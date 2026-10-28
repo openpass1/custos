@@ -65,7 +65,7 @@ ru.RemoveData=Удалить также настройки, журналы и б
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 #ifdef RuntimeInstaller
-Source: "{#RuntimeInstaller}"; Flags: dontcopy
+Source: "{#RuntimeInstaller}"; DestDir: "{tmp}"; Flags: dontcopy
 #endif
 
 [Icons]
@@ -165,7 +165,7 @@ end;
 { Registers the service: automatic start as LocalSystem, restart after a crash (section 10.1). }
 procedure RegisterAndStartService;
 var
-  BinPath: String;
+  BinPath, ErrorText: String;
   ResultCode: Integer;
 begin
   { The path is quoted inside the value, otherwise Windows would try C:\Program.exe first. }
@@ -180,8 +180,11 @@ begin
 
   ResultCode := RunHidden(ExpandConstant('{sys}\net.exe'), 'start ' + ServiceName);
   if ResultCode <> 0 then
-    SuppressibleMsgBox(FmtMessage(CustomMessage('ServiceFailed'),
-      [IntToStr(ResultCode), ExpandConstant('{commonappdata}\CUSTOS\logs')]), mbError, MB_OK, IDOK);
+  begin
+    { No line here may start with "[": Inno Setup would take it for a section header. }
+    ErrorText := FmtMessage(CustomMessage('ServiceFailed'), [IntToStr(ResultCode), ExpandConstant('{commonappdata}\CUSTOS\logs')]);
+    SuppressibleMsgBox(ErrorText, mbError, MB_OK, IDOK);
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
