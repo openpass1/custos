@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>CUSTOS</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Открыть CUSTOS</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>Закрыть интерфейс</value>
+  </data>
+  <data name="MenuCloseHint" xml:space="preserve">
+    <value>копирование продолжится</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>CUSTOS: {0}</value>
+  </data>
+  <data name="StateConnecting" xml:space="preserve">
+    <value>подключение к службе…</value>
+  </data>
+  <data name="StateRunning" xml:space="preserve">
+    <value>служба работает</value>
+  </data>
+  <data name="StateStopping" xml:space="preserve">
+    <value>служба останавливается</value>
+  </data>
+  <data name="StateUnavailable" xml:space="preserve">
+    <value>служба не отвечает</value>
+  </data>
+  <data name="ProblemNotRunning" xml:space="preserve">
+    <value>Служба CUSTOS не запущена или не отвечает.</value>
+  </data>
+  <data name="ProblemAccessDenied" xml:space="preserve">
+    <value>Windows не дала доступ к каналу службы CUSTOS.</value>
+  </data>
+  <data name="ProblemVersionMismatch" xml:space="preserve">
+    <value>Версии интерфейса и службы не совпадают. Переустановите CUSTOS.</value>
+  </data>
+  <data name="ProblemConnectionLost" xml:space="preserve">
+    <value>Служба разорвала соединение.</value>
+  </data>
+  <data name="ServerNotConnected" xml:space="preserve">
+    <value>Сервер не подключён — программа работает автономно</value>
+  </data>
+  <data name="RightsAdmin" xml:space="preserve">
+    <value>администратор</value>
+  </data>
+  <data name="RightsUser" xml:space="preserve">
+    <value>просмотр и запуск</value>
+  </data>
+  <data name="UserWithRights" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
+  <data name="RunningSince" xml:space="preserve">
+    <value>работает с {0:g}</value>
+  </data>
+  <data name="LabelService" xml:space="preserve">
+    <value>Служба:</value>
+  </data>
+  <data name="LabelServiceVersion" xml:space="preserve">
+    <value>Версия службы:</value>
+  </data>
+  <data name="LabelInterfaceVersion" xml:space="preserve">
+    <value>Версия интерфейса:</value>
+  </data>
+  <data name="LabelUser" xml:space="preserve">
+    <value>Пользователь:</value>
+  </data>
+  <data name="LabelSession" xml:space="preserve">
+    <value>Сеанс Windows:</value>
+  </data>
+  <data name="LabelProblem" xml:space="preserve">
+    <value>Подробности:</value>
+  </data>
+</root>

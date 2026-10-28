@@ -1,0 +1,54 @@
+name: Client build
+
+# Builds and tests the Windows client and makes the installer. Runs only when the client (or this file) changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: client-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (Test-Path $iscc) { Write-Host "Inno Setup is already installed: $iscc"; exit 0 }
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Windows PowerShell 5.1, the same shell the build is run with on a test machine.
+      - name: Build, test and make the installer
+        shell: powershell
+        working-directory: client
+        run: .\build.ps1 -Configuration Release
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: CUSTOS-Setup
+          path: client/artifacts/installer/*.exe
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>CUSTOS</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Open CUSTOS</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>Close interface</value>
+  </data>
+  <data name="MenuCloseHint" xml:space="preserve">
+    <value>backups continue</value>
+  </data>
+  <data name="TrayTooltip" xml:space="preserve">
+    <value>CUSTOS: {0}</value>
+  </data>
+  <data name="StateConnecting" xml:space="preserve">
+    <value>connecting to the service…</value>
+  </data>
+  <data name="StateRunning" xml:space="preserve">
+    <value>service is running</value>
+  </data>
+  <data name="StateStopping" xml:space="preserve">
+    <value>service is stopping</value>
+  </data>
+  <data name="StateUnavailable" xml:space="preserve">
+    <value>service is not responding</value>
+  </data>
+  <data name="ProblemNotRunning" xml:space="preserve">
+    <value>The CUSTOS service is not running or does not answer.</value>
+  </data>
+  <data name="ProblemAccessDenied" xml:space="preserve">
+    <value>Windows denied access to the CUSTOS service channel.</value>
+  </data>
+  <data name="ProblemVersionMismatch" xml:space="preserve">
+    <value>The interface and the service are different versions. Reinstall CUSTOS.</value>
+  </data>
+  <data name="ProblemConnectionLost" xml:space="preserve">
+    <value>The service closed the connection.</value>
+  </data>
+  <data name="ServerNotConnected" xml:space="preserve">
+    <value>Server not connected — working standalone</value>
+  </data>
+  <data name="RightsAdmin" xml:space="preserve">
+    <value>administrator</value>
+  </data>
+  <data name="RightsUser" xml:space="preserve">
+    <value>view and run</value>
+  </data>
+  <data name="UserWithRights" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
+  <data name="RunningSince" xml:space="preserve">
+    <value>running since {0:g}</value>
+  </data>
+  <data name="LabelService" xml:space="preserve">
+    <value>Service:</value>
+  </data>
+  <data name="LabelServiceVersion" xml:space="preserve">
+    <value>Service version:</value>
+  </data>
+  <data name="LabelInterfaceVersion" xml:space="preserve">
+    <value>Interface version:</value>
+  </data>
+  <data name="LabelUser" xml:space="preserve">
+    <value>User:</value>
+  </data>
+  <data name="LabelSession" xml:space="preserve">
+    <value>Windows session:</value>
+  </data>
+  <data name="LabelProblem" xml:space="preserve">
+    <value>Details:</value>
+  </data>
+</root>
