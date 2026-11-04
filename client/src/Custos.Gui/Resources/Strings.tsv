@@ -1,0 +1,26 @@
+# Interface texts. Columns: key, English, Russian (TAB-separated).
+# After a change run: python tools/make-strings.py
+AppTitle	CUSTOS	CUSTOS
+MenuOpen	Open CUSTOS	Открыть CUSTOS
+MenuClose	Close interface	Закрыть интерфейс
+MenuCloseHint	backups continue	копирование продолжится
+TrayTooltip	CUSTOS: {0}	CUSTOS: {0}
+StateConnecting	connecting to the service…	подключение к службе…
+StateRunning	service is running	служба работает
+StateStopping	service is stopping	служба останавливается
+StateUnavailable	service is not responding	служба не отвечает
+ProblemNotRunning	The CUSTOS service is not running or does not answer.	Служба CUSTOS не запущена или не отвечает.
+ProblemAccessDenied	Windows denied access to the CUSTOS service channel.	Windows не дала доступ к каналу службы CUSTOS.
+ProblemVersionMismatch	The interface and the service are different versions. Reinstall CUSTOS.	Версии интерфейса и службы не совпадают. Переустановите CUSTOS.
+ProblemConnectionLost	The service closed the connection.	Служба разорвала соединение.
+ServerNotConnected	Server not connected — working standalone	Сервер не подключён — программа работает автономно
+RightsAdmin	administrator	администратор
+RightsUser	view and run	просмотр и запуск
+UserWithRights	{0} — {1}	{0} — {1}
+RunningSince	running since {0:g}	работает с {0:g}
+LabelService	Service:	Служба:
+LabelServiceVersion	Service version:	Версия службы:
+LabelInterfaceVersion	Interface version:	Версия интерфейса:
+LabelUser	User:	Пользователь:
+LabelSession	Windows session:	Сеанс Windows:
+LabelProblem	Details:	Подробности:

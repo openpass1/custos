@@ -1,0 +1,81 @@
+# Texts of the run logs and the live log. Columns: key, English, Russian (TAB-separated).
+# After a change run: python tools/make-strings.py
+KeepAwakeReason	CUSTOS: backup task «{0}» is running	CUSTOS: выполняется задание «{0}»
+RunStarted	Task «{0}» started: {1} backup, {2}.	Задание «{0}» начато: {1} копия, {2}.
+RunFinished	Task «{0}» finished: {1}. Files copied: {2}, {3}, in {4}.	Задание «{0}» завершено: {1}. Скопировано файлов: {2}, {3}, за {4}.
+RunAborted	The run was stopped.	Задание прервано.
+NothingChanged	No file has changed since the last backup, so no new set was made.	С прошлой копии файлы не менялись, новый набор не создан.
+MirrorNotSupported	Mirror tasks arrive in the next version of CUSTOS. The task was not run.	Зеркало появится в следующей версии CUSTOS. Задание не выполнено.
+BackupTypeNotSupported	Unknown backup type «{0}».	Неизвестный тип копии «{0}».
+ArchiveNotSupported	Compression ({0}) arrives in the next version of CUSTOS. The task was not run.	Сжатие ({0}) появится в следующей версии CUSTOS. Задание не выполнено.
+NoSources	The task has no sources.	В задании нет источников.
+NoDestinations	The task has no destinations.	В задании нет назначений.
+NoDestinationAvailable	No destination is available.	Ни одно назначение недоступно.
+DestinationKindNotSupported	Destinations of type «{0}» arrive in a later version of CUSTOS.	Назначения типа «{0}» появятся в следующих версиях CUSTOS.
+DestinationReady	Destination: {0}{1}.	Назначение: {0}{1}.
+AsAccount	 (as {0})	 (под учётной записью {0})
+DestinationUnavailable	Destination {0} is not available: {1}	Назначение {0} недоступно: {1}
+UsbDiskNotFound	No disk with the label «{0}» is connected.	Диск с меткой «{0}» не найден.
+UsbDiskLabel	USB disk «{0}»	USB-диск «{0}»
+PathNotAbsolute	«{0}» is not a full path.	«{0}» — не полный путь.
+FullBecauseFirst	There is no full backup yet, so this one is full.	Полной копии ещё нет, поэтому эта копия полная.
+FullBecauseEveryRuns	Every {0}th run is a full backup.	Каждый {0}-й запуск — полная копия.
+FullBecauseWeekday	Today is the weekday for a full backup.	Сегодня день недели для полной копии.
+FullBecauseMonthDay	Today is the day of the month for a full backup.	Сегодня число месяца для полной копии.
+FullBecauseParentMissing	The full backup «{0}» is missing in {1}, so this one is full.	Полной копии «{0}» нет в {1}, поэтому эта копия полная.
+VssCreated	Shadow copy (VSS) created.	Теневая копия (VSS) создана.
+VssFailedContinue	Shadow copy (VSS) failed: {0}. Copying without it: files open in other programs may be skipped.	Не удалось создать теневую копию (VSS): {0}. Копирую без неё, открытые в программах файлы могут быть пропущены.
+VssFailedAbort	Shadow copy (VSS) failed: {0}. The task is set to stop in that case.	Не удалось создать теневую копию (VSS): {0}. По настройке задания копирование отменено.
+FolderUnreadable	Cannot read the folder {0}: {1}	Не удалось прочитать папку {0}: {1}
+SourceUnavailable	Source {0} is not available: {1}	Источник {0} недоступен: {1}
+SourceNotFound	Source not found: {0}	Источник не найден: {0}
+SourceScanned	Source {0}: {1} files, {2}.	Источник {0}: файлов {1}, {2}.
+CopyPlanned	To copy: {0} files, {1}.	К копированию: файлов {0}, {1}.
+NotEnoughSpace	Not enough space in {0}: {1} needed, {2} free. Nothing was written there.	Недостаточно места в {0}: нужно {1}, свободно {2}. В это назначение ничего не записано.
+DestinationWriteFailed	Writing to {0} failed: {1}	Ошибка записи в {0}: {1}
+FileCopied	Copied {0} ({1})	Скопирован {0} ({1})
+FileRetry	Retrying {0}: {1}	Повтор чтения {0}: {1}
+FileFailed	Not copied: {0}: {1}	Не скопирован {0}: {1}
+FileVanished	{0} was deleted before it could be copied.	Файл {0} удалён до копирования.
+SetWritten	Set «{0}» written to {1}: {2} files, {3}.	Набор «{0}» записан в {1}: файлов {2}, {3}.
+SetDeleted	Old set «{0}» deleted from {1}.	Удалён старый набор «{0}» в {1}.
+SetDeleteFailed	Could not delete the old set «{0}» in {1}: {2}	Не удалось удалить старый набор «{0}» в {1}: {2}
+PartialNotRemoved	Could not remove the unfinished folder {0}: {1}	Не удалось удалить незавершённую папку {0}: {1}
+CopyIncomplete	The backup was not made completely.	Копия создана не полностью.
+Queued	Task «{0}» is queued: {1}.	Задание «{0}» поставлено в очередь: {1}.
+AlreadyQueued	Task «{0}» is already queued or running.	Задание «{0}» уже в очереди или выполняется.
+SlotSkippedBusy	Task «{0}»: the run at {1} was skipped, the task was still queued or running.	Задание «{0}»: запуск в {1} пропущен, задание ещё было в очереди или выполнялось.
+MissedNoCatchUp	Task «{0}» missed its run at {1} while the computer was off or asleep. Catch-up runs are off for this task.	Задание «{0}» пропустило запуск в {1}: компьютер был выключен или спал. Догоняющий запуск для задания отключён.
+RunPaused	Task «{0}» paused ({1}).	Задание «{0}» поставлено на паузу ({1}).
+RunResumed	Task «{0}» resumed ({1}).	Задание «{0}» продолжено ({1}).
+RunStopping	Task «{0}» is being stopped ({1}).	Задание «{0}» останавливается ({1}).
+RemovedFromQueue	Task «{0}» removed from the queue ({1}).	Задание «{0}» убрано из очереди ({1}).
+ServiceStopping	The service is stopping, the run is stopped.	Служба останавливается, задание прервано.
+RunInterrupted	The run was cut short: the service stopped unexpectedly.	Запуск оборван: служба неожиданно остановилась.
+InternalError	Internal error: {0}. Details are in the service log.	Внутренняя ошибка: {0}. Подробности в журнале службы.
+CredentialNotFound	The account for this path is missing from the CUSTOS settings.	Учётная запись для этого пути не найдена в настройках CUSTOS.
+CredentialNoPassword	No password is stored for {0}.	Для {0} не сохранён пароль.
+LogonFailed	Logon as {0} failed: {1}	Не удалось войти под учётной записью {0}: {1}
+UnitBytes	B	Б
+UnitKilobytes	KB	КБ
+UnitMegabytes	MB	МБ
+UnitGigabytes	GB	ГБ
+UnitTerabytes	TB	ТБ
+SpeedFormat	{0}/s	{0}/с
+DurationHours	{0} h {1} min	{0} ч {1} мин
+DurationMinutes	{0} min {1} s	{0} мин {1} с
+DurationSeconds	{0} s	{0} с
+TypeFull	full	полная
+TypeIncremental	incremental	инкрементальная
+TypeDifferential	differential	дифференциальная
+TypeMirror	mirror	зеркало
+StatusSuccess	Success	Успешно
+StatusWarning	With warnings	С предупреждениями
+StatusError	Error	Ошибка
+StatusAborted	Stopped	Прервано
+StatusRunning	Running	Выполняется
+TriggerSchedule	on schedule	по расписанию
+TriggerCatchUp	catch-up for {0}	догоняющий за {0}
+TriggerManual	manually	вручную
+TriggerManualBy	manually, {0}	вручную, {0}
+TriggerRemote	by the monitoring server	командой с сервера

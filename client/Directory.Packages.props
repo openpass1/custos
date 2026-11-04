@@ -15,6 +15,10 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <!-- Local database: MIT (Microsoft.Data.Sqlite), Apache-2.0 (SQLitePCLRaw), public domain (SQLite) -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <!-- DPAPI for stored passwords: MIT -->
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
     <!-- Tests only, not shipped -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
