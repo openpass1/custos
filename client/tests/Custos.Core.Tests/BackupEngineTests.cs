@@ -235,6 +235,30 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
+    public void A_drive_letter_in_the_folder_of_a_usb_destination_is_ignored()
+    {
+        string disk = _temp.Combine("UsbDisk");
+        Directory.CreateDirectory(disk);
+        _platform.Volumes["BACKUP-1"] = disk;
+        var task = NewTask(BackupTypes.Full);
+        task.Destinations.Add(new TaskDestination { Kind = DestinationKinds.Usb, UsbLabel = "BACKUP-1", Path = @"E:\Copies\" });
+
+        var result = Run(task, Start);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.True(File.Exists(Path.Combine(disk, "Copies", result.SetName!, "Data", "a.txt")));
+    }
+
+    [Theory]
+    [InlineData(@"Copies\Office", @"Copies\Office")]
+    [InlineData(@"\Copies\", "Copies")]
+    [InlineData(@"E:\Copies", "Copies")]
+    [InlineData("e:", "")]
+    [InlineData(null, "")]
+    public void The_folder_of_a_usb_destination_is_relative_to_the_disk(string? path, string expected) =>
+        Assert.Equal(expected, DestinationKinds.UsbFolder(path));
+
+    [Fact]
     public void A_usb_disk_that_is_not_connected_is_an_error()
     {
         var task = NewTask(BackupTypes.Full);

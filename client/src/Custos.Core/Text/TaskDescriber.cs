@@ -115,7 +115,7 @@ public static class TaskDescriber
         if (destination.Kind == DestinationKinds.Usb)
         {
             string label = Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel ?? "?");
-            string folder = destination.Path.Trim('\\', '/');
+            string folder = DestinationKinds.UsbFolder(destination.Path);
             return folder.Length == 0 ? label : label + " \\" + folder;
         }
 

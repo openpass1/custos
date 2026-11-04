@@ -64,25 +64,1031 @@
   <data name="UserWithRights" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
-  <data name="RunningSince" xml:space="preserve">
-    <value>running since {0:g}</value>
+  <data name="ToolCreate" xml:space="preserve">
+    <value>Create</value>
   </data>
-  <data name="LabelService" xml:space="preserve">
-    <value>Service:</value>
+  <data name="ToolImportCobian" xml:space="preserve">
+    <value>Import from Cobian Backup…</value>
   </data>
-  <data name="LabelServiceVersion" xml:space="preserve">
-    <value>Service version:</value>
+  <data name="ToolEdit" xml:space="preserve">
+    <value>Edit</value>
   </data>
-  <data name="LabelInterfaceVersion" xml:space="preserve">
-    <value>Interface version:</value>
+  <data name="ToolClone" xml:space="preserve">
+    <value>Clone</value>
   </data>
-  <data name="LabelUser" xml:space="preserve">
+  <data name="ToolDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="ToolRun" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="ToolStop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="ToolPause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="ToolPauseHint" xml:space="preserve">
+    <value>Pause or resume the running task</value>
+  </data>
+  <data name="ToolRestore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreLater" xml:space="preserve">
+    <value>Restoring backups arrives in a later version of CUSTOS.</value>
+  </data>
+  <data name="ToolCard" xml:space="preserve">
+    <value>Card</value>
+  </data>
+  <data name="ToolCardHint" xml:space="preserve">
+    <value>Show or hide the task card</value>
+  </data>
+  <data name="ToolSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="ToolTipShortcut" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ToolAdminsOnly" xml:space="preserve">
+    <value>Changes — administrators only</value>
+  </data>
+  <data name="TabLog" xml:space="preserve">
+    <value>Log</value>
+  </data>
+  <data name="TabHistory" xml:space="preserve">
+    <value>Run history</value>
+  </data>
+  <data name="TabProgress" xml:space="preserve">
+    <value>Progress</value>
+  </data>
+  <data name="ColumnTask" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="ColumnType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="ColumnSchedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="ColumnLastRun" xml:space="preserve">
+    <value>Last run</value>
+  </data>
+  <data name="ColumnResult" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="ColumnNextRun" xml:space="preserve">
+    <value>Next run</value>
+  </data>
+  <data name="ColumnNextShort" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="ResultRunning" xml:space="preserve">
+    <value>Running {0} %</value>
+  </data>
+  <data name="ResultPaused" xml:space="preserve">
+    <value>Paused {0} %</value>
+  </data>
+  <data name="ResultStopping" xml:space="preserve">
+    <value>Stopping…</value>
+  </data>
+  <data name="ResultQueued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="ResultDisabled" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="ResultNeverRun" xml:space="preserve">
+    <value>Not run yet</value>
+  </data>
+  <data name="NoConnection" xml:space="preserve">
+    <value>{0}
+
+The window connects again by itself as soon as the service answers.</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Delete the task «{0}»?
+
+The backups it has made stay where they are.</value>
+  </data>
+  <data name="CloneName" xml:space="preserve">
+    <value>{0} (copy)</value>
+  </data>
+  <data name="NewTaskName" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="ProblemNoConnection" xml:space="preserve">
+    <value>No connection to the CUSTOS service.</value>
+  </data>
+  <data name="ProblemNoAnswer" xml:space="preserve">
+    <value>The service did not answer in time.</value>
+  </data>
+  <data name="ProblemRequestFailed" xml:space="preserve">
+    <value>The service could not do it: {0}</value>
+  </data>
+  <data name="ProblemUnexpected" xml:space="preserve">
+    <value>Something went wrong in the CUSTOS window: {0}
+
+Backups go on: the service does not depend on the window. The details are written to {1}. If this repeats, close the interface from the tray menu and open it again.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>yes</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>no</value>
+  </data>
+  <data name="CardNoSelection" xml:space="preserve">
+    <value>Select a task in the list</value>
+  </data>
+  <data name="CardSubtitle" xml:space="preserve">
+    <value>Type: {0} · {1}</value>
+  </data>
+  <data name="CardEnabled" xml:space="preserve">
+    <value>on</value>
+  </data>
+  <data name="CardDisabled" xml:space="preserve">
+    <value>off</value>
+  </data>
+  <data name="CardProgress" xml:space="preserve">
+    <value>Progress</value>
+  </data>
+  <data name="CardSources" xml:space="preserve">
+    <value>Sources</value>
+  </data>
+  <data name="CardDestinations" xml:space="preserve">
+    <value>Destinations</value>
+  </data>
+  <data name="CardSchedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="CardLastSuccess" xml:space="preserve">
+    <value>Last success</value>
+  </data>
+  <data name="CardLastRun" xml:space="preserve">
+    <value>Last run</value>
+  </data>
+  <data name="CardNextRun" xml:space="preserve">
+    <value>Next run</value>
+  </data>
+  <data name="CardChanged" xml:space="preserve">
+    <value>Changed</value>
+  </data>
+  <data name="CardComment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="CardNone" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="CardNever" xml:space="preserve">
+    <value>none yet</value>
+  </data>
+  <data name="CardNotRecursive" xml:space="preserve">
+    <value>{0} (without subfolders)</value>
+  </data>
+  <data name="CardAsAccount" xml:space="preserve">
+    <value>{0} — as {1}</value>
+  </data>
+  <data name="CardRunSummary" xml:space="preserve">
+    <value>{0}: {1} files, {2}</value>
+  </data>
+  <data name="CardFailedRun" xml:space="preserve">
+    <value>{0} — {1}: {2}</value>
+  </data>
+  <data name="CardDisabledNoRuns" xml:space="preserve">
+    <value>none: the task is off</value>
+  </data>
+  <data name="CardOnRequest" xml:space="preserve">
+    <value>only when started by hand</value>
+  </data>
+  <data name="CardChangedBy" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="CardChangedOnServer" xml:space="preserve">
+    <value>monitoring site ({0})</value>
+  </data>
+  <data name="ColumnTime" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="ColumnMessage" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="ColumnStarted" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="ColumnDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="ColumnTrigger" xml:space="preserve">
+    <value>Started by</value>
+  </data>
+  <data name="ColumnFiles" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="ColumnSize" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="ColumnDetails" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>This task has not run yet.</value>
+  </data>
+  <data name="HistorySelectTask" xml:space="preserve">
+    <value>Select a task to see its runs.</value>
+  </data>
+  <data name="HistoryWarnings" xml:space="preserve">
+    <value>Warnings: {0}</value>
+  </data>
+  <data name="ProgressIdle" xml:space="preserve">
+    <value>No task is running now.</value>
+  </data>
+  <data name="ProgressTask" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="ProgressTrigger" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="ProgressPhase" xml:space="preserve">
+    <value>Stage</value>
+  </data>
+  <data name="ProgressFile" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="ProgressFiles" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="ProgressBytes" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="ProgressSpeed" xml:space="preserve">
+    <value>Speed</value>
+  </data>
+  <data name="ProgressElapsed" xml:space="preserve">
+    <value>Elapsed</value>
+  </data>
+  <data name="ProgressRemaining" xml:space="preserve">
+    <value>Remaining</value>
+  </data>
+  <data name="ProgressOf" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="ProgressPausedPhase" xml:space="preserve">
+    <value>{0} — paused</value>
+  </data>
+  <data name="ColumnDestination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="ColumnState" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="ColumnError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="DestinationPending" xml:space="preserve">
+    <value>Waiting</value>
+  </data>
+  <data name="DestinationWriting" xml:space="preserve">
+    <value>Writing</value>
+  </data>
+  <data name="DestinationDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="DestinationFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="PhaseVss" xml:space="preserve">
+    <value>Creating a shadow copy (VSS)</value>
+  </data>
+  <data name="PhaseScan" xml:space="preserve">
+    <value>Looking for files</value>
+  </data>
+  <data name="PhaseCopy" xml:space="preserve">
+    <value>Copying</value>
+  </data>
+  <data name="PhaseVerify" xml:space="preserve">
+    <value>Checking</value>
+  </data>
+  <data name="PhaseRetention" xml:space="preserve">
+    <value>Deleting old backups</value>
+  </data>
+  <data name="PhaseEvents" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="MenuRunAll" xml:space="preserve">
+    <value>Run all tasks</value>
+  </data>
+  <data name="MenuStopCurrent" xml:space="preserve">
+    <value>Stop the running task</value>
+  </data>
+  <data name="MenuStopTask" xml:space="preserve">
+    <value>Stop the running task: {0}</value>
+  </data>
+  <data name="NothingQueued" xml:space="preserve">
+    <value>Nothing to run: no task is switched on.</value>
+  </data>
+  <data name="TrayOk" xml:space="preserve">
+    <value>all is well</value>
+  </data>
+  <data name="TrayRunning" xml:space="preserve">
+    <value>{0} — {1} %</value>
+  </data>
+  <data name="TrayError" xml:space="preserve">
+    <value>the last run of «{0}» failed</value>
+  </data>
+  <data name="TrayWarning" xml:space="preserve">
+    <value>the last run of «{0}» needs a look</value>
+  </data>
+  <data name="EditorTitle" xml:space="preserve">
+    <value>Task — {0}</value>
+  </data>
+  <data name="EditorTitleNew" xml:space="preserve">
+    <value>New task</value>
+  </data>
+  <data name="EditorNewTask" xml:space="preserve">
+    <value>New task, not saved yet</value>
+  </data>
+  <data name="EditorRevision" xml:space="preserve">
+    <value>Revision {0}, changed {1} by {2}</value>
+  </data>
+  <data name="ButtonOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="ButtonAddAccount" xml:space="preserve">
+    <value>Add…</value>
+  </data>
+  <data name="ButtonEdit" xml:space="preserve">
+    <value>Edit…</value>
+  </data>
+  <data name="ButtonRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="ButtonBrowse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="ButtonChangePassword" xml:space="preserve">
+    <value>Password…</value>
+  </data>
+  <data name="ButtonTestAccess" xml:space="preserve">
+    <value>Check access</value>
+  </data>
+  <data name="PageBasic" xml:space="preserve">
+    <value>Basic</value>
+  </data>
+  <data name="EditorName" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="EditorEnabled" xml:space="preserve">
+    <value>The task is on</value>
+  </data>
+  <data name="EditorBackupType" xml:space="preserve">
+    <value>Backup type</value>
+  </data>
+  <data name="TypeFullTitle" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="TypeFullHint" xml:space="preserve">
+    <value>Every time all files are copied. Reliable and simple, but slow, and takes more space.</value>
+  </data>
+  <data name="TypeIncrementalTitle" xml:space="preserve">
+    <value>Incremental</value>
+  </data>
+  <data name="TypeIncrementalHint" xml:space="preserve">
+    <value>Only the files changed since the last backup of any type are copied. Fast and thrifty, but a restore needs the full backup and all incremental ones after it.</value>
+  </data>
+  <data name="TypeDifferentialTitle" xml:space="preserve">
+    <value>Differential</value>
+  </data>
+  <data name="TypeDifferentialHint" xml:space="preserve">
+    <value>The files changed since the last full backup are copied. The backup grows each time, but a restore needs only the full and the last differential backup.</value>
+  </data>
+  <data name="TypeMirrorTitle" xml:space="preserve">
+    <value>Mirror</value>
+  </data>
+  <data name="TypeMirrorLater" xml:space="preserve">
+    <value>An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.</value>
+  </data>
+  <data name="EditorForceFull" xml:space="preserve">
+    <value>Forced full backup</value>
+  </data>
+  <data name="ForceEvery" xml:space="preserve">
+    <value>Every</value>
+  </data>
+  <data name="ForceEveryRunsSuffix" xml:space="preserve">
+    <value>runs</value>
+  </data>
+  <data name="ForceWeekday" xml:space="preserve">
+    <value>On the weekday</value>
+  </data>
+  <data name="ForceMonthDay" xml:space="preserve">
+    <value>On the day of the month</value>
+  </data>
+  <data name="ForceFullNote" xml:space="preserve">
+    <value>Only for incremental and differential tasks. The first backup is always full, and so is a backup whose full one is missing in the destination.</value>
+  </data>
+  <data name="LastDayOfMonth" xml:space="preserve">
+    <value>last day of the month</value>
+  </data>
+  <data name="EditorComment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="ErrorNameRequired" xml:space="preserve">
+    <value>Enter the task name.</value>
+  </data>
+  <data name="PageSources" xml:space="preserve">
+    <value>Sources</value>
+  </data>
+  <data name="SourcesNote" xml:space="preserve">
+    <value>Folders and files to back up. A network folder can be read under its own account.</value>
+  </data>
+  <data name="ColumnPath" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="ColumnSubfolders" xml:space="preserve">
+    <value>Subfolders</value>
+  </data>
+  <data name="ColumnAccount" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="KeepTopDir" xml:space="preserve">
+    <value>Keep the top folder</value>
+  </data>
+  <data name="KeepTopDirHelp" xml:space="preserve">
+    <value>On: D:\Data is copied into &lt;backup&gt;\Data\…
+Off: the contents of D:\Data go straight into &lt;backup&gt;\…</value>
+  </data>
+  <data name="ErrorNoSources" xml:space="preserve">
+    <value>Add at least one source, or switch the task off.</value>
+  </data>
+  <data name="SourceAddTitle" xml:space="preserve">
+    <value>Add source</value>
+  </data>
+  <data name="SourceEditTitle" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="SourceFolder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="SourceFile" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="SourceNetwork" xml:space="preserve">
+    <value>Network folder</value>
+  </data>
+  <data name="SourcePath" xml:space="preserve">
+    <value>Path:</value>
+  </data>
+  <data name="SourceRecursive" xml:space="preserve">
+    <value>Include subfolders</value>
+  </data>
+  <data name="SourceAccountHelp" xml:space="preserve">
+    <value>The network folder is read under this account. «Service account» is the account of this computer itself: it works in a domain if the computer may read the share; a NAS in a workgroup usually needs a user account.</value>
+  </data>
+  <data name="SourceNote" xml:space="preserve">
+    <value>Files open in other programs are read from a shadow copy when VSS is on for the task (page «Advanced»). Network folders are read without VSS.</value>
+  </data>
+  <data name="ErrorPathRequired" xml:space="preserve">
+    <value>Enter the path.</value>
+  </data>
+  <data name="ErrorPathNotAbsolute" xml:space="preserve">
+    <value>«{0}» is not a full path. Enter it with the drive letter or as \\server\share.</value>
+  </data>
+  <data name="ErrorNotUnc" xml:space="preserve">
+    <value>«{0}» is not a network path. A network folder starts with two backslashes, for example \\server\share.</value>
+  </data>
+  <data name="ErrorUncNeedsNetwork" xml:space="preserve">
+    <value>«{0}» is a network path: choose «Network folder».</value>
+  </data>
+  <data name="PageDestinations" xml:space="preserve">
+    <value>Destinations</value>
+  </data>
+  <data name="DestinationsNote" xml:space="preserve">
+    <value>Where the backups go. With several destinations the files are read once and written to all of them; if one fails, the others still get the backup.</value>
+  </data>
+  <data name="DestinationProperties" xml:space="preserve">
+    <value>Selected destination</value>
+  </data>
+  <data name="DestinationKind" xml:space="preserve">
+    <value>Type:</value>
+  </data>
+  <data name="DestinationKindHelp" xml:space="preserve">
+    <value>Local folder: a folder on a disk of this computer.
+Network folder: a path like \\server\share\folder, opened under the chosen account.
+USB disk: found by its volume label, so a new drive letter does not matter.</value>
+  </data>
+  <data name="KindLocal" xml:space="preserve">
+    <value>Local folder</value>
+  </data>
+  <data name="KindUnc" xml:space="preserve">
+    <value>Network folder</value>
+  </data>
+  <data name="KindUsb" xml:space="preserve">
+    <value>USB disk</value>
+  </data>
+  <data name="KindLater" xml:space="preserve">
+    <value>{0} (in a later version)</value>
+  </data>
+  <data name="DestinationFolder" xml:space="preserve">
+    <value>Folder:</value>
+  </data>
+  <data name="DestinationFolderOnDisk" xml:space="preserve">
+    <value>Folder on the disk:</value>
+  </data>
+  <data name="DestinationUsbLabel" xml:space="preserve">
+    <value>Disk label:</value>
+  </data>
+  <data name="DestinationUsbHelp" xml:space="preserve">
+    <value>The disk is found by its volume label, so its drive letter does not matter. The list offers the labels of the disks connected now. The folder is a path on that disk without the drive letter, for example Backup\Office.</value>
+  </data>
+  <data name="DestinationAccount" xml:space="preserve">
+    <value>Account:</value>
+  </data>
+  <data name="DestinationAccountHelp" xml:space="preserve">
+    <value>The network folder is opened under this account; files on this computer are still read by the service. «Service account» is the account of this computer itself: it works in a domain if the computer may write to the share; a NAS in a workgroup usually needs a user account.</value>
+  </data>
+  <data name="DestinationLater" xml:space="preserve">
+    <value>This type of destination arrives in a later version of CUSTOS. Until then the task writes nothing there and reports an error for it.</value>
+  </data>
+  <data name="TestRunning" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="TestOk" xml:space="preserve">
+    <value>Access is fine: {0}, free {1}.</value>
+  </data>
+  <data name="TestFailed" xml:space="preserve">
+    <value>No access: {0}</value>
+  </data>
+  <data name="EditorLayout" xml:space="preserve">
+    <value>Layout of the backups</value>
+  </data>
+  <data name="SeparateFolders" xml:space="preserve">
+    <value>A separate folder for each backup</value>
+  </data>
+  <data name="SeparateFoldersHelp" xml:space="preserve">
+    <value>On: each backup goes into its own folder, named by the template below, and old backups are deleted by the retention rules.
+Off: the files go straight into the destination folder and are updated there at each run; earlier versions are not kept.</value>
+  </data>
+  <data name="NameTemplate" xml:space="preserve">
+    <value>Folder name:</value>
+  </data>
+  <data name="NameTemplateHelp" xml:space="preserve">
+    <value>The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.</value>
+  </data>
+  <data name="ErrorNoDestinations" xml:space="preserve">
+    <value>Add at least one destination, or switch the task off.</value>
+  </data>
+  <data name="ErrorDestinationFolderRequired" xml:space="preserve">
+    <value>Enter the folder of the destination.</value>
+  </data>
+  <data name="ErrorUsbLabelRequired" xml:space="preserve">
+    <value>Enter the label of the USB disk.</value>
+  </data>
+  <data name="ErrorTemplateRequired" xml:space="preserve">
+    <value>Enter the name of the backup folders.</value>
+  </data>
+  <data name="PageSchedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="ScheduleType" xml:space="preserve">
+    <value>Run:</value>
+  </data>
+  <data name="ScheduleDaily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="ScheduleWeekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="ScheduleMonthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="ScheduleByInterval" xml:space="preserve">
+    <value>By timer, every N minutes</value>
+  </data>
+  <data name="ScheduleManual" xml:space="preserve">
+    <value>Only by hand</value>
+  </data>
+  <data name="ScheduleTimes" xml:space="preserve">
+    <value>Time:</value>
+  </data>
+  <data name="ScheduleTimesHelp" xml:space="preserve">
+    <value>One or more times separated by commas, for example 12:30, 21:00.</value>
+  </data>
+  <data name="ScheduleWeekdays" xml:space="preserve">
+    <value>Days:</value>
+  </data>
+  <data name="ScheduleMonthDays" xml:space="preserve">
+    <value>Days of the month:</value>
+  </data>
+  <data name="ScheduleMonthDaysHelp" xml:space="preserve">
+    <value>Numbers from 1 to 31 separated by commas, for example 1, 15. A month without that day (31 in April) has no run: for the end of every month tick «last day of the month».</value>
+  </data>
+  <data name="ScheduleInterval" xml:space="preserve">
+    <value>Every:</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>minutes</value>
+  </data>
+  <data name="ScheduleCatchUp" xml:space="preserve">
+    <value>Catch up a missed run</value>
+  </data>
+  <data name="ScheduleCatchUpHelp" xml:space="preserve">
+    <value>If the computer was off or asleep at the time of a run, the task runs once when the computer is back. Only the last missed run of the past 7 days counts.</value>
+  </data>
+  <data name="SchedulePreview" xml:space="preserve">
+    <value>In plain words</value>
+  </data>
+  <data name="ScheduleUpcoming" xml:space="preserve">
+    <value>Next runs: {0}</value>
+  </data>
+  <data name="ScheduleTimeZoneNote" xml:space="preserve">
+    <value>Times are the local time of this computer.</value>
+  </data>
+  <data name="ErrorBadTime" xml:space="preserve">
+    <value>«{0}» is not a time. Use HH:MM, for example 21:30.</value>
+  </data>
+  <data name="ErrorBadMonthDay" xml:space="preserve">
+    <value>«{0}» is not a day of the month (1 to 31).</value>
+  </data>
+  <data name="ErrorNoTimes" xml:space="preserve">
+    <value>Enter at least one time.</value>
+  </data>
+  <data name="ErrorNoWeekdays" xml:space="preserve">
+    <value>Tick at least one day of the week.</value>
+  </data>
+  <data name="ErrorNoMonthDays" xml:space="preserve">
+    <value>Enter at least one day of the month, or tick «last day of the month».</value>
+  </data>
+  <data name="PageArchive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="ArchiveLater" xml:space="preserve">
+    <value>Compression and encryption arrive in the next version of CUSTOS. Until then backups are plain copies of the files, which open without any program.</value>
+  </data>
+  <data name="ArchiveNone" xml:space="preserve">
+    <value>No compression, plain files</value>
+  </data>
+  <data name="ArchiveZip" xml:space="preserve">
+    <value>ZIP</value>
+  </data>
+  <data name="ArchiveSevenZip" xml:space="preserve">
+    <value>7z</value>
+  </data>
+  <data name="ArchiveSetButUnsupported" xml:space="preserve">
+    <value>This task is set to compress (for example after an import from Cobian). It does not run until compression arrives; choose «No compression» to run it now.</value>
+  </data>
+  <data name="PageRetention" xml:space="preserve">
+    <value>Retention</value>
+  </data>
+  <data name="RetentionNone" xml:space="preserve">
+    <value>Keep all backups</value>
+  </data>
+  <data name="RetentionCount" xml:space="preserve">
+    <value>Keep the last</value>
+  </data>
+  <data name="RetentionCountSuffix" xml:space="preserve">
+    <value>full backups with their chains</value>
+  </data>
+  <data name="RetentionCountHint" xml:space="preserve">
+    <value>A full backup is deleted together with the incremental and differential backups made after it, never on its own.</value>
+  </data>
+  <data name="RetentionAge" xml:space="preserve">
+    <value>Delete backups older than N days</value>
+  </data>
+  <data name="RetentionGfs" xml:space="preserve">
+    <value>Grandfather-father-son: daily, weekly and monthly backups</value>
+  </data>
+  <data name="RetentionLater" xml:space="preserve">
+    <value>These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.</value>
+  </data>
+  <data name="RetentionRules" xml:space="preserve">
+    <value>Rules that always apply</value>
+  </data>
+  <data name="RetentionRulesText" xml:space="preserve">
+    <value>• The last successful full backup is never deleted.
+• If a run ends with an error, nothing is deleted.
+• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.
+• Retention works only with «A separate folder for each backup» on.</value>
+  </data>
+  <data name="PageFilters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="FiltersNote" xml:space="preserve">
+    <value>Masks are separated by semicolons. * stands for any characters, ? for one character.</value>
+  </data>
+  <data name="FilterInclude" xml:space="preserve">
+    <value>Only files:</value>
+  </data>
+  <data name="FilterIncludeHelp" xml:space="preserve">
+    <value>If set, only the files matching these masks are copied, for example *.docx; *.xlsx. Empty: all files.</value>
+  </data>
+  <data name="FilterExclude" xml:space="preserve">
+    <value>Skip files:</value>
+  </data>
+  <data name="FilterExcludeHelp" xml:space="preserve">
+    <value>The files matching these masks are not copied, for example *.tmp; ~$*.</value>
+  </data>
+  <data name="FilterExcludeDirs" xml:space="preserve">
+    <value>Skip folders:</value>
+  </data>
+  <data name="FilterExcludeDirsHelp" xml:space="preserve">
+    <value>Folders with these names are skipped with everything inside, for example Temp; Cache. A mask with a backslash is matched against the path, for example Projects\Old.</value>
+  </data>
+  <data name="SkipHidden" xml:space="preserve">
+    <value>Skip hidden files and folders</value>
+  </data>
+  <data name="SkipSystem" xml:space="preserve">
+    <value>Skip system files and folders</value>
+  </data>
+  <data name="SkipTemp" xml:space="preserve">
+    <value>Skip temporary files</value>
+  </data>
+  <data name="SkipTempHelp" xml:space="preserve">
+    <value>Files that Windows marks as temporary (the «temporary» attribute). Masks like *.tmp go into «Skip files».</value>
+  </data>
+  <data name="PageEvents" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="EventsLater" xml:space="preserve">
+    <value>Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.</value>
+  </data>
+  <data name="EventsSetButUnsupported" xml:space="preserve">
+    <value>This task has events. They are kept in the task but not run in this version.</value>
+  </data>
+  <data name="PageAdvanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="EditorVss" xml:space="preserve">
+    <value>Open files</value>
+  </data>
+  <data name="VssEnabled" xml:space="preserve">
+    <value>Use a shadow copy (VSS)</value>
+  </data>
+  <data name="VssHelp" xml:space="preserve">
+    <value>Windows takes a snapshot of the disks with the sources, and files open in other programs (mail databases, accounting databases and the like) are copied from it in a consistent state. Works for disks of this computer only.</value>
+  </data>
+  <data name="VssOnFailure" xml:space="preserve">
+    <value>If the shadow copy fails:</value>
+  </data>
+  <data name="VssAbort" xml:space="preserve">
+    <value>stop the task</value>
+  </data>
+  <data name="VssContinue" xml:space="preserve">
+    <value>copy without it, with a warning</value>
+  </data>
+  <data name="EditorReading" xml:space="preserve">
+    <value>Reading files</value>
+  </data>
+  <data name="ReadRetries" xml:space="preserve">
+    <value>Retries after a read error:</value>
+  </data>
+  <data name="ReadRetriesHelp" xml:space="preserve">
+    <value>How many more times to try a file that could not be read, 2 seconds apart. 0: no retries.</value>
+  </data>
+  <data name="EditorLogAndQueue" xml:space="preserve">
+    <value>Log and queue</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Log detail:</value>
+  </data>
+  <data name="LogLevelInherit" xml:space="preserve">
+    <value>As in the program settings</value>
+  </data>
+  <data name="LogLevelSummary" xml:space="preserve">
+    <value>Totals and errors</value>
+  </data>
+  <data name="LogLevelFiles" xml:space="preserve">
+    <value>Every file</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priority in the queue:</value>
+  </data>
+  <data name="PriorityHelp" xml:space="preserve">
+    <value>When several tasks wait in the queue, the one with the higher number runs first. Tasks run one at a time.</value>
+  </data>
+  <data name="AccountService" xml:space="preserve">
+    <value>Service account (SYSTEM)</value>
+  </data>
+  <data name="AccountUnknown" xml:space="preserve">
+    <value>(account not found)</value>
+  </data>
+  <data name="AccountNotUsed" xml:space="preserve">
+    <value>not used</value>
+  </data>
+  <data name="AccountAddTitle" xml:space="preserve">
+    <value>Add account</value>
+  </data>
+  <data name="AccountEditTitle" xml:space="preserve">
+    <value>Account {0}</value>
+  </data>
+  <data name="AccountUser" xml:space="preserve">
     <value>User:</value>
   </data>
-  <data name="LabelSession" xml:space="preserve">
-    <value>Windows session:</value>
+  <data name="AccountDomain" xml:space="preserve">
+    <value>Domain or computer:</value>
   </data>
-  <data name="LabelProblem" xml:space="preserve">
-    <value>Details:</value>
+  <data name="AccountDomainNote" xml:space="preserve">
+    <value>For a domain account enter the domain, for example OFFICE. For an account of a NAS or of another computer you may leave it empty; if access fails, enter the name of that NAS or computer, for example NAS01.</value>
+  </data>
+  <data name="AccountPassword" xml:space="preserve">
+    <value>Password:</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Show password</value>
+  </data>
+  <data name="AccountPasswordNote" xml:space="preserve">
+    <value>The service keeps the password encrypted (Windows DPAPI) and never shows it again.</value>
+  </data>
+  <data name="AccountKeepPasswordNote" xml:space="preserve">
+    <value>Leave the password empty to keep the stored one.</value>
+  </data>
+  <data name="ErrorUserRequired" xml:space="preserve">
+    <value>Enter the user name.</value>
+  </data>
+  <data name="ErrorPasswordRequired" xml:space="preserve">
+    <value>Enter the password.</value>
+  </data>
+  <data name="ConfirmDeleteAccount" xml:space="preserve">
+    <value>Remove the account {0}?</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>CUSTOS settings</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>Logs and copying</value>
+  </data>
+  <data name="DefaultLogLevel" xml:space="preserve">
+    <value>Log detail:</value>
+  </data>
+  <data name="DefaultLogLevelHelp" xml:space="preserve">
+    <value>«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files; handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.</value>
+  </data>
+  <data name="LogRetention" xml:space="preserve">
+    <value>Keep logs, days:</value>
+  </data>
+  <data name="CopyPriority" xml:space="preserve">
+    <value>Copy priority:</value>
+  </data>
+  <data name="CopyPriorityHelp" xml:space="preserve">
+    <value>Low: copying gives way to the user and to other programs, so the computer does not slow down; while the disk and the processor are free, they are used fully. Normal: faster on a busy computer, but more noticeable.</value>
+  </data>
+  <data name="PriorityLow" xml:space="preserve">
+    <value>Low (recommended)</value>
+  </data>
+  <data name="PriorityNormal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="ServiceLanguage" xml:space="preserve">
+    <value>Language of the logs:</value>
+  </data>
+  <data name="ServiceLanguageHelp" xml:space="preserve">
+    <value>The language of the run logs and of the messages of the service. «Automatic» follows the language of Windows. The window itself follows the language of the user.</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="LanguageRussian" xml:space="preserve">
+    <value>Русский</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="SettingsAccounts" xml:space="preserve">
+    <value>Accounts for network folders</value>
+  </data>
+  <data name="SettingsAccountsNote" xml:space="preserve">
+    <value>The service keeps the passwords encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.</value>
+  </data>
+  <data name="SettingsReadOnly" xml:space="preserve">
+    <value>Only administrators can change the settings.</value>
+  </data>
+  <data name="ColumnUsedBy" xml:space="preserve">
+    <value>Used by tasks</value>
+  </data>
+  <data name="ImportTitle" xml:space="preserve">
+    <value>Import from Cobian Backup</value>
+  </data>
+  <data name="ImportFile" xml:space="preserve">
+    <value>Task list:</value>
+  </data>
+  <data name="ImportRead" xml:space="preserve">
+    <value>Read</value>
+  </data>
+  <data name="ImportNote" xml:space="preserve">
+    <value>Cobian Backup 11 keeps its tasks in MainList.lst, usually in C:\Program Files (x86)\Cobian Backup 11\DB. The tasks are added switched off: check each one in the editor and switch it on.</value>
+  </data>
+  <data name="ImportFilter" xml:space="preserve">
+    <value>Cobian task list (MainList.lst)|*.lst|All files|*.*</value>
+  </data>
+  <data name="ImportCannotRead" xml:space="preserve">
+    <value>Cannot read the task list: {0}</value>
+  </data>
+  <data name="ColumnInCobian" xml:space="preserve">
+    <value>On in Cobian</value>
+  </data>
+  <data name="ColumnRemarks" xml:space="preserve">
+    <value>Remarks</value>
+  </data>
+  <data name="ImportRemarks" xml:space="preserve">
+    <value>What to check</value>
+  </data>
+  <data name="ImportNoRemarks" xml:space="preserve">
+    <value>Nothing to check: the task was carried over as it is.</value>
+  </data>
+  <data name="ImportFound" xml:space="preserve">
+    <value>Tasks in the list: {0}</value>
+  </data>
+  <data name="ImportAccounts" xml:space="preserve">
+    <value>Accounts for network folders («Run as» in Cobian). Enter the password of each one once:</value>
+  </data>
+  <data name="ImportAccountTasks" xml:space="preserve">
+    <value>used by: {0}</value>
+  </data>
+  <data name="ImportUseStored" xml:space="preserve">
+    <value>use the stored password</value>
+  </data>
+  <data name="ImportPasswordRequired" xml:space="preserve">
+    <value>Enter the password of {0}, or untick the tasks that use it.</value>
+  </data>
+  <data name="ImportButton" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="ImportDone" xml:space="preserve">
+    <value>Tasks imported: {0}. They are switched off: check each one in the editor and switch it on.</value>
+  </data>
+  <data name="WarnScheduleUnknown" xml:space="preserve">
+    <value>Unknown schedule type «{0}»: the task is set to run by hand. Set its schedule.</value>
+  </data>
+  <data name="WarnScheduleNotSupported" xml:space="preserve">
+    <value>«Once» and «yearly» schedules do not exist in CUSTOS: the task is set to run by hand.</value>
+  </data>
+  <data name="WarnScheduleAssumed" xml:space="preserve">
+    <value>The schedule (Cobian code {0}) was read by its most likely meaning: check it on the «Schedule» page.</value>
+  </data>
+  <data name="WarnTimeUnreadable" xml:space="preserve">
+    <value>The time of the run could not be read, 00:00 is set: check it.</value>
+  </data>
+  <data name="WarnWeekdaysAssumed" xml:space="preserve">
+    <value>Days of the week {0} were read counting Monday as 1: check them on the «Schedule» page.</value>
+  </data>
+  <data name="WarnBackupTypeAssumed" xml:space="preserve">
+    <value>The backup type was read as differential: check it.</value>
+  </data>
+  <data name="WarnBackupTypeNotSupported" xml:space="preserve">
+    <value>Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.</value>
+  </data>
+  <data name="WarnMirrorLater" xml:space="preserve">
+    <value>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</value>
+  </data>
+  <data name="WarnCompressionLater" xml:space="preserve">
+    <value>The task compresses into {0}. Compression arrives in the next version, so until then the task does not run; to use it now, choose «No compression» on the «Archive» page.</value>
+  </data>
+  <data name="WarnCompressionAssumed" xml:space="preserve">
+    <value>The compression type was read as ZIP: check it.</value>
+  </data>
+  <data name="WarnEncryptionPassword" xml:space="preserve">
+    <value>The archive is encrypted in Cobian. Its password is not carried over: enter it again when encryption arrives.</value>
+  </data>
+  <data name="WarnSplitIgnored" xml:space="preserve">
+    <value>Splitting the archive into volumes was not carried over.</value>
+  </data>
+  <data name="WarnEventsInComment" xml:space="preserve">
+    <value>Events before and after the backup are not run yet; they were written into the comment: {0}</value>
+  </data>
+  <data name="WarnSourceUnknown" xml:space="preserve">
+    <value>The entry «{0}» was skipped: its type is unknown or it is not a full path.</value>
+  </data>
+  <data name="WarnFtpNotSupported" xml:space="preserve">
+    <value>The FTP entry «{0}» was skipped: CUSTOS does not read from FTP, and writing to FTP arrives in a later version.</value>
+  </data>
+  <data name="WarnNoSources" xml:space="preserve">
+    <value>The task has no sources: add them before switching it on.</value>
+  </data>
+  <data name="WarnNoDestinations" xml:space="preserve">
+    <value>The task has no destinations: add them before switching it on.</value>
+  </data>
+  <data name="WarnFixedDayAssumed" xml:space="preserve">
+    <value>The fixed day of the full backup (Cobian value {0}) was read as a day of the week, counting Monday as 1: check it on the «Basic» page.</value>
+  </data>
+  <data name="WarnFiltersImported" xml:space="preserve">
+    <value>Filters were carried over, check them on the «Filters» page: {0}</value>
+  </data>
+  <data name="WarnRunAsAccount" xml:space="preserve">
+    <value>In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: enter its password below.</value>
+  </data>
+  <data name="WarnRunAsLocalOnly" xml:space="preserve">
+    <value>In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so the account is not needed.</value>
   </data>
 </root>

@@ -41,6 +41,21 @@ public static class DestinationKinds
 
     /// <summary>Kinds this version can write to.</summary>
     public static bool IsSupported(string kind) => kind is Local or Unc or Usb;
+
+    /// <summary>
+    /// The folder of a <see cref="Usb"/> destination relative to the root of the disk. A drive letter typed by mistake
+    /// is dropped: the disk is found by its label, and writing to "E:\..." would go to whatever disk has that letter.
+    /// </summary>
+    public static string UsbFolder(string? path)
+    {
+        string folder = (path ?? string.Empty).Trim();
+        if (folder.Length >= 2 && folder[1] == ':' && char.IsAsciiLetter(folder[0]))
+        {
+            folder = folder[2..];
+        }
+
+        return folder.Trim('\\', '/');
+    }
 }
 
 /// <summary>Values of <see cref="ArchiveOptions.Format"/>.</summary>

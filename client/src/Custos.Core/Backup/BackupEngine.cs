@@ -199,7 +199,7 @@ public sealed class BackupEngine
             string label = destination.UsbLabel ?? string.Empty;
             string volume = _platform.FindVolumeByLabel(label)
                 ?? throw new BackupException(Messages.Format(Messages.UsbDiskNotFound, label));
-            return Path.Combine(volume, destination.Path.TrimStart('\\', '/'));
+            return Path.Combine(volume, DestinationKinds.UsbFolder(destination.Path));
         }
 
         if (string.IsNullOrWhiteSpace(destination.Path) || !Path.IsPathFullyQualified(destination.Path))

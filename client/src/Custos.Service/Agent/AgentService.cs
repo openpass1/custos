@@ -387,7 +387,7 @@ internal sealed class AgentService(ServiceInfo info, AgentEvents events, ILogger
                 return new DestinationTestResult { Error = Messages.Format(Messages.UsbDiskNotFound, label) };
             }
 
-            root = Path.Combine(volume, destination.Path.TrimStart('\\', '/'));
+            root = Path.Combine(volume, DestinationKinds.UsbFolder(destination.Path));
         }
         else if (string.IsNullOrWhiteSpace(destination.Path) || !Path.IsPathFullyQualified(destination.Path))
         {

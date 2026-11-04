@@ -9,6 +9,15 @@ internal static class AppIcons
     /// <summary>Tray icon: the service is running and all is well.</summary>
     public static Icon TrayOk() => Load("tray-ok.ico", SystemInformation.SmallIconSize);
 
+    /// <summary>Tray icon: a task is running.</summary>
+    public static Icon TrayRunning() => Load("tray-running.ico", SystemInformation.SmallIconSize);
+
+    /// <summary>Tray icon: the last run of a task ended with warnings.</summary>
+    public static Icon TrayWarning() => Load("tray-warning.ico", SystemInformation.SmallIconSize);
+
+    /// <summary>Tray icon: the last run of a task failed.</summary>
+    public static Icon TrayError() => Load("tray-error.ico", SystemInformation.SmallIconSize);
+
     /// <summary>Tray icon: no connection to the service (grey shield).</summary>
     public static Icon TrayDown() => Load("tray-down.ico", SystemInformation.SmallIconSize);
 

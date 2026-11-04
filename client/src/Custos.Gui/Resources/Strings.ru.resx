@@ -64,25 +64,1031 @@
   <data name="UserWithRights" xml:space="preserve">
     <value>{0} — {1}</value>
   </data>
-  <data name="RunningSince" xml:space="preserve">
-    <value>работает с {0:g}</value>
+  <data name="ToolCreate" xml:space="preserve">
+    <value>Создать</value>
   </data>
-  <data name="LabelService" xml:space="preserve">
-    <value>Служба:</value>
+  <data name="ToolImportCobian" xml:space="preserve">
+    <value>Импорт из Cobian Backup…</value>
   </data>
-  <data name="LabelServiceVersion" xml:space="preserve">
-    <value>Версия службы:</value>
+  <data name="ToolEdit" xml:space="preserve">
+    <value>Изменить</value>
   </data>
-  <data name="LabelInterfaceVersion" xml:space="preserve">
-    <value>Версия интерфейса:</value>
+  <data name="ToolClone" xml:space="preserve">
+    <value>Клонировать</value>
   </data>
-  <data name="LabelUser" xml:space="preserve">
+  <data name="ToolDelete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ToolRun" xml:space="preserve">
+    <value>Запустить</value>
+  </data>
+  <data name="ToolStop" xml:space="preserve">
+    <value>Остановить</value>
+  </data>
+  <data name="ToolPause" xml:space="preserve">
+    <value>Пауза</value>
+  </data>
+  <data name="ToolPauseHint" xml:space="preserve">
+    <value>Приостановить или продолжить выполняемое задание</value>
+  </data>
+  <data name="ToolRestore" xml:space="preserve">
+    <value>Восстановить</value>
+  </data>
+  <data name="RestoreLater" xml:space="preserve">
+    <value>Восстановление появится в следующих версиях CUSTOS.</value>
+  </data>
+  <data name="ToolCard" xml:space="preserve">
+    <value>Карточка</value>
+  </data>
+  <data name="ToolCardHint" xml:space="preserve">
+    <value>Показать или скрыть карточку задания</value>
+  </data>
+  <data name="ToolSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="ToolTipShortcut" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ToolAdminsOnly" xml:space="preserve">
+    <value>Изменение — только для администраторов</value>
+  </data>
+  <data name="TabLog" xml:space="preserve">
+    <value>Журнал</value>
+  </data>
+  <data name="TabHistory" xml:space="preserve">
+    <value>История запусков</value>
+  </data>
+  <data name="TabProgress" xml:space="preserve">
+    <value>Прогресс</value>
+  </data>
+  <data name="ColumnTask" xml:space="preserve">
+    <value>Задание</value>
+  </data>
+  <data name="ColumnType" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="ColumnSchedule" xml:space="preserve">
+    <value>Расписание</value>
+  </data>
+  <data name="ColumnLastRun" xml:space="preserve">
+    <value>Последний запуск</value>
+  </data>
+  <data name="ColumnResult" xml:space="preserve">
+    <value>Результат</value>
+  </data>
+  <data name="ColumnNextRun" xml:space="preserve">
+    <value>Следующий запуск</value>
+  </data>
+  <data name="ColumnNextShort" xml:space="preserve">
+    <value>Следующий</value>
+  </data>
+  <data name="ResultRunning" xml:space="preserve">
+    <value>Выполняется {0} %</value>
+  </data>
+  <data name="ResultPaused" xml:space="preserve">
+    <value>Пауза {0} %</value>
+  </data>
+  <data name="ResultStopping" xml:space="preserve">
+    <value>Останавливается…</value>
+  </data>
+  <data name="ResultQueued" xml:space="preserve">
+    <value>В очереди</value>
+  </data>
+  <data name="ResultDisabled" xml:space="preserve">
+    <value>Отключено</value>
+  </data>
+  <data name="ResultNeverRun" xml:space="preserve">
+    <value>Ещё не запускалось</value>
+  </data>
+  <data name="NoConnection" xml:space="preserve">
+    <value>{0}
+
+Окно подключится само, как только служба ответит.</value>
+  </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>Удалить задание «{0}»?
+
+Уже сделанные копии останутся на месте.</value>
+  </data>
+  <data name="CloneName" xml:space="preserve">
+    <value>{0} (копия)</value>
+  </data>
+  <data name="NewTaskName" xml:space="preserve">
+    <value>Новое задание</value>
+  </data>
+  <data name="ProblemNoConnection" xml:space="preserve">
+    <value>Нет связи со службой CUSTOS.</value>
+  </data>
+  <data name="ProblemNoAnswer" xml:space="preserve">
+    <value>Служба не ответила вовремя.</value>
+  </data>
+  <data name="ProblemRequestFailed" xml:space="preserve">
+    <value>Служба не смогла выполнить запрос: {0}</value>
+  </data>
+  <data name="ProblemUnexpected" xml:space="preserve">
+    <value>В окне CUSTOS произошла ошибка: {0}
+
+Копирование продолжается: служба от окна не зависит. Подробности записаны в {1}. Если ошибка повторяется, закройте интерфейс через меню в трее и откройте снова.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>да</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>нет</value>
+  </data>
+  <data name="CardNoSelection" xml:space="preserve">
+    <value>Выберите задание в списке</value>
+  </data>
+  <data name="CardSubtitle" xml:space="preserve">
+    <value>Тип: {0} · {1}</value>
+  </data>
+  <data name="CardEnabled" xml:space="preserve">
+    <value>включено</value>
+  </data>
+  <data name="CardDisabled" xml:space="preserve">
+    <value>отключено</value>
+  </data>
+  <data name="CardProgress" xml:space="preserve">
+    <value>Прогресс</value>
+  </data>
+  <data name="CardSources" xml:space="preserve">
+    <value>Источники</value>
+  </data>
+  <data name="CardDestinations" xml:space="preserve">
+    <value>Назначения</value>
+  </data>
+  <data name="CardSchedule" xml:space="preserve">
+    <value>Расписание</value>
+  </data>
+  <data name="CardLastSuccess" xml:space="preserve">
+    <value>Последний успешный</value>
+  </data>
+  <data name="CardLastRun" xml:space="preserve">
+    <value>Последний запуск</value>
+  </data>
+  <data name="CardNextRun" xml:space="preserve">
+    <value>Следующий запуск</value>
+  </data>
+  <data name="CardChanged" xml:space="preserve">
+    <value>Изменено</value>
+  </data>
+  <data name="CardComment" xml:space="preserve">
+    <value>Комментарий</value>
+  </data>
+  <data name="CardNone" xml:space="preserve">
+    <value>нет</value>
+  </data>
+  <data name="CardNever" xml:space="preserve">
+    <value>ещё не было</value>
+  </data>
+  <data name="CardNotRecursive" xml:space="preserve">
+    <value>{0} (без подпапок)</value>
+  </data>
+  <data name="CardAsAccount" xml:space="preserve">
+    <value>{0} — под учётной записью {1}</value>
+  </data>
+  <data name="CardRunSummary" xml:space="preserve">
+    <value>{0}: файлов {1}, {2}</value>
+  </data>
+  <data name="CardFailedRun" xml:space="preserve">
+    <value>{0} — {1}: {2}</value>
+  </data>
+  <data name="CardDisabledNoRuns" xml:space="preserve">
+    <value>нет: задание отключено</value>
+  </data>
+  <data name="CardOnRequest" xml:space="preserve">
+    <value>только вручную</value>
+  </data>
+  <data name="CardChangedBy" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="CardChangedOnServer" xml:space="preserve">
+    <value>сайт мониторинга ({0})</value>
+  </data>
+  <data name="ColumnTime" xml:space="preserve">
+    <value>Время</value>
+  </data>
+  <data name="ColumnMessage" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="MenuSelectAll" xml:space="preserve">
+    <value>Выделить всё</value>
+  </data>
+  <data name="ColumnStarted" xml:space="preserve">
+    <value>Начало</value>
+  </data>
+  <data name="ColumnDuration" xml:space="preserve">
+    <value>Длительность</value>
+  </data>
+  <data name="ColumnTrigger" xml:space="preserve">
+    <value>Как запущено</value>
+  </data>
+  <data name="ColumnFiles" xml:space="preserve">
+    <value>Файлов</value>
+  </data>
+  <data name="ColumnSize" xml:space="preserve">
+    <value>Объём</value>
+  </data>
+  <data name="ColumnDetails" xml:space="preserve">
+    <value>Подробности</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>Это задание ещё не запускалось.</value>
+  </data>
+  <data name="HistorySelectTask" xml:space="preserve">
+    <value>Выберите задание, чтобы увидеть его запуски.</value>
+  </data>
+  <data name="HistoryWarnings" xml:space="preserve">
+    <value>Предупреждений: {0}</value>
+  </data>
+  <data name="ProgressIdle" xml:space="preserve">
+    <value>Сейчас ничего не выполняется.</value>
+  </data>
+  <data name="ProgressTask" xml:space="preserve">
+    <value>Задание</value>
+  </data>
+  <data name="ProgressTrigger" xml:space="preserve">
+    <value>Запуск</value>
+  </data>
+  <data name="ProgressPhase" xml:space="preserve">
+    <value>Этап</value>
+  </data>
+  <data name="ProgressFile" xml:space="preserve">
+    <value>Файл</value>
+  </data>
+  <data name="ProgressFiles" xml:space="preserve">
+    <value>Файлы</value>
+  </data>
+  <data name="ProgressBytes" xml:space="preserve">
+    <value>Объём</value>
+  </data>
+  <data name="ProgressSpeed" xml:space="preserve">
+    <value>Скорость</value>
+  </data>
+  <data name="ProgressElapsed" xml:space="preserve">
+    <value>Прошло</value>
+  </data>
+  <data name="ProgressRemaining" xml:space="preserve">
+    <value>Осталось</value>
+  </data>
+  <data name="ProgressOf" xml:space="preserve">
+    <value>{0} из {1}</value>
+  </data>
+  <data name="ProgressPausedPhase" xml:space="preserve">
+    <value>{0} — пауза</value>
+  </data>
+  <data name="ColumnDestination" xml:space="preserve">
+    <value>Назначение</value>
+  </data>
+  <data name="ColumnState" xml:space="preserve">
+    <value>Состояние</value>
+  </data>
+  <data name="ColumnError" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="DestinationPending" xml:space="preserve">
+    <value>Ожидает</value>
+  </data>
+  <data name="DestinationWriting" xml:space="preserve">
+    <value>Запись</value>
+  </data>
+  <data name="DestinationDone" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="DestinationFailed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="PhaseVss" xml:space="preserve">
+    <value>Создание теневой копии (VSS)</value>
+  </data>
+  <data name="PhaseScan" xml:space="preserve">
+    <value>Поиск файлов</value>
+  </data>
+  <data name="PhaseCopy" xml:space="preserve">
+    <value>Копирование</value>
+  </data>
+  <data name="PhaseVerify" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="PhaseRetention" xml:space="preserve">
+    <value>Удаление старых копий</value>
+  </data>
+  <data name="PhaseEvents" xml:space="preserve">
+    <value>События</value>
+  </data>
+  <data name="MenuRunAll" xml:space="preserve">
+    <value>Запустить все задания</value>
+  </data>
+  <data name="MenuStopCurrent" xml:space="preserve">
+    <value>Остановить текущее</value>
+  </data>
+  <data name="MenuStopTask" xml:space="preserve">
+    <value>Остановить текущее: {0}</value>
+  </data>
+  <data name="NothingQueued" xml:space="preserve">
+    <value>Нечего запускать: нет включённых заданий.</value>
+  </data>
+  <data name="TrayOk" xml:space="preserve">
+    <value>всё в порядке</value>
+  </data>
+  <data name="TrayRunning" xml:space="preserve">
+    <value>{0} — {1} %</value>
+  </data>
+  <data name="TrayError" xml:space="preserve">
+    <value>ошибка в последнем запуске «{0}»</value>
+  </data>
+  <data name="TrayWarning" xml:space="preserve">
+    <value>последний запуск «{0}» требует внимания</value>
+  </data>
+  <data name="EditorTitle" xml:space="preserve">
+    <value>Задание — {0}</value>
+  </data>
+  <data name="EditorTitleNew" xml:space="preserve">
+    <value>Новое задание</value>
+  </data>
+  <data name="EditorNewTask" xml:space="preserve">
+    <value>Новое задание, ещё не сохранено</value>
+  </data>
+  <data name="EditorRevision" xml:space="preserve">
+    <value>Ревизия {0}, изменено {1}, {2}</value>
+  </data>
+  <data name="ButtonOk" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="ButtonClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="ButtonAdd" xml:space="preserve">
+    <value>Добавить</value>
+  </data>
+  <data name="ButtonAddAccount" xml:space="preserve">
+    <value>Добавить…</value>
+  </data>
+  <data name="ButtonEdit" xml:space="preserve">
+    <value>Изменить…</value>
+  </data>
+  <data name="ButtonRemove" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="ButtonBrowse" xml:space="preserve">
+    <value>Обзор…</value>
+  </data>
+  <data name="ButtonChangePassword" xml:space="preserve">
+    <value>Пароль…</value>
+  </data>
+  <data name="ButtonTestAccess" xml:space="preserve">
+    <value>Проверить доступ</value>
+  </data>
+  <data name="PageBasic" xml:space="preserve">
+    <value>Основное</value>
+  </data>
+  <data name="EditorName" xml:space="preserve">
+    <value>Название:</value>
+  </data>
+  <data name="EditorEnabled" xml:space="preserve">
+    <value>Задание включено</value>
+  </data>
+  <data name="EditorBackupType" xml:space="preserve">
+    <value>Тип копии</value>
+  </data>
+  <data name="TypeFullTitle" xml:space="preserve">
+    <value>Полная</value>
+  </data>
+  <data name="TypeFullHint" xml:space="preserve">
+    <value>Каждый раз копируются все файлы. Надёжно и просто, но долго и занимает больше места.</value>
+  </data>
+  <data name="TypeIncrementalTitle" xml:space="preserve">
+    <value>Инкрементальная</value>
+  </data>
+  <data name="TypeIncrementalHint" xml:space="preserve">
+    <value>Копируются только файлы, изменившиеся с прошлой копии любого типа. Быстро и экономно, но для восстановления нужна полная копия и все инкрементальные после неё.</value>
+  </data>
+  <data name="TypeDifferentialTitle" xml:space="preserve">
+    <value>Дифференциальная</value>
+  </data>
+  <data name="TypeDifferentialHint" xml:space="preserve">
+    <value>Копируются файлы, изменившиеся с последней полной копии. С каждым разом копия растёт, зато для восстановления нужны только полная и последняя дифференциальная.</value>
+  </data>
+  <data name="TypeMirrorTitle" xml:space="preserve">
+    <value>Зеркало</value>
+  </data>
+  <data name="TypeMirrorLater" xml:space="preserve">
+    <value>В назначении поддерживается точная копия источника. Появится в следующей версии CUSTOS.</value>
+  </data>
+  <data name="EditorForceFull" xml:space="preserve">
+    <value>Принудительная полная копия</value>
+  </data>
+  <data name="ForceEvery" xml:space="preserve">
+    <value>Каждый</value>
+  </data>
+  <data name="ForceEveryRunsSuffix" xml:space="preserve">
+    <value>-й запуск</value>
+  </data>
+  <data name="ForceWeekday" xml:space="preserve">
+    <value>В день недели</value>
+  </data>
+  <data name="ForceMonthDay" xml:space="preserve">
+    <value>В день месяца</value>
+  </data>
+  <data name="ForceFullNote" xml:space="preserve">
+    <value>Только для инкрементальных и дифференциальных заданий. Первая копия всегда полная, как и копия, для которой в назначении нет полной.</value>
+  </data>
+  <data name="LastDayOfMonth" xml:space="preserve">
+    <value>последний день месяца</value>
+  </data>
+  <data name="EditorComment" xml:space="preserve">
+    <value>Комментарий</value>
+  </data>
+  <data name="ErrorNameRequired" xml:space="preserve">
+    <value>Введите название задания.</value>
+  </data>
+  <data name="PageSources" xml:space="preserve">
+    <value>Источники</value>
+  </data>
+  <data name="SourcesNote" xml:space="preserve">
+    <value>Папки и файлы, которые нужно копировать. Сетевую папку можно читать под отдельной учётной записью.</value>
+  </data>
+  <data name="ColumnPath" xml:space="preserve">
+    <value>Путь</value>
+  </data>
+  <data name="ColumnSubfolders" xml:space="preserve">
+    <value>Подпапки</value>
+  </data>
+  <data name="ColumnAccount" xml:space="preserve">
+    <value>Учётная запись</value>
+  </data>
+  <data name="KeepTopDir" xml:space="preserve">
+    <value>Сохранять папку верхнего уровня</value>
+  </data>
+  <data name="KeepTopDirHelp" xml:space="preserve">
+    <value>Включено: D:\Data копируется в &lt;копия&gt;\Data\…
+Выключено: содержимое D:\Data ложится прямо в &lt;копия&gt;\…</value>
+  </data>
+  <data name="ErrorNoSources" xml:space="preserve">
+    <value>Добавьте хотя бы один источник или отключите задание.</value>
+  </data>
+  <data name="SourceAddTitle" xml:space="preserve">
+    <value>Добавить источник</value>
+  </data>
+  <data name="SourceEditTitle" xml:space="preserve">
+    <value>Источник</value>
+  </data>
+  <data name="SourceFolder" xml:space="preserve">
+    <value>Папка</value>
+  </data>
+  <data name="SourceFile" xml:space="preserve">
+    <value>Файл</value>
+  </data>
+  <data name="SourceNetwork" xml:space="preserve">
+    <value>Сетевая папка</value>
+  </data>
+  <data name="SourcePath" xml:space="preserve">
+    <value>Путь:</value>
+  </data>
+  <data name="SourceRecursive" xml:space="preserve">
+    <value>Включая подпапки</value>
+  </data>
+  <data name="SourceAccountHelp" xml:space="preserve">
+    <value>Сетевая папка читается под этой учётной записью. «Учётная запись службы» — это учётная запись самого компьютера: в домене она подходит, если компьютеру дан доступ к папке, а NAS в рабочей группе обычно требует отдельную учётную запись.</value>
+  </data>
+  <data name="SourceNote" xml:space="preserve">
+    <value>Файлы, открытые в других программах, читаются из теневой копии, если в задании включён VSS (страница «Дополнительно»). Сетевые папки читаются без VSS.</value>
+  </data>
+  <data name="ErrorPathRequired" xml:space="preserve">
+    <value>Укажите путь.</value>
+  </data>
+  <data name="ErrorPathNotAbsolute" xml:space="preserve">
+    <value>«{0}» — не полный путь. Укажите путь с буквой диска или в виде \\server\share.</value>
+  </data>
+  <data name="ErrorNotUnc" xml:space="preserve">
+    <value>«{0}» — не сетевой путь. Сетевая папка начинается с двух обратных косых черт, например \\server\share.</value>
+  </data>
+  <data name="ErrorUncNeedsNetwork" xml:space="preserve">
+    <value>«{0}» — сетевой путь: выберите «Сетевая папка».</value>
+  </data>
+  <data name="PageDestinations" xml:space="preserve">
+    <value>Назначения</value>
+  </data>
+  <data name="DestinationsNote" xml:space="preserve">
+    <value>Куда записываются копии. Если назначений несколько, файлы читаются один раз и пишутся во все, а сбой одного не мешает остальным.</value>
+  </data>
+  <data name="DestinationProperties" xml:space="preserve">
+    <value>Выбранное назначение</value>
+  </data>
+  <data name="DestinationKind" xml:space="preserve">
+    <value>Тип:</value>
+  </data>
+  <data name="DestinationKindHelp" xml:space="preserve">
+    <value>Локальная папка — папка на диске этого компьютера.
+Сетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.
+USB-диск — ищется по метке тома, поэтому смена буквы диска не мешает.</value>
+  </data>
+  <data name="KindLocal" xml:space="preserve">
+    <value>Локальная папка</value>
+  </data>
+  <data name="KindUnc" xml:space="preserve">
+    <value>Сетевая папка</value>
+  </data>
+  <data name="KindUsb" xml:space="preserve">
+    <value>USB-диск</value>
+  </data>
+  <data name="KindLater" xml:space="preserve">
+    <value>{0} (в следующих версиях)</value>
+  </data>
+  <data name="DestinationFolder" xml:space="preserve">
+    <value>Папка:</value>
+  </data>
+  <data name="DestinationFolderOnDisk" xml:space="preserve">
+    <value>Папка на диске:</value>
+  </data>
+  <data name="DestinationUsbLabel" xml:space="preserve">
+    <value>Метка диска:</value>
+  </data>
+  <data name="DestinationUsbHelp" xml:space="preserve">
+    <value>Диск ищется по метке тома, поэтому буква диска не важна. В списке — метки дисков, подключённых сейчас. Папка — путь на этом диске без буквы, например Backup\Office.</value>
+  </data>
+  <data name="DestinationAccount" xml:space="preserve">
+    <value>Учётная запись:</value>
+  </data>
+  <data name="DestinationAccountHelp" xml:space="preserve">
+    <value>Сетевая папка открывается под этой учётной записью, а файлы этого компьютера служба читает как обычно. «Учётная запись службы» — это учётная запись самого компьютера: в домене она подходит, если компьютеру дан доступ к папке, а NAS в рабочей группе обычно требует отдельную учётную запись.</value>
+  </data>
+  <data name="DestinationLater" xml:space="preserve">
+    <value>Этот тип назначения появится в следующих версиях CUSTOS. Пока задание в него ничего не пишет и отмечает его ошибкой.</value>
+  </data>
+  <data name="TestRunning" xml:space="preserve">
+    <value>Проверяю…</value>
+  </data>
+  <data name="TestOk" xml:space="preserve">
+    <value>Доступ есть: {0}, свободно {1}.</value>
+  </data>
+  <data name="TestFailed" xml:space="preserve">
+    <value>Нет доступа: {0}</value>
+  </data>
+  <data name="EditorLayout" xml:space="preserve">
+    <value>Размещение копий</value>
+  </data>
+  <data name="SeparateFolders" xml:space="preserve">
+    <value>Отдельная папка для каждой копии</value>
+  </data>
+  <data name="SeparateFoldersHelp" xml:space="preserve">
+    <value>Включено: каждая копия ложится в свою папку с именем по шаблону ниже, а старые копии удаляются по правилам хранения.
+Выключено: файлы пишутся прямо в папку назначения и обновляются там при каждом запуске; прежние версии не сохраняются.</value>
+  </data>
+  <data name="NameTemplate" xml:space="preserve">
+    <value>Имя папки:</value>
+  </data>
+  <data name="NameTemplateHelp" xml:space="preserve">
+    <value>Имя папки каждой копии. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.</value>
+  </data>
+  <data name="ErrorNoDestinations" xml:space="preserve">
+    <value>Добавьте хотя бы одно назначение или отключите задание.</value>
+  </data>
+  <data name="ErrorDestinationFolderRequired" xml:space="preserve">
+    <value>Укажите папку назначения.</value>
+  </data>
+  <data name="ErrorUsbLabelRequired" xml:space="preserve">
+    <value>Укажите метку USB-диска.</value>
+  </data>
+  <data name="ErrorTemplateRequired" xml:space="preserve">
+    <value>Укажите имя папок копий.</value>
+  </data>
+  <data name="PageSchedule" xml:space="preserve">
+    <value>Расписание</value>
+  </data>
+  <data name="ScheduleType" xml:space="preserve">
+    <value>Запуск:</value>
+  </data>
+  <data name="ScheduleDaily" xml:space="preserve">
+    <value>Ежедневно</value>
+  </data>
+  <data name="ScheduleWeekly" xml:space="preserve">
+    <value>Еженедельно</value>
+  </data>
+  <data name="ScheduleMonthly" xml:space="preserve">
+    <value>Ежемесячно</value>
+  </data>
+  <data name="ScheduleByInterval" xml:space="preserve">
+    <value>По таймеру, каждые N минут</value>
+  </data>
+  <data name="ScheduleManual" xml:space="preserve">
+    <value>Только вручную</value>
+  </data>
+  <data name="ScheduleTimes" xml:space="preserve">
+    <value>Время:</value>
+  </data>
+  <data name="ScheduleTimesHelp" xml:space="preserve">
+    <value>Одно или несколько времён через запятую, например 12:30, 21:00.</value>
+  </data>
+  <data name="ScheduleWeekdays" xml:space="preserve">
+    <value>Дни недели:</value>
+  </data>
+  <data name="ScheduleMonthDays" xml:space="preserve">
+    <value>Числа месяца:</value>
+  </data>
+  <data name="ScheduleMonthDaysHelp" xml:space="preserve">
+    <value>Числа от 1 до 31 через запятую, например 1, 15. В месяце без такого числа (31 апреля) запуска не будет: для конца каждого месяца отметьте «последний день месяца».</value>
+  </data>
+  <data name="ScheduleInterval" xml:space="preserve">
+    <value>Каждые:</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>мин</value>
+  </data>
+  <data name="ScheduleCatchUp" xml:space="preserve">
+    <value>Догонять пропущенный запуск</value>
+  </data>
+  <data name="ScheduleCatchUpHelp" xml:space="preserve">
+    <value>Если в момент запуска компьютер был выключен или спал, задание выполнится один раз после включения. Учитывается только последний пропущенный запуск за 7 дней.</value>
+  </data>
+  <data name="SchedulePreview" xml:space="preserve">
+    <value>Простыми словами</value>
+  </data>
+  <data name="ScheduleUpcoming" xml:space="preserve">
+    <value>Ближайшие запуски: {0}</value>
+  </data>
+  <data name="ScheduleTimeZoneNote" xml:space="preserve">
+    <value>Время — местное время этого компьютера.</value>
+  </data>
+  <data name="ErrorBadTime" xml:space="preserve">
+    <value>«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.</value>
+  </data>
+  <data name="ErrorBadMonthDay" xml:space="preserve">
+    <value>«{0}» — не число месяца (от 1 до 31).</value>
+  </data>
+  <data name="ErrorNoTimes" xml:space="preserve">
+    <value>Укажите хотя бы одно время запуска.</value>
+  </data>
+  <data name="ErrorNoWeekdays" xml:space="preserve">
+    <value>Отметьте хотя бы один день недели.</value>
+  </data>
+  <data name="ErrorNoMonthDays" xml:space="preserve">
+    <value>Укажите хотя бы одно число месяца или отметьте «последний день месяца».</value>
+  </data>
+  <data name="PageArchive" xml:space="preserve">
+    <value>Архив</value>
+  </data>
+  <data name="ArchiveLater" xml:space="preserve">
+    <value>Сжатие и шифрование появятся в следующей версии CUSTOS. Пока копии — обычные файлы, которые открываются без всяких программ.</value>
+  </data>
+  <data name="ArchiveNone" xml:space="preserve">
+    <value>Без сжатия, обычные файлы</value>
+  </data>
+  <data name="ArchiveZip" xml:space="preserve">
+    <value>ZIP</value>
+  </data>
+  <data name="ArchiveSevenZip" xml:space="preserve">
+    <value>7z</value>
+  </data>
+  <data name="ArchiveSetButUnsupported" xml:space="preserve">
+    <value>В задании задано сжатие (например, после импорта из Cobian). Такое задание не выполняется, пока сжатие не появится; выберите «Без сжатия», чтобы оно заработало сейчас.</value>
+  </data>
+  <data name="PageRetention" xml:space="preserve">
+    <value>Хранение</value>
+  </data>
+  <data name="RetentionNone" xml:space="preserve">
+    <value>Хранить все копии</value>
+  </data>
+  <data name="RetentionCount" xml:space="preserve">
+    <value>Хранить последние</value>
+  </data>
+  <data name="RetentionCountSuffix" xml:space="preserve">
+    <value>полных копий вместе с их цепочками</value>
+  </data>
+  <data name="RetentionCountHint" xml:space="preserve">
+    <value>Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.</value>
+  </data>
+  <data name="RetentionAge" xml:space="preserve">
+    <value>Удалять копии старше N дней</value>
+  </data>
+  <data name="RetentionGfs" xml:space="preserve">
+    <value>Дед-отец-сын: дневные, недельные и месячные копии</value>
+  </data>
+  <data name="RetentionLater" xml:space="preserve">
+    <value>Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.</value>
+  </data>
+  <data name="RetentionRules" xml:space="preserve">
+    <value>Правила, которые действуют всегда</value>
+  </data>
+  <data name="RetentionRulesText" xml:space="preserve">
+    <value>• Последняя успешная полная копия не удаляется никогда.
+• Если запуск завершился ошибкой, ничего не удаляется.
+• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.
+• Хранение работает, только если включено «Отдельная папка для каждой копии».</value>
+  </data>
+  <data name="PageFilters" xml:space="preserve">
+    <value>Фильтры</value>
+  </data>
+  <data name="FiltersNote" xml:space="preserve">
+    <value>Маски разделяются точкой с запятой. * — любые символы, ? — один символ.</value>
+  </data>
+  <data name="FilterInclude" xml:space="preserve">
+    <value>Только файлы:</value>
+  </data>
+  <data name="FilterIncludeHelp" xml:space="preserve">
+    <value>Если задано, копируются только файлы по этим маскам, например *.docx; *.xlsx. Пусто — все файлы.</value>
+  </data>
+  <data name="FilterExclude" xml:space="preserve">
+    <value>Пропускать файлы:</value>
+  </data>
+  <data name="FilterExcludeHelp" xml:space="preserve">
+    <value>Файлы по этим маскам не копируются, например *.tmp; ~$*.</value>
+  </data>
+  <data name="FilterExcludeDirs" xml:space="preserve">
+    <value>Пропускать папки:</value>
+  </data>
+  <data name="FilterExcludeDirsHelp" xml:space="preserve">
+    <value>Папки с такими именами пропускаются со всем содержимым, например Temp; Cache. Маска с обратной косой чертой сравнивается с путём, например Projects\Old.</value>
+  </data>
+  <data name="SkipHidden" xml:space="preserve">
+    <value>Пропускать скрытые файлы и папки</value>
+  </data>
+  <data name="SkipSystem" xml:space="preserve">
+    <value>Пропускать системные файлы и папки</value>
+  </data>
+  <data name="SkipTemp" xml:space="preserve">
+    <value>Пропускать временные файлы</value>
+  </data>
+  <data name="SkipTempHelp" xml:space="preserve">
+    <value>Файлы, которые Windows пометила как временные (атрибут «временный»). Маски вроде *.tmp задайте в «Пропускать файлы».</value>
+  </data>
+  <data name="PageEvents" xml:space="preserve">
+    <value>События</value>
+  </data>
+  <data name="EventsLater" xml:space="preserve">
+    <value>Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.</value>
+  </data>
+  <data name="EventsSetButUnsupported" xml:space="preserve">
+    <value>В задании есть события. Они сохранены в задании, но в этой версии не выполняются.</value>
+  </data>
+  <data name="PageAdvanced" xml:space="preserve">
+    <value>Дополнительно</value>
+  </data>
+  <data name="EditorVss" xml:space="preserve">
+    <value>Открытые файлы</value>
+  </data>
+  <data name="VssEnabled" xml:space="preserve">
+    <value>Использовать теневую копию (VSS)</value>
+  </data>
+  <data name="VssHelp" xml:space="preserve">
+    <value>Windows делает снимок дисков с источниками, и файлы, открытые в других программах (почтовые и учётные базы и т. п.), копируются из него в согласованном виде. Работает только для дисков этого компьютера.</value>
+  </data>
+  <data name="VssOnFailure" xml:space="preserve">
+    <value>Если теневая копия не удалась:</value>
+  </data>
+  <data name="VssAbort" xml:space="preserve">
+    <value>прервать задание</value>
+  </data>
+  <data name="VssContinue" xml:space="preserve">
+    <value>копировать без неё, с предупреждением</value>
+  </data>
+  <data name="EditorReading" xml:space="preserve">
+    <value>Чтение файлов</value>
+  </data>
+  <data name="ReadRetries" xml:space="preserve">
+    <value>Повторов при ошибке чтения:</value>
+  </data>
+  <data name="ReadRetriesHelp" xml:space="preserve">
+    <value>Сколько раз ещё пробовать прочитать файл после ошибки, с паузой 2 секунды. 0 — не повторять.</value>
+  </data>
+  <data name="EditorLogAndQueue" xml:space="preserve">
+    <value>Журнал и очередь</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Детальность журнала:</value>
+  </data>
+  <data name="LogLevelInherit" xml:space="preserve">
+    <value>Как в настройках программы</value>
+  </data>
+  <data name="LogLevelSummary" xml:space="preserve">
+    <value>Итоги и ошибки</value>
+  </data>
+  <data name="LogLevelFiles" xml:space="preserve">
+    <value>Каждый файл</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Приоритет в очереди:</value>
+  </data>
+  <data name="PriorityHelp" xml:space="preserve">
+    <value>Если в очереди несколько заданий, первым выполняется то, у которого число больше. Задания выполняются по одному.</value>
+  </data>
+  <data name="AccountService" xml:space="preserve">
+    <value>Учётная запись службы (SYSTEM)</value>
+  </data>
+  <data name="AccountUnknown" xml:space="preserve">
+    <value>(учётная запись не найдена)</value>
+  </data>
+  <data name="AccountNotUsed" xml:space="preserve">
+    <value>не используется</value>
+  </data>
+  <data name="AccountAddTitle" xml:space="preserve">
+    <value>Добавить учётную запись</value>
+  </data>
+  <data name="AccountEditTitle" xml:space="preserve">
+    <value>Учётная запись {0}</value>
+  </data>
+  <data name="AccountUser" xml:space="preserve">
     <value>Пользователь:</value>
   </data>
-  <data name="LabelSession" xml:space="preserve">
-    <value>Сеанс Windows:</value>
+  <data name="AccountDomain" xml:space="preserve">
+    <value>Домен или компьютер:</value>
   </data>
-  <data name="LabelProblem" xml:space="preserve">
-    <value>Подробности:</value>
+  <data name="AccountDomainNote" xml:space="preserve">
+    <value>Для доменной учётной записи укажите домен, например OFFICE. Для учётной записи NAS или другого компьютера поле можно оставить пустым; если доступа не будет, впишите имя этого NAS или компьютера, например NAS01.</value>
+  </data>
+  <data name="AccountPassword" xml:space="preserve">
+    <value>Пароль:</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Показать пароль</value>
+  </data>
+  <data name="AccountPasswordNote" xml:space="preserve">
+    <value>Служба хранит пароль в зашифрованном виде (Windows DPAPI) и больше его не показывает.</value>
+  </data>
+  <data name="AccountKeepPasswordNote" xml:space="preserve">
+    <value>Оставьте пароль пустым, чтобы не менять сохранённый.</value>
+  </data>
+  <data name="ErrorUserRequired" xml:space="preserve">
+    <value>Введите имя пользователя.</value>
+  </data>
+  <data name="ErrorPasswordRequired" xml:space="preserve">
+    <value>Введите пароль.</value>
+  </data>
+  <data name="ConfirmDeleteAccount" xml:space="preserve">
+    <value>Удалить учётную запись {0}?</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Настройки CUSTOS</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>Журналы и копирование</value>
+  </data>
+  <data name="DefaultLogLevel" xml:space="preserve">
+    <value>Детальность журнала:</value>
+  </data>
+  <data name="DefaultLogLevelHelp" xml:space="preserve">
+    <value>«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов: удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.</value>
+  </data>
+  <data name="LogRetention" xml:space="preserve">
+    <value>Хранить журналы, дней:</value>
+  </data>
+  <data name="CopyPriority" xml:space="preserve">
+    <value>Приоритет копирования:</value>
+  </data>
+  <data name="CopyPriorityHelp" xml:space="preserve">
+    <value>Низкий: копирование уступает пользователю и другим программам, и компьютер не тормозит; пока диск и процессор свободны, они используются полностью. Обычный: быстрее на загруженном компьютере, но работать мешает заметнее.</value>
+  </data>
+  <data name="PriorityLow" xml:space="preserve">
+    <value>Низкий (рекомендуется)</value>
+  </data>
+  <data name="PriorityNormal" xml:space="preserve">
+    <value>Обычный</value>
+  </data>
+  <data name="ServiceLanguage" xml:space="preserve">
+    <value>Язык журналов:</value>
+  </data>
+  <data name="ServiceLanguageHelp" xml:space="preserve">
+    <value>Язык журналов запусков и сообщений службы. «Автоматически» — по языку Windows. Само окно программы — на языке пользователя.</value>
+  </data>
+  <data name="LanguageAuto" xml:space="preserve">
+    <value>Автоматически</value>
+  </data>
+  <data name="LanguageRussian" xml:space="preserve">
+    <value>Русский</value>
+  </data>
+  <data name="LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="SettingsAccounts" xml:space="preserve">
+    <value>Учётные записи для сетевых папок</value>
+  </data>
+  <data name="SettingsAccountsNote" xml:space="preserve">
+    <value>Пароли служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которую использует задание, удалить нельзя.</value>
+  </data>
+  <data name="SettingsReadOnly" xml:space="preserve">
+    <value>Изменять настройки могут только администраторы.</value>
+  </data>
+  <data name="ColumnUsedBy" xml:space="preserve">
+    <value>Используется в заданиях</value>
+  </data>
+  <data name="ImportTitle" xml:space="preserve">
+    <value>Импорт из Cobian Backup</value>
+  </data>
+  <data name="ImportFile" xml:space="preserve">
+    <value>Список заданий:</value>
+  </data>
+  <data name="ImportRead" xml:space="preserve">
+    <value>Прочитать</value>
+  </data>
+  <data name="ImportNote" xml:space="preserve">
+    <value>Cobian Backup 11 хранит задания в файле MainList.lst, обычно в папке C:\Program Files (x86)\Cobian Backup 11\DB. Задания добавляются отключёнными: проверьте каждое в редакторе и включите.</value>
+  </data>
+  <data name="ImportFilter" xml:space="preserve">
+    <value>Список заданий Cobian (MainList.lst)|*.lst|Все файлы|*.*</value>
+  </data>
+  <data name="ImportCannotRead" xml:space="preserve">
+    <value>Не удалось прочитать список заданий: {0}</value>
+  </data>
+  <data name="ColumnInCobian" xml:space="preserve">
+    <value>Вкл. в Cobian</value>
+  </data>
+  <data name="ColumnRemarks" xml:space="preserve">
+    <value>Замечания</value>
+  </data>
+  <data name="ImportRemarks" xml:space="preserve">
+    <value>Что проверить</value>
+  </data>
+  <data name="ImportNoRemarks" xml:space="preserve">
+    <value>Проверять нечего: задание перенесено как есть.</value>
+  </data>
+  <data name="ImportFound" xml:space="preserve">
+    <value>Заданий в списке: {0}</value>
+  </data>
+  <data name="ImportAccounts" xml:space="preserve">
+    <value>Учётные записи для сетевых папок («Run as» в Cobian). Введите пароль каждой один раз:</value>
+  </data>
+  <data name="ImportAccountTasks" xml:space="preserve">
+    <value>используется в: {0}</value>
+  </data>
+  <data name="ImportUseStored" xml:space="preserve">
+    <value>использовать сохранённый пароль</value>
+  </data>
+  <data name="ImportPasswordRequired" xml:space="preserve">
+    <value>Введите пароль для {0} или снимите отметку с заданий, которые её используют.</value>
+  </data>
+  <data name="ImportButton" xml:space="preserve">
+    <value>Импортировать</value>
+  </data>
+  <data name="ImportDone" xml:space="preserve">
+    <value>Импортировано заданий: {0}. Они отключены: проверьте каждое в редакторе и включите.</value>
+  </data>
+  <data name="WarnScheduleUnknown" xml:space="preserve">
+    <value>Неизвестный тип расписания «{0}»: задание сделано ручным. Задайте расписание.</value>
+  </data>
+  <data name="WarnScheduleNotSupported" xml:space="preserve">
+    <value>Расписаний «однократно» и «ежегодно» в CUSTOS нет: задание сделано ручным.</value>
+  </data>
+  <data name="WarnScheduleAssumed" xml:space="preserve">
+    <value>Расписание (код Cobian {0}) прочитано по наиболее вероятному значению: проверьте его на странице «Расписание».</value>
+  </data>
+  <data name="WarnTimeUnreadable" xml:space="preserve">
+    <value>Время запуска не прочиталось, поставлено 00:00: проверьте его.</value>
+  </data>
+  <data name="WarnWeekdaysAssumed" xml:space="preserve">
+    <value>Дни недели {0} прочитаны, считая понедельник за 1: проверьте их на странице «Расписание».</value>
+  </data>
+  <data name="WarnBackupTypeAssumed" xml:space="preserve">
+    <value>Тип копии прочитан как дифференциальный: проверьте его.</value>
+  </data>
+  <data name="WarnBackupTypeNotSupported" xml:space="preserve">
+    <value>Типа копии Cobian {0} (например, «dummy») в CUSTOS нет: задание сделано полным. Проверьте его.</value>
+  </data>
+  <data name="WarnMirrorLater" xml:space="preserve">
+    <value>Зеркало появится в следующей версии CUSTOS, пока это задание не выполняется.</value>
+  </data>
+  <data name="WarnCompressionLater" xml:space="preserve">
+    <value>Задание сжимает в {0}. Сжатие появится в следующей версии, и пока задание не выполняется; чтобы пользоваться им сейчас, выберите «Без сжатия» на странице «Архив».</value>
+  </data>
+  <data name="WarnCompressionAssumed" xml:space="preserve">
+    <value>Тип сжатия прочитан как ZIP: проверьте его.</value>
+  </data>
+  <data name="WarnEncryptionPassword" xml:space="preserve">
+    <value>В Cobian архив шифруется. Пароль не переносится: его нужно будет ввести заново, когда появится шифрование.</value>
+  </data>
+  <data name="WarnSplitIgnored" xml:space="preserve">
+    <value>Разбиение архива на тома не перенесено.</value>
+  </data>
+  <data name="WarnEventsInComment" xml:space="preserve">
+    <value>События до и после копирования пока не выполняются, они записаны в комментарий: {0}</value>
+  </data>
+  <data name="WarnSourceUnknown" xml:space="preserve">
+    <value>Запись «{0}» пропущена: неизвестный тип или не полный путь.</value>
+  </data>
+  <data name="WarnFtpNotSupported" xml:space="preserve">
+    <value>FTP-запись «{0}» пропущена: читать с FTP CUSTOS не умеет, а запись на FTP появится в следующих версиях.</value>
+  </data>
+  <data name="WarnNoSources" xml:space="preserve">
+    <value>В задании нет источников: добавьте их, прежде чем включать задание.</value>
+  </data>
+  <data name="WarnNoDestinations" xml:space="preserve">
+    <value>В задании нет назначений: добавьте их, прежде чем включать задание.</value>
+  </data>
+  <data name="WarnFixedDayAssumed" xml:space="preserve">
+    <value>День полной копии (значение Cobian {0}) прочитан как день недели, считая понедельник за 1: проверьте его на странице «Основное».</value>
+  </data>
+  <data name="WarnFiltersImported" xml:space="preserve">
+    <value>Фильтры перенесены, проверьте их на странице «Фильтры»: {0}</value>
+  </data>
+  <data name="WarnRunAsAccount" xml:space="preserve">
+    <value>В Cobian задание выполнялось от имени {0}. В CUSTOS эта учётная запись используется только для сетевых папок задания: введите её пароль ниже.</value>
+  </data>
+  <data name="WarnRunAsLocalOnly" xml:space="preserve">
+    <value>В Cobian задание выполнялось от имени {0}, но сетевых папок в нём нет: локальные файлы CUSTOS читает от имени службы, учётная запись не нужна.</value>
   </data>
 </root>

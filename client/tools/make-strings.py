@@ -87,9 +87,10 @@ def write_accessor(path, table, namespace, cls, rows):
         "{",
     ]
     for key, en, _ in rows:
-        summary = escape(en.split("\n")[0])
+        summary = en.split("\n")[0]
         if len(summary) > 110:
             summary = summary[:107] + "..."
+        summary = escape(summary)
         lines.append(f"    /// <summary>{summary}</summary>")
         lines.append(f"    public static string {key} => Get(nameof({key}));")
         lines.append("")
