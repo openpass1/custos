@@ -24,6 +24,7 @@ internal sealed class TaskCard : UserControl
     private StateIcon? _iconState;
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 1000 };
     private string? _taskId;
+    private int _detailCount;
 
     public TaskCard()
     {
@@ -86,7 +87,7 @@ internal sealed class TaskCard : UserControl
         ShowProgress(current, progress);
 
         _details.SuspendLayout();
-        _details.Controls.Clear();
+        _detailCount = 0;
         AddDetail(Strings.CardSources, task.Sources.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Sources.Select(s => s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
@@ -112,6 +113,12 @@ internal sealed class TaskCard : UserControl
         if (!string.IsNullOrWhiteSpace(task.Comment))
         {
             AddDetail(Strings.CardComment, task.Comment);
+        }
+
+        // Rows left over from a task with more details go away.
+        while (_details.Controls.Count > _detailCount * 2)
+        {
+            _details.Controls[_details.Controls.Count - 1].Dispose();
         }
 
         _details.ResumeLayout(performLayout: true);
@@ -187,24 +194,31 @@ internal sealed class TaskCard : UserControl
         old?.Dispose();
     }
 
+    /// <summary>
+    /// The next "caption — value" row. The labels of the previous task are reused: the card is filled again with every
+    /// snapshot, and new labels each time would use up the window handles of the process within hours.
+    /// </summary>
     private void AddDetail(string caption, string value, Color? color = null)
     {
-        _details.Controls.Add(new Label
+        Label captionLabel;
+        Label valueLabel;
+        if ((_detailCount * 2) + 1 < _details.Controls.Count)
         {
-            Text = caption,
-            AutoSize = true,
-            ForeColor = SystemColors.GrayText,
-            Margin = new Padding(0, 3, 12, 5),
-        });
-        _details.Controls.Add(new Label
+            captionLabel = (Label)_details.Controls[_detailCount * 2];
+            valueLabel = (Label)_details.Controls[(_detailCount * 2) + 1];
+        }
+        else
         {
-            Text = value,
-            AutoSize = true,
-            Dock = DockStyle.Fill,
-            ForeColor = color ?? SystemColors.ControlText,
-            Margin = new Padding(0, 3, 0, 5),
-            UseMnemonic = false,
-        });
+            captionLabel = new Label { AutoSize = true, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 3, 12, 5) };
+            valueLabel = new Label { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 3, 0, 5), UseMnemonic = false };
+            _details.Controls.Add(captionLabel);
+            _details.Controls.Add(valueLabel);
+        }
+
+        captionLabel.Text = caption;
+        valueLabel.Text = value;
+        valueLabel.ForeColor = color ?? SystemColors.ControlText;
+        _detailCount++;
     }
 
     private static bool SameId(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);

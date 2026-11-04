@@ -21,6 +21,7 @@ internal sealed class TaskListView : ListView
     private List<Row> _rows = [];
     private string? _selectedId;
     private bool _updating;
+    private bool _checkQueued;
 
     public TaskListView()
     {
@@ -30,7 +31,7 @@ internal sealed class TaskListView : ListView
         HideSelection = false;
         DoubleBuffered = true;
         ColumnClick += OnColumnClick;
-        SelectedIndexChanged += (_, _) => CheckSelection();
+        SelectedIndexChanged += (_, _) => QueueSelectionCheck();
     }
 
     /// <summary>Raised once when another task gets selected (or none).</summary>
@@ -194,6 +195,29 @@ internal sealed class TaskListView : ListView
         if (item.ImageKey != icon)
         {
             item.ImageKey = icon;
+        }
+    }
+
+    /// <summary>
+    /// A click on another row raises two events: the old row loses the selection, then the new one gets it. The check
+    /// runs once after both, so the card does not flash "select a task" in between.
+    /// </summary>
+    private void QueueSelectionCheck()
+    {
+        if (!IsHandleCreated)
+        {
+            CheckSelection();
+            return;
+        }
+
+        if (!_checkQueued)
+        {
+            _checkQueued = true;
+            BeginInvoke(() =>
+            {
+                _checkQueued = false;
+                CheckSelection();
+            });
         }
     }
 

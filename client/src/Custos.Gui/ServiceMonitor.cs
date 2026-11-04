@@ -147,6 +147,13 @@ internal sealed class ServiceMonitor : IDisposable
         _stop.Dispose();
     }
 
+    // For the interface tests (tests/Custos.Gui.Tests): data as if the service had sent it, without a connection.
+    internal void SimulateSnapshot(AgentSnapshot snapshot) => ApplySnapshot(_generation, snapshot);
+
+    internal void SimulateProgress(RunProgressEvent progress) => ApplyProgress(_generation, progress);
+
+    internal void SimulateLog(List<LogLine> lines) => ApplyLog(_generation, lines);
+
     // Runs on the UI thread: every await resumes there, so the state is only touched by one thread.
     private async Task RunAsync(CancellationToken cancellationToken)
     {

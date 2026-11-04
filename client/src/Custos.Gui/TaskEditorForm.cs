@@ -36,6 +36,7 @@ internal sealed class TaskEditorForm : Form
     private readonly List<EditorPage> _pages;
     private ImageList? _pageImages;
     private bool _saving;
+    private EditorPage? _shownPage;
 
     public TaskEditorForm(ServiceMonitor monitor, TaskDefinition task, bool isNew)
     {
@@ -110,6 +111,7 @@ internal sealed class TaskEditorForm : Form
         _ok.Click += (_, _) => Save();
         CreateImages();
         _pageList.Items[0].Selected = true;
+        ShowPage(_pages[0]);
     }
 
     /// <summary>The task as the service stored it, after "OK".</summary>
@@ -170,14 +172,55 @@ internal sealed class TaskEditorForm : Form
         old?.Dispose();
     }
 
+    /// <summary>The pages, in the order of the list.</summary>
+    internal IReadOnlyList<EditorPage> Pages => _pages;
+
+    /// <summary>Selects a page in the list and shows it.</summary>
+    internal void SelectPage(EditorPage page)
+    {
+        foreach (ListViewItem item in _pageList.Items)
+        {
+            item.Selected = item.Tag == page;
+        }
+
+        ShowPage(page);
+    }
+
+    /// <summary>Every page writes into a copy of the task; the first page that finds a problem is shown.</summary>
+    /// <returns>The task as edited, or null with <paramref name="problem"/> in words.</returns>
+    internal TaskDefinition? Collect(out string? problem)
+    {
+        var task = _task.Clone();
+        foreach (var page in _pages)
+        {
+            if (page.SaveTo(task) is { } found)
+            {
+                SelectPage(page);
+                problem = found;
+                return null;
+            }
+        }
+
+        problem = null;
+        return task;
+    }
+
     private void ShowSelectedPage()
     {
-        if (_pageList.SelectedItems.Count == 0)
+        if (_pageList.SelectedItems.Count > 0)
+        {
+            ShowPage((EditorPage)_pageList.SelectedItems[0].Tag!);
+        }
+    }
+
+    private void ShowPage(EditorPage selected)
+    {
+        if (selected == _shownPage)
         {
             return;
         }
 
-        var selected = (EditorPage)_pageList.SelectedItems[0].Tag!;
+        _shownPage = selected;
         foreach (var page in _pages)
         {
             if (page != selected)
@@ -190,26 +233,12 @@ internal sealed class TaskEditorForm : Form
         selected.Shown();
     }
 
-    private void SelectPage(EditorPage page)
-    {
-        foreach (ListViewItem item in _pageList.Items)
-        {
-            item.Selected = item.Tag == page;
-        }
-    }
-
     private void Save()
     {
-        // Every page writes into a copy; the first page that finds a problem is shown with it.
-        var task = _task.Clone();
-        foreach (var page in _pages)
+        if (Collect(out string? problem) is not { } task)
         {
-            if (page.SaveTo(task) is { } problem)
-            {
-                SelectPage(page);
-                Ui.ShowWarning(this, problem);
-                return;
-            }
+            Ui.ShowWarning(this, problem!);
+            return;
         }
 
         _ok.Enabled = false;

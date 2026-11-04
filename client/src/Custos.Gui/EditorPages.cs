@@ -744,6 +744,9 @@ internal sealed class SchedulePage : EditorPage
     private readonly TableLayoutPanel _grid = new() { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
     private bool _loading;
 
+    // The interval as loaded: kept as it was when the schedule is not "by timer".
+    private int _loadedInterval;
+
     public SchedulePage(EditorContext context)
         : base(context, Strings.PageSchedule, Glyph.Clock)
     {
@@ -797,6 +800,7 @@ internal sealed class SchedulePage : EditorPage
 
         _monthDays.Text = string.Join(", ", schedule.DaysOfMonth.Where(d => d is >= 1 and <= 31));
         _lastDay.Checked = schedule.DaysOfMonth.Contains(-1);
+        _loadedInterval = schedule.IntervalMinutes;
         _interval.Value = Math.Clamp(schedule.IntervalMinutes > 0 ? schedule.IntervalMinutes : 60, 1, 1440);
         _catchUp.Checked = schedule.CatchUp;
         _loading = false;
@@ -859,7 +863,7 @@ internal sealed class SchedulePage : EditorPage
         {
             Type = SelectedType,
             CatchUp = _catchUp.Checked,
-            IntervalMinutes = (int)_interval.Value,
+            IntervalMinutes = SelectedType == ScheduleTypes.Interval ? (int)_interval.Value : _loadedInterval,
         };
 
         schedule.Times = [];

@@ -33,7 +33,8 @@ internal sealed class TrayContext : ApplicationContext
     private MainForm? _mainForm;
 
     /// <param name="activate">Set by a second copy started in the same session: show the window.</param>
-    public TrayContext(EventWaitHandle activate)
+    /// <param name="showWindow">Open the main window right away (started by the user, not at logon).</param>
+    public TrayContext(EventWaitHandle activate, bool showWindow)
     {
         _ui = SynchronizationContext.Current
             ?? throw new InvalidOperationException("TrayContext must be created on the UI thread.");
@@ -68,6 +69,10 @@ internal sealed class TrayContext : ApplicationContext
 
         _activateWait = ThreadPool.RegisterWaitForSingleObject(
             activate, (_, _) => _ui.Post(_ => ShowMainForm(), null), null, Timeout.Infinite, executeOnlyOnce: false);
+        if (showWindow)
+        {
+            ShowMainForm();
+        }
     }
 
     private enum TrayState

@@ -38,7 +38,10 @@ internal sealed class UiState
 
     public Dictionary<string, int> HistoryColumns { get; set; } = [];
 
-    private static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CUSTOS", "ui.json");
+    /// <summary>Where ui.json is kept; the interface tests use a folder of their own.</summary>
+    internal static string Folder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CUSTOS");
+
+    private static string FilePath => Path.Combine(Folder, "ui.json");
 
     public static UiState Load()
     {
@@ -57,7 +60,7 @@ internal sealed class UiState
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+            Directory.CreateDirectory(Folder);
             File.WriteAllBytes(FilePath, JsonSerializer.SerializeToUtf8Bytes(this, UiJsonContext.Default.UiState));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

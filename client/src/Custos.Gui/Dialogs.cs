@@ -3,7 +3,10 @@ using Custos.Core.Model;
 
 namespace Custos.Gui;
 
-/// <summary>Base of the small dialogs: scaled, centred on the owner, with "OK" and "Cancel" at the bottom right.</summary>
+/// <summary>
+/// Base of the small dialogs: scaled, centred on the owner, with "OK" and "Cancel" at the bottom right. The layout stays
+/// suspended until the derived class calls <see cref="EndBuild"/>, so that all controls are scaled to the screen together.
+/// </summary>
 internal abstract class DialogForm : Form
 {
     protected DialogForm(string title, Size size)
@@ -38,7 +41,6 @@ internal abstract class DialogForm : Form
 
         Controls.Add(Body);
         Controls.Add(buttons);
-        ResumeLayout(performLayout: false);
         OkButton.Click += (_, _) => OnOk();
     }
 
@@ -50,6 +52,9 @@ internal abstract class DialogForm : Form
 
     /// <summary>Called by "OK": check, save, and set <see cref="Form.DialogResult"/> when done.</summary>
     protected abstract void OnOk();
+
+    /// <summary>The last call of the constructor of a dialog, after all its controls are added.</summary>
+    protected void EndBuild() => ResumeLayout(performLayout: true);
 
     protected void AddRow(string caption, Control control, Control? extra = null)
     {
@@ -119,6 +124,7 @@ internal sealed class SourceDialog : DialogForm
         _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.SourceAccountHelp);
         Body.Controls.Add(_accountHelp);
         AddNote(Strings.SourceNote);
+        EndBuild();
 
         switch (source.Kind)
         {
@@ -243,6 +249,7 @@ internal sealed class CredentialDialog : DialogForm
         AddRow(Strings.AccountPassword, _password);
         AddWide(_show);
         AddNote(existing is null ? Strings.AccountPasswordNote : Strings.AccountKeepPasswordNote);
+        EndBuild();
         if (existing is not null)
         {
             _user.Text = existing.User;
@@ -369,6 +376,8 @@ internal sealed class SettingsForm : DialogForm
         {
             AddNote(Strings.SettingsReadOnly);
         }
+
+        EndBuild();
 
         var settings = monitor.Snapshot?.Settings ?? new AgentSettings();
         _logLevel.SelectedIndex = settings.DefaultLogLevel == LogLevels.Files ? 1 : 0;

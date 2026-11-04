@@ -4,6 +4,9 @@ namespace Custos.Gui;
 
 internal static class Program
 {
+    /// <summary>Given by the autostart entry in the registry: start in the tray, without the window.</summary>
+    private const string TrayArgument = "--tray";
+
     // Local\ objects exist once per Windows session, so every session gets its own interface (section 3.1).
     private const string InstanceMutexName = @"Local\CUSTOS.Gui";
     private const string ActivateEventName = @"Local\CUSTOS.Gui.Activate";
@@ -14,7 +17,7 @@ internal static class Program
     private static bool _showingError;
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         using var instance = new Mutex(initiallyOwned: false, InstanceMutexName, out bool firstInSession);
         using var activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
@@ -34,7 +37,9 @@ internal static class Program
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteErrorLog(e.ExceptionObject as Exception);
 
         SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
-        using var tray = new TrayContext(activate);
+        // Started at logon: only the tray icon. Started by the user (menu, installer): the window as well.
+        bool showWindow = !args.Contains(TrayArgument, StringComparer.OrdinalIgnoreCase);
+        using var tray = new TrayContext(activate, showWindow);
         Application.Run(tray);
     }
 

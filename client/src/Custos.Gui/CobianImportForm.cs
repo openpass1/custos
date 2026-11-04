@@ -120,6 +120,50 @@ internal sealed class CobianImportForm : Form
         };
     }
 
+    /// <summary>The tasks read from the list, with their check boxes.</summary>
+    internal ListView TaskList => _tasks;
+
+    /// <summary>Accounts whose password is asked for, one row each.</summary>
+    internal int AccountCount => _accountRows.Count;
+
+    /// <summary>Reads a list as "Read" does.</summary>
+    internal void ReadFile(string path)
+    {
+        _file.Text = path;
+        ReadList();
+    }
+
+    /// <summary>A remark of the importer in words.</summary>
+    internal static string Describe(ImportWarning warning)
+    {
+        string argument = warning.Argument ?? string.Empty;
+        return warning.Code switch
+        {
+            ImportWarningCodes.ScheduleUnknown => Strings.Format(Strings.WarnScheduleUnknown, argument),
+            ImportWarningCodes.ScheduleNotSupported => Strings.WarnScheduleNotSupported,
+            ImportWarningCodes.ScheduleAssumed => Strings.Format(Strings.WarnScheduleAssumed, argument),
+            ImportWarningCodes.TimeUnreadable => Strings.WarnTimeUnreadable,
+            ImportWarningCodes.WeekdaysAssumed => Strings.Format(Strings.WarnWeekdaysAssumed, argument),
+            ImportWarningCodes.BackupTypeAssumed => Strings.WarnBackupTypeAssumed,
+            ImportWarningCodes.BackupTypeNotSupported => Strings.Format(Strings.WarnBackupTypeNotSupported, argument),
+            ImportWarningCodes.MirrorLater => Strings.WarnMirrorLater,
+            ImportWarningCodes.CompressionLater => Strings.Format(Strings.WarnCompressionLater, argument.ToUpperInvariant()),
+            ImportWarningCodes.CompressionAssumed => Strings.WarnCompressionAssumed,
+            ImportWarningCodes.EncryptionPassword => Strings.WarnEncryptionPassword,
+            ImportWarningCodes.SplitIgnored => Strings.WarnSplitIgnored,
+            ImportWarningCodes.EventsInComment => Strings.Format(Strings.WarnEventsInComment, argument),
+            ImportWarningCodes.SourceUnknown => Strings.Format(Strings.WarnSourceUnknown, argument),
+            ImportWarningCodes.FtpNotSupported => Strings.Format(Strings.WarnFtpNotSupported, argument),
+            ImportWarningCodes.NoSources => Strings.WarnNoSources,
+            ImportWarningCodes.NoDestinations => Strings.WarnNoDestinations,
+            ImportWarningCodes.FixedDayAssumed => Strings.Format(Strings.WarnFixedDayAssumed, argument),
+            ImportWarningCodes.FiltersImported => Strings.Format(Strings.WarnFiltersImported, argument),
+            ImportWarningCodes.RunAsAccount => Strings.Format(Strings.WarnRunAsAccount, argument),
+            ImportWarningCodes.RunAsLocalOnly => Strings.Format(Strings.WarnRunAsLocalOnly, argument),
+            _ => warning.Code + (argument.Length > 0 ? ": " + argument : string.Empty),
+        };
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -354,37 +398,6 @@ internal sealed class CobianImportForm : Form
     private static bool Uses(TaskDefinition task, string credentialId) =>
         task.Sources.Any(s => string.Equals(s.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase))
         || task.Destinations.Any(d => string.Equals(d.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase));
-
-    /// <summary>A remark of the importer in words.</summary>
-    private static string Describe(ImportWarning warning)
-    {
-        string argument = warning.Argument ?? string.Empty;
-        return warning.Code switch
-        {
-            ImportWarningCodes.ScheduleUnknown => Strings.Format(Strings.WarnScheduleUnknown, argument),
-            ImportWarningCodes.ScheduleNotSupported => Strings.WarnScheduleNotSupported,
-            ImportWarningCodes.ScheduleAssumed => Strings.Format(Strings.WarnScheduleAssumed, argument),
-            ImportWarningCodes.TimeUnreadable => Strings.WarnTimeUnreadable,
-            ImportWarningCodes.WeekdaysAssumed => Strings.Format(Strings.WarnWeekdaysAssumed, argument),
-            ImportWarningCodes.BackupTypeAssumed => Strings.WarnBackupTypeAssumed,
-            ImportWarningCodes.BackupTypeNotSupported => Strings.Format(Strings.WarnBackupTypeNotSupported, argument),
-            ImportWarningCodes.MirrorLater => Strings.WarnMirrorLater,
-            ImportWarningCodes.CompressionLater => Strings.Format(Strings.WarnCompressionLater, argument.ToUpperInvariant()),
-            ImportWarningCodes.CompressionAssumed => Strings.WarnCompressionAssumed,
-            ImportWarningCodes.EncryptionPassword => Strings.WarnEncryptionPassword,
-            ImportWarningCodes.SplitIgnored => Strings.WarnSplitIgnored,
-            ImportWarningCodes.EventsInComment => Strings.Format(Strings.WarnEventsInComment, argument),
-            ImportWarningCodes.SourceUnknown => Strings.Format(Strings.WarnSourceUnknown, argument),
-            ImportWarningCodes.FtpNotSupported => Strings.Format(Strings.WarnFtpNotSupported, argument),
-            ImportWarningCodes.NoSources => Strings.WarnNoSources,
-            ImportWarningCodes.NoDestinations => Strings.WarnNoDestinations,
-            ImportWarningCodes.FixedDayAssumed => Strings.Format(Strings.WarnFixedDayAssumed, argument),
-            ImportWarningCodes.FiltersImported => Strings.Format(Strings.WarnFiltersImported, argument),
-            ImportWarningCodes.RunAsAccount => Strings.Format(Strings.WarnRunAsAccount, argument),
-            ImportWarningCodes.RunAsLocalOnly => Strings.Format(Strings.WarnRunAsLocalOnly, argument),
-            _ => warning.Code + (argument.Length > 0 ? ": " + argument : string.Empty),
-        };
-    }
 
     /// <summary>An account to import: its name, the tasks using it, and its password or "use the stored one".</summary>
     private sealed class AccountRow : IDisposable
