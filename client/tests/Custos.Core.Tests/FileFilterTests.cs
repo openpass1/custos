@@ -62,7 +62,10 @@ public sealed class FileFilterTests
     [Theory]
     [InlineData(@"D:\Data", "Data")]
     [InlineData(@"D:\Data\", "Data")]
+    [InlineData(@"D:\", "D")]
     [InlineData(@"\\nas\share", "share")]
+    [InlineData(@"\\nas\share\", "share")]
+    [InlineData(@"\\nas\share\docs", "docs")]
     public void The_top_folder_is_named_after_the_source(string source, string expected)
     {
         if (!OperatingSystem.IsWindows())

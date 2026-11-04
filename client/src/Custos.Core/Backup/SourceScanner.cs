@@ -164,7 +164,10 @@ public static class SourceScanner
         string name = Path.GetFileName(trimmed);
         if (name.Length == 0)
         {
-            name = trimmed.Replace(":", string.Empty, StringComparison.Ordinal).Trim('\\', '/');
+            // A root. Windows counts the share as part of a network root, so the last part is taken by hand:
+            // "D:\" → "D", "\\nas\share" → "share".
+            string[] parts = trimmed.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);
+            name = parts.Length == 0 ? string.Empty : parts[^1].Replace(":", string.Empty, StringComparison.Ordinal);
         }
 
         foreach (char invalid in Path.GetInvalidFileNameChars())
