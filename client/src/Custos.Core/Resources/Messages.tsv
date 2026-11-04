@@ -79,3 +79,73 @@ TriggerCatchUp	catch-up for {0}	догоняющий за {0}
 TriggerManual	manually	вручную
 TriggerManualBy	manually, {0}	вручную, {0}
 TriggerRemote	by the monitoring server	командой с сервера
+ConfigTaskExists	A task with this id already exists: «{0}».	Задание с таким идентификатором уже есть: «{0}».
+ConfigTaskGone	The task was deleted meanwhile.	Задание тем временем удалено.
+ConfigTaskChanged	The task was changed meanwhile by {0}. Close the editor and open the task again.	Задание тем временем изменил {0}. Закройте редактор и откройте задание снова.
+ConfigCredentialExists	The account {0} already exists.	Учётная запись {0} уже есть.
+ConfigBadRetentionDays	Logs can be kept from {0} to {1} days.	Журналы можно хранить от {0} до {1} дней.
+ConfigCredentialInUse	The account {0} is used by the tasks: {1}.	Учётная запись {0} используется в заданиях: {1}.
+ConfigCredentialMissing	The task refers to an account that is not stored (id {0}).	Задание ссылается на несохранённую учётную запись (id {0}).
+CredentialUnreadable	The password of {0} cannot be read on this computer. Enter it again.	Пароль учётной записи {0} не читается на этом компьютере. Введите его заново.
+ConfigNameRequired	Enter the task name.	Введите название задания.
+ConfigNameTooLong	The task name may have at most {0} characters.	Название задания — не длиннее {0} символов.
+ConfigBadTime	«{0}» is not a time. Use HH:MM, for example 21:30.	«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.
+ConfigBadInterval	The interval must be from {0} to {1} minutes.	Интервал — от {0} до {1} минут.
+ConfigBadKeepFull	Keep at least one full backup.	Нужно хранить хотя бы одну полную копию.
+ConfigUserRequired	Enter the user name.	Введите имя пользователя.
+ConfigRestoredFromBackup	{0} was missing; its backup copy was used.	Файл {0} не найден, использована его резервная копия.
+ConfigDamagedUsedBackup	{0} is damaged ({1}); its backup copy was used. The damaged file is kept as {2}.	Файл {0} повреждён ({1}), использована его резервная копия. Повреждённый файл сохранён как {2}.
+ConfigDamaged	{0} is damaged ({1}) and has no usable backup copy, so it starts empty. The damaged file is kept as {2}.	Файл {0} повреждён ({1}), резервной копии нет, поэтому он начат заново. Повреждённый файл сохранён как {2}.
+AgentStarted	CUSTOS service {0} started.	Служба CUSTOS {0} запущена.
+TaskCreatedBy	Task «{0}» created ({1}).	Задание «{0}» создано ({1}).
+TaskChangedBy	Task «{0}» changed ({1}).	Задание «{0}» изменено ({1}).
+TaskDeletedBy	Task «{0}» deleted ({1}). Its backups were not touched.	Задание «{0}» удалено ({1}). Его копии не тронуты.
+TasksImportedBy	{0} tasks imported from Cobian Backup ({1}). They are off until you check and turn them on.	Импортировано заданий из Cobian Backup: {0} ({1}). Они отключены, пока вы их не проверите и не включите.
+SettingsChangedBy	Program settings changed ({0}).	Настройки программы изменены ({0}).
+CatchUpRun	Task «{0}» is catching up the run missed at {1}.	Задание «{0}» догоняет запуск, пропущенный в {1}.
+RunLogFile	Run log: {0}	Журнал запуска: {0}
+DescSentence	{0}, {1} {2} {3}.	{0} {1} {2} {3}.
+DescEveryDay	every day at {0}	каждый день в {0}
+DescOnDays	on {0} at {1}	по {0} в {1}
+DescOnDaysSuffix	on {0}	по {0}
+DescWeekdaysWork	weekdays	будням
+DescWeekdaysWeekend	weekends	выходным
+DescWeekdaysShort	Mon,Tue,Wed,Thu,Fri,Sat,Sun	пн,вт,ср,чт,пт,сб,вс
+DescWeekdaysPlural	On Mondays,;On Tuesdays,;On Wednesdays,;On Thursdays,;On Fridays,;On Saturdays,;On Sundays,	По понедельникам;По вторникам;По средам;По четвергам;По пятницам;По субботам;По воскресеньям
+DescMonthly	every month on {0} at {1}	каждый месяц {0} в {1}
+DescMonthDay	the {0}{1}	{0}-го
+DescLastDay	the last day	в последний день
+DescInterval	every {0} min	каждые {0} мин
+DescManual	on request	по запросу
+DescScheduleNever	never (the schedule has no times)	никогда (в расписании нет времени запуска)
+DescCatchUp	; a missed run is made up when the computer is back on	, пропущенный запуск — после включения
+DescAnd	and	и
+DescMore	{0} more	ещё {0}
+DescActionFull	copies all files	копирует все файлы
+DescActionIncremental	copies the files changed since the last backup	копирует изменившиеся файлы
+DescActionDifferential	copies the files changed since the last full backup	копирует файлы, изменившиеся с последней полной копии,
+DescActionMirror	mirrors the files	зеркалирует файлы
+DescFrom	from {0}	из {0}
+DescTo	to {0}	в {0}
+DescToUsb	to the USB disk «{0}»	на USB-диск «{0}»
+DescNoSources	(no sources yet)	(источники не заданы)
+DescNoDestinations	(no destinations yet)	(назначения не заданы)
+DescFullEveryRuns	Every {0}{1} run is a full backup.	Каждый {0}-й запуск — полная копия.
+DescFullWeekday	{0} the backup is full.	{0} — полная копия.
+DescFullMonthDay	On the {0}{1} of every month the backup is full.	{0}-го числа каждого месяца — полная копия.
+DescFullLastDay	On the last day of the month the backup is full.	В последний день месяца — полная копия.
+DescOneFolder	The backup is kept up to date in one folder.	Копия обновляется в одной и той же папке.
+DescKeepAll	Old backups are never deleted.	Старые копии не удаляются.
+DescKeepSetsOne	Only the last backup is kept.	Хранится {0} последняя копия.
+DescKeepSetsFew	The last {0} backups are kept.	Хранятся {0} последние копии.
+DescKeepSetsMany	The last {0} backups are kept.	Хранятся {0} последних копий.
+DescKeepChainsOne	Only the last full backup is kept, with its {1} backups.	Хранится {0} последняя полная копия вместе с её {1}.
+DescKeepChainsFew	The last {0} full backups are kept, with their {1} backups.	Хранятся {0} последние полные копии вместе с их {1}.
+DescKeepChainsMany	The last {0} full backups are kept, with their {1} backups.	Хранятся {0} последних полных копий вместе с их {1}.
+DescKindIncremental	incremental	инкрементальными
+DescKindDifferential	differential	дифференциальными
+DescRetentionLater	This retention mode arrives in the next version; until then old backups are not deleted.	Этот режим хранения появится в следующей версии, пока старые копии не удаляются.
+MissedTooOld	Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.	Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.
+DeleteWhileRunning	The task is running now. Stop it first, then delete it.	Задание сейчас выполняется. Сначала остановите его, потом удаляйте.
+DatabaseRecreated	The database of the service was damaged and has been started anew. The history of earlier runs is gone; the next run of each task makes a full backup.	База службы была повреждена и создана заново. История прежних запусков потеряна, следующий запуск каждого задания сделает полную копию.
+NotAllowed	Only administrators of this computer may change tasks and settings.	Менять задания и настройки могут только администраторы этого компьютера.

@@ -1,46 +1,55 @@
 using System.Collections.Concurrent;
 using System.IO.Pipes;
+using System.Runtime.Versioning;
+using Custos.Core;
 using Custos.Core.Ipc;
+using Custos.Service.Agent;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Custos.Service.Ipc;
 
 /// <summary>
-/// Serves the interfaces of all user sessions over <c>\\.\pipe\custos</c>: answers their requests and pushes events
-/// to every connected interface (section 3.2).
+/// Serves the interfaces of all user sessions over <c>\\.\pipe\custos</c>: answers their requests and pushes the
+/// events of the agent to every connected interface (section 3.2).
 /// </summary>
-internal sealed class PipeServer(ServiceInfo info, ILogger<PipeServer> logger) : BackgroundService
+/// <remarks>
+/// Each connection must start with <see cref="PipeProtocol.Methods.Hello"/>; the user is then taken from the pipe
+/// (Windows says who it is, not the interface). Requests run side by side, so a slow one (checking a network
+/// destination) does not hold up the others. Changes are allowed to administrators only (section 4).
+/// </remarks>
+[SupportedOSPlatform("windows")]
+internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEvents events, ILogger<PipeServer> logger) : BackgroundService
 {
+    private const int MaxRequestsInFlight = 8;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan BroadcastTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>An interface that does not take a message within this time is disconnected; it connects again.</summary>
+    private static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(5);
+
+    private static readonly TimeSpan StoppingNoticeTimeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>Methods that change what the service does as SYSTEM.</summary>
+    private static readonly HashSet<string> AdminMethods =
+    [
+        PipeProtocol.Methods.TaskSave,
+        PipeProtocol.Methods.TaskDelete,
+        PipeProtocol.Methods.TasksImport,
+        PipeProtocol.Methods.CredentialSave,
+        PipeProtocol.Methods.CredentialDelete,
+        PipeProtocol.Methods.DestinationTest,
+        PipeProtocol.Methods.SettingsSave,
+    ];
 
     private readonly ConcurrentDictionary<long, Connection> _connections = new();
     private long _lastConnectionId;
-
-    /// <summary>Sends an event to every connected interface. A connection that cannot take it is dropped.</summary>
-    public async Task BroadcastAsync(PipeMessage message, CancellationToken cancellationToken)
-    {
-        var sends = _connections.Values.Select(async connection =>
-        {
-            try
-            {
-                await connection.Channel.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
-            {
-                // The interface is gone; its reader loop will clean up.
-            }
-        });
-        await Task.WhenAll(sends).ConfigureAwait(false);
-    }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         // Tell the interfaces before the pipe goes away, so they show "stopping" rather than "not responding".
         using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
-            timeout.CancelAfter(BroadcastTimeout);
+            timeout.CancelAfter(StoppingNoticeTimeout);
             var stopping = new ServiceStateEvent { State = PipeProtocol.ServiceStates.Stopping };
             await BroadcastAsync(
                 PipeMessage.Notification(PipeProtocol.Events.ServiceState, stopping, IpcJsonContext.Default.ServiceStateEvent),
@@ -52,6 +61,7 @@ internal sealed class PipeServer(ServiceInfo info, ILogger<PipeServer> logger) :
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var broadcaster = Task.Run(() => BroadcastLoopAsync(stoppingToken), CancellationToken.None);
         NamedPipeServerStream? listener = null;
         bool announced = false;
         try
@@ -101,20 +111,68 @@ internal sealed class PipeServer(ServiceInfo info, ILogger<PipeServer> logger) :
             }
 
             await Task.WhenAll(_connections.Values.Select(c => c.Completion)).ConfigureAwait(false);
+            await broadcaster.ConfigureAwait(false);
         }
     }
+
+    // ---- Events ------------------------------------------------------------------------------------------------
+
+    private async Task BroadcastLoopAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await foreach (var message in events.Reader.ReadAllAsync(stoppingToken).ConfigureAwait(false))
+            {
+                await BroadcastAsync(message, stoppingToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // The service is stopping.
+        }
+    }
+
+    /// <summary>Sends an event to every interface that has said hello.</summary>
+    private Task BroadcastAsync(PipeMessage message, CancellationToken cancellationToken) =>
+        Task.WhenAll(_connections.Values.Where(c => c.Identity is not null).Select(c => SendAsync(c, message, cancellationToken)));
+
+    /// <summary>
+    /// Sends one message. An interface that does not take it in time is disconnected: its pipe may now hold half a
+    /// message, and the interface connects again by itself.
+    /// </summary>
+    private static async Task SendAsync(Connection connection, PipeMessage message, CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, connection.Closing);
+        timeout.CancelAfter(SendTimeout);
+        try
+        {
+            await connection.Channel.SendAsync(message, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            connection.Close();
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        {
+            // The interface is gone; its reader loop cleans up.
+            connection.Close();
+        }
+    }
+
+    // ---- Connections -------------------------------------------------------------------------------------------
 
     private void StartConnection(NamedPipeServerStream pipe, CancellationToken stoppingToken)
     {
         long id = Interlocked.Increment(ref _lastConnectionId);
-        var channel = new PipeChannel(pipe, PipeProtocol.MaxRequestBytes);
+        var connection = new Connection(id, pipe, stoppingToken);
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _connections[id] = new Connection(channel, completion.Task);
+        connection.Completion = completion.Task;
+        _connections[id] = connection;
         _ = Task.Run(async () =>
         {
             try
             {
-                await ServeAsync(id, pipe, channel, stoppingToken).ConfigureAwait(false);
+                await ServeAsync(connection).ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // A broken connection must not take down the service.
             catch (Exception ex)
@@ -125,91 +183,114 @@ internal sealed class PipeServer(ServiceInfo info, ILogger<PipeServer> logger) :
             finally
             {
                 _connections.TryRemove(id, out _);
-                await channel.DisposeAsync().ConfigureAwait(false);
+                await connection.DisposeAsync().ConfigureAwait(false);
                 completion.SetResult();
             }
         }, CancellationToken.None);
     }
 
-    private async Task ServeAsync(long id, NamedPipeServerStream pipe, PipeChannel channel, CancellationToken stoppingToken)
+    private async Task ServeAsync(Connection connection)
     {
-        ClientIdentity? identity = null;
+        var token = connection.Closing;
+        using var inFlight = new SemaphoreSlim(MaxRequestsInFlight);
+        var running = new List<Task>();
         try
         {
-            while (await channel.ReceiveAsync(stoppingToken).ConfigureAwait(false) is { } request)
+            while (await connection.Channel.ReceiveAsync(token).ConfigureAwait(false) is { } request)
             {
                 if (request.Kind != PipeMessageKind.Request || request.Id is not { } requestId || request.Method is null)
                 {
                     throw new InvalidDataException($"Expected a request, got a message of kind '{request.Kind}'.");
                 }
 
-                PipeMessage response;
-                try
+                if (request.Method == PipeProtocol.Methods.Hello)
                 {
-                    response = request.Method switch
-                    {
-                        PipeProtocol.Methods.Hello => Hello(id, requestId, request.GetData(IpcJsonContext.Default.HelloRequest), pipe, ref identity),
-                        _ => PipeMessage.Failure(requestId, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
-                    };
-                }
-                catch (InvalidDataException ex)
-                {
-                    response = PipeMessage.Failure(requestId, PipeProtocol.Errors.BadRequest, ex.Message);
-                }
-#pragma warning disable CA1031 // One failing request must not take down the connection or the service.
-                catch (Exception ex)
-#pragma warning restore CA1031
-                {
-                    ServiceLog.RequestFailed(logger, ex, request.Method, id);
-                    response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Internal, "The service could not process the request. See the service log.");
+                    await SendAsync(connection, Hello(connection, requestId, request), token).ConfigureAwait(false);
+                    continue;
                 }
 
-                await channel.SendAsync(response, stoppingToken).ConfigureAwait(false);
+                if (connection.Identity is not { } identity)
+                {
+                    await SendAsync(connection, PipeMessage.Failure(requestId, PipeProtocol.Errors.HelloFirst, "Say hello first."), token).ConfigureAwait(false);
+                    continue;
+                }
+
+                // A runaway interface waits here rather than piling up work in the service.
+                await inFlight.WaitAsync(token).ConfigureAwait(false);
+                running.RemoveAll(t => t.IsCompleted);
+                running.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        await HandleAsync(connection, identity, requestId, request).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        inFlight.Release();
+                    }
+                }, CancellationToken.None));
             }
         }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            // Service is stopping.
+            // The service is stopping, or the interface could not keep up and was disconnected.
         }
         catch (InvalidDataException ex)
         {
-            ServiceLog.ClientProtocolError(logger, ex, id);
+            ServiceLog.ClientProtocolError(logger, ex, connection.Id);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             // The interface closed or crashed: normal end of a connection.
         }
-
-        if (identity is not null)
+        finally
         {
-            ServiceLog.ClientDisconnected(logger, id);
+            connection.Close();
+            await Task.WhenAll(running).ConfigureAwait(false);
+        }
+
+        if (connection.Identity is not null)
+        {
+            ServiceLog.ClientDisconnected(logger, connection.Id);
         }
     }
 
-    private PipeMessage Hello(long id, long requestId, HelloRequest hello, NamedPipeServerStream pipe, ref ClientIdentity? identity)
+    private PipeMessage Hello(Connection connection, long requestId, PipeMessage request)
     {
+        HelloRequest hello;
+        try
+        {
+            hello = request.GetData(IpcJsonContext.Default.HelloRequest);
+        }
+        catch (InvalidDataException ex)
+        {
+            return PipeMessage.Failure(requestId, PipeProtocol.Errors.BadRequest, ex.Message);
+        }
+
         if (hello.Protocol != PipeProtocol.Version)
         {
-            ServiceLog.ClientProtocolMismatch(logger, id, hello.Protocol, PipeProtocol.Version);
+            ServiceLog.ClientProtocolMismatch(logger, connection.Id, hello.Protocol, PipeProtocol.Version);
             return PipeMessage.Failure(requestId, PipeProtocol.Errors.ProtocolMismatch,
                 $"The service speaks protocol {PipeProtocol.Version}, the interface {hello.Protocol}.");
         }
 
+        var identity = connection.Identity;
         if (identity is null)
         {
             try
             {
-                identity = ClientIdentity.Read(pipe);
+                identity = ClientIdentity.Read(connection.Pipe);
             }
 #pragma warning disable CA1031 // Without an identity the interface still works, with the rights of an ordinary user.
             catch (Exception ex)
 #pragma warning restore CA1031
             {
-                ServiceLog.ClientIdentityFailed(logger, ex, id);
+                ServiceLog.ClientIdentityFailed(logger, ex, connection.Id);
                 identity = new ClientIdentity("?", IsAdmin: false, SessionId: null, ProcessId: null);
             }
 
-            ServiceLog.ClientConnected(logger, id, identity.User, identity.IsAdmin, identity.SessionId, identity.ProcessId, hello.ClientVersion);
+            connection.Identity = identity;
+            ServiceLog.ClientConnected(logger, connection.Id, identity.User, identity.IsAdmin, identity.SessionId, identity.ProcessId, hello.ClientVersion);
         }
 
         var result = new HelloResult
@@ -225,5 +306,140 @@ internal sealed class PipeServer(ServiceInfo info, ILogger<PipeServer> logger) :
         return PipeMessage.Success(requestId, result, IpcJsonContext.Default.HelloResult);
     }
 
-    private sealed record Connection(PipeChannel Channel, Task Completion);
+    private async Task HandleAsync(Connection connection, ClientIdentity identity, long requestId, PipeMessage request)
+    {
+        string method = request.Method!;
+        PipeMessage response;
+        try
+        {
+            await agent.Ready.WaitAsync(connection.Closing).ConfigureAwait(false);
+            if (AdminMethods.Contains(method) && !identity.IsAdmin && !agent.AllUsersMayEdit)
+            {
+                ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
+                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, Messages.NotAllowed);
+            }
+            else
+            {
+                response = Dispatch(identity, requestId, request);
+            }
+        }
+        catch (OperationCanceledException) when (connection.Closing.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (InvalidDataException ex)
+        {
+            response = PipeMessage.Failure(requestId, PipeProtocol.Errors.BadRequest, ex.Message);
+        }
+        catch (AgentRequestException ex)
+        {
+            response = PipeMessage.Failure(requestId, ex.Code, ex.Message);
+        }
+#pragma warning disable CA1031 // One failing request must not take down the connection or the service.
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            ServiceLog.RequestFailed(logger, ex, method, connection.Id);
+            response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Internal, Messages.Format(Messages.InternalError, ex.Message));
+        }
+
+        await SendAsync(connection, response, connection.Closing).ConfigureAwait(false);
+    }
+
+    private PipeMessage Dispatch(ClientIdentity identity, long id, PipeMessage request)
+    {
+        var json = IpcJsonContext.Default;
+        string user = identity.User;
+        return request.Method switch
+        {
+            PipeProtocol.Methods.Snapshot =>
+                PipeMessage.Success(id, agent.GetSnapshot(), json.AgentSnapshot),
+            PipeProtocol.Methods.LogRecent =>
+                PipeMessage.Success(id, new LogResult { Lines = agent.GetRecentLog() }, json.LogResult),
+            PipeProtocol.Methods.HistoryGet => History(id, request.GetData(json.HistoryRequest)),
+            PipeProtocol.Methods.TaskRun =>
+                Ok(id, agent.RunTask(request.GetData(json.TaskRequest).TaskId, user)),
+            PipeProtocol.Methods.RunAll =>
+                Ok(id, agent.RunAll(user)),
+            PipeProtocol.Methods.RunStop =>
+                Ok(id, agent.Stop(request.GetData(json.RunControlRequest).TaskId, user)),
+            PipeProtocol.Methods.RunPause =>
+                Ok(id, agent.SetPaused(request.GetData(json.RunControlRequest).TaskId, paused: true, user)),
+            PipeProtocol.Methods.RunResume =>
+                Ok(id, agent.SetPaused(request.GetData(json.RunControlRequest).TaskId, paused: false, user)),
+            PipeProtocol.Methods.TaskSave =>
+                PipeMessage.Success(id, new TaskSaveResult { Task = agent.SaveTask(request.GetData(json.TaskSaveRequest), user) }, json.TaskSaveResult),
+            PipeProtocol.Methods.TaskDelete =>
+                Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
+            PipeProtocol.Methods.TasksImport =>
+                Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user)),
+            PipeProtocol.Methods.CredentialSave =>
+                PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.SaveCredential(request.GetData(json.CredentialInput)) }, json.CredentialSaveResult),
+            PipeProtocol.Methods.CredentialDelete =>
+                Ok(id, agent.DeleteCredential(request.GetData(json.CredentialRequest).CredentialId)),
+            PipeProtocol.Methods.DestinationTest =>
+                PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest)), json.DestinationTestResult),
+            PipeProtocol.Methods.SettingsSave =>
+                Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
+            _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
+        };
+    }
+
+    private PipeMessage History(long id, HistoryRequest request) =>
+        PipeMessage.Success(id, new HistoryResult { Runs = agent.GetHistory(request.TaskId, request.Limit) }, IpcJsonContext.Default.HistoryResult);
+
+    private static PipeMessage Ok(long id, OkResult result) => PipeMessage.Success(id, result, IpcJsonContext.Default.OkResult);
+
+    /// <summary>One connected interface.</summary>
+    private sealed class Connection : IAsyncDisposable
+    {
+        private readonly CancellationTokenSource _closing;
+        private ClientIdentity? _identity;
+
+        public Connection(long id, NamedPipeServerStream pipe, CancellationToken stoppingToken)
+        {
+            Id = id;
+            Pipe = pipe;
+            Channel = new PipeChannel(pipe, PipeProtocol.MaxRequestBytes);
+            _closing = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+            Closing = _closing.Token;
+        }
+
+        public long Id { get; }
+
+        public NamedPipeServerStream Pipe { get; }
+
+        public PipeChannel Channel { get; }
+
+        /// <summary>Cancelled when the connection is being closed or the service stops.</summary>
+        public CancellationToken Closing { get; }
+
+        /// <summary>Who is connected; null until the interface has said hello.</summary>
+        public ClientIdentity? Identity
+        {
+            get => Volatile.Read(ref _identity);
+            set => Volatile.Write(ref _identity, value);
+        }
+
+        public Task Completion { get; set; } = Task.CompletedTask;
+
+        public void Close()
+        {
+            try
+            {
+                _closing.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already closed.
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            Close();
+            await Channel.DisposeAsync().ConfigureAwait(false);
+            _closing.Dispose();
+        }
+    }
 }

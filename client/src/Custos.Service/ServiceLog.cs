@@ -52,4 +52,80 @@ internal static partial class ServiceLog
     [LoggerMessage(EventId = 108, Level = LogLevel.Error,
         Message = "Interface connection {ConnectionId} failed")]
     public static partial void ConnectionFailed(ILogger logger, Exception exception, long connectionId);
+
+    [LoggerMessage(EventId = 109, Level = LogLevel.Warning,
+        Message = "User {User} (connection {ConnectionId}) is not allowed to call {Method}")]
+    public static partial void RequestForbidden(ILogger logger, string user, long connectionId, string method);
+
+    // ---- Agent: schedule, queue and runs ------------------------------------------------------------------------
+
+    [LoggerMessage(EventId = 200, Level = LogLevel.Error,
+        Message = "Checking the schedule failed; it is checked again in 30 s")]
+    public static partial void ScheduleFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = 201, Level = LogLevel.Error,
+        Message = "Cannot restrict access to {Problem}. Users other than administrators may be able to change the configuration")]
+    public static partial void FolderNotProtected(ILogger logger, string problem);
+
+    [LoggerMessage(EventId = 202, Level = LogLevel.Error,
+        Message = "Configuration: {Problem}")]
+    public static partial void ConfigProblem(ILogger logger, string problem);
+
+    [LoggerMessage(EventId = 203, Level = LogLevel.Warning,
+        Message = "{Count} runs were cut short when the service last stopped; their history records are closed with an error")]
+    public static partial void InterruptedRunsClosed(ILogger logger, int count);
+
+    [LoggerMessage(EventId = 204, Level = LogLevel.Information,
+        Message = "Deleted {Count} shadow copies left over from the last start of the service")]
+    public static partial void LeftoverShadowsDeleted(ILogger logger, int count);
+
+    [LoggerMessage(EventId = 205, Level = LogLevel.Error,
+        Message = "The run in progress did not stop within {Seconds} s")]
+    public static partial void RunnerDidNotStop(ILogger logger, int seconds);
+
+    [LoggerMessage(EventId = 206, Level = LogLevel.Information,
+        Message = "Deleted old run logs: {Files} files and {Runs} history records")]
+    public static partial void OldLogsDeleted(ILogger logger, int files, int runs);
+
+    [LoggerMessage(EventId = 207, Level = LogLevel.Error,
+        Message = "The run of task {Task} failed unexpectedly")]
+    public static partial void RunCrashed(ILogger logger, Exception exception, string task);
+
+    [LoggerMessage(EventId = 208, Level = LogLevel.Error,
+        Message = "The database of the service failed; the history and the change tracking may be incomplete")]
+    public static partial void DatabaseFailed(ILogger logger, Exception exception);
+
+    // ---- Agent: events of the Windows event log (section 6.10) --------------------------------------------------
+
+    [LoggerMessage(EventId = CustosEventIds.TaskStarted, Level = LogLevel.Information,
+        Message = "Task {Task} started ({Trigger}). Run log: {LogFile}")]
+    public static partial void TaskStarted(ILogger logger, string task, string trigger, string logFile);
+
+    [LoggerMessage(EventId = CustosEventIds.TaskSucceeded, Level = LogLevel.Information,
+        Message = "Task {Task} completed successfully: {Files} files, {Size} written")]
+    public static partial void TaskSucceeded(ILogger logger, string task, long files, string size);
+
+    [LoggerMessage(EventId = CustosEventIds.TaskCompletedWithWarnings, Level = LogLevel.Warning,
+        Message = "Task {Task} completed with {Warnings} warnings. See the run log")]
+    public static partial void TaskCompletedWithWarnings(ILogger logger, string task, int warnings);
+
+    [LoggerMessage(EventId = CustosEventIds.TaskFailed, Level = LogLevel.Error,
+        Message = "Task {Task} failed: {Error}")]
+    public static partial void TaskFailed(ILogger logger, string task, string error);
+
+    [LoggerMessage(EventId = CustosEventIds.TaskAborted, Level = LogLevel.Warning,
+        Message = "Task {Task} was aborted: {Reason}")]
+    public static partial void TaskAborted(ILogger logger, string task, string reason);
+
+    [LoggerMessage(EventId = CustosEventIds.CatchUpRun, Level = LogLevel.Information,
+        Message = "Task {Task} missed its run at {Slot}; a catch-up run is queued")]
+    public static partial void CatchUpRun(ILogger logger, string task, string slot);
+
+    [LoggerMessage(EventId = CustosEventIds.VssFailed, Level = LogLevel.Warning,
+        Message = "Task {Task}: the shadow copy (VSS) could not be made")]
+    public static partial void VssFailed(ILogger logger, string task);
+
+    [LoggerMessage(EventId = CustosEventIds.DestinationFull, Level = LogLevel.Error,
+        Message = "Task {Task}: not enough free space at a destination")]
+    public static partial void DestinationFull(ILogger logger, string task);
 }

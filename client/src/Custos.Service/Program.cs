@@ -1,5 +1,6 @@
 using Custos.Core;
 using Custos.Service;
+using Custos.Service.Agent;
 using Custos.Service.Ipc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,13 +20,24 @@ try
     builder.Logging.ClearProviders();
     builder.Services.AddSerilog();
 
+    // A run in progress is stopped and cleaned up when the service stops; give it time for that.
+    builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(25));
+
     builder.Services.AddSingleton(new ServiceInfo(runMode));
+    builder.Services.AddSingleton<AgentEvents>();
+    builder.Services.AddSingleton<AgentService>();
+
+    // Started in this order and stopped in reverse: the interfaces hear "stopping" before the runs are stopped.
     builder.Services.AddHostedService<ServiceLifecycle>();
+    builder.Services.AddHostedService(services => services.GetRequiredService<AgentService>());
     builder.Services.AddHostedService<PipeServer>();
 
     using var host = builder.Build();
     await host.RunAsync().ConfigureAwait(false);
-    return 0;
+
+    // The agent could not start (the error is in the log): a non-zero exit code makes the Service Control Manager
+    // restart the service.
+    return host.Services.GetRequiredService<AgentService>().ExecuteTask is { IsFaulted: true } ? 1 : 0;
 }
 catch (Exception ex)
 {

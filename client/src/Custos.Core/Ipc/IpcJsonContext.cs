@@ -2,7 +2,8 @@ using System.Text.Json.Serialization;
 
 namespace Custos.Core.Ipc;
 
-/// <summary>JSON contract of the service pipe: snake_case names, null values omitted (the same style as protocol.md).</summary>
+/// <summary>JSON contract of the service pipe: snake_case names, null values omitted (the same style as protocol.md).
+/// The interface and the service are installed together, so there is no version negotiation beyond hello.</summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
@@ -10,4 +11,23 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(HelloRequest))]
 [JsonSerializable(typeof(HelloResult))]
 [JsonSerializable(typeof(ServiceStateEvent))]
+[JsonSerializable(typeof(AgentSnapshot))]
+[JsonSerializable(typeof(RunProgressEvent))]
+[JsonSerializable(typeof(LogLine))]
+[JsonSerializable(typeof(EmptyRequest))]
+[JsonSerializable(typeof(TaskRequest))]
+[JsonSerializable(typeof(HistoryRequest))]
+[JsonSerializable(typeof(HistoryResult))]
+[JsonSerializable(typeof(LogResult))]
+[JsonSerializable(typeof(TaskSaveRequest))]
+[JsonSerializable(typeof(TaskSaveResult))]
+[JsonSerializable(typeof(CredentialInput))]
+[JsonSerializable(typeof(TasksImportRequest))]
+[JsonSerializable(typeof(CredentialSaveResult))]
+[JsonSerializable(typeof(CredentialRequest))]
+[JsonSerializable(typeof(RunControlRequest))]
+[JsonSerializable(typeof(DestinationTestRequest))]
+[JsonSerializable(typeof(DestinationTestResult))]
+[JsonSerializable(typeof(SettingsSaveRequest))]
+[JsonSerializable(typeof(OkResult))]
 public sealed partial class IpcJsonContext : JsonSerializerContext;
