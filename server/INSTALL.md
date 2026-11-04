@@ -1,106 +1,277 @@
-# Установка CUSTOS Monitor
+# Установка CUSTOS Monitor на CloudPanel, пошагово
 
-Инструкция для этапа 1. Пример: сайт `custos.lan`, пользователь сайта `custos`. Подставьте свои значения.
+Делайте шаги по порядку. После каждого шага написано, что должно получиться. Если получилось не так, смотрите раздел «Если что-то пошло не так» в конце.
 
-Что нужно: CloudPanel с PHP 8.4 и MariaDB 10.11+ (или MySQL 8.0+). Composer на сервере не нужен: готовый пакет уже содержит `vendor/`.
+В примерах используются такие имена. Если выбрали другие, подставляйте свои везде:
 
-## 1. Пакет
+| Что | В примерах |
+|---|---|
+| Адрес сайта | `custos.lan` |
+| Пользователь сайта в CloudPanel | `custos` |
+| База данных | `custos` |
+| Пользователь базы данных | `custos` |
 
-1. На GitHub откройте **Actions → Server**, выберите последний зелёный запуск нужной ветки (для релиза — `main`).
-2. Внизу страницы, в разделе **Artifacts**, скачайте `custos-server`. Получится `custos-server.zip`, внутри папка `server/`.
-3. Пакет хранится 14 дней. Если он пропал, нажмите **Run workflow** на странице **Actions → Server**.
+Два правила:
 
-## 2. Сайт и база в CloudPanel
+- Все команды в SSH выполняются **под пользователем сайта** (`custos`), не под root.
+- PHP-скрипты запускаются только так: `php8.4 bin/install.php`. Если не написать `php8.4` в начале, будет ошибка `Permission denied` или `?php: No such file or directory`. `chmod` делать не нужно.
 
-1. **Sites → Add Site → Create a PHP Site**. Application: **Generic**, PHP Version: **8.4**, Domain Name: `custos.lan`, Site User: `custos`, пароль задайте свой.
-2. В сайте: **Databases → Add Database**. Имя базы `custos`, пользователь `custos`, пароль задайте свой.
-3. В сайте: **Settings → Root Directory** укажите `custos.lan/server/public` и сохраните.
-4. Если агенты и браузер будут ходить по HTTP, а не по HTTPS: в сайте откройте **Vhost** и удалите блок, который перенаправляет на HTTPS, если он есть:
-   ```nginx
-   if ($scheme != "https") {
-     rewrite ^ https://$host$request_uri permanent;
-   }
-   ```
-   С таким перенаправлением агенты по HTTP работать не смогут.
+---
 
-## 3. Файлы и первый запуск
+## Часть 1. Скачать пакет (на своём компьютере)
 
-Загрузите `custos-server.zip` в `/home/custos/htdocs/custos.lan/` (WinSCP по SFTP под пользователем сайта или **File Manager** в CloudPanel). Дальше всё делается по SSH **под пользователем сайта, не под root**:
+**Шаг 1.** Откройте репозиторий на GitHub. Перейдите в **Actions**, слева выберите **Server**. Откройте верхний запуск с зелёной галочкой. Внизу страницы, в блоке **Artifacts**, нажмите `custos-server`.
+
+✅ Скачался файл `custos-server.zip`. Распаковывать его на компьютере не нужно.
+
+> Пакет хранится 14 дней. Если в блоке Artifacts пусто, на странице **Actions → Server** нажмите **Run workflow**, подождите пару минут и откройте новый запуск.
+
+---
+
+## Часть 2. CloudPanel (в браузере)
+
+**Шаг 2. Сайт.** **Sites → + Add Site → Create a PHP Site**. Заполните:
+
+- Application: **Generic**
+- Domain Name: `custos.lan`
+- PHP Version: **8.4**
+- Site User: `custos`, Site User Password: придумайте и запишите (понадобится для SSH)
+
+Нажмите **Create**.
+
+✅ Сайт появился в списке сайтов.
+
+**Шаг 3. Корневая папка.** Откройте сайт, вкладка **Settings**. В поле **Root Directory** вместо `custos.lan` впишите `custos.lan/server/public`. Нажмите **Save**.
+
+**Шаг 4. База данных.** В сайте вкладка **Databases → Add Database**:
+
+- Database Name: `custos`
+- Database User Name: `custos`
+- Database User Password: придумайте и запишите (понадобится в шаге 10)
+
+✅ База появилась в списке.
+
+**Шаг 5. Только если сайт будет работать по HTTP (без сертификата).** В сайте вкладка **Vhost**. Найдите такой блок и удалите его целиком, затем **Save**:
+
+```nginx
+if ($scheme != "https") {
+  rewrite ^ https://$host$request_uri permanent;
+}
+```
+
+Если такого блока нет, ничего не делайте. С этим блоком агенты по HTTP работать не смогут.
+
+---
+
+## Часть 3. Загрузить пакет на сервер
+
+**Шаг 6.** В сайте вкладка **File Manager**. Откройте папку `custos.lan` и загрузите туда `custos-server.zip` (кнопка **Upload**).
+
+Можно и через WinSCP: протокол SFTP, логин `custos` и пароль из шага 2, папка `/home/custos/htdocs/custos.lan/`.
+
+✅ В папке `custos.lan` лежит `custos-server.zip`.
+
+---
+
+## Часть 4. Установка по SSH
+
+**Шаг 7. Войти на сервер под пользователем сайта.** На своём компьютере (PowerShell или PuTTY):
 
 ```bash
-ssh custos@<адрес-сервера>
+ssh custos@адрес-сервера
+```
+
+Пароль: из шага 2. Затем проверьте, кто вы:
+
+```bash
+whoami
+```
+
+✅ Выводится `custos`. Если выводится `root`, выйдите (`exit`) и войдите как `custos`.
+
+**Шаг 8. Распаковать пакет.**
+
+```bash
 cd ~/htdocs/custos.lan
 unzip -o custos-server.zip
 rm custos-server.zip
 cd server
+ls
+```
+
+✅ `ls` показывает: `INSTALL.md README.md bin composer.json composer.lock config lang migrations public src templates tools vendor`.
+
+С этого места все команды выполняются из папки `~/htdocs/custos.lan/server`.
+
+**Шаг 9. Создать файл настроек.**
+
+```bash
 cp config/config.example.php config/config.php
+```
+
+Команда ничего не выводит, это нормально.
+
+**Шаг 10. Заполнить настройки.**
+
+```bash
 nano config/config.php
 ```
 
-В `config.php` укажите пароль базы (`db.password`), адрес сайта (`url`, например `http://custos.lan`) и часовой пояс для показа дат (`timezone`, например `Europe/Berlin`). Сохраните: Ctrl+O, Enter, Ctrl+X.
+Поменяйте значения в этих строках (кавычки оставьте):
+
+```php
+        'name' => 'custos',          // имя базы из шага 4
+        'user' => 'custos',          // пользователь базы из шага 4
+        'password' => 'change-me',   // ← пароль базы из шага 4
+...
+    'url' => 'http://custos.lan',    // ← адрес сайта
+...
+    'timezone' => 'UTC',             // ← ваш часовой пояс, например 'Europe/Berlin'
+```
+
+Сохранить: **Ctrl+O**, затем **Enter**. Выйти: **Ctrl+X**.
+
+**Шаг 11. Запустить установку.**
 
 ```bash
 php8.4 bin/install.php
 ```
 
-Скрипт проверит PHP и базу, создаст таблицы, ключи сервера, спросит логин и пароль первого администратора и в конце покажет:
+Скрипт задаст три вопроса:
 
-- **Registration code** — код регистрации, его вводят в агенте. Он же есть на сайте в разделе «Настройки».
-- строку для cron.
+1. `Login of the first administrator:` — логин для входа на сайт, например `admin`.
+2. `Password (at least 8 characters):` — пароль, не короче 8 символов. При вводе он не отображается, это нормально.
+3. `Repeat the password:` — тот же пароль ещё раз.
 
-Скрипт можно запускать повторно: он ничего не ломает и не создаёт второго администратора.
-
-## 4. Cron
-
-В сайте: **Cron Jobs → Add Cron Job**. Расписание: каждую минуту (`* * * * *`). Команда:
+✅ Должно получиться так (код и отпечаток у вас будут свои):
 
 ```
-/usr/bin/php8.4 /home/custos/htdocs/custos.lan/server/bin/cron.php
+[ok] PHP 8.4.x with all required extensions
+[ok] Database 10.11.x-MariaDB
+[ok] Applied migration 001_init.sql
+[ok] Folder /home/custos/htdocs/custos.lan/server/var is ready
+[ok] Created the server key pair in /home/custos/htdocs/custos.lan/server/config/keys
+Login of the first administrator: admin
+Password (at least 8 characters):
+Repeat the password:
+[ok] Created administrator "admin"
+[ok] Generated the agent registration key
+
+Server key fingerprint:  XXXX-XXXX-XXXX-XXXX
+Registration code:       XXXXX-XXXXX-XXXXX-XXXXX-XXXXX#XXXX-XXXX-XXXX-XXXX
+The code is also shown on the site under Settings.
+
+Add a cron job that runs every minute:
+  * * * * * /usr/bin/php8.4 /home/custos/htdocs/custos.lan/server/bin/cron.php
 ```
 
-## 5. Размер запросов
+Все строки начинаются с `[ok]`. **Registration code** — код, который вводят в агенте. Записывать его не обязательно: он всегда есть на сайте в разделе «Настройки».
 
-Агенты присылают журналы до 8 МБ. И nginx, и PHP должны пропускать запросы до 10 МБ.
+Если какая-то строка начинается с `[error]`, исправьте то, что в ней написано, и запустите `php8.4 bin/install.php` ещё раз. Повторный запуск ничего не ломает.
 
-- **PHP:** в сайте **PHP Settings** значение `post_max_size` должно быть не меньше `10M` (обычно там уже больше).
-- **nginx:** под root выполните
-  ```bash
-  nginx -T 2>/dev/null | grep client_max_body_size
+---
+
+## Часть 5. Cron (в CloudPanel)
+
+**Шаг 12.** В сайте вкладка **Cron Jobs → Add Cron Job**:
+
+- Name: `custos`
+- Расписание: каждую минуту (все поля `*`)
+- Command:
   ```
-  Значение должно быть не меньше `10m`. Если строк нет, лимит nginx по умолчанию 1 МБ: добавьте `client_max_body_size 10m;` в **Vhost** сайта внутри блока `server { ... }`.
+  /usr/bin/php8.4 /home/custos/htdocs/custos.lan/server/bin/cron.php
+  ```
 
-## 6. Проверка имитатором агента
+Нажмите **Add Cron Job**.
 
-Имитатор лежит в пакете. Он ведёт себя как настоящий агент: регистрируется, шлёт heartbeat, конфигурацию и запуски.
+---
+
+## Часть 6. Проверить сайт
+
+**Шаг 13.** В браузере откройте `http://custos.lan`.
+
+✅ Открывается страница входа CUSTOS. Войдите с логином и паролем из шага 11. Видна страница «Машины» с надписью «Машин пока нет».
+
+---
+
+## Часть 7. Проверить работу с агентом (имитатор)
+
+Имитатор ведёт себя как настоящий агент: регистрируется, присылает задания и запуски. Команды выполняются по SSH, как в части 4, из папки `~/htdocs/custos.lan/server`.
+
+**Шаг 14.** Возьмите код на сайте: «Настройки», поле «Код регистрации», кнопка «Скопировать». Вставьте его в команду между одинарными кавычками:
 
 ```bash
-cd ~/htdocs/custos.lan/server
-php8.4 tools/fake-agent.php --url=http://custos.lan --code='КОД-РЕГИСТРАЦИИ' --once
+php8.4 tools/fake-agent.php --url=http://custos.lan --code='СЮДА-КОД' --once
 ```
 
-Код возьмите из вывода `install.php` или со страницы «Настройки», в одинарных кавычках. Ожидаемый конец вывода:
+✅ Последние строки вывода:
 
 ```
 FAKE-PC-01: waiting for approval on the site (key fingerprint XXXX-XXXX-XXXX-XXXX); 3 report(s) kept in the outbox
 done: every answer was signed and accepted
 ```
 
-1. На сайте в «Машинах» появится `FAKE-PC-01` в «Ждут подтверждения». Отпечаток ключа совпадает с выводом. Подтвердите.
-2. Запустите команду ещё раз (код уже не нужен):
-   ```bash
-   php8.4 tools/fake-agent.php --url=http://custos.lan --once
-   ```
-   На сайте у машины появятся задания и запуски с журналами.
-3. Уберите следы: `php8.4 tools/fake-agent.php --reset`, а на сайте удалите машину `FAKE-PC-01`.
+**Шаг 15.** На сайте обновите страницу «Машины». В блоке «Ждут подтверждения» появилась `FAKE-PC-01`, отпечаток ключа совпадает с выводом. Нажмите **Подтвердить**.
 
-Если `custos.lan` не открывается с самого сервера, добавьте под root строку `127.0.0.1 custos.lan` в `/etc/hosts`.
+**Шаг 16.** Запустите имитатор ещё раз, код уже не нужен:
 
-Другие режимы имитатора (несколько машин, пауза, ошибки, выключенная машина) показывает `php8.4 tools/fake-agent.php --help`.
+```bash
+php8.4 tools/fake-agent.php --url=http://custos.lan --once
+```
 
-## 7. Обновление
+✅ В конце снова `done: every answer was signed and accepted`. На сайте у машины `FAKE-PC-01` появились 4 задания, а в «Запусках» — запуски с журналами.
 
-1. Скачайте новый `custos-server` (раздел 1) и загрузите его в `/home/custos/htdocs/custos.lan/`.
-2. Под пользователем сайта:
+**Шаг 17. Убрать тестовую машину.**
+
+```bash
+php8.4 tools/fake-agent.php --reset
+```
+
+На сайте откройте машину `FAKE-PC-01` и нажмите **Удалить**.
+
+Установка закончена.
+
+---
+
+## Часть 8. До подключения настоящих агентов
+
+Агенты присылают журналы до 8 МБ, поэтому nginx и PHP должны пропускать запросы до 10 МБ. Имитатору это не нужно, поэтому шаг можно сделать позже.
+
+**Шаг 18. PHP.** В сайте вкладка **Settings**, блок **PHP Settings**: значение `post_max_size` не меньше `10M` (обычно там уже больше).
+
+**Шаг 19. nginx.** Эта команда выполняется **под root**:
+
+```bash
+nginx -T 2>/dev/null | grep client_max_body_size
+```
+
+✅ Значение не меньше `10m` (например `client_max_body_size 64m;`). Если команда ничего не вывела, у nginx лимит 1 МБ: в сайте вкладка **Vhost**, внутри блока `server { ... }` добавьте строку `client_max_body_size 10m;` и нажмите **Save**.
+
+---
+
+## Если что-то пошло не так
+
+| Что видно | Что делать |
+|---|---|
+| `Permission denied` или `?php: No such file or directory` | Скрипт запущен без `php8.4`. Пишите `php8.4 bin/install.php`. |
+| `PHP 8.3 or newer is required` | Запущено через `php`, а не через `php8.4`. |
+| `config.php not found` | Не сделан шаг 9. |
+| `Cannot connect to the database: ... Access denied` | В `config.php` имя базы, пользователь или пароль не совпадают с шагом 4. Исправьте (шаг 10) и запустите установку ещё раз. |
+| `unzip: command not found` | Распакуйте архив в File Manager CloudPanel (правой кнопкой по файлу → Extract) и продолжайте с `cd server` в шаге 8. |
+| Сайт показывает 404 или чужую страницу | Не сделан шаг 3: Root Directory должен быть `custos.lan/server/public`. |
+| Браузер уходит на `https://` и ругается на сертификат | Не сделан шаг 5. |
+| `custos.lan` не открывается вообще | Нет записи `custos.lan` в вашем локальном DNS, которая указывает на сервер. |
+| В шаге 14 `custos.lan` не открывается с самого сервера | Под root добавьте в `/etc/hosts` строку `127.0.0.1 custos.lan`. |
+| Ошибка 500, или в логе `Permission denied` для папки `var` | Файлы распакованы или установка запущена под root. Под root выполните `chown -R custos:custos /home/custos/htdocs/custos.lan` и проверьте снова. |
+
+Если ошибка другая, пришлите её текст целиком или скриншот.
+
+---
+
+## Обновление
+
+1. Скачайте новый `custos-server.zip` (шаг 1) и загрузите его в папку `custos.lan` (шаг 6).
+2. По SSH под пользователем сайта:
    ```bash
    cd ~/htdocs/custos.lan
    unzip -o custos-server.zip
@@ -108,9 +279,11 @@ done: every answer was signed and accepted
    php8.4 server/bin/migrate.php
    ```
 
-`config/config.php`, ключи сервера (`config/keys/`) и папка `var/` в пакет не входят, поэтому обновление их не трогает.
+✅ Последняя команда выводит `[ok] Database schema is up to date` или `[ok] Applied N migration(s)`.
 
-## 8. Что сохранять в резервной копии
+Настройки (`config/config.php`), ключи сервера (`config/keys/`) и папка `var/` в пакет не входят, поэтому обновление их не трогает.
+
+## Что сохранять в резервной копии
 
 - базу `custos`;
 - `server/config/config.php`;
