@@ -26,7 +26,7 @@ $options = Cli::options($argv);
 
 // 1. PHP version and extensions (section 2).
 if (PHP_VERSION_ID < 80300) {
-    Cli::fail('PHP 8.3 or newer is required, this is ' . PHP_VERSION . '. In CloudPanel run the script with php8.4.');
+    Cli::fail('PHP 8.3 or newer is required, this is ' . PHP_VERSION . '. In CloudPanel run the script with the PHP version of the site, for example php8.4.');
 }
 $missing = array_filter(['pdo_mysql', 'openssl', 'curl', 'mbstring', 'json', 'zlib'], fn($ext) => !extension_loaded($ext));
 if ($missing !== []) {

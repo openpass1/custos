@@ -47,7 +47,7 @@ final class Request
         }
 
         $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
+        $https = self::serverHttps($_SERVER);
         if ($trustedProxies !== [] && Cidr::allows($ip, $trustedProxies)) {
             // The client is the last address in X-Forwarded-For that is not one of our proxies.
             $chain = array_reverse(array_map('trim', explode(',', $headers['x-forwarded-for'] ?? '')));
@@ -85,6 +85,23 @@ final class Request
     }
 
     /** URL path relative to the site root, starting with "/". */
+    /**
+     * Whether the web server says the client came over HTTPS. REQUEST_SCHEME (nginx $scheme, Apache) is the
+     * actual scheme and wins: a server block may hard-code HTTPS=on and port 443 for every request, and a
+     * secure cookie sent over plain HTTP is dropped by the browser.
+     *
+     * @param array<string, mixed> $server
+     */
+    public static function serverHttps(array $server): bool
+    {
+        $scheme = strtolower((string) ($server['REQUEST_SCHEME'] ?? ''));
+        if ($scheme === 'http' || $scheme === 'https') {
+            return $scheme === 'https';
+        }
+        return (!empty($server['HTTPS']) && strtolower((string) $server['HTTPS']) !== 'off')
+            || (int) ($server['SERVER_PORT'] ?? 0) === 443;
+    }
+
     public function path(): string
     {
         $path = rawurldecode((string) parse_url($this->uri, PHP_URL_PATH));

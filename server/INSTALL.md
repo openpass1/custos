@@ -7,6 +7,7 @@
 | Что | В примерах |
 |---|---|
 | Адрес сайта | `custos.lan` |
+| Версия PHP сайта | 8.4, поэтому в командах `php8.4`. Если в CloudPanel выбрана 8.5, пишите `php8.5` |
 | Пользователь сайта в CloudPanel | `custos` |
 | База данных | `custos` |
 | Пользователь базы данных | `custos` |
@@ -34,7 +35,7 @@
 
 - Application: **Generic**
 - Domain Name: `custos.lan`
-- PHP Version: **8.4**
+- PHP Version: **8.4** или новее
 - Site User: `custos`, Site User Password: придумайте и запишите (понадобится для SSH)
 
 Нажмите **Create**.
@@ -124,7 +125,7 @@ nano config/config.php
         'user' => 'custos',          // пользователь базы из шага 4
         'password' => 'change-me',   // ← пароль базы из шага 4
 ...
-    'url' => 'http://custos.lan',    // ← адрес сайта
+    'url' => 'http://custos.lan',    // ← адрес сайта, как его открывают в браузере, с http:// или https://
 ...
     'timezone' => 'UTC',             // ← ваш часовой пояс, например 'Europe/Berlin'
 ```
@@ -255,6 +256,7 @@ nginx -T 2>/dev/null | grep client_max_body_size
 |---|---|
 | `Permission denied` или `?php: No such file or directory` | Скрипт запущен без `php8.4`. Пишите `php8.4 bin/install.php`. |
 | `PHP 8.3 or newer is required` | Запущено через `php`, а не через `php8.4`. |
+| При входе на сайт «Форма устарела» | Сайт открыт по `http://`, а в `url` в `config.php` стоит `https://`, или пакет старше 06.11.2026. Исправьте `url` (шаг 10) или обновите пакет (раздел «Обновление»). |
 | `config.php not found` | Не сделан шаг 9. |
 | `Cannot connect to the database: ... Access denied` | В `config.php` имя базы, пользователь или пароль не совпадают с шагом 4. Исправьте (шаг 10) и запустите установку ещё раз. |
 | `unzip: command not found` | Распакуйте архив в File Manager CloudPanel (правой кнопкой по файлу → Extract) и продолжайте с `cd server` в шаге 8. |

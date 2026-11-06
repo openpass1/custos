@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Custos\Tests\Unit;
 
 use Custos\Http\Request;
+use Custos\Http\Web\Session;
 use Custos\Infra\Migrator;
 use Custos\Infra\Time;
 use PHPUnit\Framework\TestCase;
@@ -25,6 +26,28 @@ final class RequestTest extends TestCase
         $this->assertSame('/agents', (new Request('GET', '/custos/agents?x=1', basePath: '/custos'))->path());
         $this->assertSame('/', (new Request('GET', '/custos/', basePath: '/custos'))->path());
         $this->assertSame('/login', (new Request('GET', '/login'))->path());
+    }
+
+    public function testHttpsDetection(): void
+    {
+        $this->assertFalse(Request::serverHttps([]));
+        $this->assertTrue(Request::serverHttps(['HTTPS' => 'on']));
+        $this->assertFalse(Request::serverHttps(['HTTPS' => 'off']));
+        $this->assertTrue(Request::serverHttps(['SERVER_PORT' => '443']));
+        $this->assertFalse(
+            Request::serverHttps(['REQUEST_SCHEME' => 'http', 'HTTPS' => 'on', 'SERVER_PORT' => '443']),
+            'the real scheme wins over a hard-coded HTTPS=on'
+        );
+        $this->assertTrue(Request::serverHttps(['REQUEST_SCHEME' => 'https']));
+    }
+
+    /** A secure cookie over plain HTTP is dropped by the browser, and every form then fails the CSRF check. */
+    public function testSessionCookieIsSecureOnlyForAnHttpsSite(): void
+    {
+        $https = new Request('GET', '/login', https: true);
+        $this->assertTrue(Session::secureCookie($https, 'https://custos.example'));
+        $this->assertFalse(Session::secureCookie($https, 'http://custos.lan'));
+        $this->assertFalse(Session::secureCookie(new Request('GET', '/login'), 'https://custos.example'));
     }
 
     public function testBodyLimit(): void

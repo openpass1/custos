@@ -41,7 +41,7 @@ final class Session
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => $request->basePath === '' ? '/' : $request->basePath . '/',
-                'secure' => $request->https,
+                'secure' => self::secureCookie($request, $app->config->url()),
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
@@ -56,6 +56,15 @@ final class Session
         $_SESSION['last_activity'] = $now;
         $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
         return $session;
+    }
+
+    /**
+     * The cookie is secure only over HTTPS and only when the site address in config.php is https://.
+     * The second condition keeps login working on a plain HTTP site whose web server claims HTTPS.
+     */
+    public static function secureCookie(Request $request, string $siteUrl): bool
+    {
+        return $request->https && str_starts_with(strtolower($siteUrl), 'https://');
     }
 
     /** The signed-in user, or null. A user disabled meanwhile is logged out. */
