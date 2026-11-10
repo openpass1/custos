@@ -276,11 +276,14 @@ userdel -r custos
 | Система | СУБД |
 |---|---|
 | Debian 12 | MariaDB 10.11, PostgreSQL 15 |
+| Debian 13 | MariaDB 11.8, PostgreSQL 17 |
+| Ubuntu 18.04 | без СУБД, только файлы (самый старый bash: 4.4) |
 | Ubuntu 22.04 | MariaDB 10.6 |
 | Ubuntu 24.04 | MySQL 8.0, PostgreSQL 16 |
 | Ubuntu 26.04 | MySQL 8.4 |
 | Ubuntu 26.04 | MariaDB 11.8, PostgreSQL 18 |
 | AlmaLinux 9 | MariaDB 10.5, PostgreSQL 13 |
+| AlmaLinux 9 | MySQL 8.0 |
 
 Запуск одной системы на машине с Docker, из корня репозитория:
 
@@ -288,4 +291,4 @@ userdel -r custos
 helper/tests/run.sh debian:12 "mariadb postgresql"
 ```
 
-В GitHub Actions (`.github/workflows/helper.yml`) тесты идут на всех системах из таблицы, когда меняется что-то в `helper/`. После них workflow проверяет скрипт ShellCheck'ом и выкладывает артефакт `custos-helper` со скриптом и его SHA-256.
+В GitHub Actions (`.github/workflows/helper.yml`) тесты идут на всех системах из таблицы, когда меняется что-то в `helper/`. Рядом с ними скрипт проверяется ShellCheck'ом, а когда всё прошло, workflow выкладывает артефакт `custos-helper` со скриптом и его SHA-256.
