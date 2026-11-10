@@ -7,7 +7,7 @@ ARG ENGINES=mariadb
 ENV ENGINES=${ENGINES}
 # python3 is only for the tests: a JSON check and a unix socket among the test files.
 RUN set -eux; \
-    pkgs="openssh-server sudo rsyslog tar findutils gzip python3"; \
+    pkgs="openssh-server sudo rsyslog tar findutils gzip diffutils python3"; \
     for e in $ENGINES; do pkgs="$pkgs $e-server"; done; \
     if command -v apt-get >/dev/null; then \
         export DEBIAN_FRONTEND=noninteractive; \

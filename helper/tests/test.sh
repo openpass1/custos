@@ -57,16 +57,17 @@ start_services() {
           else "$mysqld" --initialize-insecure --user=mysql; fi
         fi
         if command -v mysqld_safe > /dev/null; then mysqld_safe --user=mysql > /dev/null 2>&1 &
-        else "$mysqld" --user=mysql > /var/log/custos-mysqld.log 2>&1 & fi
+        else "$mysqld" --basedir=/usr --user=mysql > /var/log/custos-mysqld.log 2>&1 & fi
         for _ in $(seq 90); do my -e 'SELECT 1' > /dev/null 2>&1 && break; sleep 1; done
-        my -e 'SELECT VERSION()' ;;
+        my -e 'SELECT VERSION()' ||
+          tail -n 40 /var/log/custos-mysqld.log /var/log/mysql/*.log /var/log/mariadb/*.log 2> /dev/null ;;
       postgresql)
         if command -v pg_ctlcluster > /dev/null; then
           for v in /etc/postgresql/*/main; do v=${v%/main}; pg_ctlcluster "${v##*/}" main start; done
         else
           install -d -o postgres -g postgres /run/postgresql
           [[ -e /var/lib/pgsql/data/PG_VERSION ]] ||
-            runuser -u postgres -- initdb --auth-local=peer -D /var/lib/pgsql/data > /dev/null
+            runuser -u postgres -- initdb --auth-local=peer --auth-host=scram-sha-256 -D /var/lib/pgsql/data > /dev/null
           runuser -u postgres -- pg_ctl -D /var/lib/pgsql/data -l /var/lib/pgsql/server.log -w start > /dev/null
         fi
         pg -At -c 'SELECT version()' ;;
@@ -109,6 +110,7 @@ make_databases() {
   for e in $ENGINES; do
     if my_family "$e"; then
       my <<'SQL'
+DROP DATABASE IF EXISTS test;  -- mariadb-install-db on RHEL creates it; Debian and Ubuntu do not
 CREATE DATABASE site_db CHARACTER SET utf8mb4;
 USE site_db;
 CREATE TABLE t (id INT PRIMARY KEY, txt VARCHAR(100), bin VARBINARY(16)) ENGINE=InnoDB;
