@@ -55,7 +55,7 @@
 ### 3.1. Установка и доступ
 
 - Скрипт `/usr/local/sbin/custos-helper` (0755, root), конфиг `/etc/custos/helper.conf` (0600, root).
-- Отдельный пользователь `custos` с обычной оболочкой (`/bin/bash`): через неё sshd запускает принудительную команду.
+- Отдельный пользователь `custos` с обычной оболочкой (`/bin/bash`): через неё sshd запускает принудительную команду. Пароль — `*` (`useradd --password '*'`): войти по паролю нельзя, а вход по ключу работает. С паролем по умолчанию `!` (заблокированная учётная запись) OpenSSH при `UsePAM no` отказывает и во входе по ключу.
 - sudo только на custos-helper, файл `/etc/sudoers.d/custos` (0440). Перед установкой файл проверяется `visudo -cf`: испорченный файл в `sudoers.d` ломает sudo целиком, а с ним и ваш вход через `sudo -i`.
 
   ```
@@ -132,7 +132,7 @@ db_defaults_file =
 - PostgreSQL: `pg_dump --no-password` в обычном текстовом формате; дамп всегда согласован.
 
 **`db-users`**:
-- MariaDB: `mariadb-dump --system=users`.
+- MariaDB: `mariadb-dump --system=users --insert-ignore`: пишет `CREATE USER IF NOT EXISTS`, иначе восстановление остановится на уже существующем `root@localhost`.
 - MySQL: такого параметра нет, поэтому custos-helper выгружает `SHOW CREATE USER` и `SHOW GRANTS` по каждой несистемной учётной записи и пишет их как `CREATE USER IF NOT EXISTS …`. Нужен MySQL 8.0.17+ (`print_identified_with_as_hex`). В конце — строка `-- Dump completed on …`, как у `mariadb-dump`.
 - PostgreSQL: `pg_dumpall --globals-only --no-password` (роли с хешами паролей и табличные пространства).
 
@@ -211,7 +211,7 @@ tar --create --file=- --format=pax --null --no-recursion --files-from=- --ignore
 
 1. **Подключение.** Ключ сервера сверяется с закреплённым. Не совпал — запуск `error` «Ключ сервера изменился», данные не читаются. Сервер недоступен — до трёх попыток с паузой в минуту, затем `error`.
 2. **`info`.** Несовместимый протокол custos-helper — `error` с командой обновления. Устаревший, но совместимый custos-helper, а также изменившийся конфиг (другой `config_sha256`) дают предупреждение.
-3. **Дампы.** Для каждой СУБД из `info`: `db-list`, затем `db-dump` по каждой базе и `db-users`, каждый сразу в архив. Дамп засчитывается, если код завершения 0 и последняя строка — признак конца дампа: `-- Dump completed` у MariaDB и MySQL, `-- PostgreSQL database dump complete` у PostgreSQL. Ошибка одной базы не останавливает остальные, но запуск получает `error`.
+3. **Дампы.** Для каждой СУБД из `info`: `db-list`, затем `db-dump` по каждой базе и `db-users`, каждый сразу в архив. Дамп засчитывается, если код завершения 0 и в конце есть строка-признак: у MariaDB и MySQL последняя строка начинается с `-- Dump completed`; у PostgreSQL после строки `-- PostgreSQL database dump complete` (у `db-users` — `-- PostgreSQL database cluster dump complete`) допускаются только `--`, пустые строки и одна строка `\unrestrict …`: так заканчивают вывод `pg_dump` и `pg_dumpall` начиная с версий августа 2025 (13.22, 14.19, 15.14, 16.10, 17.6 и новее). Ошибка одной базы не останавливает остальные, но запуск получает `error`.
 4. **`manifest`.** Сравнение с манифестом прошлой успешной копии: сколько файлов изменено и удалено, объём источника.
 5. **`tar-since`.** Время отсчёта — `now` из `info` прошлой успешной копии минус 10 минут. Для полной копии — 0, для дифференциальной — время последней полной. Агент читает заголовки tar на лету, ничего не распаковывая: считает прогресс, SHA-256 каждого файла и запоминает, что реально попало в копию.
 6. **Манифест** `custos-set.json` записывается в архив последним, набор закрывается и теряет суффикс `.partial`.
@@ -257,6 +257,8 @@ db/<СУБД>/_users.sql   пользователи и права этой СУ�
   mariadb site_db < db/mariadb/site_db.sql                        # база должна быть создана заранее
   psql -f db/postgresql/_users.sql && createdb site_db && psql site_db < db/postgresql/site_db.sql   # PostgreSQL, от пользователя postgres
   ```
+
+  Дампы PostgreSQL новых версий содержат команды `\restrict` и `\unrestrict`, поэтому загружать их нужно `psql` не старее августа 2025 (см. версии в 4.3).
 
 - Автоматического восстановления на сервер нет: для него нужен ключ с правом записи.
 
@@ -346,7 +348,7 @@ db/<СУБД>/_users.sql   пользователи и права этой СУ�
 
 ```bash
 bash -e <<'CUSTOS_INSTALL_EOF'
-id custos >/dev/null 2>&1 || useradd --system --create-home --shell /bin/bash custos
+id custos >/dev/null 2>&1 || useradd --system --create-home --shell /bin/bash --password '*' custos
 
 # 1. custos-helper (текст скрипта мастер вставляет целиком) и проверка контрольной суммы
 cat > /usr/local/sbin/custos-helper.new <<'CUSTOS_HELPER_EOF'
