@@ -1,0 +1,85 @@
+name: custos-helper
+
+# Tests custos-helper on Linux servers in Docker (OpenSSH, sudo, MariaDB, MySQL, PostgreSQL
+# from each distribution's own packages) and publishes the checked script with its SHA-256.
+# Runs only when custos-helper (or this file) changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'helper/**'
+      - '.github/workflows/helper.yml'
+  pull_request:
+    paths:
+      - 'helper/**'
+      - '.github/workflows/helper.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: helper-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: ShellCheck
+        run: |
+          shellcheck --version
+          shellcheck helper/custos-helper helper/tests/*.sh
+          echo "custos-helper: $(wc -l < helper/custos-helper) lines" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  test:
+    name: test (${{ matrix.base }}, ${{ matrix.engines || 'files only' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { base: 'debian:12', engines: 'mariadb postgresql' }
+          - { base: 'debian:13', engines: 'mariadb postgresql' }
+          # The oldest bash custos-helper supports (4.4); its MariaDB 10.1 is too old.
+          - { base: 'ubuntu:18.04', engines: '' }
+          - { base: 'ubuntu:22.04', engines: 'mariadb' }
+          - { base: 'ubuntu:24.04', engines: 'mysql postgresql' }
+          - { base: 'ubuntu:26.04', engines: 'mysql' }
+          - { base: 'ubuntu:26.04', engines: 'mariadb postgresql' }
+          - { base: 'almalinux:9', engines: 'mariadb postgresql' }
+          - { base: 'almalinux:9', engines: 'mysql' }
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run the tests
+        env:
+          BASE: ${{ matrix.base }}
+          ENGINES: ${{ matrix.engines }}
+        run: helper/tests/run.sh "$BASE" "$ENGINES"
+
+  artifact:
+    needs: [shellcheck, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Script and checksum
+        run: |
+          mkdir out
+          cp helper/custos-helper out/
+          (cd out && sha256sum custos-helper > custos-helper.sha256)
+          { echo '```'; cat out/custos-helper.sha256; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload custos-helper
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-helper
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
