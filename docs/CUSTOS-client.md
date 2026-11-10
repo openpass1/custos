@@ -1,6 +1,6 @@
 # CUSTOS — клиент для Windows. Техническое задание
 
-Версия ТЗ: 1.1 от 28.10.2026. Второй документ проекта — [`CUSTOS-monitor.md`](CUSTOS-monitor.md) (сервер мониторинга на PHP). Общий контракт между ними (приложение A) вынесен в отдельный файл [`protocol.md`](protocol.md).
+Версия ТЗ: 1.2 от 10.11.2026. Второй документ проекта — [`CUSTOS-monitor.md`](CUSTOS-monitor.md) (сервер мониторинга на PHP). Общий контракт между ними (приложение A) вынесен в отдельный файл [`protocol.md`](protocol.md). Забор копий с удалённых Linux-серверов описан отдельно: [`CUSTOS-remote-pull.md`](CUSTOS-remote-pull.md).
 
 ## 0. Как работать с этим документом
 
@@ -30,7 +30,7 @@
 | ZIP | SharpZipLib: умеет писать в поток без перемотки и шифровать AES-256 (WinZip AE-2) |
 | VSS | AlphaVSS. Совместимость с .NET 10 проверить на этапе 1; запасной путь — P/Invoke к `VssApi.dll` |
 | FTP / FTPS | FluentFTP |
-| SFTP | SSH.NET |
+| SFTP, источник «Linux-сервер» | SSH.NET |
 | S3 | AWSSDK.S3 с настраиваемым endpoint (MinIO и другие совместимые хранилища) |
 | WebDAV | `HttpClient` или WebDav.Client |
 | Локальная база | SQLite (`Microsoft.Data.Sqlite`): индекс файлов, история, очередь отчётов |
@@ -130,6 +130,7 @@ C:\ProgramData\CUSTOS\
 - Галочки «пропускать системные», «пропускать скрытые», «пропускать временные файлы».
 - **Переменные в путях.** Системные переменные окружения и токены даты (`{yyyy}`, `{MM}`, `{dd}`, `{HH}`, `{mm}`, `{computer}`, `{task}`, `{type}`). Пользовательские переменные (`%USERPROFILE%`, `%APPDATA%`, `%LOCALAPPDATA%` и другие) раскрываются для профиля, указанного в `profile_sid` (по умолчанию для того, кто создал задание). Путь профиля берётся из `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList`. Это важно: служба работает от SYSTEM, и без этого `%USERPROFILE%` указывал бы на профиль системы.
 - Дампы баз данных (MS SQL, PostgreSQL, 1С) делаются **скриптами в событиях «до»** (6.9). Встроенной поддержки СУБД нет.
+- **Удалённый Linux-сервер по SSH** — отдельный тип источника: агент сам забирает файлы и дампы баз через `custos-helper`. Описан в [`CUSTOS-remote-pull.md`](CUSTOS-remote-pull.md).
 
 ### 6.3. Назначения
 
@@ -311,7 +312,8 @@ custos/
     installer/custos.iss
     build.ps1
   server/            (см. CUSTOS-monitor.md)
-  docs/              CUSTOS-client.md, CUSTOS-monitor.md, protocol.md
+  helper/            custos-helper для Linux-серверов (см. CUSTOS-remote-pull.md)
+  docs/              CUSTOS-client.md, CUSTOS-monitor.md, CUSTOS-remote-pull.md, protocol.md
   LICENSE            (GPL-3.0)
   README.md  README.ru.md  THIRD-PARTY-NOTICES.txt
 ```
@@ -353,6 +355,11 @@ custos/
 - Зеркало (точное и безопасное), фильтры, переменные.
 - Хранение по возрасту и GFS. События, выключение после выполнения.
 - Восстановление на дату, права NTFS, повторы чтения, приоритеты.
+- Архиватор (7z и ZIP) принимает элементы из потока неизвестной длины, а не только файлы с диска: это нужно этапу 2а.
+
+**Этап 2а. Удалённые Linux-серверы.** Требует этап 2 и `custos-helper` (этап H в [`CUSTOS-remote-pull.md`](CUSTOS-remote-pull.md), его можно сделать в любой момент). Может идти до или после этапа 3; решается к концу этапа 2.
+- Источник «Удалённый Linux-сервер (SSH)», мастер настройки, забор дампов и файлов, восстановление в tar.
+- *Итог:* сайты и базы с VPS забираются в зашифрованные копии в офисе.
 
 **Этап 3. Сервер мониторинга.** Требует этап 1 сервера.
 - Регистрация, heartbeat, отчёты с очередью, прогресс.
