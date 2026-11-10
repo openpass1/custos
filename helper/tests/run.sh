@@ -8,4 +8,6 @@ engines=${2-}
 helper=$(cd "$(dirname "$0")/.." && pwd)
 tag=custos-helper-test:$(printf '%s-%s' "$base" "$engines" | tr -c 'a-z0-9.' '-')
 docker build --quiet --build-arg BASE="$base" --build-arg ENGINES="$engines" --tag "$tag" "$helper/tests" > /dev/null
-docker run --rm --volume "$helper:/helper:ro" "$tag" bash /helper/tests/test.sh
+# SYS_NICE: RHEL's /usr/libexec/mysqld carries the cap_sys_nice file capability, and a
+# container without it in its bounding set refuses to run the binary at all.
+docker run --rm --cap-add SYS_NICE --volume "$helper:/helper:ro" "$tag" bash /helper/tests/test.sh
