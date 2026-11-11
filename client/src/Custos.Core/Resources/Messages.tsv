@@ -289,6 +289,8 @@ SevenZipNoAnswer	no answer in {0} s	нет ответа за {0} с
 DescDatabases	Every run also dumps the databases of {0} whole into «db».	Каждый запуск также выгружает целиком базы {0} в папку «db».
 DescFromServer	from the Linux server {0}	с Linux-сервера {0}
 DescRemoteDatabases	Every run also dumps the databases of {0} on the server whole into «db».	Каждый запуск также выгружает целиком базы {0} на сервере в папку «db».
+DescRemoteDatabasesExcept	Every run also dumps the databases of {0} on the server whole into «db», all but: {1}.	Каждый запуск также выгружает целиком базы {0} на сервере в папку «db», кроме: {1}.
+DescRemoteDatabasesOnly	Every run also dumps these databases of {0} on the server whole into «db»: {1}.	Каждый запуск также выгружает целиком в папку «db» эти базы {0} на сервере: {1}.
 DescEvents	Events: {0} before the backup, {1} after.	События: до копирования — {0}, после — {1}.
 DescAfter	Afterwards: {0}.	После выполнения: {0}.
 
@@ -375,6 +377,7 @@ RemoteRetry	{0}. Next try in {1} s.	{0}. Следующая попытка че�
 RemoteGaveUp	{0}: no connection after {1} tries: {2}	{0}: нет соединения после {1} попыток: {2}
 RemoteLastListUnreadable	The list of files of the set «{0}» could not be read: {1}	Не удалось прочитать список файлов набора «{0}»: {1}
 RemoteDbReady	{0}: databases to dump: {1} ({2})	{0}: баз для дампа: {1} ({2})
+RemoteDbNotChosen	{0}: not chosen in the task, not dumped: {1}	{0}: не выбраны в задании, дампы не снимаются: {1}
 RemoteTarFailed	Files of the server: {0}	Файлы сервера: {0}
 RemoteHelperSays	custos-helper: {0}	custos-helper: {0}
 RemoteMoreLines	… and {0} more lines	… и ещё строк: {0}
@@ -404,6 +407,7 @@ ConfigSshHostRequired	Enter the address of the Linux server (a name or an IP add
 ConfigSshKeyRequired	The task needs an SSH key made by CUSTOS: create it in the wizard of the source.	Заданию нужен ключ SSH, созданный CUSTOS: создайте его в мастере источника.
 ConfigSshBadHostKey	«{0}» is not a key fingerprint of the form SHA256:… Check the connection again to take the key of the server.	«{0}» — не отпечаток ключа вида SHA256:… Проверьте подключение ещё раз, чтобы взять ключ сервера.
 ConfigSshBadSpeed	The speed limit cannot be negative.	Ограничение скорости не может быть отрицательным.
+ConfigSshBadDatabase	Not a database of the server in the choice of the task: «{0}».	В выборе баз задания не база сервера: «{0}».
 ConfigSshBadOfficeIp	«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).	«{0}» — не IP-адрес и не сеть (203.0.113.10, 203.0.113.0/24; несколько — через запятую).
 RemoteKeyCreated	New SSH key {0} made by {1}.	Создан ключ SSH {0}, создал {1}.
 RemoteTestTooLong	The server did not finish answering in {0} minutes.	Сервер не закончил отвечать за {0} мин.

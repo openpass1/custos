@@ -419,6 +419,11 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
     "db_engines": ["mariadb"],         // mariadb | mysql | postgresql
     "db_exclude": [],
     "db_defaults_file": null
+  },
+  "databases": {                       // какие базы из db-list выгружать; null = все
+    "all_databases": true,             // true: все, кроме exclude, и новые тоже; false: только include
+    "exclude": ["mariadb/old_db"],     // "<СУБД>/<имя>"
+    "include": []
   }
 }
 ```
@@ -537,6 +542,6 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 
 **11.11.2026 — протокол 1, до первого выпуска.** Linux-серверы как источник (этап 2а клиента, CUSTOS-remote-pull.md). Правки совместимые: старая сторона новые поля пропускает и сохраняет.
 
-- A.9. Новый вид источника `ssh` с полями `host`, `port`, `user`, `host_key_sha256`, `preset`, `office_ip`, `speed_limit_kbps`, `helper`. `host_key_sha256` меняется только на агенте.
+- A.9. Новый вид источника `ssh` с полями `host`, `port`, `user`, `host_key_sha256`, `preset`, `office_ip`, `speed_limit_kbps`, `helper`, `databases`. `host_key_sha256` меняется только на агенте.
 - A.9. Новый вид учётных данных `ssh_key` с открытой частью `public_key`; создаёт его только агент.
 - A.5. В `runs/finish` новый необязательный блок `remote`.

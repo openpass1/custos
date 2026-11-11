@@ -362,6 +362,19 @@ public sealed class DialogTests
         Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.Contains("MariaDB: site_db, shop_db", StringComparison.Ordinal));
         Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.Format(Strings.RemoteHostKeyPinned, Samples.ServerKey));
 
+        // The databases the test found join the list: under «All databases» ticked, the one left out by the task not.
+        var databases = Sta.Find<CheckedListBox>(dialog).Single();
+        var allChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
+        var onlyChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceOnly);
+        Assert.True(allChoice.Checked);
+        Assert.Equal(allChoice.Left, onlyChoice.Left);
+        Assert.Equal(["old_db", "site_db", "shop_db"], databases.Items.Cast<object>().Select(i => i.ToString()));
+        Assert.Equal(["site_db", "shop_db"], databases.CheckedItems.Cast<object>().Select(i => i.ToString()));
+
+        // Unticking one switches to «Selected databases»: only the ticked ones are dumped.
+        databases.SetItemChecked(2, false);
+        Assert.True(onlyChoice.Checked);
+
         ((Button)dialog.AcceptButton!).PerformClick();
         Sta.Pump();
         Assert.Equal(DialogResult.OK, dialog.DialogResult);
@@ -370,6 +383,18 @@ public sealed class DialogTests
             (original.Id, SourceKinds.Ssh, "custos@vps.example.org:22", Samples.SshKeyId, Samples.ServerKey, RemotePresets.Custom, "203.0.113.10"),
             (source.Id, source.Kind, source.Path, source.CredentialId, source.HostKeySha256, source.Preset, source.OfficeIp));
         Assert.Equal(["/etc", "/home", "/root", "/var/www", "/var/spool/cron", "/srv"], source.Helper!.Roots);
+        Assert.False(source.Databases!.AllDatabases);
+        Assert.Equal(["mariadb/site_db"], source.Databases.Include);
+        Assert.Equal(Strings.Format(Strings.DbOnly, "site_db"), RemoteSourceDialog.DescribeDatabases(source.Databases));
+
+        // Without the engine there is nothing to choose.
+        using var noEngines = new RemoteSourceDialog(context, original);
+        noEngines.Show();
+        Sta.Pump();
+        Sta.Find<CheckBox>(noEngines).Single(c => c.Text == DbEngines.Title(DbEngines.MariaDb)).Checked = false;
+        Sta.Pump();
+        Assert.Empty(Sta.Find<CheckedListBox>(noEngines).Single().Items);
+        Assert.False(Sta.Find<RadioButton>(noEngines).Single(r => r.Text == Strings.DbChoiceAll).Enabled);
     });
 
     [Fact]

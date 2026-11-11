@@ -142,6 +142,10 @@ public sealed class TaskSource
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public RemoteHelperSettings? Helper { get; set; }
 
+    /// <summary>Which of the databases custos-helper gives out are dumped; null = all of them.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RemoteDatabaseChoice? Databases { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }
@@ -166,6 +170,49 @@ public sealed class RemoteHelperSettings
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+}
+
+/// <summary>
+/// The databases of a Linux server a task dumps, ticked in the wizard from what custos-helper lists. Entries are
+/// "&lt;engine&gt;/&lt;name&gt;", for example "mariadb/shop". What custos-helper gives out at all is decided on the
+/// server (<c>db_exclude</c> of helper.conf); this choice only leaves out more.
+/// </summary>
+public sealed class RemoteDatabaseChoice
+{
+    /// <summary>True: every database custos-helper lists but <see cref="Exclude"/>, new ones too. False: only
+    /// <see cref="Include"/>.</summary>
+    public bool AllDatabases { get; set; } = true;
+
+    public List<string> Exclude { get; set; } = [];
+
+    public List<string> Include { get; set; } = [];
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    /// <summary>"mariadb/shop".</summary>
+    public static string Key(string engine, string name) => engine + "/" + name;
+
+    /// <summary>Splits "mariadb/shop"; false when it is not a known engine and a name.</summary>
+    public static bool TrySplit(string? key, out string engine, out string name)
+    {
+        int slash = key?.IndexOf('/', StringComparison.Ordinal) ?? -1;
+        engine = slash > 0 ? key![..slash] : string.Empty;
+        name = slash > 0 ? key![(slash + 1)..] : string.Empty;
+        return DbEngines.IsKnown(engine) && name.Length > 0 && !name.Contains('/', StringComparison.Ordinal);
+    }
+
+    /// <summary>The names of one engine among the entries.</summary>
+    public static List<string> Names(IEnumerable<string> keys, string engine) =>
+        [.. keys.Select(k => TrySplit(k, out string e, out string n) && e == engine ? n : null).OfType<string>().Distinct(StringComparer.Ordinal)];
+
+    /// <summary>"shop, blog" when all entries are of one engine, else "MariaDB: shop, PostgreSQL: blog".</summary>
+    public static string Describe(IReadOnlyCollection<string> keys)
+    {
+        var split = keys.Select(k => TrySplit(k, out string e, out string n) ? (Engine: e, Name: n) : (Engine: string.Empty, Name: k)).ToList();
+        bool several = split.Select(s => s.Engine).Distinct(StringComparer.Ordinal).Count() > 1;
+        return string.Join(", ", split.Select(s => several && s.Engine.Length > 0 ? DbEngines.Title(s.Engine) + ": " + s.Name : s.Name));
+    }
 }
 
 /// <summary>

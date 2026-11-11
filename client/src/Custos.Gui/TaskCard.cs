@@ -93,6 +93,10 @@ internal sealed class TaskCard : UserControl
             AddDetail(Strings.CardDatabases, string.Join(Environment.NewLine,
                 task.DbServers.Select(d => DatabasesPage.DescribeServer(d) + " — " + DatabasesPage.DescribeDatabases(d))));
         }
+        else if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh) is { Helper.DbEngines: { Count: > 0 } engines } remote)
+        {
+            AddDetail(Strings.CardDatabases, string.Join(", ", engines.Select(DbEngines.Title)) + " — " + RemoteSourceDialog.DescribeDatabases(remote.Databases));
+        }
 
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Destinations.Select(d => DescribeDestination(d, snapshot))));

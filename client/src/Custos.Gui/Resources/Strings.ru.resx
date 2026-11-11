@@ -1684,12 +1684,6 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="RemoteEngines" xml:space="preserve">
     <value>Базы данных:</value>
   </data>
-  <data name="RemoteDbExclude" xml:space="preserve">
-    <value>Пропускать базы:</value>
-  </data>
-  <data name="RemoteDbExcludeHelp" xml:space="preserve">
-    <value>Имена баз, которые не нужно выгружать, через пробел. Системные базы и так пропускаются; пользователи и права попадают в _users.sql.</value>
-  </data>
   <data name="RemoteSpeed" xml:space="preserve">
     <value>Ограничение скорости:</value>
   </data>
@@ -1734,6 +1728,9 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="RemoteCheckHeading" xml:space="preserve">
     <value>Проверка</value>
+  </data>
+  <data name="RemoteDbHeading" xml:space="preserve">
+    <value>Базы данных в копии</value>
   </data>
   <data name="RemoteHostKeyNone" xml:space="preserve">
     <value>Ключ сервера ещё не подтверждён: нажмите «Проверить подключение».</value>

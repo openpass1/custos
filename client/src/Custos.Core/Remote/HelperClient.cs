@@ -250,8 +250,9 @@ public sealed partial class HelperClient(ISshSession session, long memoryLimit =
     private static string Word(string engine) =>
         DbEngines.IsKnown(engine) ? engine : throw new ArgumentException("Unknown engine: " + engine, nameof(engine));
 
+    /// <summary>A name of a database as custos-helper gives it out.</summary>
     [GeneratedRegex("^[A-Za-z0-9_$-]+$", RegexOptions.CultureInvariant)]
-    private static partial Regex DatabaseName();
+    internal static partial Regex DatabaseName();
 
     [GeneratedRegex("^[A-Za-z0-9_$ -]+$", RegexOptions.CultureInvariant)]
     private static partial Regex CommandText();

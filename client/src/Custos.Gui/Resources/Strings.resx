@@ -1684,12 +1684,6 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   <data name="RemoteEngines" xml:space="preserve">
     <value>Databases:</value>
   </data>
-  <data name="RemoteDbExclude" xml:space="preserve">
-    <value>Skip databases:</value>
-  </data>
-  <data name="RemoteDbExcludeHelp" xml:space="preserve">
-    <value>Names of databases not to dump, separated by spaces. System databases are skipped anyway; users and rights go to _users.sql.</value>
-  </data>
   <data name="RemoteSpeed" xml:space="preserve">
     <value>Speed limit:</value>
   </data>
@@ -1734,6 +1728,9 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   </data>
   <data name="RemoteCheckHeading" xml:space="preserve">
     <value>Check</value>
+  </data>
+  <data name="RemoteDbHeading" xml:space="preserve">
+    <value>Databases in the copy</value>
   </data>
   <data name="RemoteHostKeyNone" xml:space="preserve">
     <value>The key of the server is not confirmed yet: press «Test connection».</value>

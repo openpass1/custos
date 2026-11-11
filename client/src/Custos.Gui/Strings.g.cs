@@ -1661,12 +1661,6 @@ static partial class Strings
     /// <summary>Databases:</summary>
     public static string RemoteEngines => Get(nameof(RemoteEngines));
 
-    /// <summary>Skip databases:</summary>
-    public static string RemoteDbExclude => Get(nameof(RemoteDbExclude));
-
-    /// <summary>Names of databases not to dump, separated by spaces. System databases are skipped anyway; users and rights ...</summary>
-    public static string RemoteDbExcludeHelp => Get(nameof(RemoteDbExcludeHelp));
-
     /// <summary>Speed limit:</summary>
     public static string RemoteSpeed => Get(nameof(RemoteSpeed));
 
@@ -1711,6 +1705,9 @@ static partial class Strings
 
     /// <summary>Check</summary>
     public static string RemoteCheckHeading => Get(nameof(RemoteCheckHeading));
+
+    /// <summary>Databases in the copy</summary>
+    public static string RemoteDbHeading => Get(nameof(RemoteDbHeading));
 
     /// <summary>The key of the server is not confirmed yet: press «Test connection».</summary>
     public static string RemoteHostKeyNone => Get(nameof(RemoteHostKeyNone));

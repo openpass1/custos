@@ -71,6 +71,7 @@ internal static class Samples
                 Preset = RemotePresets.IspmanagerSites,
                 OfficeIp = "203.0.113.10",
                 Helper = Custos.Core.Remote.HelperSetup.Preset(RemotePresets.IspmanagerSites),
+                Databases = new RemoteDatabaseChoice { Exclude = ["mariadb/old_db"] },
             },
         ];
         task.DbServers = [];

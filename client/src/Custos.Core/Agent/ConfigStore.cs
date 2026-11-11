@@ -618,6 +618,22 @@ public sealed class ConfigStore
         {
             throw new ConfigException(problem);
         }
+
+        if (source.Databases is { } databases)
+        {
+            foreach (string key in databases.Exclude.Concat(databases.Include))
+            {
+                if (!RemoteDatabaseChoice.TrySplit(key, out _, out string name) || !HelperClient.DatabaseName().IsMatch(name))
+                {
+                    throw new ConfigException(Messages.Format(Messages.ConfigSshBadDatabase, key));
+                }
+            }
+
+            if (!databases.AllDatabases && databases.Include.Count == 0)
+            {
+                throw new ConfigException(Messages.ConfigDbNothingChosen);
+            }
+        }
     }
 
     private static void ValidateCredential(Credential credential)
@@ -665,6 +681,12 @@ public sealed class ConfigStore
         }
 
         UniqueIds(task.DbServers, d => d.Id, (d, id) => d.Id = id);
+        foreach (var source in task.Sources.Where(s => s?.Databases is not null))
+        {
+            var databases = source.Databases!;
+            databases.Exclude = [.. (databases.Exclude ?? []).Where(k => !string.IsNullOrEmpty(k)).Distinct(StringComparer.Ordinal)];
+            databases.Include = [.. (databases.Include ?? []).Where(k => !string.IsNullOrEmpty(k)).Distinct(StringComparer.Ordinal)];
+        }
     }
 
     private static void UniqueIds<T>(List<T> items, Func<T, string> get, Action<T, string> set)

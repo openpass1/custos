@@ -862,6 +862,12 @@
   <data name="DescRemoteDatabases" xml:space="preserve">
     <value>Every run also dumps the databases of {0} on the server whole into «db».</value>
   </data>
+  <data name="DescRemoteDatabasesExcept" xml:space="preserve">
+    <value>Every run also dumps the databases of {0} on the server whole into «db», all but: {1}.</value>
+  </data>
+  <data name="DescRemoteDatabasesOnly" xml:space="preserve">
+    <value>Every run also dumps these databases of {0} on the server whole into «db»: {1}.</value>
+  </data>
   <data name="DescEvents" xml:space="preserve">
     <value>Events: {0} before the backup, {1} after.</value>
   </data>
@@ -1115,6 +1121,9 @@ Load a database into an empty one: tables already there get in the way.</value>
   <data name="RemoteDbReady" xml:space="preserve">
     <value>{0}: databases to dump: {1} ({2})</value>
   </data>
+  <data name="RemoteDbNotChosen" xml:space="preserve">
+    <value>{0}: not chosen in the task, not dumped: {1}</value>
+  </data>
   <data name="RemoteTarFailed" xml:space="preserve">
     <value>Files of the server: {0}</value>
   </data>
@@ -1193,6 +1202,9 @@ is missing on the new server gets the number of the old one. To see what a tar h
   </data>
   <data name="ConfigSshBadSpeed" xml:space="preserve">
     <value>The speed limit cannot be negative.</value>
+  </data>
+  <data name="ConfigSshBadDatabase" xml:space="preserve">
+    <value>Not a database of the server in the choice of the task: «{0}».</value>
   </data>
   <data name="ConfigSshBadOfficeIp" xml:space="preserve">
     <value>«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).</value>

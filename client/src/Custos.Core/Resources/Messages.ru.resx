@@ -862,6 +862,12 @@
   <data name="DescRemoteDatabases" xml:space="preserve">
     <value>Каждый запуск также выгружает целиком базы {0} на сервере в папку «db».</value>
   </data>
+  <data name="DescRemoteDatabasesExcept" xml:space="preserve">
+    <value>Каждый запуск также выгружает целиком базы {0} на сервере в папку «db», кроме: {1}.</value>
+  </data>
+  <data name="DescRemoteDatabasesOnly" xml:space="preserve">
+    <value>Каждый запуск также выгружает целиком в папку «db» эти базы {0} на сервере: {1}.</value>
+  </data>
   <data name="DescEvents" xml:space="preserve">
     <value>События: до копирования — {0}, после — {1}.</value>
   </data>
@@ -1115,6 +1121,9 @@
   <data name="RemoteDbReady" xml:space="preserve">
     <value>{0}: баз для дампа: {1} ({2})</value>
   </data>
+  <data name="RemoteDbNotChosen" xml:space="preserve">
+    <value>{0}: не выбраны в задании, дампы не снимаются: {1}</value>
+  </data>
   <data name="RemoteTarFailed" xml:space="preserve">
     <value>Файлы сервера: {0}</value>
   </data>
@@ -1193,6 +1202,9 @@
   </data>
   <data name="ConfigSshBadSpeed" xml:space="preserve">
     <value>Ограничение скорости не может быть отрицательным.</value>
+  </data>
+  <data name="ConfigSshBadDatabase" xml:space="preserve">
+    <value>В выборе баз задания не база сервера: «{0}».</value>
   </data>
   <data name="ConfigSshBadOfficeIp" xml:space="preserve">
     <value>«{0}» — не IP-адрес и не сеть (203.0.113.10, 203.0.113.0/24; несколько — через запятую).</value>

@@ -192,6 +192,38 @@ public sealed class RemoteBackupTests : IDisposable
     }
 
     [Fact]
+    public void The_databases_ticked_in_the_wizard_are_dumped_and_the_rest_is_named_in_the_log()
+    {
+        _server.Databases[DbEngines.MariaDb] = ["site_db", "shop_db", "old_db"];
+        var task = Task(ArchiveFormats.Zip);
+
+        // «All databases» with one unticked: the others are dumped, new ones too.
+        task.Sources[0].Databases = new RemoteDatabaseChoice { Exclude = ["mariadb/old_db"] };
+        var all = Run(task, Start);
+        Assert.Equal(RunStatuses.Success, all.Status);
+        Assert.Equal(["site_db", "shop_db"], all.Databases.Select(d => d.Name));
+        Assert.Contains(Messages.Format(Messages.RemoteDbNotChosen, "MariaDB vps.example.org", "old_db"), Log(), StringComparison.Ordinal);
+        Assert.DoesNotContain(_server.Commands, c => c.StartsWith("db-dump mariadb old_db", StringComparison.Ordinal));
+
+        // «Selected databases»: only the ticked ones; a database made since is named, not dumped.
+        _server.Databases[DbEngines.MariaDb].Add("new_db");
+        task.Sources[0].Databases = new RemoteDatabaseChoice { AllDatabases = false, Include = ["mariadb/shop_db"] };
+        _server.Now += 3600;
+        var only = Run(task, Start.AddDays(1));
+        Assert.Equal(RunStatuses.Success, only.Status);
+        Assert.Equal(["shop_db"], only.Databases.Select(d => d.Name));
+        Assert.Contains(Messages.Format(Messages.RemoteDbNotChosen, "MariaDB vps.example.org", "site_db, old_db, new_db"), Log(), StringComparison.Ordinal);
+
+        // A ticked database that is gone from the server is an error, like on Windows.
+        task.Sources[0].Databases!.Include.Add("mariadb/gone_db");
+        _server.Now += 3600;
+        var gone = Run(task, Start.AddDays(2));
+        Assert.Equal(RunStatuses.Error, gone.Status);
+        Assert.Contains(gone.Databases, d => d.Name == "gone_db" && !d.Ok);
+        Assert.Contains(gone.Databases, d => d.Name == "shop_db" && d.Ok);
+    }
+
+    [Fact]
     public void Files_that_change_while_read_make_a_warning()
     {
         _server.TarExit = (1, "tar: /var/www/site/index.php: file changed as we read it");

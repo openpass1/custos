@@ -10,8 +10,9 @@ namespace Custos.Gui;
 
 /// <summary>
 /// The wizard of a Linux server as source (CUSTOS-remote-pull.md 4.2): where the server is, from where the key may
-/// log on, what custos-helper gives out, the key and the block to paste into a root session there, and the check of
-/// the connection that pins the key of the server. The other pages of the editor do the rest.
+/// log on, what custos-helper gives out, the key and the block to paste into a root session there, the check of the
+/// connection that pins the key of the server, and the databases to dump, ticked from what the check found. The other
+/// pages of the editor do the rest.
 /// </summary>
 internal sealed class RemoteSourceDialog : DialogForm
 {
@@ -29,7 +30,6 @@ internal sealed class RemoteSourceDialog : DialogForm
     private readonly TextBox _roots = Lines(86);
     private readonly TextBox _excludes = Lines(70);
     private readonly CheckBox[] _engines = [.. Engines.Select(e => new CheckBox { Text = DbEngines.Title(e), AutoSize = true, Tag = e })];
-    private readonly TextBox _dbExclude = new() { Dock = DockStyle.Fill };
     private readonly Label _etcWarning = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Text = Strings.RemoteEtcWarning };
     private readonly NumericUpDown _speed = new() { Minimum = 0, Maximum = 10_000_000, Width = 110, ThousandsSeparator = true };
     private readonly Label _key = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 6) };
@@ -50,10 +50,14 @@ internal sealed class RemoteSourceDialog : DialogForm
     private readonly Label _hostKey = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 6) };
     private readonly Button _test = new() { Text = Strings.ButtonTestConnection, AutoSize = true };
     private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
+    private readonly RadioButton _dbAll = new() { Text = Strings.DbChoiceAll, AutoSize = true, Checked = true };
+    private readonly RadioButton _dbOnly = new() { Text = Strings.DbChoiceOnly, AutoSize = true };
+    private readonly CheckedListBox _dbList = new() { Dock = DockStyle.Fill, Height = 110, CheckOnClick = true, IntegralHeight = false };
     private string? _credentialId;
     private string? _publicKey;
     private string? _pinned;
     private bool _filling;
+    private bool _listing;
 
     public RemoteSourceDialog(EditorContext context, TaskSource source)
         : base(source.Kind == SourceKinds.Ssh ? Strings.RemoteEditTitle : Strings.RemoteAddTitle, new Size(760, 720))
@@ -82,7 +86,6 @@ internal sealed class RemoteSourceDialog : DialogForm
         var engines = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         engines.Controls.AddRange(_engines);
         AddRow(Strings.RemoteEngines, engines);
-        AddRow(Strings.RemoteDbExclude, _dbExclude, Ui.HelpIcon(context.ToolTip, Strings.RemoteDbExcludeHelp));
         var speed = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         speed.Controls.AddRange([_speed, new Label { Text = Strings.RemoteSpeedUnit, AutoSize = true, Margin = new Padding(6, 6, 0, 0) }]);
         AddRow(Strings.RemoteSpeed, speed, Ui.HelpIcon(context.ToolTip, Strings.RemoteSpeedHelp));
@@ -100,6 +103,12 @@ internal sealed class RemoteSourceDialog : DialogForm
         var test = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         test.Controls.AddRange([_test, _testResult]);
         AddWide(test);
+
+        AddHeading(Strings.RemoteDbHeading);
+        AddWide(_dbAll);
+        AddWide(_dbOnly);
+        AddWide(_dbList);
+        AddNote(Strings.DbListNote);
         AddNote(Strings.RemoteNextPages);
         EndBuild();
 
@@ -109,11 +118,17 @@ internal sealed class RemoteSourceDialog : DialogForm
         _preset.SelectedIndexChanged += (_, _) => PresetChosen();
         _roots.TextChanged += (_, _) => ListsEdited();
         _excludes.TextChanged += (_, _) => ListsEdited();
-        _dbExclude.TextChanged += (_, _) => ListsEdited();
         foreach (var engine in _engines)
         {
-            engine.CheckedChanged += (_, _) => ListsEdited();
+            engine.CheckedChanged += (_, _) =>
+            {
+                ListsEdited();
+                EnginesChanged();
+            };
         }
+
+        _dbAll.CheckedChanged += (_, _) => DbChoiceChanged();
+        _dbList.ItemCheck += (_, e) => DatabaseTicked(e);
 
         _createKey.Click += (_, _) => CreateKey();
         _copy.Click += (_, _) => CopyBlock();
@@ -135,6 +150,14 @@ internal sealed class RemoteSourceDialog : DialogForm
         _ => Strings.RemotePresetCustom,
     };
 
+    /// <summary>"all", "all but: old_shop" or "only: shop, blog" (task card).</summary>
+    internal static string DescribeDatabases(RemoteDatabaseChoice? choice) => choice switch
+    {
+        { AllDatabases: false } => Strings.Format(Strings.DbOnly, RemoteDatabaseChoice.Describe(choice.Include)),
+        { Exclude.Count: > 0 } => Strings.Format(Strings.DbAllExcept, RemoteDatabaseChoice.Describe(choice.Exclude)),
+        _ => Strings.DbAll,
+    };
+
     protected override void OnOk()
     {
         if (Problem() is { } problem)
@@ -146,6 +169,12 @@ internal sealed class RemoteSourceDialog : DialogForm
         if (_credentialId is null)
         {
             Ui.ShowError(this, Messages.ConfigSshKeyRequired);
+            return;
+        }
+
+        if (_dbOnly.Checked && _dbOnly.Enabled && _dbList.CheckedItems.Count == 0)
+        {
+            Ui.ShowError(this, Strings.ErrorDbNothingChosen);
             return;
         }
 
@@ -186,6 +215,18 @@ internal sealed class RemoteSourceDialog : DialogForm
             lines.Add(DbEngines.Title(databases.Engine) + ": " + (databases.Error
                 ?? (databases.Names.Count == 0 ? Strings.RemoteTestNoDatabases : string.Join(", ", databases.Names))));
         }
+
+        // The databases of the server join the list: ticked under «All databases», for ticking under «Selected databases».
+        var rows = DbRows();
+        var known = rows.Select(r => r.Item.Key).ToHashSet(StringComparer.Ordinal);
+        var engines = _engines.Where(e => e.Checked).Select(e => (string)e.Tag!).ToHashSet(StringComparer.Ordinal);
+        foreach (var databases in result.Databases.Where(d => d.Error is null && engines.Contains(d.Engine)))
+        {
+            rows.AddRange(databases.Names.Where(n => known.Add(RemoteDatabaseChoice.Key(databases.Engine, n)))
+                .Select(n => (new DbItem(databases.Engine, n), _dbAll.Checked)));
+        }
+
+        ShowDatabases(rows);
 
         if (result.HelperOutdated)
         {
@@ -269,6 +310,12 @@ internal sealed class RemoteSourceDialog : DialogForm
         }
 
         _testResult.Text = string.Empty;
+        var choice = source.Databases;
+        _dbAll.Checked = choice?.AllDatabases ?? true;
+        _dbOnly.Checked = !_dbAll.Checked;
+        List<string> keys = choice is null ? [] : choice.AllDatabases ? choice.Exclude : choice.Include;
+        ShowDatabases([.. keys.Select(k => RemoteDatabaseChoice.TrySplit(k, out string engine, out string name) ? new DbItem(engine, name) : null)
+            .OfType<DbItem>().Select(i => (i, !_dbAll.Checked))]);
     }
 
     private void ShowSettings(RemoteHelperSettings settings)
@@ -282,7 +329,6 @@ internal sealed class RemoteSourceDialog : DialogForm
             engine.Checked = settings.DbEngines.Contains((string)engine.Tag!, StringComparer.Ordinal);
         }
 
-        _dbExclude.Text = string.Join(" ", settings.DbExclude);
         _filling = filling;
         UpdateBlock();
     }
@@ -292,7 +338,7 @@ internal sealed class RemoteSourceDialog : DialogForm
         Roots = Split(_roots.Text, ['\r', '\n']),
         Excludes = Split(_excludes.Text, ['\r', '\n']),
         DbEngines = [.. _engines.Where(e => e.Checked).Select(e => (string)e.Tag!)],
-        DbExclude = Split(_dbExclude.Text, [' ', ',', ';', '\r', '\n', '\t']),
+        DbExclude = [.. _original.Helper?.DbExclude ?? []],
         DbDefaultsFile = _original.Helper?.DbDefaultsFile,
     };
 
@@ -505,9 +551,95 @@ internal sealed class RemoteSourceDialog : DialogForm
             OfficeIp = string.IsNullOrWhiteSpace(_officeIp.Text) ? null : _officeIp.Text.Trim(),
             SpeedLimitKbps = _speed.Value > 0 ? (int)_speed.Value : null,
             Helper = settings,
+            Databases = DbChoice(settings),
         };
         source.Path = BackupEngine.RemoteLabel(source);
         return source;
+    }
+
+    /// <summary>The databases in the list, of the engines still chosen, with their ticks.</summary>
+    private List<(DbItem Item, bool Ticked)> DbRows()
+    {
+        var engines = _engines.Where(e => e.Checked).Select(e => (string)e.Tag!).ToHashSet(StringComparer.Ordinal);
+        return [.. _dbList.Items.Cast<DbItem>().Select((item, i) => (item, _dbList.GetItemChecked(i))).Where(r => engines.Contains(r.item.Engine))];
+    }
+
+    /// <summary>Fills the list; the engine is named only when there are several.</summary>
+    private void ShowDatabases(List<(DbItem Item, bool Ticked)> rows)
+    {
+        bool several = rows.Select(r => r.Item.Engine).Distinct(StringComparer.Ordinal).Count() > 1;
+        _listing = true;
+        _dbList.BeginUpdate();
+        _dbList.Items.Clear();
+        foreach (var (item, ticked) in rows)
+        {
+            _dbList.Items.Add(item with { ShowEngine = several }, ticked);
+        }
+
+        _dbList.EndUpdate();
+        _listing = false;
+        bool any = _engines.Any(e => e.Checked);
+        _dbAll.Enabled = any;
+        _dbOnly.Enabled = any;
+        _dbList.Enabled = any;
+    }
+
+    /// <summary>Databases of an engine no longer chosen leave the list.</summary>
+    private void EnginesChanged()
+    {
+        if (!_filling)
+        {
+            ShowDatabases(DbRows());
+        }
+    }
+
+    /// <summary>«All databases» ticks every database; «Selected databases» keeps the ticks as they are.</summary>
+    private void DbChoiceChanged()
+    {
+        if (!_dbAll.Checked)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _dbList.Items.Count; i++)
+        {
+            _dbList.SetItemChecked(i, true);
+        }
+    }
+
+    /// <summary>Unticking a database under «All databases» means a choice of databases: «Selected databases».</summary>
+    private void DatabaseTicked(ItemCheckEventArgs e)
+    {
+        if (!_listing && _dbAll.Checked && e.NewValue == CheckState.Unchecked)
+        {
+            _dbOnly.Checked = true;
+        }
+    }
+
+    /// <summary>The choice for the task: null for all databases (or no engines), else the unticked or the ticked ones.</summary>
+    private RemoteDatabaseChoice? DbChoice(RemoteHelperSettings settings)
+    {
+        if (settings.DbEngines.Count == 0)
+        {
+            return null;
+        }
+
+        var rows = DbRows();
+        if (_dbAll.Checked)
+        {
+            var left = rows.Where(r => !r.Ticked).Select(r => r.Item.Key).ToList();
+            return left.Count == 0 ? null : new RemoteDatabaseChoice { Exclude = left };
+        }
+
+        return new RemoteDatabaseChoice { AllDatabases = false, Include = [.. rows.Where(r => r.Ticked).Select(r => r.Item.Key)] };
+    }
+
+    /// <summary>A database in the list.</summary>
+    private sealed record DbItem(string Engine, string Name, bool ShowEngine = false)
+    {
+        public string Key => RemoteDatabaseChoice.Key(Engine, Name);
+
+        public override string ToString() => ShowEngine ? DbEngines.Title(Engine) + ": " + Name : Name;
     }
 
     protected override void Dispose(bool disposing)

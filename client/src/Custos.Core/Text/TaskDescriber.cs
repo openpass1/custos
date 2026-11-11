@@ -28,9 +28,15 @@ public static class TaskDescriber
             sentences.Add(Messages.Format(Messages.DescDatabases, JoinWords([.. servers])));
         }
 
-        if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh)?.Helper?.DbEngines is { Count: > 0 } engines)
+        if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh) is { Helper.DbEngines: { Count: > 0 } engines } remote)
         {
-            sentences.Add(Messages.Format(Messages.DescRemoteDatabases, JoinWords([.. engines.Distinct(StringComparer.Ordinal).Select(DbEngines.Title)])));
+            string titles = JoinWords([.. engines.Distinct(StringComparer.Ordinal).Select(DbEngines.Title)]);
+            sentences.Add(remote.Databases switch
+            {
+                { AllDatabases: false } only => Messages.Format(Messages.DescRemoteDatabasesOnly, titles, RemoteDatabaseChoice.Describe(only.Include)),
+                { Exclude.Count: > 0 } except => Messages.Format(Messages.DescRemoteDatabasesExcept, titles, RemoteDatabaseChoice.Describe(except.Exclude)),
+                _ => Messages.Format(Messages.DescRemoteDatabases, titles),
+            });
         }
 
         if (task.BackupType is BackupTypes.Incremental or BackupTypes.Differential && ForceFull(task.ForceFull) is { } force)

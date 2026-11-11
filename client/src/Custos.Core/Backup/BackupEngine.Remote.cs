@@ -260,31 +260,56 @@ public sealed partial class BackupEngine
         return null;
     }
 
-    /// <summary>The dumps of every engine of helper.conf: all its databases (custos-helper leaves out the system ones).</summary>
+    /// <summary>
+    /// The dumps of every engine of helper.conf: the databases custos-helper lists (it leaves out the system ones and
+    /// <c>db_exclude</c>), as chosen in the task: all but the unticked ones, or only the ticked ones.
+    /// </summary>
     private void PlanRemoteDatabases(RunContext run, HelperInfo info, TaskSource source)
     {
+        var choice = source.Databases;
+        string address = source.Host ?? string.Empty;
         foreach (string engine in info.DbEngines)
         {
             run.Cancellation.ThrowIfCancellationRequested();
-            var server = new TaskDatabaseServer { Engine = engine, Host = source.Host ?? string.Empty, BinDir = string.Empty };
+            var server = new TaskDatabaseServer { Engine = engine, Host = address, BinDir = string.Empty };
             string where = string.Concat(DbEngines.Title(engine), " ", source.Host);
+            var chosen = choice is { AllDatabases: false } ? RemoteDatabaseChoice.Names(choice.Include, engine) : null;
             var client = run.Remote!.Helper!.DbClient(engine);
             try
             {
-                var names = client.Inspect(run.Cancellation).Databases;
+                var listed = client.Inspect(run.Cancellation).Databases;
+                var names = chosen is null
+                    ? listed.Except(RemoteDatabaseChoice.Names(choice?.Exclude ?? [], engine), StringComparer.Ordinal).ToList()
+                    : listed.Where(n => chosen.Contains(n, StringComparer.Ordinal)).ToList();
                 var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { DbTools.UsersFileStem };
                 foreach (string name in names)
                 {
-                    run.Dumps.Add(new PlannedDump(server, client, string.Empty, name, $"{DbTools.SetFolder}/{engine}/{DbTools.FileName(name, used)}.sql", where) { Address = source.Host ?? string.Empty });
+                    run.Dumps.Add(new PlannedDump(server, client, string.Empty, name, $"{DbTools.SetFolder}/{engine}/{DbTools.FileName(name, used)}.sql", where) { Address = address });
                 }
 
-                run.Dumps.Add(new PlannedDump(server, client, string.Empty, null, $"{DbTools.SetFolder}/{engine}/{DbTools.UsersFileStem}.sql", where) { Address = source.Host ?? string.Empty });
+                run.Dumps.Add(new PlannedDump(server, client, string.Empty, null, $"{DbTools.SetFolder}/{engine}/{DbTools.UsersFileStem}.sql", where) { Address = address });
                 _log.Write(RunLogLevel.Info, Messages.Format(Messages.RemoteDbReady, where, names.Count,
                     names.Count == 0 ? Messages.DbNoDatabases : string.Join(", ", names)));
+                if (listed.Except(names, StringComparer.Ordinal).ToList() is { Count: > 0 } left)
+                {
+                    // Under «Selected databases» this also names the databases made on the server since.
+                    _log.Write(RunLogLevel.Info, Messages.Format(Messages.RemoteDbNotChosen, where, string.Join(", ", left)));
+                }
+
+                foreach (string name in chosen?.Except(listed, StringComparer.Ordinal) ?? [])
+                {
+                    string message = Messages.Format(Messages.DbNotFound, name, where);
+                    DbFailed(run, message);
+                    run.Dumps.Add(new PlannedDump(server, null, string.Empty, name, null, where) { Address = address, Ok = false, Error = message });
+                }
             }
             catch (DbException ex)
             {
                 DbFailed(run, Messages.Format(Messages.DbServerUnavailable, where, ex.Message));
+                foreach (string name in chosen ?? [])
+                {
+                    run.Dumps.Add(new PlannedDump(server, null, string.Empty, name, null, where) { Address = address, Ok = false, Error = ex.Message });
+                }
             }
         }
     }

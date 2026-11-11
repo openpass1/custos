@@ -854,6 +854,12 @@ static partial class Messages
     /// <summary>Every run also dumps the databases of {0} on the server whole into «db».</summary>
     public static string DescRemoteDatabases => Get(nameof(DescRemoteDatabases));
 
+    /// <summary>Every run also dumps the databases of {0} on the server whole into «db», all but: {1}.</summary>
+    public static string DescRemoteDatabasesExcept => Get(nameof(DescRemoteDatabasesExcept));
+
+    /// <summary>Every run also dumps these databases of {0} on the server whole into «db»: {1}.</summary>
+    public static string DescRemoteDatabasesOnly => Get(nameof(DescRemoteDatabasesOnly));
+
     /// <summary>Events: {0} before the backup, {1} after.</summary>
     public static string DescEvents => Get(nameof(DescEvents));
 
@@ -1103,6 +1109,9 @@ static partial class Messages
     /// <summary>{0}: databases to dump: {1} ({2})</summary>
     public static string RemoteDbReady => Get(nameof(RemoteDbReady));
 
+    /// <summary>{0}: not chosen in the task, not dumped: {1}</summary>
+    public static string RemoteDbNotChosen => Get(nameof(RemoteDbNotChosen));
+
     /// <summary>Files of the server: {0}</summary>
     public static string RemoteTarFailed => Get(nameof(RemoteTarFailed));
 
@@ -1177,6 +1186,9 @@ static partial class Messages
 
     /// <summary>The speed limit cannot be negative.</summary>
     public static string ConfigSshBadSpeed => Get(nameof(ConfigSshBadSpeed));
+
+    /// <summary>Not a database of the server in the choice of the task: «{0}».</summary>
+    public static string ConfigSshBadDatabase => Get(nameof(ConfigSshBadDatabase));
 
     /// <summary>«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).</summary>
     public static string ConfigSshBadOfficeIp => Get(nameof(ConfigSshBadOfficeIp));

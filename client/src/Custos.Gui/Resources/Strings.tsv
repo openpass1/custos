@@ -578,8 +578,6 @@ RemoteExcludes	Skip:	Пропускать:
 RemoteExcludesHelp	Folders to skip with all they hold, one per line, as full paths; * stands for any name, for example /var/www/*/data/logs.	Папки, которые пропускаются вместе со всем содержимым, по одной в строке, полными путями; * означает любое имя, например /var/www/*/data/logs.
 RemoteEtcWarning	The whole /etc goes into the copies: the password hashes of the users and the SSH keys of the server. Keep the copies where strangers cannot read them.	В копии попадёт весь /etc: хеши паролей пользователей и ключи SSH сервера. Храните копии там, где их не прочтут посторонние.
 RemoteEngines	Databases:	Базы данных:
-RemoteDbExclude	Skip databases:	Пропускать базы:
-RemoteDbExcludeHelp	Names of databases not to dump, separated by spaces. System databases are skipped anyway; users and rights go to _users.sql.	Имена баз, которые не нужно выгружать, через пробел. Системные базы и так пропускаются; пользователи и права попадают в _users.sql.
 RemoteSpeed	Speed limit:	Ограничение скорости:
 RemoteSpeedUnit	KB/s (0 — no limit)	КБ/с (0 — без ограничения)
 RemoteSpeedHelp	How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not limited.	С какой скоростью custos-helper читает файлы, чтобы сайты не тормозили. Дампы баз не ограничиваются.
@@ -595,6 +593,7 @@ ButtonSaveAs	Save as file…	Сохранить как файл…
 RemoteCopied	The block is copied.	Блок скопирован.
 RemoteBlockFilter	Shell scripts (*.sh)|*.sh|All files (*.*)|*.*	Сценарии оболочки (*.sh)|*.sh|Все файлы (*.*)|*.*
 RemoteCheckHeading	Check	Проверка
+RemoteDbHeading	Databases in the copy	Базы данных в копии
 RemoteHostKeyNone	The key of the server is not confirmed yet: press «Test connection».	Ключ сервера ещё не подтверждён: нажмите «Проверить подключение».
 RemoteHostKeyPinned	Key of the server: {0}	Ключ сервера: {0}
 RemoteKeyToConfirm	Confirm the key of the server.	Подтвердите ключ сервера.
