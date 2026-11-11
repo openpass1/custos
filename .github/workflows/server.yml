@@ -1,0 +1,92 @@
+name: Server
+
+# Tests the monitoring server against MariaDB and packs it with its dependencies for installation.
+# Runs only when the server (or this file) changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/server.yml'
+  pull_request:
+    paths:
+      - 'server/**'
+      - '.github/workflows/server.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported pair, and a current one.
+        include:
+          - php: '8.4'
+            db: mariadb:10.11
+          - php: '8.5'
+            db: mysql:8.4
+    services:
+      db:
+        image: ${{ matrix.db }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: custos_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, openssl, curl, mbstring, zlib
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Check PHP syntax
+        run: find src bin public templates lang tools tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Tests
+        env:
+          CUSTOS_TEST_DB_HOST: 127.0.0.1
+          CUSTOS_TEST_DB_PORT: 3306
+          CUSTOS_TEST_DB_NAME: custos_test
+          CUSTOS_TEST_DB_USER: root
+          CUSTOS_TEST_DB_PASSWORD: root
+        run: vendor/bin/phpunit --fail-on-skipped
+
+      # The package is the server folder with vendor/ and without tests, ready to unpack on the server.
+      - name: Build the package
+        if: matrix.php == '8.4'
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          mkdir -p ../dist/server
+          rsync -a --exclude tests --exclude phpunit.xml.dist --exclude .phpunit.cache --exclude var \
+            --exclude config/config.php --exclude config/keys ./ ../dist/server/
+
+      - name: Upload the package
+        if: matrix.php == '8.4'
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-server
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
