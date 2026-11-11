@@ -390,7 +390,8 @@ public sealed class ConfigStore
         ArgumentNullException.ThrowIfNull(task);
         return task.Sources.Any(s => string.Equals(s.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase))
             || task.Destinations.Any(d => string.Equals(d.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(task.Archive.PasswordCredentialId, credentialId, StringComparison.OrdinalIgnoreCase);
+            || string.Equals(task.Archive.PasswordCredentialId, credentialId, StringComparison.OrdinalIgnoreCase)
+            || task.DbServers.Any(d => string.Equals(d.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase));
     }
 
     // ---- Plumbing ----------------------------------------------------------------------------------------------
@@ -414,13 +415,19 @@ public sealed class ConfigStore
         }
 
         knownCredentials ??= _credentials.Credentials.Select(c => c.Credential.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var referenced = task.Sources.Select(s => s.CredentialId).Concat(task.Destinations.Select(d => d.CredentialId)).OfType<string>();
+        var referenced = task.Sources.Select(s => s.CredentialId).Concat(task.Destinations.Select(d => d.CredentialId))
+            .Concat(task.DbServers.Select(d => d.CredentialId)).OfType<string>();
         foreach (string id in referenced)
         {
             if (!knownCredentials.Contains(id))
             {
                 throw new ConfigException(Messages.Format(Messages.ConfigCredentialMissing, id));
             }
+        }
+
+        foreach (var server in task.DbServers)
+        {
+            ValidateDbServer(server);
         }
 
         var schedule = task.Schedule;
@@ -459,6 +466,34 @@ public sealed class ConfigStore
         }
     }
 
+    private static void ValidateDbServer(TaskDatabaseServer server)
+    {
+        if (!DbEngines.IsKnown(server.Engine))
+        {
+            throw new ConfigException(Messages.Format(Messages.DbEngineUnknown, server.Engine));
+        }
+
+        if (string.IsNullOrWhiteSpace(server.BinDir))
+        {
+            throw new ConfigException(Messages.ConfigDbBinDirRequired);
+        }
+
+        if (string.IsNullOrWhiteSpace(server.Host) || server.Host.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
+        {
+            throw new ConfigException(Messages.ConfigDbHostRequired);
+        }
+
+        if (server.Port is < 1 or > 65535)
+        {
+            throw new ConfigException(Messages.Format(Messages.ConfigDbBadPort, 1, 65535));
+        }
+
+        if (!server.AllDatabases && server.Include.Count == 0)
+        {
+            throw new ConfigException(Messages.ConfigDbNothingChosen);
+        }
+    }
+
     private static void ValidateCredential(Credential credential)
     {
         if (string.IsNullOrWhiteSpace(credential.User))
@@ -492,6 +527,18 @@ public sealed class ConfigStore
         task.Copy.ReadRetries = Math.Clamp(task.Copy.ReadRetries, 0, 5);
         UniqueIds(task.Sources, s => s.Id, (s, id) => s.Id = id);
         UniqueIds(task.Destinations, d => d.Id, (d, id) => d.Id = id);
+        task.DbServers ??= [];
+        foreach (var server in task.DbServers)
+        {
+            server.Engine = (server.Engine ?? string.Empty).Trim().ToLowerInvariant();
+            server.BinDir = (server.BinDir ?? string.Empty).Trim();
+            server.Host = string.IsNullOrWhiteSpace(server.Host) ? "127.0.0.1" : server.Host.Trim();
+            server.Exclude = [.. (server.Exclude ?? []).Where(n => !string.IsNullOrEmpty(n))];
+            server.Include = [.. (server.Include ?? []).Where(n => !string.IsNullOrEmpty(n))];
+            server.DataDir = string.IsNullOrWhiteSpace(server.DataDir) ? null : server.DataDir;
+        }
+
+        UniqueIds(task.DbServers, d => d.Id, (d, id) => d.Id = id);
     }
 
     private static void UniqueIds<T>(List<T> items, Func<T, string> get, Action<T, string> set)

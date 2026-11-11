@@ -55,3 +55,50 @@ jobs:
           path: client/artifacts/installer/*.exe
           if-no-files-found: error
           retention-days: 14
+
+  # Dumps from real MySQL, MariaDB and PostgreSQL servers (section 6.2 of CUSTOS-client.md). Linux is enough: the
+  # dumps are made by the servers' own programs, which run inside the containers (client/tools/ci-databases.sh).
+  databases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: custos-test
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pcustos-test"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: custos-test
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: custos-test
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Prepare the servers and the folders of their programs
+        env:
+          MYSQL_ID: ${{ job.services.mysql.id }}
+          MARIADB_ID: ${{ job.services.mariadb.id }}
+          POSTGRES_ID: ${{ job.services.postgres.id }}
+        run: bash client/tools/ci-databases.sh
+
+      - name: Test the dumps
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_DATABASES: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~Database"

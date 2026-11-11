@@ -44,6 +44,9 @@ public sealed class RunRecord
     public string? SetName { get; set; }
 
     public List<DestinationResult> Destinations { get; set; } = [];
+
+    /// <summary>The dumped databases (section 6.2; <c>databases</c> of <c>runs/finish</c>, A.5).</summary>
+    public List<DatabaseResult> Databases { get; set; } = [];
 }
 
 /// <summary>Result of a run for one destination (A.5).</summary>
@@ -58,5 +61,22 @@ public sealed class DestinationResult
 
     public long Bytes { get; set; }
 
+    public string? Error { get; set; }
+}
+
+/// <summary>Result of the dump of one database (A.5).</summary>
+public sealed class DatabaseResult
+{
+    /// <summary>One of <see cref="DbEngines"/>.</summary>
+    public required string Engine { get; set; }
+
+    public required string Name { get; set; }
+
+    /// <summary>Size of the dump.</summary>
+    public long Bytes { get; set; }
+
+    public bool Ok { get; set; }
+
+    /// <summary>Why the dump failed; null when it worked.</summary>
     public string? Error { get; set; }
 }

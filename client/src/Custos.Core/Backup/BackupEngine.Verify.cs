@@ -41,6 +41,16 @@ public sealed partial class BackupEngine
             }
         }
 
+        foreach (var dump in run.Dumps.Where(d => d.InSet && d.Sha256 is not null))
+        {
+            run.Cancellation.ThrowIfCancellationRequested();
+            string stored = LocalSetPath(dump.File!);
+            if (CheckFile(run, target.Session, Path.Combine(target.WriteFolder, stored), dump.Sha256!) is { } problem)
+            {
+                throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, Messages.Format(Messages.VerifyFileProblem, stored, problem)));
+            }
+        }
+
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.VerifyNewOk, target.Label));
     }
 
@@ -55,6 +65,11 @@ public sealed partial class BackupEngine
             {
                 expected[ArchivePaths.ToWindows(StoredPath(context, file))] = hash;
             }
+        }
+
+        foreach (var dump in run.Dumps.Where(d => d.InSet && d.Sha256 is not null))
+        {
+            expected[ArchivePaths.ToWindows(dump.File!)] = dump.Sha256!;
         }
 
         string? problem = CheckArchive(run, run.Access!.WithSession(target.Session), run.Task.Archive.Format, target.Temps, expected);
@@ -141,11 +156,27 @@ public sealed partial class BackupEngine
             return ex.Message;
         }
 
+        var dumps = set.Header.Databases.Where(d => d.File is not null && d.Sha256 is not null).ToList();
         if (set.Storage == SetStorage.Archive)
         {
             var expected = files.Where(f => f.InSet && f.Sha256 is not null)
                 .ToDictionary(f => ArchivePaths.ToWindows(f.Path), f => f.Sha256!, StringComparer.OrdinalIgnoreCase);
+            foreach (var dump in dumps)
+            {
+                expected[ArchivePaths.ToWindows(dump.File!)] = dump.Sha256!;
+            }
+
             return CheckArchive(run, access!, set.Format ?? ArchiveFormats.SevenZip, set.Parts, expected);
+        }
+
+        foreach (var dump in dumps)
+        {
+            run.Cancellation.ThrowIfCancellationRequested();
+            string stored = LocalSetPath(dump.File!);
+            if (CheckFile(run, target.Session, Path.Combine(set.Location, stored), dump.Sha256!) is { } problem)
+            {
+                return Messages.Format(Messages.VerifyFileProblem, stored, problem);
+            }
         }
 
         foreach (var file in files.Where(f => f.InSet && f.Sha256 is not null))
@@ -159,6 +190,9 @@ public sealed partial class BackupEngine
 
         return null;
     }
+
+    /// <summary>"db/mysql/a.sql" → a relative path of this system.</summary>
+    private static string LocalSetPath(string setPath) => ArchivePaths.ToWindows(setPath).Replace('\\', Path.DirectorySeparatorChar);
 
     /// <summary>Null if the file has this SHA-256, or what is wrong with it.</summary>
     private string? CheckFile(RunContext run, INetworkSession session, string path, string expected)

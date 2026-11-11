@@ -155,4 +155,31 @@ public static class CredentialKinds
     public const string S3 = "s3";
     public const string WebDav = "webdav";
     public const string ArchivePassword = "archive_password";
+
+    /// <summary>Login and password of a database server (section 6.2); the password may be empty.</summary>
+    public const string Db = "db";
+}
+
+/// <summary>Values of <see cref="TaskDatabaseServer.Engine"/>.</summary>
+public static class DbEngines
+{
+    public const string MySql = "mysql";
+    public const string MariaDb = "mariadb";
+    public const string PostgreSql = "postgresql";
+
+    public static bool IsKnown(string? engine) => engine is MySql or MariaDb or PostgreSql;
+
+    /// <summary>MySQL and MariaDB share their programs and their behaviour.</summary>
+    public static bool IsMySqlFamily(string? engine) => engine is MySql or MariaDb;
+
+    public static int DefaultPort(string? engine) => engine == PostgreSql ? 5432 : 3306;
+
+    /// <summary>The name for people: MySQL, MariaDB, PostgreSQL.</summary>
+    public static string Title(string? engine) => engine switch
+    {
+        MySql => "MySQL",
+        MariaDb => "MariaDB",
+        PostgreSql => "PostgreSQL",
+        _ => engine ?? "?",
+    };
 }

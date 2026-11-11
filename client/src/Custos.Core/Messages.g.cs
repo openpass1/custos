@@ -374,6 +374,18 @@ static partial class Messages
     /// <summary>Enter the user name.</summary>
     public static string ConfigUserRequired => Get(nameof(ConfigUserRequired));
 
+    /// <summary>Choose the folder of the database server's programs (bin).</summary>
+    public static string ConfigDbBinDirRequired => Get(nameof(ConfigDbBinDirRequired));
+
+    /// <summary>Enter the address of the database server.</summary>
+    public static string ConfigDbHostRequired => Get(nameof(ConfigDbHostRequired));
+
+    /// <summary>The port must be from {0} to {1}.</summary>
+    public static string ConfigDbBadPort => Get(nameof(ConfigDbBadPort));
+
+    /// <summary>Choose at least one database or switch to «all databases».</summary>
+    public static string ConfigDbNothingChosen => Get(nameof(ConfigDbNothingChosen));
+
     /// <summary>{0} was missing; its backup copy was used.</summary>
     public static string ConfigRestoredFromBackup => Get(nameof(ConfigRestoredFromBackup));
 
@@ -833,9 +845,129 @@ static partial class Messages
     /// <summary>no answer in {0} s</summary>
     public static string SevenZipNoAnswer => Get(nameof(SevenZipNoAnswer));
 
+    /// <summary>Every run also dumps the databases of {0} whole into «db».</summary>
+    public static string DescDatabases => Get(nameof(DescDatabases));
+
     /// <summary>Events: {0} before the backup, {1} after.</summary>
     public static string DescEvents => Get(nameof(DescEvents));
 
     /// <summary>Afterwards: {0}.</summary>
     public static string DescAfter => Get(nameof(DescAfter));
+
+    /// <summary>The account of the database server is missing. Open the task and enter the user and the password again.</summary>
+    public static string DbAccountMissing => Get(nameof(DbAccountMissing));
+
+    /// <summary>{0} gave no answer.</summary>
+    public static string DbNoAnswer => Get(nameof(DbNoAnswer));
+
+    /// <summary>The database name «{0}» starts with «-» and cannot be passed to the dump program.</summary>
+    public static string DbNameUnsupported => Get(nameof(DbNameUnsupported));
+
+    /// <summary>{0} is not in the folder {1}. The folder of the server's programs (bin) must hold {2}.</summary>
+    public static string DbToolMissing => Get(nameof(DbToolMissing));
+
+    /// <summary>{0} did not answer in {1} seconds.</summary>
+    public static string DbTimedOut => Get(nameof(DbTimedOut));
+
+    /// <summary>{0} ended with code {1}: {2}</summary>
+    public static string DbProgramFailed => Get(nameof(DbProgramFailed));
+
+    /// <summary>no details</summary>
+    public static string DbNoDetails => Get(nameof(DbNoDetails));
+
+    /// <summary>Could not start {0}: {1}</summary>
+    public static string DbProgramNotStarted => Get(nameof(DbProgramNotStarted));
+
+    /// <summary>the dump program ended with code {0}: {1}</summary>
+    public static string DumpExitCode => Get(nameof(DumpExitCode));
+
+    /// <summary>the dump has no end line, it is cut off</summary>
+    public static string DumpNoEndLine => Get(nameof(DumpNoEndLine));
+
+    /// <summary>the dump has no end line, it is cut off: {0}</summary>
+    public static string DumpNoEndLineWithErrors => Get(nameof(DumpNoEndLineWithErrors));
+
+    /// <summary>the dump was stopped</summary>
+    public static string DumpStopped => Get(nameof(DumpStopped));
+
+    /// <summary>Unknown database engine «{0}».</summary>
+    public static string DbEngineUnknown => Get(nameof(DbEngineUnknown));
+
+    /// <summary>{0}: version {1}, databases to dump: {2} ({3}).</summary>
+    public static string DbServerReady => Get(nameof(DbServerReady));
+
+    /// <summary>none</summary>
+    public static string DbNoDatabases => Get(nameof(DbNoDatabases));
+
+    /// <summary>The data folder of the server {0} is among the sources. Its files copied while the server runs are of littl...</summary>
+    public static string DbDataDirInSources => Get(nameof(DbDataDirInSources));
+
+    /// <summary>{0}: no dumps taken: {1}</summary>
+    public static string DbServerUnavailable => Get(nameof(DbServerUnavailable));
+
+    /// <summary>The database «{0}» is not on {1}.</summary>
+    public static string DbNotFound => Get(nameof(DbNotFound));
+
+    /// <summary>Dump taken: {0} ({1})</summary>
+    public static string DumpWritten => Get(nameof(DumpWritten));
+
+    /// <summary>Dump failed: {0}: {1}</summary>
+    public static string DumpFailed => Get(nameof(DumpFailed));
+
+    /// <summary>the dump was not taken</summary>
+    public static string DumpNotTaken => Get(nameof(DumpNotTaken));
+
+    /// <summary>users and rights of {0}</summary>
+    public static string DumpUsersTitle => Get(nameof(DumpUsersTitle));
+
+    /// <summary>«{0}» of {1}</summary>
+    public static string DumpDatabaseTitle => Get(nameof(DumpDatabaseTitle));
+
+    /// <summary>Some database dumps failed. The set is kept but marked as failed; old sets were not deleted.</summary>
+    public static string DbSetKeptNotCommitted => Get(nameof(DbSetKeptNotCommitted));
+
+    /// <summary>{0}: the copy holds the contents of the source, and the source has its own «db» at the top; that name is ke...</summary>
+    public static string DbFolderTaken => Get(nameof(DbFolderTaken));
+
+    /// <summary>The set has database dumps, but no folder was given for them; they were not restored.</summary>
+    public static string RestoreDumpsNoFolder => Get(nameof(RestoreDumpsNoFolder));
+
+    /// <summary>The dump is incomplete and was saved as {0}. Do not load it as a full copy of the database.</summary>
+    public static string RestoreDumpIncomplete => Get(nameof(RestoreDumpIncomplete));
+
+    /// <summary>Dump {0} not restored: {1}</summary>
+    public static string RestoreDumpMissing => Get(nameof(RestoreDumpMissing));
+
+    /// <summary>How to load the dumps into a server: {0}</summary>
+    public static string RestoreDumpsReadme => Get(nameof(RestoreDumpsReadme));
+
+    /// <summary>Database dumps of the set «{0}» ({1}, computer {2})</summary>
+    public static string ReadmeTitle => Get(nameof(ReadmeTitle));
+
+    /// <summary>CUSTOS does not load dumps into a server by itself. When a database is needed back, run the commands below.</summary>
+    public static string ReadmeIntro => Get(nameof(ReadmeIntro));
+
+    /// <summary>Users and their rights, with their old passwords (root's too); load them only if the server needs them:</summary>
+    public static string ReadmeUsersMySql => Get(nameof(ReadmeUsersMySql));
+
+    /// <summary>Roles and their rights; load them first, the databases refer to them:</summary>
+    public static string ReadmeUsersPostgres => Get(nameof(ReadmeUsersPostgres));
+
+    /// <summary>Database «{0}»:</summary>
+    public static string ReadmeDatabase => Get(nameof(ReadmeDatabase));
+
+    /// <summary>Dumps made by PostgreSQL 17.6, 16.10, 15.14, 14.19, 13.22 and newer have a \restrict line that older psql d...</summary>
+    public static string ReadmePostgresNote => Get(nameof(ReadmePostgresNote));
+
+    /// <summary>MariaDB older than 10.5 has no program «mariadb»: write «mysql» instead.</summary>
+    public static string ReadmeMariaDbNote => Get(nameof(ReadmeMariaDbNote));
+
+    /// <summary>Problems:</summary>
+    public static string ReadmeProblems => Get(nameof(ReadmeProblems));
+
+    /// <summary>{0} is incomplete: {1}. Do not load it as a full copy of the database.</summary>
+    public static string ReadmeIncomplete => Get(nameof(ReadmeIncomplete));
+
+    /// <summary>{0} «{1}» was not dumped: {2}</summary>
+    public static string ReadmeMissing => Get(nameof(ReadmeMissing));
 }

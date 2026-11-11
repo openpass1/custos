@@ -274,6 +274,66 @@ public sealed class DestinationTestResult
     public string? Error { get; set; }
 }
 
+/// <summary>What <see cref="PipeProtocol.Methods.DatabasesFind"/> found: running servers first.</summary>
+public sealed class DbFindResult
+{
+    public List<DbCandidate> Servers { get; set; } = [];
+}
+
+/// <summary>A database server, or only the folder of its programs, found on this computer.</summary>
+public sealed class DbCandidate
+{
+    /// <summary>One of <see cref="Model.DbEngines"/>.</summary>
+    public required string Engine { get; set; }
+
+    /// <summary>The folder of the client programs (mysqldump, pg_dump …).</summary>
+    public required string BinDir { get; set; }
+
+    public string? Version { get; set; }
+
+    /// <summary>Where the server listens; for a server that is not running, the usual address.</summary>
+    public string Host { get; set; } = "127.0.0.1";
+
+    public int? Port { get; set; }
+
+    /// <summary>A running server was found; otherwise only its programs.</summary>
+    public bool Running { get; set; }
+}
+
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.DatabasesTest"/>.</summary>
+public sealed class DbTestRequest
+{
+    public required TaskDatabaseServer Server { get; set; }
+
+    /// <summary>
+    /// The account typed in the editor: its user, and the password (null keeps the stored one of the same id, ""
+    /// means none). Null uses the stored account of <see cref="TaskDatabaseServer.CredentialId"/>.
+    /// </summary>
+    public CredentialInput? Credential { get; set; }
+
+    /// <summary>The task being edited, for the variables in the folder of the programs; null for none.</summary>
+    public string? TaskName { get; set; }
+
+    /// <summary>The profile of the task; null takes the profile of whoever asks.</summary>
+    public string? ProfileSid { get; set; }
+}
+
+public sealed class DbTestResult
+{
+    public bool Ok { get; set; }
+
+    public string? Version { get; set; }
+
+    /// <summary>The databases a dump may take: all but the system ones.</summary>
+    public List<string> Databases { get; set; } = [];
+
+    /// <summary>The data folder of the server, if the account may see it.</summary>
+    public string? DataDir { get; set; }
+
+    /// <summary>What went wrong, in words.</summary>
+    public string? Error { get; set; }
+}
+
 public sealed class SettingsSaveRequest
 {
     public required AgentSettings Settings { get; set; }
@@ -361,6 +421,12 @@ public sealed class RestoreStartRequest : RestoreSource
 
     /// <summary>Folder to restore into; null = the original places.</summary>
     public string? TargetFolder { get; set; }
+
+    /// <summary>
+    /// Folder for the database dumps of the set (they go into its <c>db</c> folder, with README.txt); null =
+    /// <see cref="TargetFolder"/>. With neither, the dumps are not restored.
+    /// </summary>
+    public string? DumpsFolder { get; set; }
 
     public RestoreExisting Existing { get; set; } = RestoreExisting.Skip;
 }

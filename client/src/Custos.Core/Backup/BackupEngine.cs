@@ -112,12 +112,17 @@ public sealed partial class BackupEngine
         run.Result.BackupType = run.BackupType;
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.RunStarted, task.Name, Words.BackupType(run.BackupType), Words.Trigger(run.Request.Trigger, run.Request.ScheduledFor, null)));
 
+        if (HasDatabases(task))
+        {
+            PlanDatabases(run);
+        }
+
         CreateSnapshots(run);
         run.Pause.WaitWhilePaused(run.Cancellation);
         ScanSources(run);
         SelectFiles(run);
 
-        if (run.ToCopy.Count == 0 && run.BackupType is not (BackupTypes.Full or BackupTypes.Mirror))
+        if (run.ToCopy.Count == 0 && run.BackupType is not (BackupTypes.Full or BackupTypes.Mirror) && !DumpsToTake(run).Any())
         {
             run.Result.NothingToDo = true;
             _log.Write(RunLogLevel.Info, Messages.NothingChanged);
@@ -139,6 +144,7 @@ public sealed partial class BackupEngine
         else
         {
             OpenSets(run);
+            WriteDumps(run);
             CopyFiles(run);
             CopyFolderSecurity(run);
             if (run.BackupType == BackupTypes.Mirror)
@@ -151,6 +157,13 @@ public sealed partial class BackupEngine
 
         if (!run.SetsFinished)
         {
+            return;
+        }
+
+        if (run.DbErrors > 0)
+        {
+            // The set stays, marked as an error; the next run takes the changes again and nothing is deleted.
+            _log.Write(RunLogLevel.Warning, Messages.DbSetKeptNotCommitted);
             return;
         }
 
@@ -179,7 +192,7 @@ public sealed partial class BackupEngine
             throw new BackupException(Messages.Format(Messages.ArchiveFormatUnknown, task.Archive.Format));
         }
 
-        if (task.Sources.Count == 0)
+        if (task.Sources.Count == 0 && !HasDatabases(task))
         {
             throw new BackupException(Messages.NoSources);
         }
@@ -358,6 +371,12 @@ public sealed partial class BackupEngine
         Phase(BackupPhases.Scan);
         var filter = new FileFilter(run.Task.Filters);
         var usedTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (HasDatabases(run.Task))
+        {
+            // The dumps have this folder of the set; a source folder of that name becomes «db (2)».
+            usedTargets.Add(Databases.DbTools.SetFolder);
+        }
+
         for (int i = 0; i < run.Task.Sources.Count; i++)
         {
             run.Cancellation.ThrowIfCancellationRequested();
@@ -393,6 +412,13 @@ public sealed partial class BackupEngine
             context.Target = context.Scan.IsFile
                 ? Unique(usedTargets, context.Scan.Files[0].RelativePath)
                 : run.Task.Layout.KeepTopDir ? Unique(usedTargets, SourceScanner.TopFolderName(source.Path)) : string.Empty;
+            if (context.Target.Length == 0 && HasDatabases(run.Task)
+                && context.Scan.Folders.Concat(context.Scan.Files.Select(f => f.RelativePath)).Any(p => IsInDbFolder(p)))
+            {
+                RecordError(run, Messages.Format(Messages.DbFolderTaken, source.Path));
+                continue;
+            }
+
             long bytes = context.Scan.Files.Sum(f => f.Size);
             run.Result.SourceFiles += context.Scan.Files.Count;
             run.Result.SourceBytes += bytes;
@@ -443,8 +469,8 @@ public sealed partial class BackupEngine
             }
         }
 
-        _progress.FilesTotal = run.ToCopy.Count;
-        _progress.BytesTotal = run.BytesToCopy;
+        _progress.FilesTotal = run.ToCopy.Count + DumpsToTake(run).Count();
+        _progress.BytesTotal = run.BytesToCopy + (DumpsToTake(run).Any() ? Math.Max(0, run.Request.DumpBytesHint) : 0);
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.CopyPlanned, run.ToCopy.Count, Sizes.Format(run.BytesToCopy)));
         Report(force: true);
     }
@@ -773,7 +799,7 @@ public sealed partial class BackupEngine
         }
 
         var finished = DateTimeOffset.UtcNow;
-        string status = run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
+        string status = SetStatus(run);
 
         if (run.VerifyNew)
         {
@@ -851,10 +877,21 @@ public sealed partial class BackupEngine
         FinishedAt = finished,
         Status = status,
         Sources = [.. run.Sources.Where(s => s.Scan is { Found: true }).Select(s => new ManifestSource { Id = s.Source.Id, Path = s.Source.Path, Target = s.Target })],
+        Databases = ManifestDatabases(run),
         FileCount = run.Result.SourceFiles,
         SetFileCount = run.Copied.Count + pendingFiles,
         SetBytes = run.StoredBytes + pendingBytes,
     };
+
+    /// <summary>The status a set is written with: an error when a dump failed (the set is kept all the same).</summary>
+    private static string SetStatus(RunContext run) =>
+        run.DbErrors > 0 ? RunStatuses.Error : run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
+
+    /// <summary>A path of a source that would land in the «db» folder of the set, which belongs to the dumps.</summary>
+    private static bool IsInDbFolder(string relativePath) =>
+        string.Equals(relativePath, Databases.DbTools.SetFolder, StringComparison.OrdinalIgnoreCase)
+        || relativePath.StartsWith(Databases.DbTools.SetFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+        || relativePath.StartsWith(Databases.DbTools.SetFolder + "/", StringComparison.OrdinalIgnoreCase);
 
     /// <param name="pending">Files the archive writer has yet to read (7-Zip packs by name, so the manifest can come
     /// before them): they count as in the set, without a SHA-256.</param>
@@ -1001,6 +1038,7 @@ public sealed partial class BackupEngine
         }
 
         result.SetName = run.SetName;
+        FinishDatabases(run);
         foreach (var target in run.Targets)
         {
             result.Destinations.Add(new DestinationResult
@@ -1224,6 +1262,12 @@ public sealed partial class BackupEngine
 
         /// <summary>The events before were started, so the events after run too.</summary>
         public bool EventsStarted { get; set; }
+
+        /// <summary>The database dumps of the run, planned at its start (section 6.2).</summary>
+        public List<PlannedDump> Dumps { get; } = [];
+
+        /// <summary>Database servers that could not be reached and dumps that failed.</summary>
+        public int DbErrors { get; set; }
 
         /// <summary>Folders of the sources that could not be read: their files look deleted, but are not.</summary>
         public int UnreadableFolders { get; set; }

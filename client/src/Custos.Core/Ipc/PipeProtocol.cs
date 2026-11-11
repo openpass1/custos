@@ -71,6 +71,14 @@ public static class PipeProtocol
         /// <summary>Administrators. Try writing to a destination: <see cref="DestinationTestRequest"/> → <see cref="DestinationTestResult"/>.</summary>
         public const string DestinationTest = "destinations.test";
 
+        /// <summary>Administrators. Database servers and their programs on this computer: <see cref="EmptyRequest"/> →
+        /// <see cref="DbFindResult"/>.</summary>
+        public const string DatabasesFind = "databases.find";
+
+        /// <summary>Administrators. Connect to a database server and list its databases: <see cref="DbTestRequest"/> →
+        /// <see cref="DbTestResult"/>.</summary>
+        public const string DatabasesTest = "databases.test";
+
         /// <summary>Administrators. <see cref="SettingsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SettingsSave = "settings.save";
 

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text;
 using Custos.Core.Archives;
+using Custos.Core.Databases;
+using Custos.Core.Model;
 
 namespace Custos.Core.Backup;
 
@@ -38,6 +40,13 @@ public interface IBackupPlatform
     /// <summary>The password of an <c>archive_password</c> credential (section 6.5).</summary>
     /// <exception cref="BackupException">There is no such credential or it has no password.</exception>
     string GetArchivePassword(string credentialId);
+
+    /// <summary>Login and password of a <c>db</c> credential (section 6.2).</summary>
+    /// <exception cref="BackupException">There is no such credential or its password cannot be read.</exception>
+    DbAccount GetDbAccount(string credentialId);
+
+    /// <summary>The client of a database server: its programs in <see cref="TaskDatabaseServer.BinDir"/>.</summary>
+    IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account);
 
     /// <summary>
     /// Runs the program or script of an event and waits for it (section 6.9): <c>.bat</c> and <c>.cmd</c> through
@@ -159,6 +168,14 @@ public class LocalBackupPlatform : IBackupPlatform
 
     public virtual string GetArchivePassword(string credentialId) =>
         ArchivePasswords.TryGetValue(credentialId, out string? password) ? password : throw new BackupException(Messages.ArchivePasswordMissing);
+
+    /// <summary>Database accounts by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, DbAccount> DbAccounts { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual DbAccount GetDbAccount(string credentialId) =>
+        DbAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.DbAccountMissing);
+
+    public virtual IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account) => new ProcessDbClient(server, account, ConsoleEncoding);
 
     public virtual string ComputerName => Environment.MachineName;
 

@@ -24,6 +24,9 @@ public sealed class BackupRequest
 
     /// <summary>Read and write the files with low I/O priority (the program setting "Low", the default).</summary>
     public bool LowPriority { get; init; }
+
+    /// <summary>How big the dumps of the databases were last time: the progress counts on about as much.</summary>
+    public long DumpBytesHint { get; init; }
 }
 
 /// <summary>What a run did (the fields of <c>runs/finish</c>, A.5).</summary>
@@ -53,6 +56,9 @@ public sealed class BackupResult
     public string? ErrorMessage { get; set; }
 
     public List<DestinationResult> Destinations { get; } = [];
+
+    /// <summary>The dumped databases (section 6.2, A.5).</summary>
+    public List<DatabaseResult> Databases { get; } = [];
 
     public int DeletedSets { get; set; }
 

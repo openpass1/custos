@@ -93,6 +93,26 @@ public sealed class ConfigStoreTests : IDisposable
     }
 
     [Fact]
+    public void Database_servers_are_checked_and_their_accounts_count_as_used()
+    {
+        var account = _store.SaveCredential(new Credential { Kind = CredentialKinds.Db, User = "root" }, string.Empty);
+        Assert.False(account.HasSecret);
+        TaskDefinition Task(TaskDatabaseServer server) => new() { Name = "Sites", DbServers = [server] };
+
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { Engine = "oracle", BinDir = @"C:\bin" }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = " " }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", Port = 70000 }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", AllDatabases = false }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", CredentialId = "nope" }), null, "local:a", Now));
+
+        var saved = _store.SaveTask(Task(new TaskDatabaseServer { Engine = " MariaDB ", BinDir = @"C:\OSPanel\modules\MariaDB-11.4\bin", Host = "", CredentialId = account.Id }), null, "local:a", Now);
+        var server = Assert.Single(saved.Saved.DbServers);
+        Assert.Equal(DbEngines.MariaDb, server.Engine);
+        Assert.Equal("127.0.0.1", server.Host);
+        Assert.Throws<ConfigException>(() => _store.DeleteCredential(account.Id));
+    }
+
+    [Fact]
     public void An_account_in_use_cannot_be_deleted()
     {
         var credential = _store.SaveCredential(new Credential { User = "backup-user" }, "x");

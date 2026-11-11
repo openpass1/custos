@@ -14,7 +14,7 @@ namespace Custos.Core.Storage;
 /// </summary>
 public sealed class AgentDatabase : IFileStateStore
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     private readonly string _connectionString;
 
@@ -196,9 +196,9 @@ public sealed class AgentDatabase : IFileStateStore
         using var command = Command(connection, """
             INSERT OR REPLACE INTO runs (run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by,
                 started_at, finished_at, status, source_files, source_bytes, files_processed, bytes_written, errors,
-                warnings, error_message, set_name, destinations)
+                warnings, error_message, set_name, destinations, databases)
             VALUES ($run, $task, $name, $type, $trigger, $scheduled, $by, $started, $finished, $status, $sfiles, $sbytes,
-                $files, $bytes, $errors, $warnings, $message, $set, $destinations)
+                $files, $bytes, $errors, $warnings, $message, $set, $destinations, $databases)
             """);
         var p = command.Parameters;
         p.AddWithValue("$run", run.RunId);
@@ -220,6 +220,7 @@ public sealed class AgentDatabase : IFileStateStore
         p.AddWithValue("$message", (object?)run.ErrorMessage ?? DBNull.Value);
         p.AddWithValue("$set", (object?)run.SetName ?? DBNull.Value);
         p.AddWithValue("$destinations", JsonSerializer.Serialize(run.Destinations, StorageJsonContext.Default.ListDestinationResult));
+        p.AddWithValue("$databases", run.Databases.Count == 0 ? DBNull.Value : JsonSerializer.Serialize(run.Databases, StorageJsonContext.Default.ListDatabaseResult));
         command.ExecuteNonQuery();
     }
 
@@ -263,7 +264,7 @@ public sealed class AgentDatabase : IFileStateStore
     private const string RunColumns = """
         SELECT run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by, started_at, finished_at,
             status, source_files, source_bytes, files_processed, bytes_written, errors, warnings, error_message, set_name,
-            destinations
+            destinations, databases
         FROM runs
         """;
 
@@ -305,6 +306,7 @@ public sealed class AgentDatabase : IFileStateStore
                 ErrorMessage = reader.IsDBNull(16) ? null : reader.GetString(16),
                 SetName = reader.IsDBNull(17) ? null : reader.GetString(17),
                 Destinations = reader.IsDBNull(18) ? [] : JsonSerializer.Deserialize(reader.GetString(18), StorageJsonContext.Default.ListDestinationResult) ?? [],
+                Databases = reader.IsDBNull(19) ? [] : JsonSerializer.Deserialize(reader.GetString(19), StorageJsonContext.Default.ListDatabaseResult) ?? [],
             });
         }
 
@@ -339,6 +341,13 @@ public sealed class AgentDatabase : IFileStateStore
                 ALTER TABLE task_state ADD COLUMN stored_checked_at TEXT;
                 ALTER TABLE task_state ADD COLUMN compression_ratio REAL;
                 """, transaction);
+            alter.ExecuteNonQuery();
+        }
+
+        if (version is 1 or 2)
+        {
+            // Stage 2b: the dumped databases of a run.
+            using var alter = Command(connection, "ALTER TABLE runs ADD COLUMN databases TEXT;", transaction);
             alter.ExecuteNonQuery();
         }
 
@@ -383,7 +392,8 @@ public sealed class AgentDatabase : IFileStateStore
                 warnings INTEGER NOT NULL DEFAULT 0,
                 error_message TEXT,
                 set_name TEXT,
-                destinations TEXT
+                destinations TEXT,
+                databases TEXT
             );
 
             CREATE INDEX IF NOT EXISTS runs_by_task ON runs (task_id, started_at);

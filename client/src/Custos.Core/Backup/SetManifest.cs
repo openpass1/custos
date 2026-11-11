@@ -44,6 +44,9 @@ public sealed class SetManifestHeader
 
     public List<ManifestSource> Sources { get; set; } = [];
 
+    /// <summary>The database dumps of the set (section 6.2), with the users and rights of each server.</summary>
+    public List<ManifestDatabase> Databases { get; set; } = [];
+
     /// <summary>Files of the sources at the time of the run.</summary>
     public long FileCount { get; set; }
 
@@ -61,6 +64,39 @@ public sealed class ManifestSource
     public string Path { get; set; } = string.Empty;
 
     public string Target { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// One dump of a set: a database, or the users and rights of its server. A 7z archive packs the manifest before the
+/// dumps (7-Zip packs by name, and «custos-set.json» comes before «db/…»), so there a dump may be listed without
+/// <see cref="Ok"/>, <see cref="Bytes"/> and <see cref="Sha256"/>: then its own last line tells whether it is complete
+/// (a dump that failed ends with <see cref="Custos.Core.Databases.DumpCheck.IncompleteMarker"/>).
+/// </summary>
+public sealed class ManifestDatabase
+{
+    /// <summary>One of <see cref="Model.DbEngines"/>.</summary>
+    public string Engine { get; set; } = string.Empty;
+
+    /// <summary>The real name of the database; null for the users and rights of the server.</summary>
+    public string? Name { get; set; }
+
+    /// <summary>Where the dump lies in the set ("db/mysql/site_db.sql"); null if there is none (the server could
+    /// not be reached).</summary>
+    public string? File { get; set; }
+
+    /// <summary>The server, "host:port".</summary>
+    public string Server { get; set; } = string.Empty;
+
+    public long? Bytes { get; set; }
+
+    public string? Sha256 { get; set; }
+
+    /// <summary>True: complete. False: failed. Null: not known when the manifest was written.</summary>
+    public bool? Ok { get; set; }
+
+    public string? Error { get; set; }
+
+    public bool IsUsers => Name is null;
 }
 
 /// <summary>One file of the manifest.</summary>
@@ -103,6 +139,50 @@ public static class SetManifest
         }
 
         writer.WriteEndArray();
+        if (header.Databases.Count > 0)
+        {
+            writer.WriteStartArray("databases");
+            foreach (var database in header.Databases)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("engine", database.Engine);
+                if (database.Name is null)
+                {
+                    writer.WriteBoolean("users", true);
+                }
+                else
+                {
+                    writer.WriteString("name", database.Name);
+                }
+
+                WriteNullable(writer, "file", database.File);
+                writer.WriteString("server", database.Server);
+                if (database.Bytes is { } bytes)
+                {
+                    writer.WriteNumber("bytes", bytes);
+                }
+
+                if (database.Sha256 is not null)
+                {
+                    writer.WriteString("sha256", database.Sha256);
+                }
+
+                if (database.Ok is { } ok)
+                {
+                    writer.WriteBoolean("ok", ok);
+                }
+
+                if (database.Error is not null)
+                {
+                    writer.WriteString("error", database.Error);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        }
+
         writer.WriteNumber("file_count", header.FileCount);
         writer.WriteNumber("set_file_count", header.SetFileCount);
         writer.WriteNumber("set_bytes", header.SetBytes);
@@ -232,6 +312,16 @@ public static class SetManifest
                     continue;
                 }
 
+                if (name == "databases")
+                {
+                    if (!ReadDatabases(ref reader, header.Databases))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
                 if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
                 {
                     if (!reader.TrySkip())
@@ -291,6 +381,75 @@ public static class SetManifest
             }
 
             sources.Add(source);
+        }
+
+        return false;
+    }
+
+    private static bool ReadDatabases(ref Utf8JsonReader reader, List<ManifestDatabase> databases)
+    {
+        if (reader.TokenType != JsonTokenType.StartArray)
+        {
+            return reader.TrySkip();
+        }
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndArray)
+            {
+                return true;
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                continue;
+            }
+
+            var database = new ManifestDatabase();
+            bool users = false;
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+            {
+                string property = reader.GetString()!;
+                if (!reader.Read())
+                {
+                    return false;
+                }
+
+                if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                {
+                    if (!reader.TrySkip())
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                string? text = reader.TokenType == JsonTokenType.String ? reader.GetString() : null;
+                bool? flag = reader.TokenType switch { JsonTokenType.True => true, JsonTokenType.False => false, _ => null };
+                switch (property)
+                {
+                    case "engine": database.Engine = text ?? string.Empty; break;
+                    case "name": database.Name = text; break;
+                    case "users": users = flag == true; break;
+                    case "file": database.File = text; break;
+                    case "server": database.Server = text ?? string.Empty; break;
+                    case "bytes": database.Bytes = reader.TokenType == JsonTokenType.Number ? reader.GetInt64() : null; break;
+                    case "sha256": database.Sha256 = text; break;
+                    case "ok": database.Ok = flag; break;
+                    case "error": database.Error = text; break;
+                }
+            }
+
+            if (users)
+            {
+                database.Name = null;
+            }
+
+            if (database.Name is not null || users)
+            {
+                databases.Add(database);
+            }
         }
 
         return false;

@@ -21,6 +21,13 @@ public static class TaskDescriber
             Messages.Format(Messages.DescSentence, Capitalize(Schedule(task.Schedule)), Action(task.BackupType), Sources(task), Destinations(task)),
         };
 
+        if (task.DbServers.Count > 0)
+        {
+            var servers = task.DbServers.Select(d => string.Concat(DbEngines.Title(d.Engine), " ", d.Host, ":",
+                (d.Port ?? DbEngines.DefaultPort(d.Engine)).ToString(CultureInfo.InvariantCulture)));
+            sentences.Add(Messages.Format(Messages.DescDatabases, JoinWords([.. servers])));
+        }
+
         if (task.BackupType is BackupTypes.Incremental or BackupTypes.Differential && ForceFull(task.ForceFull) is { } force)
         {
             sentences.Add(force);

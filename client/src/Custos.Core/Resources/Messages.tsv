@@ -123,6 +123,10 @@ ConfigBadKeepFull	Keep at least one full backup.	Нужно хранить хо�
 ConfigBadMaxAge	Set how many days to keep backups: at least 1.	Укажите, сколько дней хранить копии: не меньше 1.
 ConfigBadGfs	Keep at least one daily, weekly or monthly backup.	Нужно хранить хотя бы одну дневную, недельную или месячную копию.
 ConfigUserRequired	Enter the user name.	Введите имя пользователя.
+ConfigDbBinDirRequired	Choose the folder of the database server's programs (bin).	Укажите папку программ сервера баз данных (bin).
+ConfigDbHostRequired	Enter the address of the database server.	Введите адрес сервера баз данных.
+ConfigDbBadPort	The port must be from {0} to {1}.	Порт — от {0} до {1}.
+ConfigDbNothingChosen	Choose at least one database or switch to «all databases».	Отметьте хотя бы одну базу или выберите «все базы».
 ConfigRestoredFromBackup	{0} was missing; its backup copy was used.	Файл {0} не найден, использована его резервная копия.
 ConfigDamagedUsedBackup	{0} is damaged ({1}); its backup copy was used. The damaged file is kept as {2}.	Файл {0} повреждён ({1}), использована его резервная копия. Повреждённый файл сохранён как {2}.
 ConfigDamaged	{0} is damaged ({1}) and has no usable backup copy, so it starts empty. The damaged file is kept as {2}.	Файл {0} повреждён ({1}), резервной копии нет, поэтому он начат заново. Повреждённый файл сохранён как {2}.
@@ -282,5 +286,47 @@ SevenZipBusyRestore	A restore is running. Update 7-Zip when it has finished.	И�
 SevenZipBusyUpdate	7-Zip is being updated. Try again in a minute.	Идёт обновление 7-Zip. Попробуйте через минуту.
 SevenZipNotAllowed	Only administrators may update 7-Zip.	Обновлять 7-Zip могут только администраторы.
 SevenZipNoAnswer	no answer in {0} s	нет ответа за {0} с
+DescDatabases	Every run also dumps the databases of {0} whole into «db».	Каждый запуск также выгружает целиком базы {0} в папку «db».
 DescEvents	Events: {0} before the backup, {1} after.	События: до копирования — {0}, после — {1}.
 DescAfter	Afterwards: {0}.	После выполнения: {0}.
+
+# Database dumps (section 6.2)
+DbAccountMissing	The account of the database server is missing. Open the task and enter the user and the password again.	Учётная запись сервера баз данных не найдена. Откройте задание и введите пользователя и пароль заново.
+DbNoAnswer	{0} gave no answer.	Программа {0} ничего не ответила.
+DbNameUnsupported	The database name «{0}» starts with «-» and cannot be passed to the dump program.	Имя базы «{0}» начинается с «-», его нельзя передать программе дампа.
+DbToolMissing	{0} is not in the folder {1}. The folder of the server's programs (bin) must hold {2}.	В папке {1} нет программы {0}. В папке программ сервера (bin) должны быть: {2}.
+DbTimedOut	{0} did not answer in {1} seconds.	Программа {0} не ответила за {1} с.
+DbProgramFailed	{0} ended with code {1}: {2}	Программа {0} завершилась с кодом {1}: {2}
+DbNoDetails	no details	без подробностей
+DbProgramNotStarted	Could not start {0}: {1}	Не удалось запустить {0}: {1}
+DumpExitCode	the dump program ended with code {0}: {1}	программа дампа завершилась с кодом {0}: {1}
+DumpNoEndLine	the dump has no end line, it is cut off	в дампе нет завершающей строки, он оборван
+DumpNoEndLineWithErrors	the dump has no end line, it is cut off: {0}	в дампе нет завершающей строки, он оборван: {0}
+DumpStopped	the dump was stopped	дамп остановлен
+DbEngineUnknown	Unknown database engine «{0}».	Неизвестный тип сервера баз данных «{0}».
+DbServerReady	{0}: version {1}, databases to dump: {2} ({3}).	{0}: версия {1}, баз для дампа: {2} ({3}).
+DbNoDatabases	none	нет
+DbDataDirInSources	The data folder of the server {0} is among the sources. Its files copied while the server runs are of little use: the dumps are the copy of the databases.	Папка данных сервера {0} входит в источники. Её файлы, скопированные при работающем сервере, мало пригодны: копией баз служат дампы.
+DbServerUnavailable	{0}: no dumps taken: {1}	{0}: дампы не сняты: {1}
+DbNotFound	The database «{0}» is not on {1}.	Базы «{0}» нет на сервере {1}.
+DumpWritten	Dump taken: {0} ({1})	Снят дамп: {0} ({1})
+DumpFailed	Dump failed: {0}: {1}	Дамп не удался: {0}: {1}
+DumpNotTaken	the dump was not taken	дамп не снят
+DumpUsersTitle	users and rights of {0}	пользователи и права {0}
+DumpDatabaseTitle	«{0}» of {1}	«{0}» на {1}
+DbSetKeptNotCommitted	Some database dumps failed. The set is kept but marked as failed; old sets were not deleted.	Часть дампов баз данных не удалась. Набор сохранён, но помечен как ошибочный; старые наборы не удалялись.
+DbFolderTaken	{0}: the copy holds the contents of the source, and the source has its own «db» at the top; that name is kept for the database dumps. Turn on «Keep the top folder» for this source or rename the folder.	{0}: содержимое источника кладётся прямо в копию, а в нём есть свой «db» верхнего уровня; это имя занято под дампы баз. Включите «Сохранять папку верхнего уровня» для этого источника или переименуйте папку.
+RestoreDumpsNoFolder	The set has database dumps, but no folder was given for them; they were not restored.	В наборе есть дампы баз данных, но папка для них не указана; дампы не восстановлены.
+RestoreDumpIncomplete	The dump is incomplete and was saved as {0}. Do not load it as a full copy of the database.	Дамп неполный, он сохранён как {0}. Не загружайте его как полную копию базы.
+RestoreDumpMissing	Dump {0} not restored: {1}	Дамп {0} не восстановлен: {1}
+RestoreDumpsReadme	How to load the dumps into a server: {0}	Как загрузить дампы в сервер: {0}
+ReadmeTitle	Database dumps of the set «{0}» ({1}, computer {2})	Дампы баз данных из набора «{0}» ({1}, компьютер {2})
+ReadmeIntro	CUSTOS does not load dumps into a server by itself. When a database is needed back, run the commands below.\nRun them in cmd, not in PowerShell (PowerShell spoils the input given with «<»), from the folder that holds the folder «db».\nThe programs mysql (mariadb), psql and createdb are in the folder of the server's programs (bin): go there first or write the full path to them.\nThe commands ask for the password of the server's administrator (root, postgres); write another user if yours is different.\nLoad a database into an empty one: tables already there get in the way.	CUSTOS сам не загружает дампы в сервер. Когда база понадобится, выполните команды ниже.\nЗапускайте их в cmd, а не в PowerShell (PowerShell портит ввод через «<»), находясь в папке, где лежит папка «db».\nПрограммы mysql (mariadb), psql и createdb лежат в папке программ сервера (bin): перейдите туда или пишите полный путь к ним.\nКоманды спросят пароль администратора сервера (root, postgres); если у вас другой пользователь, впишите его.\nЗагружайте базу в пустую: уже имеющиеся таблицы мешают.
+ReadmeUsersMySql	Users and their rights, with their old passwords (root's too); load them only if the server needs them:	Пользователи и их права со старыми паролями (и у root тоже); загружайте, только если они нужны на сервере:
+ReadmeUsersPostgres	Roles and their rights; load them first, the databases refer to them:	Роли и их права; загружайте их первыми, базы на них ссылаются:
+ReadmeDatabase	Database «{0}»:	База «{0}»:
+ReadmePostgresNote	Dumps made by PostgreSQL 17.6, 16.10, 15.14, 14.19, 13.22 and newer have a \restrict line that older psql does not know: load them with psql of the same or a newer version.	Дампы PostgreSQL 17.6, 16.10, 15.14, 14.19, 13.22 и новее содержат строку \restrict, которую старый psql не знает: загружайте их psql той же или более новой версии.
+ReadmeMariaDbNote	MariaDB older than 10.5 has no program «mariadb»: write «mysql» instead.	В MariaDB старше 10.5 нет программы «mariadb»: пишите «mysql».
+ReadmeProblems	Problems:	Проблемы:
+ReadmeIncomplete	{0} is incomplete: {1}. Do not load it as a full copy of the database.	{0} неполный: {1}. Не загружайте его как полную копию базы.
+ReadmeMissing	{0} «{1}» was not dumped: {2}	{0} «{1}»: дамп не снят: {2}
