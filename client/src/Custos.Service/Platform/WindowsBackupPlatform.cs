@@ -95,6 +95,49 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
         }
     });
 
+    /// <summary>
+    /// Shuts the computer down, restarts it, or puts it to sleep or into hibernation (section 6.9). Programs that are
+    /// still open are closed without asking: everyone signed in had the countdown to cancel it.
+    /// </summary>
+    /// <exception cref="BackupException">Windows refused.</exception>
+    public static void PowerAction(string action)
+    {
+        try
+        {
+            Privileges.Enable(Privileges.Shutdown);
+            switch (action)
+            {
+                case AfterActions.Shutdown or AfterActions.Restart:
+                    string mode = action == AfterActions.Shutdown ? "/s" : "/r";
+                    using (var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                        Path.Combine(Environment.SystemDirectory, "shutdown.exe"), $"{mode} /f /t 0 /d p:0:0")
+                    {
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    }))
+                    {
+                        if (process is not null && process.WaitForExit(30_000) && process.ExitCode != 0)
+                        {
+                            throw new BackupException(Messages.Format(Messages.PowerFailed, $"shutdown.exe: {process.ExitCode}"));
+                        }
+                    }
+
+                    break;
+                case AfterActions.Sleep or AfterActions.Hibernate:
+                    if (!NativeMethods.SetSuspendState(action == AfterActions.Hibernate, false, false))
+                    {
+                        throw new Win32Exception(Marshal.GetLastPInvokeError());
+                    }
+
+                    break;
+            }
+        }
+        catch (Win32Exception ex)
+        {
+            throw new BackupException(Messages.Format(Messages.PowerFailed, ex.Message), ex);
+        }
+    }
+
     public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
     {
         try

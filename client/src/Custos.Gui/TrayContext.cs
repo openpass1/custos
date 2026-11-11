@@ -31,6 +31,7 @@ internal sealed class TrayContext : ApplicationContext
 
     private readonly RegisteredWaitHandle _activateWait;
     private MainForm? _mainForm;
+    private PowerCountdownForm? _powerForm;
 
     /// <param name="activate">Set by a second copy started in the same session: show the window.</param>
     /// <param name="showWindow">Open the main window right away (started by the user, not at logon).</param>
@@ -60,8 +61,16 @@ internal sealed class TrayContext : ApplicationContext
         };
 
         _monitor = new ServiceMonitor();
-        _monitor.StatusChanged += (_, _) => UpdateTray();
-        _monitor.SnapshotChanged += (_, _) => UpdateTray();
+        _monitor.StatusChanged += (_, _) =>
+        {
+            UpdateTray();
+            UpdatePower();
+        };
+        _monitor.SnapshotChanged += (_, _) =>
+        {
+            UpdateTray();
+            UpdatePower();
+        };
         _monitor.ProgressChanged += (_, _) => UpdateTray();
         UpdateTray();
         _trayIcon.Visible = true;
@@ -88,6 +97,7 @@ internal sealed class TrayContext : ApplicationContext
     {
         _activateWait.Unregister(null);
         _trayIcon.Visible = false;
+        _powerForm?.Dispose();
         if (_mainForm is { IsDisposed: false })
         {
             _mainForm.SaveLayout();
@@ -128,6 +138,32 @@ internal sealed class TrayContext : ApplicationContext
         }
 
         _mainForm.Activate();
+    }
+
+    /// <summary>Shows the countdown to a shutdown or sleep after a run while the service counts, and hides it after.</summary>
+    private void UpdatePower()
+    {
+        var power = _monitor.IsConnected ? _monitor.Snapshot?.Power : null;
+        if (power is null)
+        {
+            if (_powerForm is not null)
+            {
+                _powerForm.Dispose();
+                _powerForm = null;
+            }
+
+            return;
+        }
+
+        if (_powerForm is null || _powerForm.IsDisposed)
+        {
+            _powerForm = new PowerCountdownForm(_monitor, power);
+            _powerForm.Show();
+        }
+        else
+        {
+            _powerForm.ShowCountdown(power);
+        }
     }
 
     private void RunAll() => Ui.Run(null, async () =>

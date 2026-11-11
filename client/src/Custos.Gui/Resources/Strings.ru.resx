@@ -948,7 +948,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Перевести в гибернацию</value>
   </data>
   <data name="AfterNote" xml:space="preserve">
-    <value>Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отмена».</value>
+    <value>Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отменить». После остановленного запуска ничего не происходит.</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Дополнительно</value>
@@ -1450,5 +1450,14 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
     <value>Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.</value>
+  </data>
+  <data name="PowerCountdownText" xml:space="preserve">
+    <value>Задание «{0}» выполнено. Через {2} с: {1}.</value>
+  </data>
+  <data name="PowerCancel" xml:space="preserve">
+    <value>Отменить</value>
+  </data>
+  <data name="PowerCancelFailed" xml:space="preserve">
+    <value>Служба не отменила действие.</value>
   </data>
 </root>

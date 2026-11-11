@@ -1429,4 +1429,13 @@ static partial class Strings
 
     /// <summary>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the...</summary>
     public static string Settings7ZipNote => Get(nameof(Settings7ZipNote));
+
+    /// <summary>The task «{0}» has finished. In {2} s: {1}.</summary>
+    public static string PowerCountdownText => Get(nameof(PowerCountdownText));
+
+    /// <summary>Cancel</summary>
+    public static string PowerCancel => Get(nameof(PowerCancel));
+
+    /// <summary>The service did not cancel it.</summary>
+    public static string PowerCancelFailed => Get(nameof(PowerCancelFailed));
 }

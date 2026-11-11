@@ -133,9 +133,11 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         ActiveRun? current;
         Dictionary<string, DateTimeOffset> slots;
         List<string> problems;
+        PowerCountdown? power;
         lock (_lock)
         {
             current = _current;
+            power = _powerCountdown;
             slots = new Dictionary<string, DateTimeOffset>(_lastSlots, StringComparer.OrdinalIgnoreCase);
             problems = [.. _problems];
         }
@@ -167,6 +169,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             Problems = [.. problems, .. _config.Problems],
             SevenZipVersion = _platform?.Archives.SevenZipVersion,
             SevenZipProblem = _sevenZipProblem,
+            Power = power,
         };
     }
 
@@ -675,7 +678,12 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         {
             try
             {
-                _queueSignal.Wait(_stopping);
+                // With an action after a run waiting, the wait ends when its countdown is over.
+                if (!_queueSignal.Wait(PowerWait(), _stopping))
+                {
+                    FirePowerIfDue();
+                    continue;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -690,6 +698,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                     break;
                 }
 
+                PostponePower();
                 try
                 {
                     Execute(next);
@@ -811,6 +820,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }, Messages.Format(Messages.RunFinished, task.Name, Words.Status(result.Status), result.FilesProcessed,
             Sizes.Format(result.BytesWritten), Sizes.FormatDuration(finishedAt - startedAt)));
         ReportToEventLog(task, result);
+        NotePowerAction(task, result);
 
         lock (_lock)
         {

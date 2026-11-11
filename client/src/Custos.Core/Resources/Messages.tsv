@@ -246,3 +246,12 @@ RestoreLogName	Restore	Восстановление
 RestoreStopRequested	Restore stopped by {0}.	Восстановление остановлено пользователем {0}.
 RestoreAborted	The restore was stopped. Files restored so far stay.	Восстановление прервано. Уже восстановленные файлы остаются.
 RestoreFolderMissing	The folder {0} does not exist.	Папка {0} не существует.
+PowerShutdown	shutdown of the computer	выключение компьютера
+PowerRestart	restart of the computer	перезагрузка компьютера
+PowerSleep	sleep	переход в сон
+PowerHibernate	hibernation	переход в гибернацию
+PowerCountdown	After the task «{0}»: {1} in {2} s unless someone cancels it.	После задания «{0}»: {1} через {2} с, если никто не отменит.
+PowerNow	Now: {0} (after the task «{1}»).	Сейчас: {0} (после задания «{1}»).
+PowerCancelled	Cancelled by {1}: {0}.	Отменено пользователем {1}: {0}.
+PowerFailed	The computer could not be shut down, restarted or put to sleep: {0}	Не удалось выключить, перезагрузить или усыпить компьютер: {0}
+PowerNothingToCancel	There is nothing to cancel.	Отменять нечего.

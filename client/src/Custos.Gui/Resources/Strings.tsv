@@ -319,7 +319,7 @@ AfterShutdown	Shut the computer down	Выключить компьютер
 AfterRestart	Restart the computer	Перезагрузить компьютер
 AfterSleep	Put the computer to sleep	Перевести в сон
 AfterHibernate	Hibernate the computer	Перевести в гибернацию
-AfterNote	If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel».	Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отмена».
+AfterNote	If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel». Nothing happens after a run that was stopped.	Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отменить». После остановленного запуска ничего не происходит.
 PageAdvanced	Advanced	Дополнительно
 EditorVss	Open files	Открытые файлы
 VssEnabled	Use a shadow copy (VSS)	Использовать теневую копию (VSS)
@@ -494,3 +494,7 @@ Settings7Zip	Archiver	Архиватор
 Settings7ZipVersion	7-Zip (7z.dll) version {0}	7-Zip (7z.dll) версии {0}
 Settings7ZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
 Settings7ZipNote	To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.	Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.
+# ---- Shutdown or sleep after a run
+PowerCountdownText	The task «{0}» has finished. In {2} s: {1}.	Задание «{0}» выполнено. Через {2} с: {1}.
+PowerCancel	Cancel	Отменить
+PowerCancelFailed	The service did not cancel it.	Служба не отменила действие.

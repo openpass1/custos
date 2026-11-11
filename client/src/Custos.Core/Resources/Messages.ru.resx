@@ -733,4 +733,31 @@
   <data name="RestoreFolderMissing" xml:space="preserve">
     <value>Папка {0} не существует.</value>
   </data>
+  <data name="PowerShutdown" xml:space="preserve">
+    <value>выключение компьютера</value>
+  </data>
+  <data name="PowerRestart" xml:space="preserve">
+    <value>перезагрузка компьютера</value>
+  </data>
+  <data name="PowerSleep" xml:space="preserve">
+    <value>переход в сон</value>
+  </data>
+  <data name="PowerHibernate" xml:space="preserve">
+    <value>переход в гибернацию</value>
+  </data>
+  <data name="PowerCountdown" xml:space="preserve">
+    <value>После задания «{0}»: {1} через {2} с, если никто не отменит.</value>
+  </data>
+  <data name="PowerNow" xml:space="preserve">
+    <value>Сейчас: {0} (после задания «{1}»).</value>
+  </data>
+  <data name="PowerCancelled" xml:space="preserve">
+    <value>Отменено пользователем {1}: {0}.</value>
+  </data>
+  <data name="PowerFailed" xml:space="preserve">
+    <value>Не удалось выключить, перезагрузить или усыпить компьютер: {0}</value>
+  </data>
+  <data name="PowerNothingToCancel" xml:space="preserve">
+    <value>Отменять нечего.</value>
+  </data>
 </root>

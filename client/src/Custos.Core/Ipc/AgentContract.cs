@@ -41,6 +41,22 @@ public sealed class AgentSnapshot
 
     /// <summary>Why 7z.dll cannot be used (tasks with 7z fail); null when it works.</summary>
     public string? SevenZipProblem { get; set; }
+
+    /// <summary>The computer is about to shut down, restart or sleep (section 6.9); every session shows a countdown.</summary>
+    public PowerCountdown? Power { get; set; }
+}
+
+/// <summary>An action after a run that is counting down; <c>power.cancel</c> stops it.</summary>
+public sealed class PowerCountdown
+{
+    /// <summary>One of <see cref="Model.AfterActions"/>.</summary>
+    public string Action { get; set; } = Model.AfterActions.Shutdown;
+
+    /// <summary>The task whose run asked for it.</summary>
+    public string TaskName { get; set; } = string.Empty;
+
+    /// <summary>When it happens unless cancelled.</summary>
+    public DateTimeOffset Deadline { get; set; }
 }
 
 /// <summary>What the service knows about the runs of one task.</summary>

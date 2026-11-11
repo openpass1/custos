@@ -233,4 +233,30 @@ public sealed class DialogTests
         Assert.True(form.SetList.Items[0].Selected);
         Assert.Equal(full.SetName, form.SetList.Items[1].SubItems[2].Text);
     });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_countdown_names_the_task_the_action_and_the_seconds_left(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        var countdown = new Custos.Core.Ipc.PowerCountdown
+        {
+            Action = AfterActions.Shutdown,
+            TaskName = "Office documents",
+            Deadline = DateTimeOffset.UtcNow.AddSeconds(42),
+        };
+        using var form = new PowerCountdownForm(monitor, countdown);
+        form.Show();
+        Sta.Pump();
+
+        Assert.InRange(form.SecondsLeft, 40, 42);
+        Assert.Contains("Office documents", form.Message, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Messages.PowerShutdown, form.Message, StringComparison.Ordinal);
+        Assert.True(form.TopMost);
+
+        form.ShowCountdown(new Custos.Core.Ipc.PowerCountdown { Action = AfterActions.Sleep, TaskName = "Photos", Deadline = DateTimeOffset.UtcNow.AddSeconds(-5) });
+        Assert.Equal(0, form.SecondsLeft);
+        Assert.Contains(Custos.Core.Messages.PowerSleep, form.Message, StringComparison.Ordinal);
+    });
 }

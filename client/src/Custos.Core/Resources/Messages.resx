@@ -733,4 +733,31 @@
   <data name="RestoreFolderMissing" xml:space="preserve">
     <value>The folder {0} does not exist.</value>
   </data>
+  <data name="PowerShutdown" xml:space="preserve">
+    <value>shutdown of the computer</value>
+  </data>
+  <data name="PowerRestart" xml:space="preserve">
+    <value>restart of the computer</value>
+  </data>
+  <data name="PowerSleep" xml:space="preserve">
+    <value>sleep</value>
+  </data>
+  <data name="PowerHibernate" xml:space="preserve">
+    <value>hibernation</value>
+  </data>
+  <data name="PowerCountdown" xml:space="preserve">
+    <value>After the task «{0}»: {1} in {2} s unless someone cancels it.</value>
+  </data>
+  <data name="PowerNow" xml:space="preserve">
+    <value>Now: {0} (after the task «{1}»).</value>
+  </data>
+  <data name="PowerCancelled" xml:space="preserve">
+    <value>Cancelled by {1}: {0}.</value>
+  </data>
+  <data name="PowerFailed" xml:space="preserve">
+    <value>The computer could not be shut down, restarted or put to sleep: {0}</value>
+  </data>
+  <data name="PowerNothingToCancel" xml:space="preserve">
+    <value>There is nothing to cancel.</value>
+  </data>
 </root>

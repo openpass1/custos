@@ -948,7 +948,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Hibernate the computer</value>
   </data>
   <data name="AfterNote" xml:space="preserve">
-    <value>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel».</value>
+    <value>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel». Nothing happens after a run that was stopped.</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Advanced</value>
@@ -1450,5 +1450,14 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
     <value>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.</value>
+  </data>
+  <data name="PowerCountdownText" xml:space="preserve">
+    <value>The task «{0}» has finished. In {2} s: {1}.</value>
+  </data>
+  <data name="PowerCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="PowerCancelFailed" xml:space="preserve">
+    <value>The service did not cancel it.</value>
   </data>
 </root>

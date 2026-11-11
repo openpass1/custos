@@ -724,4 +724,31 @@ static partial class Messages
 
     /// <summary>The folder {0} does not exist.</summary>
     public static string RestoreFolderMissing => Get(nameof(RestoreFolderMissing));
+
+    /// <summary>shutdown of the computer</summary>
+    public static string PowerShutdown => Get(nameof(PowerShutdown));
+
+    /// <summary>restart of the computer</summary>
+    public static string PowerRestart => Get(nameof(PowerRestart));
+
+    /// <summary>sleep</summary>
+    public static string PowerSleep => Get(nameof(PowerSleep));
+
+    /// <summary>hibernation</summary>
+    public static string PowerHibernate => Get(nameof(PowerHibernate));
+
+    /// <summary>After the task «{0}»: {1} in {2} s unless someone cancels it.</summary>
+    public static string PowerCountdown => Get(nameof(PowerCountdown));
+
+    /// <summary>Now: {0} (after the task «{1}»).</summary>
+    public static string PowerNow => Get(nameof(PowerNow));
+
+    /// <summary>Cancelled by {1}: {0}.</summary>
+    public static string PowerCancelled => Get(nameof(PowerCancelled));
+
+    /// <summary>The computer could not be shut down, restarted or put to sleep: {0}</summary>
+    public static string PowerFailed => Get(nameof(PowerFailed));
+
+    /// <summary>There is nothing to cancel.</summary>
+    public static string PowerNothingToCancel => Get(nameof(PowerNothingToCancel));
 }

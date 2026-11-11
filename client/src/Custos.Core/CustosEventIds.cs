@@ -16,6 +16,15 @@ public static class CustosEventIds
     public const int TaskFailed = 2003;
     public const int TaskAborted = 2004;
     public const int CatchUpRun = 2005;
+
+    /// <summary>The computer is shut down, restarted or put to sleep after a run (section 6.9).</summary>
+    public const int PowerAction = 2006;
+
+    /// <summary>A user cancelled the shutdown, restart or sleep after a run.</summary>
+    public const int PowerCancelled = 2007;
+
+    /// <summary>Windows refused to shut down, restart or sleep after a run.</summary>
+    public const int PowerFailed = 2008;
     public const int VssFailed = 3000;
     public const int DestinationFull = 3001;
 
@@ -31,6 +40,7 @@ public static class CustosEventIds
     [
         ServiceStarted, ServiceStopped, ServerConnectionLost, ServerConnectionRestored,
         TaskStarted, TaskSucceeded, TaskCompletedWithWarnings, TaskFailed, TaskAborted, CatchUpRun,
+        PowerAction, PowerCancelled, PowerFailed,
         VssFailed, DestinationFull, SevenZipUnavailable, UpdateInstalled, UpdateRejected, UnexpectedError,
     ];
 

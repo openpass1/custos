@@ -85,6 +85,9 @@ public static class PipeProtocol
 
         /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
         public const string RestoreStop = "restore.stop";
+
+        /// <summary>Everyone: whoever sits at the computer may keep it on. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string PowerCancel = "power.cancel";
     }
 
     /// <summary>Event names.</summary>

@@ -137,6 +137,18 @@ internal static partial class ServiceLog
         Message = "Task {Task} missed its run at {Slot}; a catch-up run is queued")]
     public static partial void CatchUpRun(ILogger logger, string task, string slot);
 
+    [LoggerMessage(EventId = CustosEventIds.PowerAction, Level = LogLevel.Information,
+        Message = "After task {Task}: {Action} of the computer now")]
+    public static partial void PowerAction(ILogger logger, string task, string action);
+
+    [LoggerMessage(EventId = CustosEventIds.PowerCancelled, Level = LogLevel.Information,
+        Message = "After task {Task}: {Action} of the computer cancelled by {User}")]
+    public static partial void PowerCancelled(ILogger logger, string task, string action, string user);
+
+    [LoggerMessage(EventId = CustosEventIds.PowerFailed, Level = LogLevel.Error,
+        Message = "After task {Task}: {Action} of the computer failed: {Error}")]
+    public static partial void PowerFailed(ILogger logger, string task, string action, string error);
+
     [LoggerMessage(EventId = CustosEventIds.VssFailed, Level = LogLevel.Warning,
         Message = "Task {Task}: the shadow copy (VSS) could not be made")]
     public static partial void VssFailed(ILogger logger, string task);

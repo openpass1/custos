@@ -398,6 +398,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.GetRestoreStatus(), json.RestoreStatusResult),
             PipeProtocol.Methods.RestoreStop =>
                 Ok(id, agent.StopRestore(user)),
+            PipeProtocol.Methods.PowerCancel =>
+                Ok(id, agent.CancelPower(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
         };
     }
