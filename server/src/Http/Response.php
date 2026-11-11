@@ -6,9 +6,29 @@ namespace Custos\Http;
 
 final class Response
 {
+    /** A file sent as the body instead of $body (agent update packages): read in chunks, never held in memory. */
+    public ?string $file = null;
+
     /** @param array<string, string> $headers */
     public function __construct(public int $status = 200, public string $body = '', public array $headers = [])
     {
+    }
+
+    public static function file(string $path, string $contentType, string $downloadName): self
+    {
+        $response = new self(200, '', [
+            'Content-Type' => $contentType,
+            'Content-Length' => (string) filesize($path),
+            'Content-Disposition' => 'attachment; filename="' . str_replace('"', '', $downloadName) . '"',
+        ]);
+        $response->file = $path;
+        return $response;
+    }
+
+    /** The body, read from the file for a file response. */
+    public function content(): string
+    {
+        return $this->file === null ? $this->body : (string) file_get_contents($this->file);
     }
 
     public static function json(int $status, array|object $data): self
@@ -50,6 +70,13 @@ final class Response
         http_response_code($this->status);
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
+        }
+        if ($this->file !== null) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            readfile($this->file);
+            return;
         }
         echo $this->body;
     }

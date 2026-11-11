@@ -1,11 +1,16 @@
 <?php
 /**
  * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
- * @var array $runs @var int $refresh
+ * @var array $runs @var int $refresh @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
+ * @var array $settings
  */
 use Custos\Domain\Agents;
 
 $online = $live['online'];
+$approved = $agent['status'] === 'approved';
+$older = fn(?string $have, ?array $package) => $package !== null && ((string) $have === '' || version_compare((string) $have, $package['version'], '<'));
+$agentOld = $older($agent['agent_version'], $currentVersion);
+$sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a></p>
 <h1><?= e(Agents::name($agent)) ?>
@@ -35,7 +40,10 @@ $online = $live['online'];
             </dd>
             <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
             <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
-            <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?></dd>
+            <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?>
+                <?php if ($agentOld && (string) $agent['agent_version'] !== ''): ?><?= badge('warning', t('agent.version.old', ['version' => $currentVersion['version']])) ?><?php endif ?></dd>
+            <dt><?= e(t('agent.sevenzip')) ?></dt><dd><?= e($agent['sevenzip_version'] ?? t('agent.sevenzip.unknown')) ?>
+                <?php if ($sevenZipOld && $agent['sevenzip_version'] !== null): ?><?= badge('warning', t('agent.version.old', ['version' => $latestSevenZip['version']])) ?><?php endif ?></dd>
             <dt><?= e(t('agent.time_zone')) ?></dt><dd><?= e($agent['time_zone']) ?></dd>
             <dt><?= e(t('agent.first_seen')) ?></dt><dd><?= e(fmt_time($agent['first_seen_at'])) ?></dd>
             <dt><?= e(t('agent.last_seen')) ?></dt>
@@ -71,10 +79,36 @@ $online = $live['online'];
                     </form>
                 <?php endif ?>
             <?php elseif ($agent['status'] === 'approved'): ?>
+                <div class="buttons">
+                    <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new')) ?>"><?= e(t('agent.action.add_task')) ?></a>
+                    <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/settings')) ?>"><?= e(t('agent.action.settings')) ?></a>
+                    <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/inventory')) ?>">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="secondary"><?= e(t('agent.action.inventory')) ?></button>
+                    </form>
+                </div>
+                <?php if ($agentOld || $sevenZipOld): ?>
+                    <div class="buttons">
+                        <?php if ($agentOld): ?>
+                            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/update')) ?>"
+                                  data-confirm="<?= e(t('agent.confirm.update', ['version' => $currentVersion['version']])) ?>">
+                                <?= csrf_field() ?>
+                                <button type="submit"><?= e(t('agent.action.update', ['version' => $currentVersion['version']])) ?></button>
+                            </form>
+                        <?php endif ?>
+                        <?php if ($sevenZipOld): ?>
+                            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/sevenzip')) ?>"
+                                  data-confirm="<?= e(t('agent.confirm.sevenzip', ['version' => $latestSevenZip['version']])) ?>">
+                                <?= csrf_field() ?>
+                                <button type="submit"><?= e(t('agent.action.sevenzip', ['version' => $latestSevenZip['version']])) ?></button>
+                            </form>
+                        <?php endif ?>
+                    </div>
+                <?php endif ?>
                 <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/disable')) ?>"
                       data-confirm="<?= e(t('agents.confirm.disable')) ?>">
                     <?= csrf_field() ?>
-                    <button type="submit"><?= e(t('agents.action.disable')) ?></button>
+                    <button type="submit" class="secondary"><?= e(t('agents.action.disable')) ?></button>
                 </form>
             <?php else: ?>
                 <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/enable')) ?>">
@@ -102,6 +136,13 @@ $online = $live['online'];
     <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
     <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 </div>
+
+<?php if ($commands !== []): ?>
+    <section class="panel">
+        <h2><?= e(t('commands.title')) ?></h2>
+        <?php $showTask = true; $back = '/agents/' . $agent['id']; include __DIR__ . '/_commands.php'; ?>
+    </section>
+<?php endif ?>
 
 <section class="panel">
     <h2><?= e(t('agent.runs')) ?></h2>

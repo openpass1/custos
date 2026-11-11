@@ -92,3 +92,155 @@ document.addEventListener('change', (event) => {
         }
     });
 })();
+
+// Forms with conditional parts (task editor, agent settings, updates):
+// - [data-show-if="name=a|b&other!=c"] is shown only while the fields of its scope have these values. The scope is
+//   the nearest [data-scope]; inside a row of a list the names are the last part: "kind" stands for sources[3][kind].
+// - [data-add-row="x"] adds a copy of <template data-row-template="x"> to [data-rows="x"]; [data-remove-row] removes
+//   its row ([data-row]).
+// - In the task editor the account list of a row shows only accounts of the kind the row needs, and 7z is offered
+//   only while every destination can seek (client spec 6.5).
+(() => {
+    const fieldsOf = (scope, name) => [...scope.querySelectorAll('input[name], select[name], textarea[name]')]
+        .filter((f) => f.closest('[data-scope]') === scope && (f.name === name || f.name.endsWith('[' + name + ']')));
+
+    const valueOf = (scope, name) => {
+        for (const field of fieldsOf(scope, name)) {
+            if (field.type === 'radio' || field.type === 'checkbox') {
+                if (field.checked) {
+                    return field.value;
+                }
+            } else {
+                return field.value;
+            }
+        }
+        return '';
+    };
+
+    const holds = (scope, condition) => condition.split('&').every((part) => {
+        const m = /^([^!=]+)(!?=)(.*)$/.exec(part.trim());
+        if (!m) {
+            return true;
+        }
+        const match = m[3].split('|').includes(valueOf(scope, m[1]));
+        return m[2] === '=' ? match : !match;
+    });
+
+    const editorChecks = (editor) => {
+        const seekable = (editor.getAttribute('data-seekable') || '').split('|');
+        const kinds = [...editor.querySelectorAll('select[data-destination-kind]')].map((s) => s.value);
+        const bad = kinds.some((k) => !seekable.includes(k));
+        for (const radio of editor.querySelectorAll('input[data-needs-seekable]')) {
+            // A 7z already chosen stays chosen (the server explains why it cannot be saved); it is not offered anew.
+            radio.disabled = editor.disabled || (bad && !radio.checked);
+        }
+        for (const hint of editor.querySelectorAll('[data-seekable-hint]')) {
+            hint.hidden = !bad;
+        }
+    };
+
+    const filterAccounts = (editor, row, reset) => {
+        let map = {};
+        try {
+            map = JSON.parse(editor.getAttribute('data-credential-kinds') || '{}');
+        } catch {
+            return;
+        }
+        const select = row.querySelector('select[data-credential-select]');
+        if (!select) {
+            return;
+        }
+        const need = map[valueOf(row, 'kind')] || '';
+        for (const option of select.querySelectorAll('option[data-kind]')) {
+            option.hidden = option.getAttribute('data-kind') !== need;
+            if (option.hidden && option.selected && reset) {
+                select.value = '';
+            }
+        }
+    };
+
+    const update = (changed) => {
+        for (const el of document.querySelectorAll('[data-show-if]')) {
+            const scope = el.parentElement ? el.parentElement.closest('[data-scope]') : null;
+            if (scope) {
+                el.hidden = !holds(scope, el.getAttribute('data-show-if'));
+            }
+        }
+        for (const editor of document.querySelectorAll('[data-editor]')) {
+            editorChecks(editor);
+            for (const row of editor.querySelectorAll('[data-row]')) {
+                filterAccounts(editor, row, changed !== null && row.contains(changed));
+            }
+        }
+    };
+
+    let counter = 0;
+    document.addEventListener('click', (event) => {
+        const add = event.target.closest('[data-add-row]');
+        if (add) {
+            const name = add.getAttribute('data-add-row');
+            const template = document.querySelector('template[data-row-template="' + name + '"]');
+            const rows = document.querySelector('[data-rows="' + name + '"]');
+            if (template && rows) {
+                const index = 'n' + Date.now().toString(36) + (counter++);
+                rows.insertAdjacentHTML('beforeend', template.innerHTML.split('__i__').join(index));
+                update(null);
+                const first = rows.lastElementChild && rows.lastElementChild.querySelector('input[type="text"]');
+                if (first) {
+                    first.focus();
+                }
+            }
+            return;
+        }
+        const remove = event.target.closest('[data-remove-row]');
+        if (remove) {
+            const row = remove.closest('[data-row]');
+            if (row) {
+                row.remove();
+                update(null);
+            }
+        }
+    });
+    document.addEventListener('change', (event) => update(event.target));
+    document.addEventListener('input', (event) => {
+        if (event.target.matches('select, input[type="radio"], input[type="checkbox"]')) {
+            update(event.target);
+        }
+    });
+    if (document.querySelector('[data-show-if], [data-editor]')) {
+        update(null);
+    }
+})();
+
+// SMTP form: choosing SSL or STARTTLS fills in the usual port (465 or 587), unless a non-standard port was typed in;
+// the SMTP login is copied into the sender address while the two are the same (usually they are). Both stay editable.
+(() => {
+    const block = document.querySelector('[data-smtp]');
+    if (!block) {
+        return;
+    }
+    const encryption = block.querySelector('[name="smtp_encryption"]');
+    const port = block.querySelector('[name="smtp_port"]');
+    const login = block.querySelector('[name="smtp_user"]');
+    const from = block.querySelector('[name="mail_from"]');
+    const ports = { ssl: '465', starttls: '587', none: '25' };
+    if (encryption && port) {
+        encryption.addEventListener('change', () => {
+            const standard = port.value === '' || Object.values(ports).includes(port.value);
+            if (standard && ports[encryption.value]) {
+                port.value = ports[encryption.value];
+            }
+        });
+    }
+    if (login && from) {
+        let same = from.value === '' || from.value === login.value;
+        from.addEventListener('input', () => {
+            same = from.value === '' || from.value === login.value;
+        });
+        login.addEventListener('input', () => {
+            if (same) {
+                from.value = login.value.includes('@') ? login.value : '';
+            }
+        });
+    }
+})();

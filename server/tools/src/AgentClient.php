@@ -115,6 +115,27 @@ final class AgentClient
         return $this->serverPublicKey !== null && self::verify("$version\n$sha256", $signature, $this->serverPublicKey);
     }
 
+    /** Checks the signature of the server's 7-Zip command (A.10): "7zip\n{version}\n{sha256}". */
+    public function verifySevenZip(string $version, string $sha256, string $signature): bool
+    {
+        return $this->serverPublicKey !== null && self::verify("7zip\n$version\n$sha256", $signature, $this->serverPublicKey);
+    }
+
+    /**
+     * Downloads a package (A.10): a signed GET whose 200 body is the file itself and is not signed; it is checked by
+     * the SHA-256 and signature from the command instead. An error answer is signed like any other.
+     *
+     * @return array{ok: bool, body: string, reason: string}
+     */
+    public function download(string $path): array
+    {
+        $result = $this->call('GET', $path);
+        if ($result->status === 200) {
+            return ['ok' => true, 'body' => $result->body, 'reason' => ''];
+        }
+        return ['ok' => false, 'body' => '', 'reason' => $result->describe()];
+    }
+
     public static function requestString(string $method, string $path, string $time, string $nonce, string $body): string
     {
         return "$method\n$path\n$time\n$nonce\n" . hash('sha256', $body);

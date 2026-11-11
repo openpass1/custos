@@ -27,6 +27,7 @@ final class Request
         public readonly array $post = [],
         private ?string $body = null,
         ?\Closure $bodyReader = null,
+        public readonly array $files = [],
     ) {
         $this->bodyReader = $bodyReader;
     }
@@ -60,15 +61,12 @@ final class Request
             $https = strtolower($headers['x-forwarded-proto'] ?? ($https ? 'https' : 'http')) === 'https';
         }
 
-        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
-        $basePath = rtrim(dirname($script), '/.');
-
         return new self(
             method: strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')),
             uri: (string) ($_SERVER['REQUEST_URI'] ?? '/'),
             headers: $headers,
             ip: $ip,
-            basePath: $basePath,
+            basePath: self::basePath((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')),
             https: $https,
             query: $_GET,
             post: $_POST,
@@ -76,6 +74,7 @@ final class Request
                 $body = file_get_contents('php://input', false, null, 0, $limit + 1);
                 return $body === false ? '' : $body;
             },
+            files: $_FILES,
         );
     }
 
@@ -100,6 +99,16 @@ final class Request
         }
         return (!empty($server['HTTPS']) && strtolower((string) $server['HTTPS']) !== 'off')
             || (int) ($server['SERVER_PORT'] ?? 0) === 443;
+    }
+
+    /**
+     * Where the site starts, from the front controller's SCRIPT_NAME ("/custos/index.php" => "/custos"). Under
+     * "php -S" SCRIPT_NAME can be any part of the path with a dot in it ("/updates/agent/1.0.1"): that is not a base.
+     */
+    public static function basePath(string $scriptName): string
+    {
+        $script = str_replace('\\', '/', $scriptName);
+        return str_ends_with($script, '/index.php') ? rtrim(dirname($script), '/.') : '';
     }
 
     public function path(): string

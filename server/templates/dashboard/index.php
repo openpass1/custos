@@ -11,6 +11,7 @@
         <div>
             <div data-part="running"><?= $parts['running'] ?></div>
             <div data-part="notices"><?= $parts['notices'] ?></div>
+            <div data-part="versions"><?= $parts['versions'] ?></div>
         </div>
     </div>
 </div>

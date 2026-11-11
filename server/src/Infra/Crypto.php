@@ -104,6 +104,32 @@ final class Crypto
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 
+    /** Iterations of the program password hash (A.2). */
+    public const PASSWORD_ITERATIONS = 200000;
+
+    /**
+     * Hash of the program password for settings.update (A.2): pbkdf2-sha256$<iterations>$<salt base64>$<hash base64>,
+     * a 16-byte salt and a 32-byte hash. The agent checks a typed password with Rfc2898DeriveBytes.Pbkdf2.
+     */
+    public static function programPasswordHash(string $password, ?string $salt = null): string
+    {
+        $salt ??= random_bytes(16);
+        $hash = hash_pbkdf2('sha256', $password, $salt, self::PASSWORD_ITERATIONS, 32, true);
+        return 'pbkdf2-sha256$' . self::PASSWORD_ITERATIONS . '$' . base64_encode($salt) . '$' . base64_encode($hash);
+    }
+
+    /**
+     * Deterministic UUID (version 4 layout) from a name: the same template item on the same machine always gets the
+     * same id, so applying a template again updates the task it created.
+     */
+    public static function uuidFrom(string $name): string
+    {
+        $bytes = substr(hash('sha256', $name, true), 0, 16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+
     /**
      * secret_enc of A.2: base64(RSA-OAEP(SHA-1) encrypted AES-256 key, 384 bytes || nonce, 12 bytes || ciphertext || tag, 16 bytes).
      */

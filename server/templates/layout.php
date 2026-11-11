@@ -7,8 +7,8 @@ $counts = $user === null ? [] : [
     'problems' => (int) $app->db()->value('SELECT COUNT(*) FROM problems WHERE closed_at IS NULL'),
 ];
 $unread = $user === null ? 0 : $app->notices()->unreadCount();
-$nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'users' => '/users',
-        'audit' => '/audit', 'settings' => '/settings'];
+$nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'templates' => '/templates',
+        'updates' => '/updates', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
 ?>
 <!doctype html>
 <html lang="ru">
