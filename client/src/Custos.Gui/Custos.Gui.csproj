@@ -20,6 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The window tests (built and run on Windows only) open the windows with made-up data. -->
+    <InternalsVisibleTo Include="Custos.Gui.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources\*.ico" LogicalName="Custos.Gui.Resources.%(Filename)%(Extension)" />
   </ItemGroup>
 

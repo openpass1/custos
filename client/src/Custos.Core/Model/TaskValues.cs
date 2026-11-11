@@ -1,0 +1,155 @@
+namespace Custos.Core.Model;
+
+// String values of the task object (appendix A.9 of docs/protocol.md). They are kept as strings rather than enums so
+// that a value written by a newer version survives a round trip through an older one.
+
+/// <summary>Values of <see cref="TaskDefinition.BackupType"/> and of the backup type of a run.</summary>
+public static class BackupTypes
+{
+    public const string Full = "full";
+    public const string Incremental = "incremental";
+    public const string Differential = "differential";
+    public const string Mirror = "mirror";
+}
+
+/// <summary>Values of <see cref="TaskDefinition.MirrorMode"/>.</summary>
+public static class MirrorModes
+{
+    public const string Exact = "exact";
+    public const string Safe = "safe";
+}
+
+/// <summary>Values of <see cref="TaskSource.Kind"/>.</summary>
+public static class SourceKinds
+{
+    public const string Folder = "folder";
+    public const string File = "file";
+    public const string Unc = "unc";
+}
+
+/// <summary>Values of <see cref="TaskDestination.Kind"/>.</summary>
+public static class DestinationKinds
+{
+    public const string Local = "local";
+    public const string Unc = "unc";
+    public const string Usb = "usb";
+    public const string Ftp = "ftp";
+    public const string Ftps = "ftps";
+    public const string Sftp = "sftp";
+    public const string S3 = "s3";
+    public const string WebDav = "webdav";
+
+    /// <summary>Kinds this version can write to.</summary>
+    public static bool IsSupported(string kind) => kind is Local or Unc or Usb;
+
+    /// <summary>
+    /// The folder of a <see cref="Usb"/> destination relative to the root of the disk. A drive letter typed by mistake
+    /// is dropped: the disk is found by its label, and writing to "E:\..." would go to whatever disk has that letter.
+    /// </summary>
+    public static string UsbFolder(string? path)
+    {
+        string folder = (path ?? string.Empty).Trim();
+        if (folder.Length >= 2 && folder[1] == ':' && char.IsAsciiLetter(folder[0]))
+        {
+            folder = folder[2..];
+        }
+
+        return folder.Trim('\\', '/');
+    }
+}
+
+/// <summary>Values of <see cref="ArchiveOptions.Format"/>.</summary>
+public static class ArchiveFormats
+{
+    public const string None = "none";
+    public const string Zip = "zip";
+    public const string SevenZip = "7z";
+}
+
+/// <summary>Values of <see cref="RetentionOptions.Mode"/>.</summary>
+public static class RetentionModes
+{
+    public const string None = "none";
+    public const string Count = "count";
+    public const string Age = "age";
+    public const string Gfs = "gfs";
+}
+
+/// <summary>Values of <see cref="ScheduleOptions.Type"/>.</summary>
+public static class ScheduleTypes
+{
+    public const string Daily = "daily";
+    public const string Weekly = "weekly";
+    public const string Monthly = "monthly";
+    public const string Interval = "interval";
+    public const string Manual = "manual";
+}
+
+/// <summary>Values of <see cref="VssOptions.OnFailure"/>.</summary>
+public static class VssFailureActions
+{
+    public const string Abort = "abort";
+    public const string Continue = "continue";
+}
+
+/// <summary>Values of <see cref="TaskDefinition.LogLevel"/> and <see cref="AgentSettings.DefaultLogLevel"/>.</summary>
+public static class LogLevels
+{
+    public const string Inherit = "inherit";
+
+    /// <summary>"Итоги и ошибки": totals, warnings and errors.</summary>
+    public const string Summary = "summary";
+
+    /// <summary>"Каждый файл": also every copied file.</summary>
+    public const string Files = "files";
+}
+
+/// <summary>Values of <see cref="TaskEvent.Kind"/>.</summary>
+public static class TaskEventKinds
+{
+    public const string Run = "run";
+    public const string ServiceStop = "service_stop";
+    public const string ServiceStart = "service_start";
+}
+
+/// <summary>Values of <see cref="TaskEvents.After"/>.</summary>
+public static class AfterActions
+{
+    public const string None = "none";
+    public const string Shutdown = "shutdown";
+    public const string Restart = "restart";
+    public const string Sleep = "sleep";
+    public const string Hibernate = "hibernate";
+}
+
+/// <summary>How a run was started (A.5).</summary>
+public static class RunTriggers
+{
+    public const string Schedule = "schedule";
+    public const string CatchUp = "catch_up";
+    public const string Manual = "manual";
+    public const string Remote = "remote";
+}
+
+/// <summary>Result of a run (A.5, A.12).</summary>
+public static class RunStatuses
+{
+    public const string Success = "success";
+    public const string Warning = "warning";
+    public const string Error = "error";
+    public const string Aborted = "aborted";
+
+    /// <summary>A run that counts as a backup: its set is complete, at most some files were skipped.</summary>
+    public static bool IsSuccessful(string? status) => status is Success or Warning;
+}
+
+/// <summary>Values of <see cref="Credential.Kind"/>.</summary>
+public static class CredentialKinds
+{
+    public const string Windows = "windows";
+    public const string Ftp = "ftp";
+    public const string Sftp = "sftp";
+    public const string S3 = "s3";
+    public const string WebDav = "webdav";
+    public const string ArchivePassword = "archive_password";
+}

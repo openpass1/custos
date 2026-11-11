@@ -1,0 +1,373 @@
+# Interface texts. Columns: key, English, Russian (TAB-separated).
+# After a change run: python tools/make-strings.py
+# ---- Tray menu and connection to the service
+AppTitle	CUSTOS	CUSTOS
+MenuOpen	Open CUSTOS	Открыть CUSTOS
+MenuClose	Close interface	Закрыть интерфейс
+MenuCloseHint	backups continue	копирование продолжится
+TrayTooltip	CUSTOS: {0}	CUSTOS: {0}
+StateConnecting	connecting to the service…	подключение к службе…
+StateRunning	service is running	служба работает
+StateStopping	service is stopping	служба останавливается
+StateUnavailable	service is not responding	служба не отвечает
+ProblemNotRunning	The CUSTOS service is not running or does not answer.	Служба CUSTOS не запущена или не отвечает.
+ProblemAccessDenied	Windows denied access to the CUSTOS service channel.	Windows не дала доступ к каналу службы CUSTOS.
+ProblemVersionMismatch	The interface and the service are different versions. Reinstall CUSTOS.	Версии интерфейса и службы не совпадают. Переустановите CUSTOS.
+ProblemConnectionLost	The service closed the connection.	Служба разорвала соединение.
+ServerNotConnected	Server not connected — working standalone	Сервер не подключён — программа работает автономно
+RightsAdmin	administrator	администратор
+RightsUser	view and run	просмотр и запуск
+UserWithRights	{0} — {1}	{0} — {1}
+# ---- Main window: toolbar
+ToolCreate	Create	Создать
+ToolImportCobian	Import from Cobian Backup…	Импорт из Cobian Backup…
+ToolEdit	Edit	Изменить
+ToolClone	Clone	Клонировать
+ToolDelete	Delete	Удалить
+ToolRun	Run	Запустить
+ToolStop	Stop	Остановить
+ToolPause	Pause	Пауза
+ToolPauseHint	Pause or resume the running task	Приостановить или продолжить выполняемое задание
+ToolRestore	Restore	Восстановить
+RestoreLater	Restoring backups arrives in a later version of CUSTOS.	Восстановление появится в следующих версиях CUSTOS.
+ToolCard	Card	Карточка
+ToolCardHint	Show or hide the task card	Показать или скрыть карточку задания
+ToolSettings	Settings	Настройки
+ToolTipShortcut	{0} ({1})	{0} ({1})
+ToolAdminsOnly	Changes — administrators only	Изменение — только для администраторов
+# ---- Main window: list, tabs, messages
+TabLog	Log	Журнал
+TabHistory	Run history	История запусков
+TabProgress	Progress	Прогресс
+ColumnTask	Task	Задание
+ColumnType	Type	Тип
+ColumnSchedule	Schedule	Расписание
+ColumnLastRun	Last run	Последний запуск
+ColumnResult	Result	Результат
+ColumnNextRun	Next run	Следующий запуск
+ResultRunning	Running {0} %	Выполняется {0} %
+ResultPaused	Paused {0} %	Пауза {0} %
+ResultStopping	Stopping…	Останавливается…
+ResultQueued	Queued	В очереди
+ResultDisabled	Off	Отключено
+ResultNeverRun	Not run yet	Ещё не запускалось
+NoConnection	{0}\n\nThe window connects again by itself as soon as the service answers.	{0}\n\nОкно подключится само, как только служба ответит.
+ConfirmDelete	Delete the task «{0}»?\n\nThe backups it has made stay where they are.	Удалить задание «{0}»?\n\nУже сделанные копии останутся на месте.
+CloneName	{0} (copy)	{0} (копия)
+NewTaskName	New task	Новое задание
+ProblemNoConnection	No connection to the CUSTOS service.	Нет связи со службой CUSTOS.
+ProblemNoAnswer	The service did not answer in time.	Служба не ответила вовремя.
+ProblemRequestFailed	The service could not do it: {0}	Служба не смогла выполнить запрос: {0}
+ProblemUnexpected	Something went wrong in the CUSTOS window: {0}\n\nBackups go on: the service does not depend on the window. The details are written to {1}. If this repeats, close the interface from the tray menu and open it again.	В окне CUSTOS произошла ошибка: {0}\n\nКопирование продолжается: служба от окна не зависит. Подробности записаны в {1}. Если ошибка повторяется, закройте интерфейс через меню в трее и откройте снова.
+Yes	yes	да
+No	no	нет
+# ---- Task card
+CardNoSelection	Select a task in the list	Выберите задание в списке
+CardSubtitle	Type: {0} · {1}	Тип: {0} · {1}
+CardEnabled	on	включено
+CardDisabled	off	отключено
+CardProgress	Progress	Прогресс
+CardProgressLeft	{0} left	осталось {0}
+CardSources	Sources	Источники
+CardDestinations	Destinations	Назначения
+CardSchedule	Schedule	Расписание
+CardLastSuccess	Last success	Последний успешный
+CardLastRun	Last run	Последний запуск
+CardNextRun	Next run	Следующий запуск
+CardChanged	Changed	Изменено
+CardComment	Comment	Комментарий
+CardNone	none	нет
+CardNever	none yet	ещё не было
+CardNotRecursive	{0} (without subfolders)	{0} (без подпапок)
+CardAsAccount	{0} — as {1}	{0} — под учётной записью {1}
+CardRunSummary	{0}: {1} files, {2}	{0}: файлов {1}, {2}
+CardFailedRun	{0} — {1}: {2}	{0} — {1}: {2}
+CardDisabledNoRuns	none: the task is off	нет: задание отключено
+CardOnRequest	only when started by hand	только вручную
+CardChangedBy	{0}, {1}	{0}, {1}
+CardChangedOnServer	monitoring site ({0})	сайт мониторинга ({0})
+# ---- Log, run history, progress
+ColumnTime	Time	Время
+ColumnMessage	Message	Сообщение
+MenuCopy	Copy	Копировать
+MenuSelectAll	Select all	Выделить всё
+ColumnStarted	Started	Начало
+ColumnDuration	Duration	Длительность
+ColumnTrigger	Started by	Как запущено
+ColumnFiles	Files	Файлов
+ColumnSize	Size	Объём
+ColumnDetails	Details	Подробности
+HistoryEmpty	This task has not run yet.	Это задание ещё не запускалось.
+HistorySelectTask	Select a task to see its runs.	Выберите задание, чтобы увидеть его запуски.
+HistoryWarnings	Warnings: {0}	Предупреждений: {0}
+ProgressIdle	No task is running now.	Сейчас ничего не выполняется.
+ProgressTask	Task	Задание
+ProgressTrigger	Started	Запуск
+ProgressPhase	Stage	Этап
+ProgressFile	File	Файл
+ProgressFiles	Files	Файлы
+ProgressBytes	Size	Объём
+ProgressSpeed	Speed	Скорость
+ProgressElapsed	Elapsed	Прошло
+ProgressRemaining	Remaining	Осталось
+ProgressOf	{0} of {1}	{0} из {1}
+ProgressPausedPhase	{0} — paused	{0} — пауза
+ColumnDestination	Destination	Назначение
+ColumnState	State	Состояние
+ColumnError	Error	Ошибка
+DestinationPending	Waiting	Ожидает
+DestinationWriting	Writing	Запись
+DestinationDone	Done	Готово
+DestinationFailed	Failed	Ошибка
+PhaseVss	Creating a shadow copy (VSS)	Создание теневой копии (VSS)
+PhaseScan	Looking for files	Поиск файлов
+PhaseCopy	Copying	Копирование
+PhaseVerify	Checking	Проверка
+PhaseRetention	Deleting old backups	Удаление старых копий
+PhaseEvents	Events	События
+# ---- Tray
+MenuRunAll	Run all tasks	Запустить все задания
+MenuStopCurrent	Stop the running task	Остановить текущее
+MenuStopTask	Stop the running task: {0}	Остановить текущее: {0}
+NothingQueued	Nothing to run: no task is switched on.	Нечего запускать: нет включённых заданий.
+TrayOk	all is well	всё в порядке
+TrayRunning	{0} — {1} %	{0} — {1} %
+TrayError	the last run of «{0}» failed	ошибка в последнем запуске «{0}»
+TrayWarning	the last run of «{0}» needs a look	последний запуск «{0}» требует внимания
+# ---- Task editor: frame and common buttons
+EditorTitle	Task — {0}	Задание — {0}
+EditorTitleNew	New task	Новое задание
+EditorNewTask	New task, not saved yet	Новое задание, ещё не сохранено
+EditorRevision	Revision {0}, changed {1} by {2}	Ревизия {0}, изменено {1}, {2}
+ButtonOk	OK	ОК
+ButtonCancel	Cancel	Отмена
+ButtonClose	Close	Закрыть
+ButtonAdd	Add	Добавить
+ButtonAddAccount	Add…	Добавить…
+ButtonEdit	Edit…	Изменить…
+ButtonRemove	Remove	Удалить
+ButtonBrowse	Browse…	Обзор…
+ButtonChangePassword	Password…	Пароль…
+ButtonTestAccess	Check access	Проверить доступ
+# ---- Task editor: Basic
+PageBasic	Basic	Основное
+EditorName	Name:	Название:
+EditorEnabled	The task is on	Задание включено
+EditorBackupType	Backup type	Тип копии
+TypeFullTitle	Full	Полная
+TypeFullHint	Every time all files are copied. Reliable and simple, but slow, and takes more space.	Каждый раз копируются все файлы. Надёжно и просто, но долго и занимает больше места.
+TypeIncrementalTitle	Incremental	Инкрементальная
+TypeIncrementalHint	Only the files changed since the last backup of any type are copied. Fast and thrifty, but a restore needs the full backup and all incremental ones after it.	Копируются только файлы, изменившиеся с прошлой копии любого типа. Быстро и экономно, но для восстановления нужна полная копия и все инкрементальные после неё.
+TypeDifferentialTitle	Differential	Дифференциальная
+TypeDifferentialHint	The files changed since the last full backup are copied. The backup grows each time, but a restore needs only the full and the last differential backup.	Копируются файлы, изменившиеся с последней полной копии. С каждым разом копия растёт, зато для восстановления нужны только полная и последняя дифференциальная.
+TypeMirrorTitle	Mirror	Зеркало
+TypeMirrorLater	An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.	В назначении поддерживается точная копия источника. Появится в следующей версии CUSTOS.
+EditorForceFull	Forced full backup	Принудительная полная копия
+ForceEvery	Every	Каждый
+ForceEveryRunsSuffix	runs	-й запуск
+ForceWeekday	On the weekday	В день недели
+ForceMonthDay	On the day of the month	В день месяца
+ForceFullNote	Only for incremental and differential tasks. The first backup is always full, and so is a backup whose full one is missing in the destination.	Только для инкрементальных и дифференциальных заданий. Первая копия всегда полная, как и копия, для которой в назначении нет полной.
+LastDayOfMonth	last day of the month	последний день месяца
+EditorComment	Comment	Комментарий
+ErrorNameRequired	Enter the task name.	Введите название задания.
+# ---- Task editor: Sources
+PageSources	Sources	Источники
+SourcesNote	Folders and files to back up. A network folder can be read under its own account.	Папки и файлы, которые нужно копировать. Сетевую папку можно читать под отдельной учётной записью.
+ColumnPath	Path	Путь
+ColumnSubfolders	Subfolders	Подпапки
+ColumnAccount	Account	Учётная запись
+KeepTopDir	Keep the top folder	Сохранять папку верхнего уровня
+KeepTopDirHelp	On: D:\Data is copied into <backup>\Data\…\nOff: the contents of D:\Data go straight into <backup>\…	Включено: D:\Data копируется в <копия>\Data\…\nВыключено: содержимое D:\Data ложится прямо в <копия>\…
+ErrorNoSources	Add at least one source, or switch the task off.	Добавьте хотя бы один источник или отключите задание.
+SourceAddTitle	Add source	Добавить источник
+SourceEditTitle	Source	Источник
+SourceFolder	Folder	Папка
+SourceFile	File	Файл
+SourceNetwork	Network folder	Сетевая папка
+SourcePath	Path:	Путь:
+SourceRecursive	Include subfolders	Включая подпапки
+SourceAccountHelp	The network folder is read under this account. «Service account» is the account of this computer itself: it works in a domain if the computer may read the share; a NAS in a workgroup usually needs a user account.	Сетевая папка читается под этой учётной записью. «Учётная запись службы» — это учётная запись самого компьютера: в домене она подходит, если компьютеру дан доступ к папке, а NAS в рабочей группе обычно требует отдельную учётную запись.
+SourceNote	Files open in other programs are read from a shadow copy when VSS is on for the task (page «Advanced»). Network folders are read without VSS.	Файлы, открытые в других программах, читаются из теневой копии, если в задании включён VSS (страница «Дополнительно»). Сетевые папки читаются без VSS.
+ErrorPathRequired	Enter the path.	Укажите путь.
+ErrorPathNotAbsolute	«{0}» is not a full path. Enter it with the drive letter or as \\server\share.	«{0}» — не полный путь. Укажите путь с буквой диска или в виде \\server\share.
+ErrorNotUnc	«{0}» is not a network path. A network folder starts with two backslashes, for example \\server\share.	«{0}» — не сетевой путь. Сетевая папка начинается с двух обратных косых черт, например \\server\share.
+ErrorUncNeedsNetwork	«{0}» is a network path: choose «Network folder».	«{0}» — сетевой путь: выберите «Сетевая папка».
+# ---- Task editor: Destinations
+PageDestinations	Destinations	Назначения
+DestinationsNote	Where the backups go. With several destinations the files are read once and written to all of them; if one fails, the others still get the backup.	Куда записываются копии. Если назначений несколько, файлы читаются один раз и пишутся во все, а сбой одного не мешает остальным.
+DestinationProperties	Selected destination	Выбранное назначение
+DestinationKind	Type:	Тип:
+DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск — ищется по метке тома, поэтому смена буквы диска не мешает.
+KindLocal	Local folder	Локальная папка
+KindUnc	Network folder	Сетевая папка
+KindUsb	USB disk	USB-диск
+KindLater	{0} (in a later version)	{0} (в следующих версиях)
+DestinationFolder	Folder:	Папка:
+DestinationFolderOnDisk	Folder on the disk:	Папка на диске:
+DestinationUsbLabel	Disk label:	Метка диска:
+DestinationUsbHelp	The disk is found by its volume label, so its drive letter does not matter. The list offers the labels of the disks connected now. The folder is a path on that disk without the drive letter, for example Backup\Office.	Диск ищется по метке тома, поэтому буква диска не важна. В списке — метки дисков, подключённых сейчас. Папка — путь на этом диске без буквы, например Backup\Office.
+DestinationAccount	Account:	Учётная запись:
+DestinationAccountHelp	The network folder is opened under this account; files on this computer are still read by the service. «Service account» is the account of this computer itself: it works in a domain if the computer may write to the share; a NAS in a workgroup usually needs a user account.	Сетевая папка открывается под этой учётной записью, а файлы этого компьютера служба читает как обычно. «Учётная запись службы» — это учётная запись самого компьютера: в домене она подходит, если компьютеру дан доступ к папке, а NAS в рабочей группе обычно требует отдельную учётную запись.
+DestinationLater	This type of destination arrives in a later version of CUSTOS. Until then the task writes nothing there and reports an error for it.	Этот тип назначения появится в следующих версиях CUSTOS. Пока задание в него ничего не пишет и отмечает его ошибкой.
+TestRunning	Checking…	Проверяю…
+TestOk	Access is fine: {0}, free {1}.	Доступ есть: {0}, свободно {1}.
+TestFailed	No access: {0}	Нет доступа: {0}
+EditorLayout	Layout of the backups	Размещение копий
+SeparateFolders	A separate folder for each backup	Отдельная папка для каждой копии
+SeparateFoldersHelp	On: each backup goes into its own folder, named by the template below, and old backups are deleted by the retention rules.\nOff: the files go straight into the destination folder and are updated there at each run; earlier versions are not kept.	Включено: каждая копия ложится в свою папку с именем по шаблону ниже, а старые копии удаляются по правилам хранения.\nВыключено: файлы пишутся прямо в папку назначения и обновляются там при каждом запуске; прежние версии не сохраняются.
+NameTemplate	Folder name:	Имя папки:
+NameTemplateHelp	The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.	Имя папки каждой копии. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.
+ErrorNoDestinations	Add at least one destination, or switch the task off.	Добавьте хотя бы одно назначение или отключите задание.
+ErrorDestinationFolderRequired	Enter the folder of the destination.	Укажите папку назначения.
+ErrorUsbLabelRequired	Enter the label of the USB disk.	Укажите метку USB-диска.
+ErrorTemplateRequired	Enter the name of the backup folders.	Укажите имя папок копий.
+# ---- Task editor: Schedule
+PageSchedule	Schedule	Расписание
+ScheduleType	Run:	Запуск:
+ScheduleDaily	Daily	Ежедневно
+ScheduleWeekly	Weekly	Еженедельно
+ScheduleMonthly	Monthly	Ежемесячно
+ScheduleByInterval	By timer, every N minutes	По таймеру, каждые N минут
+ScheduleManual	Only by hand	Только вручную
+ScheduleTimes	Time:	Время:
+ScheduleTimesHelp	One or more times separated by commas, for example 12:30, 21:00.	Одно или несколько времён через запятую, например 12:30, 21:00.
+ScheduleWeekdays	Days:	Дни недели:
+ScheduleMonthDays	Days of the month:	Числа месяца:
+ScheduleMonthDaysHelp	Numbers from 1 to 31 separated by commas, for example 1, 15. A month without that day (31 in April) has no run: for the end of every month tick «last day of the month».	Числа от 1 до 31 через запятую, например 1, 15. В месяце без такого числа (31 апреля) запуска не будет: для конца каждого месяца отметьте «последний день месяца».
+ScheduleInterval	Every:	Каждые:
+Minutes	minutes	мин
+ScheduleCatchUp	Catch up a missed run	Догонять пропущенный запуск
+ScheduleCatchUpHelp	If the computer was off or asleep at the time of a run, the task runs once when the computer is back. Only the last missed run of the past 7 days counts.	Если в момент запуска компьютер был выключен или спал, задание выполнится один раз после включения. Учитывается только последний пропущенный запуск за 7 дней.
+SchedulePreview	In plain words	Простыми словами
+ScheduleUpcoming	Next runs: {0}	Ближайшие запуски: {0}
+ScheduleTimeZoneNote	Times are the local time of this computer.	Время — местное время этого компьютера.
+ErrorBadTime	«{0}» is not a time. Use HH:MM, for example 21:30.	«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.
+ErrorBadMonthDay	«{0}» is not a day of the month (1 to 31).	«{0}» — не число месяца (от 1 до 31).
+ErrorNoTimes	Enter at least one time.	Укажите хотя бы одно время запуска.
+ErrorNoWeekdays	Tick at least one day of the week.	Отметьте хотя бы один день недели.
+ErrorNoMonthDays	Enter at least one day of the month, or tick «last day of the month».	Укажите хотя бы одно число месяца или отметьте «последний день месяца».
+# ---- Task editor: Archive, Retention, Filters, Events, Advanced
+PageArchive	Archive	Архив
+ArchiveLater	Compression and encryption arrive in the next version of CUSTOS. Until then backups are plain copies of the files, which open without any program.	Сжатие и шифрование появятся в следующей версии CUSTOS. Пока копии — обычные файлы, которые открываются без всяких программ.
+ArchiveNone	No compression, plain files	Без сжатия, обычные файлы
+ArchiveZip	ZIP	ZIP
+ArchiveSevenZip	7z	7z
+ArchiveSetButUnsupported	This task is set to compress (for example after an import from Cobian). It does not run until compression arrives; choose «No compression» to run it now.	В задании задано сжатие (например, после импорта из Cobian). Такое задание не выполняется, пока сжатие не появится; выберите «Без сжатия», чтобы оно заработало сейчас.
+PageRetention	Retention	Хранение
+RetentionNone	Keep all backups	Хранить все копии
+RetentionCount	Keep the last	Хранить последние
+RetentionCountSuffix	full backups with their chains	полных копий вместе с их цепочками
+RetentionCountHint	A full backup is deleted together with the incremental and differential backups made after it, never on its own.	Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.
+RetentionAge	Delete backups older than N days	Удалять копии старше N дней
+RetentionGfs	Grandfather-father-son: daily, weekly and monthly backups	Дед-отец-сын: дневные, недельные и месячные копии
+RetentionLater	These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.	Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.
+RetentionRules	Rules that always apply	Правила, которые действуют всегда
+RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works only with «A separate folder for each backup» on.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает, только если включено «Отдельная папка для каждой копии».
+FiltersHeading	Filters	Фильтры
+FiltersNote	They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? for one character.	Действуют на все источники задания. Маски разделяются точкой с запятой: * — любые символы, ? — один символ.
+FilterInclude	Only files:	Только файлы:
+FilterIncludeHelp	If set, only the files matching these masks are copied, for example *.docx; *.xlsx. Empty: all files.	Если задано, копируются только файлы по этим маскам, например *.docx; *.xlsx. Пусто — все файлы.
+FilterExclude	Skip files:	Пропускать файлы:
+FilterExcludeHelp	The files matching these masks are not copied, for example *.bak; Thumbs.db.	Файлы по этим маскам не копируются, например *.bak; Thumbs.db.
+FilterExcludeDirs	Skip folders:	Пропускать папки:
+FilterExcludeDirsHelp	One folder per line; it is skipped with everything inside. A name (Temp, Cache) is skipped everywhere; a path from the source folder (Projects\Old) or a full path only in that place. «Browse…» adds a full path.	По одной папке на строке, она пропускается со всем содержимым. Имя (Temp, Cache) пропускается везде; путь от папки источника (Projects\Old) или полный путь — только в этом месте. «Обзор…» добавляет полный путь.
+FilterExcludeDirsBrowse	Folder not to copy	Папка, которую не нужно копировать
+SkipHidden	Skip hidden files and folders	Пропускать скрытые файлы и папки
+SkipSystem	Skip system files and folders	Пропускать системные файлы и папки
+SkipTemp	Skip temporary files	Пропускать временные файлы
+SkipTempHelp	Files that Windows marks as temporary (the «temporary» attribute). Masks like *.tmp go into «Skip files».	Файлы, которые Windows пометила как временные (атрибут «временный»). Маски вроде *.tmp задайте в «Пропускать файлы».
+PageEvents	Events	События
+EventsLater	Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.	Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.
+EventsSetButUnsupported	This task has events. They are kept in the task but not run in this version.	В задании есть события. Они сохранены в задании, но в этой версии не выполняются.
+PageAdvanced	Advanced	Дополнительно
+EditorVss	Open files	Открытые файлы
+VssEnabled	Use a shadow copy (VSS)	Использовать теневую копию (VSS)
+VssHelp	Windows takes a snapshot of the disks with the sources, and files open in other programs (mail databases, accounting databases and the like) are copied from it in a consistent state. Works for disks of this computer only.	Windows делает снимок дисков с источниками, и файлы, открытые в других программах (почтовые и учётные базы и т. п.), копируются из него в согласованном виде. Работает только для дисков этого компьютера.
+VssOnFailure	If the shadow copy fails:	Если теневая копия не удалась:
+VssAbort	stop the task	прервать задание
+VssContinue	copy without it, with a warning	копировать без неё, с предупреждением
+EditorReading	Reading files	Чтение файлов
+ReadRetries	Retries after a read error:	Повторов при ошибке чтения:
+ReadRetriesHelp	How many more times to try a file that could not be read, 2 seconds apart. 0: no retries.	Сколько раз ещё пробовать прочитать файл после ошибки, с паузой 2 секунды. 0 — не повторять.
+EditorLogAndQueue	Log and queue	Журнал и очередь
+LogLevel	Log detail:	Детальность журнала:
+LogLevelInherit	As in the program settings	Как в настройках программы
+LogLevelSummary	Totals and errors	Итоги и ошибки
+LogLevelFiles	Every file	Каждый файл
+Priority	Priority in the queue:	Приоритет в очереди:
+PriorityHelp	When several tasks wait in the queue, the one with the higher number runs first. Tasks run one at a time.	Если в очереди несколько заданий, первым выполняется то, у которого число больше. Задания выполняются по одному.
+# ---- Accounts
+AccountService	Service account (SYSTEM)	Учётная запись службы (SYSTEM)
+AccountUnknown	(account not found)	(учётная запись не найдена)
+AccountNotUsed	not used	не используется
+AccountAddTitle	Add account	Добавить учётную запись
+AccountEditTitle	Account {0}	Учётная запись {0}
+AccountUser	User:	Пользователь:
+AccountDomain	Domain or computer:	Домен или компьютер:
+AccountDomainNote	For a domain account enter the domain, for example OFFICE. For an account of a NAS or of another computer you may leave it empty; if access fails, enter the name of that NAS or computer, for example NAS01.	Для доменной учётной записи укажите домен, например OFFICE. Для учётной записи NAS или другого компьютера поле можно оставить пустым; если доступа не будет, впишите имя этого NAS или компьютера, например NAS01.
+AccountPassword	Password:	Пароль:
+ShowPassword	Show password	Показать пароль
+AccountPasswordNote	The service keeps the password encrypted (Windows DPAPI) and never shows it again.	Служба хранит пароль в зашифрованном виде (Windows DPAPI) и больше его не показывает.
+AccountKeepPasswordNote	Leave the password empty to keep the stored one.	Оставьте пароль пустым, чтобы не менять сохранённый.
+ErrorUserRequired	Enter the user name.	Введите имя пользователя.
+ErrorPasswordRequired	Enter the password.	Введите пароль.
+ConfirmDeleteAccount	Remove the account {0}?	Удалить учётную запись {0}?
+# ---- Settings
+SettingsTitle	CUSTOS settings	Настройки CUSTOS
+SettingsLogs	Logs and copying	Журналы и копирование
+DefaultLogLevel	Log detail:	Детальность журнала:
+DefaultLogLevelHelp	«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files; handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.	«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов: удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.
+LogRetention	Keep logs, days:	Хранить журналы, дней:
+CopyPriority	Copy priority:	Приоритет копирования:
+CopyPriorityHelp	Low: copying gives way to the user and to other programs, so the computer does not slow down; while the disk and the processor are free, they are used fully. Normal: faster on a busy computer, but more noticeable.	Низкий: копирование уступает пользователю и другим программам, и компьютер не тормозит; пока диск и процессор свободны, они используются полностью. Обычный: быстрее на загруженном компьютере, но работать мешает заметнее.
+PriorityLow	Low (recommended)	Низкий (рекомендуется)
+PriorityNormal	Normal	Обычный
+ServiceLanguage	Language of the logs:	Язык журналов:
+ServiceLanguageHelp	The language of the run logs and of the messages of the service. «Automatic» follows the language of Windows. The window itself follows the language of the user.	Язык журналов запусков и сообщений службы. «Автоматически» — по языку Windows. Само окно программы — на языке пользователя.
+LanguageAuto	Automatic	Автоматически
+LanguageRussian	Русский	Русский
+LanguageEnglish	English	English
+SettingsAccounts	Accounts for network folders	Учётные записи для сетевых папок
+SettingsAccountsNote	The service keeps the passwords encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которую использует задание, удалить нельзя.
+SettingsReadOnly	Only administrators can change the settings.	Изменять настройки могут только администраторы.
+ColumnUsedBy	Used by tasks	Используется в заданиях
+# ---- Import from Cobian Backup
+ImportTitle	Import from Cobian Backup	Импорт из Cobian Backup
+ImportFile	Task list:	Список заданий:
+ImportRead	Read	Прочитать
+ImportNote	Cobian Backup 11 keeps its tasks in MainList.lst, usually in C:\Program Files (x86)\Cobian Backup 11\DB. The tasks are added switched off: check each one in the editor and switch it on.	Cobian Backup 11 хранит задания в файле MainList.lst, обычно в папке C:\Program Files (x86)\Cobian Backup 11\DB. Задания добавляются отключёнными: проверьте каждое в редакторе и включите.
+ImportFilter	Cobian task list (MainList.lst)|*.lst|All files|*.*	Список заданий Cobian (MainList.lst)|*.lst|Все файлы|*.*
+ImportCannotRead	Cannot read the task list: {0}	Не удалось прочитать список заданий: {0}
+ColumnInCobian	On in Cobian	Вкл. в Cobian
+ColumnRemarks	Remarks	Замечания
+ImportRemarks	What to check	Что проверить
+ImportNoRemarks	Nothing to check: the task was carried over as it is.	Проверять нечего: задание перенесено как есть.
+ImportFound	Tasks in the list: {0}	Заданий в списке: {0}
+ImportAccounts	Accounts for network folders («Run as» in Cobian). Enter the password of each one once:	Учётные записи для сетевых папок («Run as» в Cobian). Введите пароль каждой один раз:
+ImportAccountTasks	used by: {0}	используется в: {0}
+ImportUseStored	use the stored password	использовать сохранённый пароль
+ImportPasswordRequired	Enter the password of {0}, or untick the tasks that use it.	Введите пароль для {0} или снимите отметку с заданий, которые её используют.
+ImportButton	Import	Импортировать
+ImportDone	Tasks imported: {0}. They are switched off: check each one in the editor and switch it on.	Импортировано заданий: {0}. Они отключены: проверьте каждое в редакторе и включите.
+WarnScheduleUnknown	Unknown schedule type «{0}»: the task is set to run by hand. Set its schedule.	Неизвестный тип расписания «{0}»: задание сделано ручным. Задайте расписание.
+WarnScheduleNotSupported	«Once» and «yearly» schedules do not exist in CUSTOS: the task is set to run by hand.	Расписаний «однократно» и «ежегодно» в CUSTOS нет: задание сделано ручным.
+WarnScheduleAssumed	The schedule (Cobian code {0}) was read by its most likely meaning: check it on the «Schedule» page.	Расписание (код Cobian {0}) прочитано по наиболее вероятному значению: проверьте его на странице «Расписание».
+WarnTimeUnreadable	The time of the run could not be read, 00:00 is set: check it.	Время запуска не прочиталось, поставлено 00:00: проверьте его.
+WarnWeekdaysAssumed	Days of the week {0} were read counting Monday as 1: check them on the «Schedule» page.	Дни недели {0} прочитаны, считая понедельник за 1: проверьте их на странице «Расписание».
+WarnBackupTypeAssumed	The backup type was read as differential: check it.	Тип копии прочитан как дифференциальный: проверьте его.
+WarnBackupTypeNotSupported	Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.	Типа копии Cobian {0} (например, «dummy») в CUSTOS нет: задание сделано полным. Проверьте его.
+WarnMirrorLater	Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.	Зеркало появится в следующей версии CUSTOS, пока это задание не выполняется.
+WarnCompressionLater	The task compresses into {0}. Compression arrives in the next version, so until then the task does not run; to use it now, choose «No compression» on the «Archive» page.	Задание сжимает в {0}. Сжатие появится в следующей версии, и пока задание не выполняется; чтобы пользоваться им сейчас, выберите «Без сжатия» на странице «Архив».
+WarnCompressionAssumed	The compression type was read as ZIP: check it.	Тип сжатия прочитан как ZIP: проверьте его.
+WarnEncryptionPassword	The archive is encrypted in Cobian. Its password is not carried over: enter it again when encryption arrives.	В Cobian архив шифруется. Пароль не переносится: его нужно будет ввести заново, когда появится шифрование.
+WarnSplitIgnored	Splitting the archive into volumes was not carried over.	Разбиение архива на тома не перенесено.
+WarnEventsInComment	Events before and after the backup are not run yet; they were written into the comment: {0}	События до и после копирования пока не выполняются, они записаны в комментарий: {0}
+WarnSourceUnknown	The entry «{0}» was skipped: its type is unknown or it is not a full path.	Запись «{0}» пропущена: неизвестный тип или не полный путь.
+WarnFtpNotSupported	The FTP entry «{0}» was skipped: CUSTOS does not read from FTP, and writing to FTP arrives in a later version.	FTP-запись «{0}» пропущена: читать с FTP CUSTOS не умеет, а запись на FTP появится в следующих версиях.
+WarnNoSources	The task has no sources: add them before switching it on.	В задании нет источников: добавьте их, прежде чем включать задание.
+WarnNoDestinations	The task has no destinations: add them before switching it on.	В задании нет назначений: добавьте их, прежде чем включать задание.
+WarnFixedDayAssumed	The fixed day of the full backup (Cobian value {0}) was read as a day of the week, counting Monday as 1: check it on the «Basic» page.	День полной копии (значение Cobian {0}) прочитан как день недели, считая понедельник за 1: проверьте его на странице «Основное».
+WarnFiltersImported	Filters were carried over, check them on the «Sources» page: {0}	Фильтры перенесены, проверьте их на странице «Источники»: {0}
+WarnRunAsAccount	In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: enter its password below.	В Cobian задание выполнялось от имени {0}. В CUSTOS эта учётная запись используется только для сетевых папок задания: введите её пароль ниже.
+WarnRunAsLocalOnly	In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so the account is not needed.	В Cobian задание выполнялось от имени {0}, но сетевых папок в нём нет: локальные файлы CUSTOS читает от имени службы, учётная запись не нужна.

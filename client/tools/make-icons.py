@@ -48,6 +48,16 @@ def draw(size, body, facet, badge=None, shield_scale=1.0):
                    fill="white", width=lw, joint="curve")
         elif mark == "dash":
             d.line([(bx - r*0.50, by), (bx + r*0.50, by)], fill="white", width=lw)
+        elif mark == "play":
+            d.polygon([(bx - r*0.32, by - r*0.50), (bx + r*0.55, by), (bx - r*0.32, by + r*0.50)], fill="white")
+        elif mark == "bang":
+            d.line([(bx, by - r*0.55), (bx, by + r*0.12)], fill="white", width=lw)
+            dot = lw*0.62
+            d.ellipse((bx - dot, by + r*0.50 - dot, bx + dot, by + r*0.50 + dot), fill="white")
+        elif mark == "cross":
+            k = r*0.42
+            d.line([(bx - k, by - k), (bx + k, by + k)], fill="white", width=lw)
+            d.line([(bx - k, by + k), (bx + k, by - k)], fill="white", width=lw)
     return im.resize((size, size), Image.LANCZOS)
 
 def save(path, sizes, **kw):
@@ -61,3 +71,6 @@ save(f"{out}/custos.ico", [256, 64, 48, 40, 32, 24, 20, 16], body=BLUE, facet=BL
 tray = [48, 40, 32, 24, 20, 16]
 save(f"{out}/tray-ok.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((46, 160, 67, 255), "check"))
 save(f"{out}/tray-down.ico", tray, body=GREY, facet=GREY_FACET, badge=((110, 116, 122, 255), "dash"))
+save(f"{out}/tray-running.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((0, 120, 212, 255), "play"))
+save(f"{out}/tray-warning.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((224, 160, 0, 255), "bang"))
+save(f"{out}/tray-error.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((209, 52, 56, 255), "cross"))

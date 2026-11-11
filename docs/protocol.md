@@ -307,7 +307,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
     { "id": "uuid", "kind": "folder", "path": "D:\\Data", "credential_id": null, "recursive": true }
   ],                                   // kind: folder | file | unc
   "filters": {
-    "include": [], "exclude": ["*.tmp", "~$*"], "exclude_dirs": ["Temp"],
+    "include": [], "exclude": ["~$*", "*.tmp", "*.log"], "exclude_dirs": ["Temp"],
     "skip_hidden": false, "skip_system": true, "skip_temp": true
   },
   "profile_sid": null,                 // чей профиль для %USERPROFILE% и т.п.; null = кто создал задание

@@ -76,7 +76,7 @@ Name: "{autoprograms}\CUSTOS"; Filename: "{app}\Custos.exe"
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\{#EventSource}"; ValueType: expandsz; ValueName: "EventMessageFile"; ValueData: "{app}\System.Diagnostics.EventLog.Messages.dll"; Flags: uninsdeletekey
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Services\EventLog\Application\{#EventSource}"; ValueType: dword; ValueName: "TypesSupported"; ValueData: "7"
 ; The interface starts at every user's logon (section 5).
-Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "CUSTOS"; ValueData: """{app}\Custos.exe"""; Flags: uninsdeletevalue
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "CUSTOS"; ValueData: """{app}\Custos.exe"" --tray"; Flags: uninsdeletevalue
 
 [Run]
 Filename: "{app}\Custos.exe"; Description: "{cm:LaunchGui}"; Flags: postinstall nowait skipifsilent runasoriginaluser

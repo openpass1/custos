@@ -4,11 +4,12 @@ C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-clien
 
 | Project | Output | What it is |
 |---|---|---|
-| `src/Custos.Core` | `Custos.Core.dll` | Shared code: the interface/service pipe protocol, names and paths |
-| `src/Custos.Service` | `CustosService.exe` | Windows service (LocalSystem): does all the work |
+| `src/Custos.Core` | `Custos.Core.dll` | Shared code: task model, schedule, copy engine, set manifests, Cobian import, the interface/service pipe protocol |
+| `src/Custos.Service` | `CustosService.exe` | Windows service (LocalSystem): does all the work — queue, runs, VSS, share logons, database |
 | `src/Custos.Gui` | `Custos.exe` | Tray interface, one per user session; only shows state and sends commands |
 | `src/Custos.Updater` | `Custos.Updater.exe` | Update helper (placeholder until stage 3) |
-| `tests/Custos.Core.Tests` | | xUnit tests; `tests/fixtures` holds sample files for them |
+| `tests/Custos.Core.Tests` | | xUnit tests of the core; `tests/fixtures` holds sample files for them |
+| `tests/Custos.Gui.Tests` | | Window tests: open the real windows with made-up data (run on Windows only) |
 | `installer/custos.iss` | | Inno Setup script |
 
 ## Build
@@ -29,7 +30,23 @@ GitHub Actions runs the same script on every change under `client/` (workflow `C
 as a downloadable artifact for 14 days.
 
 For development: `dotnet build Custos.sln` and `dotnet test Custos.sln`. The solution also builds on Linux and macOS
-(tests that need Windows are skipped there).
+(tests that need Windows are skipped there, and the window tests are not run).
+
+The window tests open windows on the desktop for a moment; a test that waits longer than a minute (a message box
+nobody clicks) fails instead of hanging the build.
+
+## Files on the computer
+
+| Where | What |
+|---|---|
+| `C:\ProgramData\CUSTOS\config\tasks.json`, `settings.json`, `credentials.json` | Tasks, settings, accounts (passwords encrypted with DPAPI). Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\db\custos.db` | Run history and file states for incremental and differential backups |
+| `C:\ProgramData\CUSTOS\logs\` | Service log; `runs\` holds one log file per run |
+| `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
+| `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
+
+The interface starts with Windows only in the tray (`Custos.exe --tray`, set by the installer); started from the
+Start menu or by the installer it also opens its window. A second start only brings the running copy to the front.
 
 ## Diagnostics
 
