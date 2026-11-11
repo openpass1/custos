@@ -138,6 +138,8 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
         }
     }
 
+    public override Func<string, string?> Variables(string? profileSid) => ProfileVariables.For(profileSid);
+
     public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
     {
         try

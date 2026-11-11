@@ -250,6 +250,15 @@ public sealed class DestinationTestRequest
 
     /// <summary>A password typed in the editor but not saved yet; null uses the stored one.</summary>
     public CredentialInput? Credential { get; set; }
+
+    /// <summary>The task being edited, for the variables in the path (section 6.2); null for none.</summary>
+    public string? TaskName { get; set; }
+
+    /// <summary>One of <see cref="Model.BackupTypes"/>, for <c>{type}</c>.</summary>
+    public string? BackupType { get; set; }
+
+    /// <summary>The profile of the task; null takes the profile of whoever asks, as saving would.</summary>
+    public string? ProfileSid { get; set; }
 }
 
 public sealed class DestinationTestResult

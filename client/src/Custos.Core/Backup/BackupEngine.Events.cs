@@ -27,7 +27,7 @@ public sealed partial class BackupEngine
         foreach (var item in events.Pre)
         {
             run.Pause.WaitWhilePaused(run.Cancellation);
-            if (RunEvent(item, run.Cancellation) is not { } problem)
+            if (RunEvent(run, item, run.Cancellation) is not { } problem)
             {
                 continue;
             }
@@ -55,7 +55,7 @@ public sealed partial class BackupEngine
         {
             try
             {
-                if (RunEvent(item, CancellationToken.None) is { } problem)
+                if (RunEvent(run, item, CancellationToken.None) is { } problem)
                 {
                     run.Result.Warnings++;
                     _log.Write(RunLogLevel.Warning, Messages.Format(Messages.PostEventFailed, problem));
@@ -70,7 +70,7 @@ public sealed partial class BackupEngine
     }
 
     /// <returns>Null if the event went well, or what went wrong, in words.</returns>
-    private string? RunEvent(TaskEvent item, CancellationToken cancellationToken)
+    private string? RunEvent(RunContext run, TaskEvent item, CancellationToken cancellationToken)
     {
         var timeout = TimeSpan.FromSeconds(Math.Clamp(item.TimeoutS, 1, 7 * 24 * 3600));
         try
@@ -78,7 +78,7 @@ public sealed partial class BackupEngine
             switch (item.Kind)
             {
                 case TaskEventKinds.Run:
-                    return RunProgram(item, timeout, cancellationToken);
+                    return RunProgram(run.Variables, item, timeout, cancellationToken);
                 case TaskEventKinds.ServiceStop or TaskEventKinds.ServiceStart:
                     bool start = item.Kind == TaskEventKinds.ServiceStart;
                     string name = (item.Service ?? string.Empty).Trim();
@@ -96,15 +96,15 @@ public sealed partial class BackupEngine
         }
     }
 
-    private string? RunProgram(TaskEvent item, TimeSpan timeout, CancellationToken cancellationToken)
+    private string? RunProgram(PathVariables variables, TaskEvent item, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        string command = Environment.ExpandEnvironmentVariables((item.Command ?? string.Empty).Trim().Trim('"'));
+        string command = variables.Expand((item.Command ?? string.Empty).Trim().Trim('"'));
         if (command.Length == 0)
         {
             return Messages.EventNoCommand;
         }
 
-        string arguments = Environment.ExpandEnvironmentVariables(item.Args ?? string.Empty);
+        string arguments = variables.Expand(item.Args ?? string.Empty);
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.EventRunning, command, arguments).TrimEnd());
         int lines = 0;
         int code = _platform.RunProgram(command, arguments, timeout, line =>

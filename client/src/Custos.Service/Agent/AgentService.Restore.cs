@@ -217,8 +217,17 @@ internal sealed partial class AgentService
                 }
             }
 
-            foreach (var destination in task.Destinations)
+            var variables = PathVariables.For(Platform, task, DateTime.Now);
+            foreach (var destination in task.Clone().Destinations)
             {
+                // Variables in the path are filled in as for a run now; a date in the path finds this month's sets.
+                destination.Path = variables.Expand(destination.Path, out string? problem);
+                if (problem is not null)
+                {
+                    problems.Add(problem);
+                    continue;
+                }
+
                 string label = destination.Kind == DestinationKinds.Usb ? Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel) : destination.Path;
                 if (OpenPlace(label, () => BackupEngine.ResolveRoot(Platform, destination),
                     destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null, password, taskId, problems) is { } place)

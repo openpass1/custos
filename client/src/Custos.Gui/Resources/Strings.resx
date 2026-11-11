@@ -1460,4 +1460,7 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="PowerCancelFailed" xml:space="preserve">
     <value>The service did not cancel it.</value>
   </data>
+  <data name="PathVariablesNote" xml:space="preserve">
+    <value>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
 </root>

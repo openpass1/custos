@@ -255,3 +255,5 @@ PowerNow	Now: {0} (after the task «{1}»).	Сейчас: {0} (после зад
 PowerCancelled	Cancelled by {1}: {0}.	Отменено пользователем {1}: {0}.
 PowerFailed	The computer could not be shut down, restarted or put to sleep: {0}	Не удалось выключить, перезагрузить или усыпить компьютер: {0}
 PowerNothingToCancel	There is nothing to cancel.	Отменять нечего.
+PathVariableUnknown	The variable {0} in {1} is not known on this computer.	Переменная {0} в пути {1} на этом компьютере не задана.
+PathVariableNoProfile	The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes the profile of whoever saves it.	Для переменной {0} в пути {1} нужен профиль пользователя, а у задания его нет. Откройте задание и сохраните его: оно получит профиль того, кто сохранил.

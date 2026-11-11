@@ -74,6 +74,16 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public override long? GetFreeSpace(string path) => FreeSpace;
 
+    /// <summary>Environment variables of the test; the profile ones only for <see cref="ProfileSid"/>.</summary>
+    public Dictionary<string, string> EnvironmentValues { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The SID whose profile variables <see cref="EnvironmentValues"/> holds.</summary>
+    public string ProfileSid { get; set; } = "S-1-5-21-1-2-3-1001";
+
+    public override Func<string, string?> Variables(string? profileSid) => name =>
+        PathVariables.ProfileNames.Contains(name) && profileSid != ProfileSid ? null
+        : EnvironmentValues.TryGetValue(name, out string? value) ? value : Environment.GetEnvironmentVariable(name);
+
     /// <summary>Services started (true) or stopped (false) by events, in order.</summary>
     public List<(string Name, bool Start)> Services { get; } = [];
 

@@ -751,4 +751,10 @@ static partial class Messages
 
     /// <summary>There is nothing to cancel.</summary>
     public static string PowerNothingToCancel => Get(nameof(PowerNothingToCancel));
+
+    /// <summary>The variable {0} in {1} is not known on this computer.</summary>
+    public static string PathVariableUnknown => Get(nameof(PathVariableUnknown));
+
+    /// <summary>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes th...</summary>
+    public static string PathVariableNoProfile => Get(nameof(PathVariableNoProfile));
 }

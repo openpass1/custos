@@ -498,3 +498,5 @@ Settings7ZipNote	To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the
 PowerCountdownText	The task «{0}» has finished. In {2} s: {1}.	Задание «{0}» выполнено. Через {2} с: {1}.
 PowerCancel	Cancel	Отменить
 PowerCancelFailed	The service did not cancel it.	Служба не отменила действие.
+# ---- Variables in paths
+PathVariablesNote	The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.	В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.

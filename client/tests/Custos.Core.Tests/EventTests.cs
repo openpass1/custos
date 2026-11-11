@@ -35,6 +35,19 @@ public sealed class EventTests : IDisposable
     }
 
     [Fact]
+    public void Arguments_of_an_event_take_the_variables_of_paths()
+    {
+        _platform.EnvironmentValues["CUSTOS_DUMP"] = "dump";
+        var task = NewTask();
+        task.Events.Pre.Add(Shell("%CUSTOS_DUMP%-{task}-{yyyy}{MM}{dd}", 0));
+
+        var result = Run(task);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.Contains(_log.Lines, l => l.Message == "> dump-Docs-20261101");
+    }
+
+    [Fact]
     public void A_failed_event_before_stops_the_run_but_the_events_after_still_run()
     {
         var task = NewTask();

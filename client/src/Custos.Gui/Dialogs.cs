@@ -1,3 +1,4 @@
+using Custos.Core.Backup;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 
@@ -109,7 +110,7 @@ internal sealed class SourceDialog : DialogForm
     private readonly PictureBox _accountHelp;
 
     public SourceDialog(EditorContext context, TaskSource source)
-        : base(source.Path.Length == 0 ? Strings.SourceAddTitle : Strings.SourceEditTitle, new Size(620, 300))
+        : base(source.Path.Length == 0 ? Strings.SourceAddTitle : Strings.SourceEditTitle, new Size(620, 340))
     {
         _original = source;
         _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
@@ -124,6 +125,7 @@ internal sealed class SourceDialog : DialogForm
         _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.SourceAccountHelp);
         Body.Controls.Add(_accountHelp);
         AddNote(Strings.SourceNote);
+        AddNote(Strings.PathVariablesNote);
         EndBuild();
 
         switch (source.Kind)
@@ -164,7 +166,7 @@ internal sealed class SourceDialog : DialogForm
     {
         string path = _path.Text.Trim().Trim('"');
         string? problem = path.Length == 0 ? Strings.ErrorPathRequired
-            : !Path.IsPathFullyQualified(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
             : _network.Checked && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
             : !_network.Checked && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
             : null;
@@ -251,7 +253,7 @@ internal sealed class DestinationDialog : DialogForm
     private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
 
     public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew)
-        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(660, 320))
+        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(660, 360))
     {
         _context = context;
         _original = destination;
@@ -275,6 +277,7 @@ internal sealed class DestinationDialog : DialogForm
         AddGridRow(_labelLabel, _usbLabel, _usbHelp);
         AddGridRow(_accountLabel, _account, _accountHelp);
         AddWide(_unsupported);
+        AddNote(Strings.PathVariablesNote);
         var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
         testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         testRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -315,7 +318,7 @@ internal sealed class DestinationDialog : DialogForm
         return destination.Kind == DestinationKinds.Usb
                 ? string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null
             : string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
-            : !Path.IsPathFullyQualified(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
             : destination.Kind == DestinationKinds.Unc && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
             : destination.Kind == DestinationKinds.Local && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
             : null;
@@ -445,7 +448,13 @@ internal sealed class DestinationDialog : DialogForm
         {
             try
             {
-                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest { Destination = destination },
+                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest
+                {
+                    Destination = destination,
+                    TaskName = _context.TaskName,
+                    BackupType = _context.BackupType,
+                    ProfileSid = _context.ProfileSid,
+                },
                     IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(2));
                 _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
                 _testResult.Text = result.Ok

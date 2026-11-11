@@ -58,7 +58,7 @@ internal sealed class TaskEditorForm : Form
         AcceptButton = _ok;
         CancelButton = _cancel;
 
-        var context = new EditorContext(monitor, _toolTip);
+        var context = new EditorContext(monitor, _toolTip) { ProfileSid = task.ProfileSid };
         _pages =
         [
             new BasicPage(context),
@@ -291,6 +291,9 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     public string ArchiveFormat { get; private set; } = ArchiveFormats.None;
 
     public bool IsMirror => BackupType == BackupTypes.Mirror;
+
+    /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
+    public string? ProfileSid { get; init; }
 
     /// <summary>Tells the other pages what changed; null leaves a value as it is.</summary>
     public void SetShape(string? taskName = null, string? backupType = null, string? archiveFormat = null)

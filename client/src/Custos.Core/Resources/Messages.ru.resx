@@ -760,4 +760,10 @@
   <data name="PowerNothingToCancel" xml:space="preserve">
     <value>Отменять нечего.</value>
   </data>
+  <data name="PathVariableUnknown" xml:space="preserve">
+    <value>Переменная {0} в пути {1} на этом компьютере не задана.</value>
+  </data>
+  <data name="PathVariableNoProfile" xml:space="preserve">
+    <value>Для переменной {0} в пути {1} нужен профиль пользователя, а у задания его нет. Откройте задание и сохраните его: оно получит профиль того, кто сохранил.</value>
+  </data>
 </root>

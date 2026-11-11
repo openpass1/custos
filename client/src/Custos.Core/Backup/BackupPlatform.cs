@@ -52,6 +52,12 @@ public interface IBackupPlatform
     /// <summary>Starts or stops a Windows service and waits until it is running or stopped (section 6.9).</summary>
     /// <exception cref="BackupException">There is no such service, or it did not get there in time.</exception>
     void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Environment variables for the paths of a task (section 6.2): those of a user profile (<c>%USERPROFILE%</c>,
+    /// <c>%APPDATA%</c> …) for the user with this SID, the others of the system. Null for an unknown variable.
+    /// </summary>
+    Func<string, string?> Variables(string? profileSid);
 }
 
 /// <summary>A network logon. File operations on shares run inside <see cref="Run"/>; a file opened there stays usable
@@ -250,6 +256,8 @@ public class LocalBackupPlatform : IBackupPlatform
         process.WaitForExit();
         return process.ExitCode;
     }
+
+    public virtual Func<string, string?> Variables(string? profileSid) => Environment.GetEnvironmentVariable;
 
     public virtual void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken) =>
         throw new BackupException(Messages.Format(Messages.EventServiceUnsupported, name));

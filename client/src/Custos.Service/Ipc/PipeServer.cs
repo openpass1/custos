@@ -377,17 +377,17 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.RunResume =>
                 Ok(id, agent.SetPaused(request.GetData(json.RunControlRequest).TaskId, paused: false, user)),
             PipeProtocol.Methods.TaskSave =>
-                PipeMessage.Success(id, new TaskSaveResult { Task = agent.SaveTask(request.GetData(json.TaskSaveRequest), user) }, json.TaskSaveResult),
+                PipeMessage.Success(id, new TaskSaveResult { Task = agent.SaveTask(request.GetData(json.TaskSaveRequest), user, identity.Sid) }, json.TaskSaveResult),
             PipeProtocol.Methods.TaskDelete =>
                 Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.TasksImport =>
-                Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user)),
+                Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user, identity.Sid)),
             PipeProtocol.Methods.CredentialSave =>
                 PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.SaveCredential(request.GetData(json.CredentialInput)) }, json.CredentialSaveResult),
             PipeProtocol.Methods.CredentialDelete =>
                 Ok(id, agent.DeleteCredential(request.GetData(json.CredentialRequest).CredentialId)),
             PipeProtocol.Methods.DestinationTest =>
-                PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest)), json.DestinationTestResult),
+                PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest), identity.Sid), json.DestinationTestResult),
             PipeProtocol.Methods.SettingsSave =>
                 Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
             PipeProtocol.Methods.RestoreList =>

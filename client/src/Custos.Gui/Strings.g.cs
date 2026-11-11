@@ -1438,4 +1438,7 @@ static partial class Strings
 
     /// <summary>The service did not cancel it.</summary>
     public static string PowerCancelFailed => Get(nameof(PowerCancelFailed));
+
+    /// <summary>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the tas...</summary>
+    public static string PathVariablesNote => Get(nameof(PathVariablesNote));
 }

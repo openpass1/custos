@@ -252,8 +252,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public TaskDefinition SaveTask(TaskSaveRequest request, string user)
+    public TaskDefinition SaveTask(TaskSaveRequest request, string user, string? sid)
     {
+        // %USERPROFILE% and the like in the paths refer to whoever made the task (section 6.2).
+        request.Task.ProfileSid ??= sid;
         TaskChange change;
         try
         {
@@ -302,8 +304,13 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public OkResult Import(TasksImportRequest request, string user)
+    public OkResult Import(TasksImportRequest request, string user, string? sid)
     {
+        foreach (var task in request.Tasks)
+        {
+            task.ProfileSid ??= sid;
+        }
+
         List<TaskChange> changes;
         try
         {
@@ -375,9 +382,18 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     }
 
     /// <summary>Tries to write to a destination as the task would ("Check access" in the editor).</summary>
-    public DestinationTestResult TestDestination(DestinationTestRequest request)
+    public DestinationTestResult TestDestination(DestinationTestRequest request, string? sid)
     {
         var destination = request.Destination;
+        string? profile = request.ProfileSid ?? sid;
+        var variables = new PathVariables(Platform.Variables(profile), profile is not null, request.TaskName ?? string.Empty,
+            Platform.ComputerName, request.BackupType ?? BackupTypes.Full, DateTime.Now);
+        destination.Path = variables.Expand(destination.Path ?? string.Empty, out string? problem);
+        if (problem is not null)
+        {
+            return new DestinationTestResult { Error = problem };
+        }
+
         if (!DestinationKinds.IsSupported(destination.Kind))
         {
             return new DestinationTestResult { Error = Messages.Format(Messages.DestinationKindNotSupported, destination.Kind) };

@@ -1460,4 +1460,7 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="PowerCancelFailed" xml:space="preserve">
     <value>Служба не отменила действие.</value>
   </data>
+  <data name="PathVariablesNote" xml:space="preserve">
+    <value>В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
 </root>

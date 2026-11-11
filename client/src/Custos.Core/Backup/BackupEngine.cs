@@ -87,6 +87,8 @@ public sealed partial class BackupEngine
 
     private void Execute(RunContext run)
     {
+        run.Variables = PathVariables.For(_platform, run.Task, TimeZoneInfo.ConvertTime(run.Request.StartedAt, run.Request.TimeZone).DateTime);
+        run.Task = run.Variables.ExpandPaths(run.Task);
         var task = run.Task;
         Phase(BackupPhases.Scan);
         CheckSupported(task);
@@ -1162,7 +1164,10 @@ public sealed partial class BackupEngine
     {
         public BackupRequest Request { get; } = request;
 
-        public TaskDefinition Task => Request.Task;
+        /// <summary>The task with the variables in its paths filled in.</summary>
+        public TaskDefinition Task { get; set; } = request.Task;
+
+        public PathVariables Variables { get; set; } = new(_ => null, hasProfile: false, request.Task.Name, string.Empty, request.Task.BackupType, DateTime.Now);
 
         public PauseGate Pause { get; } = pause;
 

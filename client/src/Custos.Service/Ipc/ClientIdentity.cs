@@ -7,7 +7,8 @@ using Microsoft.Win32.SafeHandles;
 namespace Custos.Service.Ipc;
 
 /// <summary>Who is on the other end of an interface connection, as Windows reports it (not as the interface claims).</summary>
-internal sealed partial record ClientIdentity(string User, bool IsAdmin, int? SessionId, int? ProcessId)
+/// <param name="Sid">The SID of the user: tasks they save take their profile for %USERPROFILE% (section 6.2).</param>
+internal sealed partial record ClientIdentity(string User, bool IsAdmin, int? SessionId, int? ProcessId, string? Sid = null)
 {
     private static readonly SecurityIdentifier Administrators = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
@@ -31,7 +32,8 @@ internal sealed partial record ClientIdentity(string User, bool IsAdmin, int? Se
                 identity.Name,
                 IsAdministrator(identity),
                 GetNamedPipeClientSessionId(pipe.SafePipeHandle, out uint sessionId) ? (int)sessionId : null,
-                GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint processId) ? (int)processId : null);
+                GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint processId) ? (int)processId : null,
+                identity.User?.Value);
         }
     }
 

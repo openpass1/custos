@@ -760,4 +760,10 @@
   <data name="PowerNothingToCancel" xml:space="preserve">
     <value>There is nothing to cancel.</value>
   </data>
+  <data name="PathVariableUnknown" xml:space="preserve">
+    <value>The variable {0} in {1} is not known on this computer.</value>
+  </data>
+  <data name="PathVariableNoProfile" xml:space="preserve">
+    <value>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes the profile of whoever saves it.</value>
+  </data>
 </root>
