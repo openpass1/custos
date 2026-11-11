@@ -233,7 +233,7 @@ php8.4 tools/fake-agent.php --url=http://custos.lan --once
 
 ✅ It ends with `done: every answer was signed and accepted` again. On the site the machine `FAKE-PC-01` has 4 tasks, and Runs lists runs with logs. On the Machines page tasks are shown as colored marks: green is fine, yellow has warnings, red is an error. If the fake agent picked the result "error", Home shows this error under "Needs attention".
 
-The machine page now has a "Storages" block: where the tasks write, how much space is free and which backup sets are there. A forecast of when the space runs out appears once there is data for at least a day. Run the fake agent once more with the same command: the page of the first task shows charts (source size, written, duration), and the heat map on Home gets a colored cell for today.
+The machine page now has a "Storages" block: where the tasks write, how much space is free and which backup sets are there. A forecast of when the space runs out appears once there is data for at least a day. If 14 days or fewer are left (the limit is in Settings → Thresholds), Home shows a "space" problem and one message is sent. Run the fake agent once more with the same command: the page of the first task shows charts (source size, written, duration), and the heat map on Home gets a colored cell for today.
 
 **Step 17. Remove the test machine.**
 
@@ -333,6 +333,7 @@ What Zabbix reports:
 | "machine / task: backup failed": the task ended with an error | High |
 | "machine / task: backup did not start on schedule": a missed start while the machine was on | Average |
 | "machine / task: no recent successful copy" | Warning |
+| "machine / task: storage will be full soon": a storage of the task fills up within 14 days (the same as the "space" problem on the site) | Warning |
 | "machine has been offline for more than 24h" (the macro `{$CUSTOS.OFFLINE.MAX}` sets the time) | Warning |
 | "monitoring site is unhealthy (database or cron)" | High |
 | "no data from the monitoring site for 10 minutes" | High |
@@ -405,8 +406,9 @@ The settings (`config/config.php`), the server keys (`config/keys/`) and the `va
 - uploaded update packages and 7-Zip installers are kept in `server/var/packages/`;
 - a CUSTOS update package is uploaded through the site. If it is larger than the PHP limit, the site says so; the limit is raised in CloudPanel: site → **Settings** → **PHP Settings**, `upload_max_filesize` and `post_max_size`, for example `100M`.
 
-**Version 0.4.0 (analytics and integrations).** `migrate.php` applies migration `004` and creates two tokens (lines `[ok] Generated zabbix_token ...` and `[ok] Generated wall_token ...`). New:
+**Version 0.4.0 (analytics and integrations).** `migrate.php` applies migrations `004` and `005` and creates two tokens (lines `[ok] Generated zabbix_token ...` and `[ok] Generated wall_token ...`). New:
 - Home has a heat map of results for 30 days, the task page has charts, the machine page has a "Storages" block with a forecast of when the space runs out;
+- a storage warning: when the forecast says the space runs out within 14 days, Home shows a "space" problem and one message is sent. The limit (or 0 to turn it off) is in Settings → Thresholds;
 - Runs has a "Download CSV" button (for Excel);
 - Zabbix and the wall screen (part 10);
 - the user profile: click your login at the top right for language, theme and password. The default language for everyone is set under Settings → General;

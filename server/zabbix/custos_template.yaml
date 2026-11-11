@@ -12,6 +12,7 @@ zabbix_export:
         One HTTP request a minute (/api/zabbix/status) feeds every item; machines and tasks are discovered once an hour.
         Set the host macros {$CUSTOS.URL} (site address without a trailing slash) and {$CUSTOS.TOKEN} (Settings → Zabbix and wall screen).
         status_code of a task: 0 ok, 1 running or paused, 2 warning or anomaly, 3 missed while the machine was off, 4 no recent successful copy, 5 missed, 6 error, 9 disabled or not run yet.
+        space_days of a task: days until its storage is full while the site warns about it, otherwise -1.
         The most serious problem of a task gives its code. A run in progress shows 1 only instead of 0 or 9, so an error or a missed run stays visible while the next run goes.
         Format of Zabbix 7.0; newer versions (8.0) convert it on import.
       vendor:
@@ -415,6 +416,31 @@ zabbix_export:
                   value: '{#AGENT}'
                 - tag: task
                   value: '{#TASK}'
+            - uuid: 1b6cb14c64824a189cbda5fce0f26f3f
+              name: '{#AGENT} / {#TASK}: days until the storage is full'
+              type: DEPENDENT
+              key: 'custos.task.space_days[{#TASK_KEY}]'
+              delay: '0'
+              description: 'Days until a destination of the task fills up while the site warns about it (space_warn_days, 14 by default), -1 otherwise.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].space_days'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '-1'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+              trigger_prototypes:
+                - uuid: 05a68bf0db1e4a13aee958664e878773
+                  expression: 'last(/CUSTOS by HTTP/custos.task.space_days[{#TASK_KEY}])>=0'
+                  name: 'CUSTOS: {#AGENT} / {#TASK}: storage will be full soon'
+                  priority: WARNING
+                  description: 'By the free space trend of the last 30 days, a destination of the task fills up within space_warn_days. The item value is the number of days left. Clears when the storage stops filling up or the forecast doubles.'
       tags:
         - tag: class
           value: software

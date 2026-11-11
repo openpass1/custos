@@ -12,7 +12,8 @@ use Custos\Infra\Time;
  * destination (7.3).
  *
  * Forecast: a least-squares line through the free space of the last 30 days; while it goes down, the days until it
- * reaches zero. Cron recalculates it once an hour.
+ * reaches zero. Cron recalculates it once an hour, and with it the "space" problems: a task gets one when a destination
+ * of it will be full in space_warn_days days or less.
  */
 final class Storage
 {
@@ -25,20 +26,97 @@ final class Storage
     private const NOISE_BYTES_DAY = 1024 * 1024;
     /** Forecasts further away than this are not worth a number. */
     public const MAX_DAYS = 3650;
+    /**
+     * A space problem closes when the forecast goes beyond this many times the warning limit, not right above it:
+     * free space jumps up and down as old sets are deleted, and the problem should not open and close every hour.
+     */
+    public const CLOSE_FACTOR = 2;
 
     public function __construct(private readonly Db $db, private readonly Settings $settings)
     {
     }
 
-    /** Cron step: recalculates every forecast once an hour. Returns the number of destinations, or null if not due. */
-    public function pass(int $now): ?int
+    /**
+     * Cron step: recalculates every forecast and the space problems once an hour.
+     *
+     * @return ?array{destinations: int, opened: int, closed: int} null if not due
+     */
+    public function pass(int $now): ?array
     {
         $last = $this->settings->get('forecast_last_run');
         if ($last !== '' && Time::unix($last) > $now - self::EVERY_S) {
             return null;
         }
         $this->settings->set('forecast_last_run', Time::db($now));
-        return $this->recalculate($now);
+        return ['destinations' => $this->recalculate($now)] + $this->checkSpace($now);
+    }
+
+    /** Whether a forecast is close enough to the end to show it in red: within the warning limit. */
+    public function soon(?string $state, int|string|null $daysLeft): bool
+    {
+        $limit = $this->settings->int('space_warn_days');
+        return $limit > 0 && $state === 'filling' && $daysLeft !== null && (int) $daysLeft <= $limit;
+    }
+
+    /**
+     * Opens, updates and closes the "space" problems from the current forecasts (one per task, for its destination
+     * that fills up first). Only enabled tasks of approved machines; a disabled task or machine has its problem closed
+     * by Monitor::sweep. A limit of 0 closes every open one.
+     *
+     * @return array{opened: int, closed: int}
+     */
+    public function checkSpace(int $now): array
+    {
+        $limit = $this->settings->int('space_warn_days');
+        $worst = [];
+        if ($limit > 0) {
+            foreach ($this->db->all(
+                "SELECT f.agent_id, f.task_id, f.destination_id, f.days_left, t.data AS task_data,
+                        (SELECT s.path FROM storage_space s
+                         WHERE s.agent_id = f.agent_id AND s.task_id = f.task_id AND s.destination_id = f.destination_id
+                         ORDER BY s.id DESC LIMIT 1) AS path
+                 FROM storage_forecasts f
+                 JOIN agents a ON a.id = f.agent_id AND a.status = 'approved'
+                 JOIN tasks t ON t.agent_id = f.agent_id AND t.id = f.task_id AND t.deleted = 0 AND t.enabled = 1
+                 WHERE f.state = 'filling' AND f.days_left <= ?",
+                [$limit * self::CLOSE_FACTOR]
+            ) as $row) {
+                if (!self::taskHas($row['task_data'], $row['destination_id'])) {
+                    continue;
+                }
+                $key = $row['agent_id'] . '/' . $row['task_id'];
+                if (!isset($worst[$key]) || (int) $row['days_left'] < (int) $worst[$key]['days_left']) {
+                    $worst[$key] = $row;
+                }
+            }
+        }
+        $nowDb = Time::db($now);
+        $stats = ['opened' => 0, 'closed' => 0];
+        foreach ($this->db->all("SELECT id, agent_id, task_id FROM problems WHERE kind = 'space' AND closed_at IS NULL") as $open) {
+            $key = $open['agent_id'] . '/' . $open['task_id'];
+            if (isset($worst[$key])) {
+                $this->db->exec('UPDATE problems SET message = ?, days_left = ? WHERE id = ?',
+                    [(string) $worst[$key]['path'], (int) $worst[$key]['days_left'], $open['id']]);
+                unset($worst[$key]);
+                continue;
+            }
+            $stats['closed'] += $this->db->exec(
+                "UPDATE problems SET closed_at = ?, closed_by = 'space_ok' WHERE id = ? AND closed_at IS NULL",
+                [$nowDb, $open['id']]
+            );
+        }
+        foreach ($worst as $row) {
+            if ((int) $row['days_left'] > $limit) {
+                continue;
+            }
+            // The unique key on open problems keeps this to one per task even if two passes overlap.
+            $stats['opened'] += $this->db->exec(
+                "INSERT IGNORE INTO problems (agent_id, task_id, kind, opened_at, last_at, message, days_left)
+                 VALUES (?, ?, 'space', ?, ?, ?, ?)",
+                [$row['agent_id'], $row['task_id'], $nowDb, $nowDb, (string) $row['path'], (int) $row['days_left']]
+            );
+        }
+        return $stats;
     }
 
     public function recalculate(int $now): int
@@ -108,7 +186,7 @@ final class Storage
     /**
      * Destinations of one machine as the agent last reported them, with the task, the forecast and the sets.
      *
-     * @return list<array> rows of storage_space plus task_name, deleted, forecast (?array), sets (list), bad_sets (int)
+     * @return list<array> rows of storage_space plus task_name, deleted, forecast (?array), soon (bool), sets (list), bad_sets (int)
      */
     public function forAgent(string $agentId): array
     {
@@ -141,6 +219,7 @@ final class Storage
             $key = $row['task_id'] . '/' . $row['destination_id'];
             unset($row['task_data']);
             $row['forecast'] = $forecasts[$key] ?? null;
+            $row['soon'] = $this->soon($row['forecast']['state'] ?? null, $row['forecast']['days_left'] ?? null);
             $row['sets'] = $sets[$key] ?? [];
             $row['bad_sets'] = count(array_filter($row['sets'], fn($s) => $s['verify_ok'] !== null && (int) $s['verify_ok'] === 0));
             $result[] = $row;
@@ -173,6 +252,7 @@ final class Storage
                 continue;
             }
             unset($row['task_data']);
+            $row['soon'] = $this->soon($row['state'], $row['days_left']);
             if ($least === null || (int) $row['free_bytes'] < (int) $least['free_bytes']) {
                 $least = $row;
             }

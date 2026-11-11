@@ -31,6 +31,7 @@ for line in """Monitoring of CUSTOS backups through CUSTOS Monitor (the PHP site
 One HTTP request a minute (/api/zabbix/status) feeds every item; machines and tasks are discovered once an hour.
 Set the host macros {$CUSTOS.URL} (site address without a trailing slash) and {$CUSTOS.TOKEN} (Settings → Zabbix and wall screen).
 status_code of a task: 0 ok, 1 running or paused, 2 warning or anomaly, 3 missed while the machine was off, 4 no recent successful copy, 5 missed, 6 error, 9 disabled or not run yet.
+space_days of a task: days until its storage is full while the site warns about it, otherwise -1.
 The most serious problem of a task gives its code. A run in progress shows 1 only instead of 0 or 9, so an error or a missed run stays visible while the next run goes.
 Format of Zabbix 7.0; newer versions (8.0) convert it on import.""".split("\n"):
     w("        " + line)
@@ -175,6 +176,15 @@ def task_protos():
         units='B', tags=tags, indent=12, proto=True)
     dep('custos.task.anomaly[{#TASK_KEY}]', '{#AGENT} / {#TASK}: size anomaly', 'custos.status', key + '.anomaly',
         desc='1 when the source size or file count of the last run left the usual range.', tags=tags, indent=12, proto=True)
+    dep('custos.task.space_days[{#TASK_KEY}]', '{#AGENT} / {#TASK}: days until the storage is full', 'custos.status',
+        key + '.space_days', on_fail='-1',
+        desc='Days until a destination of the task fills up while the site warns about it (space_warn_days, 14 by default), -1 otherwise.',
+        tags=tags, indent=12, proto=True,
+        triggers=[
+            ('last(/' + T + '/custos.task.space_days[{#TASK_KEY}])>=0', 'CUSTOS: {#AGENT} / {#TASK}: storage will be full soon', 'WARNING',
+             'By the free space trend of the last 30 days, a destination of the task fills up within space_warn_days. '
+             'The item value is the number of days left. Clears when the storage stops filling up or the forecast doubles.'),
+        ])
 rule('custos.agents.discovery', 'CUSTOS: machines', '{$CUSTOS.URL}/api/zabbix/discovery/agents', agent_protos)
 rule('custos.tasks.discovery', 'CUSTOS: tasks', '{$CUSTOS.URL}/api/zabbix/discovery/tasks', task_protos)
 w("      tags:")

@@ -103,7 +103,7 @@ function status_class(string $status): string
 {
     return match ($status) {
         'success', 'online', 'ok', 'done', 'sent' => 'ok',
-        'warning', 'anomaly' => 'warn',
+        'warning', 'anomaly', 'space' => 'warn',
         'error', 'failed', 'missed' => 'bad',
         'running', 'paused', 'pending', 'queued', 'delivered' => 'info',
         default => 'muted',
@@ -180,6 +180,10 @@ function fmt_unix(?int $time): string
 /** What a problem is about, in one line for the site. */
 function problem_text(array $p): string
 {
+    if ($p['kind'] === 'space') {
+        $days = (int) ($p['days_left'] ?? 0);
+        return t($days === 0 ? 'problem.space.full' : 'problem.space', ['path' => (string) $p['message'], 'n' => $days]);
+    }
     if ($p['kind'] === 'error') {
         $text = $p['message'] === null ? t('problem.error') : t('problem.error.message', ['message' => $p['message']]);
     } else {

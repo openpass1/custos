@@ -83,6 +83,11 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
         <span class="note"><?= e(t('settings.anomaly.hint')) ?></span>
     </label>
     <?= $error('anomaly_growth_factor') ?>
+    <label><?= e(t('settings.space_warn_days')) ?>
+        <input type="number" name="space_warn_days" value="<?= e($values['space_warn_days']) ?>" min="0" max="365" required>
+        <span class="note"><?= e(t('settings.space_warn_days.hint')) ?></span>
+    </label>
+    <?= $error('space_warn_days') ?>
 
     <h2><?= e(t('settings.retention')) ?></h2>
     <label><?= e(t('settings.history_months')) ?>

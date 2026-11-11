@@ -30,10 +30,11 @@ final class Cron
             'nonces' => fn() => $this->app->db()->exec('DELETE FROM nonces WHERE created_at < ?', [Time::db($now - 600)]),
             'commands' => fn() => $this->app->commands()->expire($now),
             'monitor' => fn() => $this->app->monitor()->pass($now),
+            // Before notify: a storage warning opened by this pass goes out in the same minute.
+            'forecast' => fn() => $this->app->storage()->pass($now),
             'notify' => fn() => $this->app->notifier()->queueProblems($now),
             'send' => fn() => $this->app->notifier()->sendQueued($now),
             'updates' => fn() => $this->app->updateWatch()->pass($now),
-            'forecast' => fn() => $this->app->storage()->pass($now),
             'cleanup' => fn() => $this->cleanup($now),
         ];
         foreach ($steps as $name => $step) {

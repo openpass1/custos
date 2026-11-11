@@ -32,7 +32,7 @@
             <span class="tile-note mono" title="<?= e(\Custos\Domain\Agents::name($least)) ?>"><?= e(t('dashboard.storage.where', [
                 'path' => $least['path'] ?? $least['kind'], 'machine' => \Custos\Domain\Agents::name($least),
             ])) ?></span>
-            <span class="tile-note<?= $least['state'] === 'filling' && (int) $least['days_left'] <= 14 ? ' bad-text' : '' ?>"><?= e(forecast_text($least)) ?></span>
+            <span class="tile-note<?= $least['soon'] ? ' bad-text' : '' ?>"><?= e(forecast_text($least)) ?></span>
             <?php if ($soonest !== null && ($soonest['agent_id'] . $soonest['task_id'] . $soonest['destination_id']) !== ($least['agent_id'] . $least['task_id'] . $least['destination_id'])): ?>
                 <span class="tile-note mono" title="<?= e(\Custos\Domain\Agents::name($soonest)) ?>"><?= e(t('dashboard.storage.soonest', [
                     'path' => $soonest['path'] ?? $soonest['kind'], 'machine' => \Custos\Domain\Agents::name($soonest),

@@ -21,7 +21,8 @@ groups or chosen machines, agent update packages (upload, sign, current version,
 
 Stage 4 is done (0.4.0): task charts (Chart.js, source size, written, duration, anomalies in red), the 30-day heat map
 of results on the dashboard, storages of a machine from the inventory with a free-space forecast (least squares over
-30 days, recalculated hourly by cron), CSV export of runs, the Zabbix endpoints with the template in `zabbix/`,
+30 days, recalculated hourly by cron) and a "space" problem when a storage fills up within `space_warn_days` (14 by
+default), CSV export of runs, the Zabbix endpoints with the template in `zabbix/`,
 `/api/health`, the wall screen (`/wall?token=…`), the user profile (language, theme, password), the dark theme,
 the English interface and the site icon. Database dumps reported by agents (`databases` in `runs/finish`) are kept and
 shown on the run page; tasks that only dump databases need no file sources.
@@ -40,7 +41,7 @@ health), `Http\Api\IntegrationApi` (`/api/health`, `/api/zabbix/*`).
 repeat on different machines, so a task is keyed `{agent_id}/{task_id}` (`{#TASK_KEY}` in discovery). `status_code`
 is the most serious flag of the task: 0 ok, 1 running or paused (only instead of 0 or 9), 2 warning or anomaly,
 3 missed_offline, 4 stale, 5 missed, 6 error, 9 disabled or never run. `last_success_age_s` is -1 when there was no
-success yet. The template is written by `tools/make-zabbix-template.py` in Zabbix 7.0 format (Zabbix 8.0 imports it);
+success yet. `space_days` is the forecast of an open "space" problem of the task, -1 without one. The template is written by `tools/make-zabbix-template.py` in Zabbix 7.0 format (Zabbix 8.0 imports it);
 run it again after changing items or triggers.
 
 ## Layout
@@ -54,7 +55,7 @@ public/      web root: index.php front controller, assets, favicon.*; assets/ven
 src/         Custos\ classes: Infra (config, DB, crypto), Domain (data), Http (agent API and web pages)
 templates/   page templates
 tools/       fake-agent.php and its Custos\Tools\ classes, make-update-package.php, make-favicon.py (site icons from
-             the client's shield), make-zabbix-template.py
+             the client's shield), make-zabbix-template.py, fake-space.php
 tests/       PHPUnit tests
 var/         sessions, logs, cron lock, update packages, fake agent state (created at run time)
 zabbix/      custos_template.yaml, the Zabbix template "CUSTOS by HTTP"
@@ -92,6 +93,15 @@ signature and SHA-256 of `update.install` and `sevenzip.update`, downloads the f
 
 ```bash
 php tools/make-update-package.php --version=1.0.1     # writes custos-1.0.1.zip with manifest.json
+```
+
+Stage 4: a forecast needs days of inventory, so `tools/fake-space.php` makes up a filling storage on a test site. It
+works on the database of `config/config.php` directly (run it on the server), keeps what it changed in
+`var/fake-space.json` and puts it back with `--undo`:
+
+```bash
+php tools/fake-space.php --host=FAKE-PC-01 --days=7   # storages of FAKE-PC-01 full in about 7 days: a "space" problem
+php tools/fake-space.php --undo
 ```
 
 ## Tests

@@ -146,6 +146,8 @@ final class Integrations
                 'last_run_status' => (string) ($last[$key]['status'] ?? ''),
                 'last_bytes_written' => (int) ($last[$key]['bytes_written'] ?? 0),
                 'anomaly' => in_array('anomaly', $task['flags'], true) ? 1 : 0,
+                // Days until the storage fills up while the site warns about it (an open "space" problem), else -1.
+                'space_days' => isset($task['problems']['space']) ? (int) $task['problems']['space']['days_left'] : -1,
             ];
         }
         $summary = $board->summary();

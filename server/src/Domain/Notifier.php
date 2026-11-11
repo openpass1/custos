@@ -15,7 +15,7 @@ use Custos\Infra\Time;
 /**
  * Messages about problems in Telegram and by e-mail (section 9).
  *
- * Only problems (error, missed) are sent, one message per problem when it opens; there are no repeats, recovery
+ * Only problems (error, missed, space) are sent, one message per problem when it opens; there are no repeats, recovery
  * messages or digests. Problems opened since the previous cron pass go into one message grouped by machine.
  * Messages wait in the notifications table, so a channel that is down for a while gets them later (up to an hour).
  */
@@ -181,10 +181,14 @@ final class Notifier
         ];
     }
 
-    /** One line about a problem: "Documents — ошибка: …" or "… не запустилось по расписанию 12.11.2026 00:00 …". */
+    /** One line about a problem: "Documents — ошибка: …", "… не запустилось по расписанию 12.11.2026 00:00 …" or "… место в D:\Backup …". */
     public function describe(array $p): string
     {
         $task = $p['task_name'] ?? $this->lang->get('runs.unknown_task');
+        if ($p['kind'] === 'space') {
+            $days = (int) ($p['days_left'] ?? 0);
+            return $this->lang->get($days === 0 ? 'notify.space.full' : 'notify.space', ['task' => $task, 'path' => (string) $p['message'], 'n' => $days]);
+        }
         if ($p['kind'] === 'error') {
             return $p['message'] === null
                 ? $this->lang->get('notify.error.no_message', ['task' => $task])

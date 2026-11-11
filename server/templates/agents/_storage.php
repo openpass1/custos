@@ -9,7 +9,7 @@
         $total = $s['total_bytes'] === null ? null : (int) $s['total_bytes'];
         $free = $s['free_bytes'] === null ? null : (int) $s['free_bytes'];
         $used = $total !== null && $free !== null && $total > 0 ? (int) round(100 * ($total - $free) / $total) : null;
-        $soon = ($s['forecast']['state'] ?? '') === 'filling' && (int) $s['forecast']['days_left'] <= 14;
+        $soon = $s['soon'];
         ?>
         <div class="storage<?= $s['bad_sets'] > 0 ? ' storage-bad' : '' ?>">
             <div class="storage-head">

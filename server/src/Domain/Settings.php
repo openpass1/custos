@@ -32,6 +32,8 @@ final class Settings
         'stale_days' => '7',
         'anomaly_drop_pct' => '30',
         'anomaly_growth_factor' => '2',
+        // Warn this many days before a storage is full by its forecast (section 11); 0 turns the warning off.
+        'space_warn_days' => '14',
         // Retention (7.8): run history, presence, problems and the audit log; full run logs.
         'history_months' => '12',
         'log_days' => '90',

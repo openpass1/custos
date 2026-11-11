@@ -238,17 +238,12 @@ final class InsightsTest extends TestCase
             'total_bytes' => 10 ** 12, 'free_bytes' => 1, 'sets' => [],
         ]]]);
         $this->assertTrue($result->ok(), $result->describe());
-        // Ten days of history: 10 GB less free space each day, ending with the 50 GB just reported.
-        for ($d = 10; $d >= 1; $d--) {
-            $this->db()->exec('INSERT INTO storage_space (agent_id, task_id, destination_id, kind, path, total_bytes, free_bytes, recorded_at)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [$this->agentId, $this->taskId, self::DEST, 'unc', '\\\\nas\\backup', 1000 * 10 ** 9, (50 + 10 * $d) * 10 ** 9, Time::db($now - $d * 86400)]);
-        }
+        $this->fillingHistory($now);
 
         $storage = $this->app->storage();
-        $this->assertSame(2, $storage->pass($now));
+        $this->assertSame(2, $storage->pass($now)['destinations']);
         $this->assertNull($storage->pass($now + 60), 'once an hour');
-        $this->assertSame(2, $storage->pass($now + Storage::EVERY_S + 1));
+        $this->assertSame(2, $storage->pass($now + Storage::EVERY_S + 1)['destinations']);
 
         $rows = $storage->forAgent($this->agentId);
         $this->assertCount(1, $rows);
@@ -259,10 +254,84 @@ final class InsightsTest extends TestCase
         $this->assertCount(2, $row['sets']);
         $this->assertSame('2026-11-11 02-00 incremental', $row['sets'][0]['name'], 'newest set first');
         $this->assertSame(1, $row['bad_sets']);
+        $this->assertTrue($row['soon'], 'within the 14 days of space_warn_days');
 
         $summary = $storage->summary();
         $this->assertSame(self::DEST, $summary['least']['destination_id'], 'the removed destination with 1 byte free does not count');
         $this->assertSame(5, (int) $summary['soonest']['days_left']);
+    }
+
+    public function testFillingStorageOpensOneSpaceProblem(): void
+    {
+        $now = time();
+        $sent = [];
+        $this->app->notifier()->sender = function (string $channel, string $target, string $subject, string $body) use (&$sent): void {
+            $sent[] = $body;
+        };
+        $this->app->settings()->set('telegram_token', '123:abc');
+        $this->app->settings()->set('telegram_chat_ids', '-100123');
+        $result = $this->client->call('POST', 'agent/inventory', ['destinations' => [[
+            'task_id' => $this->taskId, 'destination_id' => self::DEST, 'kind' => 'unc', 'path' => '\\\\nas\\backup',
+            'total_bytes' => 1000 * 10 ** 9, 'free_bytes' => 50 * 10 ** 9, 'sets' => [],
+        ]]]);
+        $this->assertTrue($result->ok(), $result->describe());
+        $this->fillingHistory($now);
+
+        // Cron: the forecast step opens the problem before the notify step, so the message goes out in the same pass.
+        $this->app->settings()->set('cron_last_run', Time::db($now - 60));
+        $stats = (new Cron($this->app))->run($now);
+        $this->assertSame(['destinations' => 1, 'opened' => 1, 'closed' => 0], $stats['stats']['forecast']);
+        $problem = $this->db()->one("SELECT * FROM problems WHERE kind = 'space' AND closed_at IS NULL");
+        $this->assertSame($this->taskId, $problem['task_id']);
+        $this->assertSame('\\\\nas\\backup', $problem['message']);
+        $this->assertSame(5, (int) $problem['days_left']);
+        $this->assertSame('queued', $problem['notify']);
+        $this->assertCount(1, $sent);
+        $this->assertStringContainsString('Documents — место в \\\\nas\\backup закончится примерно через 5 дн.', $sent[0]);
+
+        // On the dashboard and in Zabbix; the task status itself does not change.
+        $board = $this->app->board();
+        $this->assertSame(['space'], array_column($board->problems, 'kind'));
+        $this->assertSame('never', $board->task($this->agentId, $this->taskId)['status']);
+        $status = $this->json('/api/zabbix/status', ['token' => $this->app->settings()->get('zabbix_token')]);
+        $this->assertSame(5, $status['tasks'][$this->agentId . '/' . $this->taskId]['space_days']);
+        $this->assertSame(1, $status['summary']['problems']);
+
+        // Still filling an hour later: the same problem, no second message.
+        $later = $now + Storage::EVERY_S + 1;
+        (new Cron($this->app))->run($later);
+        $this->assertSame(1, (int) $this->db()->value("SELECT COUNT(*) FROM problems WHERE kind = 'space'"));
+        $this->assertCount(1, $sent);
+
+        // A smaller limit: 5 days is above 3, but within twice 3, so the problem stays (no opening and closing every hour).
+        $storage = $this->app->storage();
+        $this->app->settings()->set('space_warn_days', '3');
+        $this->assertSame(['opened' => 0, 'closed' => 0], $storage->checkSpace($later));
+        $this->app->settings()->set('space_warn_days', '2');
+        $this->assertSame(['opened' => 0, 'closed' => 1], $storage->checkSpace($later));
+        $closed = $this->db()->one('SELECT closed_by, days_left FROM problems WHERE id = ?', [$problem['id']]);
+        $this->assertSame('space_ok', $closed['closed_by']);
+        $this->assertSame(5, (int) $closed['days_left'], 'the last forecast stays with the closed problem');
+        $this->assertSame(-1, $this->json('/api/zabbix/status', ['token' => $this->app->settings()->get('zabbix_token')])
+            ['tasks'][$this->agentId . '/' . $this->taskId]['space_days']);
+        $this->assertFalse($storage->forAgent($this->agentId)[0]['soon'], 'the red forecast follows the same limit');
+
+        // 0 turns the warning off; a disabled task gets no problem either.
+        $this->app->settings()->set('space_warn_days', '0');
+        $this->assertSame(['opened' => 0, 'closed' => 0], $storage->checkSpace($later));
+        $this->app->settings()->set('space_warn_days', '14');
+        $this->db()->exec('UPDATE tasks SET enabled = 0 WHERE id = ?', [$this->taskId]);
+        $this->assertSame(['opened' => 0, 'closed' => 0], $storage->checkSpace($later));
+        $this->db()->exec('UPDATE tasks SET enabled = 1 WHERE id = ?', [$this->taskId]);
+        $this->assertSame(['opened' => 1, 'closed' => 0], $storage->checkSpace($later));
+
+        // The storage stops filling (old sets deleted, space freed): the problem closes.
+        $this->db()->exec('INSERT INTO storage_space (agent_id, task_id, destination_id, kind, path, total_bytes, free_bytes, recorded_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [$this->agentId, $this->taskId, self::DEST, 'unc', '\\\\nas\\backup', 1000 * 10 ** 9, 900 * 10 ** 9, Time::db($later)]);
+        $storage->recalculate($later + 1);
+        $this->assertSame(['opened' => 0, 'closed' => 1], $storage->checkSpace($later + 1));
+        $this->assertSame([], $this->app->board()->problems);
     }
 
     public function testRunKeepsDatabaseDumps(): void
@@ -282,6 +351,16 @@ final class InsightsTest extends TestCase
     }
 
     // ---- helpers ----
+
+    /** Ten days of history: 10 GB less free space each day, down to the 50 GB of the inventory, so 5 days are left. */
+    private function fillingHistory(int $now): void
+    {
+        for ($d = 10; $d >= 1; $d--) {
+            $this->db()->exec('INSERT INTO storage_space (agent_id, task_id, destination_id, kind, path, total_bytes, free_bytes, recorded_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [$this->agentId, $this->taskId, self::DEST, 'unc', '\\\\nas\\backup', 1000 * 10 ** 9, (50 + 10 * $d) * 10 ** 9, Time::db($now - $d * 86400)]);
+        }
+    }
 
     private function db(): \Custos\Infra\Db
     {

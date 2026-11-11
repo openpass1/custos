@@ -19,11 +19,12 @@ final class SettingsController extends Controller
         'missed_grace_min' => [1, 1440],
         'stale_days' => [1, 365],
         'anomaly_drop_pct' => [1, 99],
+        'space_warn_days' => [0, 365],
         'history_months' => [1, 120],
         'log_days' => [1, 3650],
     ];
     private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'missed_grace_min', 'stale_days',
-                            'anomaly_drop_pct', 'anomaly_growth_factor', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
+                            'anomaly_drop_pct', 'anomaly_growth_factor', 'space_warn_days', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
 
     public function index(): Response
     {
