@@ -45,14 +45,13 @@ jobs:
         include:
           - { base: 'debian:12', engines: 'mariadb postgresql' }
           - { base: 'debian:13', engines: 'mariadb postgresql' }
-          # The oldest bash custos-helper supports (4.4); its MariaDB 10.1 is too old.
-          - { base: 'ubuntu:18.04', engines: '' }
           - { base: 'ubuntu:22.04', engines: 'mariadb' }
           - { base: 'ubuntu:24.04', engines: 'mysql postgresql' }
           - { base: 'ubuntu:26.04', engines: 'mysql' }
           - { base: 'ubuntu:26.04', engines: 'mariadb postgresql' }
-          # AlmaLinux 9 passed on 2026-11-10 and is left out to save Actions minutes.
-          # Run it by hand: helper/tests/run.sh almalinux:9 "mariadb postgresql" (or mysql).
+          # Passed on 2026-11-10 and left out to save Actions minutes; run by hand when needed:
+          # helper/tests/run.sh almalinux:9 "mariadb postgresql" (or mysql),
+          # helper/tests/run.sh ubuntu:18.04 "" (bash 4.4, the oldest supported; files only).
     steps:
       - uses: actions/checkout@v6
 

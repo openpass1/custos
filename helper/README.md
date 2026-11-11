@@ -288,13 +288,12 @@ userdel -r custos
 |---|---|
 | Debian 12 | MariaDB 10.11, PostgreSQL 15 |
 | Debian 13 | MariaDB 11.8, PostgreSQL 17 |
-| Ubuntu 18.04 | без СУБД, только файлы (самый старый bash: 4.4) |
 | Ubuntu 22.04 | MariaDB 10.6 |
 | Ubuntu 24.04 | MySQL 8.0, PostgreSQL 16 |
 | Ubuntu 26.04 | MySQL 8.4 |
 | Ubuntu 26.04 | MariaDB 11.8, PostgreSQL 18 |
 
-AlmaLinux 9 (MariaDB 10.5 и PostgreSQL 13, отдельно MySQL 8.0) прошёл те же тесты 10.11.2026, но в постоянный прогон не входит, чтобы не тратить минуты GitHub Actions. Его можно запустить вручную, как любую другую систему.
+AlmaLinux 9 (MariaDB 10.5 и PostgreSQL 13, отдельно MySQL 8.0) и Ubuntu 18.04 (без СУБД, только файлы; там самый старый поддерживаемый bash, 4.4) прошли те же тесты 10.11.2026, но в постоянный прогон не входят, чтобы не тратить минуты GitHub Actions. Их можно запустить вручную, как любую другую систему.
 
 Запуск одной системы на машине с Docker, из корня репозитория:
 
