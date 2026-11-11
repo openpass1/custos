@@ -1,13 +1,25 @@
 namespace Custos.Core.Backup;
 
-/// <summary>What the database remembers about the copies of a task between runs (section 7).</summary>
-public sealed record TaskBackupState(string? FullRunId, string? FullSetName, DateTimeOffset? FullAt, int RunsSinceFull)
+/// <summary>What the database remembers about the copies of a task between runs (sections 6.3, 6.5, 7).</summary>
+/// <param name="RunsSinceVerify">Successful runs since the last one whose new copy was verified.</param>
+/// <param name="StoredCheckedAt">When the stored copies were last verified (section 6.5), or null if never.</param>
+/// <param name="CompressionRatio">Archive bytes per source byte at the last archive run, for the free-space check.</param>
+public sealed record TaskBackupState(
+    string? FullRunId,
+    string? FullSetName,
+    DateTimeOffset? FullAt,
+    int RunsSinceFull,
+    int RunsSinceVerify = 0,
+    DateTimeOffset? StoredCheckedAt = null,
+    double? CompressionRatio = null)
 {
     public static readonly TaskBackupState Empty = new(null, null, null, 0);
 }
 
 /// <summary>A successful run, as written to the database.</summary>
-public sealed record CommittedRun(string RunId, string BackupType, string? SetName, DateTimeOffset StartedAt);
+/// <param name="Verified">The new copy was verified in this run.</param>
+/// <param name="CompressionRatio">Archive bytes per source byte, or null to keep the last value.</param>
+public sealed record CommittedRun(string RunId, string BackupType, string? SetName, DateTimeOffset StartedAt, bool Verified = false, double? CompressionRatio = null);
 
 /// <summary>
 /// The state of the files of each task at its last successful copy, and at its last full copy (for differential
@@ -23,6 +35,9 @@ public interface IFileStateStore
 
     /// <summary>Replaces the state after a successful run; a full run also becomes the new base.</summary>
     void CommitRun(string taskId, CommittedRun run, IReadOnlyCollection<KeyValuePair<string, FileStamp>> files);
+
+    /// <summary>Remembers when the stored copies of the task were verified.</summary>
+    void SetStoredChecked(string taskId, DateTimeOffset checkedAt);
 }
 
 /// <summary>A store kept in memory, for tests.</summary>
@@ -58,15 +73,29 @@ public sealed class MemoryFileStateStore : IFileStateStore
             var copy = new Dictionary<string, FileStamp>(files, StringComparer.OrdinalIgnoreCase);
             _files[(taskId, false)] = copy;
             var state = _states.TryGetValue(taskId, out var current) ? current : TaskBackupState.Empty;
+            state = state with
+            {
+                RunsSinceVerify = run.Verified ? 0 : state.RunsSinceVerify + 1,
+                CompressionRatio = run.CompressionRatio ?? state.CompressionRatio,
+            };
             if (run.BackupType == Model.BackupTypes.Full)
             {
                 _files[(taskId, true)] = new Dictionary<string, FileStamp>(copy, StringComparer.OrdinalIgnoreCase);
-                _states[taskId] = new TaskBackupState(run.RunId, run.SetName, run.StartedAt, 0);
+                _states[taskId] = state with { FullRunId = run.RunId, FullSetName = run.SetName, FullAt = run.StartedAt, RunsSinceFull = 0 };
             }
             else
             {
                 _states[taskId] = state with { RunsSinceFull = state.RunsSinceFull + 1 };
             }
+        }
+    }
+
+    public void SetStoredChecked(string taskId, DateTimeOffset checkedAt)
+    {
+        lock (_lock)
+        {
+            var state = _states.TryGetValue(taskId, out var current) ? current : TaskBackupState.Empty;
+            _states[taskId] = state with { StoredCheckedAt = checkedAt };
         }
     }
 }

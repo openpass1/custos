@@ -19,6 +19,8 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <!-- DPAPI for stored passwords: MIT -->
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+    <!-- ZIP archives (streaming, AES-256): MIT -->
+    <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <!-- WMI, for the shadow copies (VSS): MIT -->
     <PackageVersion Include="System.Management" Version="10.0.14" />
     <!-- Tests only, not shipped -->

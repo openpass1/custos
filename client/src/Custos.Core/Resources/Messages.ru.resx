@@ -34,8 +34,8 @@
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Неизвестный тип копии «{0}».</value>
   </data>
-  <data name="ArchiveNotSupported" xml:space="preserve">
-    <value>Сжатие ({0}) появится в следующей версии CUSTOS. Задание не выполнено.</value>
+  <data name="ArchiveFormatUnknown" xml:space="preserve">
+    <value>Неизвестный формат архива «{0}». Задание не выполнено.</value>
   </data>
   <data name="NoSources" xml:space="preserve">
     <value>В задании нет источников.</value>
@@ -459,5 +459,116 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Менять задания и настройки могут только администраторы этого компьютера.</value>
+  </data>
+  <data name="ArchiveSettings" xml:space="preserve">
+    <value>Архив: {0}, уровень сжатия {1}{2}.</value>
+  </data>
+  <data name="ArchiveEncryptedPart" xml:space="preserve">
+    <value>, шифрование AES-256</value>
+  </data>
+  <data name="ArchiveNamesEncryptedPart" xml:space="preserve">
+    <value>вместе с именами файлов</value>
+  </data>
+  <data name="ArchiveVolumesPart" xml:space="preserve">
+    <value>, тома по {0}</value>
+  </data>
+  <data name="ArchiveLibraryPart" xml:space="preserve">
+    <value>, 7z.dll {0}</value>
+  </data>
+  <data name="ArchiveWritten" xml:space="preserve">
+    <value>Архив {0} записан в {1}: файлов {2}, {3}{4}.</value>
+  </data>
+  <data name="ArchiveVolumeCount" xml:space="preserve">
+    <value>, томов: {0}</value>
+  </data>
+  <data name="ArchiveSkipped" xml:space="preserve">
+    <value>Пропущен {0}: {1}</value>
+  </data>
+  <data name="ArchivePasswordNotSet" xml:space="preserve">
+    <value>Шифрование включено, но у задания нет пароля архива. Задайте его в редакторе задания, страница «Сжатие».</value>
+  </data>
+  <data name="ArchivePasswordMissing" xml:space="preserve">
+    <value>Пароль архива задания не сохранён на этом компьютере. Введите его заново в редакторе задания.</value>
+  </data>
+  <data name="PartialFileNotRemoved" xml:space="preserve">
+    <value>Не удалось удалить незавершённый файл {0}: {1}</value>
+  </data>
+  <data name="FileCutInArchive" xml:space="preserve">
+    <value>файл не удалось прочитать до конца ({0}); в архиве он неполный и считается нескопированным</value>
+  </data>
+  <data name="SevenZipMissing" xml:space="preserve">
+    <value>Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя: переустановите CUSTOS или положите туда 7z.dll из 64-битного 7-Zip.</value>
+  </data>
+  <data name="SevenZipNot64Bit" xml:space="preserve">
+    <value>{0} — не 64-битный 7z.dll. Возьмите 7z.dll из 64-битного (x64) 7-Zip.</value>
+  </data>
+  <data name="SevenZipBroken" xml:space="preserve">
+    <value>7z.dll нельзя использовать ({0}): {1}</value>
+  </data>
+  <data name="SevenZipWriteFailed" xml:space="preserve">
+    <value>7-Zip не смог записать архив: {0}</value>
+  </data>
+  <data name="SevenZipWindowsOnly" xml:space="preserve">
+    <value>Формат 7z работает только в Windows.</value>
+  </data>
+  <data name="ZipWriteFailed" xml:space="preserve">
+    <value>Не удалось записать ZIP-архив: {0}</value>
+  </data>
+  <data name="ArchiveNeedsPassword" xml:space="preserve">
+    <value>Архив зашифрован, а пароль не указан.</value>
+  </data>
+  <data name="ArchiveWrongPassword" xml:space="preserve">
+    <value>Пароль не подходит к архиву.</value>
+  </data>
+  <data name="ArchiveUnreadable" xml:space="preserve">
+    <value>Архив не открывается: {0}</value>
+  </data>
+  <data name="ArchiveItemDamaged" xml:space="preserve">
+    <value>{0} в архиве повреждён.</value>
+  </data>
+  <data name="ManifestMissing" xml:space="preserve">
+    <value>В {0} нет custos-set.json: его создал не CUSTOS, или он повреждён.</value>
+  </data>
+  <data name="OutcomeDamaged" xml:space="preserve">
+    <value>повреждён (не совпадает контрольная сумма)</value>
+  </data>
+  <data name="OutcomeWrongPassword" xml:space="preserve">
+    <value>неверный пароль</value>
+  </data>
+  <data name="OutcomeUnsupported" xml:space="preserve">
+    <value>упакован методом, которого не знает этот 7z.dll</value>
+  </data>
+  <data name="OutcomeTruncated" xml:space="preserve">
+    <value>архив обрывается (нет тома или он обрезан?)</value>
+  </data>
+  <data name="VerifyNewOk" xml:space="preserve">
+    <value>Новая копия в {0} проверена: все файлы совпадают.</value>
+  </data>
+  <data name="VerifyNewFailed" xml:space="preserve">
+    <value>Новая копия в {0} не прошла проверку: {1}</value>
+  </data>
+  <data name="VerifyFileProblem" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="VerifyContentDiffers" xml:space="preserve">
+    <value>содержимое не совпадает с тем, что было скопировано</value>
+  </data>
+  <data name="VerifyFileMissing" xml:space="preserve">
+    <value>отсутствует</value>
+  </data>
+  <data name="StoredVerifyStarted" xml:space="preserve">
+    <value>Проверка хранящихся копий.</value>
+  </data>
+  <data name="StoredSetOk" xml:space="preserve">
+    <value>Набор «{0}» в {1} в порядке.</value>
+  </data>
+  <data name="StoredSetDamaged" xml:space="preserve">
+    <value>Набор «{0}» в {1} повреждён: {2}</value>
+  </data>
+  <data name="StoredVerifyDone" xml:space="preserve">
+    <value>Хранящиеся копии проверены: наборов {0}, повреждено {1}.</value>
+  </data>
+  <data name="RestoreFullMissing" xml:space="preserve">
+    <value>В назначении нет полной копии «{0}», на которой построен этот набор.</value>
   </data>
 </root>

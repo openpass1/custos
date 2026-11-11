@@ -75,7 +75,7 @@ public sealed class SetCatalogTests
         var sets = SetCatalog.Scan(temp.Path, "TASK-1");
 
         Assert.Equal(["run-1", "run-2"], sets.Select(s => s.Header.RunId));
-        Assert.Equal(temp.Combine("A"), sets[0].FolderPath);
+        Assert.Equal(temp.Combine("A"), sets[0].Location);
     }
 
     [Fact]

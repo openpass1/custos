@@ -1,4 +1,6 @@
+using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Model;
 
 namespace Custos.Core.Tests;
 
@@ -61,9 +63,37 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public long? FreeSpace { get; set; }
 
+    /// <summary>Archives of a test (for example a 7z.dll that does not exist); null = the usual ones.</summary>
+    public IArchiveProvider? ArchivesOverride { get; set; }
+
+    public override IArchiveProvider Archives => ArchivesOverride ?? base.Archives;
+
     public override string ComputerName => "TESTPC";
 
     public override string? FindVolumeByLabel(string label) => Volumes.TryGetValue(label, out string? root) ? root : null;
 
     public override long? GetFreeSpace(string path) => FreeSpace;
+}
+
+/// <summary>7z works only on Windows with a 7z.dll (CUSTOS_7Z_DLL, set by build.ps1).</summary>
+internal static class SevenZipCheck
+{
+    /// <summary>Skips a 7z test where 7z cannot work; with CUSTOS_REQUIRE_7Z=1 (the Windows CI) it fails instead, so
+    /// that a lost 7z.dll cannot quietly turn every 7z test off.</summary>
+    public static void SkipUnlessAvailable(string format)
+    {
+        if (format != ArchiveFormats.SevenZip)
+        {
+            return;
+        }
+
+        string? path = Environment.GetEnvironmentVariable("CUSTOS_7Z_DLL");
+        bool available = OperatingSystem.IsWindows() && !string.IsNullOrEmpty(path) && File.Exists(path);
+        if (!available && Environment.GetEnvironmentVariable("CUSTOS_REQUIRE_7Z") == "1")
+        {
+            Assert.Fail("7z.dll is required here (CUSTOS_REQUIRE_7Z=1), but CUSTOS_7Z_DLL does not point to it.");
+        }
+
+        Assert.SkipUnless(available, "7z needs Windows and 7z.dll (CUSTOS_7Z_DLL).");
+    }
 }

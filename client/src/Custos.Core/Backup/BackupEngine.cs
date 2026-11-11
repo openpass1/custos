@@ -1,22 +1,23 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Custos.Core.Archives;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
 namespace Custos.Core.Backup;
 
 /// <summary>
-/// Performs one run of a task without compression (stage 1): full, incremental or differential copy into one or more
-/// local, network or USB destinations, with change tracking, set manifests and retention by count
-/// (sections 6.1–6.8 and 7 of the client spec).
+/// Performs one run of a task: full, incremental or differential copy into one or more local, network or USB
+/// destinations, as plain files or as a 7z or ZIP archive, with change tracking, set manifests, verification and
+/// retention by count (sections 6.1–6.8 and 7 of the client spec).
 /// </summary>
 /// <remarks>
 /// Every file is read once and written to all destinations at the same time; a destination that fails is dropped,
 /// the others go on. A copy is never left looking finished when it is not: files are written under a temporary name
-/// and renamed when complete, a set folder carries ".partial" until its manifest is written. The database and the
+/// and renamed when complete, a set folder or archive carries ".partial" until it is complete. The database and the
 /// destinations are only cleaned up after a successful run.
 /// </remarks>
-public sealed class BackupEngine
+public sealed partial class BackupEngine
 {
     public const string TempSuffix = ".custos-partial";
 
@@ -32,6 +33,10 @@ public sealed class BackupEngine
     private readonly Stopwatch _progressClock = Stopwatch.StartNew();
     private readonly SpeedMeter _speed = new();
     private readonly Dictionary<string, INetworkSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
+
+    // The archive writers read the sources and write the destinations on their own threads: progress, counters and
+    // the failure of a destination are changed under this lock.
+    private readonly Lock _sync = new();
     private TimeSpan _lastProgress = TimeSpan.MinValue;
 
     public BackupEngine(IBackupPlatform platform, IFileStateStore store, IRunLog log, Action<BackupProgress>? onProgress = null)
@@ -82,6 +87,11 @@ public sealed class BackupEngine
         var task = run.Task;
         Phase(BackupPhases.Scan);
         CheckSupported(task);
+        if (IsArchive(task))
+        {
+            PrepareArchive(run);
+        }
+
         PrepareTargets(run);
         if (run.ActiveTargets.Count == 0)
         {
@@ -112,9 +122,18 @@ public sealed class BackupEngine
         }
 
         Phase(BackupPhases.Copy);
-        OpenSets(run);
-        CopyFiles(run);
-        FinishSets(run);
+        run.VerifyNew = VerifyDue(run);
+        if (IsArchive(task))
+        {
+            WriteArchive(run);
+        }
+        else
+        {
+            OpenSets(run);
+            CopyFiles(run);
+            FinishSets(run);
+        }
+
         if (!run.SetsFinished)
         {
             return;
@@ -122,6 +141,7 @@ public sealed class BackupEngine
 
         Commit(run);
         ApplyRetention(run);
+        VerifyStored(run);
     }
 
     // ---- Preparation -------------------------------------------------------------------------------------------
@@ -138,9 +158,9 @@ public sealed class BackupEngine
             throw new BackupException(Messages.Format(Messages.BackupTypeNotSupported, task.BackupType));
         }
 
-        if (task.Archive.Format != ArchiveFormats.None)
+        if (task.Archive.Format is not (ArchiveFormats.None or ArchiveFormats.Zip or ArchiveFormats.SevenZip))
         {
-            throw new BackupException(Messages.Format(Messages.ArchiveNotSupported, task.Archive.Format));
+            throw new BackupException(Messages.Format(Messages.ArchiveFormatUnknown, task.Archive.Format));
         }
 
         if (task.Sources.Count == 0)
@@ -173,7 +193,13 @@ public sealed class BackupEngine
                 target.Session.Run(() =>
                 {
                     Directory.CreateDirectory(target.Root);
-                    if (run.Task.Layout.SeparateFolders)
+                    if (run.Access is { } access)
+                    {
+                        // Archives always carry their date: every run is a set of its own.
+                        target.Sets = SetCatalog.Scan(target.Root, run.Task.Id, access.WithSession(target.Session), (path, reason) =>
+                            _log.Write(RunLogLevel.Detail, Messages.Format(Messages.ArchiveSkipped, path, reason)));
+                    }
+                    else if (run.Task.Layout.SeparateFolders)
                     {
                         target.Sets = SetCatalog.Scan(target.Root, run.Task.Id);
                     }
@@ -244,7 +270,7 @@ public sealed class BackupEngine
         {
             foreach (var target in run.ActiveTargets)
             {
-                bool hasParent = task.Layout.SeparateFolders
+                bool hasParent = task.Layout.SeparateFolders || IsArchive(task)
                     ? target.Sets.Any(s => string.Equals(s.Header.RunId, run.State.FullRunId, StringComparison.OrdinalIgnoreCase))
                     : target.SharedManifest is not null;
                 if (!hasParent)
@@ -371,7 +397,9 @@ public sealed class BackupEngine
 
     private void CheckFreeSpace(RunContext run)
     {
-        long needed = run.BytesToCopy + (1024 * 1024);
+        // An archive needs about as much as the last one did per source byte (section 6.3).
+        double ratio = IsArchive(run.Task) ? Math.Clamp(run.State.CompressionRatio ?? 1.0, 0.05, 1.1) : 1.0;
+        long needed = (long)(run.BytesToCopy * ratio) + (1024 * 1024);
         foreach (var target in run.ActiveTargets)
         {
             long? free = target.Session.Run(() => _platform.GetFreeSpace(target.Root));
@@ -450,6 +478,7 @@ public sealed class BackupEngine
                 run.Copied[file.OriginalPath] = hash;
                 run.Result.FilesProcessed++;
                 run.Result.BytesWritten += file.Size;
+                run.StoredBytes += file.Size;
                 if (run.Request.LogEveryFile)
                 {
                     _log.Write(RunLogLevel.Detail, Messages.Format(Messages.FileCopied, file.OriginalPath, Sizes.Format(file.Size)));
@@ -672,11 +701,21 @@ public sealed class BackupEngine
         var finished = DateTimeOffset.UtcNow;
         string status = run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
 
+        if (run.VerifyNew)
+        {
+            Phase(BackupPhases.Verify);
+        }
+
         foreach (var target in run.ActiveTargets)
         {
-            var header = BuildHeader(run, target, finished, status);
+            var header = BuildHeader(run, target.SetName, finished, status);
             try
             {
+                if (run.VerifyNew)
+                {
+                    VerifyNewFolder(run, target);
+                }
+
                 target.Session.Run(() =>
                 {
                     string manifest = Path.Combine(target.WriteFolder, SetManifest.FileName);
@@ -703,6 +742,10 @@ public sealed class BackupEngine
                 target.Progress.State = DestinationStates.Done;
                 _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetWritten, target.SetName, target.Label, target.Files, Sizes.Format(target.Bytes)));
             }
+            catch (BackupException ex)
+            {
+                FailTarget(run, target, ex.Message);
+            }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 FailTarget(run, target, Messages.Format(Messages.DestinationWriteFailed, target.Label, ex.Message));
@@ -710,11 +753,12 @@ public sealed class BackupEngine
         }
 
         run.SetsFinished = run.Targets.All(t => t.Completed);
+        run.Verified = run.VerifyNew && run.SetsFinished;
     }
 
-    private SetManifestHeader BuildHeader(RunContext run, Target target, DateTimeOffset finished, string status) => new()
+    private SetManifestHeader BuildHeader(RunContext run, string setName, DateTimeOffset finished, string status) => new()
     {
-        SetName = target.SetName,
+        SetName = setName,
         TaskId = run.Task.Id,
         TaskName = run.Task.Name,
         RunId = run.Request.RunId,
@@ -728,7 +772,7 @@ public sealed class BackupEngine
         Sources = [.. run.Sources.Where(s => s.Scan is { Found: true }).Select(s => new ManifestSource { Id = s.Source.Id, Path = s.Source.Path, Target = s.Target })],
         FileCount = run.Result.SourceFiles,
         SetFileCount = run.Copied.Count,
-        SetBytes = run.Result.BytesWritten,
+        SetBytes = run.StoredBytes,
     };
 
     private static IEnumerable<ManifestFile> ManifestFiles(RunContext run)
@@ -782,14 +826,20 @@ public sealed class BackupEngine
             }
         }
 
-        _store.CommitRun(run.Task.Id, new CommittedRun(run.Request.RunId, run.BackupType, run.SetName, run.Request.StartedAt), files);
+        double? ratio = IsArchive(run.Task) && run.StoredBytes > 0 ? (double)run.ArchiveBytes / run.StoredBytes : null;
+        _store.CommitRun(run.Task.Id, new CommittedRun(run.Request.RunId, run.BackupType, run.SetName, run.Request.StartedAt, run.Verified, ratio), files);
         run.Committed = true;
     }
 
     private void ApplyRetention(RunContext run)
     {
         var retention = run.Task.Retention;
-        if (!run.Task.Layout.SeparateFolders || retention.Mode != RetentionModes.Count)
+        foreach (var target in run.Targets.Where(t => t.Completed && t.NewSet is not null))
+        {
+            target.Kept = run.Task.Layout.SeparateFolders || IsArchive(run.Task) ? [.. target.Sets, target.NewSet!] : [target.NewSet!];
+        }
+
+        if (!(run.Task.Layout.SeparateFolders || IsArchive(run.Task)) || retention.Mode != RetentionModes.Count)
         {
             return;
         }
@@ -797,13 +847,13 @@ public sealed class BackupEngine
         Phase(BackupPhases.Retention);
         foreach (var target in run.Targets.Where(t => t.Completed && t.NewSet is not null))
         {
-            var sets = target.Sets.Append(target.NewSet!).ToList();
-            foreach (var set in SetCatalog.PlanCountRetention(sets, retention.KeepFull, run.Request.RunId))
+            foreach (var set in SetCatalog.PlanCountRetention(target.Kept, retention.KeepFull, run.Request.RunId))
             {
                 run.Cancellation.ThrowIfCancellationRequested();
                 try
                 {
-                    target.Session.Run(() => SetCatalog.DeleteSetFolder(set.FolderPath));
+                    target.Session.Run(() => SetCatalog.DeleteSet(set));
+                    target.Kept.Remove(set);
                     run.Result.DeletedSets++;
                     _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetDeleted, set.Header.SetName, target.Label));
                 }
@@ -820,6 +870,11 @@ public sealed class BackupEngine
 
     private void Cleanup(RunContext run)
     {
+        foreach (var target in run.Targets.Where(t => !t.Completed))
+        {
+            RemoveArchiveLeftovers(target);
+        }
+
         foreach (var target in run.Targets.Where(t => !t.Completed && t.WriteFolder.Length > 0
             && !string.Equals(t.WriteFolder, t.SetFolder, StringComparison.Ordinal)))
         {
@@ -902,19 +957,22 @@ public sealed class BackupEngine
 
     private void FailTarget(RunContext run, Target target, string message)
     {
-        if (target.Failed)
+        lock (_sync)
         {
-            return;
-        }
+            if (target.Failed)
+            {
+                return;
+            }
 
-        target.Failed = true;
-        target.Error = message;
-        run.Result.Errors++;
-        target.Progress.State = DestinationStates.Failed;
-        target.Progress.Error = message;
-        run.Result.ErrorMessage ??= message;
-        _log.Write(RunLogLevel.Error, message);
-        Report(force: true);
+            target.Failed = true;
+            target.Error = message;
+            run.Result.Errors++;
+            target.Progress.State = DestinationStates.Failed;
+            target.Progress.Error = message;
+            run.Result.ErrorMessage ??= message;
+            _log.Write(RunLogLevel.Error, message);
+            Report(force: true);
+        }
     }
 
     // ---- Helpers -----------------------------------------------------------------------------------------------
@@ -981,17 +1039,20 @@ public sealed class BackupEngine
             return;
         }
 
-        var now = _progressClock.Elapsed;
-        if (!force && now - _lastProgress < ProgressInterval)
+        lock (_sync)
         {
-            return;
-        }
+            var now = _progressClock.Elapsed;
+            if (!force && now - _lastProgress < ProgressInterval)
+            {
+                return;
+            }
 
-        _lastProgress = now;
-        _progress.SpeedBps = _speed.BytesPerSecond;
-        long remaining = Math.Max(0, _progress.BytesTotal - _progress.BytesDone);
-        _progress.EtaS = _progress.SpeedBps > 0 && _progress.Phase == BackupPhases.Copy ? remaining / _progress.SpeedBps : null;
-        _onProgress(_progress.Copy());
+            _lastProgress = now;
+            _progress.SpeedBps = _speed.BytesPerSecond;
+            long remaining = Math.Max(0, _progress.BytesTotal - _progress.BytesDone);
+            _progress.EtaS = _progress.SpeedBps > 0 && _progress.Phase == BackupPhases.Copy ? remaining / _progress.SpeedBps : null;
+            _onProgress(_progress.Copy());
+        }
     }
 
     private static string DescribeDestination(TaskDestination destination) => destination.Kind == DestinationKinds.Usb
@@ -1065,6 +1126,27 @@ public sealed class BackupEngine
         public bool SetsFinished { get; set; }
 
         public bool Committed { get; set; }
+
+        /// <summary>Source bytes stored in the set (plain or packed).</summary>
+        public long StoredBytes { get; set; }
+
+        // ---- Archives
+
+        public ArchiveAccess? Access { get; set; }
+
+        public IArchiveWriter? Writer { get; set; }
+
+        /// <summary>The manifest packed into the archive; set when the writer gets to it.</summary>
+        public SetManifestHeader? Header { get; set; }
+
+        /// <summary>Size of the archive (all volumes).</summary>
+        public long ArchiveBytes { get; set; }
+
+        /// <summary>This run verifies its new copy (section 6.5).</summary>
+        public bool VerifyNew { get; set; }
+
+        /// <summary>The new copy was verified in every destination.</summary>
+        public bool Verified { get; set; }
     }
 
     private sealed class SourceContext(TaskSource source)
@@ -1111,9 +1193,26 @@ public sealed class BackupEngine
 
         public StoredSet? NewSet { get; set; }
 
+        /// <summary>Sets of the task in this destination after retention, the new one included.</summary>
+        public List<StoredSet> Kept { get; set; } = [];
+
         public int Files { get; set; }
 
         public long Bytes { get; set; }
+
+        // ---- Archives
+
+        /// <summary>The archive being written here (a file or the volumes).</summary>
+        public Stream? Output { get; set; }
+
+        /// <summary>Final names of the archive files, in order.</summary>
+        public List<string> Parts { get; } = [];
+
+        /// <summary>The names they are written under (<see cref="Parts"/> + ".partial").</summary>
+        public List<string> Temps { get; } = [];
+
+        /// <summary>Files already given their final name.</summary>
+        public List<string> Renamed { get; } = [];
     }
 
     private sealed record Output(Target Target, FileStream Stream, string Temp, string Final);

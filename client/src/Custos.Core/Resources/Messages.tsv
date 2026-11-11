@@ -7,7 +7,7 @@ RunAborted	The run was stopped.	Задание прервано.
 NothingChanged	No file has changed since the last backup, so no new set was made.	С прошлой копии файлы не менялись, новый набор не создан.
 MirrorNotSupported	Mirror tasks arrive in the next version of CUSTOS. The task was not run.	Зеркало появится в следующей версии CUSTOS. Задание не выполнено.
 BackupTypeNotSupported	Unknown backup type «{0}».	Неизвестный тип копии «{0}».
-ArchiveNotSupported	Compression ({0}) arrives in the next version of CUSTOS. The task was not run.	Сжатие ({0}) появится в следующей версии CUSTOS. Задание не выполнено.
+ArchiveFormatUnknown	Unknown archive format «{0}». The task was not run.	Неизвестный формат архива «{0}». Задание не выполнено.
 NoSources	The task has no sources.	В задании нет источников.
 NoDestinations	The task has no destinations.	В задании нет назначений.
 NoDestinationAvailable	No destination is available.	Ни одно назначение недоступно.
@@ -149,3 +149,46 @@ MissedTooOld	Task «{0}» missed its run at {1}. That was more than 7 days ago, 
 DeleteWhileRunning	The task is running now. Stop it first, then delete it.	Задание сейчас выполняется. Сначала остановите его, потом удаляйте.
 DatabaseRecreated	The database of the service was damaged and has been started anew. The history of earlier runs is gone; the next run of each task makes a full backup.	База службы была повреждена и создана заново. История прежних запусков потеряна, следующий запуск каждого задания сделает полную копию.
 NotAllowed	Only administrators of this computer may change tasks and settings.	Менять задания и настройки могут только администраторы этого компьютера.
+
+# Archives (section 6.5)
+ArchiveSettings	Archive: {0}, compression level {1}{2}.	Архив: {0}, уровень сжатия {1}{2}.
+ArchiveEncryptedPart	, AES-256 encryption	, шифрование AES-256
+ArchiveNamesEncryptedPart	 including file names	 вместе с именами файлов
+ArchiveVolumesPart	, volumes of {0}	, тома по {0}
+ArchiveLibraryPart	, 7z.dll {0}	, 7z.dll {0}
+ArchiveWritten	Archive {0} written to {1}: {2} files, {3}{4}.	Архив {0} записан в {1}: файлов {2}, {3}{4}.
+ArchiveVolumeCount	, {0} volumes	, томов: {0}
+ArchiveSkipped	Skipped {0}: {1}	Пропущен {0}: {1}
+ArchivePasswordNotSet	Encryption is on, but the task has no archive password. Set it in the task editor, page «Compression».	Шифрование включено, но у задания нет пароля архива. Задайте его в редакторе задания, страница «Сжатие».
+ArchivePasswordMissing	The archive password of the task is not stored on this computer. Enter it again in the task editor.	Пароль архива задания не сохранён на этом компьютере. Введите его заново в редакторе задания.
+PartialFileNotRemoved	Could not remove the unfinished file {0}: {1}	Не удалось удалить незавершённый файл {0}: {1}
+FileCutInArchive	the file could not be read to the end ({0}); it is in the archive incomplete and counts as not copied	файл не удалось прочитать до конца ({0}); в архиве он неполный и считается нескопированным
+SevenZipMissing	7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 64-bit 7-Zip there.	Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя: переустановите CUSTOS или положите туда 7z.dll из 64-битного 7-Zip.
+SevenZipNot64Bit	{0} is not a 64-bit 7z.dll. Take 7z.dll from the 64-bit (x64) 7-Zip.	{0} — не 64-битный 7z.dll. Возьмите 7z.dll из 64-битного (x64) 7-Zip.
+SevenZipBroken	7z.dll cannot be used ({0}): {1}	7z.dll нельзя использовать ({0}): {1}
+SevenZipWriteFailed	7-Zip could not write the archive: {0}	7-Zip не смог записать архив: {0}
+SevenZipWindowsOnly	The 7z format works only on Windows.	Формат 7z работает только в Windows.
+ZipWriteFailed	The ZIP archive could not be written: {0}	Не удалось записать ZIP-архив: {0}
+ArchiveNeedsPassword	The archive is encrypted, and no password was given.	Архив зашифрован, а пароль не указан.
+ArchiveWrongPassword	The password does not fit the archive.	Пароль не подходит к архиву.
+ArchiveUnreadable	The archive cannot be opened: {0}	Архив не открывается: {0}
+ArchiveItemDamaged	{0} in the archive is damaged.	{0} в архиве повреждён.
+ManifestMissing	{0} has no custos-set.json: it was not made by CUSTOS or is damaged.	В {0} нет custos-set.json: его создал не CUSTOS, или он повреждён.
+OutcomeDamaged	damaged (checksum does not match)	повреждён (не совпадает контрольная сумма)
+OutcomeWrongPassword	wrong password	неверный пароль
+OutcomeUnsupported	packed with a method this 7z.dll does not know	упакован методом, которого не знает этот 7z.dll
+OutcomeTruncated	the archive ends too early (a volume missing or cut off?)	архив обрывается (нет тома или он обрезан?)
+
+# Verification (section 6.5)
+VerifyNewOk	The new copy in {0} is verified: all files match.	Новая копия в {0} проверена: все файлы совпадают.
+VerifyNewFailed	The new copy in {0} did not pass verification: {1}	Новая копия в {0} не прошла проверку: {1}
+VerifyFileProblem	{0}: {1}	{0}: {1}
+VerifyContentDiffers	the content differs from what was copied	содержимое не совпадает с тем, что было скопировано
+VerifyFileMissing	missing	отсутствует
+StoredVerifyStarted	Verifying the stored copies.	Проверка хранящихся копий.
+StoredSetOk	Set «{0}» in {1} is whole.	Набор «{0}» в {1} в порядке.
+StoredSetDamaged	Set «{0}» in {1} is damaged: {2}	Набор «{0}» в {1} повреждён: {2}
+StoredVerifyDone	Stored copies verified: {0} sets, damaged: {1}.	Хранящиеся копии проверены: наборов {0}, повреждено {1}.
+
+# Restore (section 6.11)
+RestoreFullMissing	The full copy «{0}» this set builds on is not in the destination.	В назначении нет полной копии «{0}», на которой построен этот набор.

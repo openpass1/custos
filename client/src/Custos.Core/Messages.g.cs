@@ -26,8 +26,8 @@ static partial class Messages
     /// <summary>Unknown backup type «{0}».</summary>
     public static string BackupTypeNotSupported => Get(nameof(BackupTypeNotSupported));
 
-    /// <summary>Compression ({0}) arrives in the next version of CUSTOS. The task was not run.</summary>
-    public static string ArchiveNotSupported => Get(nameof(ArchiveNotSupported));
+    /// <summary>Unknown archive format «{0}». The task was not run.</summary>
+    public static string ArchiveFormatUnknown => Get(nameof(ArchiveFormatUnknown));
 
     /// <summary>The task has no sources.</summary>
     public static string NoSources => Get(nameof(NoSources));
@@ -451,4 +451,115 @@ static partial class Messages
 
     /// <summary>Only administrators of this computer may change tasks and settings.</summary>
     public static string NotAllowed => Get(nameof(NotAllowed));
+
+    /// <summary>Archive: {0}, compression level {1}{2}.</summary>
+    public static string ArchiveSettings => Get(nameof(ArchiveSettings));
+
+    /// <summary>, AES-256 encryption</summary>
+    public static string ArchiveEncryptedPart => Get(nameof(ArchiveEncryptedPart));
+
+    /// <summary>including file names</summary>
+    public static string ArchiveNamesEncryptedPart => Get(nameof(ArchiveNamesEncryptedPart));
+
+    /// <summary>, volumes of {0}</summary>
+    public static string ArchiveVolumesPart => Get(nameof(ArchiveVolumesPart));
+
+    /// <summary>, 7z.dll {0}</summary>
+    public static string ArchiveLibraryPart => Get(nameof(ArchiveLibraryPart));
+
+    /// <summary>Archive {0} written to {1}: {2} files, {3}{4}.</summary>
+    public static string ArchiveWritten => Get(nameof(ArchiveWritten));
+
+    /// <summary>, {0} volumes</summary>
+    public static string ArchiveVolumeCount => Get(nameof(ArchiveVolumeCount));
+
+    /// <summary>Skipped {0}: {1}</summary>
+    public static string ArchiveSkipped => Get(nameof(ArchiveSkipped));
+
+    /// <summary>Encryption is on, but the task has no archive password. Set it in the task editor, page «Compression».</summary>
+    public static string ArchivePasswordNotSet => Get(nameof(ArchivePasswordNotSet));
+
+    /// <summary>The archive password of the task is not stored on this computer. Enter it again in the task editor.</summary>
+    public static string ArchivePasswordMissing => Get(nameof(ArchivePasswordMissing));
+
+    /// <summary>Could not remove the unfinished file {0}: {1}</summary>
+    public static string PartialFileNotRemoved => Get(nameof(PartialFileNotRemoved));
+
+    /// <summary>the file could not be read to the end ({0}); it is in the archive incomplete and counts as not copied</summary>
+    public static string FileCutInArchive => Get(nameof(FileCutInArchive));
+
+    /// <summary>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 64-bit 7-Zip there.</summary>
+    public static string SevenZipMissing => Get(nameof(SevenZipMissing));
+
+    /// <summary>{0} is not a 64-bit 7z.dll. Take 7z.dll from the 64-bit (x64) 7-Zip.</summary>
+    public static string SevenZipNot64Bit => Get(nameof(SevenZipNot64Bit));
+
+    /// <summary>7z.dll cannot be used ({0}): {1}</summary>
+    public static string SevenZipBroken => Get(nameof(SevenZipBroken));
+
+    /// <summary>7-Zip could not write the archive: {0}</summary>
+    public static string SevenZipWriteFailed => Get(nameof(SevenZipWriteFailed));
+
+    /// <summary>The 7z format works only on Windows.</summary>
+    public static string SevenZipWindowsOnly => Get(nameof(SevenZipWindowsOnly));
+
+    /// <summary>The ZIP archive could not be written: {0}</summary>
+    public static string ZipWriteFailed => Get(nameof(ZipWriteFailed));
+
+    /// <summary>The archive is encrypted, and no password was given.</summary>
+    public static string ArchiveNeedsPassword => Get(nameof(ArchiveNeedsPassword));
+
+    /// <summary>The password does not fit the archive.</summary>
+    public static string ArchiveWrongPassword => Get(nameof(ArchiveWrongPassword));
+
+    /// <summary>The archive cannot be opened: {0}</summary>
+    public static string ArchiveUnreadable => Get(nameof(ArchiveUnreadable));
+
+    /// <summary>{0} in the archive is damaged.</summary>
+    public static string ArchiveItemDamaged => Get(nameof(ArchiveItemDamaged));
+
+    /// <summary>{0} has no custos-set.json: it was not made by CUSTOS or is damaged.</summary>
+    public static string ManifestMissing => Get(nameof(ManifestMissing));
+
+    /// <summary>damaged (checksum does not match)</summary>
+    public static string OutcomeDamaged => Get(nameof(OutcomeDamaged));
+
+    /// <summary>wrong password</summary>
+    public static string OutcomeWrongPassword => Get(nameof(OutcomeWrongPassword));
+
+    /// <summary>packed with a method this 7z.dll does not know</summary>
+    public static string OutcomeUnsupported => Get(nameof(OutcomeUnsupported));
+
+    /// <summary>the archive ends too early (a volume missing or cut off?)</summary>
+    public static string OutcomeTruncated => Get(nameof(OutcomeTruncated));
+
+    /// <summary>The new copy in {0} is verified: all files match.</summary>
+    public static string VerifyNewOk => Get(nameof(VerifyNewOk));
+
+    /// <summary>The new copy in {0} did not pass verification: {1}</summary>
+    public static string VerifyNewFailed => Get(nameof(VerifyNewFailed));
+
+    /// <summary>{0}: {1}</summary>
+    public static string VerifyFileProblem => Get(nameof(VerifyFileProblem));
+
+    /// <summary>the content differs from what was copied</summary>
+    public static string VerifyContentDiffers => Get(nameof(VerifyContentDiffers));
+
+    /// <summary>missing</summary>
+    public static string VerifyFileMissing => Get(nameof(VerifyFileMissing));
+
+    /// <summary>Verifying the stored copies.</summary>
+    public static string StoredVerifyStarted => Get(nameof(StoredVerifyStarted));
+
+    /// <summary>Set «{0}» in {1} is whole.</summary>
+    public static string StoredSetOk => Get(nameof(StoredSetOk));
+
+    /// <summary>Set «{0}» in {1} is damaged: {2}</summary>
+    public static string StoredSetDamaged => Get(nameof(StoredSetDamaged));
+
+    /// <summary>Stored copies verified: {0} sets, damaged: {1}.</summary>
+    public static string StoredVerifyDone => Get(nameof(StoredVerifyDone));
+
+    /// <summary>The full copy «{0}» this set builds on is not in the destination.</summary>
+    public static string RestoreFullMissing => Get(nameof(RestoreFullMissing));
 }
