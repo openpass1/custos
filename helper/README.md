@@ -198,6 +198,7 @@ set S=custos@vps.example.org
 | `ssh -i %K% %S% db-users mariadb > users.sql` | пользователи и права СУБД: строки `CREATE USER IF NOT EXISTS` и `GRANT` |
 | `ssh -i %K% %S% manifest > manifest.gz` | непустой файл, список всех файлов в сжатом виде |
 | `ssh -i %K% %S% tar-since 0 > full.tar` | полная копия файлов. `tar -tvf full.tar \| more` показывает файлы, имена начинаются с `var/www/`, `etc/nginx/` и т. д. Папок `httpd-logs`, `data/logs`, `data/tmp`, `data/mod-tmp` в нём нет |
+| `ssh -i %K% %S% tar-since 0 gzip > full.tar.gz` | то же со сжатием на сервере: файл меньше, и по медленному каналу приходит быстрее. `tar -tvf full.tar.gz` читает его так же |
 
 Для PostgreSQL то же самое с `postgresql` вместо `mariadb`. Дамп PostgreSQL заканчивается строкой `-- PostgreSQL database dump complete`, после неё идёт служебная строка `\unrestrict`.
 
@@ -211,6 +212,8 @@ tar -tvf changed.tar | findstr /v /b "d"
 Вторая команда скрывает папки (они входят в каждую копию) и показывает только файлы: `var/www/custos-test.txt` и то, что ещё успело измениться на сервере за это время.
 
 **Ограничение скорости.** `ssh -i %K% %S% tar-since 0 1000 > slow.tar` делает то же, что полная копия, но не быстрее 1000 КБ/с, поэтому идёт заметно дольше. Время видно, если выполнить `echo %time%` до и после.
+
+**Сжатие.** К `db-dump`, `db-users` и `tar-since` можно добавить в конце слово `gzip`, например `tar-since 0 1000 gzip` или `db-dump mariadb site_db gzip > site_db.sql.gz`. Агент CUSTOS всегда просит сжатый поток. С `gzip` ограничение скорости считается по данным до сжатия, поэтому по сети идёт ещё медленнее заданного.
 
 **Отказы.** Эти команды должны быть отклонены с кодом 64, а на сервер ничего не попадает:
 

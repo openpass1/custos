@@ -14,7 +14,7 @@ export LC_ALL=C
 umask 077
 
 readonly VERSION=1.0.0 PROTOCOL=1 CONF=/etc/custos/helper.conf
-ROOTS=() EXCLUDES=() ENGINES=() DB_EXCLUDES=() DB_DEFAULTS='' CMD=''
+ROOTS=() EXCLUDES=() ENGINES=() DB_EXCLUDES=() DB_DEFAULTS='' CMD='' GZ=0
 SQL='' DUMP='' DB_OPTS=()
 
 die() { local code=$1; shift; printf 'custos-helper: %s\n' "$*" >&2; exit "$code"; }
@@ -207,6 +207,10 @@ op_tar_since() {
 
 # --- Entry point -----------------------------------------------------------------
 
+# Optional gzip on the way out ("... gzip"). Fd 3 follows stdout into gzip, and -n
+# leaves out the time, so the stream stays the same from run to run.
+out() { if (( GZ )); then { exec 3>&1; "$@"; } | gzip -6 -n; else "$@"; fi; }
+
 main() {
   trap 'log_exit $?' EXIT
   # Over SSH the command comes in SSH_ORIGINAL_COMMAND; root may also pass it as arguments.
@@ -219,16 +223,17 @@ main() {
   set -- "${words[@]}"
   op=${1-}
   (( $# == 0 )) || shift
+  if [[ $op =~ ^(db-dump|db-users|tar-since)$ && ${*: -1} == gzip ]]; then GZ=1; set -- "${@:1:$#-1}"; fi
   load_config
   cd /
   exec 3>&1
   case "$op:$#" in
     info:0) op_info ;;
     db-list:1) db_list "$1" ;;
-    db-dump:2) op_db_dump "$1" "$2" ;;
-    db-users:1) op_db_users "$1" ;;
+    db-dump:2) out op_db_dump "$1" "$2" ;;
+    db-users:1) out op_db_users "$1" ;;
     manifest:0) with_warnings manifest_stream ;;
-    tar-since:1 | tar-since:2) op_tar_since "$@" ;;
+    tar-since:1 | tar-since:2) out op_tar_since "$@" ;;
     *) usage "unknown operation or wrong number of arguments: '$op'" ;;
   esac
 }

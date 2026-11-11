@@ -177,7 +177,7 @@ test_refusals() {
   code 64 "refuse: no command" r
   for c in foo 'info x' tar-since 'tar-since abc' 'tar-since 1 2 3' 'tar-since 1 x' 'tar-since -1' \
     'cat /etc/shadow' 'info;id' 'info && id' "info\$(id)" $'info\nid' 'db-list' 'db-list oracle' \
-    'db-dump' 'db-users' 'manifest x'; do
+    'db-dump' 'db-users' 'manifest x' 'info gzip' 'manifest gzip' 'tar-since gzip' 'db-dump gzip'; do
     code 64 "refuse: $(printf %q "$c")" r "$c"
   done
   for c in mariadb mysql postgresql; do
@@ -258,6 +258,10 @@ test_databases() {
     check "$e: dump over SSH equals the local one" cmp -s \
       <(grep -Ev '^(-- Dump completed|\\(un)?restrict )' "$T/$e.sql") \
       <(grep -Ev '^(-- Dump completed|\\(un)?restrict )' "$T/$e-local.sql")
+    code 0 "$e: db-dump gzip" r db-dump "$e" site_db gzip
+    check "$e: gzip dump unpacks to the same dump" cmp -s \
+      <(gzip -dc "$T/out" | grep -Ev '^(-- Dump completed|\\(un)?restrict )') \
+      <(grep -Ev '^(-- Dump completed|\\(un)?restrict )' "$T/$e.sql")
     for c in mysql skipped_db missing_db 'my-db' '-x' '../site_db'; do
       code 64 "$e: refuse db-dump $c" r db-dump "$e" "$c"
     done
@@ -274,6 +278,9 @@ test_databases() {
     cp "$T/out" "$T/$e-users.sql"
     check "$e: users end with the completion marker" dump_ok "$e" "$T/$e-users.sql" users
     check "$e: users include site_user" has site_user "$T/$e-users.sql"
+    code 0 "$e: db-users gzip" r db-users "$e" gzip
+    gzip -dc "$T/out" > "$T/$e-users-gz.sql"
+    check "$e: gzip users end with the completion marker" dump_ok "$e" "$T/$e-users-gz.sql" users
     if my_family "$e"; then
       check "$e: users are created with IF NOT EXISTS" has 'CREATE USER IF NOT EXISTS' "$T/$e-users.sql"
       my -e "DROP USER 'site_user'@'localhost'"
@@ -337,6 +344,10 @@ PY
   check "tar-since 0: no warnings" test ! -s "$T/err"
   l tar-since 0 > "$T/full-local.tar" 2> /dev/null
   check "tar-since 0: byte for byte equal to a local run" cmp -s "$T/full.tar" "$T/full-local.tar"
+  code 0 "tar-since 0 0 gzip: over SSH" r tar-since 0 0 gzip
+  check "tar-since 0 0 gzip: unpacks to the same tar" cmp -s <(gzip -dc "$T/out") "$T/full.tar"
+  code 0 "tar-since 0 gzip: the speed can be left out" r tar-since 0 gzip
+  check "tar-since 0 gzip: unpacks to the same tar" cmp -s <(gzip -dc "$T/out") "$T/full.tar"
   check "tar-since 0: names are relative" test -z "$(members "$T/full.tar" | grep '^/')"
   members "$T/full.tar" > "$T/full.list"
   check "tar-since 0: excluded folders are left out" test -z "$(grep -E '/data/(logs|tmp)(/|$)' "$T/full.list")"
@@ -379,6 +390,8 @@ PY
   check "warning: names the linked root" has '/srv/link-root' "$T/err"
   check "warning: the other root is still there" has 'srv/conf/sub/app.conf' <(members "$T/out")
   code 1 "warning: manifest with a missing root" r manifest
+  code 1 "warning: tar-since gzip keeps the warning code" r tar-since 0 0 gzip
+  check "warning: the gzip stream is still complete" has 'srv/conf/sub/app.conf' <(gzip -dc "$T/out" | tar -tf -)
   conf '# no roots'
   code 0 "files: no roots gives an empty but valid tar" r tar-since 0
   check "files: the empty tar is valid" test -z "$(tar -tf "$T/out")"
@@ -415,14 +428,15 @@ test_syslog() {
 }
 
 test_database_down() { # last: stops the servers
-  local e
+  local e want
   for e in $ENGINES; do
     if my_family "$e"; then "$(command -v mariadb-admin || command -v mysqladmin)" shutdown
     elif command -v pg_ctlcluster > /dev/null; then pg_ctlcluster "$(ls /etc/postgresql)" main stop
     else runuser -u postgres -- pg_ctl -D /var/lib/pgsql/data -w stop > /dev/null; fi
     sleep 1
-    code "$( [[ $e == postgresql ]] && echo 2 || echo 1 )" "$e: server down: db-dump fails with the client's code" \
-      r db-dump "$e" site_db
+    want=$( [[ $e == postgresql ]] && echo 2 || echo 1 )
+    code "$want" "$e: server down: db-dump fails with the client's code" r db-dump "$e" site_db
+    code "$want" "$e: server down: gzip does not hide the failure" r db-dump "$e" site_db gzip
   done
 }
 
