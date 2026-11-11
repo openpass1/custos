@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared library: protocol, models and code used by the service, the interface and the updater.
+       Targets plain net10.0 so that its tests also run outside Windows; Windows-only code is marked
+       with [SupportedOSPlatform("windows")]. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Custos.Core</RootNamespace>
+    <AssemblyName>Custos.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Custos.Core.Tests" />
+  </ItemGroup>
+
+</Project>

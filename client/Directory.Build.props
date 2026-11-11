@@ -1,0 +1,25 @@
+<Project>
+
+  <!-- Settings shared by every project under client/. -->
+  <PropertyGroup>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Product>CUSTOS</Product>
+    <Company>CUSTOS contributors</Company>
+    <Copyright>Copyright (C) 2026 CUSTOS contributors. Licensed under GPL-3.0.</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- CA1303: the service, updater and tests use English literals on purpose; the GUI takes its texts from resources. -->
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+
+    <PlatformTarget>x64</PlatformTarget>
+    <SatelliteResourceLanguages>en;ru</SatelliteResourceLanguages>
+    <!-- Lets the solution build on Linux and macOS too (CI and tests); the product itself runs on Windows only. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+# Client (.NET)
+client/**/bin/
+client/**/obj/
+client/artifacts/
+client/installer/redist/
+client/TestResults/
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
