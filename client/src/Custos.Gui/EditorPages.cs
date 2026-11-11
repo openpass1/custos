@@ -531,7 +531,9 @@ internal sealed class DestinationsPage : EditorPage
         task.Layout.SeparateFolders = _separate.Checked;
         if (named)
         {
-            task.Layout.NameTemplate = _template.Text.Trim();
+            // An emptied field means the usual name, and says so when the task is opened again.
+            string template = _template.Text.Trim();
+            task.Layout.NameTemplate = template.Length == 0 ? LayoutOptions.DefaultNameTemplate : template;
         }
 
         return null;
