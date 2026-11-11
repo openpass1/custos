@@ -192,3 +192,11 @@ StoredVerifyDone	Stored copies verified: {0} sets, damaged: {1}.	Хранящи�
 
 # Restore (section 6.11)
 RestoreFullMissing	The full copy «{0}» this set builds on is not in the destination.	В назначении нет полной копии «{0}», на которой построен этот набор.
+RestoreStarted	Restoring «{0}» to {1}. Sets used: {2}.	Восстановление «{0}» в {1}. Используются наборы: {2}.
+RestoreToOriginal	the original places	исходные места
+RestoreNotInChain	{0} is in no set of the chain and was not restored.	{0} нет ни в одном наборе цепочки, файл не восстановлен.
+RestoreNoPlace	{0}: no source of the set fits this path; restore it into a folder instead.	{0}: путь не подходит ни к одному источнику набора; восстановите в отдельную папку.
+RestoreSkipped	Skipped, already there: {0}	Пропущен, уже есть: {0}
+RestoreFileFailed	Not restored: {0}: {1}	Не восстановлен {0}: {1}
+RestoreFileDone	Restored {0} ({1})	Восстановлен {0} ({1})
+RestoreFinished	Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.	Восстановление завершено: восстановлено файлов {0} ({1}), пропущено {2}, с ошибкой {3}.

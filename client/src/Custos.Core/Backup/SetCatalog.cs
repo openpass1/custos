@@ -92,11 +92,11 @@ public static partial class SetCatalog
     private static readonly Lock CacheLock = new();
 
     /// <summary>
-    /// Sets of <paramref name="taskId"/> directly below <paramref name="root"/>, oldest first: set folders, and archives
-    /// when <paramref name="archives"/> is given. Folders and files without a readable manifest of this task are left
+    /// Sets of <paramref name="taskId"/> (null = of any task) directly below <paramref name="root"/>, oldest first: set
+    /// folders, and archives when <paramref name="archives"/> is given. Folders and files without a readable manifest of this task are left
     /// alone; <paramref name="onProblem"/> hears about archives that could not be opened.
     /// </summary>
-    public static List<StoredSet> Scan(string root, string taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null)
+    public static List<StoredSet> Scan(string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null)
     {
         ArgumentNullException.ThrowIfNull(root);
         var sets = new List<StoredSet>();
@@ -113,7 +113,7 @@ public static partial class SetCatalog
             }
 
             if (TryReadHeader(Path.Combine(folder, SetManifest.FileName)) is { } header
-                && string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase))
+                && (taskId is null || string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
             {
                 sets.Add(new StoredSet(folder, header));
             }
@@ -124,7 +124,7 @@ public static partial class SetCatalog
             foreach (var found in FindArchives(root))
             {
                 var header = ReadArchiveHeader(found, archives, onProblem);
-                if (header is not null && string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase))
+                if (header is not null && (taskId is null || string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
                 {
                     sets.Add(new StoredSet(found.Parts[0], header)
                     {

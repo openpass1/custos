@@ -562,4 +562,28 @@ static partial class Messages
 
     /// <summary>The full copy «{0}» this set builds on is not in the destination.</summary>
     public static string RestoreFullMissing => Get(nameof(RestoreFullMissing));
+
+    /// <summary>Restoring «{0}» to {1}. Sets used: {2}.</summary>
+    public static string RestoreStarted => Get(nameof(RestoreStarted));
+
+    /// <summary>the original places</summary>
+    public static string RestoreToOriginal => Get(nameof(RestoreToOriginal));
+
+    /// <summary>{0} is in no set of the chain and was not restored.</summary>
+    public static string RestoreNotInChain => Get(nameof(RestoreNotInChain));
+
+    /// <summary>{0}: no source of the set fits this path; restore it into a folder instead.</summary>
+    public static string RestoreNoPlace => Get(nameof(RestoreNoPlace));
+
+    /// <summary>Skipped, already there: {0}</summary>
+    public static string RestoreSkipped => Get(nameof(RestoreSkipped));
+
+    /// <summary>Not restored: {0}: {1}</summary>
+    public static string RestoreFileFailed => Get(nameof(RestoreFileFailed));
+
+    /// <summary>Restored {0} ({1})</summary>
+    public static string RestoreFileDone => Get(nameof(RestoreFileDone));
+
+    /// <summary>Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.</summary>
+    public static string RestoreFinished => Get(nameof(RestoreFinished));
 }

@@ -571,4 +571,28 @@
   <data name="RestoreFullMissing" xml:space="preserve">
     <value>В назначении нет полной копии «{0}», на которой построен этот набор.</value>
   </data>
+  <data name="RestoreStarted" xml:space="preserve">
+    <value>Восстановление «{0}» в {1}. Используются наборы: {2}.</value>
+  </data>
+  <data name="RestoreToOriginal" xml:space="preserve">
+    <value>исходные места</value>
+  </data>
+  <data name="RestoreNotInChain" xml:space="preserve">
+    <value>{0} нет ни в одном наборе цепочки, файл не восстановлен.</value>
+  </data>
+  <data name="RestoreNoPlace" xml:space="preserve">
+    <value>{0}: путь не подходит ни к одному источнику набора; восстановите в отдельную папку.</value>
+  </data>
+  <data name="RestoreSkipped" xml:space="preserve">
+    <value>Пропущен, уже есть: {0}</value>
+  </data>
+  <data name="RestoreFileFailed" xml:space="preserve">
+    <value>Не восстановлен {0}: {1}</value>
+  </data>
+  <data name="RestoreFileDone" xml:space="preserve">
+    <value>Восстановлен {0} ({1})</value>
+  </data>
+  <data name="RestoreFinished" xml:space="preserve">
+    <value>Восстановление завершено: восстановлено файлов {0} ({1}), пропущено {2}, с ошибкой {3}.</value>
+  </data>
 </root>
