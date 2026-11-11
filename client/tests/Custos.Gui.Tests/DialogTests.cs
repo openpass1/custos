@@ -390,27 +390,32 @@ public sealed class DialogTests
         Assert.Equal(["shop"], list.CheckedItems.Cast<string>());
         Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.StartsWith(Strings.Format(Strings.DbTestOk, "11.4.4-MariaDB", 2), StringComparison.Ordinal));
 
-        // «All databases»: everything is ticked, new databases too; an unticked one is left out.
-        var all = new TaskDatabaseServer { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin", Exclude = ["test"] };
+        // «All databases»: everything is ticked, new databases too; unticking one switches to «Selected databases».
+        var all = new TaskDatabaseServer { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin" };
         using (var allDialog = new DbServerDialog(new EditorContext(monitor, toolTip), all, isNew: false))
         {
             allDialog.Show();
             Sta.Pump();
             var allList = Sta.Find<CheckedListBox>(allDialog).Single();
-            Assert.Empty(allList.CheckedItems);
-            allDialog.ShowTest(new Custos.Core.Ipc.DbTestResult { Ok = true, Version = "8.0.40", Databases = ["shop", "test", "blog"] });
+            var allChoice = Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceAll);
+            var onlyChoice = Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceOnly);
+            Assert.Equal(allChoice.Left, onlyChoice.Left);
+            allDialog.ShowTest(new Custos.Core.Ipc.DbTestResult { Ok = true, Version = "8.4.8", Databases = ["shop", "blog"] });
             Assert.Equal(["shop", "blog"], allList.CheckedItems.Cast<string>());
-            allList.SetItemChecked(allList.Items.IndexOf("blog"), false);
             var built = allDialog.Build();
             Assert.True(built.AllDatabases);
-            Assert.Equal(["test", "blog"], built.Exclude);
-            Assert.Empty(built.Include);
+            Assert.Empty(built.Exclude);
 
-            // «Selected databases» keeps the ticks; going back to «All databases» ticks everything again.
-            Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceOnly).Checked = true;
-            Assert.Equal(["shop"], allDialog.Build().Include);
-            Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceAll).Checked = true;
-            Assert.Empty(allDialog.Build().Exclude);
+            allList.SetItemChecked(allList.Items.IndexOf("blog"), false);
+            Assert.True(onlyChoice.Checked);
+            built = allDialog.Build();
+            Assert.False(built.AllDatabases);
+            Assert.Equal(["shop"], built.Include);
+
+            // Back to «All databases»: everything is ticked again.
+            allChoice.Checked = true;
+            Assert.Equal(["shop", "blog"], allList.CheckedItems.Cast<string>());
+            Assert.True(allDialog.Build().AllDatabases);
         }
 
         using var find = new DbFindDialog(monitor);

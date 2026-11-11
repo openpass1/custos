@@ -79,6 +79,7 @@ internal sealed class TaskEditorForm : Form
             page.Visible = false;
             _host.Controls.Add(page);
             page.LoadFrom(task);
+            page.EndBuild();
             _pageList.Items.Add(new ListViewItem(page.Title)
             {
                 ImageKey = page.Glyph.ToString(),
@@ -394,6 +395,11 @@ internal abstract class EditorPage : UserControl
         Context = context;
         Title = title;
         Glyph = glyph;
+
+        // Without this every added row lays out the whole table again, wrapped notes measured anew each time: the
+        // editor took seconds to open. The editor ends it with EndBuild after LoadFrom.
+        SuspendLayout();
+        _table.SuspendLayout();
         AutoScroll = true;
         _table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -421,6 +427,13 @@ internal abstract class EditorPage : UserControl
     protected ToolTip ToolTip => Context.ToolTip;
 
     public abstract void LoadFrom(TaskDefinition task);
+
+    /// <summary>Lets the page lay out again, once, after it was built and loaded.</summary>
+    internal void EndBuild()
+    {
+        _table.ResumeLayout(performLayout: false);
+        ResumeLayout(performLayout: false);
+    }
 
     /// <summary>Writes the page into the task.</summary>
     /// <returns>What is wrong, in words, or null.</returns>

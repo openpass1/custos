@@ -1086,7 +1086,7 @@ internal sealed class DbServerDialog : DialogForm
     private readonly TextBox _user = new() { Dock = DockStyle.Fill };
     private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
     private readonly CheckBox _noPassword = new() { Text = Strings.DbNoPassword, AutoSize = true };
-    private readonly RadioButton _all = new() { Text = Strings.DbChoiceAll, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
+    private readonly RadioButton _all = new() { Text = Strings.DbChoiceAll, AutoSize = true, Margin = new Padding(3, 8, 3, 3) };
     private readonly RadioButton _only = new() { Text = Strings.DbChoiceOnly, AutoSize = true };
     private readonly CheckedListBox _databases = new() { Dock = DockStyle.Fill, Height = 130, CheckOnClick = true, IntegralHeight = false };
     private readonly Button _test = new() { Text = Strings.ButtonTestConnection, AutoSize = true };
@@ -1148,6 +1148,7 @@ internal sealed class DbServerDialog : DialogForm
 
         UpdatePassword();
         _all.CheckedChanged += (_, _) => ChoiceChanged();
+        _databases.ItemCheck += (_, e) => DatabaseTicked(e);
         _engine.SelectedIndexChanged += (_, _) => EngineChanged();
         _noPassword.CheckedChanged += (_, _) => UpdatePassword();
         _browse.Click += (_, _) => Browse();
@@ -1245,6 +1246,15 @@ internal sealed class DbServerDialog : DialogForm
             DataDir = _dataDir,
             ExtensionData = _original.ExtensionData,
         };
+    }
+
+    /// <summary>Unticking a database under «All databases» means a choice of databases: «Selected databases».</summary>
+    private void DatabaseTicked(ItemCheckEventArgs e)
+    {
+        if (_all.Checked && e.NewValue == CheckState.Unchecked)
+        {
+            _only.Checked = true;
+        }
     }
 
     /// <summary>«All databases» starts with every database ticked; «Selected databases» keeps the ticks as they are.</summary>

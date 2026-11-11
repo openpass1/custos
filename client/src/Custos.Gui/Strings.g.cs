@@ -1541,7 +1541,7 @@ static partial class Strings
     /// <summary>Selected databases</summary>
     public static string DbChoiceOnly => Get(nameof(DbChoiceOnly));
 
-    /// <summary>The list fills in on «Test connection». A ticked database goes into the copy: with «All databases» untick o...</summary>
+    /// <summary>The list fills in on «Test connection». A ticked database goes into the copy. «All databases» takes every d...</summary>
     public static string DbListNote => Get(nameof(DbListNote));
 
     /// <summary>Test connection</summary>

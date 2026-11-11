@@ -537,7 +537,7 @@ DbAccountNote	An account that may read every database: root for MySQL and MariaD
 DbKeepPasswordNote	Leave the password empty to keep the stored one.	Оставьте пароль пустым, чтобы не менять сохранённый.
 DbChoiceAll	All databases	Все базы
 DbChoiceOnly	Selected databases	Выбранные базы
-DbListNote	The list fills in on «Test connection». A ticked database goes into the copy: with «All databases» untick one to leave it out, new databases are added by themselves. System databases are never dumped as databases; users and rights go to _users.sql.	Список заполняется по кнопке «Проверить подключение». Отмеченная база попадает в копию: при «Все базы» снимите галочку, чтобы исключить базу, а новые базы добавятся сами. Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.
+DbListNote	The list fills in on «Test connection». A ticked database goes into the copy. «All databases» takes every database of the server, new ones too; unticking one switches to «Selected databases». System databases are never dumped as databases; users and rights go to _users.sql.	Список заполняется по кнопке «Проверить подключение». Отмеченная база попадает в копию. «Все базы» — все базы сервера, и новые тоже; если снять галочку с базы, выбор переключится на «Выбранные базы». Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.
 ButtonTestConnection	Test connection	Проверить подключение
 DbTestOk	Connected: version {0}, databases: {1}.	Подключение есть: версия {0}, баз: {1}.
 DbTestDataDir	Data folder of the server: {0}	Папка данных сервера: {0}
