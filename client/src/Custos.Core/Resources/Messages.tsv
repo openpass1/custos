@@ -282,3 +282,5 @@ SevenZipBusyRestore	A restore is running. Update 7-Zip when it has finished.	И�
 SevenZipBusyUpdate	7-Zip is being updated. Try again in a minute.	Идёт обновление 7-Zip. Попробуйте через минуту.
 SevenZipNotAllowed	Only administrators may update 7-Zip.	Обновлять 7-Zip могут только администраторы.
 SevenZipNoAnswer	no answer in {0} s	нет ответа за {0} с
+DescEvents	Events: {0} before the backup, {1} after.	События: до копирования — {0}, после — {1}.
+DescAfter	Afterwards: {0}.	После выполнения: {0}.

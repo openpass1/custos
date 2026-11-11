@@ -832,4 +832,10 @@ static partial class Messages
 
     /// <summary>no answer in {0} s</summary>
     public static string SevenZipNoAnswer => Get(nameof(SevenZipNoAnswer));
+
+    /// <summary>Events: {0} before the backup, {1} after.</summary>
+    public static string DescEvents => Get(nameof(DescEvents));
+
+    /// <summary>Afterwards: {0}.</summary>
+    public static string DescAfter => Get(nameof(DescAfter));
 }

@@ -27,6 +27,16 @@ public static class TaskDescriber
         }
 
         sentences.Add(Retention(task));
+        if (task.Events.Pre.Count + task.Events.Post.Count > 0)
+        {
+            sentences.Add(Messages.Format(Messages.DescEvents, task.Events.Pre.Count, task.Events.Post.Count));
+        }
+
+        if (task.Events.After is AfterActions.Shutdown or AfterActions.Restart or AfterActions.Sleep or AfterActions.Hibernate)
+        {
+            sentences.Add(Messages.Format(Messages.DescAfter, Words.PowerAction(task.Events.After)));
+        }
+
         return string.Join(" ", sentences);
     }
 

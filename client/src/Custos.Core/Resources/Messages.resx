@@ -841,4 +841,10 @@
   <data name="SevenZipNoAnswer" xml:space="preserve">
     <value>no answer in {0} s</value>
   </data>
+  <data name="DescEvents" xml:space="preserve">
+    <value>Events: {0} before the backup, {1} after.</value>
+  </data>
+  <data name="DescAfter" xml:space="preserve">
+    <value>Afterwards: {0}.</value>
+  </data>
 </root>

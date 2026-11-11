@@ -277,6 +277,18 @@ public sealed class TaskDescriberTests : IDisposable
             TaskDescriber.Describe(task));
     }
 
+    [Fact]
+    public void Events_and_the_action_after_are_mentioned()
+    {
+        Messages.Culture = CultureInfo.GetCultureInfo("ru-RU");
+        var task = Example();
+        task.Events.Pre.Add(new TaskEvent { Command = "dump.cmd" });
+        task.Events.Post.Add(new TaskEvent { Command = "notify.cmd" });
+        task.Events.After = AfterActions.Shutdown;
+
+        Assert.EndsWith(" События: до копирования — 1, после — 1. После выполнения: выключение компьютера.", TaskDescriber.Describe(task), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(ScheduleTypes.Daily, new[] { 1, 2, 3, 4, 5 }, new int[0], 0, "по будням в 02:00 и 14:00")]
     [InlineData(ScheduleTypes.Weekly, new[] { 1, 5 }, new int[0], 0, "по пн и пт в 02:00 и 14:00")]

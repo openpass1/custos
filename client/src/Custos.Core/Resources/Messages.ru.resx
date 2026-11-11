@@ -841,4 +841,10 @@
   <data name="SevenZipNoAnswer" xml:space="preserve">
     <value>нет ответа за {0} с</value>
   </data>
+  <data name="DescEvents" xml:space="preserve">
+    <value>События: до копирования — {0}, после — {1}.</value>
+  </data>
+  <data name="DescAfter" xml:space="preserve">
+    <value>После выполнения: {0}.</value>
+  </data>
 </root>

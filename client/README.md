@@ -69,6 +69,11 @@ CUSTOS работает с архивами 7z через `C:\Program Files\CUST
 
 Откат: так же остановить службу, скопировать `7z.dll.old` обратно в `7z.dll`, запустить службу.
 
+Проще — кнопкой: CUSTOS → «Настройки» → «Архиватор» → «Проверить обновление 7-Zip» (нужны права администратора и
+интернет). Служба покажет установленную и последнюю версию и после согласия сама скачает 64-битный установщик 7-Zip с
+GitHub, сверит его SHA-256 с опубликованным, проверит новый `7z.dll` и заменит старый (он останется как `7z.dll.old`).
+Пока идёт задание или восстановление, обновление не начинается. Сама служба 7-Zip не проверяет: только по кнопке.
+
 Если `7z.dll` нет или он не подходит, служба при запуске пишет об этом в журнал Windows «Приложение» (событие 3002), а
 ошибкой завершаются только задания с форматом 7z, с понятной причиной в журнале запуска. Задания с ZIP и без сжатия
 работают как обычно. Установщик CUSTOS не заменяет
@@ -81,6 +86,7 @@ CUSTOS работает с архивами 7z через `C:\Program Files\CUST
 | `C:\ProgramData\CUSTOS\config\tasks.json`, `settings.json`, `credentials.json` | Tasks, settings, accounts (passwords encrypted with DPAPI). Only SYSTEM and Administrators may read the folder |
 | `C:\ProgramData\CUSTOS\db\custos.db` | Run history and file states for incremental and differential backups |
 | `C:\ProgramData\CUSTOS\logs\` | Service log; `runs\` holds one log file per run |
+| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts. Only SYSTEM and Administrators may read the folder |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
 | `C:\Program Files\CUSTOS\7z.dll`, `7-Zip-License.txt` | 7-Zip library for 7z archives (x64, GNU LGPL) and its license |
@@ -92,8 +98,9 @@ Start menu or by the installer it also opens its window. A second start only bri
 
 - Service log: `C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log`, kept 180 days.
 - Windows event log "Application", source `CUSTOS`: 1000 service started, 1001 service stopped,
-  3002 7z.dll missing or unusable, 9000 unexpected error (details in the log file). Full list in section 6.10 of the
-  specification.
+  2000-2005 runs, 2006-2008 shutdown or sleep after a run (done, cancelled, failed), 3002 7z.dll missing or unusable,
+  3003/3004 7-Zip updated / update failed, 9000 unexpected error (details in the log file). Full list in section 6.10
+  of the specification.
 - To watch the service live, stop it and start it in an administrator console:
   `sc.exe stop CustosService`, then `& "C:\Program Files\CUSTOS\CustosService.exe"` (Ctrl+C to stop), then
   `sc.exe start CustosService`.
