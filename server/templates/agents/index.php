@@ -1,5 +1,8 @@
 <?php
-/** @var array $pending @var array $agents @var array $byId @var int $offlineAfter */
+/**
+ * @var \Custos\Domain\Board $board @var list<array{name: ?string, agents: list<array>}> $sections @var list<array> $groups
+ * @var string $filter @var list<array> $pending @var array $byId @var bool $hasAgents
+ */
 use Custos\Domain\Agents;
 ?>
 <h1><?= e(t('agents.title')) ?></h1>
@@ -60,43 +63,72 @@ use Custos\Domain\Agents;
     </section>
 <?php endif ?>
 
-<?php if ($agents === [] && $pending === []): ?>
+<?php if (!$hasAgents): ?>
     <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/settings')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
-<?php elseif ($agents !== []): ?>
-    <div class="table-wrap">
-        <table>
-            <thead>
-            <tr>
-                <th><?= e(t('agents.col.name')) ?></th>
-                <th><?= e(t('agents.col.status')) ?></th>
-                <th><?= e(t('agents.col.last_seen')) ?></th>
-                <th><?= e(t('agents.col.version')) ?></th>
-                <th><?= e(t('agents.col.os')) ?></th>
-                <th><?= e(t('agents.col.ip')) ?></th>
-                <th class="num"><?= e(t('agents.col.tasks')) ?></th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($agents as $a): ?>
+<?php else: ?>
+    <form method="get" action="<?= e(url('/agents')) ?>" class="filters">
+        <label><?= e(t('agents.filter.group')) ?>
+            <select name="group" data-autosubmit>
+                <option value=""><?= e(t('common.all')) ?></option>
+                <?php foreach ($groups as $g): ?>
+                    <option value="<?= (int) $g['id'] ?>"<?= $filter === (string) $g['id'] ? ' selected' : '' ?>><?= e($g['name']) ?></option>
+                <?php endforeach ?>
+                <?php if ($groups !== []): ?>
+                    <option value="none"<?= $filter === 'none' ? ' selected' : '' ?>><?= e(t('groups.none')) ?></option>
+                <?php endif ?>
+            </select>
+        </label>
+        <noscript><button type="submit"><?= e(t('common.apply')) ?></button></noscript>
+        <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.manage')) ?></a>
+    </form>
+
+    <?php if ($sections === []): ?>
+        <p class="empty"><?= e(t('agents.filter.empty')) ?></p>
+    <?php endif ?>
+    <?php foreach ($sections as $section): ?>
+        <?php if ($section['name'] !== null): ?><h2 class="group-title"><?= e($section['name']) ?></h2><?php endif ?>
+        <div class="table-wrap">
+            <table class="grid">
+                <thead>
                 <tr>
-                    <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e(Agents::name($a)) ?></a>
-                        <?php if (Agents::name($a) !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
-                    </td>
-                    <td>
-                        <?php if ($a['status'] === 'disabled'): ?>
-                            <?= badge('disabled') ?>
-                        <?php else: ?>
-                            <?= Agents::isOnline($a, $offlineAfter) ? badge('online') : badge('offline') ?>
-                        <?php endif ?>
-                    </td>
-                    <td title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
-                    <td><?= e($a['agent_version']) ?></td>
-                    <td><?= e($a['os']) ?></td>
-                    <td><?= e($a['last_ip'] ?? '—') ?></td>
-                    <td class="num"><?= (int) $a['task_count'] ?></td>
+                    <th><?= e(t('agents.col.name')) ?></th>
+                    <th><?= e(t('agents.col.status')) ?></th>
+                    <th><?= e(t('agents.col.last_seen')) ?></th>
+                    <th><?= e(t('agents.col.version')) ?></th>
+                    <th><?= e(t('agents.col.tasks')) ?></th>
                 </tr>
-            <?php endforeach ?>
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                <?php foreach ($section['agents'] as $a): ?>
+                    <tr>
+                        <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['name']) ?></a>
+                            <?php if ($a['name'] !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
+                        </td>
+                        <td>
+                            <?php if ($a['status'] === 'disabled'): ?>
+                                <?= badge('disabled') ?>
+                            <?php else: ?>
+                                <?= $a['online'] ? badge('online') : badge('offline') ?>
+                            <?php endif ?>
+                        </td>
+                        <td class="nowrap" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
+                        <td><?= e($a['agent_version']) ?></td>
+                        <td class="pills">
+                            <?php $agentTasks = $board->tasksOf($a['id']); ?>
+                            <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
+                            <?php foreach ($agentTasks as $task): ?>
+                                <?php $agent = $a; include __DIR__ . '/_pill.php'; ?>
+                            <?php endforeach ?>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endforeach ?>
+    <p class="legend note">
+        <?php foreach (['ok', 'warning', 'error', 'missed', 'running', 'missed_offline', 'stale', 'never', 'disabled'] as $s): ?>
+            <span class="pill pill-<?= e(status_class($s)) ?>"><?= e(t('status.' . $s)) ?></span>
+        <?php endforeach ?>
+    </p>
 <?php endif ?>

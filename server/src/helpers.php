@@ -92,16 +92,22 @@ function fmt_duration(int|string|null $seconds): string
     return t('duration.hours', ['h' => intdiv($seconds, 3600), 'm' => intdiv($seconds % 3600, 60)]);
 }
 
-/** A coloured status label. Colours follow section 6.6. */
-function badge(string $status, ?string $label = null): string
+/** Colour of a status (6.6): red only for error and missed, yellow for warning and anomaly, blue while running. */
+function status_class(string $status): string
 {
-    $class = match ($status) {
-        'success', 'online', 'ok', 'done' => 'ok',
-        'warning' => 'warn',
-        'error', 'failed' => 'bad',
+    return match ($status) {
+        'success', 'online', 'ok', 'done', 'sent' => 'ok',
+        'warning', 'anomaly' => 'warn',
+        'error', 'failed', 'missed' => 'bad',
         'running', 'paused', 'pending', 'queued', 'delivered' => 'info',
         default => 'muted',
     };
+}
+
+/** A coloured status label. Colours follow section 6.6. */
+function badge(string $status, ?string $label = null): string
+{
+    $class = status_class($status);
     $lang = View::$current?->app->lang();
     $label ??= $lang !== null && $lang->has('status.' . $status) ? $lang->get('status.' . $status) : $status;
     return '<span class="badge badge-' . $class . '">' . e($label) . '</span>';
@@ -151,4 +157,135 @@ function pager(int $page, int $pages, string $path, array $query): string
             : '<a href="' . e(url($path, ['page' => $i] + $query)) . '">' . $i . '</a>';
     }
     return $html . '</nav>';
+}
+
+/** A UTC time from the database in the agent's time zone: schedule slots read the same as the schedule. */
+function fmt_local(?string $utc, string $timeZone): string
+{
+    return $utc === null || $utc === '' ? '—' : \Custos\Domain\Notifier::localTime($utc, $timeZone);
+}
+
+/** A unix time in the site time zone. */
+function fmt_unix(?int $time): string
+{
+    return $time === null ? '—' : fmt_time(gmdate('Y-m-d H:i:s', $time));
+}
+
+/** What a problem is about, in one line for the site. */
+function problem_text(array $p): string
+{
+    if ($p['kind'] === 'error') {
+        $text = $p['message'] === null ? t('problem.error') : t('problem.error.message', ['message' => $p['message']]);
+    } else {
+        $time = fmt_local($p['first_slot_at'], (string) ($p['time_zone'] ?? 'UTC'));
+        $text = t($p['slot_kind'] === 'interval' ? 'problem.missed.interval' : 'problem.missed', ['time' => $time]);
+    }
+    if ((int) $p['occurrences'] > 1) {
+        $text .= ' ' . t($p['kind'] === 'error' ? 'problem.more.error' : 'problem.more.missed', ['n' => (int) $p['occurrences']]);
+    }
+    return $text;
+}
+
+/** What changed in an anomalous run: "files −60 %, size −58 %". */
+function anomaly_text(?string $json): string
+{
+    $data = json_decode((string) $json, true);
+    if (!is_array($data)) {
+        return '';
+    }
+    $parts = [];
+    foreach (['source_files' => 'anomaly.files', 'source_bytes' => 'anomaly.bytes'] as $field => $key) {
+        if (isset($data[$field]['change_pct'])) {
+            $pct = (int) $data[$field]['change_pct'];
+            $parts[] = t($key, ['change' => ($pct > 0 ? '+' : '−') . abs($pct) . ' %']);
+        }
+    }
+    return implode(', ', $parts);
+}
+
+/** A destination of a task in a few words: a path, "USB «LABEL» \\path", "sftp://host/path", "s3://bucket". */
+function destination_label(array $d): string
+{
+    $kind = (string) ($d['kind'] ?? '');
+    $path = (string) ($d['path'] ?? '');
+    return match ($kind) {
+        'local', 'unc' => $path,
+        'usb' => trim('USB «' . ($d['usb_label'] ?? '') . '» ' . $path),
+        's3' => 's3://' . ($d['bucket'] ?? '') . ($path !== '' ? '/' . ltrim($path, '/') : ''),
+        default => $kind . '://' . ($d['host'] ?? '') . ($path !== '' ? '/' . ltrim($path, '/') : ''),
+    };
+}
+
+/**
+ * A task in human language (7.6), so that a wrong setting is easy to spot:
+ * "Инкрементальная копия D:\Data → \\fileserver\docs · ежедневно 00:00 · без сжатия · хранить 12 полных копий · VSS".
+ */
+function task_summary(array $task): string
+{
+    $parts = [];
+    $sources = array_map(fn($s) => (string) ($s['path'] ?? ''), array_filter((array) ($task['sources'] ?? []), 'is_array'));
+    $destinations = array_map('destination_label', array_filter((array) ($task['destinations'] ?? []), 'is_array'));
+    $type = (string) ($task['backup_type'] ?? '');
+    $head = t('summary.type.' . $type);
+    if ($type === 'mirror' && ($task['mirror_mode'] ?? null) !== null) {
+        $head .= ' (' . t('summary.mirror.' . $task['mirror_mode']) . ')';
+    }
+    $parts[] = trim($head . ' ' . implode(', ', $sources) . ($destinations === [] ? '' : ' → ' . implode(', ', $destinations)));
+    $parts[] = schedule_label($task['schedule'] ?? null);
+
+    $archive = (array) ($task['archive'] ?? []);
+    $format = (string) ($archive['format'] ?? 'none');
+    if ($format === 'none') {
+        $parts[] = t('summary.no_compression');
+    } else {
+        $text = t('summary.archive', ['format' => $format, 'level' => (int) ($archive['level'] ?? 5)]);
+        if (!empty($archive['encrypt'])) {
+            $text .= ', ' . t(!empty($archive['encrypt_names']) ? 'summary.encrypted_names' : 'summary.encrypted');
+        }
+        if ((int) ($archive['split_mb'] ?? 0) > 0) {
+            $text .= ', ' . t('summary.split', ['mb' => (int) $archive['split_mb']]);
+        }
+        $parts[] = $text;
+    }
+
+    $retention = (array) ($task['retention'] ?? []);
+    $parts[] = match ($retention['mode'] ?? 'count') {
+        'none' => t('summary.keep_all'),
+        'age' => t('summary.keep_days', ['n' => (int) ($retention['max_age_days'] ?? 0)]),
+        'gfs' => t('summary.keep_gfs', [
+            'd' => (int) ($retention['gfs']['daily'] ?? 0), 'w' => (int) ($retention['gfs']['weekly'] ?? 0),
+            'm' => (int) ($retention['gfs']['monthly'] ?? 0),
+        ]),
+        default => t('summary.keep_full', ['n' => (int) ($retention['keep_full'] ?? 0)]),
+    };
+    if (!empty($task['vss']['enabled'])) {
+        $parts[] = 'VSS';
+    }
+    $pre = count((array) ($task['events']['pre'] ?? []));
+    $post = count((array) ($task['events']['post'] ?? []));
+    if ($pre + $post > 0) {
+        $parts[] = t('summary.events', ['pre' => $pre, 'post' => $post]);
+    }
+    $after = (string) ($task['events']['after'] ?? 'none');
+    if ($after !== 'none') {
+        $parts[] = t('summary.after.' . $after);
+    }
+    if (isset($task['enabled']) && $task['enabled'] === false) {
+        $parts[] = t('summary.disabled');
+    }
+    return implode(' · ', array_filter($parts, fn($p) => $p !== ''));
+}
+
+/** A notice of the bell (7.7) as text. */
+function notice_text(array $n): string
+{
+    $params = json_decode((string) $n['params'], true) ?: [];
+    if (isset($params['kind'])) {
+        $params['kind'] = t('command.' . $params['kind']) === 'command.' . $params['kind'] ? $params['kind'] : t('command.' . $params['kind']);
+    }
+    if (isset($params['status'])) {
+        $params['status'] = t('status.' . $params['status']);
+    }
+    $params['machine'] = ($n['hostname'] ?? null) === null ? '' : \Custos\Domain\Agents::name($n);
+    return t('notice.' . $n['kind'], $params);
 }

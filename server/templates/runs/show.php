@@ -7,9 +7,14 @@ use Custos\Domain\Agents;
 ?>
 <p class="crumbs">
     <a href="<?= e(url('/agents/' . $run['agent_id'])) ?>"><?= e(Agents::name($run)) ?></a> ·
-    <a href="<?= e(url('/runs', ['agent' => $run['agent_id'], 'task' => $run['task_id']])) ?>"><?= e($run['task_name'] ?? t('runs.unknown_task')) ?></a>
+    <a href="<?= e(url('/agents/' . $run['agent_id'] . '/tasks/' . $run['task_id'])) ?>"><?= e($run['task_name'] ?? t('runs.unknown_task')) ?></a>
 </p>
-<h1><?= e(t('run.title', ['time' => fmt_time($run['started_at'])])) ?> <?= badge($run['status']) ?></h1>
+<h1><?= e(t('run.title', ['time' => fmt_time($run['started_at'])])) ?> <?= badge($run['status']) ?>
+    <?php if ($run['anomaly'] !== null): ?><?= badge('anomaly') ?><?php endif ?></h1>
+
+<?php if ($run['anomaly'] !== null): ?>
+    <div class="alert alert-warn"><?= e(t('run.anomaly', ['what' => anomaly_text($run['anomaly'])])) ?></div>
+<?php endif ?>
 
 <?php if ($run['error_message'] !== null && $run['error_message'] !== ''): ?>
     <div class="flash flash-error"><?= e($run['error_message']) ?></div>

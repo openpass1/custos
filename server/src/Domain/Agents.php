@@ -16,7 +16,7 @@ final class Agents
 {
     public const MIN_KEY_BITS = 3072;
 
-    public function __construct(private readonly Db $db)
+    public function __construct(private readonly Db $db, private readonly Monitor $monitor, private readonly Notices $notices)
     {
     }
 
@@ -25,12 +25,13 @@ final class Agents
         return $this->db->one('SELECT * FROM agents WHERE id = ?', [strtolower($id)]);
     }
 
-    /** All agents with their task counts, pending ones first. */
+    /** All agents with their task counts and group names, pending ones first. */
     public function all(): array
     {
         return $this->db->all(
-            "SELECT a.*, (SELECT COUNT(*) FROM tasks t WHERE t.agent_id = a.id AND t.deleted = 0) AS task_count
-             FROM agents a
+            "SELECT a.*, g.name AS group_name,
+                    (SELECT COUNT(*) FROM tasks t WHERE t.agent_id = a.id AND t.deleted = 0) AS task_count
+             FROM agents a LEFT JOIN agent_groups g ON g.id = a.group_id
              ORDER BY a.status = 'pending' DESC, COALESCE(a.display_name, a.hostname), a.first_seen_at"
         );
     }
@@ -55,8 +56,8 @@ final class Agents
                 );
                 return $existing;
             }
-            $previous = $this->db->value(
-                "SELECT id FROM agents WHERE machine_guid = ? AND status <> 'pending' ORDER BY first_seen_at DESC LIMIT 1",
+            $previous = $this->db->one(
+                "SELECT id, hostname, display_name FROM agents WHERE machine_guid = ? AND status <> 'pending' ORDER BY first_seen_at DESC LIMIT 1",
                 [$info['machine_guid']]
             );
             $id = Crypto::uuid4();
@@ -66,10 +67,15 @@ final class Agents
                  VALUES (?, \'pending\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $id, $info['hostname'], $info['machine_guid'], Crypto::publicPem($publicKey), $sha,
-                    Crypto::fingerprint($publicKey), $previous, $info['os'], $info['agent_version'], $info['time_zone'],
+                    Crypto::fingerprint($publicKey), $previous['id'] ?? null, $info['os'], $info['agent_version'], $info['time_zone'],
                     $ip, Time::now(),
                 ]
             );
+            if ($previous === null) {
+                $this->notices->add('agent.pending', $id, null, ['name' => $info['hostname']]);
+            } else {
+                $this->notices->add('agent.reregistered', $id, null, ['name' => $info['hostname'], 'old_name' => self::name($previous)]);
+            }
             return ['id' => $id, 'status' => 'pending'];
         });
     }
@@ -79,8 +85,9 @@ final class Agents
      *
      * @param array{agent_version: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>} $hb
      */
-    public function heartbeat(string $id, array $hb, string $ip): void
+    public function heartbeat(string $id, array $hb, string $ip, string $status): void
     {
+        $this->monitor->presence($id, $status, time());
         $this->db->exec(
             'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, time_zone = ?, service_started_at = ?,
                                state = ?, running = ?, queue = ?
@@ -103,6 +110,7 @@ final class Agents
             "UPDATE agents SET status = 'approved', approved_at = ?, reregistration_of = NULL WHERE id = ? AND status = 'pending'",
             [Time::now(), $id]
         );
+        $this->monitor->watchFrom($id, null, time());
     }
 
     /**
@@ -133,6 +141,7 @@ final class Agents
                 ]
             );
             $this->db->exec('UPDATE agents SET reregistration_of = ? WHERE reregistration_of = ?', [$newId, $oldId]);
+            $this->monitor->watchFrom($newId, null, time());
             return $oldId;
         });
     }
@@ -140,9 +149,11 @@ final class Agents
     public function setDisabled(string $id, bool $disabled): void
     {
         if ($disabled) {
+            // Problems of a disabled machine close (6.7), and nothing is expected from it any more.
             $this->db->exec("UPDATE agents SET status = 'disabled' WHERE id = ? AND status = 'approved'", [$id]);
-        } else {
-            $this->db->exec("UPDATE agents SET status = 'approved' WHERE id = ? AND status = 'disabled'", [$id]);
+            $this->monitor->sweep($id, time());
+        } elseif ($this->db->exec("UPDATE agents SET status = 'approved' WHERE id = ? AND status = 'disabled'", [$id]) > 0) {
+            $this->monitor->watchFrom($id, null, time());
         }
     }
 
@@ -159,6 +170,11 @@ final class Agents
     public function rename(string $id, ?string $displayName): void
     {
         $this->db->exec('UPDATE agents SET display_name = ? WHERE id = ?', [$displayName, $id]);
+    }
+
+    public function setGroup(string $id, ?int $groupId): void
+    {
+        $this->db->exec('UPDATE agents SET group_id = ? WHERE id = ?', [$groupId, $id]);
     }
 
     public static function name(array $agent): string

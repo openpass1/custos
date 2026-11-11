@@ -37,6 +37,13 @@ final class View
         return Response::html($html, $status);
     }
 
+    /** A template without the layout, for blocks that the page refreshes by itself. */
+    public function partial(string $template, array $vars): string
+    {
+        self::$current = $this;
+        return $this->capture($template, $vars);
+    }
+
     public function url(string $path, array $query = []): string
     {
         $query = array_filter($query, fn($v) => $v !== null && $v !== '');

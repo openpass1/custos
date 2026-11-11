@@ -10,8 +10,14 @@ use Custos\Http\Response;
 use Custos\Http\Web\Controller\AgentsController;
 use Custos\Http\Web\Controller\AuditController;
 use Custos\Http\Web\Controller\AuthController;
+use Custos\Http\Web\Controller\DashboardController;
+use Custos\Http\Web\Controller\GroupsController;
+use Custos\Http\Web\Controller\NoticesController;
+use Custos\Http\Web\Controller\NotificationsController;
+use Custos\Http\Web\Controller\ProblemsController;
 use Custos\Http\Web\Controller\RunsController;
 use Custos\Http\Web\Controller\SettingsController;
+use Custos\Http\Web\Controller\TasksController;
 use Custos\Http\Web\Controller\UsersController;
 use Custos\Infra\Cidr;
 use Custos\Infra\Log;
@@ -23,26 +29,41 @@ final class Web
 {
     private const ID = '([0-9a-fA-F-]{36})';
 
-    /** [method, path pattern, controller, action, public] */
+    /**
+     * [method, path pattern, controller, action, access]: access is "public" (no login), "user" or "live".
+     * "live" pages are polled by the browser for fresh data: they need a login but do not count as activity, so the
+     * inactivity timeout still works with a dashboard left open, and they answer 401 instead of redirecting.
+     */
     private const ROUTES = [
-        ['GET', '#^/$#', AgentsController::class, 'home', false],
-        ['GET', '#^/login$#', AuthController::class, 'form', true],
-        ['POST', '#^/login$#', AuthController::class, 'login', true],
-        ['POST', '#^/logout$#', AuthController::class, 'logout', false],
-        ['GET', '#^/agents$#', AgentsController::class, 'index', false],
-        ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', false],
-        ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename)$#', AgentsController::class, 'action', false],
-        ['GET', '#^/runs$#', RunsController::class, 'index', false],
-        ['GET', '#^/runs/' . self::ID . '$#', RunsController::class, 'show', false],
-        ['GET', '#^/runs/' . self::ID . '/log$#', RunsController::class, 'log', false],
-        ['GET', '#^/runs/' . self::ID . '/log/download$#', RunsController::class, 'download', false],
-        ['GET', '#^/users$#', UsersController::class, 'index', false],
-        ['POST', '#^/users$#', UsersController::class, 'create', false],
-        ['POST', '#^/users/(\d+)/(password|disable|enable)$#', UsersController::class, 'action', false],
-        ['GET', '#^/audit$#', AuditController::class, 'index', false],
-        ['GET', '#^/settings$#', SettingsController::class, 'index', false],
-        ['POST', '#^/settings$#', SettingsController::class, 'save', false],
-        ['POST', '#^/settings/registration-key$#', SettingsController::class, 'regenerateKey', false],
+        ['GET', '#^/$#', DashboardController::class, 'index', 'user'],
+        ['GET', '#^/dashboard/live$#', DashboardController::class, 'live', 'live'],
+        ['GET', '#^/login$#', AuthController::class, 'form', 'public'],
+        ['POST', '#^/login$#', AuthController::class, 'login', 'public'],
+        ['POST', '#^/logout$#', AuthController::class, 'logout', 'user'],
+        ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
+        ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/live$#', AgentsController::class, 'live', 'live'],
+        ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group)$#', AgentsController::class, 'action', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '$#', TasksController::class, 'show', 'user'],
+        ['GET', '#^/groups$#', GroupsController::class, 'index', 'user'],
+        ['POST', '#^/groups$#', GroupsController::class, 'create', 'user'],
+        ['POST', '#^/groups/(\d+)/(rename|delete)$#', GroupsController::class, 'action', 'user'],
+        ['GET', '#^/problems$#', ProblemsController::class, 'index', 'user'],
+        ['GET', '#^/notices$#', NoticesController::class, 'index', 'user'],
+        ['POST', '#^/notices/read$#', NoticesController::class, 'read', 'user'],
+        ['GET', '#^/runs$#', RunsController::class, 'index', 'user'],
+        ['GET', '#^/runs/' . self::ID . '$#', RunsController::class, 'show', 'user'],
+        ['GET', '#^/runs/' . self::ID . '/log$#', RunsController::class, 'log', 'user'],
+        ['GET', '#^/runs/' . self::ID . '/log/download$#', RunsController::class, 'download', 'user'],
+        ['GET', '#^/users$#', UsersController::class, 'index', 'user'],
+        ['POST', '#^/users$#', UsersController::class, 'create', 'user'],
+        ['POST', '#^/users/(\d+)/(password|disable|enable)$#', UsersController::class, 'action', 'user'],
+        ['GET', '#^/audit$#', AuditController::class, 'index', 'user'],
+        ['GET', '#^/settings$#', SettingsController::class, 'index', 'user'],
+        ['POST', '#^/settings$#', SettingsController::class, 'save', 'user'],
+        ['POST', '#^/settings/registration-key$#', SettingsController::class, 'regenerateKey', 'user'],
+        ['GET', '#^/settings/notifications$#', NotificationsController::class, 'index', 'user'],
+        ['POST', '#^/settings/notifications$#', NotificationsController::class, 'save', 'user'],
     ];
 
     public function __construct(private readonly App $app)
@@ -77,10 +98,10 @@ final class Web
         $path = $request->path();
         $route = null;
         $methodMismatch = false;
-        foreach (self::ROUTES as [$method, $pattern, $class, $action, $public]) {
+        foreach (self::ROUTES as [$method, $pattern, $class, $action, $access]) {
             if (preg_match($pattern, $path, $m)) {
                 if ($method === $request->method || ($method === 'GET' && $request->method === 'HEAD')) {
-                    $route = [$class, $action, $public, array_slice($m, 1)];
+                    $route = [$class, $action, $access, array_slice($m, 1)];
                     break;
                 }
                 $methodMismatch = true;
@@ -89,14 +110,16 @@ final class Web
         if ($route === null) {
             return Response::text($lang->get($methodMismatch ? 'error.method' : 'error.not_found'), $methodMismatch ? 405 : 404);
         }
-        [$class, $action, $public, $params] = $route;
+        [$class, $action, $access, $params] = $route;
 
-        $session = Session::start($this->app, $request);
+        $session = Session::start($this->app, $request, $access !== 'live');
         if ($request->method === 'POST' && !$session->checkCsrf((string) ($request->post['_csrf'] ?? ''))) {
             return Response::text($lang->get('error.csrf'), 400);
         }
-        if (!$public && $session->user() === null) {
-            return Response::redirect($request->basePath . '/login');
+        if ($access !== 'public' && $session->user() === null) {
+            return $access === 'live'
+                ? Response::json(401, ['error' => 'login'])
+                : Response::redirect($request->basePath . '/login');
         }
 
         $view = new View($this->app, $request, $session);

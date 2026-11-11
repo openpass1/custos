@@ -24,9 +24,10 @@ use Custos\Domain\Agents;
                 <?php if ($showAgent): ?>
                     <td><a href="<?= e(url('/agents/' . $r['agent_id'])) ?>"><?= e(Agents::name($r)) ?></a></td>
                 <?php endif ?>
-                <td><?= e($r['task_name'] ?? t('runs.unknown_task')) ?></td>
+                <td><a href="<?= e(url('/agents/' . $r['agent_id'] . '/tasks/' . $r['task_id'])) ?>"><?= e($r['task_name'] ?? t('runs.unknown_task')) ?></a></td>
                 <td>
                     <?= badge($r['status']) ?>
+                    <?php if (($r['anomaly'] ?? null) !== null): ?><span title="<?= e(anomaly_text($r['anomaly'])) ?>"><?= badge('anomaly') ?></span><?php endif ?>
                     <?php if ((int) $r['errors'] > 0): ?><span class="note"><?= e(t('runs.errors', ['n' => $r['errors']])) ?></span><?php endif ?>
                     <?php if ((int) $r['warnings'] > 0): ?><span class="note"><?= e(t('runs.warnings', ['n' => $r['warnings']])) ?></span><?php endif ?>
                 </td>

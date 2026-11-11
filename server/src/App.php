@@ -6,8 +6,14 @@ namespace Custos;
 
 use Custos\Domain\Agents;
 use Custos\Domain\Audit;
+use Custos\Domain\Board;
 use Custos\Domain\Commands;
 use Custos\Domain\ConfigSnapshots;
+use Custos\Domain\Groups;
+use Custos\Domain\Maintenance;
+use Custos\Domain\Monitor;
+use Custos\Domain\Notices;
+use Custos\Domain\Notifier;
 use Custos\Domain\Reports;
 use Custos\Domain\Settings;
 use Custos\Domain\Tasks;
@@ -27,7 +33,7 @@ use Custos\Infra\ServerKeys;
  */
 final class App
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
 
     private ?Db $db = null;
     private array $services = [];
@@ -89,7 +95,7 @@ final class App
 
     public function agents(): Agents
     {
-        return $this->services[Agents::class] ??= new Agents($this->db());
+        return $this->services[Agents::class] ??= new Agents($this->db(), $this->monitor(), $this->notices());
     }
 
     public function tasks(): Tasks
@@ -99,16 +105,47 @@ final class App
 
     public function reports(): Reports
     {
-        return $this->services[Reports::class] ??= new Reports($this->db(), $this->tasks());
+        return $this->services[Reports::class] ??= new Reports($this->db(), $this->tasks(), $this->monitor());
     }
 
     public function configSnapshots(): ConfigSnapshots
     {
-        return $this->services[ConfigSnapshots::class] ??= new ConfigSnapshots($this->db(), $this->tasks());
+        return $this->services[ConfigSnapshots::class] ??= new ConfigSnapshots($this->db(), $this->tasks(), $this->monitor(), $this->notices());
     }
 
     public function commands(): Commands
     {
-        return $this->services[Commands::class] ??= new Commands($this->db());
+        return $this->services[Commands::class] ??= new Commands($this->db(), $this->notices());
+    }
+
+    public function monitor(): Monitor
+    {
+        return $this->services[Monitor::class] ??= new Monitor($this->db(), $this->settings());
+    }
+
+    public function notices(): Notices
+    {
+        return $this->services[Notices::class] ??= new Notices($this->db());
+    }
+
+    public function groups(): Groups
+    {
+        return $this->services[Groups::class] ??= new Groups($this->db());
+    }
+
+    public function notifier(): Notifier
+    {
+        return $this->services[Notifier::class] ??= new Notifier($this->db(), $this->settings(), $this->lang(), $this->config);
+    }
+
+    public function maintenance(): Maintenance
+    {
+        return $this->services[Maintenance::class] ??= new Maintenance($this->db(), $this->settings());
+    }
+
+    /** Statuses of all machines and tasks right now (or of one machine). */
+    public function board(?string $agentId = null, ?int $now = null): Board
+    {
+        return Board::load($this->db(), $this->settings(), $this->monitor(), $now ?? time(), $agentId);
     }
 }

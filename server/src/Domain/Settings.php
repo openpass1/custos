@@ -19,6 +19,26 @@ final class Settings
         'ip_allow_agents' => '',
         'registration_key' => '',
         'cron_last_run' => '',
+        'cron_last_cleanup' => '',
+        // Thresholds (7.8).
+        'missed_grace_min' => '15',
+        'stale_days' => '7',
+        'anomaly_drop_pct' => '30',
+        'anomaly_growth_factor' => '2',
+        // Retention (7.8): run history, presence, problems and the audit log; full run logs.
+        'history_months' => '12',
+        'log_days' => '90',
+        // Notifications (section 9). The bot token and the SMTP password are needed in plain text to send.
+        'telegram_token' => '',
+        'telegram_chat_ids' => '',
+        'telegram_proxy' => '',
+        'smtp_host' => '',
+        'smtp_port' => '587',
+        'smtp_encryption' => 'starttls',
+        'smtp_user' => '',
+        'smtp_password' => '',
+        'mail_from' => '',
+        'mail_to' => '',
     ];
 
     private ?array $values = null;
@@ -41,6 +61,23 @@ final class Settings
     public function int(string $name): int
     {
         return (int) $this->get($name);
+    }
+
+    public function float(string $name): float
+    {
+        return (float) $this->get($name);
+    }
+
+    /** A list kept as one item per line (chat ids, e-mail addresses). */
+    public function lines(string $name): array
+    {
+        return self::splitList($this->get($name));
+    }
+
+    /** Splits text by new lines, commas, semicolons and spaces into non-empty items. */
+    public static function splitList(string $text): array
+    {
+        return array_values(array_filter(array_map('trim', preg_split('/[\s,;]+/', $text)), fn($s) => $s !== ''));
     }
 
     public function set(string $name, string $value): void
