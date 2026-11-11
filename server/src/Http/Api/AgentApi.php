@@ -251,7 +251,7 @@ final class AgentApi
             ],
             'queue' => $in->uuids('queue'),
         ];
-        $this->app->agents()->heartbeat($agent['id'], $hb, $request->ip);
+        $this->app->agents()->heartbeat($agent['id'], $hb, $request->ip, $agent['status']);
 
         $approved = $agent['status'] === 'approved';
         $wantConfig = $approved

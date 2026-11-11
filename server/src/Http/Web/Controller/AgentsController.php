@@ -8,24 +8,52 @@ use Custos\Domain\Agents;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 
-/** Machines: the list with approval of new agents, and the machine page (sections 7.3, 8). */
+/** Machines: machines × tasks by group with approval of new agents (7.2, 8), and the machine page (7.3). */
 final class AgentsController extends Controller
 {
-    public function home(): Response
-    {
-        return $this->redirect('/agents');
-    }
+    /** The machine page refreshes its "now" block and task statuses this often. */
+    public const REFRESH_S = 10;
 
     public function index(): Response
     {
-        $agents = $this->app->agents()->all();
-        $byId = array_column($agents, null, 'id');
+        $board = $this->app->board();
+        $groups = $this->app->groups()->all();
+        $filter = $this->query('group');
+        $rows = [];
+        foreach ($board->agents as $agent) {
+            if ($agent['status'] === 'pending') {
+                continue;
+            }
+            $key = $agent['group_id'] === null ? '' : (string) $agent['group_id'];
+            if ($filter !== '' && $filter !== ($key === '' ? 'none' : $key)) {
+                continue;
+            }
+            $rows[$key][] = $agent;
+        }
+        // Groups in name order, machines without a group last; machines by name inside a group.
+        $sections = [];
+        foreach ($groups as $group) {
+            if (isset($rows[(string) $group['id']])) {
+                $sections[] = ['name' => $group['name'], 'agents' => $rows[(string) $group['id']]];
+            }
+        }
+        if (isset($rows[''])) {
+            $sections[] = ['name' => $groups === [] ? null : $this->t('groups.none'), 'agents' => $rows['']];
+        }
+        foreach ($sections as &$section) {
+            usort($section['agents'], fn($a, $b) => strcasecmp($a['name'], $b['name']));
+        }
+        unset($section);
+        $all = $this->app->agents()->all();
         return $this->render('agents/index', [
             'section' => 'agents',
-            'pending' => array_values(array_filter($agents, fn($a) => $a['status'] === 'pending')),
-            'agents' => array_values(array_filter($agents, fn($a) => $a['status'] !== 'pending')),
-            'byId' => $byId,
-            'offlineAfter' => $this->app->settings()->int('offline_after_min'),
+            'board' => $board,
+            'sections' => $sections,
+            'groups' => $groups,
+            'filter' => $filter,
+            'pending' => array_values(array_filter($all, fn($a) => $a['status'] === 'pending')),
+            'byId' => array_column($all, null, 'id'),
+            'hasAgents' => count($all) > 0,
         ], $this->t('agents.title'));
     }
 
@@ -41,11 +69,8 @@ final class AgentsController extends Controller
             'section' => 'agents',
             'agent' => $agent,
             'replaces' => $replaces,
-            'online' => Agents::isOnline($agent, $this->app->settings()->int('offline_after_min')),
-            'tasks' => $this->app->tasks()->forAgent($agent['id']),
-            'progress' => $db->one('SELECT * FROM run_progress WHERE agent_id = ?', [$agent['id']]),
-            'running' => $agent['running'] === null ? null : json_decode($agent['running'], true),
-            'queue' => json_decode((string) $agent['queue'], true) ?: [],
+            'groups' => $this->app->groups()->all(),
+            'live' => $this->liveVars($agent['id']),
             'credentials' => json_decode((string) $agent['credentials'], true) ?: [],
             'runs' => $db->all(
                 'SELECT r.*, t.name AS task_name FROM runs r
@@ -53,7 +78,38 @@ final class AgentsController extends Controller
                  WHERE r.agent_id = ? ORDER BY r.started_at DESC LIMIT 10',
                 [$agent['id']]
             ),
+            'refresh' => self::REFRESH_S,
         ], Agents::name($agent));
+    }
+
+    /** Fresh "now", problems and tasks blocks of the machine page. */
+    public function live(string $id): Response
+    {
+        $agent = $this->app->agents()->find($id);
+        if ($agent === null) {
+            return Response::json(404, ['error' => 'not_found']);
+        }
+        $vars = $this->liveVars($agent['id']);
+        $parts = [];
+        foreach (['now', 'problems', 'tasks'] as $name) {
+            $parts[$name] = $this->view->partial('agents/_' . $name, $vars);
+        }
+        return Response::json(200, ['parts' => $parts, 'bell' => $this->app->notices()->unreadCount()]);
+    }
+
+    private function liveVars(string $agentId): array
+    {
+        $board = $this->app->board($agentId);
+        $agent = $board->agents[$agentId];
+        return [
+            'board' => $board,
+            'agent' => $agent,
+            'online' => $agent['online'],
+            'tasks' => $board->tasksOf($agentId),
+            'running' => $board->running($this->app->db()),
+            'queue' => $agent['queue_ids'],
+            'problems' => $board->problems,
+        ];
     }
 
     public function action(string $id, string $action): Response
@@ -100,6 +156,12 @@ final class AgentsController extends Controller
                 $newName = $newName === '' ? null : mb_substr($newName, 0, 255);
                 $agents->rename($id, $newName);
                 $this->audit('agent.rename', 'agent', $id, $details + ['new_name' => $newName ?? $agent['hostname']]);
+                break;
+            case 'group':
+                $groupId = ctype_digit($this->post('group_id')) ? (int) $this->post('group_id') : null;
+                $group = $groupId === null ? null : $this->app->groups()->find($groupId);
+                $agents->setGroup($id, $group === null ? null : (int) $group['id']);
+                $this->audit('agent.group', 'agent', $id, $details + ['group' => $group['name'] ?? null]);
                 break;
         }
         return $this->redirect($this->post('back') === 'list' ? '/agents' : '/agents/' . $id);

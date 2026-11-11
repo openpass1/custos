@@ -15,7 +15,7 @@ final class Commands
 {
     public const RESULT_STATUSES = ['done', 'failed', 'rejected'];
 
-    public function __construct(private readonly Db $db)
+    public function __construct(private readonly Db $db, private readonly Notices $notices)
     {
     }
 
@@ -65,7 +65,7 @@ final class Commands
     {
         $status = $in->enum('status', self::RESULT_STATUSES);
         $message = $in->string('message', 65535, true);
-        $command = $this->db->one('SELECT agent_id, status FROM commands WHERE id = ?', [strtolower($commandId)]);
+        $command = $this->db->one('SELECT agent_id, kind, payload, status FROM commands WHERE id = ?', [strtolower($commandId)]);
         if ($command === null || $command['agent_id'] !== $agentId) {
             throw new InvalidInput("command $commandId is not known for this agent");
         }
@@ -76,6 +76,31 @@ final class Commands
             'UPDATE commands SET status = ?, result_message = ?, result_at = ? WHERE id = ?',
             [$status, $message, Time::now(), strtolower($commandId)]
         );
+        if ($status !== 'done') {
+            $taskId = json_decode($command['payload'], true)['task_id'] ?? null;
+            $this->notices->add('command.failed', $agentId, is_string($taskId) ? $taskId : null,
+                ['kind' => $command['kind'], 'status' => $status, 'message' => (string) $message]);
+        }
+    }
+
+    /**
+     * Commands whose time is up become expired, and the secrets still in them are erased (section 11).
+     * A delivered command that never reported back expires too; a late result still overrides it.
+     */
+    public function expire(int $now): int
+    {
+        $rows = $this->db->all(
+            "SELECT id, payload FROM commands WHERE status IN ('queued', 'delivered') AND expires_at <= ?",
+            [Time::db($now)]
+        );
+        foreach ($rows as $row) {
+            $payload = json_decode($row['payload'], false) ?? new \stdClass();
+            $this->db->exec(
+                "UPDATE commands SET status = 'expired', payload = ? WHERE id = ? AND status IN ('queued', 'delivered')",
+                [json_encode(self::withoutSecrets($payload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $row['id']]
+            );
+        }
+        return count($rows);
     }
 
     private static function withoutSecrets(object $payload): object

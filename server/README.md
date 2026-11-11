@@ -7,6 +7,14 @@ Installation on CloudPanel is described in [INSTALL.md](INSTALL.md) (in Russian)
 Stage 1 is done: login, users, CSRF, login rate limiting, IP allow-lists, audit log, server keys, the whole agent
 API with signed requests and responses, machine approval, the machine page, run history and run logs.
 
+Stage 2 is done: presence and expected slots in the agent's time zone, missed / missed_offline / stale / anomaly,
+problems and the bell, the dashboard with live progress, the machines × tasks grid with groups, the task page, and
+Telegram and e-mail notifications with retries. All of it is driven by `bin/cron.php`, which must run every minute
+(`--verbose` prints what one pass did).
+
+Where the logic lives: `Domain\Monitor` (presence, slots, problems), `Domain\Board` (statuses for the pages),
+`Domain\Notifier` (outbox), `Domain\Maintenance` (retention), `Cron` (the order of the steps).
+
 ## Layout
 
 ```
@@ -45,6 +53,9 @@ php tools/fake-agent.php --url=http://127.0.0.1:8080 --code='KEY#FINGERPRINT' --
 php tools/fake-agent.php --help
 ```
 
+Stage 2 scenarios: `--skip-schedule` (scheduled runs are skipped: "missed"), `--offline=MIN` (the machine is off
+and catches up: "missed_offline"), `--pause=SEC` (paused runs), `--result=error` (error problems).
+
 ## Tests
 
 The integration tests need an empty MariaDB or MySQL database that they may drop and recreate tables in.
@@ -58,6 +69,6 @@ Variables: `CUSTOS_TEST_DB_HOST`, `_PORT`, `_NAME`, `_USER`, `_PASSWORD` (defaul
 
 ## CI
 
-`.github/workflows/server.yml` runs on changes under `server/`: PHP syntax check and PHPUnit against MariaDB 10.11,
-then it builds the installable package (with `vendor/`, without tests) and uploads it as the `custos-server`
+`.github/workflows/server.yml` runs on changes under `server/`: PHP syntax check and PHPUnit against MariaDB 10.11
+(PHP 8.4) and MySQL 8.4 (PHP 8.5), then it builds the installable package (with `vendor/`, without tests) and uploads it as the `custos-server`
 artifact.

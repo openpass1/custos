@@ -23,7 +23,8 @@ final class Session
     {
     }
 
-    public static function start(App $app, Request $request): self
+    /** @param bool $activity false for requests the page makes by itself (live updates): they do not keep the session alive */
+    public static function start(App $app, Request $request, bool $activity = true): self
     {
         $timeout = max(1, (int) $app->config->get('session_timeout_hours')) * 3600;
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -53,7 +54,9 @@ final class Session
             unset($_SESSION['user_id']);
             $session->flash('info', $app->lang()->get('login.expired'));
         }
-        $_SESSION['last_activity'] = $now;
+        if ($activity || !isset($_SESSION['last_activity'])) {
+            $_SESSION['last_activity'] = $now;
+        }
         $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
         return $session;
     }

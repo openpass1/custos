@@ -1,11 +1,11 @@
 <?php
 /**
- * @var array $agent @var ?array $replaces @var bool $online @var array $tasks @var ?array $progress
- * @var ?array $running @var array $queue @var array $credentials @var array $runs
+ * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
+ * @var array $runs @var int $refresh
  */
 use Custos\Domain\Agents;
 
-$taskNames = array_column($tasks, 'name', 'id');
+$online = $live['online'];
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a></p>
 <h1><?= e(Agents::name($agent)) ?>
@@ -19,6 +19,20 @@ $taskNames = array_column($tasks, 'name', 'id');
         <h2><?= e(t('agent.card')) ?></h2>
         <dl class="props">
             <dt><?= e(t('agent.hostname')) ?></dt><dd><?= e($agent['hostname']) ?></dd>
+            <dt><?= e(t('agent.group')) ?></dt>
+            <dd>
+                <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/group')) ?>" class="inline">
+                    <?= csrf_field() ?>
+                    <select name="group_id" aria-label="<?= e(t('agent.group')) ?>" data-autosubmit>
+                        <option value=""><?= e(t('groups.none')) ?></option>
+                        <?php foreach ($groups as $g): ?>
+                            <option value="<?= (int) $g['id'] ?>"<?= (int) $agent['group_id'] === (int) $g['id'] && $agent['group_id'] !== null ? ' selected' : '' ?>><?= e($g['name']) ?></option>
+                        <?php endforeach ?>
+                    </select>
+                    <noscript><button type="submit"><?= e(t('common.save')) ?></button></noscript>
+                    <?php if ($groups === []): ?><a href="<?= e(url('/groups')) ?>" class="note"><?= e(t('groups.create_first')) ?></a><?php endif ?>
+                </form>
+            </dd>
             <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
             <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
             <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?></dd>
@@ -83,77 +97,11 @@ $taskNames = array_column($tasks, 'name', 'id');
     </section>
 </div>
 
-<section class="panel">
-    <h2><?= e(t('agent.now')) ?></h2>
-    <?php if ($running === null): ?>
-        <p><?= e($agent['state'] === null ? '—' : t('agent.state.idle')) ?></p>
-    <?php else: ?>
-        <p>
-            <?= badge($agent['state'] === 'paused' ? 'paused' : 'running') ?>
-            <?= e($taskNames[$running['task_id']] ?? $running['task_id']) ?>
-            <?php if (!empty($running['paused_at'])): ?>
-                · <?= e(t('agent.paused_since', ['time' => fmt_time(\Custos\Infra\Time::parseIso($running['paused_at']))])) ?>
-            <?php endif ?>
-        </p>
-        <?php if ($progress !== null && $progress['run_id'] === $running['run_id']): ?>
-            <progress max="100" value="<?= e(min(100, (float) $progress['percent'])) ?>"></progress>
-            <p class="note">
-                <?= e(t('phase.' . $progress['phase'])) ?> · <?= e(round((float) $progress['percent'], 1)) ?>%
-                · <?= e(fmt_number($progress['files_done'])) ?> / <?= e(fmt_number($progress['files_total'])) ?> <?= e(t('agent.files')) ?>
-                · <?= e(fmt_bytes($progress['speed_bps'])) ?>/<?= e(t('unit.s')) ?>
-                · <?= e(t('agent.eta', ['time' => fmt_duration($progress['eta_s'])])) ?>
-            </p>
-            <?php if ($progress['current_file'] !== null): ?><p class="note mono"><?= e($progress['current_file']) ?></p><?php endif ?>
-        <?php endif ?>
-    <?php endif ?>
-    <?php if ($queue !== []): ?>
-        <p class="note"><?= e(t('agent.queue')) ?>: <?= e(implode(', ', array_map(fn($id) => $taskNames[$id] ?? $id, $queue))) ?></p>
-    <?php endif ?>
-</section>
-
-<section class="panel">
-    <h2><?= e(t('agent.tasks')) ?></h2>
-    <?php if ($tasks === []): ?>
-        <p class="empty"><?= e(t('agent.tasks.empty')) ?></p>
-    <?php else: ?>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                <tr>
-                    <th><?= e(t('tasks.col.name')) ?></th>
-                    <th><?= e(t('tasks.col.type')) ?></th>
-                    <th><?= e(t('tasks.col.schedule')) ?></th>
-                    <th><?= e(t('tasks.col.last_run')) ?></th>
-                    <th><?= e(t('tasks.col.last_success')) ?></th>
-                    <th><?= e(t('tasks.col.revision')) ?></th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($tasks as $task): ?>
-                    <?php $data = json_decode($task['data'], true) ?: []; ?>
-                    <tr>
-                        <td><?= e($task['name']) ?><?php if (!$task['enabled']): ?> <?= badge('disabled') ?><?php endif ?></td>
-                        <td><?= e(t('backup.' . ($data['backup_type'] ?? ''))) ?></td>
-                        <td><?= e(schedule_label($data['schedule'] ?? null)) ?></td>
-                        <td>
-                            <?php if ($task['last_run_id'] !== null): ?>
-                                <a href="<?= e(url('/runs/' . $task['last_run_id'])) ?>"><?= badge($task['last_run_status']) ?></a>
-                                <?= e(fmt_time($task['last_run_at'])) ?>
-                            <?php else: ?>
-                                <?= e(t('tasks.never')) ?>
-                            <?php endif ?>
-                        </td>
-                        <td><?= e(fmt_time($task['last_success_at'])) ?></td>
-                        <td class="note" title="<?= e($task['updated_by'] ?? '') ?>"><?= (int) $task['revision'] ?> · <?= e(fmt_time($task['updated_at'])) ?></td>
-                        <td><a href="<?= e(url('/runs', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= e(t('tasks.history')) ?></a></td>
-                    </tr>
-                <?php endforeach ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif ?>
-</section>
+<div data-live="<?= e(url('/agents/' . $agent['id'] . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
+    <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
+    <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
+    <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
+</div>
 
 <section class="panel">
     <h2><?= e(t('agent.runs')) ?></h2>

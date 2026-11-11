@@ -6,6 +6,11 @@
 $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">' . e($errors[$name]) . '</div>' : '';
 ?>
 <h1><?= e(t('settings.title')) ?></h1>
+<nav class="tabs">
+    <a class="active" href="<?= e(url('/settings')) ?>"><?= e(t('settings.tab.general')) ?></a>
+    <a href="<?= e(url('/settings/notifications')) ?>"><?= e(t('settings.tab.notifications')) ?></a>
+    <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.title')) ?></a>
+</nav>
 
 <section class="panel">
     <h2><?= e(t('settings.agents')) ?></h2>
@@ -49,6 +54,36 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
         <input type="number" name="offline_after_min" value="<?= e($values['offline_after_min']) ?>" min="1" max="10080" required>
     </label>
     <?= $error('offline_after_min') ?>
+
+    <h2><?= e(t('settings.thresholds')) ?></h2>
+    <label><?= e(t('settings.missed_grace_min')) ?>
+        <input type="number" name="missed_grace_min" value="<?= e($values['missed_grace_min']) ?>" min="1" max="1440" required>
+        <span class="note"><?= e(t('settings.missed_grace_min.hint')) ?></span>
+    </label>
+    <?= $error('missed_grace_min') ?>
+    <label><?= e(t('settings.stale_days')) ?>
+        <input type="number" name="stale_days" value="<?= e($values['stale_days']) ?>" min="1" max="365" required>
+    </label>
+    <?= $error('stale_days') ?>
+    <label><?= e(t('settings.anomaly_drop_pct')) ?>
+        <input type="number" name="anomaly_drop_pct" value="<?= e($values['anomaly_drop_pct']) ?>" min="1" max="99" required>
+    </label>
+    <?= $error('anomaly_drop_pct') ?>
+    <label><?= e(t('settings.anomaly_growth_factor')) ?>
+        <input type="text" name="anomaly_growth_factor" value="<?= e($values['anomaly_growth_factor']) ?>" inputmode="decimal" required>
+        <span class="note"><?= e(t('settings.anomaly.hint')) ?></span>
+    </label>
+    <?= $error('anomaly_growth_factor') ?>
+
+    <h2><?= e(t('settings.retention')) ?></h2>
+    <label><?= e(t('settings.history_months')) ?>
+        <input type="number" name="history_months" value="<?= e($values['history_months']) ?>" min="1" max="120" required>
+    </label>
+    <?= $error('history_months') ?>
+    <label><?= e(t('settings.log_days')) ?>
+        <input type="number" name="log_days" value="<?= e($values['log_days']) ?>" min="1" max="3650" required>
+    </label>
+    <?= $error('log_days') ?>
 
     <h2><?= e(t('settings.networks')) ?></h2>
     <p class="hint"><?= e(t('settings.networks.hint', ['ip' => $myIp])) ?></p>

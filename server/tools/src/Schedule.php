@@ -8,7 +8,9 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * Slots of a task schedule (A.9) in the agent's time zone, as the fake agent runs them.
+ * Slots of a task schedule (A.9) in the agent's time zone, as the fake agent runs them. Daylight saving time as on
+ * the Windows agent: a time skipped by the change runs right after it (30-minute steps), a time that happens twice
+ * runs the first time.
  */
 final class Schedule
 {
@@ -36,19 +38,40 @@ final class Schedule
         $weekdays = array_map('intval', (array) ($schedule['days_of_week'] ?? []));
         $monthDays = array_map('intval', (array) ($schedule['days_of_month'] ?? []));
         $zone = new DateTimeZone($timeZone);
-        $day = (new DateTimeImmutable('@' . $after))->setTimezone($zone)->setTime(0, 0);
-        for ($i = 0; $i < 400; $i++, $day = $day->modify('+1 day')) {
+        $day = (new DateTimeImmutable('@' . $after))->setTimezone($zone)->setTime(0, 0)->modify('-1 day');
+        for ($i = 0; $i < 401; $i++, $day = $day->modify('+1 day')) {
             if (!self::dayMatches($type, $day, $weekdays, $monthDays)) {
                 continue;
             }
             foreach ($times as $time) {
-                $slot = new DateTimeImmutable($day->format('Y-m-d') . ' ' . $time, $zone);
-                if ($slot->getTimestamp() > $after) {
-                    return $slot->getTimestamp();
+                $slot = self::wallClock($day->format('Y-m-d') . ' ' . $time, $zone);
+                if ($slot > $after) {
+                    return $slot;
                 }
             }
         }
         return null;
+    }
+
+    /** "Y-m-d H:i" in $zone as unix time. */
+    private static function wallClock(string $local, DateTimeZone $zone): int
+    {
+        $utc = new DateTimeZone('UTC');
+        for ($i = 0; $i < 8; $i++) {
+            $time = (new DateTimeImmutable($local, $zone))->getTimestamp();
+            if ((new DateTimeImmutable('@' . $time))->setTimezone($zone)->format('Y-m-d H:i') === $local) {
+                // The same wall-clock time may have happened earlier too (fall back): take the first one.
+                foreach ([7200, 3600, 1800] as $back) {
+                    if ((new DateTimeImmutable('@' . ($time - $back)))->setTimezone($zone)->format('Y-m-d H:i') === $local) {
+                        return $time - $back;
+                    }
+                }
+                return $time;
+            }
+            // Skipped by spring forward.
+            $local = (new DateTimeImmutable($local, $utc))->modify('+30 minutes')->format('Y-m-d H:i');
+        }
+        return (new DateTimeImmutable($local, $zone))->getTimestamp();
     }
 
     private static function dayMatches(string $type, DateTimeImmutable $day, array $weekdays, array $monthDays): bool

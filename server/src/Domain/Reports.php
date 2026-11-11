@@ -18,7 +18,7 @@ final class Reports
     public const FINAL_STATUSES = ['success', 'warning', 'error', 'aborted'];
     public const MAX_LOG_TAIL = 1024 * 1024;
 
-    public function __construct(private readonly Db $db, private readonly Tasks $tasks)
+    public function __construct(private readonly Db $db, private readonly Tasks $tasks, private readonly Monitor $monitor)
     {
     }
 
@@ -50,6 +50,7 @@ final class Reports
                 [$runId, $agentId, $taskId, $row['task_revision'], $row['backup_type'], $row['trigger_type'],
                  $row['scheduled_for'], $row['started_at'], Time::now()]
             );
+            $this->monitor->runStarted($agentId, $taskId, $runId, $row['scheduled_for'], time());
         });
     }
 
@@ -140,6 +141,7 @@ final class Reports
                 $this->storeLog($runId, $log, 'finish');
             }
             $this->db->exec('DELETE FROM run_progress WHERE agent_id = ? AND run_id = ?', [$agentId, $runId]);
+            $this->monitor->runFinished($runId, time());
             $this->tasks->refreshRunCache($agentId, $taskId);
         });
     }

@@ -1,8 +1,14 @@
 <?php
 /** @var string $title @var string $content @var ?array $user @var array $flash @var string $section */
-$serverName = \Custos\Http\Web\View::$current->app->settings()->get('server_name');
-$pendingCount = $user === null ? 0 : (int) \Custos\Http\Web\View::$current->app->db()->value("SELECT COUNT(*) FROM agents WHERE status = 'pending'");
-$nav = ['agents' => '/agents', 'runs' => '/runs', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
+$app = \Custos\Http\Web\View::$current->app;
+$serverName = $app->settings()->get('server_name');
+$counts = $user === null ? [] : [
+    'agents' => (int) $app->db()->value("SELECT COUNT(*) FROM agents WHERE status = 'pending'"),
+    'problems' => (int) $app->db()->value('SELECT COUNT(*) FROM problems WHERE closed_at IS NULL'),
+];
+$unread = $user === null ? 0 : $app->notices()->unreadCount();
+$nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'users' => '/users',
+        'audit' => '/audit', 'settings' => '/settings'];
 ?>
 <!doctype html>
 <html lang="ru">
@@ -20,10 +26,14 @@ $nav = ['agents' => '/agents', 'runs' => '/runs', 'users' => '/users', 'audit' =
         <nav class="menu">
             <?php foreach ($nav as $key => $path): ?>
                 <a href="<?= e(url($path)) ?>"<?= $section === $key ? ' class="active"' : '' ?>>
-                    <?= e(t('nav.' . $key)) ?><?php if ($key === 'agents' && $pendingCount > 0): ?> <span class="count"><?= $pendingCount ?></span><?php endif ?>
+                    <?= e(t('nav.' . $key)) ?><?php if (($counts[$key] ?? 0) > 0): ?> <span class="count<?= $key === 'problems' ? ' count-bad' : '' ?>"><?= $counts[$key] ?></span><?php endif ?>
                 </a>
             <?php endforeach ?>
         </nav>
+        <a class="bell<?= $section === 'notices' ? ' active' : '' ?>" href="<?= e(url('/notices')) ?>" title="<?= e(t('nav.notices')) ?>">
+            <span aria-hidden="true">🔔</span><span class="visually-hidden"><?= e(t('nav.notices')) ?></span>
+            <span class="count" data-bell<?= $unread === 0 ? ' hidden' : '' ?>><?= $unread ?></span>
+        </a>
         <form class="whoami" method="post" action="<?= e(url('/logout')) ?>">
             <?= csrf_field() ?>
             <span><?= e($user['login']) ?></span>

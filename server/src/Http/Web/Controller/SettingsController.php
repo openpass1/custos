@@ -9,13 +9,21 @@ use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 use Custos\Infra\Cidr;
 
-/** Settings of section 7.8 needed so far: name, intervals, IP allow-lists, agent registration code. */
+/** Settings of section 7.8: name, intervals, thresholds, retention, IP allow-lists, agent registration code. */
 final class SettingsController extends Controller
 {
+    /** Whole-number settings and their allowed ranges. */
     private const NUMBERS = [
         'heartbeat_interval_s' => [10, 3600],
         'offline_after_min' => [1, 10080],
+        'missed_grace_min' => [1, 1440],
+        'stale_days' => [1, 365],
+        'anomaly_drop_pct' => [1, 99],
+        'history_months' => [1, 120],
+        'log_days' => [1, 3650],
     ];
+    private const FIELDS = ['server_name', 'heartbeat_interval_s', 'offline_after_min', 'missed_grace_min', 'stale_days',
+                            'anomaly_drop_pct', 'anomaly_growth_factor', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
 
     public function index(): Response
     {
@@ -25,13 +33,16 @@ final class SettingsController extends Controller
     public function save(): Response
     {
         $settings = $this->app->settings();
-        $values = [
-            'server_name' => trim($this->post('server_name')),
-            'heartbeat_interval_s' => trim($this->post('heartbeat_interval_s')),
-            'offline_after_min' => trim($this->post('offline_after_min')),
-            'ip_allow_site' => $this->post('ip_allow_site'),
-            'ip_allow_agents' => $this->post('ip_allow_agents'),
-        ];
+        $values = [];
+        foreach (self::FIELDS as $name) {
+            $values[$name] = str_starts_with($name, 'ip_allow_') ? $this->post($name) : trim($this->post($name));
+        }
+        // A form from before these fields existed keeps the stored values.
+        foreach ([...array_keys(self::NUMBERS), 'anomaly_growth_factor'] as $name) {
+            if (!isset($this->request->post[$name])) {
+                $values[$name] = $settings->get($name);
+            }
+        }
         $errors = [];
         if ($values['server_name'] === '' || mb_strlen($values['server_name']) > 100) {
             $errors['server_name'] = $this->t('settings.error.server_name');
@@ -40,6 +51,12 @@ final class SettingsController extends Controller
             if (!ctype_digit($values[$name]) || (int) $values[$name] < $min || (int) $values[$name] > $max) {
                 $errors[$name] = $this->t('settings.error.range', ['min' => $min, 'max' => $max]);
             }
+        }
+        $factor = str_replace(',', '.', $values['anomaly_growth_factor']);
+        if (!is_numeric($factor) || (float) $factor < 1.1 || (float) $factor > 100) {
+            $errors['anomaly_growth_factor'] = $this->t('settings.error.factor');
+        } else {
+            $values['anomaly_growth_factor'] = (string) (float) $factor;
         }
         foreach (['ip_allow_site', 'ip_allow_agents'] as $name) {
             try {
@@ -82,7 +99,7 @@ final class SettingsController extends Controller
     {
         $settings = $this->app->settings();
         $values = [];
-        foreach (['server_name', 'heartbeat_interval_s', 'offline_after_min', 'ip_allow_site', 'ip_allow_agents'] as $name) {
+        foreach (self::FIELDS as $name) {
             $values[$name] = $settings->get($name);
         }
         return $values;
