@@ -72,6 +72,11 @@ internal sealed partial class AgentService
             {
                 throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.RestoreAlreadyRunning);
             }
+
+            if (_sevenZipUpdating)
+            {
+                throw new AgentRequestException(PipeProtocol.Errors.Conflict, Messages.SevenZipBusyUpdate);
+            }
         }
 
         if (request.TargetFolder is { } folder && !Path.IsPathFullyQualified(folder))
@@ -107,11 +112,11 @@ internal sealed partial class AgentService
         var job = new RestoreJob(set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
         lock (_restoreLock)
         {
-            if (_restore is { Running: true })
+            if (_restore is { Running: true } || _sevenZipUpdating)
             {
                 found.Dispose();
                 file.Dispose();
-                throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.RestoreAlreadyRunning);
+                throw new AgentRequestException(PipeProtocol.Errors.Invalid, _sevenZipUpdating ? Messages.SevenZipBusyUpdate : Messages.RestoreAlreadyRunning);
             }
 
             _restore?.Dispose();

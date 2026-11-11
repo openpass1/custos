@@ -769,4 +769,76 @@
   <data name="SecurityNotCopied" xml:space="preserve">
     <value>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied there for the rest of this run.</value>
   </data>
+  <data name="SevenZipCheckFailed" xml:space="preserve">
+    <value>Could not find out the newest 7-Zip: {0}</value>
+  </data>
+  <data name="SevenZipNoRelease" xml:space="preserve">
+    <value>GitHub lists no release of 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoInstaller" xml:space="preserve">
+    <value>The release {0} of 7-Zip has no file {1}.</value>
+  </data>
+  <data name="SevenZipNoDigest" xml:space="preserve">
+    <value>GitHub shows no SHA-256 for {0}, so the file cannot be checked. It is not downloaded; try again in a few days.</value>
+  </data>
+  <data name="SevenZipDownloading" xml:space="preserve">
+    <value>Downloading {0} ({1}).</value>
+  </data>
+  <data name="SevenZipDownloadFailed" xml:space="preserve">
+    <value>Could not download {0}: {1}</value>
+  </data>
+  <data name="SevenZipChecksumMismatch" xml:space="preserve">
+    <value>{0} has SHA-256 {1}, but GitHub publishes {2}. The file was deleted and not used.</value>
+  </data>
+  <data name="SevenZipVerified" xml:space="preserve">
+    <value>{0}: SHA-256 matches the one published on GitHub.</value>
+  </data>
+  <data name="SevenZipUnpacking" xml:space="preserve">
+    <value>Unpacking 7z.dll from {0}.</value>
+  </data>
+  <data name="SevenZipNotInInstaller" xml:space="preserve">
+    <value>7z.dll could not be unpacked from {0}.</value>
+  </data>
+  <data name="SevenZipNeedsCurrent" xml:space="preserve">
+    <value>The 7z.dll in use unpacks the 7-Zip installer, but it cannot be used: {0} Replace 7z.dll by hand.</value>
+  </data>
+  <data name="SevenZipSelfTestFailed" xml:space="preserve">
+    <value>The new 7z.dll ({0}) failed the test of packing and unpacking: {1}</value>
+  </data>
+  <data name="SevenZipSelfTestOk" xml:space="preserve">
+    <value>The new 7z.dll ({0}) packs and unpacks correctly.</value>
+  </data>
+  <data name="SevenZipCopyDiffers" xml:space="preserve">
+    <value>The copy {0} differs from the unpacked file.</value>
+  </data>
+  <data name="SevenZipSwapFailed" xml:space="preserve">
+    <value>7z.dll could not be replaced in {0}: {1} The old one stays.</value>
+  </data>
+  <data name="SevenZipUpdated" xml:space="preserve">
+    <value>7-Zip updated from {0} to {1} by {2}. The old file is kept as 7z.dll.old.</value>
+  </data>
+  <data name="SevenZipUpdateFailed" xml:space="preserve">
+    <value>7-Zip was not updated: {0}</value>
+  </data>
+  <data name="SevenZipUpToDate" xml:space="preserve">
+    <value>7-Zip {0} is the newest version.</value>
+  </data>
+  <data name="SevenZipNotNewer" xml:space="preserve">
+    <value>The installer has 7-Zip {0}, which is not newer than the 7z.dll in use ({1}).</value>
+  </data>
+  <data name="SevenZipBusyRun" xml:space="preserve">
+    <value>The task «{0}» is running. Update 7-Zip when it has finished.</value>
+  </data>
+  <data name="SevenZipBusyRestore" xml:space="preserve">
+    <value>A restore is running. Update 7-Zip when it has finished.</value>
+  </data>
+  <data name="SevenZipBusyUpdate" xml:space="preserve">
+    <value>7-Zip is being updated. Try again in a minute.</value>
+  </data>
+  <data name="SevenZipNotAllowed" xml:space="preserve">
+    <value>Only administrators may update 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoAnswer" xml:space="preserve">
+    <value>no answer in {0} s</value>
+  </data>
 </root>

@@ -117,6 +117,14 @@ internal static partial class ServiceLog
         Message = "7z.dll cannot be used: {Reason} Tasks with the 7z format will fail; ZIP and plain copies work")]
     public static partial void SevenZipUnavailable(ILogger logger, string reason);
 
+    [LoggerMessage(EventId = CustosEventIds.SevenZipUpdated, Level = LogLevel.Information,
+        Message = "7-Zip updated from {Old} to {New} by {User}; the old file is kept as 7z.dll.old")]
+    public static partial void SevenZipUpdated(ILogger logger, string old, string @new, string user);
+
+    [LoggerMessage(EventId = CustosEventIds.SevenZipUpdateFailed, Level = LogLevel.Error,
+        Message = "7-Zip was not updated: {Reason}")]
+    public static partial void SevenZipUpdateFailed(ILogger logger, string reason);
+
     [LoggerMessage(EventId = CustosEventIds.TaskStarted, Level = LogLevel.Information,
         Message = "Task {Task} started ({Trigger}). Run log: {LogFile}")]
     public static partial void TaskStarted(ILogger logger, string task, string trigger, string logFile);

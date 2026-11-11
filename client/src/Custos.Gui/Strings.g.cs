@@ -1427,7 +1427,7 @@ static partial class Strings
     /// <summary>7z.dll cannot be used: {0}</summary>
     public static string Settings7ZipProblem => Get(nameof(Settings7ZipProblem));
 
-    /// <summary>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the...</summary>
+    /// <summary>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agr...</summary>
     public static string Settings7ZipNote => Get(nameof(Settings7ZipNote));
 
     /// <summary>The task «{0}» has finished. In {2} s: {1}.</summary>
@@ -1447,4 +1447,19 @@ static partial class Strings
 
     /// <summary>For copies without compression: files and folders in the copy get the permissions and the owner of the orig...</summary>
     public static string PreserveAclHelp => Get(nameof(PreserveAclHelp));
+
+    /// <summary>Check for a 7-Zip update</summary>
+    public static string SevenZipCheckButton => Get(nameof(SevenZipCheckButton));
+
+    /// <summary>Only administrators may update 7-Zip.</summary>
+    public static string SevenZipAdminOnly => Get(nameof(SevenZipAdminOnly));
+
+    /// <summary>You have 7-Zip {0}; the newest is {1}. There is nothing to update.</summary>
+    public static string SevenZipNothingNew => Get(nameof(SevenZipNothingNew));
+
+    /// <summary>You have 7-Zip {0}; the newest is {1}.</summary>
+    public static string SevenZipAskUpdate => Get(nameof(SevenZipAskUpdate));
+
+    /// <summary>Updating 7-Zip to {0}…</summary>
+    public static string SevenZipUpdatingTo => Get(nameof(SevenZipUpdatingTo));
 }

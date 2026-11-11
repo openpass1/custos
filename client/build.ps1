@@ -11,7 +11,7 @@
     machine: its x64 installer and 7zr.exe are downloaded once from github.com/ip7z/7zip into
     installer\redist\7-zip\<version>, refused if their SHA-256 differs from the pinned one, and 7z.dll is unpacked
     from the installer with 7zr.exe. Without internet, put those two files there by hand. The tests use that 7z.dll
-    too (CUSTOS_7Z_DLL).
+    too (CUSTOS_7Z_DLL, and the installer as CUSTOS_7Z_INSTALLER).
 
     Results:
         artifacts\publish\                 the program files, as installed to C:\Program Files\CUSTOS
@@ -204,6 +204,8 @@ function Get-SevenZip {
     if (-not (Test-Path $folder)) { New-Item -ItemType Directory -Path $folder | Out-Null }
     $installer = Get-PinnedFile $pin.installerUrl $pin.installerSha256 $folder
     $extractor = Get-PinnedFile $pin.extractorUrl $pin.extractorSha256 $folder
+    # The tests of the 7-Zip update unpack this installer the way the service does.
+    $env:CUSTOS_7Z_INSTALLER = $installer
 
     $out = Join-Path $folder 'unpacked'
     if (Test-Path $out) { Remove-Item $out -Recurse -Force }

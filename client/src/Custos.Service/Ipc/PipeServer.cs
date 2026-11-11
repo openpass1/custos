@@ -37,6 +37,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.RestoreStart,
         PipeProtocol.Methods.RestoreStatus,
         PipeProtocol.Methods.RestoreStop,
+
+        // A new 7z.dll is loaded by SYSTEM.
+        PipeProtocol.Methods.SevenZipCheck,
+        PipeProtocol.Methods.SevenZipUpdate,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -325,11 +329,22 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             if ((AdminOnlyMethods.Contains(method) && !identity.IsAdmin) || (AdminMethods.Contains(method) && !identity.IsAdmin && !agent.AllUsersMayEdit))
             {
                 ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
-                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed : Messages.NotAllowed);
+                string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
+                    : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
+                    : Messages.NotAllowed;
+                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
             }
             else
             {
-                response = Dispatch(identity, requestId, request);
+                response = method switch
+                {
+                    // These wait for GitHub (and the update for a download), so they do not block a thread meanwhile.
+                    PipeProtocol.Methods.SevenZipCheck => PipeMessage.Success(requestId,
+                        await agent.CheckSevenZipAsync(connection.Closing).ConfigureAwait(false), IpcJsonContext.Default.SevenZipCheckResult),
+                    PipeProtocol.Methods.SevenZipUpdate => Ok(requestId,
+                        await agent.UpdateSevenZipAsync(identity.User, connection.Closing).ConfigureAwait(false)),
+                    _ => Dispatch(identity, requestId, request),
+                };
             }
         }
         catch (OperationCanceledException) when (connection.Closing.IsCancellationRequested)

@@ -280,6 +280,21 @@ public sealed class SettingsSaveRequest
 }
 
 /// <summary>Result of requests that only say "done".</summary>
+/// <summary>What <see cref="PipeProtocol.Methods.SevenZipCheck"/> found out.</summary>
+public sealed class SevenZipCheckResult
+{
+    /// <summary>The version of the 7z.dll in use, or null if none works.</summary>
+    public string? Installed { get; set; }
+
+    /// <summary>The newest release on GitHub, or null if it could not be found out.</summary>
+    public string? Latest { get; set; }
+
+    public bool UpdateAvailable { get; set; }
+
+    /// <summary>Why the newest version is not known (offline, GitHub refused).</summary>
+    public string? Error { get; set; }
+}
+
 public sealed class OkResult
 {
     public static readonly OkResult Instance = new();

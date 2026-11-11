@@ -769,4 +769,76 @@
   <data name="SecurityNotCopied" xml:space="preserve">
     <value>{0}: не удалось задать права NTFS ({1}). Файлы копируются, но права в это место до конца запуска не переносятся.</value>
   </data>
+  <data name="SevenZipCheckFailed" xml:space="preserve">
+    <value>Не удалось узнать последнюю версию 7-Zip: {0}</value>
+  </data>
+  <data name="SevenZipNoRelease" xml:space="preserve">
+    <value>На GitHub нет ни одного выпуска 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoInstaller" xml:space="preserve">
+    <value>В выпуске 7-Zip {0} нет файла {1}.</value>
+  </data>
+  <data name="SevenZipNoDigest" xml:space="preserve">
+    <value>GitHub не показывает SHA-256 для {0}, поэтому файл нельзя проверить. Он не скачивается; попробуйте через несколько дней.</value>
+  </data>
+  <data name="SevenZipDownloading" xml:space="preserve">
+    <value>Скачивается {0} ({1}).</value>
+  </data>
+  <data name="SevenZipDownloadFailed" xml:space="preserve">
+    <value>Не удалось скачать {0}: {1}</value>
+  </data>
+  <data name="SevenZipChecksumMismatch" xml:space="preserve">
+    <value>У {0} SHA-256 {1}, а GitHub указывает {2}. Файл удалён и не использован.</value>
+  </data>
+  <data name="SevenZipVerified" xml:space="preserve">
+    <value>{0}: SHA-256 совпадает с указанным на GitHub.</value>
+  </data>
+  <data name="SevenZipUnpacking" xml:space="preserve">
+    <value>Распаковка 7z.dll из {0}.</value>
+  </data>
+  <data name="SevenZipNotInInstaller" xml:space="preserve">
+    <value>Не удалось распаковать 7z.dll из {0}.</value>
+  </data>
+  <data name="SevenZipNeedsCurrent" xml:space="preserve">
+    <value>Установщик 7-Zip распаковывается текущим 7z.dll, а его нельзя использовать: {0} Замените 7z.dll вручную.</value>
+  </data>
+  <data name="SevenZipSelfTestFailed" xml:space="preserve">
+    <value>Новый 7z.dll ({0}) не прошёл проверку упаковки и распаковки: {1}</value>
+  </data>
+  <data name="SevenZipSelfTestOk" xml:space="preserve">
+    <value>Новый 7z.dll ({0}) правильно упаковывает и распаковывает.</value>
+  </data>
+  <data name="SevenZipCopyDiffers" xml:space="preserve">
+    <value>Копия {0} отличается от распакованного файла.</value>
+  </data>
+  <data name="SevenZipSwapFailed" xml:space="preserve">
+    <value>Не удалось заменить 7z.dll в {0}: {1} Остаётся прежний.</value>
+  </data>
+  <data name="SevenZipUpdated" xml:space="preserve">
+    <value>7-Zip обновлён с {0} до {1}, обновил {2}. Прежний файл сохранён как 7z.dll.old.</value>
+  </data>
+  <data name="SevenZipUpdateFailed" xml:space="preserve">
+    <value>7-Zip не обновлён: {0}</value>
+  </data>
+  <data name="SevenZipUpToDate" xml:space="preserve">
+    <value>7-Zip {0} — последняя версия.</value>
+  </data>
+  <data name="SevenZipNotNewer" xml:space="preserve">
+    <value>В установщике 7-Zip {0}, это не новее используемого 7z.dll ({1}).</value>
+  </data>
+  <data name="SevenZipBusyRun" xml:space="preserve">
+    <value>Выполняется задание «{0}». Обновите 7-Zip, когда оно закончится.</value>
+  </data>
+  <data name="SevenZipBusyRestore" xml:space="preserve">
+    <value>Идёт восстановление. Обновите 7-Zip, когда оно закончится.</value>
+  </data>
+  <data name="SevenZipBusyUpdate" xml:space="preserve">
+    <value>Идёт обновление 7-Zip. Попробуйте через минуту.</value>
+  </data>
+  <data name="SevenZipNotAllowed" xml:space="preserve">
+    <value>Обновлять 7-Zip могут только администраторы.</value>
+  </data>
+  <data name="SevenZipNoAnswer" xml:space="preserve">
+    <value>нет ответа за {0} с</value>
+  </data>
 </root>

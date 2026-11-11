@@ -17,13 +17,17 @@ internal static class DataFolders
 
     public static string RunLogs { get; } = Path.Combine(CustosInfo.LogsDirectory, "runs");
 
+    /// <summary>Downloaded 7-Zip installers and the 7z.dll unpacked from them: the service loads a DLL from here, so
+    /// it is closed like <c>config</c>.</summary>
+    public static string Updates { get; } = Path.Combine(CustosInfo.DataDirectory, "updates");
+
     public static string DatabaseFile { get; } = Path.Combine(Database, "custos.db");
 
     /// <summary>Ids of shadow copies made and not yet deleted (see <see cref="ShadowCopies"/>).</summary>
     public static string PendingShadowsFile { get; } = Path.Combine(Database, "shadow-copies.txt");
 
     /// <summary>
-    /// Creates the folders and closes <c>config</c> and <c>db</c> to everyone but SYSTEM and Administrators (section 3.3).
+    /// Creates the folders and closes <c>config</c>, <c>db</c> and <c>updates</c> to everyone but SYSTEM and Administrators (section 3.3).
     /// Without that a user could give himself administrator rights by editing tasks.json: the service runs what it says.
     /// Files a user may have put there beforehand get the same protection and lose their owner.
     /// </summary>
@@ -34,7 +38,7 @@ internal static class DataFolders
         var problems = new List<string>();
         Directory.CreateDirectory(CustosInfo.LogsDirectory);
         Directory.CreateDirectory(RunLogs);
-        foreach (string folder in new[] { Config, Database })
+        foreach (string folder in new[] { Config, Database, Updates })
         {
             Directory.CreateDirectory(folder);
             Protect(folder, problems);

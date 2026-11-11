@@ -760,4 +760,76 @@ static partial class Messages
 
     /// <summary>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied th...</summary>
     public static string SecurityNotCopied => Get(nameof(SecurityNotCopied));
+
+    /// <summary>Could not find out the newest 7-Zip: {0}</summary>
+    public static string SevenZipCheckFailed => Get(nameof(SevenZipCheckFailed));
+
+    /// <summary>GitHub lists no release of 7-Zip.</summary>
+    public static string SevenZipNoRelease => Get(nameof(SevenZipNoRelease));
+
+    /// <summary>The release {0} of 7-Zip has no file {1}.</summary>
+    public static string SevenZipNoInstaller => Get(nameof(SevenZipNoInstaller));
+
+    /// <summary>GitHub shows no SHA-256 for {0}, so the file cannot be checked. It is not downloaded; try again in a few days.</summary>
+    public static string SevenZipNoDigest => Get(nameof(SevenZipNoDigest));
+
+    /// <summary>Downloading {0} ({1}).</summary>
+    public static string SevenZipDownloading => Get(nameof(SevenZipDownloading));
+
+    /// <summary>Could not download {0}: {1}</summary>
+    public static string SevenZipDownloadFailed => Get(nameof(SevenZipDownloadFailed));
+
+    /// <summary>{0} has SHA-256 {1}, but GitHub publishes {2}. The file was deleted and not used.</summary>
+    public static string SevenZipChecksumMismatch => Get(nameof(SevenZipChecksumMismatch));
+
+    /// <summary>{0}: SHA-256 matches the one published on GitHub.</summary>
+    public static string SevenZipVerified => Get(nameof(SevenZipVerified));
+
+    /// <summary>Unpacking 7z.dll from {0}.</summary>
+    public static string SevenZipUnpacking => Get(nameof(SevenZipUnpacking));
+
+    /// <summary>7z.dll could not be unpacked from {0}.</summary>
+    public static string SevenZipNotInInstaller => Get(nameof(SevenZipNotInInstaller));
+
+    /// <summary>The 7z.dll in use unpacks the 7-Zip installer, but it cannot be used: {0} Replace 7z.dll by hand.</summary>
+    public static string SevenZipNeedsCurrent => Get(nameof(SevenZipNeedsCurrent));
+
+    /// <summary>The new 7z.dll ({0}) failed the test of packing and unpacking: {1}</summary>
+    public static string SevenZipSelfTestFailed => Get(nameof(SevenZipSelfTestFailed));
+
+    /// <summary>The new 7z.dll ({0}) packs and unpacks correctly.</summary>
+    public static string SevenZipSelfTestOk => Get(nameof(SevenZipSelfTestOk));
+
+    /// <summary>The copy {0} differs from the unpacked file.</summary>
+    public static string SevenZipCopyDiffers => Get(nameof(SevenZipCopyDiffers));
+
+    /// <summary>7z.dll could not be replaced in {0}: {1} The old one stays.</summary>
+    public static string SevenZipSwapFailed => Get(nameof(SevenZipSwapFailed));
+
+    /// <summary>7-Zip updated from {0} to {1} by {2}. The old file is kept as 7z.dll.old.</summary>
+    public static string SevenZipUpdated => Get(nameof(SevenZipUpdated));
+
+    /// <summary>7-Zip was not updated: {0}</summary>
+    public static string SevenZipUpdateFailed => Get(nameof(SevenZipUpdateFailed));
+
+    /// <summary>7-Zip {0} is the newest version.</summary>
+    public static string SevenZipUpToDate => Get(nameof(SevenZipUpToDate));
+
+    /// <summary>The installer has 7-Zip {0}, which is not newer than the 7z.dll in use ({1}).</summary>
+    public static string SevenZipNotNewer => Get(nameof(SevenZipNotNewer));
+
+    /// <summary>The task «{0}» is running. Update 7-Zip when it has finished.</summary>
+    public static string SevenZipBusyRun => Get(nameof(SevenZipBusyRun));
+
+    /// <summary>A restore is running. Update 7-Zip when it has finished.</summary>
+    public static string SevenZipBusyRestore => Get(nameof(SevenZipBusyRestore));
+
+    /// <summary>7-Zip is being updated. Try again in a minute.</summary>
+    public static string SevenZipBusyUpdate => Get(nameof(SevenZipBusyUpdate));
+
+    /// <summary>Only administrators may update 7-Zip.</summary>
+    public static string SevenZipNotAllowed => Get(nameof(SevenZipNotAllowed));
+
+    /// <summary>no answer in {0} s</summary>
+    public static string SevenZipNoAnswer => Get(nameof(SevenZipNoAnswer));
 }

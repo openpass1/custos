@@ -1449,7 +1449,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>7z.dll нельзя использовать: {0}</value>
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
-    <value>Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.</value>
+    <value>Кнопка смотрит официальные выпуски 7-Zip на GitHub, только когда её нажимают, и обновляет только с вашего согласия. Вручную: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу.</value>
   </data>
   <data name="PowerCountdownText" xml:space="preserve">
     <value>Задание «{0}» выполнено. Через {2} с: {1}.</value>
@@ -1468,5 +1468,22 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="PreserveAclHelp" xml:space="preserve">
     <value>Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.</value>
+  </data>
+  <data name="SevenZipCheckButton" xml:space="preserve">
+    <value>Проверить обновление 7-Zip</value>
+  </data>
+  <data name="SevenZipAdminOnly" xml:space="preserve">
+    <value>Обновлять 7-Zip могут только администраторы.</value>
+  </data>
+  <data name="SevenZipNothingNew" xml:space="preserve">
+    <value>У вас 7-Zip {0}, последняя версия {1}. Обновлять нечего.</value>
+  </data>
+  <data name="SevenZipAskUpdate" xml:space="preserve">
+    <value>У вас 7-Zip {0}, последняя версия {1}.
+
+Обновить сейчас? Служба скачает 64-битный установщик с официальной страницы 7-Zip на GitHub, проверит его SHA-256, возьмёт из него 7z.dll, проверит его в работе и только потом заменит старый файл (он сохранится как 7z.dll.old). Задания на это время ждут; это около минуты.</value>
+  </data>
+  <data name="SevenZipUpdatingTo" xml:space="preserve">
+    <value>Обновление 7-Zip до {0}…</value>
   </data>
 </root>

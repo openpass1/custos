@@ -96,7 +96,8 @@ internal sealed partial class AgentService
             PublishSnapshot();
         }
 
-        return wait < TimeSpan.Zero ? TimeSpan.Zero : wait;
+        // Past the deadline but held up (a restore, an update of 7z.dll): look again twice a second.
+        return wait <= TimeSpan.Zero ? TimeSpan.FromMilliseconds(500) : wait;
     }
 
     /// <summary>A run is about to start: the countdown stops and starts again once the queue is empty.</summary>
@@ -118,6 +119,15 @@ internal sealed partial class AgentService
     /// <summary>The runner waited without a new run: if the countdown is over, the action happens now.</summary>
     private void FirePowerIfDue()
     {
+        // Not in the middle of a restore or of an update of 7z.dll: it happens right after.
+        lock (_restoreLock)
+        {
+            if (_restore is { Running: true } || _sevenZipUpdating)
+            {
+                return;
+            }
+        }
+
         PowerCountdown due;
         lock (_lock)
         {

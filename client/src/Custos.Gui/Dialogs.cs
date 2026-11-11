@@ -810,6 +810,8 @@ internal sealed class SettingsForm : DialogForm
     private readonly Button _deleteAccount = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly ToolTip _toolTip = new();
     private readonly bool _canEdit;
+    private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
+    private readonly Button _sevenZipCheck = new() { Text = Strings.SevenZipCheckButton, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
 
     public SettingsForm(ServiceMonitor monitor)
         : base(Strings.SettingsTitle, new Size(640, 620))
@@ -833,18 +835,22 @@ internal sealed class SettingsForm : DialogForm
         var archiverHeading = new Label { Text = Strings.Settings7Zip, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         archiverHeading.Font = heading.Font;
         AddWide(archiverHeading);
-        var snapshot = monitor.Snapshot;
-        var archiver = new Label
-        {
-            AutoSize = true,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(0, 2, 0, 2),
-            Text = snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
-                : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—"),
-            ForeColor = snapshot?.SevenZipProblem is null ? SystemColors.ControlText : Glyphs.WarningText,
-        };
-        AddWide(archiver);
+        var archiverRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+        archiverRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        archiverRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        archiverRow.Controls.Add(_archiver, 0, 0);
+        archiverRow.Controls.Add(_sevenZipCheck, 1, 0);
+        AddWide(archiverRow);
         AddNote(Strings.Settings7ZipNote);
+        ShowArchiver();
+        bool admin = monitor.Status.Hello?.IsAdmin == true;
+        _sevenZipCheck.Enabled = admin && monitor.IsConnected;
+        if (!admin)
+        {
+            _toolTip.SetToolTip(_sevenZipCheck, Strings.SevenZipAdminOnly);
+        }
+
+        _sevenZipCheck.Click += (_, _) => Ui.Run(this, CheckSevenZipAsync);
 
         var accountsHeading = new Label { Text = Strings.SettingsAccounts, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         accountsHeading.Font = heading.Font;
@@ -898,6 +904,69 @@ internal sealed class SettingsForm : DialogForm
         }
 
         base.Dispose(disposing);
+    }
+
+    /// <summary>The version of 7z.dll the service uses, or what is wrong with it.</summary>
+    private void ShowArchiver()
+    {
+        var snapshot = _monitor.Snapshot;
+        _archiver.Text = snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
+            : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—");
+        _archiver.ForeColor = snapshot?.SevenZipProblem is null ? SystemColors.ControlText : Glyphs.WarningText;
+    }
+
+    /// <summary>«Проверить обновление 7-Zip»: asks the service, which asks GitHub; updates only after "Yes".</summary>
+    private async Task CheckSevenZipAsync()
+    {
+        var json = IpcJsonContext.Default;
+        _sevenZipCheck.Enabled = false;
+        UseWaitCursor = true;
+        try
+        {
+            var check = await _monitor.RequestAsync(PipeProtocol.Methods.SevenZipCheck, EmptyRequest.Instance,
+                json.EmptyRequest, json.SevenZipCheckResult, TimeSpan.FromMinutes(1));
+            UseWaitCursor = false;
+            if (check.Error is { } error)
+            {
+                Ui.ShowWarning(this, error);
+                return;
+            }
+
+            if (!check.UpdateAvailable)
+            {
+                Ui.ShowInfo(this, Strings.Format(Strings.SevenZipNothingNew, check.Installed ?? "—", check.Latest));
+                return;
+            }
+
+            if (!Ui.Confirm(this, Strings.Format(Strings.SevenZipAskUpdate, check.Installed ?? "—", check.Latest)))
+            {
+                return;
+            }
+
+            UseWaitCursor = true;
+            _archiver.Text = Strings.Format(Strings.SevenZipUpdatingTo, check.Latest);
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.SevenZipUpdate, EmptyRequest.Instance,
+                json.EmptyRequest, json.OkResult, TimeSpan.FromMinutes(15));
+            UseWaitCursor = false;
+            ShowArchiver();
+            if (result.Ok)
+            {
+                Ui.ShowInfo(this, result.Message ?? Strings.Format(Strings.Settings7ZipVersion, check.Latest));
+            }
+            else
+            {
+                Ui.ShowWarning(this, result.Message ?? Strings.ProblemNoAnswer);
+            }
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            if (!IsDisposed)
+            {
+                _sevenZipCheck.Enabled = true;
+                ShowArchiver();
+            }
+        }
     }
 
     protected override void OnOk()

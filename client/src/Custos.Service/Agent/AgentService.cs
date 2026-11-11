@@ -483,6 +483,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         _platform = new WindowsBackupPlatform(_config, shadows);
+        Core.Archives.SevenZip.SevenZipInstaller.CleanUp(AppContext.BaseDirectory, DataFolders.Updates);
         LoadSevenZip();
 
         // A task the database has no slot for starts counting now; the others catch up what they missed.
@@ -714,6 +715,16 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                     break;
                 }
 
+                try
+                {
+                    // An update of 7z.dll finishes first.
+                    _sevenZipGate.Wait(_stopping);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
                 PostponePower();
                 try
                 {
@@ -730,6 +741,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                     }
 
                     PublishSnapshot();
+                }
+                finally
+                {
+                    _sevenZipGate.Release();
                 }
             }
         }

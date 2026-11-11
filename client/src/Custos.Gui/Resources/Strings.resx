@@ -1449,7 +1449,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>7z.dll cannot be used: {0}</value>
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
-    <value>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.</value>
+    <value>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agree. By hand: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service.</value>
   </data>
   <data name="PowerCountdownText" xml:space="preserve">
     <value>The task «{0}» has finished. In {2} s: {1}.</value>
@@ -1468,5 +1468,22 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="PreserveAclHelp" xml:space="preserve">
     <value>For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.</value>
+  </data>
+  <data name="SevenZipCheckButton" xml:space="preserve">
+    <value>Check for a 7-Zip update</value>
+  </data>
+  <data name="SevenZipAdminOnly" xml:space="preserve">
+    <value>Only administrators may update 7-Zip.</value>
+  </data>
+  <data name="SevenZipNothingNew" xml:space="preserve">
+    <value>You have 7-Zip {0}; the newest is {1}. There is nothing to update.</value>
+  </data>
+  <data name="SevenZipAskUpdate" xml:space="preserve">
+    <value>You have 7-Zip {0}; the newest is {1}.
+
+Update now? The service downloads the 64-bit installer from the official 7-Zip page on GitHub, checks its SHA-256, takes 7z.dll from it, tests it and only then replaces the old file (kept as 7z.dll.old). Tasks wait meanwhile; it takes about a minute.</value>
+  </data>
+  <data name="SevenZipUpdatingTo" xml:space="preserve">
+    <value>Updating 7-Zip to {0}…</value>
   </data>
 </root>

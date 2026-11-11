@@ -130,6 +130,8 @@ public sealed class DialogTests
         var row = Assert.Single(accounts.Items.Cast<ListViewItem>());
         Assert.Equal(Samples.Account().DisplayName, row.Text);
         Assert.Equal("Office documents", row.SubItems[1].Text);
+        var sevenZip = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.SevenZipCheckButton);
+        Assert.False(sevenZip.Enabled);
     });
 
     [Theory]

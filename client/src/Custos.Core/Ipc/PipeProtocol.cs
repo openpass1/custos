@@ -88,6 +88,14 @@ public static class PipeProtocol
 
         /// <summary>Everyone: whoever sits at the computer may keep it on. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
         public const string PowerCancel = "power.cancel";
+
+        /// <summary>Administrators only, always: asks GitHub for the newest 7-Zip. <see cref="EmptyRequest"/> →
+        /// <see cref="SevenZipCheckResult"/>.</summary>
+        public const string SevenZipCheck = "sevenzip.check";
+
+        /// <summary>Administrators only, always: downloads, checks and installs the newest 7-Zip (takes up to a few
+        /// minutes). <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string SevenZipUpdate = "sevenzip.update";
     }
 
     /// <summary>Event names.</summary>
