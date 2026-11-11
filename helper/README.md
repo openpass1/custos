@@ -85,13 +85,12 @@ id custos >/dev/null 2>&1 || useradd --system --create-home --shell /bin/bash --
 # 2. Скрипт, заранее скопированный в /tmp
 install -m 0755 /tmp/custos-helper /usr/local/sbin/custos-helper
 
-# 3. Конфиг (пресет «ispmanager»). Создаётся, только если его ещё нет.
+# 3. Конфиг (пресет «ispmanager: только сайты»). Создаётся, только если его ещё нет.
 install -d -m 0755 /etc/custos
 if [ ! -e /etc/custos/helper.conf ]; then
 cat > /etc/custos/helper.conf <<'CUSTOS_CONF_EOF'
 root       = /var/www
-root       = /etc
-root       = /usr/local/mgr5/etc
+root       = /etc/nginx
 root       = /var/spool/cron/crontabs
 exclude    = /var/www/*/data/logs
 exclude    = /var/www/*/data/tmp
@@ -140,7 +139,16 @@ CUSTOS_INSTALL_EOF
 | `db_exclude` | база, которую не забирать. Можно повторять. Системные базы custos-helper пропускает сам |
 | `db_defaults_file` | только для MariaDB и MySQL: файл вида `my.cnf` с учётной записью, если root не входит в СУБД без пароля |
 
-Пресет в блоке рассчитан на сервер с ispmanager. Для обычного сервера без панели подойдут `root = /etc`, `/home`, `/root`, `/var/www` и `/var/spool/cron`. Если на сервере есть PostgreSQL, добавьте строку `db_engine = postgresql`.
+Пресет в блоке — «ispmanager: только сайты», для переноса сайтов с ispmanager на любой другой сервер или панель. Он забирает файлы сайтов (в `/var/www` ispmanager держит и SSL-сертификаты, папка `httpd-cert`), а для справки — настройки nginx (редиректы и правила сайтов) и задания cron. Если сайты работают ещё и через Apache, добавьте `root = /etc/apache2`. Если на сервере есть PostgreSQL, добавьте строку `db_engine = postgresql`.
+
+Папок, которых на сервере нет, в списке быть не должно: custos-helper пропустит их, но каждый забор будет заканчиваться предупреждением (код 1). Корни не должны вкладываться друг в друга (например, `/etc` и `/etc/nginx`), иначе файлы попадут в архив дважды.
+
+Другие пресеты:
+
+- **«ispmanager: сайты и панель»**, чтобы поднять тот же сервер с ispmanager целиком: `root = /var/www`, `/etc`, `/usr/local/mgr5/etc`, `/var/spool/cron/crontabs`, исключения и базы те же.
+- **«Обычный Linux»**, сервер без панели: `root = /etc`, `/home`, `/root`, `/var/www`, `/var/spool/cron`.
+
+Весь `/etc` без нужды не забирайте: там хеши паролей (`/etc/shadow`) и закрытые ключи SSH самого сервера, и всё это окажется в копиях.
 
 Если нужен `db_defaults_file`, лучше завести в СУБД отдельного пользователя только на чтение:
 
@@ -186,7 +194,7 @@ set S=custos@vps.example.org
 | `ssh -i %K% %S% db-dump mariadb site_db > site_db.sql` | файл с дампом. `findstr /c:"-- Dump completed" site_db.sql` находит строку в конце дампа |
 | `ssh -i %K% %S% db-users mariadb > users.sql` | пользователи и права СУБД: строки `CREATE USER IF NOT EXISTS` и `GRANT` |
 | `ssh -i %K% %S% manifest > manifest.gz` | непустой файл, список всех файлов в сжатом виде |
-| `ssh -i %K% %S% tar-since 0 > full.tar` | полная копия файлов. `tar -tvf full.tar \| more` показывает файлы, имена начинаются с `var/www/`, `etc/` и т. д. Папок `data/logs`, `data/tmp`, `data/mod-tmp` в нём нет |
+| `ssh -i %K% %S% tar-since 0 > full.tar` | полная копия файлов. `tar -tvf full.tar \| more` показывает файлы, имена начинаются с `var/www/`, `etc/nginx/` и т. д. Папок `data/logs`, `data/tmp`, `data/mod-tmp` в нём нет |
 
 Для PostgreSQL то же самое с `postgresql` вместо `mariadb`. Дамп PostgreSQL заканчивается строкой `-- PostgreSQL database dump complete`, после неё идёт служебная строка `\unrestrict`.
 
