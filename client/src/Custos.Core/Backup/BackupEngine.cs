@@ -218,12 +218,18 @@ public sealed partial class BackupEngine
         }
     }
 
-    private string ResolveRoot(TaskDestination destination)
+    private string ResolveRoot(TaskDestination destination) => ResolveRoot(_platform, destination);
+
+    /// <summary>The folder of a destination: its path, or for a USB disk the folder on the disk with that label.</summary>
+    /// <exception cref="BackupException">The disk is not connected or the path is not absolute.</exception>
+    public static string ResolveRoot(IBackupPlatform platform, TaskDestination destination)
     {
+        ArgumentNullException.ThrowIfNull(platform);
+        ArgumentNullException.ThrowIfNull(destination);
         if (destination.Kind == DestinationKinds.Usb)
         {
             string label = destination.UsbLabel ?? string.Empty;
-            string volume = _platform.FindVolumeByLabel(label)
+            string volume = platform.FindVolumeByLabel(label)
                 ?? throw new BackupException(Messages.Format(Messages.UsbDiskNotFound, label));
             return Path.Combine(volume, DestinationKinds.UsbFolder(destination.Path));
         }

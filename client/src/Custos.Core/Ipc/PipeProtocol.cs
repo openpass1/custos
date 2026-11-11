@@ -73,6 +73,18 @@ public static class PipeProtocol
 
         /// <summary>Administrators. <see cref="SettingsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SettingsSave = "settings.save";
+
+        /// <summary>Administrators only, always. Sets to restore: <see cref="RestoreListRequest"/> → <see cref="RestoreListResult"/>.</summary>
+        public const string RestoreList = "restore.list";
+
+        /// <summary>Administrators only, always. <see cref="RestoreStartRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string RestoreStart = "restore.start";
+
+        /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="RestoreStatusResult"/>.</summary>
+        public const string RestoreStatus = "restore.status";
+
+        /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string RestoreStop = "restore.stop";
     }
 
     /// <summary>Event names.</summary>

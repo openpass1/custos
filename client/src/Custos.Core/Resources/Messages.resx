@@ -595,4 +595,28 @@
   <data name="RestoreFinished" xml:space="preserve">
     <value>Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.</value>
   </data>
+  <data name="RestoreNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may restore.</value>
+  </data>
+  <data name="RestoreAlreadyRunning" xml:space="preserve">
+    <value>A restore is already running. Wait for it to finish or stop it.</value>
+  </data>
+  <data name="RestoreNotRunning" xml:space="preserve">
+    <value>No restore is running.</value>
+  </data>
+  <data name="RestoreSetGone" xml:space="preserve">
+    <value>The set {0} is no longer there. Search again.</value>
+  </data>
+  <data name="RestoreLogName" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreStopRequested" xml:space="preserve">
+    <value>Restore stopped by {0}.</value>
+  </data>
+  <data name="RestoreAborted" xml:space="preserve">
+    <value>The restore was stopped. Files restored so far stay.</value>
+  </data>
+  <data name="RestoreFolderMissing" xml:space="preserve">
+    <value>The folder {0} does not exist.</value>
+  </data>
 </root>

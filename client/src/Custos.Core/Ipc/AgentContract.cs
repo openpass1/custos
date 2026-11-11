@@ -35,6 +35,12 @@ public sealed class AgentSnapshot
 
     /// <summary>Problems of the service the user should know about (unreadable configuration and the like).</summary>
     public List<string> Problems { get; set; } = [];
+
+    /// <summary>Version of the 7z.dll the service uses, like "26.06"; null if it could not be loaded.</summary>
+    public string? SevenZipVersion { get; set; }
+
+    /// <summary>Why 7z.dll cannot be used (tasks with 7z fail); null when it works.</summary>
+    public string? SevenZipProblem { get; set; }
 }
 
 /// <summary>What the service knows about the runs of one task.</summary>
@@ -257,4 +263,85 @@ public sealed class OkResult
 
     /// <summary>A remark for the user, for example why nothing was queued.</summary>
     public string? Message { get; set; }
+}
+
+/// <summary>Where to look for sets to restore (<see cref="PipeProtocol.Methods.RestoreList"/>): the destinations of a
+/// task, or a folder (for example a backup disk on a new computer).</summary>
+public class RestoreSource
+{
+    /// <summary>The task whose destinations to search; null = search <see cref="Folder"/>.</summary>
+    public string? TaskId { get; set; }
+
+    public string? Folder { get; set; }
+
+    /// <summary>Stored account for a network folder; null = the service's own account.</summary>
+    public string? CredentialId { get; set; }
+
+    /// <summary>Password of encrypted archives, typed for this restore; null = the password of the task.</summary>
+    public string? Password { get; set; }
+}
+
+public sealed class RestoreListRequest : RestoreSource;
+
+/// <summary>A set that can be restored.</summary>
+public sealed class RestoreSetInfo
+{
+    /// <summary>The set folder or the (first) archive file; names the set in <see cref="RestoreStartRequest"/>.</summary>
+    public required string Location { get; set; }
+
+    /// <summary>Where it was found, in words: the destination of the task or the folder.</summary>
+    public string Where { get; set; } = string.Empty;
+
+    public required SetManifestHeader Header { get; set; }
+
+    /// <summary><c>folder</c>, <c>zip</c> or <c>7z</c>.</summary>
+    public string Storage { get; set; } = "folder";
+
+    /// <summary>Size in the destination (archives); 0 for folders.</summary>
+    public long Bytes { get; set; }
+
+    /// <summary>Volumes of a split archive (1 = one file).</summary>
+    public int Parts { get; set; } = 1;
+}
+
+public sealed class RestoreListResult
+{
+    /// <summary>Newest first.</summary>
+    public List<RestoreSetInfo> Sets { get; set; } = [];
+
+    /// <summary>Destinations or archives that could not be read, in words.</summary>
+    public List<string> Problems { get; set; } = [];
+}
+
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.RestoreStart"/>.</summary>
+public sealed class RestoreStartRequest : RestoreSource
+{
+    /// <summary><see cref="RestoreSetInfo.Location"/> of the set whose date to restore.</summary>
+    public required string Location { get; set; }
+
+    /// <summary>Folder to restore into; null = the original places.</summary>
+    public string? TargetFolder { get; set; }
+
+    public RestoreExisting Existing { get; set; } = RestoreExisting.Skip;
+}
+
+/// <summary>The restore in progress or the last one (<see cref="PipeProtocol.Methods.RestoreStatus"/>).</summary>
+public sealed class RestoreStatusResult
+{
+    public bool Running { get; set; }
+
+    public string? SetName { get; set; }
+
+    public string? Target { get; set; }
+
+    public DateTimeOffset? StartedAt { get; set; }
+
+    public DateTimeOffset? FinishedAt { get; set; }
+
+    public RestoreProgress? Progress { get; set; }
+
+    /// <summary>Null while running.</summary>
+    public RestoreResult? Result { get; set; }
+
+    public string? LogFile { get; set; }
 }

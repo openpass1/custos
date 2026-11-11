@@ -200,3 +200,11 @@ RestoreSkipped	Skipped, already there: {0}	Пропущен, уже есть: {0
 RestoreFileFailed	Not restored: {0}: {1}	Не восстановлен {0}: {1}
 RestoreFileDone	Restored {0} ({1})	Восстановлен {0} ({1})
 RestoreFinished	Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.	Восстановление завершено: восстановлено файлов {0} ({1}), пропущено {2}, с ошибкой {3}.
+RestoreNotAllowed	Only administrators of this computer may restore.	Восстанавливать могут только администраторы этого компьютера.
+RestoreAlreadyRunning	A restore is already running. Wait for it to finish or stop it.	Восстановление уже идёт. Дождитесь его окончания или остановите.
+RestoreNotRunning	No restore is running.	Восстановление не выполняется.
+RestoreSetGone	The set {0} is no longer there. Search again.	Набора {0} больше нет. Выполните поиск ещё раз.
+RestoreLogName	Restore	Восстановление
+RestoreStopRequested	Restore stopped by {0}.	Восстановление остановлено пользователем {0}.
+RestoreAborted	The restore was stopped. Files restored so far stay.	Восстановление прервано. Уже восстановленные файлы остаются.
+RestoreFolderMissing	The folder {0} does not exist.	Папка {0} не существует.

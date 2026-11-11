@@ -6,6 +6,7 @@ using Custos.Core.Text;
 namespace Custos.Core.Backup;
 
 /// <summary>What to do with a file that already exists where a restored file goes (section 6.11).</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<RestoreExisting>))]
 public enum RestoreExisting
 {
     /// <summary>Leave it alone.</summary>

@@ -595,4 +595,28 @@
   <data name="RestoreFinished" xml:space="preserve">
     <value>Восстановление завершено: восстановлено файлов {0} ({1}), пропущено {2}, с ошибкой {3}.</value>
   </data>
+  <data name="RestoreNotAllowed" xml:space="preserve">
+    <value>Восстанавливать могут только администраторы этого компьютера.</value>
+  </data>
+  <data name="RestoreAlreadyRunning" xml:space="preserve">
+    <value>Восстановление уже идёт. Дождитесь его окончания или остановите.</value>
+  </data>
+  <data name="RestoreNotRunning" xml:space="preserve">
+    <value>Восстановление не выполняется.</value>
+  </data>
+  <data name="RestoreSetGone" xml:space="preserve">
+    <value>Набора {0} больше нет. Выполните поиск ещё раз.</value>
+  </data>
+  <data name="RestoreLogName" xml:space="preserve">
+    <value>Восстановление</value>
+  </data>
+  <data name="RestoreStopRequested" xml:space="preserve">
+    <value>Восстановление остановлено пользователем {0}.</value>
+  </data>
+  <data name="RestoreAborted" xml:space="preserve">
+    <value>Восстановление прервано. Уже восстановленные файлы остаются.</value>
+  </data>
+  <data name="RestoreFolderMissing" xml:space="preserve">
+    <value>Папка {0} не существует.</value>
+  </data>
 </root>

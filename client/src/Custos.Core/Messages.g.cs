@@ -586,4 +586,28 @@ static partial class Messages
 
     /// <summary>Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.</summary>
     public static string RestoreFinished => Get(nameof(RestoreFinished));
+
+    /// <summary>Only administrators of this computer may restore.</summary>
+    public static string RestoreNotAllowed => Get(nameof(RestoreNotAllowed));
+
+    /// <summary>A restore is already running. Wait for it to finish or stop it.</summary>
+    public static string RestoreAlreadyRunning => Get(nameof(RestoreAlreadyRunning));
+
+    /// <summary>No restore is running.</summary>
+    public static string RestoreNotRunning => Get(nameof(RestoreNotRunning));
+
+    /// <summary>The set {0} is no longer there. Search again.</summary>
+    public static string RestoreSetGone => Get(nameof(RestoreSetGone));
+
+    /// <summary>Restore</summary>
+    public static string RestoreLogName => Get(nameof(RestoreLogName));
+
+    /// <summary>Restore stopped by {0}.</summary>
+    public static string RestoreStopRequested => Get(nameof(RestoreStopRequested));
+
+    /// <summary>The restore was stopped. Files restored so far stay.</summary>
+    public static string RestoreAborted => Get(nameof(RestoreAborted));
+
+    /// <summary>The folder {0} does not exist.</summary>
+    public static string RestoreFolderMissing => Get(nameof(RestoreFolderMissing));
 }
