@@ -85,6 +85,14 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetVolumePathName(string fileName, [Out] char[] volumePathName, int bufferLength);
 
+    /// <summary>The file system keeps permissions (NTFS, ReFS; not FAT or exFAT).</summary>
+    public const uint FILE_PERSISTENT_ACLS = 0x8;
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GetVolumeInformation(string rootPathName, IntPtr volumeNameBuffer, int volumeNameSize, out uint volumeSerialNumber,
+        out uint maximumComponentLength, out uint fileSystemFlags, IntPtr fileSystemNameBuffer, int fileSystemNameSize);
+
     [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetVolumeNameForVolumeMountPoint(string volumeMountPoint, [Out] char[] volumeName, int bufferLength);

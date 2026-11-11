@@ -74,6 +74,25 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public override long? GetFreeSpace(string path) => FreeSpace;
 
+    /// <summary>Permissions "set" by the engine: path, folder or file, and the descriptor (the source path in UTF-8).</summary>
+    public List<(string Path, bool Folder, string Descriptor)> SecurityWritten { get; } = [];
+
+    /// <summary>Setting permissions fails, as on a share that does not allow it.</summary>
+    public bool SecurityBroken { get; set; }
+
+    public override byte[]? ReadSecurity(string path, bool folder) => System.Text.Encoding.UTF8.GetBytes(path);
+
+    public override bool WriteSecurity(string path, bool folder, byte[] descriptor)
+    {
+        if (SecurityBroken)
+        {
+            throw new BackupException("access denied");
+        }
+
+        SecurityWritten.Add((path, folder, System.Text.Encoding.UTF8.GetString(descriptor)));
+        return true;
+    }
+
     /// <summary>Environment variables of the test; the profile ones only for <see cref="ProfileSid"/>.</summary>
     public Dictionary<string, string> EnvironmentValues { get; } = new(StringComparer.OrdinalIgnoreCase);
 

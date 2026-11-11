@@ -972,7 +972,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>copy without it, with a warning</value>
   </data>
   <data name="EditorReading" xml:space="preserve">
-    <value>Reading files</value>
+    <value>Reading and copying files</value>
   </data>
   <data name="ReadRetries" xml:space="preserve">
     <value>Retries after a read error:</value>
@@ -1462,5 +1462,11 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="PathVariablesNote" xml:space="preserve">
     <value>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
+  <data name="PreserveAcl" xml:space="preserve">
+    <value>Keep NTFS permissions of files and folders</value>
+  </data>
+  <data name="PreserveAclHelp" xml:space="preserve">
+    <value>For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.</value>
   </data>
 </root>

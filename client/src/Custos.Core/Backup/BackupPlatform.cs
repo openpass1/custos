@@ -58,6 +58,14 @@ public interface IBackupPlatform
     /// <c>%APPDATA%</c> …) for the user with this SID, the others of the system. Null for an unknown variable.
     /// </summary>
     Func<string, string?> Variables(string? profileSid);
+
+    /// <summary>The NTFS permissions, owner and group of a file or folder (section 6.8); null if there are none.</summary>
+    byte[]? ReadSecurity(string path, bool folder);
+
+    /// <summary>Gives a copied file or folder the permissions read by <see cref="ReadSecurity"/>.</summary>
+    /// <returns>False if the file system there keeps no permissions (FAT, exFAT): nothing to do.</returns>
+    /// <exception cref="BackupException">They could not be set.</exception>
+    bool WriteSecurity(string path, bool folder, byte[] descriptor);
 }
 
 /// <summary>A network logon. File operations on shares run inside <see cref="Run"/>; a file opened there stays usable
@@ -258,6 +266,10 @@ public class LocalBackupPlatform : IBackupPlatform
     }
 
     public virtual Func<string, string?> Variables(string? profileSid) => Environment.GetEnvironmentVariable;
+
+    public virtual byte[]? ReadSecurity(string path, bool folder) => null;
+
+    public virtual bool WriteSecurity(string path, bool folder, byte[] descriptor) => false;
 
     public virtual void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken) =>
         throw new BackupException(Messages.Format(Messages.EventServiceUnsupported, name));

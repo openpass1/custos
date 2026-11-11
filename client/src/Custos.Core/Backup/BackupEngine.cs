@@ -138,6 +138,7 @@ public sealed partial class BackupEngine
         {
             OpenSets(run);
             CopyFiles(run);
+            CopyFolderSecurity(run);
             if (run.BackupType == BackupTypes.Mirror)
             {
                 DeleteFromMirror(run);
@@ -365,6 +366,7 @@ public sealed partial class BackupEngine
             {
                 context.Session = Session(IsNetworkPath(source.Path) ? source.CredentialId : null);
                 string readRoot = run.Snapshots.Map(source.Path);
+                context.ReadRoot = readRoot;
                 context.Scan = context.Session.Run(() => SourceScanner.Scan(source, i, readRoot, filter,
                     (path, reason) =>
                     {
@@ -584,7 +586,8 @@ public sealed partial class BackupEngine
                     Report(force: false);
                 }
 
-                CompleteOutputs(run, outputs, file);
+                byte[]? security = KeepsSecurity(run) ? context.Session.Run(() => _platform.ReadSecurity(file.ReadPath, folder: false)) : null;
+                CompleteOutputs(run, outputs, file, security);
                 return outputs.Count == 0 ? null : SetManifest.ToHex(hash.GetHashAndReset());
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException && outputs.Count == 0)
@@ -669,7 +672,7 @@ public sealed partial class BackupEngine
         }
     }
 
-    private void CompleteOutputs(RunContext run, List<Output> outputs, ScannedFile file)
+    private void CompleteOutputs(RunContext run, List<Output> outputs, ScannedFile file, byte[]? security)
     {
         for (int i = outputs.Count - 1; i >= 0; i--)
         {
@@ -695,6 +698,11 @@ public sealed partial class BackupEngine
                     File.Move(output.Temp, output.Final, overwrite: true);
                     ApplyMetadata(output.Final, file);
                 });
+                if (security is not null)
+                {
+                    ApplySecurity(run, output.Target, output.Final, folder: false, security);
+                }
+
                 output.Target.Files++;
                 output.Target.Bytes += file.Size;
             }
@@ -1251,6 +1259,9 @@ public sealed partial class BackupEngine
 
         /// <summary>Folder (or file name) of this source inside the set; "" = the set folder itself.</summary>
         public string Target { get; set; } = string.Empty;
+
+        /// <summary>The path read: inside the shadow copy when there is one.</summary>
+        public string ReadRoot { get; set; } = string.Empty;
     }
 
     private sealed class Target(TaskDestination destination, string label)
@@ -1276,6 +1287,9 @@ public sealed partial class BackupEngine
         public string WriteFolder { get; set; } = string.Empty;
 
         public HashSet<string> CreatedFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Permissions could not be set here: no more tries in this run.</summary>
+        public bool SecurityFailed { get; set; }
 
         public bool Failed { get; set; }
 

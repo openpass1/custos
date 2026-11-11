@@ -972,7 +972,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>копировать без неё, с предупреждением</value>
   </data>
   <data name="EditorReading" xml:space="preserve">
-    <value>Чтение файлов</value>
+    <value>Чтение и копирование файлов</value>
   </data>
   <data name="ReadRetries" xml:space="preserve">
     <value>Повторов при ошибке чтения:</value>
@@ -1462,5 +1462,11 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="PathVariablesNote" xml:space="preserve">
     <value>В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
+  <data name="PreserveAcl" xml:space="preserve">
+    <value>Сохранять права NTFS файлов и папок</value>
+  </data>
+  <data name="PreserveAclHelp" xml:space="preserve">
+    <value>Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.</value>
   </data>
 </root>

@@ -766,4 +766,7 @@
   <data name="PathVariableNoProfile" xml:space="preserve">
     <value>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes the profile of whoever saves it.</value>
   </data>
+  <data name="SecurityNotCopied" xml:space="preserve">
+    <value>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied there for the rest of this run.</value>
+  </data>
 </root>

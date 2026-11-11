@@ -757,4 +757,7 @@ static partial class Messages
 
     /// <summary>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes th...</summary>
     public static string PathVariableNoProfile => Get(nameof(PathVariableNoProfile));
+
+    /// <summary>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied th...</summary>
+    public static string SecurityNotCopied => Get(nameof(SecurityNotCopied));
 }

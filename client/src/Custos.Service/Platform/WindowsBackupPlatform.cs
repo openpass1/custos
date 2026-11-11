@@ -140,6 +140,10 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
 
     public override Func<string, string?> Variables(string? profileSid) => ProfileVariables.For(profileSid);
 
+    public override byte[]? ReadSecurity(string path, bool folder) => FileSecurityCopy.Read(path, folder);
+
+    public override bool WriteSecurity(string path, bool folder, byte[] descriptor) => FileSecurityCopy.Write(path, folder, descriptor);
+
     public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
     {
         try

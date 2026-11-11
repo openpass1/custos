@@ -1378,6 +1378,7 @@ internal sealed class AdvancedPage : EditorPage
     private readonly RadioButton _vssContinue = new() { Text = Strings.VssContinue, AutoSize = true };
     private readonly FlowLayoutPanel _vssFailure = new() { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(18, 0, 0, 0) };
     private readonly NumericUpDown _retries = new() { Minimum = 0, Maximum = 5, Value = 1, Width = 60 };
+    private readonly CheckBox _acl = new() { Text = Strings.PreserveAcl, AutoSize = true };
     private readonly ComboBox _logLevel = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly NumericUpDown _priority = new() { Minimum = -100, Maximum = 100, Value = 0, Width = 70 };
 
@@ -1392,6 +1393,7 @@ internal sealed class AdvancedPage : EditorPage
         AddWide(_vssFailure);
         AddHeading(Strings.EditorReading);
         AddRow(Strings.ReadRetries, _retries, Strings.ReadRetriesHelp);
+        AddWide(_acl, Strings.PreserveAclHelp);
         AddHeading(Strings.EditorLogAndQueue);
         AddRow(Strings.LogLevel, _logLevel);
         AddRow(Strings.Priority, _priority, Strings.PriorityHelp);
@@ -1406,6 +1408,7 @@ internal sealed class AdvancedPage : EditorPage
         _vssContinue.Checked = task.Vss.OnFailure == VssFailureActions.Continue;
         _vssFailure.Enabled = _vss.Checked;
         _retries.Value = Math.Clamp(task.Copy.ReadRetries, 0, 5);
+        _acl.Checked = task.Copy.PreserveAcl;
         int level = Array.IndexOf(Levels, task.LogLevel);
         _logLevel.SelectedIndex = level < 0 ? 0 : level;
         _priority.Value = Math.Clamp(task.Priority, -100, 100);
@@ -1416,6 +1419,7 @@ internal sealed class AdvancedPage : EditorPage
         task.Vss.Enabled = _vss.Checked;
         task.Vss.OnFailure = _vssContinue.Checked ? VssFailureActions.Continue : VssFailureActions.Abort;
         task.Copy.ReadRetries = (int)_retries.Value;
+        task.Copy.PreserveAcl = _acl.Checked;
         task.LogLevel = Levels[Math.Max(0, _logLevel.SelectedIndex)];
         task.Priority = (int)_priority.Value;
         return null;

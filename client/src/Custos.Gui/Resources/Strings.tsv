@@ -327,7 +327,7 @@ VssHelp	Windows takes a snapshot of the disks with the sources, and files open i
 VssOnFailure	If the shadow copy fails:	Если теневая копия не удалась:
 VssAbort	stop the task	прервать задание
 VssContinue	copy without it, with a warning	копировать без неё, с предупреждением
-EditorReading	Reading files	Чтение файлов
+EditorReading	Reading and copying files	Чтение и копирование файлов
 ReadRetries	Retries after a read error:	Повторов при ошибке чтения:
 ReadRetriesHelp	How many more times to try a file that could not be read, 2 seconds apart. 0: no retries.	Сколько раз ещё пробовать прочитать файл после ошибки, с паузой 2 секунды. 0 — не повторять.
 EditorLogAndQueue	Log and queue	Журнал и очередь
@@ -500,3 +500,6 @@ PowerCancel	Cancel	Отменить
 PowerCancelFailed	The service did not cancel it.	Служба не отменила действие.
 # ---- Variables in paths
 PathVariablesNote	The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.	В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.
+# ---- NTFS permissions
+PreserveAcl	Keep NTFS permissions of files and folders	Сохранять права NTFS файлов и папок
+PreserveAclHelp	For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.	Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.

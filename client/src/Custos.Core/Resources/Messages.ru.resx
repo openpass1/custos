@@ -766,4 +766,7 @@
   <data name="PathVariableNoProfile" xml:space="preserve">
     <value>Для переменной {0} в пути {1} нужен профиль пользователя, а у задания его нет. Откройте задание и сохраните его: оно получит профиль того, кто сохранил.</value>
   </data>
+  <data name="SecurityNotCopied" xml:space="preserve">
+    <value>{0}: не удалось задать права NTFS ({1}). Файлы копируются, но права в это место до конца запуска не переносятся.</value>
+  </data>
 </root>

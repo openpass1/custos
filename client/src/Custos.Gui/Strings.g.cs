@@ -950,7 +950,7 @@ static partial class Strings
     /// <summary>copy without it, with a warning</summary>
     public static string VssContinue => Get(nameof(VssContinue));
 
-    /// <summary>Reading files</summary>
+    /// <summary>Reading and copying files</summary>
     public static string EditorReading => Get(nameof(EditorReading));
 
     /// <summary>Retries after a read error:</summary>
@@ -1441,4 +1441,10 @@ static partial class Strings
 
     /// <summary>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the tas...</summary>
     public static string PathVariablesNote => Get(nameof(PathVariablesNote));
+
+    /// <summary>Keep NTFS permissions of files and folders</summary>
+    public static string PreserveAcl => Get(nameof(PreserveAcl));
+
+    /// <summary>For copies without compression: files and folders in the copy get the permissions and the owner of the orig...</summary>
+    public static string PreserveAclHelp => Get(nameof(PreserveAclHelp));
 }
