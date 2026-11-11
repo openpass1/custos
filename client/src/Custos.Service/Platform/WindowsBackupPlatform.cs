@@ -140,6 +140,13 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
 
     public override Func<string, string?> Variables(string? profileSid) => ProfileVariables.For(profileSid);
 
+    public override void LowerIoPriority(SafeFileHandle handle)
+    {
+        // FILE_IO_PRIORITY_HINT_INFO is one enum value. Network files and some drivers say no: then it stays as it was.
+        int hint = NativeMethods.IoPriorityHintLow;
+        _ = NativeMethods.SetFileInformationByHandle(handle, NativeMethods.FileIoPriorityHintInfo, ref hint, sizeof(int));
+    }
+
     public override byte[]? ReadSecurity(string path, bool folder) => FileSecurityCopy.Read(path, folder);
 
     public override bool WriteSecurity(string path, bool folder, byte[] descriptor) => FileSecurityCopy.Write(path, folder, descriptor);

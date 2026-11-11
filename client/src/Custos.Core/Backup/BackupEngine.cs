@@ -38,6 +38,7 @@ public sealed partial class BackupEngine
     // the failure of a destination are changed under this lock.
     private readonly Lock _sync = new();
     private TimeSpan _lastProgress = TimeSpan.MinValue;
+    private bool _lowIo;
 
     public BackupEngine(IBackupPlatform platform, IFileStateStore store, IRunLog log, Action<BackupProgress>? onProgress = null)
     {
@@ -53,6 +54,7 @@ public sealed partial class BackupEngine
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(pause);
         var run = new RunContext(request, pause, cancellationToken);
+        _lowIo = request.LowPriority;
         using (_platform.KeepAwake(Messages.Format(Messages.KeepAwakeReason, request.Task.Name)))
         {
             try
@@ -555,8 +557,8 @@ public sealed partial class BackupEngine
             var outputs = new List<Output>();
             try
             {
-                using var input = context.Session.Run(() => new FileStream(
-                    file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1, FileOptions.SequentialScan));
+                using var input = Lowered(context.Session.Run(() => new FileStream(
+                    file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1, FileOptions.SequentialScan)));
                 OpenOutputs(run, targetPath, outputs);
                 if (outputs.Count == 0)
                 {
@@ -643,7 +645,7 @@ public sealed partial class BackupEngine
                 var stream = target.Session.Run(() =>
                 {
                     CreateFolder(target, Path.GetDirectoryName(final)!);
-                    return new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 1);
+                    return Lowered(new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 1));
                 });
                 outputs.Add(new Output(target, stream, temp, final));
             }
@@ -1079,6 +1081,17 @@ public sealed partial class BackupEngine
         }
 
         return session;
+    }
+
+    /// <summary>Low I/O priority for the files of a run (section 6.6): the user's programs read and write first.</summary>
+    private FileStream Lowered(FileStream stream)
+    {
+        if (_lowIo)
+        {
+            _platform.LowerIoPriority(stream.SafeFileHandle);
+        }
+
+        return stream;
     }
 
     private static void CreateFolder(Target target, string folder)

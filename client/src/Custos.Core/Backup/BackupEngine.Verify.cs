@@ -128,7 +128,7 @@ public sealed partial class BackupEngine
     }
 
     /// <summary>Null if the set is whole, or what is wrong with it.</summary>
-    private static string? CheckSet(RunContext run, Target target, StoredSet set)
+    private string? CheckSet(RunContext run, Target target, StoredSet set)
     {
         var access = run.Access?.WithSession(target.Session);
         List<ManifestFile> files;
@@ -161,11 +161,11 @@ public sealed partial class BackupEngine
     }
 
     /// <summary>Null if the file has this SHA-256, or what is wrong with it.</summary>
-    private static string? CheckFile(RunContext run, INetworkSession session, string path, string expected)
+    private string? CheckFile(RunContext run, INetworkSession session, string path, string expected)
     {
         try
         {
-            using var stream = session.Run(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan));
+            using var stream = Lowered(session.Run(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[BufferSize];
             int read;

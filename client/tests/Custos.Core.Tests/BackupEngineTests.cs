@@ -408,6 +408,34 @@ public sealed class BackupEngineTests : IDisposable
         Copy = new CopyOptions { ReadRetries = 0 },
     };
 
+    [Fact]
+    public void Low_priority_asks_for_low_io_on_every_file_read_and_written()
+    {
+        var task = NewTask(BackupTypes.Full, _temp.Combine("Backup"));
+        task.Verify.EveryRuns = 1;
+        var engine = new BackupEngine(_platform, _store, _log);
+        using var gate = new PauseGate();
+        var normal = engine.Run(Request(task, Start, Guid.NewGuid().ToString()), gate, TestContext.Current.CancellationToken);
+        Assert.Equal(RunStatuses.Success, normal.Status);
+        Assert.Equal(0, _platform.LoweredFiles);
+
+        var request = Request(task, Start.AddHours(1), Guid.NewGuid().ToString());
+        var low = new BackupEngine(_platform, _store, _log).Run(new BackupRequest
+        {
+            Task = request.Task,
+            RunId = request.RunId,
+            Trigger = request.Trigger,
+            StartedAt = request.StartedAt,
+            TimeZone = request.TimeZone,
+            LowPriority = true,
+        }, gate, TestContext.Current.CancellationToken);
+
+        Assert.Equal(RunStatuses.Success, low.Status);
+
+        // Two sources read, two copies written, two copies read back by the check.
+        Assert.Equal(6, _platform.LoweredFiles);
+    }
+
     private BackupResult Run(TaskDefinition task, DateTimeOffset startedAt, string? runId = null) =>
         RunWith(task, startedAt, runId, TestContext.Current.CancellationToken);
 

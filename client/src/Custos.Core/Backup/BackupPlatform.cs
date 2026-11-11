@@ -59,6 +59,9 @@ public interface IBackupPlatform
     /// </summary>
     Func<string, string?> Variables(string? profileSid);
 
+    /// <summary>Asks Windows to serve the I/O of this file after that of other programs. Failures are ignored.</summary>
+    void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle);
+
     /// <summary>The NTFS permissions, owner and group of a file or folder (section 6.8); null if there are none.</summary>
     byte[]? ReadSecurity(string path, bool folder);
 
@@ -266,6 +269,11 @@ public class LocalBackupPlatform : IBackupPlatform
     }
 
     public virtual Func<string, string?> Variables(string? profileSid) => Environment.GetEnvironmentVariable;
+
+    public virtual void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle)
+    {
+        // Only Windows has I/O priority hints.
+    }
 
     public virtual byte[]? ReadSecurity(string path, bool folder) => null;
 

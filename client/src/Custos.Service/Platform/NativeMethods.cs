@@ -85,6 +85,16 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetVolumePathName(string fileName, [Out] char[] volumePathName, int bufferLength);
 
+    /// <summary>FILE_INFO_BY_HANDLE_CLASS.FileIoPriorityHintInfo.</summary>
+    public const int FileIoPriorityHintInfo = 12;
+
+    /// <summary>PRIORITY_HINT.IoPriorityHintLow.</summary>
+    public const int IoPriorityHintLow = 1;
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetFileInformationByHandle(SafeFileHandle file, int fileInformationClass, ref int fileInformation, int bufferSize);
+
     /// <summary>The file system keeps permissions (NTFS, ReFS; not FAT or exFAT).</summary>
     public const uint FILE_PERSISTENT_ACLS = 0x8;
 

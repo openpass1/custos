@@ -103,6 +103,10 @@ internal static partial class ServiceLog
         Message = "Restore of {Set} to {Target} started by {User}")]
     public static partial void RestoreStarted(ILogger logger, string set, string target, string user);
 
+    [LoggerMessage(EventId = 212, Level = LogLevel.Warning,
+        Message = "The priority of the service could not be changed: {Reason}")]
+    public static partial void PriorityNotSet(ILogger logger, string reason);
+
     [LoggerMessage(EventId = 211, Level = LogLevel.Information,
         Message = "Restore of {Set} finished: {Status}, {Restored} files restored, {Failed} failed")]
     public static partial void RestoreFinished(ILogger logger, string set, string status, long restored, long failed);

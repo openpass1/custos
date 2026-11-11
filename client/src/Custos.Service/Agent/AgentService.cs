@@ -777,7 +777,8 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         PublishSnapshot();
         ServiceLog.TaskStarted(logger, task.Name, queued.Trigger, file.Path);
         var log = new RunLog(this, file, task.Id, runId);
-        Thread.CurrentThread.Priority = settings.ProcessPriority == "normal" ? ThreadPriority.Normal : ThreadPriority.BelowNormal;
+        bool low = settings.ProcessPriority != "normal";
+        SetPriority(low);
 
         BackupResult result;
         try
@@ -792,6 +793,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                 StartedAt = startedAt,
                 LogEveryFile = level == LogLevels.Files,
                 TimeZone = TimeZoneInfo.Local,
+                LowPriority = low,
             }, pause, cancel.Token);
         }
 #pragma warning disable CA1031 // Whatever broke, the run ends with an error and the queue goes on.
@@ -802,6 +804,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             string message = Messages.Format(Messages.InternalError, ex.Message);
             log.Write(RunLogLevel.Error, message);
             result = new BackupResult { BackupType = task.BackupType, Status = RunStatuses.Error, Errors = 1, ErrorMessage = message };
+        }
+        finally
+        {
+            SetPriority(low: false);
         }
 
         if (result.Status == RunStatuses.Aborted && _stopping.IsCancellationRequested)
@@ -844,6 +850,23 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         PublishSnapshot();
+    }
+
+    /// <summary>
+    /// "Low" priority (section 6.6): the whole service, with the threads 7-Zip starts, runs below normal while a run
+    /// lasts, so the processor is used fully only while nobody else needs it. Files get low I/O priority in the engine.
+    /// </summary>
+    private void SetPriority(bool low)
+    {
+        try
+        {
+            using var self = System.Diagnostics.Process.GetCurrentProcess();
+            self.PriorityClass = low ? System.Diagnostics.ProcessPriorityClass.BelowNormal : System.Diagnostics.ProcessPriorityClass.Normal;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or NotSupportedException)
+        {
+            ServiceLog.PriorityNotSet(logger, ex.Message);
+        }
     }
 
     private void ReportToEventLog(TaskDefinition task, BackupResult result)

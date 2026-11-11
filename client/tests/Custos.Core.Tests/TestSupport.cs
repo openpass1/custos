@@ -74,6 +74,13 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public override long? GetFreeSpace(string path) => FreeSpace;
 
+    /// <summary>Files the engine asked to read and write with low I/O priority.</summary>
+    public int LoweredFiles => _loweredFiles;
+
+    private int _loweredFiles;
+
+    public override void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => Interlocked.Increment(ref _loweredFiles);
+
     /// <summary>Permissions "set" by the engine: path, folder or file, and the descriptor (the source path in UTF-8).</summary>
     public List<(string Path, bool Folder, string Descriptor)> SecurityWritten { get; } = [];
 
