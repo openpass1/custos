@@ -18,6 +18,8 @@ use Custos\Http\Web\Controller\ProblemsController;
 use Custos\Http\Web\Controller\RunsController;
 use Custos\Http\Web\Controller\SettingsController;
 use Custos\Http\Web\Controller\TasksController;
+use Custos\Http\Web\Controller\TemplatesController;
+use Custos\Http\Web\Controller\UpdatesController;
 use Custos\Http\Web\Controller\UsersController;
 use Custos\Infra\Cidr;
 use Custos\Infra\Log;
@@ -43,8 +45,35 @@ final class Web
         ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
         ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', 'user'],
         ['GET', '#^/agents/' . self::ID . '/live$#', AgentsController::class, 'live', 'live'],
-        ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group)$#', AgentsController::class, 'action', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group|inventory|update|sevenzip)$#', AgentsController::class, 'action', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/commands/' . self::ID . '/cancel$#', AgentsController::class, 'cancel', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/settings$#', AgentsController::class, 'settings', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/settings$#', AgentsController::class, 'saveSettings', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/tasks/new$#', TasksController::class, 'create', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/tasks/new$#', TasksController::class, 'store', 'user'],
         ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '$#', TasksController::class, 'show', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/(run|stop|pause|resume|enable|disable|delete)$#', TasksController::class, 'command', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/edit$#', TasksController::class, 'edit', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/edit$#', TasksController::class, 'save', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/versions$#', TasksController::class, 'versions', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/versions/(\d{1,18})/restore$#', TasksController::class, 'restore', 'user'],
+        ['GET', '#^/templates$#', TemplatesController::class, 'index', 'user'],
+        ['GET', '#^/templates/new$#', TemplatesController::class, 'create', 'user'],
+        ['POST', '#^/templates/new$#', TemplatesController::class, 'store', 'user'],
+        ['GET', '#^/templates/(\d{1,10})$#', TemplatesController::class, 'show', 'user'],
+        ['GET', '#^/templates/(\d{1,10})/edit$#', TemplatesController::class, 'edit', 'user'],
+        ['POST', '#^/templates/(\d{1,10})/edit$#', TemplatesController::class, 'update', 'user'],
+        ['POST', '#^/templates/(\d{1,10})/delete$#', TemplatesController::class, 'delete', 'user'],
+        ['POST', '#^/templates/(\d{1,10})/apply$#', TemplatesController::class, 'apply', 'user'],
+        ['GET', '#^/updates$#', UpdatesController::class, 'index', 'user'],
+        ['POST', '#^/updates/upload$#', UpdatesController::class, 'upload', 'user'],
+        ['POST', '#^/updates/install$#', UpdatesController::class, 'install', 'user'],
+        ['POST', '#^/updates/sevenzip/check$#', UpdatesController::class, 'sevenZipCheck', 'user'],
+        ['POST', '#^/updates/sevenzip/download$#', UpdatesController::class, 'sevenZipDownload', 'user'],
+        ['POST', '#^/updates/sevenzip/upload$#', UpdatesController::class, 'sevenZipUpload', 'user'],
+        ['POST', '#^/updates/sevenzip/settings$#', UpdatesController::class, 'sevenZipSettings', 'user'],
+        ['POST', '#^/updates/agent/([0-9A-Za-z.+-]{1,32})/current$#', UpdatesController::class, 'current', 'user'],
+        ['POST', '#^/updates/(agent|7zip)/([0-9A-Za-z.+-]{1,32})/delete$#', UpdatesController::class, 'delete', 'user'],
         ['GET', '#^/groups$#', GroupsController::class, 'index', 'user'],
         ['POST', '#^/groups$#', GroupsController::class, 'create', 'user'],
         ['POST', '#^/groups/(\d+)/(rename|delete)$#', GroupsController::class, 'action', 'user'],
@@ -55,6 +84,7 @@ final class Web
         ['GET', '#^/runs/' . self::ID . '$#', RunsController::class, 'show', 'user'],
         ['GET', '#^/runs/' . self::ID . '/log$#', RunsController::class, 'log', 'user'],
         ['GET', '#^/runs/' . self::ID . '/log/download$#', RunsController::class, 'download', 'user'],
+        ['POST', '#^/runs/' . self::ID . '/fetch-log$#', RunsController::class, 'fetchLog', 'user'],
         ['GET', '#^/users$#', UsersController::class, 'index', 'user'],
         ['POST', '#^/users$#', UsersController::class, 'create', 'user'],
         ['POST', '#^/users/(\d+)/(password|disable|enable)$#', UsersController::class, 'action', 'user'],

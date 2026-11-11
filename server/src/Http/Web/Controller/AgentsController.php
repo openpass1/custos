@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace Custos\Http\Web\Controller;
 
 use Custos\Domain\Agents;
+use Custos\Domain\TaskEdits;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
+use Custos\Infra\Crypto;
+use Custos\Infra\Time;
 
-/** Machines: machines × tasks by group with approval of new agents (7.2, 8), and the machine page (7.3). */
+/**
+ * Machines: machines × tasks by group with approval of new agents (7.2, 8), the machine page (7.3) with its commands,
+ * and the agent settings sent with settings.update.
+ */
 final class AgentsController extends Controller
 {
     /** The machine page refreshes its "now" block and task statuses this often. */
     public const REFRESH_S = 10;
+    private const TRAY_MODES = ['full', 'status', 'hidden'];
 
     public function index(): Response
     {
@@ -79,6 +86,10 @@ final class AgentsController extends Controller
                 [$agent['id']]
             ),
             'refresh' => self::REFRESH_S,
+            'commands' => $this->app->commands()->forAgent($agent['id']),
+            'currentVersion' => $this->app->packages()->current(),
+            'latestSevenZip' => $this->app->packages()->latestSevenZip(),
+            'settings' => json_decode((string) $agent['settings'], true) ?: [],
         ], Agents::name($agent));
     }
 
@@ -109,7 +120,26 @@ final class AgentsController extends Controller
             'running' => $board->running($this->app->db()),
             'queue' => $agent['queue_ids'],
             'problems' => $board->problems,
+            'edits' => $this->pendingEdits($agentId),
         ];
+    }
+
+    /**
+     * Task edits from the site the agent has not confirmed yet, by task id: {status, name}. Tasks created on the site
+     * appear here before the agent reports them.
+     */
+    private function pendingEdits(string $agentId): array
+    {
+        $result = [];
+        foreach ($this->app->db()->all(
+            "SELECT task_id, status, payload FROM commands WHERE agent_id = ? AND kind = 'task.upsert' AND status IN ('queued', 'delivered')
+             AND expires_at > ? ORDER BY created_at",
+            [$agentId, Time::now()]
+        ) as $row) {
+            $payload = json_decode($row['payload'], true);
+            $result[(string) $row['task_id']] = ['status' => $row['status'], 'name' => (string) ($payload['task']['name'] ?? '')];
+        }
+        return $result;
     }
 
     public function action(string $id, string $action): Response
@@ -163,7 +193,168 @@ final class AgentsController extends Controller
                 $agents->setGroup($id, $group === null ? null : (int) $group['id']);
                 $this->audit('agent.group', 'agent', $id, $details + ['group' => $group['name'] ?? null]);
                 break;
+            case 'inventory':
+                if ($this->approved($agent)) {
+                    $this->app->commands()->queue($id, 'inventory.refresh', [], $this->user());
+                    $this->audit('command', 'agent', $id, ['name' => $name, 'command' => 'inventory.refresh']);
+                    $this->session->flash('info', $this->t('commands.flash.sent', ['command' => $this->t('command.inventory.refresh')]));
+                }
+                break;
+            case 'update':
+            case 'sevenzip':
+                $this->install($agent, $action === 'update' ? 'agent' : '7zip');
+                break;
         }
         return $this->redirect($this->post('back') === 'list' ? '/agents' : '/agents/' . $id);
+    }
+
+    /** Withdraws a command that has not been delivered yet. */
+    public function cancel(string $id, string $commandId): Response
+    {
+        $agent = $this->app->agents()->find($id);
+        if ($agent === null) {
+            return $this->notFound();
+        }
+        $command = $this->app->commands()->find($commandId);
+        if ($command !== null && $this->app->commands()->cancel($agent['id'], $commandId)) {
+            $this->audit('command.cancel', 'agent', $agent['id'], ['name' => Agents::name($agent), 'command' => $command['kind']]);
+            $this->session->flash('info', $this->t('commands.flash.cancelled'));
+        } else {
+            $this->session->flash('error', $this->t('commands.error.too_late'));
+        }
+        return $this->redirect($this->post('back') !== '' && str_starts_with($this->post('back'), '/agents/' . $agent['id'])
+            ? $this->post('back') : '/agents/' . $agent['id']);
+    }
+
+    /** Agent settings (7.3) sent with settings.update: only what changed. */
+    public function settings(string $id): Response
+    {
+        $agent = $this->app->agents()->find($id);
+        if ($agent === null) {
+            return $this->notFound();
+        }
+        return $this->settingsForm($agent, $this->storedSettings($agent), []);
+    }
+
+    public function saveSettings(string $id): Response
+    {
+        $agent = $this->app->agents()->find($id);
+        if ($agent === null) {
+            return $this->notFound();
+        }
+        $stored = $this->storedSettings($agent);
+        $values = [
+            'tray_mode' => in_array($this->post('tray_mode'), self::TRAY_MODES, true) ? $this->post('tray_mode') : 'full',
+            'allow_all_users_edit' => $this->post('allow_all_users_edit') === '1',
+            'log_retention_days' => trim($this->post('log_retention_days')),
+            'default_log_level' => in_array($this->post('default_log_level'), ['summary', 'files'], true) ? $this->post('default_log_level') : 'summary',
+            'process_priority' => in_array($this->post('process_priority'), ['low', 'normal'], true) ? $this->post('process_priority') : 'low',
+        ];
+        $errors = [];
+        if (!ctype_digit($values['log_retention_days']) || (int) $values['log_retention_days'] < 1 || (int) $values['log_retention_days'] > 3650) {
+            $errors['log_retention_days'] = $this->t('settings.error.range', ['min' => 1, 'max' => 3650]);
+        } else {
+            $values['log_retention_days'] = (int) $values['log_retention_days'];
+        }
+        $password = $this->post('password_action');
+        $new = $this->post('program_password');
+        if ($password === 'set' && mb_strlen($new) < 4) {
+            $errors['program_password'] = $this->t('agent_settings.error.password');
+        } elseif ($password === 'set' && $new !== $this->post('program_password_again')) {
+            $errors['program_password'] = $this->t('agent_settings.error.password_again');
+        }
+        if ($agent['status'] !== 'approved') {
+            $errors['agent'] = $this->t('commands.error.not_approved');
+        } elseif (TaskEdits::remoteEditOff($agent)) {
+            $errors['agent'] = $this->t('commands.error.remote_edit_off');
+        }
+        if ($errors !== []) {
+            return $this->settingsForm($agent, $values + ['password_action' => $password] + $stored, $errors, 422);
+        }
+
+        $changes = [];
+        foreach ($values as $key => $value) {
+            if (($stored[$key] ?? null) !== $value) {
+                $changes[$key] = $value;
+            }
+        }
+        $audit = array_keys($changes);
+        if ($password === 'set') {
+            $changes['program_password_hash'] = Crypto::programPasswordHash($new);
+            $audit[] = 'program_password';
+        } elseif ($password === 'reset') {
+            $changes['program_password_hash'] = null;
+            $audit[] = 'program_password_reset';
+        }
+        if ($changes === []) {
+            $this->session->flash('info', $this->t('agent_settings.flash.nothing'));
+            return $this->redirect('/agents/' . $agent['id'] . '/settings');
+        }
+        $this->app->taskEdits()->updateSettings($agent, $changes, $this->user());
+        $this->audit('agent.settings', 'agent', $agent['id'], ['name' => Agents::name($agent), 'changed' => implode(', ', $audit)]);
+        $this->session->flash('info', $this->t('agent_settings.flash.saved'));
+        return $this->redirect('/agents/' . $agent['id']);
+    }
+
+    /** The agent settings as the last configuration snapshot reported them, with the defaults of A.9. */
+    private function storedSettings(array $agent): array
+    {
+        $settings = json_decode((string) $agent['settings'], true) ?: [];
+        return [
+            'tray_mode' => (string) ($settings['tray_mode'] ?? 'full'),
+            'allow_all_users_edit' => (bool) ($settings['allow_all_users_edit'] ?? false),
+            'log_retention_days' => (int) ($settings['log_retention_days'] ?? 180),
+            'default_log_level' => (string) ($settings['default_log_level'] ?? 'summary'),
+            'process_priority' => (string) ($settings['process_priority'] ?? 'low'),
+        ];
+    }
+
+    private function settingsForm(array $agent, array $values, array $errors, int $status = 200): Response
+    {
+        return $this->render('agents/settings', [
+            'section' => 'agents',
+            'agent' => $agent,
+            'values' => $values,
+            'errors' => $errors,
+            'known' => $agent['settings'] !== null,
+            'pending' => $this->app->db()->one(
+                "SELECT * FROM commands WHERE agent_id = ? AND kind = 'settings.update' AND status IN ('queued', 'delivered')
+                 ORDER BY created_at DESC LIMIT 1",
+                [$agent['id']]
+            ),
+            'refusal' => $agent['status'] !== 'approved' ? $this->t('commands.error.not_approved')
+                : (TaskEdits::remoteEditOff($agent) ? $this->t('commands.error.remote_edit_off') : null),
+        ], $this->t('agent_settings.title', ['name' => Agents::name($agent)]), $status);
+    }
+
+    private function approved(array $agent): bool
+    {
+        if ($agent['status'] === 'approved') {
+            return true;
+        }
+        $this->session->flash('error', $this->t('commands.error.not_approved'));
+        return false;
+    }
+
+    /** "Update the agent" / "Update 7-Zip" on one machine. */
+    private function install(array $agent, string $kind): void
+    {
+        if (!$this->approved($agent)) {
+            return;
+        }
+        $packages = $this->app->packages();
+        $package = $kind === 'agent' ? $packages->current() : $packages->latestSevenZip();
+        if ($package === null) {
+            $this->session->flash('error', $this->t($kind === 'agent' ? 'updates.error.no_current' : 'sevenzip.error.none'));
+            return;
+        }
+        $result = $packages->install($kind, $package['version'], [$agent], $this->user());
+        if ($result['queued'] === []) {
+            $this->session->flash('error', $this->t('updates.flash.not_needed', ['version' => $package['version']]));
+            return;
+        }
+        $this->audit($kind === 'agent' ? 'update.install' : 'sevenzip.install', 'agent', $agent['id'],
+            ['name' => Agents::name($agent), 'version' => $package['version']]);
+        $this->session->flash('info', $this->t($kind === 'agent' ? 'updates.flash.queued_one' : 'sevenzip.flash.queued_one', ['version' => $package['version']]));
     }
 }

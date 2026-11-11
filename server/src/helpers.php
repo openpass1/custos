@@ -289,3 +289,36 @@ function notice_text(array $n): string
     $params['machine'] = ($n['hostname'] ?? null) === null ? '' : \Custos\Domain\Agents::name($n);
     return t('notice.' . $n['kind'], $params);
 }
+
+/** A message whose parameters may be messages too: ['key' => …, 'params' => […]] (errors of the task editor). */
+function t_msg(array $message): string
+{
+    $params = [];
+    foreach ((array) ($message['params'] ?? []) as $name => $value) {
+        $params[$name] = is_array($value) && isset($value['key']) ? t_msg($value) : $value;
+    }
+    return t((string) $message['key'], $params);
+}
+
+/** An account in a few words: "OFFICE\backup1 (Windows)", "пароль архива". */
+function account_label(array $c): string
+{
+    $kind = (string) ($c['kind'] ?? '');
+    if ($kind === 'archive_password') {
+        return t('credential.kind.archive_password');
+    }
+    $name = \Custos\Domain\Templates::accountName($c);
+    return ($name === '' ? '—' : $name) . ' (' . t('credential.kind.' . $kind) . ')';
+}
+
+/** "checked" for a checkbox or radio button. */
+function checked(bool $on): string
+{
+    return $on ? ' checked' : '';
+}
+
+/** "selected" for an option. */
+function selected(mixed $value, mixed $current): string
+{
+    return (string) $value === (string) $current ? ' selected' : '';
+}

@@ -83,17 +83,17 @@ final class Agents
     /**
      * Stores what the heartbeat says (A.4).
      *
-     * @param array{agent_version: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>} $hb
+     * @param array{agent_version: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>, sevenzip_version?: ?string} $hb
      */
     public function heartbeat(string $id, array $hb, string $ip, string $status): void
     {
         $this->monitor->presence($id, $status, time());
         $this->db->exec(
-            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, time_zone = ?, service_started_at = ?,
-                               state = ?, running = ?, queue = ?
+            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, sevenzip_version = ?, time_zone = ?,
+                               service_started_at = ?, state = ?, running = ?, queue = ?
              WHERE id = ?',
             [
-                Time::now(), $ip, $hb['agent_version'], $hb['time_zone'], $hb['service_started_at'], $hb['state'],
+                Time::now(), $ip, $hb['agent_version'], $hb['sevenzip_version'] ?? null, $hb['time_zone'], $hb['service_started_at'], $hb['state'],
                 $hb['running'] === null ? null : json_encode($hb['running'], JSON_UNESCAPED_SLASHES),
                 json_encode($hb['queue'], JSON_UNESCAPED_SLASHES),
                 $id,

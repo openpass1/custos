@@ -25,6 +25,9 @@ final class RequestTest extends TestCase
     {
         $this->assertSame('/agents', (new Request('GET', '/custos/agents?x=1', basePath: '/custos'))->path());
         $this->assertSame('/', (new Request('GET', '/custos/', basePath: '/custos'))->path());
+        $this->assertSame('/custos', Request::basePath('/custos/index.php'));
+        $this->assertSame('', Request::basePath('/index.php'));
+        $this->assertSame('', Request::basePath('/updates/agent/1.0.1'), 'php -S takes a path with a dot for a script');
         $this->assertSame('/login', (new Request('GET', '/login'))->path());
     }
 

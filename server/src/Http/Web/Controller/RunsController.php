@@ -91,6 +91,11 @@ final class RunsController extends Controller
             'log' => $db->one('SELECT LENGTH(log_gz) AS size, source, received_at FROM run_logs WHERE run_id = ?', [$run['id']]),
             'verify' => json_decode((string) $run['verify'], true),
             'retention' => json_decode((string) $run['retention'], true),
+            'logRequest' => $db->one(
+                "SELECT status, created_at, result_message FROM commands WHERE agent_id = ? AND kind = 'log.fetch' AND payload LIKE ?
+                 ORDER BY created_at DESC LIMIT 1",
+                [$run['agent_id'], '%' . $run['id'] . '%']
+            ),
         ], $this->runTitle($run));
     }
 
@@ -121,6 +126,24 @@ final class RunsController extends Controller
             'Content-Type' => 'application/gzip',
             'Content-Disposition' => 'attachment; filename="custos-run-' . $run['id'] . '.log.gz"',
         ]);
+    }
+
+    /** "Ask the agent for the log" (7.4): log.fetch for a run whose full log the server does not have. */
+    public function fetchLog(string $id): Response
+    {
+        $run = $this->find($id);
+        if ($run === null) {
+            return $this->notFound();
+        }
+        $agent = $this->app->agents()->find($run['agent_id']);
+        if ($agent['status'] !== 'approved') {
+            $this->session->flash('error', $this->t('commands.error.not_approved'));
+        } else {
+            $this->app->commands()->queue($agent['id'], 'log.fetch', ['run_id' => $run['id']], $this->user());
+            $this->audit('command', 'agent', $agent['id'], ['name' => Agents::name($agent), 'command' => 'log.fetch', 'task' => $run['task_name']]);
+            $this->session->flash('info', $this->t('run.log.requested'));
+        }
+        return $this->redirect('/runs/' . $run['id']);
     }
 
     private function find(string $id): ?array

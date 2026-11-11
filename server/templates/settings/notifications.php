@@ -50,7 +50,7 @@ $secret = function (string $name) use ($secretSet): string {
         </div>
     </section>
 
-    <section class="panel stack">
+    <section class="panel stack" data-smtp>
         <h2><?= e(t('notifications.email')) ?> <?= in_array('email', $channels, true) ? badge('ok', t('notifications.on')) : badge('disabled', t('notifications.off')) ?></h2>
         <label><?= e(t('notifications.smtp_host')) ?>
             <input type="text" name="smtp_host" value="<?= e($values['smtp_host']) ?>" placeholder="smtp.example.org">
@@ -77,6 +77,7 @@ $secret = function (string $name) use ($secretSet): string {
         </label>
         <label><?= e(t('notifications.mail_from')) ?>
             <input type="email" name="mail_from" value="<?= e($values['mail_from']) ?>" placeholder="custos@example.org">
+            <span class="note"><?= e(t('notifications.mail_from.hint')) ?></span>
         </label>
         <?= $error('mail_from') ?>
         <label><?= e(t('notifications.mail_to')) ?>

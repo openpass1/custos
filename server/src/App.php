@@ -14,9 +14,13 @@ use Custos\Domain\Maintenance;
 use Custos\Domain\Monitor;
 use Custos\Domain\Notices;
 use Custos\Domain\Notifier;
+use Custos\Domain\Packages;
 use Custos\Domain\Reports;
 use Custos\Domain\Settings;
+use Custos\Domain\TaskEdits;
 use Custos\Domain\Tasks;
+use Custos\Domain\Templates;
+use Custos\Domain\UpdateWatch;
 use Custos\Domain\Users;
 use Custos\Http\Api\AgentApi;
 use Custos\Http\Request;
@@ -33,7 +37,7 @@ use Custos\Infra\ServerKeys;
  */
 final class App
 {
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.3.0';
 
     private ?Db $db = null;
     private array $services = [];
@@ -141,6 +145,31 @@ final class App
     public function maintenance(): Maintenance
     {
         return $this->services[Maintenance::class] ??= new Maintenance($this->db(), $this->settings());
+    }
+
+    public function taskEdits(): TaskEdits
+    {
+        return $this->services[TaskEdits::class] ??= new TaskEdits($this->db(), $this->tasks(), $this->commands());
+    }
+
+    public function templates(): Templates
+    {
+        return $this->services[Templates::class] ??= new Templates($this->db(), $this->taskEdits());
+    }
+
+    /** Agent update packages and 7-Zip installers, kept in var/packages. */
+    public function packages(): Packages
+    {
+        return $this->services[Packages::class] ??= new Packages($this->db(), $this->keys(), $this->commands(), $this->config->varDir() . '/packages');
+    }
+
+    public function updateWatch(): UpdateWatch
+    {
+        return $this->services[UpdateWatch::class] ??= new UpdateWatch(
+            $this->db(), $this->settings(), $this->packages(), $this->notices(),
+            rtrim((string) $this->config->get('github_api_url', 'https://api.github.com'), '/'),
+            'CUSTOS-Monitor/' . self::VERSION
+        );
     }
 
     /** Statuses of all machines and tasks right now (or of one machine). */
