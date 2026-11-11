@@ -1,9 +1,17 @@
 <?php
 /**
  * @var array $agent from the board @var array $task from the board @var list<array> $problems @var list<array> $slots
- * @var list<array> $runs @var ?array $progress
+ * @var list<array> $runs @var ?array $progress @var list<array> $commands @var ?array $pending @var ?array $templateLink
+ * @var int $versionCount
  */
 $def = $task['def'];
+$taskUrl = '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
+$isNew = !empty($task['new']);
+$approved = $agent['status'] === 'approved';
+$command = function (string $action, string $class = 'secondary', ?string $confirm = null) use ($taskUrl): string {
+    return '<form method="post" action="' . e(url($taskUrl . '/' . $action)) . '"' . ($confirm === null ? '' : ' data-confirm="' . e($confirm) . '"') . '>'
+        . csrf_field() . '<button type="submit" class="' . e($class) . '">' . e(t('task.action.' . $action)) . '</button></form>';
+};
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a> ›
     <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><?= e($agent['name']) ?></a></p>
@@ -12,6 +20,37 @@ $def = $task['def'];
     <?php if (!empty($task['deleted'])): ?><?= badge('deleted', t('tasks.deleted')) ?><?php endif ?>
 </h1>
 <p class="summary"><?= e(task_summary($def)) ?></p>
+
+<?php if ($pending !== null): ?>
+    <div class="alert alert-info"><?= e(t($isNew ? 'task.pending.new' : 'task.pending', [
+        'time' => fmt_time($pending['created_at']), 'by' => (string) $pending['created_by_login'],
+    ])) ?> <?= badge($pending['status']) ?></div>
+<?php endif ?>
+<?php if ($templateLink !== null): ?>
+    <p class="note"><?= e(t('task.template', ['name' => $templateLink['name'], 'revision' => (int) $templateLink['template_revision']])) ?>
+        <?php if ((int) $templateLink['template_revision'] < (int) $templateLink['revision']): ?><?= badge('warning', t('task.template.outdated', ['revision' => (int) $templateLink['revision']])) ?><?php endif ?>
+        <a href="<?= e(url('/templates/' . $templateLink['id'])) ?>"><?= e(t('task.template.open')) ?></a></p>
+<?php endif ?>
+
+<?php if ($approved && empty($task['deleted'])): ?>
+    <div class="actions-row">
+        <?php if (!$isNew): ?>
+            <?php if (in_array($task['status'], ['running', 'paused'], true)): ?>
+                <?= $task['status'] === 'paused' ? $command('resume', '') : $command('pause') ?>
+                <?= $command('stop', 'danger', t('task.confirm.stop')) ?>
+            <?php else: ?>
+                <?= $command('run', '') ?>
+            <?php endif ?>
+            <?= !empty($def['enabled']) ? $command('disable', 'secondary', t('task.confirm.disable')) : $command('enable') ?>
+        <?php endif ?>
+        <a class="button-link" href="<?= e(url($taskUrl . '/edit')) ?>"><?= e(t('task.action.edit')) ?></a>
+        <?php if (!$isNew): ?>
+            <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new', ['from' => $task['id']])) ?>"><?= e(t('task.action.clone')) ?></a>
+            <a class="button-link" href="<?= e(url('/templates/new', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= e(t('task.action.template')) ?></a>
+            <?= $command('delete', 'danger', t('task.confirm.delete', ['name' => $task['name']])) ?>
+        <?php endif ?>
+    </div>
+<?php endif ?>
 
 <div class="columns">
     <section class="panel">
@@ -28,7 +67,8 @@ $def = $task['def'];
             <dt><?= e(t('task.watched')) ?></dt>
             <dd><?= e($task['watched'] ? t('task.watched.since', ['time' => fmt_time($task['watch_from'] ?? $task['first_seen_at'])]) : t('task.watched.no')) ?></dd>
             <dt><?= e(t('tasks.col.revision')) ?></dt>
-            <dd><?= (int) $task['revision'] ?> · <?= e(fmt_time($task['updated_at'])) ?> · <?= e((string) $task['updated_by']) ?></dd>
+            <dd><?= (int) $task['revision'] ?> · <?= e(fmt_time($task['updated_at'])) ?> · <?= e((string) $task['updated_by']) ?>
+                <?php if ($versionCount > 0): ?>· <a href="<?= e(url($taskUrl . '/versions')) ?>"><?= e(t('task.versions', ['n' => $versionCount])) ?></a><?php endif ?></dd>
         </dl>
         <p><a href="<?= e(url('/runs', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= e(t('task.all_runs')) ?></a></p>
     </section>
@@ -106,3 +146,10 @@ $def = $task['def'];
         <?php $showAgent = false; include __DIR__ . '/../runs/_table.php'; ?>
     <?php endif ?>
 </section>
+
+<?php if ($commands !== []): ?>
+    <section class="panel">
+        <h2><?= e(t('commands.title')) ?></h2>
+        <?php $showTask = false; $back = $taskUrl; include __DIR__ . '/../agents/_commands.php'; ?>
+    </section>
+<?php endif ?>

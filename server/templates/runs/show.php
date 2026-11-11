@@ -1,6 +1,6 @@
 <?php
 /**
- * @var array $run @var array $destinations @var array $destinationInfo @var ?array $log
+ * @var array $run @var array $destinations @var array $destinationInfo @var ?array $log @var ?array $logRequest
  * @var ?array $verify @var ?array $retention
  */
 use Custos\Domain\Agents;
@@ -94,6 +94,16 @@ use Custos\Domain\Agents;
         </p>
     <?php else: ?>
         <p class="note"><?= e(t('run.log.none')) ?></p>
+        <?php if ($run['finished_at'] !== null): ?>
+            <form method="post" action="<?= e(url('/runs/' . $run['id'] . '/fetch-log')) ?>" class="inline">
+                <?= csrf_field() ?>
+                <button type="submit" class="secondary"><?= e(t('run.log.request')) ?></button>
+                <?php if ($logRequest !== null): ?>
+                    <span class="note"><?= e(t('run.log.request_state', ['time' => fmt_time($logRequest['created_at'])])) ?>
+                        <?= badge($logRequest['status']) ?><?= $logRequest['result_message'] ? ' ' . e($logRequest['result_message']) : '' ?></span>
+                <?php endif ?>
+            </form>
+        <?php endif ?>
     <?php endif ?>
     <?php if ($run['log_tail'] !== null && $run['log_tail'] !== ''): ?>
         <h3><?= e(t('run.log_tail')) ?></h3>

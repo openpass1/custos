@@ -18,7 +18,7 @@ final class DashboardController extends Controller
     /** The dashboard warns when cron has not run for this long (it would stop the checks for missed runs). */
     public const CRON_LATE_S = 300;
     /** Parts of the page that are refreshed, in templates/dashboard/_{name}.php */
-    private const PARTS = ['summary', 'attention', 'running', 'notices'];
+    private const PARTS = ['summary', 'attention', 'running', 'notices', 'versions'];
 
     public function index(): Response
     {
@@ -61,6 +61,15 @@ final class DashboardController extends Controller
                  ORDER BY s.free_bytes LIMIT 1'
             ),
             'notices' => $app->notices()->latest(5, 0, true),
+            'versions' => self::distribution($db->all(
+                "SELECT agent_version AS version, COUNT(*) AS n FROM agents WHERE status = 'approved' GROUP BY agent_version"
+            )),
+            'sevenZipVersions' => self::distribution($db->all(
+                "SELECT sevenzip_version AS version, COUNT(*) AS n FROM agents WHERE status = 'approved' AND sevenzip_version IS NOT NULL
+                 GROUP BY sevenzip_version"
+            )),
+            'currentVersion' => $app->packages()->current()['version'] ?? null,
+            'latestSevenZip' => $app->updateWatch()->latestSevenZip()['version'] ?? null,
             'unread' => $app->notices()->unreadCount(),
         ];
         $parts = [];
@@ -68,5 +77,12 @@ final class DashboardController extends Controller
             $parts[$name] = $this->view->partial('dashboard/_' . $name, $vars);
         }
         return $parts;
+    }
+
+    /** Versions with their number of machines, newest first. */
+    private static function distribution(array $rows): array
+    {
+        usort($rows, fn($a, $b) => version_compare((string) $b['version'], (string) $a['version']));
+        return $rows;
     }
 }

@@ -17,6 +17,8 @@ use DateTimeZone;
 final class FakeAgent
 {
     public const VERSION = '1.0.0';
+    /** 7z.dll version a new fake agent reports (--sevenzip changes it). */
+    public const SEVENZIP_VERSION = '24.09';
 
     /** Reports that the agent keeps in its outbox until the server accepts them (A.5, A.11). */
     private const KEY_BITS = 3072;
@@ -47,7 +49,8 @@ final class FakeAgent
 
     /**
      * @param array{url: string, code: ?string, hostname: string, time_zone: string, run_seconds: int,
-     *              skip_schedule: bool, offline_min: ?int, pause_s: ?int, result?: ?string} $options
+     *              skip_schedule: bool, offline_min: ?int, pause_s: ?int, result?: ?string, sevenzip?: ?string,
+     *              once_run?: bool} $options
      * @param \Closure(string): void $log
      */
     public function __construct(
@@ -58,6 +61,11 @@ final class FakeAgent
     ) {
         $saved = is_file($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : null;
         $this->state = is_array($saved) ? $saved : $this->newState();
+        // State files of older fake agents have no versions yet.
+        $this->state += ['agent_version' => self::VERSION, 'sevenzip_version' => self::SEVENZIP_VERSION];
+        if (array_key_exists('sevenzip', $options)) {
+            $this->state['sevenzip_version'] = $options['sevenzip'];
+        }
         $key = openssl_pkey_get_private($this->state['private_key']);
         if ($key === false) {
             throw new \RuntimeException("Bad private key in $stateFile");
@@ -150,7 +158,8 @@ final class FakeAgent
             }
             if (!$enqueued && $this->heartbeats > 0 && ($this->state['status'] !== 'approved' || $this->configDue === null)) {
                 $first = $this->state['tasks'][0] ?? null;
-                if ($first !== null) {
+                // Tests that only need commands and the configuration skip the run (option once_run = false).
+                if ($first !== null && ($this->options['once_run'] ?? true)) {
                     $this->enqueue($first['id'], 'manual', null);
                 }
                 $enqueued = true;
@@ -191,7 +200,7 @@ final class FakeAgent
             'hostname' => $this->state['hostname'],
             'machine_guid' => $this->state['machine_guid'],
             'os' => 'Windows 11 Pro 24H2 (26100)',
-            'agent_version' => self::VERSION,
+            'agent_version' => $this->state['agent_version'] ?? self::VERSION,
             'time_zone' => $this->state['time_zone'],
         ]);
         if (!$result['ok']) {
@@ -214,7 +223,8 @@ final class FakeAgent
         $now = microtime(true);
         $this->nextHeartbeat = $now + $this->interval;
         $result = $this->client->call('POST', 'agent/heartbeat', [
-            'agent_version' => self::VERSION,
+            'agent_version' => $this->state['agent_version'] ?? self::VERSION,
+            'sevenzip_version' => $this->state['sevenzip_version'] ?? null,
             'config_revision' => $this->state['config_revision'],
             'time_zone' => $this->state['time_zone'],
             'service_started_at' => $this->state['service_started_at'],
@@ -634,9 +644,8 @@ final class FakeAgent
             $kind === 'settings.update' => $this->commandSettings((array) ($payload['settings'] ?? [])),
             $kind === 'log.fetch' => $this->commandLog((string) ($payload['run_id'] ?? '')),
             $kind === 'inventory.refresh' => $this->commandInventory(),
-            $kind === 'update.install' => $this->client->verifyUpdate((string) ($payload['version'] ?? ''), (string) ($payload['sha256'] ?? ''), (string) ($payload['signature'] ?? ''))
-                ? ['rejected', 'the fake agent does not install updates']
-                : ['rejected', 'bad update signature'],
+            $kind === 'update.install' => $this->commandUpdate($payload, false),
+            $kind === 'sevenzip.update' => $this->commandUpdate($payload, true),
             default => ['rejected', "unknown command $kind"],
         };
         $this->say("command $kind: $status" . ($message === null ? '' : " ($message)"));
@@ -732,7 +741,7 @@ final class FakeAgent
         $this->state['tasks'] = array_values(array_filter($this->state['tasks'], fn($t) => $t['id'] !== $taskId));
         $this->state['deleted_task_ids'][] = $taskId;
         $this->state['config_revision']++;
-        $this->configDue = microtime(true) + 10;
+        $this->configDue = microtime(true) + ($this->onceMode ? 0 : 10);
         $this->save();
         return ['done', null];
     }
@@ -743,7 +752,7 @@ final class FakeAgent
         unset($settings['allow_remote_edit'], $settings['server_url']);
         $this->state['settings'] = array_replace($this->state['settings'], $settings);
         $this->state['config_revision']++;
-        $this->configDue = microtime(true) + 10;
+        $this->configDue = microtime(true) + ($this->onceMode ? 0 : 10);
         $this->save();
         return ['done', null];
     }
@@ -755,6 +764,41 @@ final class FakeAgent
         }
         $this->push("agent/runs/$runId/log", ['log_gz_b64' => $this->state['logs'][$runId]]);
         return ['done', null];
+    }
+
+    /**
+     * update.install and sevenzip.update (A.10): check the server signature from the command, download the file,
+     * check its SHA-256, then "install" it: the fake agent only reports the new version from now on.
+     */
+    private function commandUpdate(array $payload, bool $sevenZip): array
+    {
+        $version = (string) ($payload['version'] ?? '');
+        $sha256 = strtolower((string) ($payload['sha256'] ?? ''));
+        $signature = (string) ($payload['signature'] ?? '');
+        $signed = $sevenZip ? $this->client->verifySevenZip($version, $sha256, $signature) : $this->client->verifyUpdate($version, $sha256, $signature);
+        if (!$signed || !preg_match('/^[0-9A-Za-z.+-]{1,32}$/', $version)) {
+            return ['rejected', 'bad signature'];
+        }
+        $download = $this->client->download(($sevenZip ? 'agent/sevenzip/' : 'agent/updates/') . $version);
+        if (!$download['ok']) {
+            return ['failed', 'download failed: ' . $download['reason']];
+        }
+        if (!hash_equals($sha256, hash('sha256', $download['body']))) {
+            return ['failed', 'SHA-256 of the downloaded file does not match'];
+        }
+        if ($sevenZip && !str_starts_with($download['body'], 'MZ')) {
+            return ['failed', 'the file is not a Windows program'];
+        }
+        $this->state[$sevenZip ? 'sevenzip_version' : 'agent_version'] = $version;
+        $this->save();
+        // A real agent restarts after an update; the new version reaches the server with the next heartbeat.
+        $this->nextHeartbeat = min($this->nextHeartbeat, microtime(true) + 2);
+        return ['done', sprintf('%s %s installed (%s)', $sevenZip ? '7-Zip' : 'CUSTOS', $version, self::size(strlen($download['body'])))];
+    }
+
+    private static function size(int $bytes): string
+    {
+        return $bytes >= 1048576 ? round($bytes / 1048576, 1) . ' MB' : round($bytes / 1024) . ' KB';
     }
 
     private function commandInventory(): array
@@ -792,6 +836,8 @@ final class FakeAgent
             'free_bytes' => [],
             'last_runs' => [],
             'size_seed' => random_int(1, 1000),
+            'agent_version' => self::VERSION,
+            'sevenzip_version' => array_key_exists('sevenzip', $this->options) ? $this->options['sevenzip'] : self::SEVENZIP_VERSION,
         ];
     }
 

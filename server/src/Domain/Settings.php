@@ -39,6 +39,13 @@ final class Settings
         'smtp_password' => '',
         'mail_from' => '',
         'mail_to' => '',
+        // Updates (section 8): the daily 7-Zip release check can be turned off when the server has no internet.
+        'sevenzip_check' => '1',
+        'sevenzip_latest' => '',
+        'sevenzip_checked_at' => '',
+        'sevenzip_check_error' => '',
+        'sevenzip_notified' => '',
+        'agent_outdated_notified' => '',
     ];
 
     private ?array $values = null;

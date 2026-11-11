@@ -38,6 +38,8 @@ final class AgentApi
         ['POST', '#^agent/runs/([^/]+)/log$#', 'runLog'],
         ['POST', '#^agent/commands/([^/]+)/result$#', 'commandResult'],
         ['POST', '#^agent/inventory$#', 'inventory'],
+        ['GET', '#^agent/updates/([^/]+)$#', 'downloadUpdate'],
+        ['GET', '#^agent/sevenzip/([^/]+)$#', 'downloadSevenZip'],
     ];
 
     public function __construct(private readonly App $app)
@@ -75,6 +77,11 @@ final class AgentApi
      */
     private function sign(Response $response, string $nonce, ?string $macKey): Response
     {
+        if ($response->file !== null) {
+            // A package body is checked by its SHA-256 and the signature in the command, not by the answer (A.2, A.10).
+            $response->headers['Cache-Control'] = 'no-store';
+            return $response;
+        }
         $time = (string) time();
         $string = $response->status . "\n" . $time . "\n" . $nonce . "\n" . hash('sha256', $response->body);
         $response->headers['X-Custos-Time'] = $time;
@@ -140,7 +147,7 @@ final class AgentApi
         }
 
         try {
-            $input = Input::fromJson($body);
+            $input = $request->method === 'GET' ? new Input([]) : Input::fromJson($body);
             return match ($handler) {
                 'heartbeat' => $this->heartbeat($agent, $input, $request),
                 'config' => $this->ok(fn() => $this->app->configSnapshots()->apply($agent['id'], $input, $body)),
@@ -150,6 +157,8 @@ final class AgentApi
                 'runLog' => $this->ok(fn() => $this->app->reports()->log($agent['id'], $params[0], $input)),
                 'commandResult' => $this->ok(fn() => $this->app->commands()->result($agent['id'], $params[0], $input)),
                 'inventory' => $this->ok(fn() => $this->app->reports()->inventory($agent['id'], $input)),
+                'downloadUpdate' => $this->package('agent', $params[0]),
+                'downloadSevenZip' => $this->package('7zip', $params[0]),
             };
         } catch (InvalidInput $e) {
             throw ApiError::badRequest($e->getMessage());
@@ -250,6 +259,7 @@ final class AgentApi
                 'paused_at' => Time::iso($running->time('paused_at', true)),
             ],
             'queue' => $in->uuids('queue'),
+            'sevenzip_version' => $in->string('sevenzip_version', 32, true),
         ];
         $this->app->agents()->heartbeat($agent['id'], $hb, $request->ip, $agent['status']);
 
@@ -263,6 +273,17 @@ final class AgentApi
             'want_config' => $wantConfig,
             'commands' => $approved ? $this->app->commands()->deliver($agent['id']) : [],
         ]);
+    }
+
+    /** GET agent/updates/{version} and agent/sevenzip/{version}: the package itself, not signed (A.10). */
+    private function package(string $kind, string $version): Response
+    {
+        $file = preg_match('/^[0-9A-Za-z.+-]{1,32}$/', $version) ? $this->app->packages()->file($kind, $version) : null;
+        if ($file === null) {
+            // Not 404: to an agent 404 means only unknown_agent (A.11).
+            throw ApiError::badRequest("No package $version on this server");
+        }
+        return Response::file($file, $kind === '7zip' ? 'application/vnd.microsoft.portable-executable' : 'application/zip', basename($file));
     }
 
     private function ok(callable $action): Response

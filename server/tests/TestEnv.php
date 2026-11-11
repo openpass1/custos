@@ -40,7 +40,9 @@ final class TestEnv
         if (self::$dir === null) {
             self::$dir = sys_get_temp_dir() . '/custos-tests-' . getmypid();
             @mkdir(self::$dir, 0700, true);
-            register_shutdown_function(static fn() => self::removeTree(self::$dir));
+            if (getenv('CUSTOS_TEST_KEEP') !== '1') {
+                register_shutdown_function(static fn() => self::removeTree(self::$dir));
+            }
         }
         return self::$dir;
     }
@@ -89,6 +91,8 @@ final class TestEnv
         $app = new App(Config::fromArray(self::config(), $root));
         $app->keys()->create();
         $app->settings()->set('registration_key', RegistrationKey::generate());
+        // Cron passes would ask GitHub for 7-Zip releases; tests that need the check turn it on with a fake HTTP client.
+        $app->settings()->set('sevenzip_check', '0');
         return $app;
     }
 
@@ -107,7 +111,7 @@ final class TestEnv
             foreach ($response->headers as $name => $value) {
                 $responseHeaders[strtolower($name)] = $value;
             }
-            return [$response->status, $responseHeaders, $response->body];
+            return [$response->status, $responseHeaders, $response->content()];
         };
     }
 

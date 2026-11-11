@@ -31,9 +31,12 @@ Usage: php tools/fake-agent.php --url=http://custos.lan --code=KEY#FINGERPRINT [
   --pause[=SEC]      every run pauses halfway for SEC seconds (default 120) (for checking "paused")
   --result=STATUS    every run ends with this status: success, warning or error (default: random,
                      mostly success)
+  --sevenzip=VER     7z.dll version the agents report, e.g. 23.01 (default 24.09 for new agents; "none" = not
+                     reported, like an agent without 7-Zip support)
   --reset            forget the agents in the state folder and exit
 
-Agents keep their identity between runs. The interval task "Desktop" runs every 15 minutes, the other
+Agents keep their identity between runs. update.install and sevenzip.update commands are checked (signature,
+SHA-256) and "installed": the agent then reports the new version. The interval task "Desktop" runs every 15 minutes, the other
 tasks at their scheduled times in the agent's time zone. Stop with Ctrl+C.
 TEXT;
 
@@ -84,6 +87,13 @@ $agentOptions = [
     'pause_s' => isset($options['pause']) ? (is_string($options['pause']) ? max(1, (int) $options['pause']) : 120) : null,
     'result' => $options['result'] ?? null,
 ];
+if (isset($options['sevenzip'])) {
+    if (!is_string($options['sevenzip']) || !preg_match('/^(\d{1,3}\.\d{2}|none)$/', $options['sevenzip'])) {
+        fwrite(STDERR, "--sevenzip must be a 7-Zip version such as 24.09, or none\n");
+        exit(2);
+    }
+    $agentOptions['sevenzip'] = $options['sevenzip'] === 'none' ? null : $options['sevenzip'];
+}
 if ($agentOptions['result'] !== null && !in_array($agentOptions['result'], ['success', 'warning', 'error'], true)) {
     fwrite(STDERR, "--result must be success, warning or error\n");
     exit(2);

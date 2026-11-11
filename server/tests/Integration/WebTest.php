@@ -42,16 +42,37 @@ final class WebTest extends TestCase
     {
         TestEnv::emptyDatabase($this);
         self::$config = TestEnv::configFile();
-        // A fake Telegram API that answers "ok" and writes down what it was sent. It goes into the configuration
-        // now: the site under "php -S" keeps the configuration file in the opcode cache.
+        // Fake Telegram and GitHub APIs: Telegram answers "ok" and writes down what it was sent; GitHub lists one 7-Zip
+        // release whose installer it serves. They go into the configuration now: the site under "php -S" keeps the
+        // configuration file in the opcode cache.
         $dir = TestEnv::dir() . '/telegram';
         @mkdir($dir);
-        file_put_contents("$dir/router.php", '<?php file_put_contents(__DIR__ . "/sent.log", json_encode($_POST) . "\\n", FILE_APPEND);'
-            . ' header("Content-Type: application/json"); echo \'{"ok":true,"result":{}}\';');
         $port = self::freePort();
+        $installer = "MZ fake 7-Zip 24.10 installer\n" . random_bytes(2048);
+        file_put_contents("$dir/7z2410-x64.exe", $installer);
+        file_put_contents("$dir/releases.json", json_encode([
+            ['tag_name' => '24.10', 'published_at' => '2026-11-01T10:00:00Z', 'assets' => [[
+                'name' => '7z2410-x64.exe', 'browser_download_url' => "http://127.0.0.1:$port/7z2410-x64.exe",
+                'digest' => 'sha256:' . hash('sha256', $installer),
+            ]]],
+            ['tag_name' => '24.09', 'assets' => []],
+        ]));
+        file_put_contents("$dir/router.php", <<<'PHP'
+            <?php
+            $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            if ($path === '/repos/ip7z/7zip/releases' || $path === '/7z2410-x64.exe') {
+                header('Content-Type: ' . ($path === '/7z2410-x64.exe' ? 'application/octet-stream' : 'application/json'));
+                readfile(__DIR__ . ($path === '/7z2410-x64.exe' ? $path : '/releases.json'));
+                return;
+            }
+            file_put_contents(__DIR__ . '/sent.log', json_encode($_POST) . "\n", FILE_APPEND);
+            header('Content-Type: application/json');
+            echo '{"ok":true,"result":{}}';
+            PHP);
         self::$telegram = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", "$dir/router.php"],
             [0 => ['pipe', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes, $dir);
-        file_put_contents(self::$config, '<?php return ' . var_export(TestEnv::config() + ['telegram_api_url' => "http://127.0.0.1:$port"], true) . ';');
+        file_put_contents(self::$config, '<?php return ' . var_export(TestEnv::config()
+            + ['telegram_api_url' => "http://127.0.0.1:$port", 'github_api_url' => "http://127.0.0.1:$port"], true) . ';');
         [$code, $output] = self::php(['bin/install.php', '--admin-login=admin'], ['CUSTOS_ADMIN_PASSWORD' => self::PASSWORD]);
         $this->assertSame(0, $code, $output);
         $this->assertMatchesRegularExpression('/Registration code:\s+([A-Z2-7]{5}-){4}[A-Z2-7]{5}#[0-9A-F-]{19}/', $output);
@@ -213,7 +234,7 @@ final class WebTest extends TestCase
         $this->assertSame(200, $status);
         $this->assertStringStartsWith('application/json', $headers['content-type']);
         $live = json_decode($json, true);
-        $this->assertSame(['summary', 'attention', 'running', 'notices'], array_keys($live['parts']));
+        $this->assertSame(['summary', 'attention', 'running', 'notices', 'versions'], array_keys($live['parts']));
         $this->assertStringContainsString('Documents', $live['parts']['attention']);
         $this->assertGreaterThan(0, $live['bell'], 'registration and the first configuration are notices');
 
@@ -286,6 +307,7 @@ final class WebTest extends TestCase
         $this->assertSame(0, $code, $output);
         $stats = json_decode(substr($output, strpos($output, '{')), true);
         $this->assertIsArray($stats, $output);
+        $this->assertSame('ok', $stats['updates']['sevenzip_check'] ?? null, 'cron asked (the fake) GitHub for 7-Zip releases: ' . $output);
         $sent = array_map(fn($line) => json_decode($line, true), file("$dir/sent.log", FILE_IGNORE_NEW_LINES));
         $this->assertCount(3, $sent, 'two test messages and one message about the problem');
         $this->assertSame('-1001234567890', $sent[2]['chat_id']);
@@ -296,6 +318,108 @@ final class WebTest extends TestCase
         $this->assertStringNotContainsString('cron', $home, 'cron has run');
         [, $notifications] = $this->http('GET', '/settings/notifications');
         $this->assertStringContainsString('проблем: 1', $notifications, 'the latest messages are listed');
+    }
+
+    /** Stage 3 through the pages: the task editor, versions, agent settings, a template, updates of CUSTOS and 7-Zip. */
+    #[Depends('testNotificationsAndCron')]
+    public function testManagementFromTheSite(): void
+    {
+        [, $agents] = $this->http('GET', '/agents');
+        $this->assertSame(1, preg_match('#href="/agents/([0-9a-f-]{36})"#', $agents, $m));
+        $agentUrl = '/agents/' . $m[1];
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertSame(1, preg_match('#href="' . $agentUrl . '/tasks/([0-9a-f-]{36})"><strong>Documents</strong>#', $page, $m));
+        $taskUrl = $agentUrl . '/tasks/' . $m[1];
+
+        // The editor: rename the task, the agent applies it, the versions page shows the difference.
+        [$status, $editor] = $this->http('GET', "$taskUrl/edit");
+        $this->assertSame(200, $status);
+        $form = self::formFields($editor, "$taskUrl/edit");
+        [$status, $page] = $this->http('POST', "$taskUrl/edit", self::encode(self::withValues($form, ['name' => 'Documents and photos'])));
+        $this->assertSame(303, $status, $page);
+        [, $page] = $this->http('GET', $taskUrl);
+        $this->assertStringContainsString('Изменение сохранено и ждёт доставки агенту.', $page);
+        $this->assertStringContainsString('ещё не подтверждено агентом', $page);
+        [$status, $page] = $this->http('POST', "$taskUrl/edit", self::encode(self::withValues($form, ['schedule[times]' => '25:00'])));
+        $this->assertSame(422, $status, 'a wrong time is refused like the client refuses it');
+        $this->assertStringContainsString('25:00', $page);
+
+        // Agent settings and a command for the task go along with the next heartbeat.
+        [$status, $settings] = $this->http('GET', "$agentUrl/settings");
+        $this->assertSame(200, $status);
+        $fields = self::withValues(self::formFields($settings, "$agentUrl/settings"), ['log_retention_days' => '45']);
+        [$status, , $headers] = $this->http('POST', "$agentUrl/settings", self::encode($fields));
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Настройки отправлены агенту.', $this->http('GET', parse_url($headers['location'], PHP_URL_PATH))[1]);
+        [$status] = $this->post("$taskUrl/disable", []);
+        $this->assertSame(303, $status);
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertSame(3, preg_match_all('#/commands/[0-9a-f-]{36}/cancel"#', $page), 'the edit, the settings and the command wait and can be cancelled');
+
+        [$exit, $output] = $this->fakeAgent(['--result=success', '--skip-schedule', '--sevenzip=23.01']);
+        $this->assertSame(0, $exit, $output);
+        [, $page] = $this->http('GET', $taskUrl);
+        $this->assertStringContainsString('Documents and photos', $page);
+        $this->assertStringNotContainsString('ещё не подтверждено агентом', $page);
+        [$status, $versions] = $this->http('GET', "$taskUrl/versions");
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('с сайта', $versions);
+        $this->assertMatchesRegularExpression('#<td class="mono">name</td>\s*<td class="mono old">&quot;Documents&quot;</td>\s*<td class="mono new">&quot;Documents and photos&quot;</td>#', $versions,
+            'the difference with the version before');
+        [, $settings] = $this->http('GET', "$agentUrl/settings");
+        $this->assertMatchesRegularExpression('/name="log_retention_days"[^>]*value="45"/', $settings);
+
+        // A template from the task, applied to the machine: a second task appears there.
+        [$status, $editor] = $this->http('GET', '/templates/new?agent=' . basename($agentUrl) . '&task=' . basename($taskUrl));
+        $this->assertSame(200, $status);
+        $fields = self::withValues(self::formFields($editor, '/templates/new'), ['name' => 'Office documents']);
+        [$status, , $headers] = $this->http('POST', '/templates/new', self::encode($fields));
+        $this->assertSame(303, $status);
+        $templateUrl = parse_url($headers['location'], PHP_URL_PATH);
+        [, $template] = $this->http('GET', $templateUrl);
+        $this->assertStringContainsString('Шаблон «Office documents» создан.', $template);
+        $fields = self::withValues(self::formFields($template, "$templateUrl/apply"), ['agent_ids[]' => basename($agentUrl)]);
+        [$status] = $this->http('POST', "$templateUrl/apply", self::encode($fields));
+        $this->assertSame(303, $status);
+        [, $template] = $this->http('GET', $templateUrl);
+        $this->assertStringContainsString('WEB-PC-01: не применён — нужен пароль для svc-backup', $template);
+        $fields = array_map(fn($f) => str_starts_with($f[0], 'passwords[') ? [$f[0], 'share-password'] : $f, $fields);
+        $this->http('POST', "$templateUrl/apply", self::encode($fields));
+        [, $template] = $this->http('GET', $templateUrl);
+        $this->assertStringContainsString('Шаблон «Office documents» отправлен машинам: 1.', $template);
+
+        // Updates: a CUSTOS package uploaded and made current, the 7-Zip installer from (the fake) GitHub.
+        $package = TestEnv::dir() . '/custos-1.0.1.zip';
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--out=' . $package]);
+        $this->assertSame(0, $code, $output);
+        [, $updates] = $this->http('GET', '/updates');
+        preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
+        [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-1.0.1.zip')]);
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Пакет 1.0.1 загружен.', $this->http('GET', '/updates')[1]);
+        [$status] = $this->post('/updates/agent/1.0.1/current', []);
+        $this->assertSame(303, $status);
+        [$status] = $this->post('/updates/sevenzip/download', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Установщик 7-Zip 24.10 сохранён на сервере.', $updates);
+        foreach (['agent', '7zip'] as $kind) {
+            $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => basename($agentUrl), 'kind' => $kind]);
+            [$status] = $this->http('POST', '/updates/install', self::encode($fields));
+            $this->assertSame(303, $status);
+        }
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновление до 24.10 отправлено машинам: 1, пропущено: 0.', $updates);
+
+        [$exit, $output] = $this->fakeAgent(['--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        $this->assertStringContainsString('CUSTOS 1.0.1 installed', $output);
+        $this->assertStringContainsString('7-Zip 24.10 installed', $output);
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertStringContainsString('Office documents', $page, 'the task made from the template');
+        $this->assertStringContainsString('24.10', $page);
+        $versions = json_decode($this->http('GET', '/dashboard/live')[1], true)['parts']['versions'];
+        $this->assertStringContainsString('1.0.1', $versions);
     }
 
     #[Depends('testInstallAndStart')]
@@ -333,8 +457,72 @@ final class WebTest extends TestCase
         return $this->http('POST', $path, ['_csrf' => $m[1] ?? ''] + $fields);
     }
 
-    /** @return array{0: int, 1: string, 2: array<string, string>} */
-    private function http(string $method, string $path, ?array $fields = null): array
+    /**
+     * The fields a browser sends with the form that has this action: nothing from <template> rows or disabled fields,
+     * only checked boxes, the selected option of each list.
+     *
+     * @return list<array{0: string, 1: string}>
+     */
+    private static function formFields(string $html, string $action): array
+    {
+        $doc = new \DOMDocument();
+        @$doc->loadHTML('<?xml encoding="UTF-8">' . $html);
+        $xpath = new \DOMXPath($doc);
+        $form = $xpath->query('//form[@action="' . $action . '"]')->item(0) ?? throw new \RuntimeException("No form for $action");
+        $fields = [];
+        foreach ($xpath->query('.//input | .//select | .//textarea', $form) as $field) {
+            $name = $field->getAttribute('name');
+            if ($name === '' || $field->hasAttribute('disabled') || $xpath->query('ancestor::template | ancestor::fieldset[@disabled]', $field)->length > 0) {
+                continue;
+            }
+            $type = strtolower($field->getAttribute('type') ?: 'text');
+            if ($field->nodeName === 'select') {
+                $option = $xpath->query('.//option[@selected]', $field)->item(0) ?? $xpath->query('.//option', $field)->item(0);
+                if ($option !== null) {
+                    $fields[] = [$name, $option->hasAttribute('value') ? $option->getAttribute('value') : $option->textContent];
+                }
+            } elseif ($field->nodeName === 'textarea') {
+                $fields[] = [$name, $field->textContent];
+            } elseif (in_array($type, ['checkbox', 'radio'], true)) {
+                if ($field->hasAttribute('checked')) {
+                    $fields[] = [$name, $field->hasAttribute('value') ? $field->getAttribute('value') : 'on'];
+                }
+            } elseif (!in_array($type, ['submit', 'button', 'reset', 'file'], true)) {
+                $fields[] = [$name, $field->getAttribute('value')];
+            }
+        }
+        return $fields;
+    }
+
+    /** Sets fields as a user would: a field that is there gets the value, any other is added (a checked box). */
+    private static function withValues(array $fields, array $values): array
+    {
+        foreach ($values as $name => $value) {
+            $found = false;
+            foreach ($fields as $i => $field) {
+                if ($field[0] === $name && !str_ends_with($name, '[]')) {
+                    $fields[$i][1] = (string) $value;
+                    $found = true;
+                }
+            }
+            if (!$found) {
+                $fields[] = [$name, (string) $value];
+            }
+        }
+        return $fields;
+    }
+
+    private static function encode(array $fields): string
+    {
+        return implode('&', array_map(fn($field) => rawurlencode($field[0]) . '=' . rawurlencode($field[1]), $fields));
+    }
+
+    /**
+     * $fields: form fields (urlencoded), a ready body, or fields with a \CURLFile (multipart).
+     *
+     * @return array{0: int, 1: string, 2: array<string, string>}
+     */
+    private function http(string $method, string $path, array|string|null $fields = null): array
     {
         $headers = [];
         $curl = curl_init(self::$base . $path);
@@ -351,7 +539,12 @@ final class WebTest extends TestCase
                 }
                 return strlen($line);
             },
-        ] + ($fields === null ? [] : [CURLOPT_POSTFIELDS => http_build_query($fields)]));
+        ] + match (true) {
+            $fields === null => [],
+            is_string($fields) => [CURLOPT_POSTFIELDS => $fields],
+            array_filter($fields, fn($v) => $v instanceof \CURLFile) !== [] => [CURLOPT_POSTFIELDS => $fields],
+            default => [CURLOPT_POSTFIELDS => http_build_query($fields)],
+        });
         $body = (string) curl_exec($curl);
         return [(int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE), $body, $headers];
     }

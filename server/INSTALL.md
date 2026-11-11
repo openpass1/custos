@@ -248,7 +248,7 @@ php8.4 tools/fake-agent.php --reset
 nginx -T 2>/dev/null | grep client_max_body_size
 ```
 
-✅ Значение не меньше `10m` (например `client_max_body_size 64m;`). Если команда ничего не вывела, у nginx лимит 1 МБ: в сайте вкладка **Vhost**, внутри блока `server { ... }` добавьте строку `client_max_body_size 10m;` и нажмите **Save**.
+✅ Значение не меньше `10m` (например `client_max_body_size 64m;`). Если команда ничего не вывела, у nginx лимит 1 МБ: в сайте вкладка **Vhost**, внутри блока `server { ... }` добавьте строку `client_max_body_size 100m;` и нажмите **Save** (агентам хватает 10 МБ, больше нужно для загрузки пакетов обновления через сайт).
 
 ---
 
@@ -323,11 +323,17 @@ nginx -T 2>/dev/null | grep client_max_body_size
 
 Настройки (`config/config.php`), ключи сервера (`config/keys/`) и папка `var/` в пакет не входят, поэтому распаковка поверх их не трогает.
 
+**Версия 0.3.0 (управление).** `migrate.php` применит миграцию `003`. Новое:
+- раздел «Обновления»: сервер раз в сутки обращается к `api.github.com`, чтобы узнать новую версию 7-Zip. Если у сервера нет выхода в интернет, выключите проверку на той же странице, а установщик 7-Zip загружайте вручную;
+- загруженные пакеты обновления и установщики 7-Zip лежат в `server/var/packages/`;
+- пакет обновления CUSTOS загружается через сайт. Если он больше лимита PHP, сайт напишет об этом; лимит поднимается в CloudPanel: сайт → **Settings** → **PHP Settings**, `upload_max_filesize` и `post_max_size`, например `100M`.
+
 ## Что сохранять в резервной копии
 
 - базу `custos`;
 - `server/config/config.php`;
 - `server/config/keys/` — ключ сервера. Если он потеряется, все агенты перестанут доверять серверу, и их придётся регистрировать заново.
+- `server/var/packages/` — по желанию: пакеты обновления можно загрузить заново.
 
 ## Без CloudPanel
 
@@ -336,7 +342,7 @@ nginx -T 2>/dev/null | grep client_max_body_size
 ```nginx
 root /var/www/custos/server/public;
 index index.php;
-client_max_body_size 10m;
+client_max_body_size 100m;   # агентам хватает 10m; больше нужно для загрузки пакетов обновления через сайт
 
 location / {
     try_files $uri /index.php?$query_string;
