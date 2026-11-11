@@ -67,9 +67,7 @@ internal sealed class RemoteSourceDialog : DialogForm
         _original = source;
 
         // A long window: it may be made larger, up to the whole screen.
-        FormBorderStyle = FormBorderStyle.Sizable;
-        MaximizeBox = true;
-        MinimumSize = new Size(640, 480);
+        MakeSizable(new Size(640, 480));
         foreach (string preset in Presets)
         {
             _preset.Items.Add(PresetTitle(preset));

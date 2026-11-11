@@ -63,6 +63,28 @@ internal abstract class DialogForm : Form
     /// <summary>The last call of the constructor of a dialog, after all its controls are added.</summary>
     protected void EndBuild() => ResumeLayout(performLayout: true);
 
+    /// <summary>
+    /// Lets the dialog be resized and maximized. The rows then sit in a panel that scrolls, at their own height: a
+    /// table that fills the window itself gives the height it does not need to its last row, so a maximized window
+    /// showed a long empty space under the last line.
+    /// </summary>
+    protected void MakeSizable(Size minimum)
+    {
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MaximizeBox = true;
+        MinimumSize = minimum;
+        int index = Controls.GetChildIndex(Body);
+        Controls.Remove(Body);
+        var host = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+        Body.AutoScroll = false;
+        Body.AutoSize = true;
+        Body.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        Body.Dock = DockStyle.Top;
+        host.Controls.Add(Body);
+        Controls.Add(host);
+        Controls.SetChildIndex(host, index);
+    }
+
     protected void AddRow(string caption, Control control, Control? extra = null)
     {
         Body.Controls.Add(new Label { Text = caption, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) });

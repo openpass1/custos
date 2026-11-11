@@ -354,6 +354,19 @@ public sealed class DialogTests
         var speedBox = Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum > 65535);
         Assert.True(dialog.PointToClient(speedBox.PointToScreen(Point.Empty)).Y > dialog.PointToClient(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonTestConnection).PointToScreen(Point.Empty)).Y);
 
+        // Scrolled down and then made larger, the rows keep their height: no empty space under the last line.
+        var lastNote = Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteNextPages);
+        var rows = (TableLayoutPanel)lastNote.Parent!;
+        var scroller = (ScrollableControl)rows.Parent!;
+        dialog.ClientSize = new Size(760, 500);
+        Sta.Pump();
+        scroller.AutoScrollPosition = new Point(0, 10_000);
+        Sta.Pump();
+        dialog.ClientSize = new Size(1000, 900);
+        Sta.Pump();
+        Assert.InRange(rows.Height - lastNote.Bottom, 0, lastNote.Margin.Bottom + rows.Padding.Bottom + 2);
+        Assert.Equal(rows.Width, scroller.ClientSize.Width);
+
         // The test: an unknown key of the server is to be confirmed first, then the answer of custos-helper is shown.
         Assert.True(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult { HostKeySha256 = Samples.ServerKey, HostKeyUnconfirmed = true }));
         Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.RemoteKeyToConfirm);
