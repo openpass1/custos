@@ -7,4 +7,5 @@ namespace Custos.Core.Storage;
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(List<DestinationResult>))]
 [JsonSerializable(typeof(List<DatabaseResult>))]
+[JsonSerializable(typeof(RemoteResult))]
 internal sealed partial class StorageJsonContext : JsonSerializerContext;

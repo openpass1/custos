@@ -23,7 +23,8 @@ public sealed partial class BackupEngine
     private static readonly TimeSpan TimeTolerance = TimeSpan.FromSeconds(2);
 
     /// <summary>Each run makes a set folder of its own (a mirror never does).</summary>
-    private static bool SeparateSets(TaskDefinition task) => task.Layout.SeparateFolders && task.BackupType != BackupTypes.Mirror;
+    /// <summary>Every run makes a set folder of its own. Always so for a Linux server: its sets are a tar each.</summary>
+    private static bool SeparateSets(TaskDefinition task) => (task.Layout.SeparateFolders || IsRemote(task)) && task.BackupType != BackupTypes.Mirror;
 
     private static bool IsSafeMirror(RunContext run) =>
         run.BackupType == BackupTypes.Mirror && run.Task.MirrorMode == MirrorModes.Safe;

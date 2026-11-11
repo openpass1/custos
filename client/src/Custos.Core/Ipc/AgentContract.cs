@@ -334,6 +334,73 @@ public sealed class DbTestResult
     public string? Error { get; set; }
 }
 
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.RemoteCreateKey"/>.</summary>
+public sealed class RemoteKeyRequest
+{
+    /// <summary>The server, for the name of the account ("custos@vps.example.org").</summary>
+    public required string Host { get; set; }
+
+    public string User { get; set; } = "custos";
+}
+
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.RemoteTest"/>.</summary>
+public sealed class RemoteTestRequest
+{
+    /// <summary>The source as the editor has it: address, port, user, key and the pinned key of the server (null
+    /// when none is pinned yet: then the answer only shows the key).</summary>
+    public required TaskSource Source { get; set; }
+}
+
+public sealed class RemoteTestResult
+{
+    /// <summary>The server answered and custos-helper works.</summary>
+    public bool Ok { get; set; }
+
+    /// <summary>The key the server showed, "SHA256:…" (also when it is not the pinned one).</summary>
+    public string? HostKeySha256 { get; set; }
+
+    /// <summary>The key did not match the pinned one (or none was pinned): nothing else was asked.</summary>
+    public bool HostKeyUnconfirmed { get; set; }
+
+    public string? HelperVersion { get; set; }
+
+    /// <summary>custos-helper is older than the one of this program (still works).</summary>
+    public bool HelperOutdated { get; set; }
+
+    public string? Hostname { get; set; }
+
+    public string? Os { get; set; }
+
+    public List<string> Roots { get; set; } = [];
+
+    public long? ServerFreeBytes { get; set; }
+
+    /// <summary>The databases by engine.</summary>
+    public List<RemoteDatabases> Databases { get; set; } = [];
+
+    public long Entries { get; set; }
+
+    public long Files { get; set; }
+
+    public long Bytes { get; set; }
+
+    /// <summary>Warnings of custos-helper while listing (unreadable folders …).</summary>
+    public string? Warnings { get; set; }
+
+    /// <summary>What went wrong, in words.</summary>
+    public string? Error { get; set; }
+}
+
+public sealed class RemoteDatabases
+{
+    public required string Engine { get; set; }
+
+    public List<string> Names { get; set; } = [];
+
+    /// <summary>The list could not be read.</summary>
+    public string? Error { get; set; }
+}
+
 public sealed class SettingsSaveRequest
 {
     public required AgentSettings Settings { get; set; }

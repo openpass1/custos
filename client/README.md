@@ -67,6 +67,31 @@ open the first part.
   в исходные места укажите отдельную папку «Дампы баз в папку».
 - MS SQL и 1С выгружаются своими программами через страницу «События» (до копирования) в папку-источник.
 
+## Linux-серверы (custos-helper по SSH)
+
+Страница задания «Источники» → «Linux-сервер…». Спецификация: [`docs/CUSTOS-remote-pull.md`](../docs/CUSTOS-remote-pull.md),
+сам скрипт на сервере и его ручная установка: [`helper/README.md`](../helper/README.md).
+
+1. Адрес сервера, порт SSH и IP офиса (внешний адрес этого компьютера: ключ будет работать только с него).
+2. Что забирать: «ispmanager: только сайты» (по умолчанию), «ispmanager: сайты и панель» или «Обычный Linux»;
+   папки, исключения, СУБД и исключённые базы можно поправить.
+3. «Создать ключ»: служба делает ключ ed25519, закрытая часть остаётся у неё (DPAPI) и никуда не уходит.
+4. Блок под ключом вставляется целиком в сессию root на сервере (после `sudo -i`), кнопка «Копировать» или
+   «Сохранить как файл…». Он создаёт пользователя `custos`, ставит custos-helper (сверяя SHA-256), его настройки,
+   sudo только для custos-helper и ключ. Повторный запуск безопасен; после изменений в окне его надо выполнить снова.
+5. «Проверить подключение»: CUSTOS покажет ключ сервера, его нужно сверить на сервере
+   (`for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done`) и подтвердить. Затем видны версия
+   custos-helper, базы, число файлов и объём.
+
+- В задании с Linux-сервером других источников нет, зеркало недоступно, фильтры страницы не применяются.
+- Набор: `files.tar` (все файлы или изменённые), `db\<СУБД>\<база>.sql`, `_users.sql` и `custos-set.json`.
+  Tar на Windows не распаковывается никогда.
+- Ключ сервера изменился, сервер недоступен (три попытки с паузой в минуту), дамп оборвался — запуск с ошибкой.
+- Восстановление — только в папку: tar на каждую папку сервера (`var-www.tar` …), дампы и `README.txt` с командами
+  для сервера. Настройки (`/etc` и папки `etc`) распаковываются на сервере в `/root/old-etc`, не поверх системы.
+- Если сервер отдаёт данные быстрее, чем архив успевает сжимать (больше 256 МБ ждут в памяти), запуск прерывается:
+  задайте ограничение скорости в окне сервера или уменьшите степень сжатия.
+
 ## Переход с Cobian Backup
 
 Главное окно → «Импорт из Cobian Backup…» → файл `MainList.lst` (обычно
@@ -119,6 +144,7 @@ GitHub, сверит его SHA-256 с опубликованным, прове�
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
 | `C:\Program Files\CUSTOS\7z.dll`, `7-Zip-License.txt` | 7-Zip library for 7z archives (x64, GNU LGPL) and its license |
+| `C:\Program Files\CUSTOS\THIRD-PARTY-NOTICES.txt` | Licenses of the other libraries CUSTOS ships with (SSH.NET, BouncyCastle, SharpZipLib, Serilog, SQLite …) |
 
 The interface starts with Windows only in the tray (`Custos.exe --tray`, set by the installer); started from the
 Start menu or by the installer it also opens its window. A second start only brings the running copy to the front.

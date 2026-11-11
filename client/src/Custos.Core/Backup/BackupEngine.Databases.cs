@@ -343,7 +343,7 @@ public sealed partial class BackupEngine
             Engine = d.Server.Engine,
             Name = d.Database,
             File = d.File is not null && (d.Ok is null || d.InSet) ? d.File : null,
-            Server = DbAddress(d.Server),
+            Server = d.Address ?? DbAddress(d.Server),
             Bytes = d.Ok is null ? null : d.Bytes,
             Sha256 = d.Sha256,
             Ok = d.Ok,
@@ -408,6 +408,9 @@ public sealed partial class BackupEngine
 
         /// <summary>"MySQL 127.0.0.1:3306".</summary>
         public string Where { get; } = where;
+
+        /// <summary>The server in the manifest; null = host:port of <see cref="Server"/> (a Linux server: its address).</summary>
+        public string? Address { get; init; }
 
         /// <summary>Null until the dump is taken.</summary>
         public bool? Ok { get; set; }

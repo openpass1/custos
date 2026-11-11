@@ -112,17 +112,25 @@ public sealed partial class BackupEngine
         run.Result.BackupType = run.BackupType;
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.RunStarted, task.Name, Words.BackupType(run.BackupType), Words.Trigger(run.Request.Trigger, run.Request.ScheduledFor, null)));
 
-        if (HasDatabases(task))
+        if (IsRemote(task))
         {
-            PlanDatabases(run);
+            PrepareRemote(run);
+        }
+        else
+        {
+            if (HasDatabases(task))
+            {
+                PlanDatabases(run);
+            }
+
+            CreateSnapshots(run);
+            run.Pause.WaitWhilePaused(run.Cancellation);
+            ScanSources(run);
+            SelectFiles(run);
         }
 
-        CreateSnapshots(run);
-        run.Pause.WaitWhilePaused(run.Cancellation);
-        ScanSources(run);
-        SelectFiles(run);
-
-        if (run.ToCopy.Count == 0 && run.BackupType is not (BackupTypes.Full or BackupTypes.Mirror) && !DumpsToTake(run).Any())
+        if (run.ToCopy.Count == 0 && run.BackupType is not (BackupTypes.Full or BackupTypes.Mirror) && !DumpsToTake(run).Any()
+            && run.Remote is not { Planned.Count: > 0 })
         {
             run.Result.NothingToDo = true;
             _log.Write(RunLogLevel.Info, Messages.NothingChanged);
@@ -146,6 +154,11 @@ public sealed partial class BackupEngine
             OpenSets(run);
             WriteDumps(run);
             CopyFiles(run);
+            if (run.Remote is not null)
+            {
+                WriteRemoteTar(run);
+            }
+
             CopyFolderSecurity(run);
             if (run.BackupType == BackupTypes.Mirror)
             {
@@ -160,10 +173,10 @@ public sealed partial class BackupEngine
             return;
         }
 
-        if (run.DbErrors > 0)
+        if (run.DbErrors > 0 || run.RemoteErrors > 0)
         {
             // The set stays, marked as an error; the next run takes the changes again and nothing is deleted.
-            _log.Write(RunLogLevel.Warning, Messages.DbSetKeptNotCommitted);
+            _log.Write(RunLogLevel.Warning, run.DbErrors > 0 ? Messages.DbSetKeptNotCommitted : Messages.RemoteSetKeptNotCommitted);
             return;
         }
 
@@ -195,6 +208,11 @@ public sealed partial class BackupEngine
         if (task.Sources.Count == 0 && !HasDatabases(task))
         {
             throw new BackupException(Messages.NoSources);
+        }
+
+        if (IsRemote(task))
+        {
+            CheckRemoteSupported(task);
         }
 
         if (task.Destinations.Count == 0)
@@ -237,7 +255,7 @@ public sealed partial class BackupEngine
                     {
                         ReadMirror(run, target);
                     }
-                    else if (run.Task.Layout.SeparateFolders)
+                    else if (SeparateSets(run.Task))
                     {
                         target.Sets = SetCatalog.Scan(target.Root, run.Task.Id);
                     }
@@ -314,7 +332,7 @@ public sealed partial class BackupEngine
         {
             foreach (var target in run.ActiveTargets)
             {
-                bool hasParent = task.Layout.SeparateFolders || IsArchive(task)
+                bool hasParent = SeparateSets(task) || IsArchive(task)
                     ? target.Sets.Any(s => string.Equals(s.Header.RunId, run.State.FullRunId, StringComparison.OrdinalIgnoreCase))
                     : target.SharedManifest is not null;
                 if (!hasParent)
@@ -322,6 +340,11 @@ public sealed partial class BackupEngine
                     reason = Messages.Format(Messages.FullBecauseParentMissing, run.State.FullSetName ?? run.State.FullRunId, target.Label);
                     break;
                 }
+            }
+
+            if (reason is null && IsRemote(task))
+            {
+                reason = RemoteBaseMissing(run);
             }
         }
 
@@ -806,13 +829,14 @@ public sealed partial class BackupEngine
             Phase(BackupPhases.Verify);
         }
 
+        var remoteFiles = run.Remote is not null ? RemoteManifestFiles(run, out _, out _) : null;
         foreach (var target in run.ActiveTargets)
         {
-            var files = run.BackupType == BackupTypes.Mirror ? MirrorFiles(run, target) : null;
+            var files = run.BackupType == BackupTypes.Mirror ? MirrorFiles(run, target) : remoteFiles;
             var header = BuildHeader(run, target.SetName, finished, status);
             if (files is not null)
             {
-                header.SetFileCount = files.Count(f => f.InSet);
+                header.SetFileCount = files.Count(f => f.InSet && f.Posix?.Type is null or "f");
                 header.SetBytes = files.Where(f => f.InSet).Sum(f => f.Size);
             }
 
@@ -876,7 +900,11 @@ public sealed partial class BackupEngine
         StartedAt = run.Request.StartedAt,
         FinishedAt = finished,
         Status = status,
-        Sources = [.. run.Sources.Where(s => s.Scan is { Found: true }).Select(s => new ManifestSource { Id = s.Source.Id, Path = s.Source.Path, Target = s.Target })],
+        Sources = run.Remote is { } remote
+            ? [new ManifestSource { Id = remote.Source.Id, Path = RemoteLabel(remote.Source), Target = RemoteTarName }]
+            : [.. run.Sources.Where(s => s.Scan is { Found: true }).Select(s => new ManifestSource { Id = s.Source.Id, Path = s.Source.Path, Target = s.Target })],
+        SourceKind = run.Remote is null ? null : SourceKinds.Ssh,
+        Remote = run.Remote?.Info is null ? null : ManifestRemoteOf(run),
         Databases = ManifestDatabases(run),
         FileCount = run.Result.SourceFiles,
         SetFileCount = run.Copied.Count + pendingFiles,
@@ -885,7 +913,7 @@ public sealed partial class BackupEngine
 
     /// <summary>The status a set is written with: an error when a dump failed (the set is kept all the same).</summary>
     private static string SetStatus(RunContext run) =>
-        run.DbErrors > 0 ? RunStatuses.Error : run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
+        run.DbErrors > 0 || run.RemoteErrors > 0 ? RunStatuses.Error : run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
 
     /// <summary>A path of a source that would land in the «db» folder of the set, which belongs to the dumps.</summary>
     private static bool IsInDbFolder(string relativePath) =>
@@ -1017,6 +1045,7 @@ public sealed partial class BackupEngine
         }
 
         run.Snapshots.Dispose();
+        run.Remote?.Session?.Dispose();
         foreach (var session in _sessions.Values)
         {
             session.Dispose();
@@ -1268,6 +1297,12 @@ public sealed partial class BackupEngine
 
         /// <summary>Database servers that could not be reached and dumps that failed.</summary>
         public int DbErrors { get; set; }
+
+        /// <summary>A Linux server as the source (stage 2a); null for the other tasks.</summary>
+        public RemoteRun? Remote { get; set; }
+
+        /// <summary>custos-helper ended the tar with an error: the set is kept, nothing is committed.</summary>
+        public int RemoteErrors { get; set; }
 
         /// <summary>Folders of the sources that could not be read: their files look deleted, but are not.</summary>
         public int UnreadableFolders { get; set; }

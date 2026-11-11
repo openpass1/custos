@@ -287,6 +287,8 @@ SevenZipBusyUpdate	7-Zip is being updated. Try again in a minute.	Идёт об�
 SevenZipNotAllowed	Only administrators may update 7-Zip.	Обновлять 7-Zip могут только администраторы.
 SevenZipNoAnswer	no answer in {0} s	нет ответа за {0} с
 DescDatabases	Every run also dumps the databases of {0} whole into «db».	Каждый запуск также выгружает целиком базы {0} в папку «db».
+DescFromServer	from the Linux server {0}	с Linux-сервера {0}
+DescRemoteDatabases	Every run also dumps the databases of {0} on the server whole into «db».	Каждый запуск также выгружает целиком базы {0} на сервере в папку «db».
 DescEvents	Events: {0} before the backup, {1} after.	События: до копирования — {0}, после — {1}.
 DescAfter	Afterwards: {0}.	После выполнения: {0}.
 
@@ -330,3 +332,78 @@ ReadmeMariaDbNote	MariaDB older than 10.5 has no program «mariadb»: write «my
 ReadmeProblems	Problems:	Проблемы:
 ReadmeIncomplete	{0} is incomplete: {1}. Do not load it as a full copy of the database.	{0} неполный: {1}. Не загружайте его как полную копию базы.
 ReadmeMissing	{0} «{1}» was not dumped: {2}	{0} «{1}»: дамп не снят: {2}
+# Linux servers over SSH (CUSTOS-remote-pull.md, stage 2a)
+RemoteHostKeyNew	{0}: the server shows the key {1}. Check it and confirm it in the task.	{0}: сервер показывает ключ {1}. Сверьте его и подтвердите в задании.
+RemoteHostKeyChanged	{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server was reinstalled, check the new key and confirm it in the task; otherwise someone may be in the way.	{0}: КЛЮЧ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не читались. Если сервер переустанавливали, сверьте новый ключ и подтвердите его в задании; иначе соединение могли перехватить.
+RemoteKeyRefused	{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task on the server again.	{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Выполните на сервере блок установки из задания ещё раз.
+RemoteUnreachable	{0}: no connection: {1}	{0}: нет соединения: {1}
+RemoteConnectionLost	The connection to the server broke: {0}	Соединение с сервером оборвалось: {0}
+RemoteNoRoots	Add at least one folder to take.	Добавьте хотя бы одну папку, которую забирать.
+RemotePathNotAbsolute	«{0}» is not an absolute Linux path (it must start with «/»).	«{0}» — не абсолютный путь Linux (он должен начинаться с «/»).
+RemoteRootIsSlash	The whole disk «/» cannot be a folder to take: choose the folders you need.	Весь диск «/» забирать нельзя: укажите нужные папки.
+RemoteRootsNested	«{1}» lies inside «{0}»: its files would be taken twice. Keep one of them.	«{1}» лежит внутри «{0}»: файлы попали бы в копию дважды. Оставьте одну из папок.
+RemoteMariaDbAndMySql	MariaDB and MySQL cannot both be chosen: a server runs one of them.	Нельзя выбрать и MariaDB, и MySQL: на сервере работает что-то одно.
+RemoteBadDbName	«{0}» cannot be a database name in helper.conf.	«{0}» не может быть именем базы в helper.conf.
+RemoteListingTooLong	The server lists more than {0} entries.	Сервер перечисляет больше {0} записей.
+RemoteListingBroken	the list of files is damaged ({0})	список файлов повреждён ({0})
+RemoteTarCut	the tar breaks off after {0} bytes	tar обрывается после {0} байт
+RemoteTarDamaged	the tar is damaged at byte {0}	tar повреждён на байте {0}
+RemoteBadAnswer	custos-helper gave a strange answer to «{0}»: {1}	custos-helper дал странный ответ на «{0}»: {1}
+RemoteHelperRefused	custos-helper refused «{0}»: {1}	custos-helper отказал в «{0}»: {1}
+RemoteHelperConfig	custos-helper cannot use its config /etc/custos/helper.conf: {0}	custos-helper не может работать со своим конфигом /etc/custos/helper.conf: {0}
+RemoteHelperMissing	custos-helper is not installed on the server or cannot be started: {0}. Run the install block from the task.	custos-helper не установлен на сервере или не запускается: {0}. Выполните блок установки из задания.
+RemoteHelperFailed	custos-helper «{0}» ended with code {1}: {2}	custos-helper «{0}» завершился с кодом {1}: {2}
+RemoteAnswerTooLong	The answer to «{0}» is longer than {1} bytes.	Ответ на «{0}» длиннее {1} байт.
+RemoteMemoryGuard	the server sends faster than the archive takes it, {0} wait in memory. Set a speed limit in the task (Sources → Linux server) or a lower compression level.	сервер отдаёт данные быстрее, чем их успевает принять архив, в памяти ждут {0}. Задайте в задании ограничение скорости («Источники» → Linux-сервер) или меньшую степень сжатия.
+RemoteOnlySource	A task with a Linux server has no other sources.	В задании с Linux-сервером других источников быть не может.
+RemoteNoMirror	A Linux server cannot be copied as a mirror: choose a full, incremental or differential copy.	Linux-сервер нельзя копировать зеркалом: выберите полную, инкрементальную или дифференциальную копию.
+RemoteNoDbServers	A task with a Linux server dumps the databases of that server; database servers of this computer belong in another task.	Задание с Linux-сервером выгружает базы этого сервера; серверы баз этого компьютера настраиваются в другом задании.
+RemoteFullBecauseNoBase	Full copy: «{0}» has no set of this server to build on.	Полная копия: в «{0}» нет набора этого сервера, от которого считать изменения.
+RemoteHostKeyNotPinned	{0}: the key of the server is not confirmed yet. Open the task and press «Test connection».	{0}: ключ сервера ещё не подтверждён. Откройте задание и нажмите «Проверить подключение».
+RemoteKeyMissing	The SSH key of the task is missing. Open the task and create the key again (then run the install block on the server again).	SSH-ключ задания не найден. Откройте задание и создайте ключ заново (затем снова выполните блок установки на сервере).
+RemoteInfoFailed	{0}: custos-helper does not answer: {1}	{0}: custos-helper не отвечает: {1}
+RemoteHelperIncompatible	{0}: custos-helper {1} speaks protocol {2}, this CUSTOS needs custos-helper {3}. Update it with the install block from the task.	{0}: custos-helper {1} работает по протоколу {2}, этому CUSTOS нужен custos-helper {3}. Обновите его блоком установки из задания.
+RemoteConnected	{0}: custos-helper {1}, {2}; folders: {3}; free on the server: {4}	{0}: custos-helper {1}, {2}; папки: {3}; свободно на сервере: {4}
+RemoteHelperOutdated	custos-helper {0} on the server is older than {1} of this CUSTOS: update it with the install block from the task.	custos-helper {0} на сервере старше версии {1} этого CUSTOS: обновите его блоком установки из задания.
+RemoteConfigChanged	The config of custos-helper (/etc/custos/helper.conf) has changed since the last copy.	Конфиг custos-helper (/etc/custos/helper.conf) изменился после прошлой копии.
+RemoteListingFailed	{0}: the list of files could not be read: {1}	{0}: не удалось прочитать список файлов: {1}
+RemoteSinceAll	all files	все файлы
+RemoteSinceTime	changed after {0} (server time)	изменённые после {0} (время сервера)
+RemotePlanned	On the server: {0} entries, {1} files ({2}). To take: {3} files and links ({4}), {5}{6}.	На сервере: {0} записей, файлов {1} ({2}). Забрать: файлов и ссылок {3} ({4}), {5}{6}.
+RemoteDeletedPart	; deleted since the last copy: {0}	; удалено после прошлой копии: {0}
+RemoteRetry	{0}. Next try in {1} s.	{0}. Следующая попытка через {1} с.
+RemoteGaveUp	{0}: no connection after {1} tries: {2}	{0}: нет соединения после {1} попыток: {2}
+RemoteLastListUnreadable	The list of files of the set «{0}» could not be read: {1}	Не удалось прочитать список файлов набора «{0}»: {1}
+RemoteDbReady	{0}: databases to dump: {1} ({2})	{0}: баз для дампа: {1} ({2})
+RemoteTarFailed	Files of the server: {0}	Файлы сервера: {0}
+RemoteHelperSays	custos-helper: {0}	custos-helper: {0}
+RemoteMoreLines	… and {0} more lines	… и ещё строк: {0}
+RemoteTarWarning	Some files changed or disappeared while they were read.	Часть файлов изменилась или исчезла во время чтения.
+RemoteTarWritten	Files of the server taken: {0} files and {1} folders and links ({2})	Файлы сервера забраны: файлов {0}, папок и ссылок {1} ({2})
+RemoteSetKeptNotCommitted	custos-helper reported an error. The set is kept but marked as failed; old sets were not deleted, the next run takes the changes again.	custos-helper сообщил об ошибке. Набор сохранён, но помечен как ошибочный; старые наборы не удалялись, следующий запуск снова заберёт изменения.
+
+# Restore of sets of Linux servers (CUSTOS-remote-pull.md 4.5)
+RestoreRemoteNeedsFolder	A copy of a Linux server is restored only into a folder of this computer: choose one.	Копия Linux-сервера восстанавливается только в папку на этом компьютере: выберите папку.
+RestoreRemoteTarProblem	files.tar of the set «{0}»: {1}	files.tar набора «{0}»: {1}
+RestoreRemoteMoreMissing	… and {0} more files that no set of the chain holds.	… и ещё файлов, которых нет ни в одном наборе цепочки: {0}.
+RestoreRemoteTarWritten	Written {0}: {1} entries ({2})	Записан {0}: записей {1} ({2})
+RestoreRemoteReadme	How to put the files and the databases back on a server: {0}	Как вернуть файлы и базы на сервер: {0}
+RemoteRestoreCut	the tar of the set breaks off in this file	tar набора обрывается на этом файле
+RemoteReadmeTitle	Copy of the Linux server {0}, set «{1}» ({2})	Копия Linux-сервера {0}, набор «{1}» ({2})
+RemoteReadmeIntro	CUSTOS does not put anything back on a server by itself. Copy this folder to the server (for example with WinSCP),\nlog on as root (sudo -i), go into the folder (cd) and run the commands you need from below.	CUSTOS сам ничего не возвращает на сервер. Скопируйте эту папку на сервер (например, WinSCP),\nвойдите как root (sudo -i), перейдите в папку (cd) и выполните нужные команды ниже.
+RemoteReadmeFiles	Files: a tar for each folder taken from the server, with the newest version of every file on the date of the set.	Файлы: по tar на каждую папку, забранную с сервера, с последней версией каждого файла на дату набора.
+RemoteReadmeOther	Other files	Прочие файлы
+RemoteReadmeEtc	Settings from /etc: do not unpack them over a working server, that replaces its own settings.\nUnpack them into a separate folder and take what you need from there:	Настройки из /etc: не распаковывайте их поверх рабочего сервера, это затрёт его собственные настройки.\nРаспакуйте в отдельную папку и берите оттуда нужное:
+RemoteReadmeWholeEtc	This is the whole /etc: over a server it would also replace the network settings, fstab, the users with their\npasswords and the SSH keys of the server. Unpack it only into a separate folder and take what you need from there:	Это весь /etc: поверх сервера он заменит ещё и сеть, fstab, пользователей с паролями и ключи SSH сервера.\nРаспаковывайте его только в отдельную папку и берите оттуда нужное:
+RemoteReadmeTarNotes	Run tar as root: then it gives the files their owners and rights back. Owners are matched by name; a user that\nis missing on the new server gets the number of the old one. To see what a tar holds: tar -tvf <file>	Запускайте tar от root: тогда он вернёт файлам владельцев и права. Владельцы ищутся по имени; пользователь,\nкоторого нет на новом сервере, получит номер со старого. Посмотреть, что внутри tar: tar -tvf <файл>
+RemoteReadmeDatabases	Databases (on the server as root; the database server must be running):	Базы данных (на сервере от root; сервер баз данных должен быть запущен):
+
+# Settings of tasks with a Linux server (CUSTOS-remote-pull.md 4.1)
+ConfigSshKeyOnlyMade	An SSH key is made by the agent itself and cannot be entered or replaced.	Ключ SSH создаёт сам агент, его нельзя ввести или заменить.
+ConfigSshHostRequired	Enter the address of the Linux server (a name or an IP address, without «user@»).	Введите адрес Linux-сервера (имя или IP-адрес, без «пользователь@»).
+ConfigSshKeyRequired	The task needs an SSH key made by CUSTOS: create it in the wizard of the source.	Заданию нужен ключ SSH, созданный CUSTOS: создайте его в мастере источника.
+ConfigSshBadHostKey	«{0}» is not a key fingerprint of the form SHA256:… Check the connection again to take the key of the server.	«{0}» — не отпечаток ключа вида SHA256:… Проверьте подключение ещё раз, чтобы взять ключ сервера.
+ConfigSshBadSpeed	The speed limit cannot be negative.	Ограничение скорости не может быть отрицательным.
+ConfigSshBadOfficeIp	«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).	«{0}» — не IP-адрес и не сеть (203.0.113.10, 203.0.113.0/24; несколько — через запятую).
+RemoteKeyCreated	New SSH key {0} made by {1}.	Создан ключ SSH {0}, создал {1}.
+RemoteTestTooLong	The server did not finish answering in {0} minutes.	Сервер не закончил отвечать за {0} мин.

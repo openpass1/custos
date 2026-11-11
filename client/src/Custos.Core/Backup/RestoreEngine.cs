@@ -92,7 +92,7 @@ public sealed class RestoreProgress
 /// restored. Every file is checked against the SHA-256 of its manifest while it is written, and appears under its
 /// name only when complete.
 /// </summary>
-public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgress = null)
+public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgress = null)
 {
     private const int BufferSize = 1024 * 1024;
     private static readonly TimeSpan ProgressInterval = TimeSpan.FromMilliseconds(250);
@@ -114,6 +114,10 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
         var chain = SetCatalog.RestoreChain(request.Sets, request.Set);
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreStarted, request.Set.Header.SetName,
             request.TargetFolder ?? Messages.RestoreToOriginal, string.Join(", ", chain.Select(s => s.Header.SetName))));
+        if (IsRemote(request.Set.Header))
+        {
+            return RunRemote(request, chain, result, cancellationToken);
+        }
 
         var manifests = new List<(StoredSet Set, Dictionary<string, ManifestFile> Files)>();
         foreach (var set in chain)
@@ -514,6 +518,28 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
     /// </summary>
     private void FinishDumps(RestoreRequest request, List<Planned> dumps, RestoreResult result)
     {
+        var lines = CheckDumps(request, dumps, result);
+        string folder = request.DumpsFolder ?? request.TargetFolder!;
+        string readme = Path.Combine(folder, DbTools.SetFolder, "README.txt");
+        try
+        {
+            string text = DumpReadme.Build(request.Set.Header, folder, lines);
+            request.WriteSession.Run(() =>
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(readme)!);
+                File.WriteAllText(readme, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            });
+            _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreDumpsReadme, readme));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreFileFailed, readme, ex.Message));
+        }
+    }
+
+    /// <summary>Renames incomplete dumps and warns about missing ones; gives every dump that is there.</summary>
+    private List<(ManifestDatabase Database, string Path, bool Complete)> CheckDumps(RestoreRequest request, List<Planned> dumps, RestoreResult result)
+    {
         var lines = new List<(ManifestDatabase Database, string Path, bool Complete)>();
         foreach (var planned in dumps)
         {
@@ -550,22 +576,7 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
             _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreDumpMissing, DumpName(database), database.Error ?? "?"));
         }
 
-        string folder = request.DumpsFolder ?? request.TargetFolder!;
-        string readme = Path.Combine(folder, DbTools.SetFolder, "README.txt");
-        try
-        {
-            string text = DumpReadme.Build(request.Set.Header, folder, lines);
-            request.WriteSession.Run(() =>
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(readme)!);
-                File.WriteAllText(readme, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-            });
-            _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreDumpsReadme, readme));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreFileFailed, readme, ex.Message));
-        }
+        return lines;
     }
 
     private static string DumpName(ManifestDatabase database) => database.Name ?? DbTools.UsersFileStem;

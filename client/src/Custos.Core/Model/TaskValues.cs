@@ -25,6 +25,25 @@ public static class SourceKinds
     public const string Folder = "folder";
     public const string File = "file";
     public const string Unc = "unc";
+
+    /// <summary>A Linux server, read through custos-helper over SSH (CUSTOS-remote-pull.md).</summary>
+    public const string Ssh = "ssh";
+}
+
+/// <summary>Values of <see cref="TaskSource.Preset"/>: what the wizard offers to take from a Linux server.</summary>
+public static class RemotePresets
+{
+    /// <summary>ispmanager: the sites only (the default).</summary>
+    public const string IspmanagerSites = "ispmanager_sites";
+
+    /// <summary>ispmanager: the sites and the panel.</summary>
+    public const string IspmanagerFull = "ispmanager_full";
+
+    /// <summary>A Linux server without a panel.</summary>
+    public const string Linux = "linux";
+
+    /// <summary>The lists changed by hand.</summary>
+    public const string Custom = "custom";
 }
 
 /// <summary>Values of <see cref="TaskDestination.Kind"/>.</summary>
@@ -158,6 +177,9 @@ public static class CredentialKinds
 
     /// <summary>Login and password of a database server (section 6.2); the password may be empty.</summary>
     public const string Db = "db";
+
+    /// <summary>An Ed25519 key the agent made for a Linux server; the private part never leaves the agent.</summary>
+    public const string SshKey = "ssh_key";
 }
 
 /// <summary>Values of <see cref="TaskDatabaseServer.Engine"/>.</summary>

@@ -848,6 +848,12 @@ static partial class Messages
     /// <summary>Every run also dumps the databases of {0} whole into «db».</summary>
     public static string DescDatabases => Get(nameof(DescDatabases));
 
+    /// <summary>from the Linux server {0}</summary>
+    public static string DescFromServer => Get(nameof(DescFromServer));
+
+    /// <summary>Every run also dumps the databases of {0} on the server whole into «db».</summary>
+    public static string DescRemoteDatabases => Get(nameof(DescRemoteDatabases));
+
     /// <summary>Events: {0} before the backup, {1} after.</summary>
     public static string DescEvents => Get(nameof(DescEvents));
 
@@ -970,4 +976,214 @@ static partial class Messages
 
     /// <summary>{0} «{1}» was not dumped: {2}</summary>
     public static string ReadmeMissing => Get(nameof(ReadmeMissing));
+
+    /// <summary>{0}: the server shows the key {1}. Check it and confirm it in the task.</summary>
+    public static string RemoteHostKeyNew => Get(nameof(RemoteHostKeyNew));
+
+    /// <summary>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server...</summary>
+    public static string RemoteHostKeyChanged => Get(nameof(RemoteHostKeyChanged));
+
+    /// <summary>{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task o...</summary>
+    public static string RemoteKeyRefused => Get(nameof(RemoteKeyRefused));
+
+    /// <summary>{0}: no connection: {1}</summary>
+    public static string RemoteUnreachable => Get(nameof(RemoteUnreachable));
+
+    /// <summary>The connection to the server broke: {0}</summary>
+    public static string RemoteConnectionLost => Get(nameof(RemoteConnectionLost));
+
+    /// <summary>Add at least one folder to take.</summary>
+    public static string RemoteNoRoots => Get(nameof(RemoteNoRoots));
+
+    /// <summary>«{0}» is not an absolute Linux path (it must start with «/»).</summary>
+    public static string RemotePathNotAbsolute => Get(nameof(RemotePathNotAbsolute));
+
+    /// <summary>The whole disk «/» cannot be a folder to take: choose the folders you need.</summary>
+    public static string RemoteRootIsSlash => Get(nameof(RemoteRootIsSlash));
+
+    /// <summary>«{1}» lies inside «{0}»: its files would be taken twice. Keep one of them.</summary>
+    public static string RemoteRootsNested => Get(nameof(RemoteRootsNested));
+
+    /// <summary>MariaDB and MySQL cannot both be chosen: a server runs one of them.</summary>
+    public static string RemoteMariaDbAndMySql => Get(nameof(RemoteMariaDbAndMySql));
+
+    /// <summary>«{0}» cannot be a database name in helper.conf.</summary>
+    public static string RemoteBadDbName => Get(nameof(RemoteBadDbName));
+
+    /// <summary>The server lists more than {0} entries.</summary>
+    public static string RemoteListingTooLong => Get(nameof(RemoteListingTooLong));
+
+    /// <summary>the list of files is damaged ({0})</summary>
+    public static string RemoteListingBroken => Get(nameof(RemoteListingBroken));
+
+    /// <summary>the tar breaks off after {0} bytes</summary>
+    public static string RemoteTarCut => Get(nameof(RemoteTarCut));
+
+    /// <summary>the tar is damaged at byte {0}</summary>
+    public static string RemoteTarDamaged => Get(nameof(RemoteTarDamaged));
+
+    /// <summary>custos-helper gave a strange answer to «{0}»: {1}</summary>
+    public static string RemoteBadAnswer => Get(nameof(RemoteBadAnswer));
+
+    /// <summary>custos-helper refused «{0}»: {1}</summary>
+    public static string RemoteHelperRefused => Get(nameof(RemoteHelperRefused));
+
+    /// <summary>custos-helper cannot use its config /etc/custos/helper.conf: {0}</summary>
+    public static string RemoteHelperConfig => Get(nameof(RemoteHelperConfig));
+
+    /// <summary>custos-helper is not installed on the server or cannot be started: {0}. Run the install block from the task.</summary>
+    public static string RemoteHelperMissing => Get(nameof(RemoteHelperMissing));
+
+    /// <summary>custos-helper «{0}» ended with code {1}: {2}</summary>
+    public static string RemoteHelperFailed => Get(nameof(RemoteHelperFailed));
+
+    /// <summary>The answer to «{0}» is longer than {1} bytes.</summary>
+    public static string RemoteAnswerTooLong => Get(nameof(RemoteAnswerTooLong));
+
+    /// <summary>the server sends faster than the archive takes it, {0} wait in memory. Set a speed limit in the task (Sourc...</summary>
+    public static string RemoteMemoryGuard => Get(nameof(RemoteMemoryGuard));
+
+    /// <summary>A task with a Linux server has no other sources.</summary>
+    public static string RemoteOnlySource => Get(nameof(RemoteOnlySource));
+
+    /// <summary>A Linux server cannot be copied as a mirror: choose a full, incremental or differential copy.</summary>
+    public static string RemoteNoMirror => Get(nameof(RemoteNoMirror));
+
+    /// <summary>A task with a Linux server dumps the databases of that server; database servers of this computer belong in ...</summary>
+    public static string RemoteNoDbServers => Get(nameof(RemoteNoDbServers));
+
+    /// <summary>Full copy: «{0}» has no set of this server to build on.</summary>
+    public static string RemoteFullBecauseNoBase => Get(nameof(RemoteFullBecauseNoBase));
+
+    /// <summary>{0}: the key of the server is not confirmed yet. Open the task and press «Test connection».</summary>
+    public static string RemoteHostKeyNotPinned => Get(nameof(RemoteHostKeyNotPinned));
+
+    /// <summary>The SSH key of the task is missing. Open the task and create the key again (then run the install block on t...</summary>
+    public static string RemoteKeyMissing => Get(nameof(RemoteKeyMissing));
+
+    /// <summary>{0}: custos-helper does not answer: {1}</summary>
+    public static string RemoteInfoFailed => Get(nameof(RemoteInfoFailed));
+
+    /// <summary>{0}: custos-helper {1} speaks protocol {2}, this CUSTOS needs custos-helper {3}. Update it with the install...</summary>
+    public static string RemoteHelperIncompatible => Get(nameof(RemoteHelperIncompatible));
+
+    /// <summary>{0}: custos-helper {1}, {2}; folders: {3}; free on the server: {4}</summary>
+    public static string RemoteConnected => Get(nameof(RemoteConnected));
+
+    /// <summary>custos-helper {0} on the server is older than {1} of this CUSTOS: update it with the install block from the...</summary>
+    public static string RemoteHelperOutdated => Get(nameof(RemoteHelperOutdated));
+
+    /// <summary>The config of custos-helper (/etc/custos/helper.conf) has changed since the last copy.</summary>
+    public static string RemoteConfigChanged => Get(nameof(RemoteConfigChanged));
+
+    /// <summary>{0}: the list of files could not be read: {1}</summary>
+    public static string RemoteListingFailed => Get(nameof(RemoteListingFailed));
+
+    /// <summary>all files</summary>
+    public static string RemoteSinceAll => Get(nameof(RemoteSinceAll));
+
+    /// <summary>changed after {0} (server time)</summary>
+    public static string RemoteSinceTime => Get(nameof(RemoteSinceTime));
+
+    /// <summary>On the server: {0} entries, {1} files ({2}). To take: {3} files and links ({4}), {5}{6}.</summary>
+    public static string RemotePlanned => Get(nameof(RemotePlanned));
+
+    /// <summary>; deleted since the last copy: {0}</summary>
+    public static string RemoteDeletedPart => Get(nameof(RemoteDeletedPart));
+
+    /// <summary>{0}. Next try in {1} s.</summary>
+    public static string RemoteRetry => Get(nameof(RemoteRetry));
+
+    /// <summary>{0}: no connection after {1} tries: {2}</summary>
+    public static string RemoteGaveUp => Get(nameof(RemoteGaveUp));
+
+    /// <summary>The list of files of the set «{0}» could not be read: {1}</summary>
+    public static string RemoteLastListUnreadable => Get(nameof(RemoteLastListUnreadable));
+
+    /// <summary>{0}: databases to dump: {1} ({2})</summary>
+    public static string RemoteDbReady => Get(nameof(RemoteDbReady));
+
+    /// <summary>Files of the server: {0}</summary>
+    public static string RemoteTarFailed => Get(nameof(RemoteTarFailed));
+
+    /// <summary>custos-helper: {0}</summary>
+    public static string RemoteHelperSays => Get(nameof(RemoteHelperSays));
+
+    /// <summary>… and {0} more lines</summary>
+    public static string RemoteMoreLines => Get(nameof(RemoteMoreLines));
+
+    /// <summary>Some files changed or disappeared while they were read.</summary>
+    public static string RemoteTarWarning => Get(nameof(RemoteTarWarning));
+
+    /// <summary>Files of the server taken: {0} files and {1} folders and links ({2})</summary>
+    public static string RemoteTarWritten => Get(nameof(RemoteTarWritten));
+
+    /// <summary>custos-helper reported an error. The set is kept but marked as failed; old sets were not deleted, the next ...</summary>
+    public static string RemoteSetKeptNotCommitted => Get(nameof(RemoteSetKeptNotCommitted));
+
+    /// <summary>A copy of a Linux server is restored only into a folder of this computer: choose one.</summary>
+    public static string RestoreRemoteNeedsFolder => Get(nameof(RestoreRemoteNeedsFolder));
+
+    /// <summary>files.tar of the set «{0}»: {1}</summary>
+    public static string RestoreRemoteTarProblem => Get(nameof(RestoreRemoteTarProblem));
+
+    /// <summary>… and {0} more files that no set of the chain holds.</summary>
+    public static string RestoreRemoteMoreMissing => Get(nameof(RestoreRemoteMoreMissing));
+
+    /// <summary>Written {0}: {1} entries ({2})</summary>
+    public static string RestoreRemoteTarWritten => Get(nameof(RestoreRemoteTarWritten));
+
+    /// <summary>How to put the files and the databases back on a server: {0}</summary>
+    public static string RestoreRemoteReadme => Get(nameof(RestoreRemoteReadme));
+
+    /// <summary>the tar of the set breaks off in this file</summary>
+    public static string RemoteRestoreCut => Get(nameof(RemoteRestoreCut));
+
+    /// <summary>Copy of the Linux server {0}, set «{1}» ({2})</summary>
+    public static string RemoteReadmeTitle => Get(nameof(RemoteReadmeTitle));
+
+    /// <summary>CUSTOS does not put anything back on a server by itself. Copy this folder to the server (for example with W...</summary>
+    public static string RemoteReadmeIntro => Get(nameof(RemoteReadmeIntro));
+
+    /// <summary>Files: a tar for each folder taken from the server, with the newest version of every file on the date of th...</summary>
+    public static string RemoteReadmeFiles => Get(nameof(RemoteReadmeFiles));
+
+    /// <summary>Other files</summary>
+    public static string RemoteReadmeOther => Get(nameof(RemoteReadmeOther));
+
+    /// <summary>Settings from /etc: do not unpack them over a working server, that replaces its own settings.</summary>
+    public static string RemoteReadmeEtc => Get(nameof(RemoteReadmeEtc));
+
+    /// <summary>This is the whole /etc: over a server it would also replace the network settings, fstab, the users with their</summary>
+    public static string RemoteReadmeWholeEtc => Get(nameof(RemoteReadmeWholeEtc));
+
+    /// <summary>Run tar as root: then it gives the files their owners and rights back. Owners are matched by name; a user that</summary>
+    public static string RemoteReadmeTarNotes => Get(nameof(RemoteReadmeTarNotes));
+
+    /// <summary>Databases (on the server as root; the database server must be running):</summary>
+    public static string RemoteReadmeDatabases => Get(nameof(RemoteReadmeDatabases));
+
+    /// <summary>An SSH key is made by the agent itself and cannot be entered or replaced.</summary>
+    public static string ConfigSshKeyOnlyMade => Get(nameof(ConfigSshKeyOnlyMade));
+
+    /// <summary>Enter the address of the Linux server (a name or an IP address, without «user@»).</summary>
+    public static string ConfigSshHostRequired => Get(nameof(ConfigSshHostRequired));
+
+    /// <summary>The task needs an SSH key made by CUSTOS: create it in the wizard of the source.</summary>
+    public static string ConfigSshKeyRequired => Get(nameof(ConfigSshKeyRequired));
+
+    /// <summary>«{0}» is not a key fingerprint of the form SHA256:… Check the connection again to take the key of the server.</summary>
+    public static string ConfigSshBadHostKey => Get(nameof(ConfigSshBadHostKey));
+
+    /// <summary>The speed limit cannot be negative.</summary>
+    public static string ConfigSshBadSpeed => Get(nameof(ConfigSshBadSpeed));
+
+    /// <summary>«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).</summary>
+    public static string ConfigSshBadOfficeIp => Get(nameof(ConfigSshBadOfficeIp));
+
+    /// <summary>New SSH key {0} made by {1}.</summary>
+    public static string RemoteKeyCreated => Get(nameof(RemoteKeyCreated));
+
+    /// <summary>The server did not finish answering in {0} minutes.</summary>
+    public static string RemoteTestTooLong => Get(nameof(RemoteTestTooLong));
 }

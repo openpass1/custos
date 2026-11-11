@@ -47,6 +47,24 @@ public sealed class RunRecord
 
     /// <summary>The dumped databases (section 6.2; <c>databases</c> of <c>runs/finish</c>, A.5).</summary>
     public List<DatabaseResult> Databases { get; set; } = [];
+
+    /// <summary>For a task with a Linux server: what custos-helper reported (<c>remote</c> of <c>runs/finish</c>, A.5).</summary>
+    public RemoteResult? Remote { get; set; }
+}
+
+/// <summary>The <c>remote</c> block of <c>runs/finish</c> (A.5, CUSTOS-remote-pull.md 5).</summary>
+public sealed class RemoteResult
+{
+    public string HelperVersion { get; set; } = string.Empty;
+
+    /// <summary>Free space on the disk of the roots of the server (the smallest), or null.</summary>
+    public long? ServerFreeBytes { get; set; }
+
+    /// <summary>Files changed since the last copy.</summary>
+    public long? FilesChanged { get; set; }
+
+    /// <summary>Files deleted since the last copy; null when the last copy could not be read.</summary>
+    public long? FilesDeleted { get; set; }
 }
 
 /// <summary>Result of a run for one destination (A.5).</summary>

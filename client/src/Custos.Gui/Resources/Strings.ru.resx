@@ -581,6 +581,12 @@
   <data name="ErrorUncNeedsNetwork" xml:space="preserve">
     <value>«{0}» — сетевой путь: выберите «Сетевая папка».</value>
   </data>
+  <data name="SourceAddLinux" xml:space="preserve">
+    <value>Linux-сервер…</value>
+  </data>
+  <data name="SourcesRemoteNote" xml:space="preserve">
+    <value>Задание забирает Linux-сервер через custos-helper. Других источников в таком задании нет; что забирать и что пропускать, задаётся в окне сервера, фильтры ниже к нему не применяются.</value>
+  </data>
   <data name="PageDestinations" xml:space="preserve">
     <value>Назначения</value>
   </data>
@@ -1608,5 +1614,172 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="CardDatabases" xml:space="preserve">
     <value>Базы данных</value>
+  </data>
+  <data name="RestoreRemoteNote" xml:space="preserve">
+    <value>Копия Linux-сервера восстанавливается только в папку: по tar на каждую папку сервера и дампы баз вместе с README.txt о том, как вернуть их на сервер.</value>
+  </data>
+  <data name="DatabasesRemoteNote" xml:space="preserve">
+    <value>Задание забирает Linux-сервер: его базы настраиваются в окне сервера на странице «Источники».</value>
+  </data>
+  <data name="RemoteAddTitle" xml:space="preserve">
+    <value>Добавить Linux-сервер</value>
+  </data>
+  <data name="RemoteEditTitle" xml:space="preserve">
+    <value>Linux-сервер</value>
+  </data>
+  <data name="RemoteHost" xml:space="preserve">
+    <value>Адрес:</value>
+  </data>
+  <data name="RemoteHostHelp" xml:space="preserve">
+    <value>Имя или IP-адрес сервера, как для подключения по SSH. На сервере нужен custos-helper: его устанавливает блок ниже вместе с пользователем custos; меняйте пользователя, только если настраиваете сервер вручную.</value>
+  </data>
+  <data name="RemotePort" xml:space="preserve">
+    <value>Порт:</value>
+  </data>
+  <data name="RemoteUser" xml:space="preserve">
+    <value>Пользователь:</value>
+  </data>
+  <data name="RemoteOfficeIp" xml:space="preserve">
+    <value>IP офиса:</value>
+  </data>
+  <data name="RemoteOfficeIpHelp" xml:space="preserve">
+    <value>Адрес, с которого этот компьютер выходит в интернет: ключ будет работать только с него. Несколько адресов или сетей пишутся через запятую, например 203.0.113.10,198.51.100.0/24.</value>
+  </data>
+  <data name="RemoteOfficeEmpty" xml:space="preserve">
+    <value>Без IP офиса ключ будет работать с любого адреса.</value>
+  </data>
+  <data name="RemoteWhatHeading" xml:space="preserve">
+    <value>Что забирать</value>
+  </data>
+  <data name="RemotePreset" xml:space="preserve">
+    <value>Набор:</value>
+  </data>
+  <data name="RemotePresetIspSites" xml:space="preserve">
+    <value>ispmanager: только сайты</value>
+  </data>
+  <data name="RemotePresetIspFull" xml:space="preserve">
+    <value>ispmanager: сайты и панель</value>
+  </data>
+  <data name="RemotePresetLinux" xml:space="preserve">
+    <value>Обычный Linux</value>
+  </data>
+  <data name="RemotePresetCustom" xml:space="preserve">
+    <value>Свои списки</value>
+  </data>
+  <data name="RemoteRoots" xml:space="preserve">
+    <value>Папки:</value>
+  </data>
+  <data name="RemoteRootsHelp" xml:space="preserve">
+    <value>Папки сервера, которые нужно забирать, по одной в строке, полными путями. Папка, которой нет на сервере, пропускается с предупреждением.</value>
+  </data>
+  <data name="RemoteExcludes" xml:space="preserve">
+    <value>Пропускать:</value>
+  </data>
+  <data name="RemoteExcludesHelp" xml:space="preserve">
+    <value>Папки, которые пропускаются вместе со всем содержимым, по одной в строке, полными путями; * означает любое имя, например /var/www/*/data/logs.</value>
+  </data>
+  <data name="RemoteEtcWarning" xml:space="preserve">
+    <value>В копии попадёт весь /etc: хеши паролей пользователей и ключи SSH сервера. Храните копии там, где их не прочтут посторонние.</value>
+  </data>
+  <data name="RemoteEngines" xml:space="preserve">
+    <value>Базы данных:</value>
+  </data>
+  <data name="RemoteDbExclude" xml:space="preserve">
+    <value>Пропускать базы:</value>
+  </data>
+  <data name="RemoteDbExcludeHelp" xml:space="preserve">
+    <value>Имена баз, которые не нужно выгружать, через пробел. Системные базы и так пропускаются; пользователи и права попадают в _users.sql.</value>
+  </data>
+  <data name="RemoteSpeed" xml:space="preserve">
+    <value>Ограничение скорости:</value>
+  </data>
+  <data name="RemoteSpeedUnit" xml:space="preserve">
+    <value>КБ/с (0 — без ограничения)</value>
+  </data>
+  <data name="RemoteSpeedHelp" xml:space="preserve">
+    <value>С какой скоростью custos-helper читает файлы, чтобы сайты не тормозили. Дампы баз не ограничиваются.</value>
+  </data>
+  <data name="RemoteKeyHeading" xml:space="preserve">
+    <value>Ключ и установка</value>
+  </data>
+  <data name="RemoteKey" xml:space="preserve">
+    <value>Ключ:</value>
+  </data>
+  <data name="RemoteCreateKey" xml:space="preserve">
+    <value>Создать ключ</value>
+  </data>
+  <data name="RemoteKeyIs" xml:space="preserve">
+    <value>{0} (ed25519, закрытая часть хранится в службе)</value>
+  </data>
+  <data name="RemoteKeyNone" xml:space="preserve">
+    <value>ещё нет: нажмите «Создать ключ»</value>
+  </data>
+  <data name="RemoteBlockNote" xml:space="preserve">
+    <value>Вставьте этот блок целиком в сессию root на сервере (после sudo -i). Он создаёт пользователя custos и устанавливает custos-helper, его настройки, sudo только для custos-helper и ключ. После изменений здесь выполните его ещё раз.</value>
+  </data>
+  <data name="RemoteBlockNeedsKey" xml:space="preserve">
+    <value>Блок для сервера появится здесь, когда будет создан ключ.</value>
+  </data>
+  <data name="ButtonCopy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="ButtonSaveAs" xml:space="preserve">
+    <value>Сохранить как файл…</value>
+  </data>
+  <data name="RemoteCopied" xml:space="preserve">
+    <value>Блок скопирован.</value>
+  </data>
+  <data name="RemoteBlockFilter" xml:space="preserve">
+    <value>Сценарии оболочки (*.sh)|*.sh|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="RemoteCheckHeading" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="RemoteHostKeyNone" xml:space="preserve">
+    <value>Ключ сервера ещё не подтверждён: нажмите «Проверить подключение».</value>
+  </data>
+  <data name="RemoteHostKeyPinned" xml:space="preserve">
+    <value>Ключ сервера: {0}</value>
+  </data>
+  <data name="RemoteKeyToConfirm" xml:space="preserve">
+    <value>Подтвердите ключ сервера.</value>
+  </data>
+  <data name="RemoteKeyChangedShort" xml:space="preserve">
+    <value>Ключ сервера изменился!</value>
+  </data>
+  <data name="RemoteKeyConfirm" xml:space="preserve">
+    <value>Сервер {0} показывает ключ
+{1}
+
+Доверяйте ему, только если это ключ вашего сервера. На сервере ключи показывает команда:
+for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
+
+Доверять этому ключу?</value>
+  </data>
+  <data name="RemoteKeyChanged" xml:space="preserve">
+    <value>{0}
+
+Доверяйте новому ключу, только если знаете, почему он изменился.</value>
+  </data>
+  <data name="RemoteSaveUnconfirmed" xml:space="preserve">
+    <value>Ключ сервера не подтверждён: запуски будут завершаться ошибкой, пока не пройдена «Проверка подключения». Всё равно сохранить?</value>
+  </data>
+  <data name="RemoteTestFailed" xml:space="preserve">
+    <value>Нет подключения: {0}</value>
+  </data>
+  <data name="RemoteTestOk" xml:space="preserve">
+    <value>custos-helper {0}, {1}. Файлов: {2} ({3}); свободно на сервере: {4}.</value>
+  </data>
+  <data name="RemoteTestNoDatabases" xml:space="preserve">
+    <value>баз нет</value>
+  </data>
+  <data name="RemoteTestOutdated" xml:space="preserve">
+    <value>custos-helper {0} старше {1}: выполните блок на сервере ещё раз.</value>
+  </data>
+  <data name="RemoteTestWarnings" xml:space="preserve">
+    <value>Предупреждения: {0}</value>
+  </data>
+  <data name="RemoteNextPages" xml:space="preserve">
+    <value>Расписание, архив, назначения и хранение задаются на остальных страницах, как в любом задании.</value>
   </data>
 </root>

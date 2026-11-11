@@ -108,6 +108,62 @@ public sealed class TaskSource
 
     public bool Recursive { get; set; } = true;
 
+    // ---- A Linux server over SSH (kind "ssh", CUSTOS-remote-pull.md 4.1); null for the other kinds ----
+
+    /// <summary>Address of the Linux server.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Host { get; set; }
+
+    /// <summary>Null = 22.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Port { get; set; }
+
+    /// <summary>The account custos-helper runs for ("custos").</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? User { get; set; }
+
+    /// <summary>The pinned key of the server, "SHA256:…". Changed only on this computer (wizard, editor).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HostKeySha256 { get; set; }
+
+    /// <summary>One of <see cref="RemotePresets"/>; only the wizard needs it.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Preset { get; set; }
+
+    /// <summary>External address of the office for <c>from=</c> of the key; null = the key works from anywhere.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OfficeIp { get; set; }
+
+    /// <summary>Limit for the files in KB/s; 0 = none. Dumps are never limited.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? SpeedLimitKbps { get; set; }
+
+    /// <summary>The settings of helper.conf the wizard wrote into the install block; only the wizard needs them.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RemoteHelperSettings? Helper { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+}
+
+/// <summary>What custos-helper may give out, as the wizard writes it into <c>/etc/custos/helper.conf</c>.</summary>
+public sealed class RemoteHelperSettings
+{
+    /// <summary>Folders taken with everything inside (<c>root</c>).</summary>
+    public List<string> Roots { get; set; } = [];
+
+    /// <summary><c>find -path</c> patterns left out with everything inside (<c>exclude</c>).</summary>
+    public List<string> Excludes { get; set; } = [];
+
+    /// <summary>Values of <see cref="DbEngines"/> (<c>db_engine</c>).</summary>
+    public List<string> DbEngines { get; set; } = [];
+
+    /// <summary>Databases left out besides the system ones (<c>db_exclude</c>).</summary>
+    public List<string> DbExclude { get; set; } = [];
+
+    /// <summary>A my.cnf with an account for MariaDB or MySQL; null = root over the socket (<c>db_defaults_file</c>).</summary>
+    public string? DbDefaultsFile { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }

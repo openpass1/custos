@@ -271,6 +271,108 @@ public sealed class DialogTests
     });
 
     [Fact]
+    public void The_restore_window_puts_a_copy_of_a_linux_server_into_a_folder() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new RestoreForm(monitor, Samples.OfficeId);
+        form.Show();
+        Sta.Pump();
+        var server = new Custos.Core.Backup.SetManifestHeader
+        {
+            SetName = "Web 1",
+            BackupType = BackupTypes.Full,
+            StartedAt = new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero),
+            SourceKind = SourceKinds.Ssh,
+        };
+
+        form.ShowSets(new Custos.Core.Ipc.RestoreListResult
+        {
+            Sets = [new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\w", Where = @"D:\Backup", Header = server }],
+        });
+        Sta.Pump();
+
+        var original = Sta.Find<RadioButton>(form).Single(r => r.Text == Strings.RestoreToOriginal);
+        Assert.False(original.Enabled);
+        Assert.False(original.Checked);
+        Assert.True(Sta.Find<RadioButton>(form).Single(r => r.Text == Strings.RestoreToFolder).Checked);
+        Assert.True(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreRemoteNote).Visible);
+        Assert.False(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsFolder).Visible);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_linux_server_dialog_makes_the_block_and_gives_back_the_source(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var context = new EditorContext(monitor, toolTip);
+        using (var empty = new RemoteSourceDialog(context, new TaskSource()))
+        {
+            empty.Show();
+            Sta.Pump();
+            Assert.Equal(Strings.RemoteAddTitle, empty.Text);
+            Assert.Equal(Strings.RemoteBlockNeedsKey, empty.BlockText);
+            Assert.True(Sta.Find<Label>(empty).Single(l => l.Text == Strings.RemoteOfficeEmpty).Visible);
+        }
+
+        var original = Samples.Server().Sources[0];
+        original.HostKeySha256 = null;
+        using var dialog = new RemoteSourceDialog(context, original);
+        dialog.Show();
+        Sta.Pump();
+
+        // The key of the task is there: the block installs custos-helper as it is built in, with the key from the office only.
+        Assert.Equal(Strings.RemoteEditTitle, dialog.Text);
+        string block = dialog.BlockText.ReplaceLineEndings("\n");
+        Assert.StartsWith("bash -e <<'CUSTOS_INSTALL_EOF'\n", block, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Remote.HelperScript.Sha256, block, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Remote.HelperSetup.KeyLine(Samples.SshKey().PublicKey!, "203.0.113.10"), block, StringComparison.Ordinal);
+        Assert.Contains("root       = /var/www\n", block, StringComparison.Ordinal);
+        Assert.False(Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteOfficeEmpty).Visible);
+        var etc = Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteEtcWarning);
+        Assert.False(etc.Visible);
+
+        // A preset with the whole /etc warns; a changed list is a list of one's own.
+        var preset = Sta.Find<ComboBox>(dialog).Single();
+        preset.SelectedIndex = 2;
+        Sta.Pump();
+        Assert.True(etc.Visible);
+        Assert.Contains("root       = /home\n", dialog.BlockText.ReplaceLineEndings("\n"), StringComparison.Ordinal);
+        var roots = Sta.Find<TextBox>(dialog).Single(b => b.Multiline && b.Text.Contains("/home", StringComparison.Ordinal));
+        roots.Text += Environment.NewLine + "/srv";
+        Sta.Pump();
+        Assert.Equal(RemoteSourceDialog.PresetTitle(RemotePresets.Custom), preset.Text);
+
+        // The test: an unknown key of the server is to be confirmed first, then the answer of custos-helper is shown.
+        Assert.True(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult { HostKeySha256 = Samples.ServerKey, HostKeyUnconfirmed = true }));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.RemoteKeyToConfirm);
+        dialog.Pin(Samples.ServerKey);
+        Assert.False(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult
+        {
+            Ok = true,
+            HostKeySha256 = Samples.ServerKey,
+            HelperVersion = "1.0.0",
+            Os = "Debian GNU/Linux 12",
+            Files = 1234,
+            Bytes = 5_000_000,
+            ServerFreeBytes = 50_000_000_000,
+            Databases = [new Custos.Core.Ipc.RemoteDatabases { Engine = DbEngines.MariaDb, Names = ["site_db", "shop_db"] }],
+        }));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.Contains("MariaDB: site_db, shop_db", StringComparison.Ordinal));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.Format(Strings.RemoteHostKeyPinned, Samples.ServerKey));
+
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        var source = dialog.Source;
+        Assert.Equal(
+            (original.Id, SourceKinds.Ssh, "custos@vps.example.org:22", Samples.SshKeyId, Samples.ServerKey, RemotePresets.Custom, "203.0.113.10"),
+            (source.Id, source.Kind, source.Path, source.CredentialId, source.HostKeySha256, source.Preset, source.OfficeIp));
+        Assert.Equal(["/etc", "/home", "/root", "/var/www", "/var/spool/cron", "/srv"], source.Helper!.Roots);
+    });
+
+    [Fact]
     public void The_database_server_dialog_lists_what_the_test_and_the_search_found() => Sta.Run("ru-RU", () =>
     {
         using var monitor = Samples.Monitor();

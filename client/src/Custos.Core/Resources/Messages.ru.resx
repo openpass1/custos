@@ -856,6 +856,12 @@
   <data name="DescDatabases" xml:space="preserve">
     <value>Каждый запуск также выгружает целиком базы {0} в папку «db».</value>
   </data>
+  <data name="DescFromServer" xml:space="preserve">
+    <value>с Linux-сервера {0}</value>
+  </data>
+  <data name="DescRemoteDatabases" xml:space="preserve">
+    <value>Каждый запуск также выгружает целиком базы {0} на сервере в папку «db».</value>
+  </data>
   <data name="DescEvents" xml:space="preserve">
     <value>События: до копирования — {0}, после — {1}.</value>
   </data>
@@ -982,5 +988,219 @@
   </data>
   <data name="ReadmeMissing" xml:space="preserve">
     <value>{0} «{1}»: дамп не снят: {2}</value>
+  </data>
+  <data name="RemoteHostKeyNew" xml:space="preserve">
+    <value>{0}: сервер показывает ключ {1}. Сверьте его и подтвердите в задании.</value>
+  </data>
+  <data name="RemoteHostKeyChanged" xml:space="preserve">
+    <value>{0}: КЛЮЧ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не читались. Если сервер переустанавливали, сверьте новый ключ и подтвердите его в задании; иначе соединение могли перехватить.</value>
+  </data>
+  <data name="RemoteKeyRefused" xml:space="preserve">
+    <value>{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Выполните на сервере блок установки из задания ещё раз.</value>
+  </data>
+  <data name="RemoteUnreachable" xml:space="preserve">
+    <value>{0}: нет соединения: {1}</value>
+  </data>
+  <data name="RemoteConnectionLost" xml:space="preserve">
+    <value>Соединение с сервером оборвалось: {0}</value>
+  </data>
+  <data name="RemoteNoRoots" xml:space="preserve">
+    <value>Добавьте хотя бы одну папку, которую забирать.</value>
+  </data>
+  <data name="RemotePathNotAbsolute" xml:space="preserve">
+    <value>«{0}» — не абсолютный путь Linux (он должен начинаться с «/»).</value>
+  </data>
+  <data name="RemoteRootIsSlash" xml:space="preserve">
+    <value>Весь диск «/» забирать нельзя: укажите нужные папки.</value>
+  </data>
+  <data name="RemoteRootsNested" xml:space="preserve">
+    <value>«{1}» лежит внутри «{0}»: файлы попали бы в копию дважды. Оставьте одну из папок.</value>
+  </data>
+  <data name="RemoteMariaDbAndMySql" xml:space="preserve">
+    <value>Нельзя выбрать и MariaDB, и MySQL: на сервере работает что-то одно.</value>
+  </data>
+  <data name="RemoteBadDbName" xml:space="preserve">
+    <value>«{0}» не может быть именем базы в helper.conf.</value>
+  </data>
+  <data name="RemoteListingTooLong" xml:space="preserve">
+    <value>Сервер перечисляет больше {0} записей.</value>
+  </data>
+  <data name="RemoteListingBroken" xml:space="preserve">
+    <value>список файлов повреждён ({0})</value>
+  </data>
+  <data name="RemoteTarCut" xml:space="preserve">
+    <value>tar обрывается после {0} байт</value>
+  </data>
+  <data name="RemoteTarDamaged" xml:space="preserve">
+    <value>tar повреждён на байте {0}</value>
+  </data>
+  <data name="RemoteBadAnswer" xml:space="preserve">
+    <value>custos-helper дал странный ответ на «{0}»: {1}</value>
+  </data>
+  <data name="RemoteHelperRefused" xml:space="preserve">
+    <value>custos-helper отказал в «{0}»: {1}</value>
+  </data>
+  <data name="RemoteHelperConfig" xml:space="preserve">
+    <value>custos-helper не может работать со своим конфигом /etc/custos/helper.conf: {0}</value>
+  </data>
+  <data name="RemoteHelperMissing" xml:space="preserve">
+    <value>custos-helper не установлен на сервере или не запускается: {0}. Выполните блок установки из задания.</value>
+  </data>
+  <data name="RemoteHelperFailed" xml:space="preserve">
+    <value>custos-helper «{0}» завершился с кодом {1}: {2}</value>
+  </data>
+  <data name="RemoteAnswerTooLong" xml:space="preserve">
+    <value>Ответ на «{0}» длиннее {1} байт.</value>
+  </data>
+  <data name="RemoteMemoryGuard" xml:space="preserve">
+    <value>сервер отдаёт данные быстрее, чем их успевает принять архив, в памяти ждут {0}. Задайте в задании ограничение скорости («Источники» → Linux-сервер) или меньшую степень сжатия.</value>
+  </data>
+  <data name="RemoteOnlySource" xml:space="preserve">
+    <value>В задании с Linux-сервером других источников быть не может.</value>
+  </data>
+  <data name="RemoteNoMirror" xml:space="preserve">
+    <value>Linux-сервер нельзя копировать зеркалом: выберите полную, инкрементальную или дифференциальную копию.</value>
+  </data>
+  <data name="RemoteNoDbServers" xml:space="preserve">
+    <value>Задание с Linux-сервером выгружает базы этого сервера; серверы баз этого компьютера настраиваются в другом задании.</value>
+  </data>
+  <data name="RemoteFullBecauseNoBase" xml:space="preserve">
+    <value>Полная копия: в «{0}» нет набора этого сервера, от которого считать изменения.</value>
+  </data>
+  <data name="RemoteHostKeyNotPinned" xml:space="preserve">
+    <value>{0}: ключ сервера ещё не подтверждён. Откройте задание и нажмите «Проверить подключение».</value>
+  </data>
+  <data name="RemoteKeyMissing" xml:space="preserve">
+    <value>SSH-ключ задания не найден. Откройте задание и создайте ключ заново (затем снова выполните блок установки на сервере).</value>
+  </data>
+  <data name="RemoteInfoFailed" xml:space="preserve">
+    <value>{0}: custos-helper не отвечает: {1}</value>
+  </data>
+  <data name="RemoteHelperIncompatible" xml:space="preserve">
+    <value>{0}: custos-helper {1} работает по протоколу {2}, этому CUSTOS нужен custos-helper {3}. Обновите его блоком установки из задания.</value>
+  </data>
+  <data name="RemoteConnected" xml:space="preserve">
+    <value>{0}: custos-helper {1}, {2}; папки: {3}; свободно на сервере: {4}</value>
+  </data>
+  <data name="RemoteHelperOutdated" xml:space="preserve">
+    <value>custos-helper {0} на сервере старше версии {1} этого CUSTOS: обновите его блоком установки из задания.</value>
+  </data>
+  <data name="RemoteConfigChanged" xml:space="preserve">
+    <value>Конфиг custos-helper (/etc/custos/helper.conf) изменился после прошлой копии.</value>
+  </data>
+  <data name="RemoteListingFailed" xml:space="preserve">
+    <value>{0}: не удалось прочитать список файлов: {1}</value>
+  </data>
+  <data name="RemoteSinceAll" xml:space="preserve">
+    <value>все файлы</value>
+  </data>
+  <data name="RemoteSinceTime" xml:space="preserve">
+    <value>изменённые после {0} (время сервера)</value>
+  </data>
+  <data name="RemotePlanned" xml:space="preserve">
+    <value>На сервере: {0} записей, файлов {1} ({2}). Забрать: файлов и ссылок {3} ({4}), {5}{6}.</value>
+  </data>
+  <data name="RemoteDeletedPart" xml:space="preserve">
+    <value>; удалено после прошлой копии: {0}</value>
+  </data>
+  <data name="RemoteRetry" xml:space="preserve">
+    <value>{0}. Следующая попытка через {1} с.</value>
+  </data>
+  <data name="RemoteGaveUp" xml:space="preserve">
+    <value>{0}: нет соединения после {1} попыток: {2}</value>
+  </data>
+  <data name="RemoteLastListUnreadable" xml:space="preserve">
+    <value>Не удалось прочитать список файлов набора «{0}»: {1}</value>
+  </data>
+  <data name="RemoteDbReady" xml:space="preserve">
+    <value>{0}: баз для дампа: {1} ({2})</value>
+  </data>
+  <data name="RemoteTarFailed" xml:space="preserve">
+    <value>Файлы сервера: {0}</value>
+  </data>
+  <data name="RemoteHelperSays" xml:space="preserve">
+    <value>custos-helper: {0}</value>
+  </data>
+  <data name="RemoteMoreLines" xml:space="preserve">
+    <value>… и ещё строк: {0}</value>
+  </data>
+  <data name="RemoteTarWarning" xml:space="preserve">
+    <value>Часть файлов изменилась или исчезла во время чтения.</value>
+  </data>
+  <data name="RemoteTarWritten" xml:space="preserve">
+    <value>Файлы сервера забраны: файлов {0}, папок и ссылок {1} ({2})</value>
+  </data>
+  <data name="RemoteSetKeptNotCommitted" xml:space="preserve">
+    <value>custos-helper сообщил об ошибке. Набор сохранён, но помечен как ошибочный; старые наборы не удалялись, следующий запуск снова заберёт изменения.</value>
+  </data>
+  <data name="RestoreRemoteNeedsFolder" xml:space="preserve">
+    <value>Копия Linux-сервера восстанавливается только в папку на этом компьютере: выберите папку.</value>
+  </data>
+  <data name="RestoreRemoteTarProblem" xml:space="preserve">
+    <value>files.tar набора «{0}»: {1}</value>
+  </data>
+  <data name="RestoreRemoteMoreMissing" xml:space="preserve">
+    <value>… и ещё файлов, которых нет ни в одном наборе цепочки: {0}.</value>
+  </data>
+  <data name="RestoreRemoteTarWritten" xml:space="preserve">
+    <value>Записан {0}: записей {1} ({2})</value>
+  </data>
+  <data name="RestoreRemoteReadme" xml:space="preserve">
+    <value>Как вернуть файлы и базы на сервер: {0}</value>
+  </data>
+  <data name="RemoteRestoreCut" xml:space="preserve">
+    <value>tar набора обрывается на этом файле</value>
+  </data>
+  <data name="RemoteReadmeTitle" xml:space="preserve">
+    <value>Копия Linux-сервера {0}, набор «{1}» ({2})</value>
+  </data>
+  <data name="RemoteReadmeIntro" xml:space="preserve">
+    <value>CUSTOS сам ничего не возвращает на сервер. Скопируйте эту папку на сервер (например, WinSCP),
+войдите как root (sudo -i), перейдите в папку (cd) и выполните нужные команды ниже.</value>
+  </data>
+  <data name="RemoteReadmeFiles" xml:space="preserve">
+    <value>Файлы: по tar на каждую папку, забранную с сервера, с последней версией каждого файла на дату набора.</value>
+  </data>
+  <data name="RemoteReadmeOther" xml:space="preserve">
+    <value>Прочие файлы</value>
+  </data>
+  <data name="RemoteReadmeEtc" xml:space="preserve">
+    <value>Настройки из /etc: не распаковывайте их поверх рабочего сервера, это затрёт его собственные настройки.
+Распакуйте в отдельную папку и берите оттуда нужное:</value>
+  </data>
+  <data name="RemoteReadmeWholeEtc" xml:space="preserve">
+    <value>Это весь /etc: поверх сервера он заменит ещё и сеть, fstab, пользователей с паролями и ключи SSH сервера.
+Распаковывайте его только в отдельную папку и берите оттуда нужное:</value>
+  </data>
+  <data name="RemoteReadmeTarNotes" xml:space="preserve">
+    <value>Запускайте tar от root: тогда он вернёт файлам владельцев и права. Владельцы ищутся по имени; пользователь,
+которого нет на новом сервере, получит номер со старого. Посмотреть, что внутри tar: tar -tvf &lt;файл&gt;</value>
+  </data>
+  <data name="RemoteReadmeDatabases" xml:space="preserve">
+    <value>Базы данных (на сервере от root; сервер баз данных должен быть запущен):</value>
+  </data>
+  <data name="ConfigSshKeyOnlyMade" xml:space="preserve">
+    <value>Ключ SSH создаёт сам агент, его нельзя ввести или заменить.</value>
+  </data>
+  <data name="ConfigSshHostRequired" xml:space="preserve">
+    <value>Введите адрес Linux-сервера (имя или IP-адрес, без «пользователь@»).</value>
+  </data>
+  <data name="ConfigSshKeyRequired" xml:space="preserve">
+    <value>Заданию нужен ключ SSH, созданный CUSTOS: создайте его в мастере источника.</value>
+  </data>
+  <data name="ConfigSshBadHostKey" xml:space="preserve">
+    <value>«{0}» — не отпечаток ключа вида SHA256:… Проверьте подключение ещё раз, чтобы взять ключ сервера.</value>
+  </data>
+  <data name="ConfigSshBadSpeed" xml:space="preserve">
+    <value>Ограничение скорости не может быть отрицательным.</value>
+  </data>
+  <data name="ConfigSshBadOfficeIp" xml:space="preserve">
+    <value>«{0}» — не IP-адрес и не сеть (203.0.113.10, 203.0.113.0/24; несколько — через запятую).</value>
+  </data>
+  <data name="RemoteKeyCreated" xml:space="preserve">
+    <value>Создан ключ SSH {0}, создал {1}.</value>
+  </data>
+  <data name="RemoteTestTooLong" xml:space="preserve">
+    <value>Сервер не закончил отвечать за {0} мин.</value>
   </data>
 </root>

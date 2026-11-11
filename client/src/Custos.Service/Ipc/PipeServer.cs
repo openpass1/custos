@@ -53,6 +53,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.DestinationTest,
         PipeProtocol.Methods.DatabasesFind,
         PipeProtocol.Methods.DatabasesTest,
+        PipeProtocol.Methods.RemoteCreateKey,
+        PipeProtocol.Methods.RemoteTest,
         PipeProtocol.Methods.SettingsSave,
     ];
 
@@ -409,6 +411,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.FindDatabases(), json.DbFindResult),
             PipeProtocol.Methods.DatabasesTest =>
                 PipeMessage.Success(id, agent.TestDatabase(request.GetData(json.DbTestRequest), identity.Sid), json.DbTestResult),
+            PipeProtocol.Methods.RemoteCreateKey =>
+                PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.CreateSshKey(request.GetData(json.RemoteKeyRequest), user) }, json.CredentialSaveResult),
+            PipeProtocol.Methods.RemoteTest =>
+                PipeMessage.Success(id, agent.TestRemote(request.GetData(json.RemoteTestRequest)), json.RemoteTestResult),
             PipeProtocol.Methods.SettingsSave =>
                 Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
             PipeProtocol.Methods.RestoreList =>

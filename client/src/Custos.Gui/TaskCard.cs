@@ -86,7 +86,8 @@ internal sealed class TaskCard : UserControl
         _details.SuspendLayout();
         _detailCount = 0;
         AddDetail(Strings.CardSources, task.Sources.Count == 0 ? Strings.CardNone
-            : string.Join(Environment.NewLine, task.Sources.Select(s => s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
+            : string.Join(Environment.NewLine, task.Sources.Select(s => s.Kind == SourceKinds.Ssh ? s.Path + " (" + RemoteSourceDialog.PresetTitle(s.Preset) + ")"
+                : s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
         if (task.DbServers.Count > 0)
         {
             AddDetail(Strings.CardDatabases, string.Join(Environment.NewLine,

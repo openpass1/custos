@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Custos.Core.Archives;
 using Custos.Core.Model;
+using Custos.Core.Remote;
 
 namespace Custos.Core.Backup;
 
@@ -51,6 +52,11 @@ public sealed partial class BackupEngine
             }
         }
 
+        if (run.Remote is { } remote && CheckTarFile(run, target.Session, Path.Combine(target.WriteFolder, RemoteTarName), RemoteExpected(remote)) is { } tarProblem)
+        {
+            throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, tarProblem));
+        }
+
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.VerifyNewOk, target.Label));
     }
 
@@ -72,7 +78,8 @@ public sealed partial class BackupEngine
             expected[ArchivePaths.ToWindows(dump.File!)] = dump.Sha256!;
         }
 
-        string? problem = CheckArchive(run, run.Access!.WithSession(target.Session), run.Task.Archive.Format, target.Temps, expected);
+        string? problem = CheckArchive(run, run.Access!.WithSession(target.Session), run.Task.Archive.Format, target.Temps, expected,
+            run.Remote is { } remote ? RemoteExpected(remote) : null);
         if (problem is not null)
         {
             throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, problem));
@@ -157,7 +164,28 @@ public sealed partial class BackupEngine
         }
 
         var dumps = set.Header.Databases.Where(d => d.File is not null && d.Sha256 is not null).ToList();
-        if (set.Storage == SetStorage.Archive)
+        if (RestoreEngine.IsRemote(set.Header))
+        {
+            // The files of a Linux server lie in files.tar, by their paths there (case matters).
+            var inTar = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var file in files.Where(f => f.InSet && f.Sha256 is not null))
+            {
+                inTar[Remote.RemotePath.Key(file)] = file.Sha256!;
+            }
+
+            files = [];
+            if (set.Storage == SetStorage.Archive)
+            {
+                var expectedDumps = dumps.ToDictionary(d => ArchivePaths.ToWindows(d.File!), d => d.Sha256!, StringComparer.OrdinalIgnoreCase);
+                return CheckArchive(run, access!, set.Format ?? ArchiveFormats.SevenZip, set.Parts, expectedDumps, inTar);
+            }
+
+            if (CheckTarFile(run, target.Session, Path.Combine(set.Location, RemoteTarName), inTar) is { } tarProblem)
+            {
+                return tarProblem;
+            }
+        }
+        else if (set.Storage == SetStorage.Archive)
         {
             var expected = files.Where(f => f.InSet && f.Sha256 is not null)
                 .ToDictionary(f => ArchivePaths.ToWindows(f.Path), f => f.Sha256!, StringComparer.OrdinalIgnoreCase);
@@ -189,6 +217,39 @@ public sealed partial class BackupEngine
         }
 
         return null;
+    }
+
+    /// <summary>What the tar of this run holds, by key, with the SHA-256 of every file.</summary>
+    private static Dictionary<string, string> RemoteExpected(RemoteRun remote) =>
+        remote.Stored.Where(s => s.Value.Sha256 is not null).ToDictionary(s => s.Key, s => s.Value.Sha256!, StringComparer.Ordinal);
+
+    private static bool IsRemoteTar(string archivePath) => string.Equals(ArchivePaths.ToZip(archivePath), RemoteTarName, StringComparison.Ordinal);
+
+    /// <summary>Null if the tar file of a plain set holds every expected file with its SHA-256, or what is wrong.</summary>
+    private string? CheckTarFile(RunContext run, INetworkSession session, string path, IReadOnlyDictionary<string, string> expected)
+    {
+        try
+        {
+            using var stream = Lowered(session.Run(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
+            using var check = new TarCheckStream(expected);
+            var buffer = new byte[BufferSize];
+            int read;
+            while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                run.Cancellation.ThrowIfCancellationRequested();
+                check.Write(buffer, 0, read);
+            }
+
+            return check.Finish();
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return Messages.Format(Messages.VerifyFileProblem, RemoteTarName, Messages.VerifyFileMissing);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Messages.Format(Messages.VerifyFileProblem, RemoteTarName, ex.Message);
+        }
     }
 
     /// <summary>"db/mysql/a.sql" → a relative path of this system.</summary>
@@ -225,22 +286,42 @@ public sealed partial class BackupEngine
     /// Unpacks every item of an archive into nowhere. Null if all is well: every item passes its own check, every
     /// expected file is there with its SHA-256. Otherwise the first problem, in words.
     /// </summary>
-    private static string? CheckArchive(RunContext run, ArchiveAccess access, string format, IReadOnlyList<string> parts, IReadOnlyDictionary<string, string> expected)
+    /// <param name="inTar">For a set of a Linux server: what its files.tar must hold, by key, with the SHA-256.</param>
+    private static string? CheckArchive(RunContext run, ArchiveAccess access, string format, IReadOnlyList<string> parts, IReadOnlyDictionary<string, string> expected,
+        IReadOnlyDictionary<string, string>? inTar = null)
     {
         try
         {
             using var reader = access.Open(format, parts);
-            var sinks = new Dictionary<int, HashingStream>();
+            var sinks = new Dictionary<int, Stream>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             string? problem = null;
+            bool tarSeen = false;
             try
             {
                 reader.Extract(
                     [.. reader.Entries.Where(e => !e.IsFolder).Select(e => e.Index)],
-                    entry => sinks[entry.Index] = new HashingStream(),
+                    entry => sinks[entry.Index] = inTar is not null && IsRemoteTar(entry.Path) ? new TarCheckStream(inTar) : new HashingStream(),
                     (entry, outcome) =>
                     {
-                        string? hash = sinks.Remove(entry.Index, out var sink) ? sink.Finish() : null;
+                        string? hash = null;
+                        if (sinks.Remove(entry.Index, out var sink))
+                        {
+                            using var done = sink;
+                            if (sink is TarCheckStream tar)
+                            {
+                                tarSeen = true;
+                                if (outcome == ExtractOutcome.Ok && tar.Finish() is { } tarProblem)
+                                {
+                                    problem ??= tarProblem;
+                                }
+                            }
+                            else
+                            {
+                                hash = ((HashingStream)sink).Finish();
+                            }
+                        }
+
                         if (outcome != ExtractOutcome.Ok)
                         {
                             problem ??= Messages.Format(Messages.VerifyFileProblem, entry.Path, OutcomeText(outcome));
@@ -269,6 +350,11 @@ public sealed partial class BackupEngine
             if (problem is null && expected.Keys.FirstOrDefault(k => !seen.Contains(k)) is { } missing)
             {
                 problem = Messages.Format(Messages.VerifyFileProblem, missing, Messages.VerifyFileMissing);
+            }
+
+            if (problem is null && inTar is { Count: > 0 } && !tarSeen)
+            {
+                problem = Messages.Format(Messages.VerifyFileProblem, RemoteTarName, Messages.VerifyFileMissing);
             }
 
             return problem;

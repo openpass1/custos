@@ -185,7 +185,7 @@ public sealed partial class BackupEngine
                     }
                 });
                 target.Completed = true;
-                target.Files = run.Copied.Count + run.Dumps.Count(d => d.InSet);
+                target.Files = run.Copied.Count + run.Dumps.Count(d => d.InSet) + (int)(run.Remote?.StoredFiles ?? 0);
                 target.Bytes = run.ArchiveBytes;
                 target.NewSet = new StoredSet(target.Parts[0], run.Header!)
                 {
@@ -317,6 +317,11 @@ public sealed partial class BackupEngine
             }
         }
 
+        if (run.Remote is not null)
+        {
+            items.Add(RemoteTarItem(run));
+        }
+
         foreach (var (context, file) in run.ToCopy)
         {
             items.Add(new ArchiveItem
@@ -359,6 +364,18 @@ public sealed partial class BackupEngine
                     pending.Add(file.OriginalPath);
                     pendingBytes += file.Size;
                 }
+            }
+
+            if (run.Remote is not null)
+            {
+                var files = RemoteManifestFiles(run, out int setFiles, out long setBytes);
+                run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, SetStatus(run));
+                run.Header.SetFileCount = setFiles;
+                run.Header.SetBytes = setBytes;
+                var remoteStream = new MemoryStream();
+                SetManifest.Write(remoteStream, run.Header, files);
+                remoteStream.Position = 0;
+                return remoteStream;
             }
 
             run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, SetStatus(run), pending.Count, pendingBytes);

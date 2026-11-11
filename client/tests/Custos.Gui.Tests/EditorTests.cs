@@ -266,6 +266,51 @@ public sealed class EditorTests
         Assert.Equal(Strings.Format(Strings.DbOnly, "crm"), list.Items[1].SubItems[1].Text);
     });
 
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void A_linux_server_comes_back_unchanged_and_stays_the_only_source(string culture) => Sta.Run(culture, () =>
+    {
+        var task = Samples.Server();
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task.Clone(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var sources = Assert.IsType<SourcesPage>(editor.Pages[1]);
+        editor.SelectPage(sources);
+        Sta.Pump();
+        var row = Sta.Find<ListView>(sources).Single().Items[0];
+        Assert.Equal(("custos@vps.example.org:22", "custos@vps.example.org"), (row.Text, row.SubItems[2].Text));
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.SourceAddLinux).Enabled);
+        Assert.True(Sta.Find<Label>(sources).Single(l => l.Text == Strings.SourcesRemoteNote).Visible);
+        Assert.False(Sta.Find<CheckBox>(sources).Single(c => c.Text == Strings.SkipHidden).Enabled);
+
+        var databases = Assert.IsType<DatabasesPage>(editor.Pages[2]);
+        editor.SelectPage(databases);
+        Sta.Pump();
+        Assert.False(Sta.Find<Button>(databases).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.True(Sta.Find<Label>(databases).Single(l => l.Text == Strings.DatabasesRemoteNote).Visible);
+    });
+
+    [Fact]
+    public void A_task_with_folders_cannot_take_a_linux_server_as_well() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var sources = editor.Pages[1];
+        editor.SelectPage(sources);
+        Sta.Pump();
+
+        Assert.True(Sta.Find<Button>(sources).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.SourceAddLinux).Enabled);
+        Assert.False(Sta.Find<Label>(sources).Single(l => l.Text == Strings.SourcesRemoteNote).Visible);
+    });
+
     /// <summary>Opens the editor, shows every page as a user clicking through them would, and collects the task.</summary>
     private static TaskDefinition OpenAndCollect(TaskDefinition task)
     {

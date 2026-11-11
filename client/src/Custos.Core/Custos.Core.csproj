@@ -18,6 +18,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SharpZipLib" />
+    <PackageReference Include="SSH.NET" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- custos-helper as it is in the repository: the wizard puts it into the install block (stage 2a). -->
+    <EmbeddedResource Include="..\..\..\helper\custos-helper" LogicalName="Custos.Core.custos-helper" />
   </ItemGroup>
 
 </Project>

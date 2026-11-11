@@ -231,7 +231,14 @@ internal sealed class RestoreForm : Form
         _password.Enabled = idle;
         _search.Enabled = idle;
         _sets.Enabled = idle;
-        _toOriginal.Enabled = idle;
+        // A copy of a Linux server goes into a folder only, as tars and dumps (CUSTOS-remote-pull.md 4.5).
+        bool remote = _sets.SelectedItems.Count == 1 && _sets.SelectedItems[0].Tag is RestoreSetInfo { Header.SourceKind: SourceKinds.Ssh };
+        if (remote && _toOriginal.Checked)
+        {
+            _toFolder.Checked = true;
+        }
+
+        _toOriginal.Enabled = idle && !remote;
         _toFolder.Enabled = idle;
         _target.Enabled = idle && _toFolder.Checked;
         _browseTarget.Enabled = idle && _toFolder.Checked;
@@ -239,7 +246,8 @@ internal sealed class RestoreForm : Form
 
         // Dumps go into «db» of the other folder; to the original places they need a folder of their own.
         bool dumps = _sets.SelectedItems.Count == 1 && _sets.SelectedItems[0].Tag is RestoreSetInfo { Header.Databases.Count: > 0 };
-        _dumpsNote.Visible = dumps;
+        _dumpsNote.Text = remote ? Strings.RestoreRemoteNote : Strings.RestoreDumpsNote;
+        _dumpsNote.Visible = dumps || remote;
         _dumpsLabel.Visible = _dumps.Visible = _browseDumps.Visible = dumps && _toOriginal.Checked;
         _dumps.Enabled = _browseDumps.Enabled = idle;
         _start.Enabled = idle && _sets.SelectedItems.Count == 1;

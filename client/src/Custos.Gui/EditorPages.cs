@@ -199,8 +199,11 @@ internal sealed class SourcesPage : EditorPage
     };
 
     private readonly Button _add = new() { Text = Strings.ButtonAdd, AutoSize = true, MinimumSize = new Size(100, 0) };
+    private readonly Button _addLinux = new() { Text = Strings.SourceAddLinux, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
+    private readonly Label _remoteNote;
+    private readonly Control[] _fileOptions;
     private readonly CheckBox _keepTopDir = new() { Text = Strings.KeepTopDir, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
     private readonly TextBox _exclude = new() { Dock = DockStyle.Fill };
 
@@ -230,7 +233,7 @@ internal sealed class SourcesPage : EditorPage
         _list.Columns.Add(Strings.ColumnAccount, 150);
 
         var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(8, 0, 0, 0) };
-        buttons.Controls.AddRange([_add, _edit, _remove]);
+        buttons.Controls.AddRange([_add, _addLinux, _edit, _remove]);
         var row = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -239,6 +242,8 @@ internal sealed class SourcesPage : EditorPage
 
         AddNote(Strings.SourcesNote);
         AddWide(row);
+        _remoteNote = AddNote(Strings.SourcesRemoteNote);
+        _remoteNote.Visible = false;
         AddWide(_keepTopDir, Strings.KeepTopDirHelp);
 
         var dirs = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
@@ -255,9 +260,11 @@ internal sealed class SourcesPage : EditorPage
         AddWide(_skipSystem);
         AddWide(_skipTemp, Strings.SkipTempHelp);
         AddRow(Strings.FilterInclude, _include, Strings.FilterIncludeHelp);
+        _fileOptions = [_keepTopDir, _exclude, _excludeDirs, _browseDirs, _skipHidden, _skipSystem, _skipTemp, _include];
 
         _browseDirs.Click += (_, _) => BrowseExcludedFolder();
         _add.Click += (_, _) => AddSource();
+        _addLinux.Click += (_, _) => AddLinuxServer();
         _edit.Click += (_, _) => EditSource();
         _remove.Click += (_, _) => RemoveSource();
         _list.ItemActivate += (_, _) => EditSource();
@@ -312,6 +319,13 @@ internal sealed class SourcesPage : EditorPage
         _list.Items.Clear();
         foreach (var source in _sources)
         {
+            if (source.Kind == SourceKinds.Ssh)
+            {
+                string key = Context.FindCredential(source.CredentialId)?.DisplayName ?? Strings.AccountUnknown;
+                _list.Items.Add(new ListViewItem([source.Path, "—", key]));
+                continue;
+            }
+
             string account = source.CredentialId is { } id
                 ? accounts.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? Strings.AccountUnknown
                 : source.Kind == SourceKinds.Unc ? Strings.AccountService : string.Empty;
@@ -332,6 +346,29 @@ internal sealed class SourcesPage : EditorPage
         bool any = _list.SelectedIndices.Count > 0;
         _edit.Enabled = any;
         _remove.Enabled = any;
+
+        // A Linux server is the only source of its task (CUSTOS-remote-pull.md 4.1); the filters are custos-helper's.
+        bool remote = _sources.Any(s => s.Kind == SourceKinds.Ssh);
+        _add.Enabled = !remote;
+        _addLinux.Enabled = _sources.Count == 0;
+        _remoteNote.Visible = remote;
+        foreach (var control in _fileOptions)
+        {
+            control.Enabled = !remote;
+        }
+
+        Context.HasRemoteSource = remote;
+    }
+
+    private void AddLinuxServer()
+    {
+        using var dialog = new RemoteSourceDialog(Context, new TaskSource());
+        if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+        {
+            _sources.Add(dialog.Source);
+            Fill();
+            _list.Items[^1].Selected = true;
+        }
     }
 
     private void AddSource()
@@ -353,6 +390,18 @@ internal sealed class SourcesPage : EditorPage
         }
 
         int index = _list.SelectedIndices[0];
+        if (_sources[index].Kind == SourceKinds.Ssh)
+        {
+            using var remote = new RemoteSourceDialog(Context, _sources[index]);
+            if (remote.ShowDialog(FindForm()) == DialogResult.OK)
+            {
+                _sources[index] = remote.Source;
+                Fill();
+            }
+
+            return;
+        }
+
         using var dialog = new SourceDialog(Context, _sources[index]);
         if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
         {
@@ -426,6 +475,7 @@ internal sealed class DatabasesPage : EditorPage
     private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly List<TaskDatabaseServer> _servers = [];
+    private readonly Label _remoteNote;
 
     public DatabasesPage(EditorContext context)
         : base(context, Strings.PageDatabases, Glyph.Database)
@@ -443,9 +493,13 @@ internal sealed class DatabasesPage : EditorPage
         row.Controls.Add(buttons, 1, 0);
 
         AddNote(Strings.DatabasesNote);
+        _remoteNote = AddNote(Strings.DatabasesRemoteNote);
+        _remoteNote.ForeColor = Glyphs.WarningText;
+        _remoteNote.Visible = false;
         AddWide(row);
 
         _add.Click += (_, _) => AddServer();
+        Context.RemoteChanged += (_, _) => UpdateButtons();
         _edit.Click += (_, _) => EditServer();
         _remove.Click += (_, _) => RemoveServer();
         _list.ItemActivate += (_, _) => EditServer();
@@ -501,6 +555,8 @@ internal sealed class DatabasesPage : EditorPage
         bool any = _list.SelectedIndices.Count > 0;
         _edit.Enabled = any;
         _remove.Enabled = any;
+        _add.Enabled = !Context.HasRemoteSource;
+        _remoteNote.Visible = Context.HasRemoteSource;
     }
 
     private void AddServer()

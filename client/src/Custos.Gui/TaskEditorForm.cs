@@ -296,6 +296,23 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
     public int DbServerCount { get; set; }
 
+    /// <summary>Raised when a Linux server was added to the sources or removed from them.</summary>
+    public event EventHandler? RemoteChanged;
+
+    /// <summary>Whether the source is a Linux server: then it is the only one, and its databases are its own.</summary>
+    public bool HasRemoteSource
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                RemoteChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
     /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
     public string? ProfileSid { get; init; }
 

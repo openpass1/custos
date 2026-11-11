@@ -581,6 +581,12 @@ Off: the contents of D:\Data go straight into &lt;backup&gt;\…</value>
   <data name="ErrorUncNeedsNetwork" xml:space="preserve">
     <value>«{0}» is a network path: choose «Network folder».</value>
   </data>
+  <data name="SourceAddLinux" xml:space="preserve">
+    <value>Linux server…</value>
+  </data>
+  <data name="SourcesRemoteNote" xml:space="preserve">
+    <value>The task takes a Linux server through custos-helper. Such a task has no other sources; what to take and what to skip is set in the window of the server, the filters below do not apply to it.</value>
+  </data>
   <data name="PageDestinations" xml:space="preserve">
     <value>Destinations</value>
   </data>
@@ -1608,5 +1614,172 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   </data>
   <data name="CardDatabases" xml:space="preserve">
     <value>Databases</value>
+  </data>
+  <data name="RestoreRemoteNote" xml:space="preserve">
+    <value>A copy of a Linux server is restored into a folder only: a tar for each folder of the server and the database dumps, with README.txt on how to put them back on a server.</value>
+  </data>
+  <data name="DatabasesRemoteNote" xml:space="preserve">
+    <value>The task takes a Linux server: its databases are set in the window of the server on the page «Sources».</value>
+  </data>
+  <data name="RemoteAddTitle" xml:space="preserve">
+    <value>Add a Linux server</value>
+  </data>
+  <data name="RemoteEditTitle" xml:space="preserve">
+    <value>Linux server</value>
+  </data>
+  <data name="RemoteHost" xml:space="preserve">
+    <value>Address:</value>
+  </data>
+  <data name="RemoteHostHelp" xml:space="preserve">
+    <value>The name or IP address of the server, as for SSH. The server needs custos-helper: the block below installs it, with the user custos; change the user only if you set the server up by hand.</value>
+  </data>
+  <data name="RemotePort" xml:space="preserve">
+    <value>Port:</value>
+  </data>
+  <data name="RemoteUser" xml:space="preserve">
+    <value>User:</value>
+  </data>
+  <data name="RemoteOfficeIp" xml:space="preserve">
+    <value>Office IP:</value>
+  </data>
+  <data name="RemoteOfficeIpHelp" xml:space="preserve">
+    <value>The address this computer goes out to the Internet from: the key then works only from it. Several addresses or networks are separated by commas, for example 203.0.113.10,198.51.100.0/24.</value>
+  </data>
+  <data name="RemoteOfficeEmpty" xml:space="preserve">
+    <value>Without an office IP the key works from any address.</value>
+  </data>
+  <data name="RemoteWhatHeading" xml:space="preserve">
+    <value>What to take</value>
+  </data>
+  <data name="RemotePreset" xml:space="preserve">
+    <value>Preset:</value>
+  </data>
+  <data name="RemotePresetIspSites" xml:space="preserve">
+    <value>ispmanager: sites only</value>
+  </data>
+  <data name="RemotePresetIspFull" xml:space="preserve">
+    <value>ispmanager: sites and panel</value>
+  </data>
+  <data name="RemotePresetLinux" xml:space="preserve">
+    <value>Plain Linux</value>
+  </data>
+  <data name="RemotePresetCustom" xml:space="preserve">
+    <value>Own lists</value>
+  </data>
+  <data name="RemoteRoots" xml:space="preserve">
+    <value>Folders:</value>
+  </data>
+  <data name="RemoteRootsHelp" xml:space="preserve">
+    <value>Folders of the server to take, one per line, as full paths. A folder that is missing on the server is skipped with a warning.</value>
+  </data>
+  <data name="RemoteExcludes" xml:space="preserve">
+    <value>Skip:</value>
+  </data>
+  <data name="RemoteExcludesHelp" xml:space="preserve">
+    <value>Folders to skip with all they hold, one per line, as full paths; * stands for any name, for example /var/www/*/data/logs.</value>
+  </data>
+  <data name="RemoteEtcWarning" xml:space="preserve">
+    <value>The whole /etc goes into the copies: the password hashes of the users and the SSH keys of the server. Keep the copies where strangers cannot read them.</value>
+  </data>
+  <data name="RemoteEngines" xml:space="preserve">
+    <value>Databases:</value>
+  </data>
+  <data name="RemoteDbExclude" xml:space="preserve">
+    <value>Skip databases:</value>
+  </data>
+  <data name="RemoteDbExcludeHelp" xml:space="preserve">
+    <value>Names of databases not to dump, separated by spaces. System databases are skipped anyway; users and rights go to _users.sql.</value>
+  </data>
+  <data name="RemoteSpeed" xml:space="preserve">
+    <value>Speed limit:</value>
+  </data>
+  <data name="RemoteSpeedUnit" xml:space="preserve">
+    <value>KB/s (0 — no limit)</value>
+  </data>
+  <data name="RemoteSpeedHelp" xml:space="preserve">
+    <value>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not limited.</value>
+  </data>
+  <data name="RemoteKeyHeading" xml:space="preserve">
+    <value>Key and installation</value>
+  </data>
+  <data name="RemoteKey" xml:space="preserve">
+    <value>Key:</value>
+  </data>
+  <data name="RemoteCreateKey" xml:space="preserve">
+    <value>Create key</value>
+  </data>
+  <data name="RemoteKeyIs" xml:space="preserve">
+    <value>{0} (ed25519, the private part stays in the service)</value>
+  </data>
+  <data name="RemoteKeyNone" xml:space="preserve">
+    <value>not yet: press «Create key»</value>
+  </data>
+  <data name="RemoteBlockNote" xml:space="preserve">
+    <value>Paste this block whole into a root session on the server (after sudo -i). It makes the user custos and installs custos-helper, its settings, sudo for custos-helper only and the key. After a change here, run it again.</value>
+  </data>
+  <data name="RemoteBlockNeedsKey" xml:space="preserve">
+    <value>The block for the server appears here when the key is made.</value>
+  </data>
+  <data name="ButtonCopy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="ButtonSaveAs" xml:space="preserve">
+    <value>Save as file…</value>
+  </data>
+  <data name="RemoteCopied" xml:space="preserve">
+    <value>The block is copied.</value>
+  </data>
+  <data name="RemoteBlockFilter" xml:space="preserve">
+    <value>Shell scripts (*.sh)|*.sh|All files (*.*)|*.*</value>
+  </data>
+  <data name="RemoteCheckHeading" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="RemoteHostKeyNone" xml:space="preserve">
+    <value>The key of the server is not confirmed yet: press «Test connection».</value>
+  </data>
+  <data name="RemoteHostKeyPinned" xml:space="preserve">
+    <value>Key of the server: {0}</value>
+  </data>
+  <data name="RemoteKeyToConfirm" xml:space="preserve">
+    <value>Confirm the key of the server.</value>
+  </data>
+  <data name="RemoteKeyChangedShort" xml:space="preserve">
+    <value>The key of the server has changed!</value>
+  </data>
+  <data name="RemoteKeyConfirm" xml:space="preserve">
+    <value>The server {0} shows the key
+{1}
+
+Trust it only if it is the key of your server. On the server the keys are shown by:
+for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
+
+Trust this key?</value>
+  </data>
+  <data name="RemoteKeyChanged" xml:space="preserve">
+    <value>{0}
+
+Trust the new key only if you know why it changed.</value>
+  </data>
+  <data name="RemoteSaveUnconfirmed" xml:space="preserve">
+    <value>The key of the server is not confirmed: runs fail until «Test connection» is passed. Save anyway?</value>
+  </data>
+  <data name="RemoteTestFailed" xml:space="preserve">
+    <value>No connection: {0}</value>
+  </data>
+  <data name="RemoteTestOk" xml:space="preserve">
+    <value>custos-helper {0}, {1}. Files: {2} ({3}); free on the server: {4}.</value>
+  </data>
+  <data name="RemoteTestNoDatabases" xml:space="preserve">
+    <value>no databases</value>
+  </data>
+  <data name="RemoteTestOutdated" xml:space="preserve">
+    <value>custos-helper {0} is older than {1}: run the block on the server again.</value>
+  </data>
+  <data name="RemoteTestWarnings" xml:space="preserve">
+    <value>Warnings: {0}</value>
+  </data>
+  <data name="RemoteNextPages" xml:space="preserve">
+    <value>Schedule, archive, destinations and retention are set on the other pages, as for any task.</value>
   </data>
 </root>

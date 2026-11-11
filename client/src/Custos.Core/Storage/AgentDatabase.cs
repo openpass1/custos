@@ -14,7 +14,7 @@ namespace Custos.Core.Storage;
 /// </summary>
 public sealed class AgentDatabase : IFileStateStore
 {
-    private const int SchemaVersion = 3;
+    private const int SchemaVersion = 4;
 
     private readonly string _connectionString;
 
@@ -38,7 +38,7 @@ public sealed class AgentDatabase : IFileStateStore
     public TaskBackupState GetBackupState(string taskId)
     {
         using var connection = Open();
-        using var command = Command(connection, "SELECT full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, stored_checked_at, compression_ratio FROM task_state WHERE task_id = $task");
+        using var command = Command(connection, "SELECT full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, stored_checked_at, compression_ratio, last_run_id FROM task_state WHERE task_id = $task");
         command.Parameters.AddWithValue("$task", taskId);
         using var reader = command.ExecuteReader();
         if (!reader.Read())
@@ -53,7 +53,8 @@ public sealed class AgentDatabase : IFileStateStore
             reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
             reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
             reader.IsDBNull(5) ? null : ParseTime(reader.GetString(5)),
-            reader.IsDBNull(6) ? null : reader.GetDouble(6));
+            reader.IsDBNull(6) ? null : reader.GetDouble(6),
+            reader.IsDBNull(7) ? null : reader.GetString(7));
     }
 
     public Dictionary<string, FileStamp> LoadFileState(string taskId, bool baseFull)
@@ -111,17 +112,17 @@ public sealed class AgentDatabase : IFileStateStore
 
         using (var state = Command(connection, full
             ? """
-              INSERT INTO task_state (task_id, full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, compression_ratio)
-              VALUES ($task, $run, $set, $at, 0, $verify, $ratio)
+              INSERT INTO task_state (task_id, full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, compression_ratio, last_run_id)
+              VALUES ($task, $run, $set, $at, 0, $verify, $ratio, $run)
               ON CONFLICT(task_id) DO UPDATE SET full_run_id = $run, full_set_name = $set, full_at = $at, runs_since_full = 0,
                 runs_since_verify = CASE WHEN $verified THEN 0 ELSE runs_since_verify + 1 END,
-                compression_ratio = COALESCE($ratio, compression_ratio)
+                compression_ratio = COALESCE($ratio, compression_ratio), last_run_id = $run
               """
             : """
-              INSERT INTO task_state (task_id, runs_since_full, runs_since_verify, compression_ratio) VALUES ($task, 1, $verify, $ratio)
+              INSERT INTO task_state (task_id, runs_since_full, runs_since_verify, compression_ratio, last_run_id) VALUES ($task, 1, $verify, $ratio, $run)
               ON CONFLICT(task_id) DO UPDATE SET runs_since_full = runs_since_full + 1,
                 runs_since_verify = CASE WHEN $verified THEN 0 ELSE runs_since_verify + 1 END,
-                compression_ratio = COALESCE($ratio, compression_ratio)
+                compression_ratio = COALESCE($ratio, compression_ratio), last_run_id = $run
               """, transaction))
         {
             state.Parameters.AddWithValue("$task", taskId);
@@ -196,9 +197,9 @@ public sealed class AgentDatabase : IFileStateStore
         using var command = Command(connection, """
             INSERT OR REPLACE INTO runs (run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by,
                 started_at, finished_at, status, source_files, source_bytes, files_processed, bytes_written, errors,
-                warnings, error_message, set_name, destinations, databases)
+                warnings, error_message, set_name, destinations, databases, remote)
             VALUES ($run, $task, $name, $type, $trigger, $scheduled, $by, $started, $finished, $status, $sfiles, $sbytes,
-                $files, $bytes, $errors, $warnings, $message, $set, $destinations, $databases)
+                $files, $bytes, $errors, $warnings, $message, $set, $destinations, $databases, $remote)
             """);
         var p = command.Parameters;
         p.AddWithValue("$run", run.RunId);
@@ -221,6 +222,7 @@ public sealed class AgentDatabase : IFileStateStore
         p.AddWithValue("$set", (object?)run.SetName ?? DBNull.Value);
         p.AddWithValue("$destinations", JsonSerializer.Serialize(run.Destinations, StorageJsonContext.Default.ListDestinationResult));
         p.AddWithValue("$databases", run.Databases.Count == 0 ? DBNull.Value : JsonSerializer.Serialize(run.Databases, StorageJsonContext.Default.ListDatabaseResult));
+        p.AddWithValue("$remote", run.Remote is null ? DBNull.Value : JsonSerializer.Serialize(run.Remote, StorageJsonContext.Default.RemoteResult));
         command.ExecuteNonQuery();
     }
 
@@ -264,7 +266,7 @@ public sealed class AgentDatabase : IFileStateStore
     private const string RunColumns = """
         SELECT run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by, started_at, finished_at,
             status, source_files, source_bytes, files_processed, bytes_written, errors, warnings, error_message, set_name,
-            destinations, databases
+            destinations, databases, remote
         FROM runs
         """;
 
@@ -307,6 +309,7 @@ public sealed class AgentDatabase : IFileStateStore
                 SetName = reader.IsDBNull(17) ? null : reader.GetString(17),
                 Destinations = reader.IsDBNull(18) ? [] : JsonSerializer.Deserialize(reader.GetString(18), StorageJsonContext.Default.ListDestinationResult) ?? [],
                 Databases = reader.IsDBNull(19) ? [] : JsonSerializer.Deserialize(reader.GetString(19), StorageJsonContext.Default.ListDatabaseResult) ?? [],
+                Remote = reader.IsDBNull(20) ? null : JsonSerializer.Deserialize(reader.GetString(20), StorageJsonContext.Default.RemoteResult),
             });
         }
 
@@ -351,6 +354,21 @@ public sealed class AgentDatabase : IFileStateStore
             alter.ExecuteNonQuery();
         }
 
+        if (version is 1 or 2 or 3)
+        {
+            // Stage 2a: the report of custos-helper, and the last committed run (its set is where the next copy of a
+            // Linux server starts from).
+            using var alter = Command(connection, "ALTER TABLE runs ADD COLUMN remote TEXT;", transaction);
+            alter.ExecuteNonQuery();
+            using var exists = Command(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'task_state';", transaction);
+            if ((long)exists.ExecuteScalar()! > 0)
+            {
+                // Without the table it is made below, with the column.
+                using var state = Command(connection, "ALTER TABLE task_state ADD COLUMN last_run_id TEXT;", transaction);
+                state.ExecuteNonQuery();
+            }
+        }
+
         using (var create = Command(connection, """
             CREATE TABLE IF NOT EXISTS file_state (
                 task_id TEXT NOT NULL,
@@ -370,7 +388,8 @@ public sealed class AgentDatabase : IFileStateStore
                 last_slot TEXT,
                 runs_since_verify INTEGER NOT NULL DEFAULT 0,
                 stored_checked_at TEXT,
-                compression_ratio REAL
+                compression_ratio REAL,
+                last_run_id TEXT
             );
 
             CREATE TABLE IF NOT EXISTS runs (
@@ -393,7 +412,8 @@ public sealed class AgentDatabase : IFileStateStore
                 error_message TEXT,
                 set_name TEXT,
                 destinations TEXT,
-                databases TEXT
+                databases TEXT,
+                remote TEXT
             );
 
             CREATE INDEX IF NOT EXISTS runs_by_task ON runs (task_id, started_at);

@@ -1,15 +1,20 @@
 name: Client build
 
-# Builds and tests the Windows client and makes the installer. Runs only when the client (or this file) changes.
+# Builds and tests the Windows client and makes the installer. Runs only when the client, custos-helper (which the
+# client puts into the install block) or this file changes.
 on:
   push:
     branches: [main]
     paths:
       - 'client/**'
+      - 'helper/custos-helper'
+      - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'client/**'
+      - 'helper/custos-helper'
+      - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -105,3 +110,24 @@ jobs:
         env:
           CUSTOS_REQUIRE_DATABASES: '1'
         run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~Database"
+
+  # A Linux server over real SSH (CUSTOS-remote-pull.md): custos-helper installed with the block of the wizard, full and
+  # incremental sets, restore into tars. The server is the test image of custos-helper (client/tools/ci-remote.sh).
+  remote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Start the Linux server
+        run: bash client/tools/ci-remote.sh
+
+      - name: Test the Linux server as a source
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_SSH: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~RealRemote"

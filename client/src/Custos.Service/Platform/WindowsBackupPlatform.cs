@@ -63,6 +63,24 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
         }
     }
 
+    public override byte[] GetSshKey(string credentialId)
+    {
+        var credential = config.GetCredential(credentialId);
+        if (credential is null || credential.Kind != CredentialKinds.SshKey)
+        {
+            throw new BackupException(Messages.RemoteKeyMissing);
+        }
+
+        try
+        {
+            return config.GetSshKey(credentialId);
+        }
+        catch (ConfigException ex)
+        {
+            throw new BackupException(ex.Message, ex);
+        }
+    }
+
     public override INetworkSession OpenSession(string? credentialId)
     {
         if (credentialId is null)

@@ -914,6 +914,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         record.SetName = result.SetName;
         record.Destinations = result.Destinations;
         record.Databases = result.Databases;
+        record.Remote = result.Remote;
         TryDatabase(db =>
         {
             db.SaveRun(record);

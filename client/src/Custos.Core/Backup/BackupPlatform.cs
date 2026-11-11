@@ -48,6 +48,13 @@ public interface IBackupPlatform
     /// <summary>The client of a database server: its programs in <see cref="TaskDatabaseServer.BinDir"/>.</summary>
     IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account);
 
+    /// <summary>SSH to Linux servers (stage 2a).</summary>
+    Remote.ISshConnector Ssh { get; }
+
+    /// <summary>The private key of an <c>ssh_key</c> credential: its 32-byte Ed25519 seed.</summary>
+    /// <exception cref="BackupException">There is no such credential or its key cannot be read.</exception>
+    byte[] GetSshKey(string credentialId);
+
     /// <summary>
     /// Runs the program or script of an event and waits for it (section 6.9): <c>.bat</c> and <c>.cmd</c> through
     /// cmd.exe, <c>.ps1</c> through PowerShell, anything else directly. Each line it prints goes to
@@ -176,6 +183,14 @@ public class LocalBackupPlatform : IBackupPlatform
         DbAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.DbAccountMissing);
 
     public virtual IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account) => new ProcessDbClient(server, account, ConsoleEncoding);
+
+    public virtual Remote.ISshConnector Ssh => Remote.SshNetConnector.Instance;
+
+    /// <summary>Private SSH keys (seeds) by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, byte[]> SshKeySeeds { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual byte[] GetSshKey(string credentialId) =>
+        SshKeySeeds.TryGetValue(credentialId, out byte[]? seed) ? seed : throw new BackupException(Messages.RemoteKeyMissing);
 
     public virtual string ComputerName => Environment.MachineName;
 

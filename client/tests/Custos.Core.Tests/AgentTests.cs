@@ -298,6 +298,20 @@ public sealed class TaskDescriberTests : IDisposable
     }
 
     [Fact]
+    public void A_linux_server_is_named_with_its_databases()
+    {
+        Messages.Culture = CultureInfo.GetCultureInfo("ru-RU");
+        var task = Example();
+        task.Sources = [new TaskSource { Kind = SourceKinds.Ssh, Host = "vps.example.org", Path = "custos@vps.example.org:22", Helper = new RemoteHelperSettings { Roots = ["/var/www"], DbEngines = [DbEngines.MariaDb] } }];
+
+        Assert.StartsWith(
+            "Каждый день в 00:00 копирует изменившиеся файлы с Linux-сервера vps.example.org в \\\\nas01\\backup и на USB-диск «BACKUP-USB». " +
+            "Каждый запуск также выгружает целиком базы MariaDB на сервере в папку «db».",
+            TaskDescriber.Describe(task),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Events_and_the_action_after_are_mentioned()
     {
         Messages.Culture = CultureInfo.GetCultureInfo("ru-RU");

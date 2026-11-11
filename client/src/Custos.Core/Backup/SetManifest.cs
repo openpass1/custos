@@ -42,6 +42,12 @@ public sealed class SetManifestHeader
 
     public string Status { get; set; } = string.Empty;
 
+    /// <summary>"ssh" for a set taken from a Linux server (CUSTOS-remote-pull.md 4.4); null for the others.</summary>
+    public string? SourceKind { get; set; }
+
+    /// <summary>The Linux server of an "ssh" set and what custos-helper said about it.</summary>
+    public ManifestRemote? Remote { get; set; }
+
     public List<ManifestSource> Sources { get; set; } = [];
 
     /// <summary>The database dumps of the set (section 6.2), with the users and rights of each server.</summary>
@@ -54,6 +60,45 @@ public sealed class SetManifestHeader
     public long SetFileCount { get; set; }
 
     public long SetBytes { get; set; }
+}
+
+/// <summary>The Linux server of a set taken through custos-helper (CUSTOS-remote-pull.md 4.4).</summary>
+public sealed class ManifestRemote
+{
+    public string Host { get; set; } = string.Empty;
+
+    public int Port { get; set; }
+
+    public string User { get; set; } = string.Empty;
+
+    /// <summary>The key of the server the set was taken from, "SHA256:…".</summary>
+    public string HostKeySha256 { get; set; } = string.Empty;
+
+    public string HelperVersion { get; set; } = string.Empty;
+
+    /// <summary>The name the server gives itself.</summary>
+    public string Hostname { get; set; } = string.Empty;
+
+    public string Os { get; set; } = string.Empty;
+
+    /// <summary>The time of the server at the start of the run (Unix seconds): the next run takes what changed after it.</summary>
+    public long ServerNow { get; set; }
+
+    /// <summary>Files changed after this time (Unix seconds) are in the set; 0 = all (a full copy).</summary>
+    public long Since { get; set; }
+
+    public string ConfigSha256 { get; set; } = string.Empty;
+
+    /// <summary>The roots of helper.conf: one tar each when restoring.</summary>
+    public List<string> Roots { get; set; } = [];
+
+    /// <summary>Free space on the disk of the roots of the server (the smallest), or null.</summary>
+    public long? ServerFreeBytes { get; set; }
+
+    /// <summary>Files changed since the last copy, and files deleted since then (when it could be read).</summary>
+    public long? FilesChanged { get; set; }
+
+    public long? FilesDeleted { get; set; }
 }
 
 /// <summary>A source of the task and the folder it got inside the set ("" = the set folder itself).</summary>
@@ -100,7 +145,22 @@ public sealed class ManifestDatabase
 }
 
 /// <summary>One file of the manifest.</summary>
-public readonly record struct ManifestFile(string Path, long Size, DateTime ModifiedUtc, bool InSet, string? Sha256);
+/// <remarks>In a set from a Linux server (<see cref="SetManifestHeader.SourceKind"/> "ssh") every entry of the server
+/// is listed, folders and links included, with its absolute path and <see cref="Posix"/>.</remarks>
+public readonly record struct ManifestFile(string Path, long Size, DateTime ModifiedUtc, bool InSet, string? Sha256)
+{
+    /// <summary>A path that is not UTF-8, in base64 (<see cref="Path"/> then shows it with U+FFFD).</summary>
+    public string? PathBase64 { get; init; }
+
+    /// <summary>Type, owner and permissions of an entry from a Linux server.</summary>
+    public ManifestPosix? Posix { get; init; }
+}
+
+/// <summary>What a Linux server tells about an entry besides its size and time.</summary>
+/// <param name="Type">The letter of <c>find %y</c>: f, d, l…</param>
+/// <param name="Mode">Permissions, octal ("644").</param>
+/// <param name="Link">Target of a link, or null.</param>
+public sealed record ManifestPosix(string Type, string Mode, long Uid, long Gid, string User, string Group, string? Link, DateTime ChangedUtc);
 
 /// <summary>Writes and reads <c>custos-set.json</c>.</summary>
 public static class SetManifest
@@ -128,6 +188,16 @@ public static class SetManifest
         writer.WriteString("started_at", UtcTimeConverter.ToText(header.StartedAt));
         writer.WriteString("finished_at", UtcTimeConverter.ToText(header.FinishedAt));
         writer.WriteString("status", header.Status);
+        if (header.SourceKind is not null)
+        {
+            writer.WriteString("source_kind", header.SourceKind);
+        }
+
+        if (header.Remote is { } remote)
+        {
+            WriteRemote(writer, remote);
+        }
+
         writer.WriteStartArray("sources");
         foreach (var source in header.Sources)
         {
@@ -190,13 +260,37 @@ public static class SetManifest
         foreach (var file in files)
         {
             writer.WriteStartObject();
-            writer.WriteString("path", file.Path);
+            if (file.PathBase64 is not null)
+            {
+                writer.WriteString("path_b64", file.PathBase64);
+            }
+            else
+            {
+                writer.WriteString("path", file.Path);
+            }
+
             writer.WriteNumber("size", file.Size);
-            writer.WriteString("modified", file.ModifiedUtc.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture));
+            writer.WriteString("modified", Time(file.ModifiedUtc));
             writer.WriteBoolean("in_set", file.InSet);
             if (file.Sha256 is not null)
             {
                 writer.WriteString("sha256", file.Sha256);
+            }
+
+            if (file.Posix is { } posix)
+            {
+                writer.WriteString("type", posix.Type);
+                writer.WriteString("mode", posix.Mode);
+                writer.WriteNumber("uid", posix.Uid);
+                writer.WriteNumber("gid", posix.Gid);
+                writer.WriteString("user", posix.User);
+                writer.WriteString("group", posix.Group);
+                if (posix.Link is not null)
+                {
+                    writer.WriteString("link", posix.Link);
+                }
+
+                writer.WriteString("ctime", Time(posix.ChangedUtc));
             }
 
             writer.WriteEndObject();
@@ -257,12 +351,32 @@ public static class SetManifest
 
         foreach (var file in files.EnumerateArray())
         {
+            string? base64 = file.TryGetProperty("path_b64", out var raw) ? raw.GetString() : null;
+            string path = base64 is not null ? Encoding.UTF8.GetString(Convert.FromBase64String(base64)) : file.GetProperty("path").GetString() ?? string.Empty;
+            ManifestPosix? posix = null;
+            if (file.TryGetProperty("type", out var type))
+            {
+                posix = new ManifestPosix(
+                    type.GetString() ?? string.Empty,
+                    file.TryGetProperty("mode", out var mode) ? mode.GetString() ?? string.Empty : string.Empty,
+                    file.TryGetProperty("uid", out var uid) ? uid.GetInt64() : 0,
+                    file.TryGetProperty("gid", out var gid) ? gid.GetInt64() : 0,
+                    file.TryGetProperty("user", out var user) ? user.GetString() ?? string.Empty : string.Empty,
+                    file.TryGetProperty("group", out var group) ? group.GetString() ?? string.Empty : string.Empty,
+                    file.TryGetProperty("link", out var link) ? link.GetString() : null,
+                    file.TryGetProperty("ctime", out var ctime) ? ParseUtc(ctime.GetString()!) : default);
+            }
+
             result.Add(new ManifestFile(
-                file.GetProperty("path").GetString() ?? string.Empty,
+                path,
                 file.GetProperty("size").GetInt64(),
-                DateTime.Parse(file.GetProperty("modified").GetString()!, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal),
+                ParseUtc(file.GetProperty("modified").GetString()!),
                 file.GetProperty("in_set").GetBoolean(),
-                file.TryGetProperty("sha256", out var hash) ? hash.GetString() : null));
+                file.TryGetProperty("sha256", out var hash) ? hash.GetString() : null)
+            {
+                PathBase64 = base64,
+                Posix = posix,
+            });
         }
 
         return result;
@@ -315,6 +429,17 @@ public static class SetManifest
                 if (name == "databases")
                 {
                     if (!ReadDatabases(ref reader, header.Databases))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (name == "remote" && reader.TokenType == JsonTokenType.StartObject)
+                {
+                    header.Remote = new ManifestRemote();
+                    if (!ReadRemote(ref reader, header.Remote))
                     {
                         return false;
                     }
@@ -474,11 +599,121 @@ public static class SetManifest
             case "started_at": header.StartedAt = ParseTime(text); break;
             case "finished_at": header.FinishedAt = ParseTime(text); break;
             case "status": header.Status = text ?? string.Empty; break;
+            case "source_kind": header.SourceKind = text; break;
             case "file_count": header.FileCount = number; break;
             case "set_file_count": header.SetFileCount = number; break;
             case "set_bytes": header.SetBytes = number; break;
         }
     }
+
+    private static void WriteRemote(Utf8JsonWriter writer, ManifestRemote remote)
+    {
+        writer.WriteStartObject("remote");
+        writer.WriteString("host", remote.Host);
+        writer.WriteNumber("port", remote.Port);
+        writer.WriteString("user", remote.User);
+        writer.WriteString("host_key_sha256", remote.HostKeySha256);
+        writer.WriteString("helper_version", remote.HelperVersion);
+        writer.WriteString("hostname", remote.Hostname);
+        writer.WriteString("os", remote.Os);
+        writer.WriteNumber("server_now", remote.ServerNow);
+        writer.WriteNumber("since", remote.Since);
+        writer.WriteString("config_sha256", remote.ConfigSha256);
+        writer.WriteStartArray("roots");
+        foreach (string root in remote.Roots)
+        {
+            writer.WriteStringValue(root);
+        }
+
+        writer.WriteEndArray();
+        if (remote.ServerFreeBytes is { } free)
+        {
+            writer.WriteNumber("server_free_bytes", free);
+        }
+
+        if (remote.FilesChanged is { } changed)
+        {
+            writer.WriteNumber("files_changed", changed);
+        }
+
+        if (remote.FilesDeleted is { } deleted)
+        {
+            writer.WriteNumber("files_deleted", deleted);
+        }
+
+        writer.WriteEndObject();
+    }
+
+    private static bool ReadRemote(ref Utf8JsonReader reader, ManifestRemote remote)
+    {
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                return true;
+            }
+
+            string property = reader.GetString()!;
+            if (!reader.Read())
+            {
+                return false;
+            }
+
+            if (property == "roots" && reader.TokenType == JsonTokenType.StartArray)
+            {
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                {
+                    if (reader.TokenType == JsonTokenType.String)
+                    {
+                        remote.Roots.Add(reader.GetString()!);
+                    }
+                }
+
+                if (reader.TokenType != JsonTokenType.EndArray)
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+            {
+                if (!reader.TrySkip())
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            string text = reader.TokenType == JsonTokenType.String ? reader.GetString()! : string.Empty;
+            long? number = reader.TokenType == JsonTokenType.Number && reader.TryGetInt64(out long value) ? value : null;
+            switch (property)
+            {
+                case "host": remote.Host = text; break;
+                case "port": remote.Port = (int)(number ?? 0); break;
+                case "user": remote.User = text; break;
+                case "host_key_sha256": remote.HostKeySha256 = text; break;
+                case "helper_version": remote.HelperVersion = text; break;
+                case "hostname": remote.Hostname = text; break;
+                case "os": remote.Os = text; break;
+                case "server_now": remote.ServerNow = number ?? 0; break;
+                case "since": remote.Since = number ?? 0; break;
+                case "config_sha256": remote.ConfigSha256 = text; break;
+                case "server_free_bytes": remote.ServerFreeBytes = number; break;
+                case "files_changed": remote.FilesChanged = number; break;
+                case "files_deleted": remote.FilesDeleted = number; break;
+            }
+        }
+
+        return false;
+    }
+
+    private static string Time(DateTime utc) => utc.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture);
+
+    private static DateTime ParseUtc(string text) =>
+        DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
 
     private static DateTimeOffset ParseTime(string? text) =>
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var value) ? value.ToUniversalTime() : default;

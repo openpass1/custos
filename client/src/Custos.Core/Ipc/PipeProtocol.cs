@@ -79,6 +79,14 @@ public static class PipeProtocol
         /// <see cref="DbTestResult"/>.</summary>
         public const string DatabasesTest = "databases.test";
 
+        /// <summary>Administrators. A new SSH key for a Linux server, kept by the service: <see cref="RemoteKeyRequest"/> →
+        /// <see cref="CredentialSaveResult"/> (with the public key).</summary>
+        public const string RemoteCreateKey = "remote.create_key";
+
+        /// <summary>Administrators. Connect to a Linux server with the key of a task and ask custos-helper what it has:
+        /// <see cref="RemoteTestRequest"/> → <see cref="RemoteTestResult"/>.</summary>
+        public const string RemoteTest = "remote.test";
+
         /// <summary>Administrators. <see cref="SettingsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SettingsSave = "settings.save";
 

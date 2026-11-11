@@ -114,6 +114,11 @@ internal sealed class TestPlatform : LocalBackupPlatform
     /// <summary>Database clients of a test (<see cref="FakeDbClient"/>); null = the real programs.</summary>
     public Func<TaskDatabaseServer, DbAccount?, IDbClient>? DbClients { get; set; }
 
+    /// <summary>The Linux server of a test (<see cref="FakeLinuxServer"/>); null = SSH.NET.</summary>
+    public Remote.ISshConnector? SshOverride { get; set; }
+
+    public override Remote.ISshConnector Ssh => SshOverride ?? base.Ssh;
+
     public override IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account) =>
         DbClients?.Invoke(server, account) ?? base.CreateDbClient(server, account);
 

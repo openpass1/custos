@@ -566,6 +566,12 @@ static partial class Strings
     /// <summary>«{0}» is a network path: choose «Network folder».</summary>
     public static string ErrorUncNeedsNetwork => Get(nameof(ErrorUncNeedsNetwork));
 
+    /// <summary>Linux server…</summary>
+    public static string SourceAddLinux => Get(nameof(SourceAddLinux));
+
+    /// <summary>The task takes a Linux server through custos-helper. Such a task has no other sources; what to take and wha...</summary>
+    public static string SourcesRemoteNote => Get(nameof(SourcesRemoteNote));
+
     /// <summary>Destinations</summary>
     public static string PageDestinations => Get(nameof(PageDestinations));
 
@@ -1585,4 +1591,163 @@ static partial class Strings
 
     /// <summary>Databases</summary>
     public static string CardDatabases => Get(nameof(CardDatabases));
+
+    /// <summary>A copy of a Linux server is restored into a folder only: a tar for each folder of the server and the databa...</summary>
+    public static string RestoreRemoteNote => Get(nameof(RestoreRemoteNote));
+
+    /// <summary>The task takes a Linux server: its databases are set in the window of the server on the page «Sources».</summary>
+    public static string DatabasesRemoteNote => Get(nameof(DatabasesRemoteNote));
+
+    /// <summary>Add a Linux server</summary>
+    public static string RemoteAddTitle => Get(nameof(RemoteAddTitle));
+
+    /// <summary>Linux server</summary>
+    public static string RemoteEditTitle => Get(nameof(RemoteEditTitle));
+
+    /// <summary>Address:</summary>
+    public static string RemoteHost => Get(nameof(RemoteHost));
+
+    /// <summary>The name or IP address of the server, as for SSH. The server needs custos-helper: the block below installs ...</summary>
+    public static string RemoteHostHelp => Get(nameof(RemoteHostHelp));
+
+    /// <summary>Port:</summary>
+    public static string RemotePort => Get(nameof(RemotePort));
+
+    /// <summary>User:</summary>
+    public static string RemoteUser => Get(nameof(RemoteUser));
+
+    /// <summary>Office IP:</summary>
+    public static string RemoteOfficeIp => Get(nameof(RemoteOfficeIp));
+
+    /// <summary>The address this computer goes out to the Internet from: the key then works only from it. Several addresses...</summary>
+    public static string RemoteOfficeIpHelp => Get(nameof(RemoteOfficeIpHelp));
+
+    /// <summary>Without an office IP the key works from any address.</summary>
+    public static string RemoteOfficeEmpty => Get(nameof(RemoteOfficeEmpty));
+
+    /// <summary>What to take</summary>
+    public static string RemoteWhatHeading => Get(nameof(RemoteWhatHeading));
+
+    /// <summary>Preset:</summary>
+    public static string RemotePreset => Get(nameof(RemotePreset));
+
+    /// <summary>ispmanager: sites only</summary>
+    public static string RemotePresetIspSites => Get(nameof(RemotePresetIspSites));
+
+    /// <summary>ispmanager: sites and panel</summary>
+    public static string RemotePresetIspFull => Get(nameof(RemotePresetIspFull));
+
+    /// <summary>Plain Linux</summary>
+    public static string RemotePresetLinux => Get(nameof(RemotePresetLinux));
+
+    /// <summary>Own lists</summary>
+    public static string RemotePresetCustom => Get(nameof(RemotePresetCustom));
+
+    /// <summary>Folders:</summary>
+    public static string RemoteRoots => Get(nameof(RemoteRoots));
+
+    /// <summary>Folders of the server to take, one per line, as full paths. A folder that is missing on the server is skipp...</summary>
+    public static string RemoteRootsHelp => Get(nameof(RemoteRootsHelp));
+
+    /// <summary>Skip:</summary>
+    public static string RemoteExcludes => Get(nameof(RemoteExcludes));
+
+    /// <summary>Folders to skip with all they hold, one per line, as full paths; * stands for any name, for example /var/ww...</summary>
+    public static string RemoteExcludesHelp => Get(nameof(RemoteExcludesHelp));
+
+    /// <summary>The whole /etc goes into the copies: the password hashes of the users and the SSH keys of the server. Keep ...</summary>
+    public static string RemoteEtcWarning => Get(nameof(RemoteEtcWarning));
+
+    /// <summary>Databases:</summary>
+    public static string RemoteEngines => Get(nameof(RemoteEngines));
+
+    /// <summary>Skip databases:</summary>
+    public static string RemoteDbExclude => Get(nameof(RemoteDbExclude));
+
+    /// <summary>Names of databases not to dump, separated by spaces. System databases are skipped anyway; users and rights ...</summary>
+    public static string RemoteDbExcludeHelp => Get(nameof(RemoteDbExcludeHelp));
+
+    /// <summary>Speed limit:</summary>
+    public static string RemoteSpeed => Get(nameof(RemoteSpeed));
+
+    /// <summary>KB/s (0 — no limit)</summary>
+    public static string RemoteSpeedUnit => Get(nameof(RemoteSpeedUnit));
+
+    /// <summary>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not ...</summary>
+    public static string RemoteSpeedHelp => Get(nameof(RemoteSpeedHelp));
+
+    /// <summary>Key and installation</summary>
+    public static string RemoteKeyHeading => Get(nameof(RemoteKeyHeading));
+
+    /// <summary>Key:</summary>
+    public static string RemoteKey => Get(nameof(RemoteKey));
+
+    /// <summary>Create key</summary>
+    public static string RemoteCreateKey => Get(nameof(RemoteCreateKey));
+
+    /// <summary>{0} (ed25519, the private part stays in the service)</summary>
+    public static string RemoteKeyIs => Get(nameof(RemoteKeyIs));
+
+    /// <summary>not yet: press «Create key»</summary>
+    public static string RemoteKeyNone => Get(nameof(RemoteKeyNone));
+
+    /// <summary>Paste this block whole into a root session on the server (after sudo -i). It makes the user custos and inst...</summary>
+    public static string RemoteBlockNote => Get(nameof(RemoteBlockNote));
+
+    /// <summary>The block for the server appears here when the key is made.</summary>
+    public static string RemoteBlockNeedsKey => Get(nameof(RemoteBlockNeedsKey));
+
+    /// <summary>Copy</summary>
+    public static string ButtonCopy => Get(nameof(ButtonCopy));
+
+    /// <summary>Save as file…</summary>
+    public static string ButtonSaveAs => Get(nameof(ButtonSaveAs));
+
+    /// <summary>The block is copied.</summary>
+    public static string RemoteCopied => Get(nameof(RemoteCopied));
+
+    /// <summary>Shell scripts (*.sh)|*.sh|All files (*.*)|*.*</summary>
+    public static string RemoteBlockFilter => Get(nameof(RemoteBlockFilter));
+
+    /// <summary>Check</summary>
+    public static string RemoteCheckHeading => Get(nameof(RemoteCheckHeading));
+
+    /// <summary>The key of the server is not confirmed yet: press «Test connection».</summary>
+    public static string RemoteHostKeyNone => Get(nameof(RemoteHostKeyNone));
+
+    /// <summary>Key of the server: {0}</summary>
+    public static string RemoteHostKeyPinned => Get(nameof(RemoteHostKeyPinned));
+
+    /// <summary>Confirm the key of the server.</summary>
+    public static string RemoteKeyToConfirm => Get(nameof(RemoteKeyToConfirm));
+
+    /// <summary>The key of the server has changed!</summary>
+    public static string RemoteKeyChangedShort => Get(nameof(RemoteKeyChangedShort));
+
+    /// <summary>The server {0} shows the key</summary>
+    public static string RemoteKeyConfirm => Get(nameof(RemoteKeyConfirm));
+
+    /// <summary>{0}</summary>
+    public static string RemoteKeyChanged => Get(nameof(RemoteKeyChanged));
+
+    /// <summary>The key of the server is not confirmed: runs fail until «Test connection» is passed. Save anyway?</summary>
+    public static string RemoteSaveUnconfirmed => Get(nameof(RemoteSaveUnconfirmed));
+
+    /// <summary>No connection: {0}</summary>
+    public static string RemoteTestFailed => Get(nameof(RemoteTestFailed));
+
+    /// <summary>custos-helper {0}, {1}. Files: {2} ({3}); free on the server: {4}.</summary>
+    public static string RemoteTestOk => Get(nameof(RemoteTestOk));
+
+    /// <summary>no databases</summary>
+    public static string RemoteTestNoDatabases => Get(nameof(RemoteTestNoDatabases));
+
+    /// <summary>custos-helper {0} is older than {1}: run the block on the server again.</summary>
+    public static string RemoteTestOutdated => Get(nameof(RemoteTestOutdated));
+
+    /// <summary>Warnings: {0}</summary>
+    public static string RemoteTestWarnings => Get(nameof(RemoteTestWarnings));
+
+    /// <summary>Schedule, archive, destinations and retention are set on the other pages, as for any task.</summary>
+    public static string RemoteNextPages => Get(nameof(RemoteNextPages));
 }
