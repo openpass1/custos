@@ -35,8 +35,8 @@ final class ServerKeys
         $pair = Crypto::generateKeyPair();
         $old = umask(0077);
         try {
-            if (file_put_contents($this->privatePath(), $pair['private']) === false) {
-                throw new \RuntimeException('Cannot write ' . $this->privatePath());
+            if (@file_put_contents($this->privatePath(), $pair['private']) === false) {
+                throw new \RuntimeException('Cannot write ' . $this->privatePath() . '.');
             }
         } finally {
             umask($old);
@@ -50,10 +50,15 @@ final class ServerKeys
     public function privateKey(): OpenSSLAsymmetricKey
     {
         if ($this->private === null) {
-            $pem = @file_get_contents($this->privatePath());
+            $path = $this->privatePath();
+            $pem = @file_get_contents($path);
             $key = $pem === false ? false : openssl_pkey_get_private($pem);
             if ($key === false) {
-                throw new \RuntimeException('Server key ' . $this->privatePath() . ' is missing or unreadable. Run bin/install.php.');
+                throw new \RuntimeException(match (true) {
+                    $pem !== false => "Server key $path is damaged.",
+                    is_file($path) => "Server key $path cannot be read by this process. The server folder must belong to the site user, the one PHP runs as.",
+                    default => "Server key $path is missing. Run bin/install.php as the site user.",
+                });
             }
             $this->private = $key;
         }

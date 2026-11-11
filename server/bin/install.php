@@ -66,11 +66,13 @@ Cli::ok('Folder ' . $app->config->varDir() . ' is ready');
 
 // 5. Server keys (A.2).
 $keys = $app->keys();
-if ($keys->create()) {
-    Cli::ok('Created the server key pair in ' . $app->config->keysDir());
-} else {
-    Cli::ok('Server key pair already exists');
+try {
+    $created = $keys->create();
+    $keys->privateKey();
+} catch (RuntimeException $e) {
+    Cli::fail($e->getMessage() . ' If the files belong to root, change their owner to the site user (chown -R) and run this script again as the site user.');
 }
+Cli::ok($created ? 'Created the server key pair in ' . $app->config->keysDir() : 'Server key pair already exists');
 
 // 6. The first administrator.
 $users = $app->users();
