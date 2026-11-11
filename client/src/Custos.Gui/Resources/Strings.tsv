@@ -182,7 +182,7 @@ ColumnSubfolders	Subfolders	Подпапки
 ColumnAccount	Account	Учётная запись
 KeepTopDir	Keep the top folder	Сохранять папку верхнего уровня
 KeepTopDirHelp	On: D:\Data is copied into <backup>\Data\…\nOff: the contents of D:\Data go straight into <backup>\…	Включено: D:\Data копируется в <копия>\Data\…\nВыключено: содержимое D:\Data ложится прямо в <копия>\…
-ErrorNoSources	Add at least one source, or switch the task off.	Добавьте хотя бы один источник или отключите задание.
+ErrorNoSources	Add at least one source or database server, or switch the task off.	Добавьте хотя бы один источник или сервер баз данных либо отключите задание.
 SourceAddTitle	Add source	Добавить источник
 SourceEditTitle	Source	Источник
 SourceFolder	Folder	Папка
@@ -509,3 +509,46 @@ SevenZipAdminOnly	Only administrators may update 7-Zip.	Обновлять 7-Zip
 SevenZipNothingNew	You have 7-Zip {0}; the newest is {1}. There is nothing to update.	У вас 7-Zip {0}, последняя версия {1}. Обновлять нечего.
 SevenZipAskUpdate	You have 7-Zip {0}; the newest is {1}.\n\nUpdate now? The service downloads the 64-bit installer from the official 7-Zip page on GitHub, checks its SHA-256, takes 7z.dll from it, tests it and only then replaces the old file (kept as 7z.dll.old). Tasks wait meanwhile; it takes about a minute.	У вас 7-Zip {0}, последняя версия {1}.\n\nОбновить сейчас? Служба скачает 64-битный установщик с официальной страницы 7-Zip на GitHub, проверит его SHA-256, возьмёт из него 7z.dll, проверит его в работе и только потом заменит старый файл (он сохранится как 7z.dll.old). Задания на это время ждут; это около минуты.
 SevenZipUpdatingTo	Updating 7-Zip to {0}…	Обновление 7-Zip до {0}…
+
+# Database dumps (section 6.2)
+PageDatabases	Databases	Базы данных
+DatabasesNote	Databases of MySQL, MariaDB and PostgreSQL on this computer (for example of OSPanel) are dumped whole in every run, by the server's own programs, into the folder «db» of each copy. The data folder of a server need not be copied as files. For MS SQL or 1C, add a program to «Events» that makes the dump into a source folder.	Базы MySQL, MariaDB и PostgreSQL на этом компьютере (например, OSPanel) выгружаются целиком при каждом запуске программами самого сервера в папку «db» каждой копии. Папку данных сервера копировать файлами не нужно. Для MS SQL или 1С добавьте в «События» программу, которая делает дамп в папку-источник.
+ColumnServer	Server	Сервер
+ColumnDatabases	Databases	Базы
+ColumnPrograms	Folder of the programs	Папка программ
+DbAll	all	все
+DbAllExcept	all but: {0}	все, кроме: {0}
+DbOnly	only: {0}	только: {0}
+DbServerAddTitle	Add a database server	Добавить сервер баз данных
+DbServerEditTitle	Database server	Сервер баз данных
+DbEngine	Server:	Сервер:
+DbBinDir	Folder of the programs:	Папка программ:
+DbBinDirHelp	The bin folder of the server, with mysqldump and mysql (MariaDB: mariadb-dump and mariadb; PostgreSQL: pg_dump, pg_dumpall and psql). For OSPanel 6 it is like C:\OSPanel\modules\MySQL-8.0\bin. «Find» looks for running servers and the usual folders.	Папка bin сервера, где лежат mysqldump и mysql (MariaDB: mariadb-dump и mariadb; PostgreSQL: pg_dump, pg_dumpall и psql). В OSPanel 6 это папка вида C:\OSPanel\modules\MySQL-8.0\bin. «Найти» ищет запущенные серверы и обычные папки.
+DbFind	Find…	Найти…
+DbHost	Address:	Адрес:
+DbHostHelp	Where the server listens. OSPanel 6 gives each module an address of its own, like 127.127.126.26; «Find» takes it from the running server.	Где сервер принимает подключения. OSPanel 6 даёт каждому модулю свой адрес, например 127.127.126.26; «Найти» берёт его у запущенного сервера.
+DbPort	Port:	Порт:
+DbUser	User:	Пользователь:
+DbPassword	Password:	Пароль:
+DbNoPassword	No password	Без пароля
+DbAccountNote	An account that may read every database: root for MySQL and MariaDB, postgres for PostgreSQL. The password is kept by the service, encrypted.	Учётная запись, которой можно читать все базы: root для MySQL и MariaDB, postgres для PostgreSQL. Пароль хранит служба в зашифрованном виде.
+DbKeepPasswordNote	Leave the password empty to keep the stored one.	Оставьте пароль пустым, чтобы не менять сохранённый.
+DbChoiceAll	All databases but the ticked ones	Все базы, кроме отмеченных
+DbChoiceOnly	Only the ticked databases	Только отмеченные базы
+DbListNote	The list fills in on «Test connection». System databases are never dumped as databases; users and rights go to _users.sql.	Список заполняется по кнопке «Проверить подключение». Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.
+ButtonTestConnection	Test connection	Проверить подключение
+DbTestOk	Connected: version {0}, databases: {1}.	Подключение есть: версия {0}, баз: {1}.
+DbTestDataDir	Data folder of the server: {0}	Папка данных сервера: {0}
+DbTestFailed	No connection: {0}	Нет подключения: {0}
+ErrorDbBinDirRequired	Choose the folder of the server's programs.	Укажите папку программ сервера.
+ErrorDbHostRequired	Enter the address of the server.	Введите адрес сервера.
+ErrorDbNothingChosen	Tick at least one database, or choose «All databases but the ticked ones».	Отметьте хотя бы одну базу или выберите «Все базы, кроме отмеченных».
+DbFindTitle	Database servers on this computer	Серверы баз данных на этом компьютере
+DbFindRunning	Looking for servers…	Ищу серверы…
+DbFindNothing	No MySQL, MariaDB or PostgreSQL was found. Choose the folder of the programs yourself.	MySQL, MariaDB и PostgreSQL не найдены. Укажите папку программ вручную.
+DbFindNote	Running servers come first, with the address they listen on. Pick one and press OK.	Сначала идут запущенные серверы с адресом, на котором они работают. Выберите сервер и нажмите OK.
+DbRunning	running	работает
+DbNotRunning	not running	не запущен
+RestoreDumpsFolder	Database dumps to:	Дампы баз в папку:
+RestoreDumpsNote	The set has database dumps. They are restored as .sql files into the folder «db» with README.txt on how to load them; CUSTOS does not load them into a server. Without a folder they are not restored.	В наборе есть дампы баз данных. Они восстанавливаются файлами .sql в папку «db» вместе с README.txt о том, как загрузить их в сервер; сам CUSTOS в сервер их не загружает. Без папки дампы не восстанавливаются.
+CardDatabases	Databases	Базы данных

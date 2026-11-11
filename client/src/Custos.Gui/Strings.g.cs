@@ -524,7 +524,7 @@ static partial class Strings
     /// <summary>On: D:\Data is copied into &lt;backup&gt;\Data\…</summary>
     public static string KeepTopDirHelp => Get(nameof(KeepTopDirHelp));
 
-    /// <summary>Add at least one source, or switch the task off.</summary>
+    /// <summary>Add at least one source or database server, or switch the task off.</summary>
     public static string ErrorNoSources => Get(nameof(ErrorNoSources));
 
     /// <summary>Add source</summary>
@@ -1462,4 +1462,127 @@ static partial class Strings
 
     /// <summary>Updating 7-Zip to {0}…</summary>
     public static string SevenZipUpdatingTo => Get(nameof(SevenZipUpdatingTo));
+
+    /// <summary>Databases</summary>
+    public static string PageDatabases => Get(nameof(PageDatabases));
+
+    /// <summary>Databases of MySQL, MariaDB and PostgreSQL on this computer (for example of OSPanel) are dumped whole in ev...</summary>
+    public static string DatabasesNote => Get(nameof(DatabasesNote));
+
+    /// <summary>Server</summary>
+    public static string ColumnServer => Get(nameof(ColumnServer));
+
+    /// <summary>Databases</summary>
+    public static string ColumnDatabases => Get(nameof(ColumnDatabases));
+
+    /// <summary>Folder of the programs</summary>
+    public static string ColumnPrograms => Get(nameof(ColumnPrograms));
+
+    /// <summary>all</summary>
+    public static string DbAll => Get(nameof(DbAll));
+
+    /// <summary>all but: {0}</summary>
+    public static string DbAllExcept => Get(nameof(DbAllExcept));
+
+    /// <summary>only: {0}</summary>
+    public static string DbOnly => Get(nameof(DbOnly));
+
+    /// <summary>Add a database server</summary>
+    public static string DbServerAddTitle => Get(nameof(DbServerAddTitle));
+
+    /// <summary>Database server</summary>
+    public static string DbServerEditTitle => Get(nameof(DbServerEditTitle));
+
+    /// <summary>Server:</summary>
+    public static string DbEngine => Get(nameof(DbEngine));
+
+    /// <summary>Folder of the programs:</summary>
+    public static string DbBinDir => Get(nameof(DbBinDir));
+
+    /// <summary>The bin folder of the server, with mysqldump and mysql (MariaDB: mariadb-dump and mariadb; PostgreSQL: pg_d...</summary>
+    public static string DbBinDirHelp => Get(nameof(DbBinDirHelp));
+
+    /// <summary>Find…</summary>
+    public static string DbFind => Get(nameof(DbFind));
+
+    /// <summary>Address:</summary>
+    public static string DbHost => Get(nameof(DbHost));
+
+    /// <summary>Where the server listens. OSPanel 6 gives each module an address of its own, like 127.127.126.26; «Find» ta...</summary>
+    public static string DbHostHelp => Get(nameof(DbHostHelp));
+
+    /// <summary>Port:</summary>
+    public static string DbPort => Get(nameof(DbPort));
+
+    /// <summary>User:</summary>
+    public static string DbUser => Get(nameof(DbUser));
+
+    /// <summary>Password:</summary>
+    public static string DbPassword => Get(nameof(DbPassword));
+
+    /// <summary>No password</summary>
+    public static string DbNoPassword => Get(nameof(DbNoPassword));
+
+    /// <summary>An account that may read every database: root for MySQL and MariaDB, postgres for PostgreSQL. The password ...</summary>
+    public static string DbAccountNote => Get(nameof(DbAccountNote));
+
+    /// <summary>Leave the password empty to keep the stored one.</summary>
+    public static string DbKeepPasswordNote => Get(nameof(DbKeepPasswordNote));
+
+    /// <summary>All databases but the ticked ones</summary>
+    public static string DbChoiceAll => Get(nameof(DbChoiceAll));
+
+    /// <summary>Only the ticked databases</summary>
+    public static string DbChoiceOnly => Get(nameof(DbChoiceOnly));
+
+    /// <summary>The list fills in on «Test connection». System databases are never dumped as databases; users and rights go...</summary>
+    public static string DbListNote => Get(nameof(DbListNote));
+
+    /// <summary>Test connection</summary>
+    public static string ButtonTestConnection => Get(nameof(ButtonTestConnection));
+
+    /// <summary>Connected: version {0}, databases: {1}.</summary>
+    public static string DbTestOk => Get(nameof(DbTestOk));
+
+    /// <summary>Data folder of the server: {0}</summary>
+    public static string DbTestDataDir => Get(nameof(DbTestDataDir));
+
+    /// <summary>No connection: {0}</summary>
+    public static string DbTestFailed => Get(nameof(DbTestFailed));
+
+    /// <summary>Choose the folder of the server's programs.</summary>
+    public static string ErrorDbBinDirRequired => Get(nameof(ErrorDbBinDirRequired));
+
+    /// <summary>Enter the address of the server.</summary>
+    public static string ErrorDbHostRequired => Get(nameof(ErrorDbHostRequired));
+
+    /// <summary>Tick at least one database, or choose «All databases but the ticked ones».</summary>
+    public static string ErrorDbNothingChosen => Get(nameof(ErrorDbNothingChosen));
+
+    /// <summary>Database servers on this computer</summary>
+    public static string DbFindTitle => Get(nameof(DbFindTitle));
+
+    /// <summary>Looking for servers…</summary>
+    public static string DbFindRunning => Get(nameof(DbFindRunning));
+
+    /// <summary>No MySQL, MariaDB or PostgreSQL was found. Choose the folder of the programs yourself.</summary>
+    public static string DbFindNothing => Get(nameof(DbFindNothing));
+
+    /// <summary>Running servers come first, with the address they listen on. Pick one and press OK.</summary>
+    public static string DbFindNote => Get(nameof(DbFindNote));
+
+    /// <summary>running</summary>
+    public static string DbRunning => Get(nameof(DbRunning));
+
+    /// <summary>not running</summary>
+    public static string DbNotRunning => Get(nameof(DbNotRunning));
+
+    /// <summary>Database dumps to:</summary>
+    public static string RestoreDumpsFolder => Get(nameof(RestoreDumpsFolder));
+
+    /// <summary>The set has database dumps. They are restored as .sql files into the folder «db» with README.txt on how to ...</summary>
+    public static string RestoreDumpsNote => Get(nameof(RestoreDumpsNote));
+
+    /// <summary>Databases</summary>
+    public static string CardDatabases => Get(nameof(CardDatabases));
 }

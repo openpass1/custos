@@ -1064,3 +1064,398 @@ internal sealed class SettingsForm : DialogForm
         task.Sources.Any(s => string.Equals(s.CredentialId, id, StringComparison.OrdinalIgnoreCase))
         || task.Destinations.Any(d => string.Equals(d.CredentialId, id, StringComparison.OrdinalIgnoreCase));
 }
+
+/// <summary>
+/// Adds or changes one database server of a task (section 6.2): its kind, the folder of its programs, where it
+/// listens, the account, and which databases to dump. «Find» lists the servers on this computer, «Test connection»
+/// lists the databases of the server.
+/// </summary>
+internal sealed class DbServerDialog : DialogForm
+{
+    private static readonly string[] Engines = [DbEngines.MySql, DbEngines.MariaDb, DbEngines.PostgreSql];
+
+    private readonly EditorContext _context;
+    private readonly TaskDatabaseServer _original;
+    private readonly Credential? _credential;
+    private readonly ComboBox _engine = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+    private readonly TextBox _binDir = new() { Dock = DockStyle.Fill };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true, Margin = new Padding(0) };
+    private readonly Button _find = new() { Text = Strings.DbFind, AutoSize = true, Margin = new Padding(6, 0, 0, 0) };
+    private readonly TextBox _host = new() { Dock = DockStyle.Fill };
+    private readonly NumericUpDown _port = new() { Minimum = 1, Maximum = 65535, Width = 90 };
+    private readonly TextBox _user = new() { Dock = DockStyle.Fill };
+    private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
+    private readonly CheckBox _noPassword = new() { Text = Strings.DbNoPassword, AutoSize = true };
+    private readonly RadioButton _all = new() { Text = Strings.DbChoiceAll, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
+    private readonly RadioButton _only = new() { Text = Strings.DbChoiceOnly, AutoSize = true };
+    private readonly CheckedListBox _databases = new() { Dock = DockStyle.Fill, Height = 130, CheckOnClick = true, IntegralHeight = false };
+    private readonly Button _test = new() { Text = Strings.ButtonTestConnection, AutoSize = true };
+    private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
+    private string? _dataDir;
+    private string _shownEngine;
+
+    public DbServerDialog(EditorContext context, TaskDatabaseServer server, bool isNew)
+        : base(isNew ? Strings.DbServerAddTitle : Strings.DbServerEditTitle, new Size(680, 640))
+    {
+        _context = context;
+        _original = server;
+        _credential = context.FindCredential(server.CredentialId);
+        foreach (string engine in Engines)
+        {
+            _engine.Items.Add(DbEngines.Title(engine));
+        }
+
+        var folderButtons = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        folderButtons.Controls.AddRange([_browse, _find]);
+        AddRow(Strings.DbEngine, _engine);
+        AddRow(Strings.DbBinDir, _binDir, folderButtons);
+        AddWide(Help(Strings.DbBinDirHelp));
+        AddRow(Strings.DbHost, _host, Ui.HelpIcon(context.ToolTip, Strings.DbHostHelp));
+        AddRow(Strings.DbPort, _port);
+        AddRow(Strings.DbUser, _user);
+        AddRow(Strings.DbPassword, _password);
+        AddWide(_noPassword);
+        AddNote(_credential is null ? Strings.DbAccountNote : Strings.DbAccountNote + " " + Strings.DbKeepPasswordNote);
+        AddWide(_all);
+        AddWide(_only);
+        AddWide(_databases);
+        AddNote(Strings.DbListNote);
+        var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        testRow.Controls.Add(_test, 0, 0);
+        testRow.Controls.Add(_testResult, 1, 0);
+        AddWide(testRow);
+        EndBuild();
+
+        int index = Array.IndexOf(Engines, server.Engine);
+        _engine.SelectedIndex = index >= 0 ? index : 0;
+        _shownEngine = Engine;
+        _binDir.Text = server.BinDir;
+        _host.Text = server.Host;
+        _port.Value = server.Port ?? DbEngines.DefaultPort(Engine);
+        _user.Text = _credential?.User ?? DefaultUser(Engine);
+        _noPassword.Checked = _credential is { HasSecret: false };
+        _dataDir = server.DataDir;
+        _all.Checked = server.AllDatabases;
+        _only.Checked = !server.AllDatabases;
+        foreach (string name in server.AllDatabases ? server.Exclude : server.Include)
+        {
+            _databases.Items.Add(name, isChecked: true);
+        }
+
+        UpdatePassword();
+        _engine.SelectedIndexChanged += (_, _) => EngineChanged();
+        _noPassword.CheckedChanged += (_, _) => UpdatePassword();
+        _browse.Click += (_, _) => Browse();
+        _find.Click += (_, _) => Find();
+        _test.Click += (_, _) => TestConnection();
+        foreach (var box in new Control[] { _binDir, _host, _user, _password })
+        {
+            box.TextChanged += (_, _) => _testResult.Text = string.Empty;
+        }
+    }
+
+    /// <summary>The server as entered, after "OK".</summary>
+    public TaskDatabaseServer Server { get; private set; } = new();
+
+    private string Engine => Engines[Math.Max(0, _engine.SelectedIndex)];
+
+    private static string DefaultUser(string engine) => engine == DbEngines.PostgreSql ? "postgres" : "root";
+
+    /// <summary>What is wrong with the fields, in words, or null.</summary>
+    private string? Check()
+    {
+        return string.IsNullOrWhiteSpace(_binDir.Text) ? Strings.ErrorDbBinDirRequired
+            : !PathVariables.LooksAbsolute(_binDir.Text.Trim().Trim('"')) ? Strings.Format(Strings.ErrorPathNotAbsolute, _binDir.Text.Trim())
+            : string.IsNullOrWhiteSpace(_host.Text) ? Strings.ErrorDbHostRequired
+            : string.IsNullOrWhiteSpace(_user.Text) ? Strings.ErrorUserRequired
+            : _only.Checked && _databases.CheckedItems.Count == 0 ? Strings.ErrorDbNothingChosen
+            : null;
+    }
+
+    protected override void OnOk()
+    {
+        if (Check() is { } problem)
+        {
+            Ui.ShowWarning(this, problem);
+            return;
+        }
+
+        string? password = Password;
+        if (_credential is null && password is null)
+        {
+            Ui.ShowWarning(this, Strings.ErrorPasswordRequired);
+            return;
+        }
+
+        var credential = new Credential
+        {
+            Id = _credential?.Id ?? TaskDefinition.NewId(),
+            Kind = CredentialKinds.Db,
+            User = _user.Text.Trim(),
+            ExtensionData = _credential?.ExtensionData,
+        };
+        var server = Build();
+        SetBusy(true);
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.CredentialSave, new CredentialInput { Credential = credential, Password = password },
+                    IpcJsonContext.Default.CredentialInput, IpcJsonContext.Default.CredentialSaveResult);
+                _context.RememberCredential(result.Credential);
+                server.CredentialId = result.Credential.Id;
+                Server = server;
+                _password.Clear();
+                DialogResult = DialogResult.OK;
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        });
+    }
+
+    /// <summary>The password to store: "" for none, null to keep the stored one.</summary>
+    private string? Password => _noPassword.Checked ? string.Empty : _password.Text.Length > 0 ? _password.Text : null;
+
+    private static Label Help(string text) =>
+        new() { Text = text, AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6) };
+
+    /// <summary>The server from the fields; the account is set on "OK".</summary>
+    private TaskDatabaseServer Build()
+    {
+        var chosen = _databases.CheckedItems.Cast<string>().ToList();
+        return new TaskDatabaseServer
+        {
+            Id = _original.Id,
+            Engine = Engine,
+            BinDir = _binDir.Text.Trim().Trim('"'),
+            Host = _host.Text.Trim(),
+            Port = (int)_port.Value,
+            CredentialId = _original.CredentialId,
+            AllDatabases = _all.Checked,
+            Exclude = _all.Checked ? chosen : [],
+            Include = _all.Checked ? [] : chosen,
+            DataDir = _dataDir,
+            ExtensionData = _original.ExtensionData,
+        };
+    }
+
+    private void UpdatePassword()
+    {
+        _password.Enabled = !_noPassword.Checked;
+        if (_noPassword.Checked)
+        {
+            _password.Clear();
+        }
+    }
+
+    /// <summary>The port and user follow the kind of server while they still have the usual values of the old one.</summary>
+    private void EngineChanged()
+    {
+        string old = _shownEngine;
+        _shownEngine = Engine;
+        if ((int)_port.Value == DbEngines.DefaultPort(old))
+        {
+            _port.Value = DbEngines.DefaultPort(Engine);
+        }
+
+        if (_user.Text.Trim() == DefaultUser(old))
+        {
+            _user.Text = DefaultUser(Engine);
+        }
+
+        _testResult.Text = string.Empty;
+    }
+
+    private void Browse()
+    {
+        using var dialog = new FolderBrowserDialog { ShowNewFolderButton = false, UseDescriptionForTitle = true, Description = Strings.DbBinDir.TrimEnd(':') };
+        if (Directory.Exists(_binDir.Text))
+        {
+            dialog.InitialDirectory = _binDir.Text;
+        }
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _binDir.Text = dialog.SelectedPath;
+        }
+    }
+
+    private void Find()
+    {
+        using var dialog = new DbFindDialog(_context.Monitor);
+        if (dialog.ShowDialog(this) != DialogResult.OK || dialog.Selected is not { } found)
+        {
+            return;
+        }
+
+        int index = Array.IndexOf(Engines, found.Engine);
+        if (index >= 0)
+        {
+            _engine.SelectedIndex = index;
+        }
+
+        _binDir.Text = found.BinDir;
+        _host.Text = found.Host;
+        _port.Value = Math.Clamp(found.Port ?? DbEngines.DefaultPort(found.Engine), 1, 65535);
+    }
+
+    private void TestConnection()
+    {
+        if (Check() is { } problem)
+        {
+            _testResult.ForeColor = Glyphs.ErrorText;
+            _testResult.Text = problem;
+            return;
+        }
+
+        var server = Build();
+        var account = new CredentialInput
+        {
+            Credential = new Credential { Id = _credential?.Id ?? TaskDefinition.NewId(), Kind = CredentialKinds.Db, User = _user.Text.Trim() },
+            Password = Password,
+        };
+        _test.Enabled = false;
+        _testResult.ForeColor = SystemColors.GrayText;
+        _testResult.Text = Strings.TestRunning;
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DatabasesTest, new DbTestRequest
+                {
+                    Server = server,
+                    Credential = account,
+                    TaskName = _context.TaskName,
+                    ProfileSid = _context.ProfileSid,
+                },
+                    IpcJsonContext.Default.DbTestRequest, IpcJsonContext.Default.DbTestResult, TimeSpan.FromMinutes(2));
+                ShowTest(result);
+            }
+            catch (ServiceUnavailableException ex)
+            {
+                _testResult.ForeColor = Glyphs.ErrorText;
+                _testResult.Text = ex.Message;
+            }
+            finally
+            {
+                _test.Enabled = true;
+            }
+        });
+    }
+
+    /// <summary>Shows what the test found; the databases of the server join the list (also used by the window tests).</summary>
+    internal void ShowTest(DbTestResult result)
+    {
+        if (!result.Ok)
+        {
+            _testResult.ForeColor = Glyphs.ErrorText;
+            _testResult.Text = Strings.Format(Strings.DbTestFailed, result.Error);
+            return;
+        }
+
+        _dataDir = result.DataDir;
+        var present = _databases.Items.Cast<string>().ToHashSet(StringComparer.Ordinal);
+        foreach (string name in result.Databases.Where(n => !present.Contains(n)))
+        {
+            _databases.Items.Add(name, isChecked: false);
+        }
+
+        _testResult.ForeColor = Glyphs.Green;
+        _testResult.Text = Strings.Format(Strings.DbTestOk, result.Version, result.Databases.Count)
+            + (result.DataDir is { } dataDir ? Environment.NewLine + Strings.Format(Strings.DbTestDataDir, dataDir) : string.Empty);
+    }
+}
+
+/// <summary>«Find» of <see cref="DbServerDialog"/>: the database servers and folders of their programs on this computer.</summary>
+internal sealed class DbFindDialog : DialogForm
+{
+    private readonly ServiceMonitor _monitor;
+    private readonly ListView _list = new()
+    {
+        Dock = DockStyle.Fill,
+        Height = 220,
+        View = View.Details,
+        FullRowSelect = true,
+        MultiSelect = false,
+        HideSelection = false,
+    };
+
+    private readonly Label _status = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 6, 0, 6) };
+
+    public DbFindDialog(ServiceMonitor monitor)
+        : base(Strings.DbFindTitle, new Size(720, 380))
+    {
+        _monitor = monitor;
+        _list.Columns.Add(Strings.ColumnServer, 220);
+        _list.Columns.Add(Strings.ColumnState, 100);
+        _list.Columns.Add(Strings.ColumnPrograms, 360);
+        AddNote(Strings.DbFindNote);
+        AddWide(_list);
+        AddWide(_status);
+        EndBuild();
+        OkButton.Enabled = false;
+        _list.SelectedIndexChanged += (_, _) => OkButton.Enabled = _list.SelectedItems.Count == 1;
+        _list.ItemActivate += (_, _) => OnOk();
+        Shown += (_, _) => Search();
+    }
+
+    /// <summary>The server picked, after "OK".</summary>
+    public DbCandidate? Selected { get; private set; }
+
+    protected override void OnOk()
+    {
+        if (_list.SelectedItems.Count == 1 && _list.SelectedItems[0].Tag is DbCandidate candidate)
+        {
+            Selected = candidate;
+            DialogResult = DialogResult.OK;
+        }
+    }
+
+    /// <summary>Shows what the service found (also used by the window tests).</summary>
+    internal void ShowFound(DbFindResult result)
+    {
+        _list.BeginUpdate();
+        _list.Items.Clear();
+        foreach (var server in result.Servers)
+        {
+            string title = DbEngines.Title(server.Engine) + (server.Version is { Length: > 0 } version ? " " + version : string.Empty);
+            string where = server.Running ? $"{title} — {server.Host}:{server.Port}" : title;
+            _list.Items.Add(new ListViewItem([where, server.Running ? Strings.DbRunning : Strings.DbNotRunning, server.BinDir]) { Tag = server });
+        }
+
+        _list.EndUpdate();
+        _status.Text = result.Servers.Count == 0 ? Strings.DbFindNothing : string.Empty;
+        if (_list.Items.Count > 0)
+        {
+            _list.Items[0].Selected = true;
+        }
+    }
+
+    private void Search()
+    {
+        _status.Text = Strings.DbFindRunning;
+        UseWaitCursor = true;
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _monitor.RequestAsync(PipeProtocol.Methods.DatabasesFind, EmptyRequest.Instance,
+                    IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.DbFindResult, TimeSpan.FromMinutes(2));
+                ShowFound(result);
+            }
+            catch (ServiceUnavailableException)
+            {
+                _status.Text = string.Empty;
+                throw;
+            }
+            finally
+            {
+                UseWaitCursor = false;
+            }
+        });
+    }
+}

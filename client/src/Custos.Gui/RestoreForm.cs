@@ -37,6 +37,10 @@ internal sealed class RestoreForm : Form
     private readonly TextBox _target = new() { Dock = DockStyle.Fill, Enabled = false };
     private readonly Button _browseTarget = new() { Text = Strings.ButtonBrowse, AutoSize = true, Enabled = false };
     private readonly ComboBox _existing = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 320 };
+    private readonly Label _dumpsLabel = new() { Text = Strings.RestoreDumpsFolder, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 8, 8, 6) };
+    private readonly TextBox _dumps = new() { Dock = DockStyle.Fill };
+    private readonly Button _browseDumps = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Label _dumpsNote = new() { Text = Strings.RestoreDumpsNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 4) };
     private readonly ProgressBar _bar = new() { Dock = DockStyle.Fill, Height = 18, Visible = false };
     private readonly Label _status = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 8, 6) };
     private readonly Button _start = new() { Text = Strings.RestoreStart, AutoSize = true, MinimumSize = new Size(110, 0), Enabled = false };
@@ -110,7 +114,12 @@ internal sealed class RestoreForm : Form
         to.Controls.Add(_browseTarget, 2, 2);
         to.Controls.Add(new Label { Text = Strings.RestoreExisting, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 8, 8, 6) }, 0, 3);
         to.Controls.Add(_existing, 1, 3);
-        to.Controls.Add(_bar, 0, 4);
+        to.Controls.Add(_dumpsLabel, 0, 4);
+        to.Controls.Add(_dumps, 1, 4);
+        to.Controls.Add(_browseDumps, 2, 4);
+        to.Controls.Add(_dumpsNote, 0, 5);
+        to.SetColumnSpan(_dumpsNote, 3);
+        to.Controls.Add(_bar, 0, 6);
         to.SetColumnSpan(_bar, 3);
 
         var bottom = new TableLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, ColumnCount = 4, Padding = new Padding(12, 8, 12, 12) };
@@ -139,6 +148,7 @@ internal sealed class RestoreForm : Form
         _folder.TextChanged += (_, _) => ClearSets();
         _browseFolder.Click += (_, _) => Browse(_folder);
         _browseTarget.Click += (_, _) => Browse(_target);
+        _browseDumps.Click += (_, _) => Browse(_dumps);
         _search.Click += (_, _) => Search();
         _start.Click += (_, _) => Start();
         _stop.Click += (_, _) => Ui.Run(this, () => _monitor.CommandAsync(PipeProtocol.Methods.RestoreStop));
@@ -226,6 +236,12 @@ internal sealed class RestoreForm : Form
         _target.Enabled = idle && _toFolder.Checked;
         _browseTarget.Enabled = idle && _toFolder.Checked;
         _existing.Enabled = idle;
+
+        // Dumps go into «db» of the other folder; to the original places they need a folder of their own.
+        bool dumps = _sets.SelectedItems.Count == 1 && _sets.SelectedItems[0].Tag is RestoreSetInfo { Header.Databases.Count: > 0 };
+        _dumpsNote.Visible = dumps;
+        _dumpsLabel.Visible = _dumps.Visible = _browseDumps.Visible = dumps && _toOriginal.Checked;
+        _dumps.Enabled = _browseDumps.Enabled = idle;
         _start.Enabled = idle && _sets.SelectedItems.Count == 1;
         _stop.Visible = _running;
         _bar.Visible = _running;
@@ -336,6 +352,17 @@ internal sealed class RestoreForm : Form
             }
         }
 
+        string? dumps = null;
+        if (target is null && set.Header.Databases.Count > 0 && _dumps.Text.Trim().Length > 0)
+        {
+            dumps = _dumps.Text.Trim();
+            if (!Path.IsPathFullyQualified(dumps))
+            {
+                Ui.ShowWarning(this, Strings.RestoreChooseTarget);
+                return;
+            }
+        }
+
         var existing = _existing.SelectedIndex switch
         {
             1 => RestoreExisting.Overwrite,
@@ -359,6 +386,7 @@ internal sealed class RestoreForm : Form
             Password = source.Password,
             Location = set.Location,
             TargetFolder = target,
+            DumpsFolder = dumps,
             Existing = existing,
         };
         _start.Enabled = false;

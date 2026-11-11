@@ -540,7 +540,7 @@ Backups go on: the service does not depend on the window. The details are writte
 Off: the contents of D:\Data go straight into &lt;backup&gt;\…</value>
   </data>
   <data name="ErrorNoSources" xml:space="preserve">
-    <value>Add at least one source, or switch the task off.</value>
+    <value>Add at least one source or database server, or switch the task off.</value>
   </data>
   <data name="SourceAddTitle" xml:space="preserve">
     <value>Add source</value>
@@ -1485,5 +1485,128 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   </data>
   <data name="SevenZipUpdatingTo" xml:space="preserve">
     <value>Updating 7-Zip to {0}…</value>
+  </data>
+  <data name="PageDatabases" xml:space="preserve">
+    <value>Databases</value>
+  </data>
+  <data name="DatabasesNote" xml:space="preserve">
+    <value>Databases of MySQL, MariaDB and PostgreSQL on this computer (for example of OSPanel) are dumped whole in every run, by the server's own programs, into the folder «db» of each copy. The data folder of a server need not be copied as files. For MS SQL or 1C, add a program to «Events» that makes the dump into a source folder.</value>
+  </data>
+  <data name="ColumnServer" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="ColumnDatabases" xml:space="preserve">
+    <value>Databases</value>
+  </data>
+  <data name="ColumnPrograms" xml:space="preserve">
+    <value>Folder of the programs</value>
+  </data>
+  <data name="DbAll" xml:space="preserve">
+    <value>all</value>
+  </data>
+  <data name="DbAllExcept" xml:space="preserve">
+    <value>all but: {0}</value>
+  </data>
+  <data name="DbOnly" xml:space="preserve">
+    <value>only: {0}</value>
+  </data>
+  <data name="DbServerAddTitle" xml:space="preserve">
+    <value>Add a database server</value>
+  </data>
+  <data name="DbServerEditTitle" xml:space="preserve">
+    <value>Database server</value>
+  </data>
+  <data name="DbEngine" xml:space="preserve">
+    <value>Server:</value>
+  </data>
+  <data name="DbBinDir" xml:space="preserve">
+    <value>Folder of the programs:</value>
+  </data>
+  <data name="DbBinDirHelp" xml:space="preserve">
+    <value>The bin folder of the server, with mysqldump and mysql (MariaDB: mariadb-dump and mariadb; PostgreSQL: pg_dump, pg_dumpall and psql). For OSPanel 6 it is like C:\OSPanel\modules\MySQL-8.0\bin. «Find» looks for running servers and the usual folders.</value>
+  </data>
+  <data name="DbFind" xml:space="preserve">
+    <value>Find…</value>
+  </data>
+  <data name="DbHost" xml:space="preserve">
+    <value>Address:</value>
+  </data>
+  <data name="DbHostHelp" xml:space="preserve">
+    <value>Where the server listens. OSPanel 6 gives each module an address of its own, like 127.127.126.26; «Find» takes it from the running server.</value>
+  </data>
+  <data name="DbPort" xml:space="preserve">
+    <value>Port:</value>
+  </data>
+  <data name="DbUser" xml:space="preserve">
+    <value>User:</value>
+  </data>
+  <data name="DbPassword" xml:space="preserve">
+    <value>Password:</value>
+  </data>
+  <data name="DbNoPassword" xml:space="preserve">
+    <value>No password</value>
+  </data>
+  <data name="DbAccountNote" xml:space="preserve">
+    <value>An account that may read every database: root for MySQL and MariaDB, postgres for PostgreSQL. The password is kept by the service, encrypted.</value>
+  </data>
+  <data name="DbKeepPasswordNote" xml:space="preserve">
+    <value>Leave the password empty to keep the stored one.</value>
+  </data>
+  <data name="DbChoiceAll" xml:space="preserve">
+    <value>All databases but the ticked ones</value>
+  </data>
+  <data name="DbChoiceOnly" xml:space="preserve">
+    <value>Only the ticked databases</value>
+  </data>
+  <data name="DbListNote" xml:space="preserve">
+    <value>The list fills in on «Test connection». System databases are never dumped as databases; users and rights go to _users.sql.</value>
+  </data>
+  <data name="ButtonTestConnection" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="DbTestOk" xml:space="preserve">
+    <value>Connected: version {0}, databases: {1}.</value>
+  </data>
+  <data name="DbTestDataDir" xml:space="preserve">
+    <value>Data folder of the server: {0}</value>
+  </data>
+  <data name="DbTestFailed" xml:space="preserve">
+    <value>No connection: {0}</value>
+  </data>
+  <data name="ErrorDbBinDirRequired" xml:space="preserve">
+    <value>Choose the folder of the server's programs.</value>
+  </data>
+  <data name="ErrorDbHostRequired" xml:space="preserve">
+    <value>Enter the address of the server.</value>
+  </data>
+  <data name="ErrorDbNothingChosen" xml:space="preserve">
+    <value>Tick at least one database, or choose «All databases but the ticked ones».</value>
+  </data>
+  <data name="DbFindTitle" xml:space="preserve">
+    <value>Database servers on this computer</value>
+  </data>
+  <data name="DbFindRunning" xml:space="preserve">
+    <value>Looking for servers…</value>
+  </data>
+  <data name="DbFindNothing" xml:space="preserve">
+    <value>No MySQL, MariaDB or PostgreSQL was found. Choose the folder of the programs yourself.</value>
+  </data>
+  <data name="DbFindNote" xml:space="preserve">
+    <value>Running servers come first, with the address they listen on. Pick one and press OK.</value>
+  </data>
+  <data name="DbRunning" xml:space="preserve">
+    <value>running</value>
+  </data>
+  <data name="DbNotRunning" xml:space="preserve">
+    <value>not running</value>
+  </data>
+  <data name="RestoreDumpsFolder" xml:space="preserve">
+    <value>Database dumps to:</value>
+  </data>
+  <data name="RestoreDumpsNote" xml:space="preserve">
+    <value>The set has database dumps. They are restored as .sql files into the folder «db» with README.txt on how to load them; CUSTOS does not load them into a server. Without a folder they are not restored.</value>
+  </data>
+  <data name="CardDatabases" xml:space="preserve">
+    <value>Databases</value>
   </data>
 </root>

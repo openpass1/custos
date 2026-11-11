@@ -236,6 +236,73 @@ public sealed class DialogTests
         Assert.Equal(full.SetName, form.SetList.Items[1].SubItems[2].Text);
     });
 
+    [Fact]
+    public void The_restore_window_asks_for_a_folder_for_the_dumps_of_a_set_with_databases() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new RestoreForm(monitor, Samples.OfficeId);
+        form.Show();
+        Sta.Pump();
+        var plain = new Custos.Core.Backup.SetManifestHeader { SetName = "Office 1", BackupType = BackupTypes.Full, StartedAt = new DateTimeOffset(2026, 11, 1, 18, 0, 0, TimeSpan.Zero) };
+        var dumps = new Custos.Core.Backup.SetManifestHeader
+        {
+            SetName = "Office 2",
+            BackupType = BackupTypes.Full,
+            StartedAt = new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero),
+            Databases = [new Custos.Core.Backup.ManifestDatabase { Engine = DbEngines.MySql, Name = "shop", File = "db/mysql/shop.sql", Server = "127.0.0.1:3306" }],
+        };
+
+        form.ShowSets(new Custos.Core.Ipc.RestoreListResult
+        {
+            Sets =
+            [
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\b", Where = @"D:\Backup", Header = dumps },
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\a", Where = @"D:\Backup", Header = plain },
+            ],
+        });
+        Sta.Pump();
+        var note = Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsNote);
+        Assert.True(note.Visible);
+        Assert.True(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsFolder).Visible);
+
+        form.SetList.Items[1].Selected = true;
+        Sta.Pump();
+        Assert.False(note.Visible);
+    });
+
+    [Fact]
+    public void The_database_server_dialog_lists_what_the_test_and_the_search_found() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var server = new TaskDatabaseServer { Engine = DbEngines.MariaDb, BinDir = @"C:\OSPanel\modules\MariaDB-11.4\bin", AllDatabases = false, Include = ["shop"] };
+        using var dialog = new DbServerDialog(new EditorContext(monitor, toolTip), server, isNew: true);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.Equal("root", Sta.Find<TextBox>(dialog).Single(b => b.Text == "root").Text);
+        dialog.ShowTest(new Custos.Core.Ipc.DbTestResult { Ok = true, Version = "11.4.4-MariaDB", Databases = ["blog", "shop"], DataDir = @"C:\OSPanel\data\MariaDB-11.4\" });
+        Sta.Pump();
+        var list = Sta.Find<CheckedListBox>(dialog).Single();
+        Assert.Equal(["shop", "blog"], list.Items.Cast<string>());
+        Assert.Equal(["shop"], list.CheckedItems.Cast<string>());
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.StartsWith(Strings.Format(Strings.DbTestOk, "11.4.4-MariaDB", 2), StringComparison.Ordinal));
+
+        using var find = new DbFindDialog(monitor);
+        find.ShowFound(new Custos.Core.Ipc.DbFindResult
+        {
+            Servers =
+            [
+                new Custos.Core.Ipc.DbCandidate { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin", Version = "8.0", Host = "127.127.126.26", Port = 3306, Running = true },
+                new Custos.Core.Ipc.DbCandidate { Engine = DbEngines.PostgreSql, BinDir = @"C:\Program Files\PostgreSQL\17\bin", Version = "17", Port = 5432 },
+            ],
+        });
+        var found = Sta.Find<ListView>(find).Single();
+        Assert.Equal(2, found.Items.Count);
+        Assert.Equal("MySQL 8.0 — 127.127.126.26:3306", found.Items[0].Text);
+        Assert.Equal(Strings.DbNotRunning, found.Items[1].SubItems[1].Text);
+    });
+
     [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]

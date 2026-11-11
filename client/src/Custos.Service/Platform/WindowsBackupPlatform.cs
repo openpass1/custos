@@ -8,6 +8,7 @@ using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Databases;
 using Custos.Core.Model;
 using Microsoft.Win32.SafeHandles;
 
@@ -36,6 +37,25 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
         try
         {
             return config.GetPassword(credentialId) is { Length: > 0 } password ? password : throw new BackupException(Messages.ArchivePasswordMissing);
+        }
+        catch (ConfigException ex)
+        {
+            throw new BackupException(ex.Message, ex);
+        }
+    }
+
+    public override DbAccount GetDbAccount(string credentialId)
+    {
+        var credential = config.GetCredential(credentialId);
+        if (credential is null || credential.Kind != CredentialKinds.Db)
+        {
+            throw new BackupException(Messages.DbAccountMissing);
+        }
+
+        try
+        {
+            // A local server of a development panel often has root without a password: an empty one is fine here.
+            return new DbAccount(credential.User, config.GetPassword(credentialId) ?? string.Empty);
         }
         catch (ConfigException ex)
         {

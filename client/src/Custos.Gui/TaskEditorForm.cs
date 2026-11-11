@@ -63,6 +63,7 @@ internal sealed class TaskEditorForm : Form
         [
             new BasicPage(context),
             new SourcesPage(context),
+            new DatabasesPage(context),
             new DestinationsPage(context),
             new SchedulePage(context),
             new ArchivePage(context),
@@ -292,6 +293,9 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
 
     public bool IsMirror => BackupType == BackupTypes.Mirror;
 
+    /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
+    public int DbServerCount { get; set; }
+
     /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
     public string? ProfileSid { get; init; }
 
@@ -322,6 +326,22 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
                     .Where(c => c.Kind == CredentialKinds.Windows)
                     .OrderBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase),
             ];
+        }
+    }
+
+    /// <summary>A stored account of any kind, including the ones saved in this editor; null if there is none.</summary>
+    public Credential? FindCredential(string? id) =>
+        id is null ? null
+        : _added.LastOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase))
+            ?? Monitor.Snapshot?.Credentials.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Keeps an account saved by a dialog of this editor (a database account) until the service sends it.</summary>
+    public void RememberCredential(Credential credential)
+    {
+        _added.Add(credential);
+        if (credential.Kind == CredentialKinds.Windows)
+        {
+            CredentialsChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

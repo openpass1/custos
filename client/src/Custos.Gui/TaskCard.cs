@@ -87,6 +87,12 @@ internal sealed class TaskCard : UserControl
         _detailCount = 0;
         AddDetail(Strings.CardSources, task.Sources.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Sources.Select(s => s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
+        if (task.DbServers.Count > 0)
+        {
+            AddDetail(Strings.CardDatabases, string.Join(Environment.NewLine,
+                task.DbServers.Select(d => DatabasesPage.DescribeServer(d) + " — " + DatabasesPage.DescribeDatabases(d))));
+        }
+
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Destinations.Select(d => DescribeDestination(d, snapshot))));
         AddDetail(Strings.CardSchedule, TaskDescriber.ScheduleWithCatchUp(task.Schedule));

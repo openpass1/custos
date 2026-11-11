@@ -540,7 +540,7 @@
 Выключено: содержимое D:\Data ложится прямо в &lt;копия&gt;\…</value>
   </data>
   <data name="ErrorNoSources" xml:space="preserve">
-    <value>Добавьте хотя бы один источник или отключите задание.</value>
+    <value>Добавьте хотя бы один источник или сервер баз данных либо отключите задание.</value>
   </data>
   <data name="SourceAddTitle" xml:space="preserve">
     <value>Добавить источник</value>
@@ -1485,5 +1485,128 @@ USB-диск — ищется по метке тома, поэтому смен�
   </data>
   <data name="SevenZipUpdatingTo" xml:space="preserve">
     <value>Обновление 7-Zip до {0}…</value>
+  </data>
+  <data name="PageDatabases" xml:space="preserve">
+    <value>Базы данных</value>
+  </data>
+  <data name="DatabasesNote" xml:space="preserve">
+    <value>Базы MySQL, MariaDB и PostgreSQL на этом компьютере (например, OSPanel) выгружаются целиком при каждом запуске программами самого сервера в папку «db» каждой копии. Папку данных сервера копировать файлами не нужно. Для MS SQL или 1С добавьте в «События» программу, которая делает дамп в папку-источник.</value>
+  </data>
+  <data name="ColumnServer" xml:space="preserve">
+    <value>Сервер</value>
+  </data>
+  <data name="ColumnDatabases" xml:space="preserve">
+    <value>Базы</value>
+  </data>
+  <data name="ColumnPrograms" xml:space="preserve">
+    <value>Папка программ</value>
+  </data>
+  <data name="DbAll" xml:space="preserve">
+    <value>все</value>
+  </data>
+  <data name="DbAllExcept" xml:space="preserve">
+    <value>все, кроме: {0}</value>
+  </data>
+  <data name="DbOnly" xml:space="preserve">
+    <value>только: {0}</value>
+  </data>
+  <data name="DbServerAddTitle" xml:space="preserve">
+    <value>Добавить сервер баз данных</value>
+  </data>
+  <data name="DbServerEditTitle" xml:space="preserve">
+    <value>Сервер баз данных</value>
+  </data>
+  <data name="DbEngine" xml:space="preserve">
+    <value>Сервер:</value>
+  </data>
+  <data name="DbBinDir" xml:space="preserve">
+    <value>Папка программ:</value>
+  </data>
+  <data name="DbBinDirHelp" xml:space="preserve">
+    <value>Папка bin сервера, где лежат mysqldump и mysql (MariaDB: mariadb-dump и mariadb; PostgreSQL: pg_dump, pg_dumpall и psql). В OSPanel 6 это папка вида C:\OSPanel\modules\MySQL-8.0\bin. «Найти» ищет запущенные серверы и обычные папки.</value>
+  </data>
+  <data name="DbFind" xml:space="preserve">
+    <value>Найти…</value>
+  </data>
+  <data name="DbHost" xml:space="preserve">
+    <value>Адрес:</value>
+  </data>
+  <data name="DbHostHelp" xml:space="preserve">
+    <value>Где сервер принимает подключения. OSPanel 6 даёт каждому модулю свой адрес, например 127.127.126.26; «Найти» берёт его у запущенного сервера.</value>
+  </data>
+  <data name="DbPort" xml:space="preserve">
+    <value>Порт:</value>
+  </data>
+  <data name="DbUser" xml:space="preserve">
+    <value>Пользователь:</value>
+  </data>
+  <data name="DbPassword" xml:space="preserve">
+    <value>Пароль:</value>
+  </data>
+  <data name="DbNoPassword" xml:space="preserve">
+    <value>Без пароля</value>
+  </data>
+  <data name="DbAccountNote" xml:space="preserve">
+    <value>Учётная запись, которой можно читать все базы: root для MySQL и MariaDB, postgres для PostgreSQL. Пароль хранит служба в зашифрованном виде.</value>
+  </data>
+  <data name="DbKeepPasswordNote" xml:space="preserve">
+    <value>Оставьте пароль пустым, чтобы не менять сохранённый.</value>
+  </data>
+  <data name="DbChoiceAll" xml:space="preserve">
+    <value>Все базы, кроме отмеченных</value>
+  </data>
+  <data name="DbChoiceOnly" xml:space="preserve">
+    <value>Только отмеченные базы</value>
+  </data>
+  <data name="DbListNote" xml:space="preserve">
+    <value>Список заполняется по кнопке «Проверить подключение». Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.</value>
+  </data>
+  <data name="ButtonTestConnection" xml:space="preserve">
+    <value>Проверить подключение</value>
+  </data>
+  <data name="DbTestOk" xml:space="preserve">
+    <value>Подключение есть: версия {0}, баз: {1}.</value>
+  </data>
+  <data name="DbTestDataDir" xml:space="preserve">
+    <value>Папка данных сервера: {0}</value>
+  </data>
+  <data name="DbTestFailed" xml:space="preserve">
+    <value>Нет подключения: {0}</value>
+  </data>
+  <data name="ErrorDbBinDirRequired" xml:space="preserve">
+    <value>Укажите папку программ сервера.</value>
+  </data>
+  <data name="ErrorDbHostRequired" xml:space="preserve">
+    <value>Введите адрес сервера.</value>
+  </data>
+  <data name="ErrorDbNothingChosen" xml:space="preserve">
+    <value>Отметьте хотя бы одну базу или выберите «Все базы, кроме отмеченных».</value>
+  </data>
+  <data name="DbFindTitle" xml:space="preserve">
+    <value>Серверы баз данных на этом компьютере</value>
+  </data>
+  <data name="DbFindRunning" xml:space="preserve">
+    <value>Ищу серверы…</value>
+  </data>
+  <data name="DbFindNothing" xml:space="preserve">
+    <value>MySQL, MariaDB и PostgreSQL не найдены. Укажите папку программ вручную.</value>
+  </data>
+  <data name="DbFindNote" xml:space="preserve">
+    <value>Сначала идут запущенные серверы с адресом, на котором они работают. Выберите сервер и нажмите OK.</value>
+  </data>
+  <data name="DbRunning" xml:space="preserve">
+    <value>работает</value>
+  </data>
+  <data name="DbNotRunning" xml:space="preserve">
+    <value>не запущен</value>
+  </data>
+  <data name="RestoreDumpsFolder" xml:space="preserve">
+    <value>Дампы баз в папку:</value>
+  </data>
+  <data name="RestoreDumpsNote" xml:space="preserve">
+    <value>В наборе есть дампы баз данных. Они восстанавливаются файлами .sql в папку «db» вместе с README.txt о том, как загрузить их в сервер; сам CUSTOS в сервер их не загружает. Без папки дампы не восстанавливаются.</value>
+  </data>
+  <data name="CardDatabases" xml:space="preserve">
+    <value>Базы данных</value>
   </data>
 </root>
