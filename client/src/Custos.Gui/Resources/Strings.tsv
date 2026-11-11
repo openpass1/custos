@@ -67,6 +67,7 @@ CardSubtitle	Type: {0} · {1}	Тип: {0} · {1}
 CardEnabled	on	включено
 CardDisabled	off	отключено
 CardProgress	Progress	Прогресс
+CardProgressLeft	{0} left	осталось {0}
 CardSources	Sources	Источники
 CardDestinations	Destinations	Назначения
 CardSchedule	Schedule	Расписание

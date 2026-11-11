@@ -208,6 +208,9 @@
   <data name="CardProgress" xml:space="preserve">
     <value>Прогресс</value>
   </data>
+  <data name="CardProgressLeft" xml:space="preserve">
+    <value>осталось {0}</value>
+  </data>
   <data name="CardSources" xml:space="preserve">
     <value>Источники</value>
   </data>

@@ -1,5 +1,6 @@
 using Custos.Core.Backup;
 using Custos.Core.Ipc;
+using Custos.Core.Text;
 
 namespace Custos.Gui.Tests;
 
@@ -59,6 +60,50 @@ public sealed class MainFormTests
         Assert.Equal(2, list.Items.Count);
         Assert.Null(list.SelectedTaskId);
         Assert.True(Sta.Shows(card, Strings.CardNoSelection));
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_card_shows_a_short_progress_and_the_tab_the_details(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new MainForm(monitor);
+        form.Show();
+        Sta.Pump();
+        var list = Assert.Single(Sta.Find<TaskListView>(form));
+        var card = Assert.Single(Sta.Find<TaskCard>(form));
+        var tab = Assert.Single(Sta.Find<ProgressView>(form));
+        list.SelectTask(Samples.OfficeId);
+        monitor.SimulateSnapshot(Samples.Snapshot(2, running: true));
+        Sta.Pump();
+
+        // Before the time left is known: what the run is doing.
+        var scan = Samples.Progress(0);
+        scan.Phase = BackupPhases.Scan;
+        monitor.SimulateProgress(new RunProgressEvent { RunId = Samples.RunId, TaskId = Samples.OfficeId, Progress = scan });
+        Sta.Pump();
+        Assert.Equal(TaskStates.RunningText(stopping: false, paused: false, 0) + " · " + Strings.PhaseScan, card.ProgressLine);
+
+        // Copying: percent and time left in the card, nothing more.
+        var copy = Samples.Progress(470);
+        copy.EtaS = 125;
+        monitor.SimulateProgress(new RunProgressEvent { RunId = Samples.RunId, TaskId = Samples.OfficeId, Progress = copy });
+        Sta.Pump();
+        string left = Strings.Format(Strings.CardProgressLeft, Sizes.FormatDuration(TimeSpan.FromSeconds(125)));
+        Assert.Equal(TaskStates.RunningText(stopping: false, paused: false, 47) + " · " + left, card.ProgressLine);
+        Assert.False(Sta.ShowsPart(card, "report.docx"));
+
+        // The current file and the rest are on the "Progress" tab.
+        var page = (TabPage)tab.Parent!;
+        ((TabControl)page.Parent!).SelectedTab = page;
+        Sta.Pump();
+        Assert.True(Sta.ShowsPart(tab, "report.docx"));
+
+        // Paused: no time left.
+        monitor.SimulateProgress(new RunProgressEvent { RunId = Samples.RunId, TaskId = Samples.OfficeId, Progress = copy, Paused = true });
+        Sta.Pump();
+        Assert.Equal(TaskStates.RunningText(stopping: false, paused: true, 47), card.ProgressLine);
     });
 
     [Fact]

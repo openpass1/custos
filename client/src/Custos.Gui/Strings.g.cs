@@ -194,6 +194,9 @@ static partial class Strings
     /// <summary>Progress</summary>
     public static string CardProgress => Get(nameof(CardProgress));
 
+    /// <summary>{0} left</summary>
+    public static string CardProgressLeft => Get(nameof(CardProgressLeft));
+
     /// <summary>Sources</summary>
     public static string CardSources => Get(nameof(CardSources));
 

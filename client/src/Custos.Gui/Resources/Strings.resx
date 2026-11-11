@@ -208,6 +208,9 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="CardProgress" xml:space="preserve">
     <value>Progress</value>
   </data>
+  <data name="CardProgressLeft" xml:space="preserve">
+    <value>{0} left</value>
+  </data>
   <data name="CardSources" xml:space="preserve">
     <value>Sources</value>
   </data>

@@ -17,12 +17,11 @@ internal sealed class TaskCard : UserControl
     private readonly Label _subtitle = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 2, 0, 8) };
     private readonly Label _description = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 10), UseMnemonic = false };
     private readonly GroupBox _progressBox = new() { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10, 6, 10, 8), Margin = new Padding(0, 0, 0, 10) };
-    private readonly ProgressTable _progress = new(detailed: false) { Dock = DockStyle.Fill };
+    private readonly ProgressSummary _progress = new() { Dock = DockStyle.Fill };
     private readonly TableLayoutPanel _details = new() { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
     private readonly Label _empty = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = SystemColors.GrayText };
     private readonly Font _nameFont;
     private StateIcon? _iconState;
-    private readonly System.Windows.Forms.Timer _clock = new() { Interval = 1000 };
     private string? _taskId;
     private int _detailCount;
 
@@ -57,7 +56,6 @@ internal sealed class TaskCard : UserControl
         Controls.Add(_scroll);
         Controls.Add(_empty);
         ResumeLayout(performLayout: true);
-        _clock.Tick += (_, _) => _progress.ShowElapsed();
         ShowTask(null, null, null);
     }
 
@@ -69,7 +67,6 @@ internal sealed class TaskCard : UserControl
         _empty.Visible = task is null;
         if (task is null || snapshot is null)
         {
-            _clock.Stop();
             return;
         }
 
@@ -131,14 +128,15 @@ internal sealed class TaskCard : UserControl
         if (current is null || !SameId(current.TaskId, _taskId))
         {
             _progressBox.Visible = false;
-            _clock.Stop();
             return;
         }
 
         _progress.ShowRun(current, progress);
         _progressBox.Visible = true;
-        _clock.Start();
     }
+
+    /// <summary>The line under the progress bar, for the tests; empty when nothing of this task runs.</summary>
+    internal string ProgressLine => _progressBox.Visible ? _progress.Line : string.Empty;
 
     /// <summary>"PC01\admin" for changes made on this computer, "monitoring site (login)" for changes from the server.</summary>
     public static string DescribeAuthor(string? updatedBy) => updatedBy switch
@@ -165,7 +163,6 @@ internal sealed class TaskCard : UserControl
     {
         if (disposing)
         {
-            _clock.Dispose();
             _nameFont.Dispose();
             _icon.Image?.Dispose();
         }
