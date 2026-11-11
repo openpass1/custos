@@ -51,8 +51,8 @@ jobs:
           - { base: 'ubuntu:24.04', engines: 'mysql postgresql' }
           - { base: 'ubuntu:26.04', engines: 'mysql' }
           - { base: 'ubuntu:26.04', engines: 'mariadb postgresql' }
-          - { base: 'almalinux:9', engines: 'mariadb postgresql' }
-          - { base: 'almalinux:9', engines: 'mysql' }
+          # AlmaLinux 9 passed on 2026-11-10 and is left out to save Actions minutes.
+          # Run it by hand: helper/tests/run.sh almalinux:9 "mariadb postgresql" (or mysql).
     steps:
       - uses: actions/checkout@v6
 

@@ -293,13 +293,14 @@ userdel -r custos
 | Ubuntu 24.04 | MySQL 8.0, PostgreSQL 16 |
 | Ubuntu 26.04 | MySQL 8.4 |
 | Ubuntu 26.04 | MariaDB 11.8, PostgreSQL 18 |
-| AlmaLinux 9 | MariaDB 10.5, PostgreSQL 13 |
-| AlmaLinux 9 | MySQL 8.0 |
+
+AlmaLinux 9 (MariaDB 10.5 и PostgreSQL 13, отдельно MySQL 8.0) прошёл те же тесты 10.11.2026, но в постоянный прогон не входит, чтобы не тратить минуты GitHub Actions. Его можно запустить вручную, как любую другую систему.
 
 Запуск одной системы на машине с Docker, из корня репозитория:
 
 ```bash
 helper/tests/run.sh debian:12 "mariadb postgresql"
+helper/tests/run.sh almalinux:9 mysql
 ```
 
 В GitHub Actions (`.github/workflows/helper.yml`) тесты идут на всех системах из таблицы, когда меняется что-то в `helper/`. Рядом с ними скрипт проверяется ShellCheck'ом, а когда всё прошло, workflow выкладывает артефакт `custos-helper` со скриптом и его SHA-256.
