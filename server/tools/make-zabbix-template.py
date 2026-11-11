@@ -177,7 +177,7 @@ def task_protos():
     dep('custos.task.anomaly[{#TASK_KEY}]', '{#AGENT} / {#TASK}: size anomaly', 'custos.status', key + '.anomaly',
         desc='1 when the source size or file count of the last run left the usual range.', tags=tags, indent=12, proto=True)
     dep('custos.task.space_days[{#TASK_KEY}]', '{#AGENT} / {#TASK}: days until the storage is full', 'custos.status',
-        key + '.space_days', on_fail='-1',
+        key + '.space_days', value_type='FLOAT', on_fail='-1',
         desc='Days until a destination of the task fills up while the site warns about it (space_warn_days, 14 by default), -1 otherwise.',
         tags=tags, indent=12, proto=True,
         triggers=[

@@ -421,6 +421,7 @@ zabbix_export:
               type: DEPENDENT
               key: 'custos.task.space_days[{#TASK_KEY}]'
               delay: '0'
+              value_type: FLOAT
               description: 'Days until a destination of the task fills up while the site warns about it (space_warn_days, 14 by default), -1 otherwise.'
               preprocessing:
                 - type: JSONPATH
