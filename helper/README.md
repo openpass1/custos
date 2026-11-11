@@ -248,7 +248,7 @@ rm /tmp/site_db.sql
 |---|---|
 | `journalctl -t custos-helper -n 20` или `grep custos-helper /var/log/syslog \| tail -n 20` | строка на каждый вызов: `cmd=info exit=0`, `cmd=cat\ /etc/shadow exit=64` и т. д. |
 | `sudo -u custos sudo -n -l` | пользователю `custos` разрешён только `/usr/local/sbin/custos-helper` |
-| `sudo -u custos sudo -n cat /etc/shadow` | отказ: `a password is required` |
+| `sudo -u custos sudo -n cat /etc/shadow` | отказ: `a password is required` или `I'm sorry custos. I'm afraid I can't do that` (зависит от версии sudo) |
 | `ls -l /etc/custos/helper.conf` | `-rw-------` и владелец `root` |
 
 ## Коды завершения
@@ -260,6 +260,7 @@ rm /tmp/site_db.sql
 | 2 и больше | ошибка tar или СУБД; сообщение в stderr |
 | 64 | неверный вызов: неизвестная операция, лишние аргументы, недопустимые символы, база не из `db-list` |
 | 78 | ошибка в конфиге, сообщение называет строку |
+| 141 | только в журнале сервера: получатель закрыл соединение раньше конца (Ctrl+C, обрыв связи), custos-helper остановился |
 | 255 | ошибка самого ssh на стороне Windows: нет связи, ключ не подошёл |
 
 ## Обновление
