@@ -109,6 +109,24 @@ final class TaskFormTest extends TestCase
         $this->assertSame($remote, $form->task()['sources'][1]);
     }
 
+    public function testTaskWithDatabasesNeedsNoFileSources(): void
+    {
+        $db = '66666666-6666-4666-8666-666666666666';
+        $task = $this->task();
+        $task['sources'] = [];
+        $task['db_servers'] = [['id' => '77777777-7777-4777-8777-777777777777', 'engine' => 'mariadb', 'host' => '127.0.0.1',
+                                'port' => 3306, 'credential_id' => $db, 'databases' => ['*']]];
+        $credentials = $this->credentials() + [$db => ['id' => $db, 'kind' => 'db', 'user' => 'backup', 'domain' => null, 'has_secret' => false]];
+        $form = TaskForm::parse($task, self::formFor($task), $credentials);
+        $this->assertSame([], $form->errors, 'database servers are enough to have something to copy');
+        $this->assertSame($task['db_servers'], $form->task()['db_servers'], 'the editor keeps database servers as they are');
+        $this->assertContains($db, TaskForm::credentialRefs($form->task()), 'accounts of database servers are references too');
+
+        $task['db_servers'] = [];
+        $form = TaskForm::parse($task, self::formFor($task), $credentials);
+        $this->assertContains('task_form.error.no_sources', array_column($form->errors, 'key'));
+    }
+
     public function testDiffMatchesListItemsById(): void
     {
         $old = $this->task();

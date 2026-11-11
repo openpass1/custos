@@ -1,0 +1,432 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: b085d67e6b5a424a8e20e7b06c7428e7
+      name: Templates/Applications
+  templates:
+    - uuid: 586d744e28da4dfcbd96222c33dc3d64
+      template: 'CUSTOS by HTTP'
+      name: 'CUSTOS by HTTP'
+      description: |
+        Monitoring of CUSTOS backups through CUSTOS Monitor (the PHP site).
+        One HTTP request a minute (/api/zabbix/status) feeds every item; machines and tasks are discovered once an hour.
+        Set the host macros {$CUSTOS.URL} (site address without a trailing slash) and {$CUSTOS.TOKEN} (Settings → Zabbix and wall screen).
+        status_code of a task: 0 ok, 1 running or paused, 2 warning or anomaly, 3 missed while the machine was off, 4 no recent successful copy, 5 missed, 6 error, 9 disabled or not run yet.
+        The most serious problem of a task gives its code. A run in progress shows 1 only instead of 0 or 9, so an error or a missed run stays visible while the next run goes.
+        Format of Zabbix 7.0; newer versions (8.0) convert it on import.
+      vendor:
+        name: CUSTOS
+        version: 7.0-0
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 7bef5bf23b194f4b841b764206be54fa
+          name: 'CUSTOS: status data'
+          type: HTTP_AGENT
+          key: custos.status
+          history: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Every status in one answer; the other items take their values from it.'
+          timeout: 15s
+          url: '{$CUSTOS.URL}/api/zabbix/status'
+          headers:
+            - name: X-Custos-Token
+              value: '{$CUSTOS.TOKEN}'
+          tags:
+            - tag: component
+              value: raw
+          triggers:
+            - uuid: c544de37c85b4ba89039218b048a716f
+              expression: 'nodata(/CUSTOS by HTTP/custos.status,10m)=1'
+              name: 'CUSTOS: no data from the monitoring site for 10 minutes'
+              priority: HIGH
+              description: 'The site does not answer, or the token or the address allow-list does not let Zabbix in.'
+        - uuid: 71501c480c6c4f7aa6107749949dc126
+          name: 'CUSTOS: health data'
+          type: HTTP_AGENT
+          key: custos.health
+          history: 1h
+          value_type: TEXT
+          trends: '0'
+          description: 'Database and cron state. The site answers 503 when either is bad, so 503 is accepted too.'
+          timeout: 15s
+          url: '{$CUSTOS.URL}/api/health'
+          status_codes: '200,503'
+          headers:
+            - name: X-Custos-Token
+              value: '{$CUSTOS.TOKEN}'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 486d19ec1423442083466c841b90b775
+          name: 'CUSTOS: health'
+          type: DEPENDENT
+          key: 'custos.health.status'
+          delay: '0'
+          value_type: CHAR
+          trends: '0'
+          description: 'ok, or fail when the database does not answer or cron has not run for 5 minutes (missed runs are not checked then).'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.status'
+          master_item:
+            key: custos.health
+          tags:
+            - tag: component
+              value: 'health'
+          triggers:
+            - uuid: f402518deeb74aa3a951ea19955b9f0f
+              expression: 'last(/CUSTOS by HTTP/custos.health.status)<>"ok"'
+              name: 'CUSTOS: monitoring site is unhealthy (database or cron)'
+              priority: HIGH
+              description: 'Open /api/health on the site: db shows the database, cron_lag_s how long ago cron ran.'
+        - uuid: 4079615f7c094afca7a01bf6d2ae0f42
+          name: 'CUSTOS: seconds since the last cron pass'
+          type: DEPENDENT
+          key: 'custos.health.cron_lag'
+          delay: '0'
+          value_type: FLOAT
+          units: s
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.cron_lag_s'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: custos.health
+          tags:
+            - tag: component
+              value: 'health'
+        - uuid: 09d581c3c69f4faa8dc0c98eb4a9d8e3
+          name: 'CUSTOS: machines'
+          type: DEPENDENT
+          key: 'custos.summary.agents'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.agents'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: 7086b309973d4126b7f340a7627092b9
+          name: 'CUSTOS: machines online'
+          type: DEPENDENT
+          key: 'custos.summary.online'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.online'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: a41cec824d7b45349a4f5ee45e74d9a4
+          name: 'CUSTOS: watched tasks'
+          type: DEPENDENT
+          key: 'custos.summary.tasks'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.tasks'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: 913a8eae1e27415da5b92dc0bf5cf361
+          name: 'CUSTOS: open problems'
+          type: DEPENDENT
+          key: 'custos.summary.problems'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.problems'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: f798090054664e1b9ca32010e5327173
+          name: 'CUSTOS: tasks with errors'
+          type: DEPENDENT
+          key: 'custos.summary.error'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.error'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: 6de75762bdbf4d7193de2024a429c89a
+          name: 'CUSTOS: tasks with missed runs'
+          type: DEPENDENT
+          key: 'custos.summary.missed'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.missed'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: 75589caa920c4ff5ab61dc72f2d66214
+          name: 'CUSTOS: tasks with warnings'
+          type: DEPENDENT
+          key: 'custos.summary.warning'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.warning'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+        - uuid: ef5bc5877fc14de393482150a8c25258
+          name: 'CUSTOS: tasks running'
+          type: DEPENDENT
+          key: 'custos.summary.running'
+          delay: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.summary.running'
+          master_item:
+            key: custos.status
+          tags:
+            - tag: component
+              value: 'summary'
+      discovery_rules:
+        - uuid: b6e64002a5254182ada7c38168de561d
+          name: 'CUSTOS: machines'
+          type: HTTP_AGENT
+          key: custos.agents.discovery
+          delay: 1h
+          timeout: 15s
+          url: '{$CUSTOS.URL}/api/zabbix/discovery/agents'
+          headers:
+            - name: X-Custos-Token
+              value: '{$CUSTOS.TOKEN}'
+          item_prototypes:
+            - uuid: 22091c6ba2ed4f68a39fdf231947928e
+              name: 'Machine {#AGENT}: online'
+              type: DEPENDENT
+              key: 'custos.agent.online[{#AGENT_ID}]'
+              delay: '0'
+              description: '1 when the agent sent a heartbeat recently (offline_after_min on the site).'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.agents[''{#AGENT_ID}''].online'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: group
+                  value: '{#GROUP}'
+            - uuid: 6d8614e6d569406aa40f821cefcae14e
+              name: 'Machine {#AGENT}: since the last contact'
+              type: DEPENDENT
+              key: 'custos.agent.last_seen[{#AGENT_ID}]'
+              delay: '0'
+              units: s
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.agents[''{#AGENT_ID}''].last_seen_s'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: group
+                  value: '{#GROUP}'
+              trigger_prototypes:
+                - uuid: 892d9e32a1314904b9f43c1849580d35
+                  expression: 'last(/CUSTOS by HTTP/custos.agent.last_seen[{#AGENT_ID}])>{$CUSTOS.OFFLINE.MAX}'
+                  name: 'CUSTOS: {#AGENT} has been offline for more than {$CUSTOS.OFFLINE.MAX}'
+                  priority: WARNING
+                  description: 'Useful for servers that should always be on. Workstations that are switched off at night can get a larger {$CUSTOS.OFFLINE.MAX} on their host.'
+            - uuid: 89eb309eb9a746f7bf9514c0a197b951
+              name: 'Machine {#AGENT}: CUSTOS version'
+              type: DEPENDENT
+              key: 'custos.agent.version[{#AGENT_ID}]'
+              delay: '0'
+              value_type: CHAR
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.agents[''{#AGENT_ID}''].version'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: group
+                  value: '{#GROUP}'
+        - uuid: 6bf2450c8f9941f2a027c113aec81874
+          name: 'CUSTOS: tasks'
+          type: HTTP_AGENT
+          key: custos.tasks.discovery
+          delay: 1h
+          timeout: 15s
+          url: '{$CUSTOS.URL}/api/zabbix/discovery/tasks'
+          headers:
+            - name: X-Custos-Token
+              value: '{$CUSTOS.TOKEN}'
+          item_prototypes:
+            - uuid: f53ab47fff654233bd439a34146e3a31
+              name: '{#AGENT} / {#TASK}: status code'
+              type: DEPENDENT
+              key: 'custos.task.code[{#TASK_KEY}]'
+              delay: '0'
+              description: '0 ok, 1 running, 2 warning or anomaly, 3 missed while off, 4 no recent success, 5 missed, 6 error, 9 disabled or not run yet.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].status_code'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+              trigger_prototypes:
+                - uuid: 76aba8d3e1e841aa986fbdcdb5d61272
+                  expression: 'last(/CUSTOS by HTTP/custos.task.code[{#TASK_KEY}])=6'
+                  name: 'CUSTOS: {#AGENT} / {#TASK}: backup failed'
+                  priority: HIGH
+                  description: 'The last run ended with an error, or a stored set failed its check. Details on the task page of the site.'
+                - uuid: eb120f460bd247f0bfc3beeb38cc87e0
+                  expression: 'last(/CUSTOS by HTTP/custos.task.code[{#TASK_KEY}])=5'
+                  name: 'CUSTOS: {#AGENT} / {#TASK}: backup did not start on schedule'
+                  priority: AVERAGE
+                  description: 'The machine was on, but the scheduled run did not happen.'
+                - uuid: a5952dcc0e8a45c58a940b33d8137547
+                  expression: 'last(/CUSTOS by HTTP/custos.task.code[{#TASK_KEY}])=4'
+                  name: 'CUSTOS: {#AGENT} / {#TASK}: no recent successful copy'
+                  priority: WARNING
+                  description: 'The latest successful copy is older than stale_days on the site (7 days by default).'
+            - uuid: fabbeabdbecf462eb5f70d7141816959
+              name: '{#AGENT} / {#TASK}: status'
+              type: DEPENDENT
+              key: 'custos.task.status[{#TASK_KEY}]'
+              delay: '0'
+              value_type: CHAR
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].status'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+            - uuid: d9ee3c89ef304af7aded618cf0d52d68
+              name: '{#AGENT} / {#TASK}: since the last successful copy'
+              type: DEPENDENT
+              key: 'custos.task.success_age[{#TASK_KEY}]'
+              delay: '0'
+              value_type: FLOAT
+              units: s
+              description: '-1 when there has been no successful copy yet.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].last_success_age_s'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+            - uuid: 99e295856cd848e5be97457105825694
+              name: '{#AGENT} / {#TASK}: last run result'
+              type: DEPENDENT
+              key: 'custos.task.last_status[{#TASK_KEY}]'
+              delay: '0'
+              value_type: CHAR
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].last_run_status'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+            - uuid: f20a4053d9d64d6ca72ef185d3fd9073
+              name: '{#AGENT} / {#TASK}: written by the last run'
+              type: DEPENDENT
+              key: 'custos.task.written[{#TASK_KEY}]'
+              delay: '0'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].last_bytes_written'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+            - uuid: 2396c1c4e6134db392f4f83b95df0dad
+              name: '{#AGENT} / {#TASK}: size anomaly'
+              type: DEPENDENT
+              key: 'custos.task.anomaly[{#TASK_KEY}]'
+              delay: '0'
+              description: '1 when the source size or file count of the last run left the usual range.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.tasks[''{#TASK_KEY}''].anomaly'
+              master_item:
+                key: custos.status
+              tags:
+                - tag: machine
+                  value: '{#AGENT}'
+                - tag: task
+                  value: '{#TASK}'
+      tags:
+        - tag: class
+          value: software
+        - tag: target
+          value: custos
+      macros:
+        - macro: '{$CUSTOS.OFFLINE.MAX}'
+          value: 24h
+          description: 'A machine offline for longer than this raises a warning.'
+        - macro: '{$CUSTOS.TOKEN}'
+          type: SECRET_TEXT
+          description: 'Zabbix token from the site: Settings → Zabbix and wall screen.'
+        - macro: '{$CUSTOS.URL}'
+          value: 'http://custos.lan'
+          description: 'Address of the monitoring site without a trailing slash, as in config.php.'

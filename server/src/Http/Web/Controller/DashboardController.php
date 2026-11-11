@@ -9,8 +9,8 @@ use Custos\Http\Web\Controller;
 use Custos\Infra\Time;
 
 /**
- * The dashboard (7.1): summary, "needs attention", runs in progress and notices. The page asks /dashboard/live for
- * fresh blocks every 15 seconds.
+ * The dashboard (7.1): summary, "needs attention", runs in progress, notices, versions and the 30-day heat map. The page
+ * asks /dashboard/live for fresh blocks every 15 seconds; the heat map is history and comes with the page only.
  */
 final class DashboardController extends Controller
 {
@@ -22,8 +22,12 @@ final class DashboardController extends Controller
 
     public function index(): Response
     {
-        return $this->render('dashboard/index', ['section' => 'dashboard', 'parts' => $this->parts(), 'refresh' => self::REFRESH_S],
-            $this->t('dashboard.title'));
+        return $this->render('dashboard/index', [
+            'section' => 'dashboard',
+            'parts' => $this->parts(),
+            'refresh' => self::REFRESH_S,
+            'heatmap' => $this->app->analytics()->heatmap(time(), $this->app->config->timezone()),
+        ], $this->t('dashboard.title'));
     }
 
     public function live(): Response
@@ -50,16 +54,7 @@ final class DashboardController extends Controller
                 'SELECT COALESCE(SUM(bytes_written), 0) FROM runs WHERE finished_at >= ?',
                 [Time::db($now - 86400)]
             ),
-            'storage' => $db->one(
-                'SELECT s.free_bytes, s.total_bytes, s.path, s.kind, s.agent_id, a.hostname, a.display_name
-                 FROM storage_space s
-                 JOIN (SELECT agent_id, task_id, destination_id, MAX(id) AS id FROM storage_space GROUP BY agent_id, task_id, destination_id) last
-                   ON last.id = s.id
-                 JOIN agents a ON a.id = s.agent_id
-                 JOIN tasks t ON t.agent_id = s.agent_id AND t.id = s.task_id AND t.deleted = 0
-                 WHERE s.free_bytes IS NOT NULL AND a.status = \'approved\'
-                 ORDER BY s.free_bytes LIMIT 1'
-            ),
+            'storage' => $app->storage()->summary(),
             'notices' => $app->notices()->latest(5, 0, true),
             'versions' => self::distribution($db->all(
                 "SELECT agent_version AS version, COUNT(*) AS n FROM agents WHERE status = 'approved' GROUP BY agent_version"

@@ -13,7 +13,7 @@ abstract class Controller
     public function __construct(
         protected readonly App $app,
         protected readonly Request $request,
-        protected readonly Session $session,
+        protected readonly ?Session $session,
         protected readonly View $view
     ) {
     }
@@ -40,7 +40,7 @@ abstract class Controller
 
     protected function user(): array
     {
-        return $this->session->user() ?? throw new \LogicException('No signed-in user.');
+        return $this->session?->user() ?? throw new \LogicException('No signed-in user.');
     }
 
     protected function post(string $key): string
@@ -57,7 +57,7 @@ abstract class Controller
 
     protected function audit(string $action, ?string $objectType = null, ?string $objectId = null, array $details = []): void
     {
-        $this->app->audit()->log($this->session->user(), $this->request->ip, $action, $objectType, $objectId, $details);
+        $this->app->audit()->log($this->session?->user(), $this->request->ip, $action, $objectType, $objectId, $details);
     }
 
     /** Converts a date typed in a filter ("2026-10-12", site time zone) to UTC for queries. */

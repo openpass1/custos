@@ -51,10 +51,13 @@ final class TasksController extends Controller
             $task = $row + ['def' => json_decode($row['data'], true) ?: [], 'status' => 'disabled', 'flags' => [], 'next_at' => null,
                             'problems' => [], 'offline_slots' => [], 'queued' => false, 'watched' => false];
         }
+        $chart = $this->app->analytics()->taskChart($agentId, $taskId, time());
         return $this->render('tasks/show', [
             'section' => 'agents',
             'agent' => $agent,
             'task' => $task,
+            'chart' => $chart,
+            'scripts' => count($chart) >= 2 ? ['vendor/chart.umd.min.js'] : [],
             'problems' => $db->all(
                 'SELECT * FROM problems WHERE agent_id = ? AND task_id = ? ORDER BY closed_at IS NULL DESC, opened_at DESC LIMIT 20',
                 [$agentId, $taskId]

@@ -19,7 +19,7 @@ final class View
     public function __construct(
         public readonly App $app,
         public readonly Request $request,
-        public readonly Session $session
+        public readonly ?Session $session
     ) {
     }
 
@@ -30,11 +30,26 @@ final class View
         $html = $this->capture('layout', [
             'title' => $title,
             'content' => $content,
-            'user' => $this->session->user(),
-            'flash' => $this->session->takeFlash(),
+            'user' => $this->session?->user(),
+            'flash' => $this->session?->takeFlash() ?? [],
             'section' => $vars['section'] ?? '',
+            'scripts' => $vars['scripts'] ?? [],
         ]);
         return Response::html($html, $status);
+    }
+
+    /** A whole page without the layout (the wall screen has its own). */
+    public function page(string $template, array $vars, int $status = 200): Response
+    {
+        self::$current = $this;
+        return Response::html($this->capture($template, $vars), $status);
+    }
+
+    /** Light, dark or auto (follows the system) for the page: the user's choice. */
+    public function theme(): string
+    {
+        $theme = (string) ($this->session?->user()['theme'] ?? 'auto');
+        return in_array($theme, ['light', 'dark'], true) ? $theme : 'auto';
     }
 
     /** A template without the layout, for blocks that the page refreshes by itself. */

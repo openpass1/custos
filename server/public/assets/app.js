@@ -49,6 +49,12 @@ document.addEventListener('change', (event) => {
     const url = block.getAttribute('data-live');
     const every = Math.max(5, parseInt(block.getAttribute('data-live-every'), 10) || 15) * 1000;
     let busy = false;
+    // The wall screen says so when the data it shows is getting old.
+    const offline = (on) => {
+        for (const mark of block.querySelectorAll('[data-live-offline]')) {
+            mark.hidden = !on;
+        }
+    };
 
     const refresh = async () => {
         if (busy || document.hidden) {
@@ -57,13 +63,16 @@ document.addEventListener('change', (event) => {
         busy = true;
         try {
             const response = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', cache: 'no-store' });
-            if (response.status === 401) {
+            // 401: the session has ended; 403 on the wall screen: its token was replaced. The page shows why.
+            if (response.status === 401 || (response.status === 403 && block.hasAttribute('data-live-public'))) {
                 window.location.reload();
                 return;
             }
             if (!response.ok) {
+                offline(true);
                 return;
             }
+            offline(false);
             const data = await response.json();
             for (const [name, html] of Object.entries(data.parts || {})) {
                 const part = block.querySelector('[data-part="' + name + '"]');
@@ -80,6 +89,7 @@ document.addEventListener('change', (event) => {
             }
         } catch {
             // The server is unreachable for a moment: try again on the next round.
+            offline(true);
         } finally {
             busy = false;
         }
@@ -244,3 +254,107 @@ document.addEventListener('change', (event) => {
         });
     }
 })();
+
+// Charts of the task page (7.4): source size, written volume and duration of the latest runs, anomalies in red.
+// Chart.js (public/assets/vendor) is loaded only on that page; the data comes in <script id="task-chart-data">.
+// A click on a point opens that run.
+document.addEventListener('DOMContentLoaded', () => {
+    const holder = document.getElementById('task-chart-data');
+    if (!holder || typeof window.Chart === 'undefined') {
+        return;
+    }
+    let data;
+    try {
+        data = JSON.parse(holder.textContent);
+    } catch {
+        return;
+    }
+    const css = getComputedStyle(document.documentElement);
+    const color = (name, fallback) => (css.getPropertyValue(name) || '').trim() || fallback;
+    const text = data.text;
+    const bytes = (value) => {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+        let v = Number(value);
+        let i = 0;
+        while (v >= 1024 && i < text.units.length - 1) {
+            v /= 1024;
+            i++;
+        }
+        const number = i === 0 ? String(Math.round(v)) : v.toFixed(v < 10 ? 1 : 0).replace('.', text.decimal);
+        return number + ' ' + text.units[i];
+    };
+    const minutes = (seconds) => seconds === null ? '—' : (Math.round(seconds / 6) / 10).toString().replace('.', text.decimal) + ' ' + text.minutes;
+    const accent = color('--info', '#1f5fbf');
+    const bad = color('--bad', '#b3261e');
+    const muted = color('--muted', '#687083');
+    const grid = color('--border', '#dde1e8');
+    window.Chart.defaults.color = muted;
+    window.Chart.defaults.font.family = css.fontFamily;
+    const pointColors = data.anomaly.map((a, i) => a || data.status[i] === 'error' ? bad : accent);
+    const pointSizes = data.anomaly.map((a) => a ? 6 : 2);
+
+    const make = (canvas, kind, values, format) => new window.Chart(canvas, {
+        type: kind,
+        data: {
+            labels: data.labels,
+            datasets: [{
+                data: values,
+                borderColor: accent,
+                backgroundColor: kind === 'bar' ? pointColors : accent,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: pointColors,
+                pointRadius: pointSizes,
+                pointHoverRadius: 7,
+                borderWidth: 2,
+                tension: 0.2,
+                spanGaps: true,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => {
+                            const lines = [format(item.raw)];
+                            if (canvas.getAttribute('data-chart') === 'source' && data.files[item.dataIndex] !== null) {
+                                lines.push(text.files + ': ' + Number(data.files[item.dataIndex]).toLocaleString());
+                            }
+                            if (data.anomaly[item.dataIndex]) {
+                                lines.push(text.anomaly);
+                            }
+                            return lines;
+                        },
+                    },
+                },
+            },
+            scales: {
+                // Days under the axis, the full time in the tooltip.
+                x: { ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkipPadding: 12, callback: (value) => data.days[value] }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { callback: (value) => format(value), maxTicksLimit: 5 }, grid: { color: grid } },
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0 && data.runs[elements[0].index]) {
+                    window.location.href = data.runs[elements[0].index];
+                }
+            },
+        },
+    });
+
+    for (const canvas of document.querySelectorAll('canvas[data-chart]')) {
+        const which = canvas.getAttribute('data-chart');
+        if (which === 'source') {
+            make(canvas, 'line', data.source, bytes);
+        } else if (which === 'written') {
+            make(canvas, 'bar', data.written, bytes);
+        } else if (which === 'duration') {
+            make(canvas, 'line', data.duration, minutes);
+        }
+    }
+});

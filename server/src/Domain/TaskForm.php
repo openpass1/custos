@@ -35,6 +35,11 @@ final class TaskForm
     public const VSS_FAILURE = ['abort', 'continue'];
     public const MAX_NAME = 200;
 
+    /** Lists of a task whose items have their own id and may refer to an account (db_servers: client stage 2b). */
+    public const ITEM_LISTS = ['sources', 'destinations', 'db_servers'];
+    /** Account kinds an agent knows (A.9); "db" accounts may have an empty password. */
+    public const ACCOUNT_KINDS = ['windows', 'ftp', 'sftp', 's3', 'webdav', 'archive_password', 'db'];
+
     /** Kind of the account a source or destination needs; kinds missing here take no account. */
     public const CREDENTIAL_KINDS = ['unc' => 'windows', 'ftp' => 'ftp', 'ftps' => 'ftp', 'sftp' => 'sftp', 's3' => 's3', 'webdav' => 'webdav'];
 
@@ -98,7 +103,7 @@ final class TaskForm
         $task['id'] = Crypto::uuid4();
         $task['revision'] = 0;
         unset($task['updated_at'], $task['updated_by']);
-        foreach (['sources', 'destinations'] as $list) {
+        foreach (self::ITEM_LISTS as $list) {
             foreach ((array) ($task[$list] ?? []) as $i => $item) {
                 if (is_array($item)) {
                     $task[$list][$i]['id'] = Crypto::uuid4();
@@ -147,11 +152,11 @@ final class TaskForm
         return $data;
     }
 
-    /** Account ids the task refers to (sources, destinations, archive password). */
+    /** Account ids the task refers to (sources, destinations, database servers, archive password). */
     public static function credentialRefs(array $task): array
     {
         $ids = [];
-        foreach (['sources', 'destinations'] as $list) {
+        foreach (self::ITEM_LISTS as $list) {
             foreach ((array) ($task[$list] ?? []) as $item) {
                 if (is_array($item) && is_string($item['credential_id'] ?? null)) {
                     $ids[] = $item['credential_id'];
@@ -189,6 +194,11 @@ final class TaskForm
         ]);
 
         $task['sources'] = $this->sources(self::sub($base, 'sources'), (array) ($post['sources'] ?? []));
+        // A task that dumps databases may have no files to copy (A.9, client stage 2b). The editor does not change
+        // database servers; they come from the program on the machine and are kept as they are.
+        if ($task['sources'] === [] && self::sub($base, 'db_servers') === []) {
+            $this->error('task_form.error.no_sources');
+        }
         $task['filters'] = $this->filters(self::sub($base, 'filters'), (array) ($post['filters'] ?? []));
         $task['destinations'] = $this->destinations(self::sub($base, 'destinations'), (array) ($post['destinations'] ?? []));
         $task['layout'] = $this->layout(self::sub($base, 'layout'), (array) ($post['layout'] ?? []));
@@ -260,9 +270,6 @@ final class TaskForm
                 $this->error('task_form.error.unc', ['what' => $this->label('task_form.source', $n)]);
             }
             $result[] = $item;
-        }
-        if ($result === []) {
-            $this->error('task_form.error.no_sources');
         }
         return $result;
     }

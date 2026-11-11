@@ -1,5 +1,7 @@
 # Установка CUSTOS Monitor на CloudPanel, пошагово
 
+English version: [INSTALL.en.md](INSTALL.en.md). Установка на сервер без CloudPanel (обычный nginx) описана в разделе [«Без CloudPanel»](#без-cloudpanel) в конце.
+
 Делайте шаги по порядку. После каждого шага написано, что должно получиться. Если получилось не так, смотрите раздел «Если что-то пошло не так» в конце.
 
 В примерах используются такие имена. Если выбрали другие, подставляйте свои везде:
@@ -100,7 +102,7 @@ cd server
 ls
 ```
 
-✅ `ls` показывает: `INSTALL.md README.md bin composer.json composer.lock config lang migrations public src templates tools vendor`.
+✅ `ls` показывает: `INSTALL.en.md INSTALL.md README.md bin composer.json composer.lock config lang migrations public src templates tools vendor zabbix`.
 
 С этого места все команды выполняются из папки `~/htdocs/custos.lan/server`.
 
@@ -150,6 +152,8 @@ php8.4 bin/install.php
 [ok] PHP 8.4.x with all required extensions
 [ok] Database 10.11.x-MariaDB
 [ok] Applied migration 001_init.sql
+...
+[ok] Applied migration 004_analytics.sql
 [ok] Folder /home/custos/htdocs/custos.lan/server/var is ready
 [ok] Created the server key pair in /home/custos/htdocs/custos.lan/server/config/keys
 Login of the first administrator: admin
@@ -157,6 +161,8 @@ Password (at least 8 characters):
 Repeat the password:
 [ok] Created administrator "admin"
 [ok] Generated the agent registration key
+[ok] Generated zabbix_token
+[ok] Generated wall_token
 
 Server key fingerprint:  XXXX-XXXX-XXXX-XXXX
 Registration code:       XXXXX-XXXXX-XXXXX-XXXXX-XXXXX#XXXX-XXXX-XXXX-XXXX
@@ -191,7 +197,9 @@ Add a cron job that runs every minute:
 
 **Шаг 13.** В браузере откройте `http://custos.lan`.
 
-✅ Открывается страница входа CUSTOS. Войдите с логином и паролем из шага 11. Видна «Главная»: плитки «Машины 0 / 0» и блок «Требует внимания» с надписью «Проблем нет.».
+✅ Открывается страница входа CUSTOS. Во вкладке браузера виден значок-щит CUSTOS. Войдите с логином и паролем из шага 11. Видна «Главная»: плитки «Машины 0 / 0», блок «Требует внимания» с надписью «Проблем нет.» и ниже «Результаты за 30 дней» с надписью «Подтверждённых машин пока нет.».
+
+Язык (русский или английский), тему (светлая, тёмная или как в системе) и свой пароль каждый пользователь меняет сам: щёлкните свой логин справа вверху.
 
 Если в блоке «Требует внимания» красная надпись про cron, подождите минуту и обновите страницу. Надпись осталась — cron из шага 12 не работает: проверьте путь к `cron.php` и версию PHP в команде.
 
@@ -223,6 +231,8 @@ php8.4 tools/fake-agent.php --url=http://custos.lan --once
 ```
 
 ✅ В конце снова `done: every answer was signed and accepted`. На сайте у машины `FAKE-PC-01` появились 4 задания, а в «Запусках» — запуски с журналами. На странице «Машины» задания показаны цветными метками: зелёная — в норме, жёлтая — с предупреждениями, красная — ошибка. Если имитатор выбрал результат «ошибка», на «Главной» в блоке «Требует внимания» появится эта ошибка.
+
+На странице машины появился блок «Хранилища»: куда пишут задания, сколько там свободно и какие наборы копий лежат. Прогноз заполнения появится, когда наберутся данные хотя бы за сутки. Запустите имитатор ещё раз той же командой: на странице первого задания появятся графики (размер источника, записано, длительность), а на «Главной» в тепловой карте — цветная клетка за сегодня.
 
 **Шаг 17. Убрать тестовую машину.**
 
@@ -277,6 +287,67 @@ nginx -T 2>/dev/null | grep client_max_body_size
 
 ---
 
+## Часть 10. Zabbix и настенный экран (по желанию)
+
+### Zabbix
+
+Шаблон работает с Zabbix 7.0 и новее (проверен на 7.0 и 8.0). Zabbix делает один запрос в минуту и получает сразу всё: машины, задания и состояние самого сайта. Машины и задания он находит сам, раз в час.
+
+**Шаг 20. Проверить, что Zabbix-сервер видит сайт.** На сервере Zabbix выполните (адрес сайта свой):
+
+```bash
+curl -s http://custos.lan/api/health
+```
+
+✅ Ответ `{"status":"ok","db":"ok","cron_lag_s":...}`. Если `"status":"fail"` и `cron_lag_s` больше 300 или `null`, не работает cron (шаг 12). Если ответа нет, Zabbix-сервер не видит сайт: проверьте DNS и сеть.
+
+**Шаг 21. Импортировать шаблон.** На сайте: «Настройки» → вкладка «Zabbix и настенный экран». Нажмите ссылку `custos_template.yaml`, файл скачается. В Zabbix: **Сбор данных → Шаблоны** (Data collection → Templates), справа вверху **Импорт**, выберите файл, **Импорт**.
+
+✅ В списке шаблонов появился `CUSTOS by HTTP`.
+
+**Шаг 22. Создать узел.** **Сбор данных → Узлы сети → Создать узел сети** (Data collection → Hosts → Create host):
+
+- Имя узла: `CUSTOS`
+- Шаблоны: `CUSTOS by HTTP`
+- Группы узлов: любая, например `Applications`
+- Интерфейсы: не нужны
+
+Вкладка **Макросы** (Macros), кнопка **Добавить** два раза:
+
+| Макрос | Значение |
+|---|---|
+| `{$CUSTOS.URL}` | адрес сайта со страницы «Zabbix и настенный экран», без `/` в конце, например `http://custos.lan` |
+| `{$CUSTOS.TOKEN}` | токен с той же страницы (кнопка «Скопировать»); тип значения — «Секретный текст» (Secret text) |
+
+Нажмите **Добавить**.
+
+**Шаг 23. Проверить.** Через 1–2 минуты откройте **Мониторинг → Последние данные** (Monitoring → Latest data), фильтр по узлу `CUSTOS`.
+
+✅ «CUSTOS: health» = `ok`, «CUSTOS: machines» — число машин. Машины и задания появятся в течение часа. Чтобы не ждать: **Сбор данных → Узлы сети**, в строке `CUSTOS` ссылка **Обнаружение** (Discovery), отметьте оба правила и нажмите **Выполнить сейчас** (Execute now), через минуту обновите «Последние данные».
+
+Что сообщает Zabbix:
+
+| Триггер | Важность |
+|---|---|
+| «машина / задание: backup failed» — задание закончилось ошибкой | Высокая |
+| «машина / задание: backup did not start on schedule» — пропуск, машина была включена | Средняя |
+| «машина / задание: no recent successful copy» — давно нет успешной копии | Предупреждение |
+| «машина has been offline for more than 24h» (срок задаёт макрос `{$CUSTOS.OFFLINE.MAX}`) | Предупреждение |
+| «monitoring site is unhealthy (database or cron)» | Высокая |
+| «no data from the monitoring site for 10 minutes» | Высокая |
+
+Код состояния задания (элемент «status code»): 0 — в норме, 1 — выполняется или на паузе, 2 — предупреждение или аномалия, 3 — пропуск, когда машина была выключена, 4 — давно нет успешной копии, 5 — пропуск, 6 — ошибка, 9 — отключено или ещё не запускалось. Если у задания несколько проблем, код показывает самую серьёзную. Пока идёт новый запуск, ошибка и пропуск остаются видны (код не меняется на 1).
+
+### Настенный экран
+
+**Шаг 24.** На той же вкладке скопируйте «Ссылку» настенного экрана и откройте её в браузере на телевизоре или мониторе (во весь экран: F11). Вход не нужен: доступ даёт токен в ссылке. Экран тёмный, сверху крупно проблемы, ниже плитки машин; обновляется сам каждые 30 секунд. Если связь с сервером пропала, вверху появится красная надпись «Нет связи с сервером».
+
+Ссылку никому не публикуйте. Если она попала не туда, нажмите «Сгенерировать новый токен»: старая ссылка сразу перестанет работать, на экранах нужно будет открыть новую.
+
+**Ограничить адреса.** В поле «Откуда можно» на той же вкладке перечислите адреса Zabbix-сервера и экранов (по одному в строке, можно подсети вида `192.0.2.0/24`) и нажмите «Сохранить». Пустое поле — с любых адресов. Это отдельный список: настенный экран не открывает сам сайт, а `/api/health` доступен всегда.
+
+---
+
 ## Если что-то пошло не так
 
 | Что видно | Что делать |
@@ -299,6 +370,11 @@ nginx -T 2>/dev/null | grep client_max_body_size
 | Тестовое письмо: `Could not connect to SMTP host`, `SMTP connect() failed` или `Could not authenticate` | Проверьте сервер, порт и шифрование (587 — STARTTLS, 465 — SSL), логин и пароль. Многие почтовые службы требуют «пароль приложения» вместо обычного. |
 | На странице «Внутренняя ошибка сервера», в журнале `var/log` строка `Server key ... is missing` | Ключа сервера нет, например папку `server` удалили и распаковали заново. Выполните `php8.4 bin/install.php`: он создаст ключ. Если агенты уже были подключены, их придётся зарегистрировать заново. |
 | Ошибка 500, или в логе `Permission denied` для папки `var` или `Server key ... cannot be read` | Файлы распакованы или установка запущена под root. Под root выполните `chown -R custos:custos /home/custos/htdocs/custos.lan` и проверьте снова. |
+| Zabbix: элемент «CUSTOS: status data» не поддерживается, в ошибке `401` | Неверный макрос `{$CUSTOS.TOKEN}` (или токен сгенерирован заново). Скопируйте токен со страницы «Zabbix и настенный экран» ещё раз. |
+| Zabbix: в ошибке `403` и `ip_not_allowed` | Адреса Zabbix-сервера нет в поле «Откуда можно». Добавьте его (адрес виден в ответе) или очистите поле. |
+| Zabbix: в ошибке `Couldn't resolve host` или `Connection refused` | Zabbix-сервер не видит сайт: проверьте `{$CUSTOS.URL}` и шаг 20. |
+| Настенный экран: «Ссылка устарела» | Токен сгенерирован заново. Откройте новую ссылку со страницы «Zabbix и настенный экран». |
+| Настенный экран: «Доступ с адреса … запрещён настройками сайта» | Адреса экрана нет в поле «Откуда можно» (часть 10). |
 
 Если ошибка другая, пришлите её текст целиком или скриншот.
 
@@ -328,6 +404,15 @@ nginx -T 2>/dev/null | grep client_max_body_size
 - загруженные пакеты обновления и установщики 7-Zip лежат в `server/var/packages/`;
 - пакет обновления CUSTOS загружается через сайт. Если он больше лимита PHP, сайт напишет об этом; лимит поднимается в CloudPanel: сайт → **Settings** → **PHP Settings**, `upload_max_filesize` и `post_max_size`, например `100M`.
 
+**Версия 0.4.0 (аналитика и интеграции).** `migrate.php` применит миграцию `004` и создаст два токена (строки `[ok] Generated zabbix_token ...` и `[ok] Generated wall_token ...`). Новое:
+- на «Главной» тепловая карта результатов за 30 дней, на странице задания графики, на странице машины блок «Хранилища» с прогнозом заполнения;
+- в «Запусках» кнопка «Скачать CSV» (для Excel);
+- Zabbix и настенный экран (часть 10);
+- профиль пользователя: щёлкните свой логин справа вверху — язык, тема, смена пароля. Язык по умолчанию для всех задаётся в «Настройки» → «Общие»;
+- значок сайта во вкладке браузера.
+
+Ничего настраивать не нужно. Если сайт работает без CloudPanel, проверьте блок nginx: файлы `favicon.ico`, `favicon.svg` и `assets/vendor/chart.umd.min.js` должны отдаваться из `server/public`, как остальные файлы (с примером из раздела «Без CloudPanel» так и есть).
+
 ## Что сохранять в резервной копии
 
 - базу `custos`;
@@ -337,22 +422,124 @@ nginx -T 2>/dev/null | grep client_max_body_size
 
 ## Без CloudPanel
 
-Корень сайта — `server/public`. Минимальный блок nginx:
+Пример для Ubuntu 24.04 (PHP 8.3, MariaDB, nginx). На других системах нужны те же части: PHP 8.3 или новее с PHP-FPM и расширениями `pdo_mysql`, `curl`, `mbstring`, `openssl`, `zlib`; MariaDB 10.11+ или MySQL 8.0+; nginx. В Debian 12 PHP 8.2, этого мало: поставьте PHP 8.4 из репозитория packages.sury.org и везде пишите `php8.4`.
+
+Все команды этого раздела, кроме отмеченных, выполняются **под root**. Сайт работает от отдельного пользователя `custos`, как в CloudPanel.
+
+**Шаг Н1. Пакеты.**
+
+```bash
+apt update
+apt install -y nginx mariadb-server php8.3-fpm php8.3-cli php8.3-mysql php8.3-curl php8.3-mbstring unzip
+```
+
+**Шаг Н2. Пользователь и папка сайта.**
+
+```bash
+adduser --disabled-password --gecos "" custos
+mkdir -p /var/www/custos
+chown custos:custos /var/www/custos
+```
+
+**Шаг Н3. База данных.** Вместо `ПАРОЛЬ` придумайте свой пароль и запишите его:
+
+```bash
+mariadb -e "CREATE DATABASE custos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'custos'@'localhost' IDENTIFIED BY 'ПАРОЛЬ'; GRANT ALL ON custos.* TO 'custos'@'localhost';"
+```
+
+**Шаг Н4. PHP-FPM от пользователя сайта.** Создайте файл:
+
+```bash
+nano /etc/php/8.3/fpm/pool.d/custos.conf
+```
+
+с таким содержимым:
+
+```ini
+[custos]
+user = custos
+group = custos
+listen = /run/php/php8.3-fpm-custos.sock
+listen.owner = www-data
+listen.group = www-data
+pm = ondemand
+pm.max_children = 10
+php_admin_value[upload_max_filesize] = 100M
+php_admin_value[post_max_size] = 100M
+```
+
+```bash
+systemctl restart php8.3-fpm
+```
+
+**Шаг Н5. nginx.**
+
+```bash
+nano /etc/nginx/sites-available/custos
+```
 
 ```nginx
-root /var/www/custos/server/public;
-index index.php;
-client_max_body_size 100m;   # агентам хватает 10m; больше нужно для загрузки пакетов обновления через сайт
+server {
+    listen 80;
+    server_name custos.lan;
+    root /var/www/custos/server/public;
+    index index.php;
+    client_max_body_size 100m;   # агентам хватает 10m; больше нужно для загрузки пакетов обновления через сайт
 
-location / {
-    try_files $uri /index.php?$query_string;
-}
+    location / {
+        try_files $uri /index.php?$query_string;
+    }
 
-location ~ \.php$ {
-    include fastcgi_params;
-    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+    location = /index.php {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/php8.3-fpm-custos.sock;
+    }
+
+    location ~ \.php$ {
+        return 404;
+    }
 }
 ```
+
+```bash
+ln -s /etc/nginx/sites-available/custos /etc/nginx/sites-enabled/custos
+nginx -t
+systemctl reload nginx
+```
+
+✅ `nginx -t` пишет `syntax is ok` и `test is successful`.
+
+**Шаг Н6. Пакет и установка.** Скачайте `custos-server.zip` (шаг 1) и загрузите его в `/home/custos/` (WinSCP, протокол SFTP; или `scp custos-server.zip root@адрес-сервера:/home/custos/`). Дальше **под пользователем сайта**:
+
+```bash
+chown custos:custos /home/custos/custos-server.zip
+su - custos
+cd /var/www/custos
+unzip -o ~/custos-server.zip
+rm ~/custos-server.zip
+cd server
+cp config/config.example.php config/config.php
+nano config/config.php
+```
+
+В `config.php` заполните то же, что в шаге 10 (база `custos`, пользователь `custos`, пароль из шага Н3, адрес сайта, часовой пояс). Затем:
+
+```bash
+php8.3 bin/install.php
+exit
+```
+
+✅ Вывод как в шаге 11, все строки начинаются с `[ok]`.
+
+**Шаг Н7. Cron** (под root):
+
+```bash
+echo '* * * * * custos /usr/bin/php8.3 /var/www/custos/server/bin/cron.php' > /etc/cron.d/custos
+```
+
+Дальше проверьте сайт и агента, как в частях 6 и 7 (шаги 13–17), только пишите `php8.3` вместо `php8.4`, а папка сайта — `/var/www/custos/server`. Обновление: распакуйте новый пакет поверх в `/var/www/custos` под пользователем `custos` и выполните `php8.3 server/bin/migrate.php`.
+
+**HTTPS (по желанию).** Если у сайта есть публичное имя: `apt install -y certbot python3-certbot-nginx`, затем `certbot --nginx -d ваш.домен`. В `config.php` поменяйте `url` на `https://...`.
 
 Если сайт стоит в подпапке или за обратным прокси, часть пути, начиная с `/api/v1/`, должна доходить до PHP без изменений: по ней проверяются подписи агентов. Адреса прокси перечислите в `trusted_proxies` в `config.php`.

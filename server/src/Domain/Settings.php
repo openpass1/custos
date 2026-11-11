@@ -13,13 +13,20 @@ final class Settings
 {
     public const DEFAULTS = [
         'server_name' => 'CUSTOS',
+        // Interface language for users who have not chosen one, and the language of Telegram and e-mail messages.
+        'default_language' => 'ru',
         'heartbeat_interval_s' => '60',
         'offline_after_min' => '60',
         'ip_allow_site' => '',
         'ip_allow_agents' => '',
+        // Zabbix and the wall screen (section 4): their own allow-list and tokens, created by install.php and migrate.php.
+        'ip_allow_integrations' => '',
+        'zabbix_token' => '',
+        'wall_token' => '',
         'registration_key' => '',
         'cron_last_run' => '',
         'cron_last_cleanup' => '',
+        'forecast_last_run' => '',
         // Thresholds (7.8).
         'missed_grace_min' => '15',
         'stale_days' => '7',

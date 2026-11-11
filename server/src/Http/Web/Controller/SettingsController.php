@@ -22,7 +22,7 @@ final class SettingsController extends Controller
         'history_months' => [1, 120],
         'log_days' => [1, 3650],
     ];
-    private const FIELDS = ['server_name', 'heartbeat_interval_s', 'offline_after_min', 'missed_grace_min', 'stale_days',
+    private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'missed_grace_min', 'stale_days',
                             'anomaly_drop_pct', 'anomaly_growth_factor', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
 
     public function index(): Response
@@ -38,7 +38,7 @@ final class SettingsController extends Controller
             $values[$name] = str_starts_with($name, 'ip_allow_') ? $this->post($name) : trim($this->post($name));
         }
         // A form from before these fields existed keeps the stored values.
-        foreach ([...array_keys(self::NUMBERS), 'anomaly_growth_factor'] as $name) {
+        foreach ([...array_keys(self::NUMBERS), 'anomaly_growth_factor', 'default_language'] as $name) {
             if (!isset($this->request->post[$name])) {
                 $values[$name] = $settings->get($name);
             }
@@ -51,6 +51,9 @@ final class SettingsController extends Controller
             if (!ctype_digit($values[$name]) || (int) $values[$name] < $min || (int) $values[$name] > $max) {
                 $errors[$name] = $this->t('settings.error.range', ['min' => $min, 'max' => $max]);
             }
+        }
+        if (!in_array($values['default_language'], \Custos\App::LANGUAGES, true)) {
+            $values['default_language'] = \Custos\App::DEFAULT_LANGUAGE;
         }
         $factor = str_replace(',', '.', $values['anomaly_growth_factor']);
         if (!is_numeric($factor) || (float) $factor < 1.1 || (float) $factor > 100) {
@@ -117,6 +120,7 @@ final class SettingsController extends Controller
             'serverFingerprint' => $keys->fingerprint(),
             'serverUrl' => $this->app->config->url(),
             'myIp' => $this->request->ip,
+            'languages' => $this->app->languages(),
         ], $this->t('settings.title'), $status);
     }
 }

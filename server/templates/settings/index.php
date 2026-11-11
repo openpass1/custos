@@ -9,6 +9,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
 <nav class="tabs">
     <a class="active" href="<?= e(url('/settings')) ?>"><?= e(t('settings.tab.general')) ?></a>
     <a href="<?= e(url('/settings/notifications')) ?>"><?= e(t('settings.tab.notifications')) ?></a>
+    <a href="<?= e(url('/settings/integrations')) ?>"><?= e(t('integrations.title')) ?></a>
     <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.title')) ?></a>
 </nav>
 
@@ -46,6 +47,14 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
         <input type="text" name="server_name" value="<?= e($values['server_name']) ?>" maxlength="100" required>
     </label>
     <?= $error('server_name') ?>
+    <label><?= e(t('settings.default_language')) ?>
+        <select name="default_language">
+            <?php foreach ($languages as $code => $name): ?>
+                <option value="<?= e($code) ?>"<?= selected($code, $values['default_language']) ?>><?= e($name) ?></option>
+            <?php endforeach ?>
+        </select>
+        <span class="note"><?= e(t('settings.default_language.hint')) ?></span>
+    </label>
     <label><?= e(t('settings.heartbeat_interval_s')) ?>
         <input type="number" name="heartbeat_interval_s" value="<?= e($values['heartbeat_interval_s']) ?>" min="10" max="3600" required>
     </label>

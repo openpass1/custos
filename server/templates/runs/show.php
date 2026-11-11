@@ -1,7 +1,7 @@
 <?php
 /**
  * @var array $run @var array $destinations @var array $destinationInfo @var ?array $log @var ?array $logRequest
- * @var ?array $verify @var ?array $retention
+ * @var ?array $verify @var ?array $retention @var list<array> $dumps
  */
 use Custos\Domain\Agents;
 ?>
@@ -77,6 +77,32 @@ use Custos\Domain\Agents;
                         <td><?= e($d['set_name'] ?? '—') ?></td>
                         <td class="num"><?= e(fmt_bytes($d['bytes'])) ?></td>
                         <td><?= e($d['error'] ?? '') ?></td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+<?php endif ?>
+
+<?php if ($dumps !== []): ?>
+    <section class="panel">
+        <h2><?= e(t('run.databases')) ?></h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr>
+                    <th><?= e(t('run.database')) ?></th><th><?= e(t('run.database.engine')) ?></th><th><?= e(t('runs.col.status')) ?></th>
+                    <th class="num"><?= e(t('run.bytes')) ?></th><th><?= e(t('run.error')) ?></th>
+                </tr></thead>
+                <tbody>
+                <?php foreach ($dumps as $d): ?>
+                    <?php $engine = (string) ($d['engine'] ?? ''); $ok = ($d['ok'] ?? null) !== false && ($d['error'] ?? null) === null; ?>
+                    <tr<?= $ok ? '' : ' class="bad-row"' ?>>
+                        <td class="mono"><?= e((string) ($d['name'] ?? '')) ?></td>
+                        <td><?= e(t('db.engine.' . $engine) === 'db.engine.' . $engine ? $engine : t('db.engine.' . $engine)) ?></td>
+                        <td><?= badge($ok ? 'success' : 'error') ?></td>
+                        <td class="num"><?= e(fmt_bytes(isset($d['bytes']) && is_int($d['bytes']) ? $d['bytes'] : null)) ?></td>
+                        <td><?= e((string) ($d['error'] ?? '')) ?></td>
                     </tr>
                 <?php endforeach ?>
                 </tbody>

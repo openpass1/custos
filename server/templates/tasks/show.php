@@ -2,7 +2,7 @@
 /**
  * @var array $agent from the board @var array $task from the board @var list<array> $problems @var list<array> $slots
  * @var list<array> $runs @var ?array $progress @var list<array> $commands @var ?array $pending @var ?array $templateLink
- * @var int $versionCount
+ * @var int $versionCount @var list<array> $chart
  */
 $def = $task['def'];
 $taskUrl = '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
@@ -82,6 +82,10 @@ $command = function (string $action, string $class = 'secondary', ?string $confi
         <?php endif ?>
     </section>
 </div>
+
+<?php if (empty($task['new'])): ?>
+    <?php include __DIR__ . '/_charts.php' ?>
+<?php endif ?>
 
 <section class="panel">
     <h2><?= e(t('task.problems')) ?></h2>

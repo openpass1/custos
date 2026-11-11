@@ -2,7 +2,7 @@
 /**
  * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
  * @var array $runs @var int $refresh @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
- * @var array $settings
+ * @var array $settings @var list<array> $storages
  */
 use Custos\Domain\Agents;
 
@@ -136,6 +136,10 @@ $sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
     <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
     <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 </div>
+
+<?php if ($storages !== []): ?>
+    <?php include __DIR__ . '/_storage.php' ?>
+<?php endif ?>
 
 <?php if ($commands !== []): ?>
     <section class="panel">

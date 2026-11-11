@@ -1,5 +1,5 @@
 <?php
-/** @var array<string, string> $parts @var int $refresh */
+/** @var array<string, string> $parts @var int $refresh @var array $heatmap */
 ?>
 <h1><?= e(t('dashboard.title')) ?></h1>
 <div data-live="<?= e(url('/dashboard/live')) ?>" data-live-every="<?= (int) $refresh ?>">
@@ -15,3 +15,4 @@
         </div>
     </div>
 </div>
+<?php include __DIR__ . '/_heatmap.php' ?>

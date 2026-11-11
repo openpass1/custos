@@ -2,7 +2,8 @@
 
 The monitoring server for CUSTOS backup agents: PHP 8.3+ without a framework, MariaDB 10.11+ (or MySQL 8.0+),
 nginx with PHP-FPM. The specification is `docs/CUSTOS-monitor.md`, the agent protocol is `docs/protocol.md`.
-Installation on CloudPanel is described in [INSTALL.md](INSTALL.md) (in Russian).
+Installation on CloudPanel or plain nginx is described in [INSTALL.md](INSTALL.md) (Russian) and
+[INSTALL.en.md](INSTALL.en.md) (English).
 
 Stage 1 is done: login, users, CSRF, login rate limiting, IP allow-lists, audit log, server keys, the whole agent
 API with signed requests and responses, machine approval, the machine page, run history and run logs.
@@ -18,24 +19,45 @@ history with differences and "return this version", agent settings (`settings.up
 groups or chosen machines, agent update packages (upload, sign, current version, update machines) and 7-Zip updates
 (daily check of github.com/ip7z/7zip, download or manual upload of the installer, `sevenzip.update`).
 
+Stage 4 is done (0.4.0): task charts (Chart.js, source size, written, duration, anomalies in red), the 30-day heat map
+of results on the dashboard, storages of a machine from the inventory with a free-space forecast (least squares over
+30 days, recalculated hourly by cron), CSV export of runs, the Zabbix endpoints with the template in `zabbix/`,
+`/api/health`, the wall screen (`/wall?token=…`), the user profile (language, theme, password), the dark theme,
+the English interface and the site icon. Database dumps reported by agents (`databases` in `runs/finish`) are kept and
+shown on the run page; tasks that only dump databases need no file sources.
+
 Where the logic lives: `Domain\Monitor` (presence, slots, problems), `Domain\Board` (statuses for the pages),
 `Domain\Notifier` (outbox), `Domain\Maintenance` (retention), `Cron` (the order of the steps), `Domain\Commands`
 (command queue), `Domain\TaskForm` (the editor's checks), `Domain\TaskEdits` (task.upsert, versions),
-`Domain\Templates`, `Domain\Packages` (update files), `Domain\UpdateWatch` (version notices, the 7-Zip check).
+`Domain\Templates`, `Domain\Packages` (update files), `Domain\UpdateWatch` (version notices, the 7-Zip check),
+`Domain\Analytics` (heat map, chart points), `Domain\Storage` (forecasts), `Domain\Integrations` (tokens, Zabbix data,
+health), `Http\Api\IntegrationApi` (`/api/health`, `/api/zabbix/*`).
+
+## Zabbix
+
+`/api/zabbix/discovery/agents`, `/api/zabbix/discovery/tasks` and `/api/zabbix/status` need the Zabbix token
+(`?token=` or `X-Custos-Token`) and an address from the integrations allow-list; `/api/health` is open. Task ids can
+repeat on different machines, so a task is keyed `{agent_id}/{task_id}` (`{#TASK_KEY}` in discovery). `status_code`
+is the most serious flag of the task: 0 ok, 1 running or paused (only instead of 0 or 9), 2 warning or anomaly,
+3 missed_offline, 4 stale, 5 missed, 6 error, 9 disabled or never run. `last_success_age_s` is -1 when there was no
+success yet. The template is written by `tools/make-zabbix-template.py` in Zabbix 7.0 format (Zabbix 8.0 imports it);
+run it again after changing items or triggers.
 
 ## Layout
 
 ```
 bin/         install.php, migrate.php, cron.php (command line only)
 config/      config.example.php -> config.php; keys/ holds the server key pair (created by install.php)
-lang/        interface strings
+lang/        interface strings: ru.php (the reference) and en.php with the same keys
 migrations/  SQL migrations, applied in name order
-public/      web root: index.php front controller and assets
+public/      web root: index.php front controller, assets, favicon.*; assets/vendor holds third-party files (see its README)
 src/         Custos\ classes: Infra (config, DB, crypto), Domain (data), Http (agent API and web pages)
 templates/   page templates
-tools/       fake-agent.php and its Custos\Tools\ classes, make-update-package.php
+tools/       fake-agent.php and its Custos\Tools\ classes, make-update-package.php, make-favicon.py (site icons from
+             the client's shield), make-zabbix-template.py
 tests/       PHPUnit tests
 var/         sessions, logs, cron lock, update packages, fake agent state (created at run time)
+zabbix/      custos_template.yaml, the Zabbix template "CUSTOS by HTTP"
 ```
 
 ## Local development
@@ -82,6 +104,9 @@ CUSTOS_TEST_DB_USER=custos CUSTOS_TEST_DB_PASSWORD=custos vendor/bin/phpunit
 
 Variables: `CUSTOS_TEST_DB_HOST`, `_PORT`, `_NAME`, `_USER`, `_PASSWORD` (defaults `127.0.0.1`, `3306`,
 `custos_test`, `root`, empty). Without a database the integration tests are skipped.
+
+`tests/Unit/LangTest.php` checks that every language has every Russian string with the same placeholders and that
+the code asks only for strings that exist: add a new string to `lang/ru.php` and `lang/en.php` together.
 
 ## CI
 

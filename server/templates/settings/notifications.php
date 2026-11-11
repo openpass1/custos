@@ -18,6 +18,7 @@ $secret = function (string $name) use ($secretSet): string {
 <nav class="tabs">
     <a href="<?= e(url('/settings')) ?>"><?= e(t('settings.tab.general')) ?></a>
     <a class="active" href="<?= e(url('/settings/notifications')) ?>"><?= e(t('settings.tab.notifications')) ?></a>
+    <a href="<?= e(url('/settings/integrations')) ?>"><?= e(t('integrations.title')) ?></a>
     <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.title')) ?></a>
 </nav>
 <p class="hint"><?= e(t('notifications.hint')) ?></p>

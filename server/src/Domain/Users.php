@@ -13,6 +13,7 @@ use Custos\Infra\Time;
 final class Users
 {
     public const MIN_PASSWORD = 8;
+    public const THEMES = ['auto', 'light', 'dark'];
 
     public function __construct(private readonly Db $db)
     {
@@ -79,6 +80,12 @@ final class Users
             throw new \InvalidArgumentException('users.error.password');
         }
         $this->db->exec('UPDATE users SET password_hash = ? WHERE id = ?', [self::hash($password), $id]);
+    }
+
+    /** Interface language (null = the site default) and theme of a user (7, profile). */
+    public function setPreferences(int $id, ?string $language, string $theme): void
+    {
+        $this->db->exec('UPDATE users SET language = ?, theme = ? WHERE id = ?', [$language, $theme, $id]);
     }
 
     public function setDisabled(int $id, bool $disabled): void

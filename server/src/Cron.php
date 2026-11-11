@@ -33,6 +33,7 @@ final class Cron
             'notify' => fn() => $this->app->notifier()->queueProblems($now),
             'send' => fn() => $this->app->notifier()->sendQueued($now),
             'updates' => fn() => $this->app->updateWatch()->pass($now),
+            'forecast' => fn() => $this->app->storage()->pass($now),
             'cleanup' => fn() => $this->cleanup($now),
         ];
         foreach ($steps as $name => $step) {
@@ -43,7 +44,7 @@ final class Cron
                 $errors[] = "$name: " . $e->getMessage();
             }
         }
-        // /api/health (stage 4) and the dashboard warn when this time gets old.
+        // /api/health and the dashboard warn when this time gets old.
         $this->app->settings()->set('cron_last_run', Time::db($now));
         return ['stats' => $stats, 'errors' => $errors];
     }

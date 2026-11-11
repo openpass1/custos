@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Custos;
 
 use Custos\Domain\Agents;
+use Custos\Domain\Analytics;
 use Custos\Domain\Audit;
 use Custos\Domain\Board;
 use Custos\Domain\Commands;
 use Custos\Domain\ConfigSnapshots;
 use Custos\Domain\Groups;
+use Custos\Domain\Integrations;
 use Custos\Domain\Maintenance;
 use Custos\Domain\Monitor;
 use Custos\Domain\Notices;
@@ -17,12 +19,14 @@ use Custos\Domain\Notifier;
 use Custos\Domain\Packages;
 use Custos\Domain\Reports;
 use Custos\Domain\Settings;
+use Custos\Domain\Storage;
 use Custos\Domain\TaskEdits;
 use Custos\Domain\Tasks;
 use Custos\Domain\Templates;
 use Custos\Domain\UpdateWatch;
 use Custos\Domain\Users;
 use Custos\Http\Api\AgentApi;
+use Custos\Http\Api\IntegrationApi;
 use Custos\Http\Request;
 use Custos\Http\Response;
 use Custos\Http\Web\Web;
@@ -37,10 +41,15 @@ use Custos\Infra\ServerKeys;
  */
 final class App
 {
-    public const VERSION = '0.3.0';
+    public const VERSION = '0.4.0';
+    /** Interface languages: lang/<code>.php. */
+    public const LANGUAGES = ['ru', 'en'];
+    public const DEFAULT_LANGUAGE = 'ru';
 
     private ?Db $db = null;
     private array $services = [];
+    /** Language of the interface for this request (the user's choice), null = the site default. */
+    private ?string $language = null;
 
     public function __construct(public readonly Config $config)
     {
@@ -64,6 +73,9 @@ final class App
         if (str_starts_with($request->path(), '/api/v1/')) {
             return (new AgentApi($this))->handle($request);
         }
+        if (IntegrationApi::handles($request->path())) {
+            return (new IntegrationApi($this))->handle($request);
+        }
         return (new Web($this))->handle($request);
     }
 
@@ -77,9 +89,45 @@ final class App
         return $this->services[ServerKeys::class] ??= new ServerKeys($this->config->keysDir());
     }
 
+    /** Strings in the language of this request: the signed-in user's choice, otherwise the site default. */
     public function lang(): Lang
     {
-        return $this->services[Lang::class] ??= new Lang($this->root() . '/lang', 'ru');
+        $code = $this->language ?? $this->defaultLanguage();
+        return $this->services[Lang::class . $code] ??= new Lang($this->root() . '/lang', $code);
+    }
+
+    /** Strings in the site default language: messages to Telegram and e-mail, which go to everybody. */
+    public function systemLang(): Lang
+    {
+        $code = $this->defaultLanguage();
+        return $this->services[Lang::class . $code] ??= new Lang($this->root() . '/lang', $code);
+    }
+
+    /** Switches the interface language for this request; an unknown or empty code means the site default. */
+    public function useLanguage(?string $code): void
+    {
+        $this->language = in_array($code, self::LANGUAGES, true) ? $code : null;
+    }
+
+    /** The site default language from the settings; Russian while the database cannot be read. */
+    public function defaultLanguage(): string
+    {
+        try {
+            $code = $this->settings()->get('default_language');
+        } catch (\Throwable) {
+            return self::DEFAULT_LANGUAGE;
+        }
+        return in_array($code, self::LANGUAGES, true) ? $code : self::DEFAULT_LANGUAGE;
+    }
+
+    /** @return array<string, string> language code => its own name ("Русский", "English") */
+    public function languages(): array
+    {
+        $names = [];
+        foreach (self::LANGUAGES as $code) {
+            $names[$code] = (new Lang($this->root() . '/lang', $code))->get('lang.name');
+        }
+        return $names;
     }
 
     public function settings(): Settings
@@ -139,7 +187,7 @@ final class App
 
     public function notifier(): Notifier
     {
-        return $this->services[Notifier::class] ??= new Notifier($this->db(), $this->settings(), $this->lang(), $this->config);
+        return $this->services[Notifier::class] ??= new Notifier($this->db(), $this->settings(), $this->systemLang(), $this->config);
     }
 
     public function maintenance(): Maintenance
@@ -170,6 +218,22 @@ final class App
             rtrim((string) $this->config->get('github_api_url', 'https://api.github.com'), '/'),
             'CUSTOS-Monitor/' . self::VERSION
         );
+    }
+
+    public function storage(): Storage
+    {
+        return $this->services[Storage::class] ??= new Storage($this->db(), $this->settings());
+    }
+
+    public function analytics(): Analytics
+    {
+        return $this->services[Analytics::class] ??= new Analytics($this->db());
+    }
+
+    /** Zabbix and the wall screen: tokens and status data. */
+    public function integrations(): Integrations
+    {
+        return $this->services[Integrations::class] ??= new Integrations($this->db(), $this->settings());
     }
 
     /** Statuses of all machines and tasks right now (or of one machine). */

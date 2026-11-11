@@ -28,6 +28,7 @@ $statuses = ['success', 'warning', 'error', 'aborted', 'running'];
     <label><?= e(t('common.to')) ?> <input type="date" name="to" value="<?= e($filter['to']) ?>"></label>
     <button type="submit"><?= e(t('common.apply')) ?></button>
     <?php if (array_filter($filter) !== []): ?><a href="<?= e(url('/runs')) ?>"><?= e(t('common.reset')) ?></a><?php endif ?>
+    <a class="button-link" href="<?= e(url('/runs/export', $filter)) ?>" title="<?= e(t('runs.export.hint')) ?>"><?= e(t('runs.export')) ?></a>
 </form>
 
 <?php if ($runs === []): ?>
