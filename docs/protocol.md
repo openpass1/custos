@@ -236,6 +236,9 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   ],
   "verify": { "performed": true, "ok": true, "scope": "new", "sets_checked": 1, "failed_sets": [] },
   "retention": { "deleted_sets": 1 },
+  "databases": [
+    { "engine": "mysql", "name": "shop", "bytes": 52428800, "ok": true, "error": null }
+  ],
   "log_tail": "последние 100 строк журнала",
   "log_gz_b64": "есть только при status warning или error"
 }
@@ -244,6 +247,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - `status`: `success`, `warning` (выполнено, но часть файлов пропущена), `error` или `aborted` (остановлено пользователем или командой).
 - `source_files` и `source_bytes` описывают весь источник на момент запуска, даже при инкрементальной копии: по ним сервер ищет аномалии.
 - `verify.scope`: `new` (проверена только что созданная копия) или `stored` (плановая проверка всех хранящихся наборов). Если какой-то набор не прошёл проверку, его имя попадает в `failed_sets`, а статус запуска становится `error` с `error_message` вида «Повреждён набор …».
+- `databases` — дампы баз данных этого запуска (раздел 6.2 ТЗ клиента), по одному на базу; пользователи и права серверов сюда не входят. Поле необязательное: у задания без серверов баз его нет. Неудачный дамп делает запуск `error`; `error` дампа — причина словами.
 - `start` и `finish` идемпотентны по `run_id`. При недоступности сервера они сохраняются в локальной очереди агента и отправляются позже строго по порядку.
 
 ### A.6. Снимок конфигурации
@@ -310,6 +314,20 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
     "include": [], "exclude": ["~$*", "*.tmp", "*.log"], "exclude_dirs": ["Temp"],
     "skip_hidden": false, "skip_system": true, "skip_temp": true
   },
+  "db_servers": [                      // серверы баз данных на этом компьютере, их базы выгружаются в «db» каждой копии (6.2)
+    {
+      "id": "uuid",
+      "engine": "mysql",               // mysql | mariadb | postgresql
+      "bin_dir": "C:\\OSPanel\\modules\\MySQL-8.0\\bin",   // папка программ сервера (mysqldump, pg_dump …); переменные как в path
+      "host": "127.0.0.1",
+      "port": null,                    // null = 3306 или 5432
+      "credential_id": "uuid",         // учётка kind = db; null = без учётки
+      "all_databases": true,           // true: все, кроме системных и exclude; false: только include
+      "exclude": [],
+      "include": [],
+      "data_dir": null                 // папка данных сервера, как её назвал сервер при проверке; только для подсказок
+    }
+  ],
   "profile_sid": null,                 // чей профиль для %USERPROFILE% и т.п.; null = кто создал задание
   "destinations": [
     {
@@ -374,7 +392,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 { "id": "uuid", "kind": "windows", "user": "backup1", "domain": ".", "has_secret": true }
 ```
 
-`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`. Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `db` (сервер баз данных; пароль может быть пустым). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
 
 **Настройки агента** (`settings`):
 
@@ -456,3 +474,9 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 
 - A.11. Добавлен код `403 forbidden`: адрес агента не входит в разрешённые подсети (раздел 4 ТЗ сервера). Агент поступает так же, как при `pending`: ждёт и держит отчёты в очереди.
 - A.11. Неизвестный адрес под `api/v1/` и неподходящий метод HTTP дают `400 bad_request`, а не `404`: код `404` агент понимает только как `unknown_agent`.
+
+**11.11.2026 — протокол 1, до первого выпуска.** Дампы баз данных на Windows (этап 2б клиента). Правки совместимые: старая сторона новые поля пропускает и сохраняет.
+
+- A.9. В задании новое поле `db_servers`: серверы MySQL, MariaDB и PostgreSQL этого компьютера. Задание с серверами баз может не иметь `sources`.
+- A.9. Новый вид учётных данных `db`.
+- A.5. В `runs/finish` новое необязательное поле `databases` с итогом дампа каждой базы.
