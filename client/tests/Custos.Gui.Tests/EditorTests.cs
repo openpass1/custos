@@ -58,6 +58,9 @@ public sealed class EditorTests
         Assert.Null(editor.Collect(out string? problem));
         Assert.Equal(Strings.ErrorNoSources, problem);
         Assert.True(editor.Pages[1].Visible);
+
+        // A new task skips log files along with the temporary ones.
+        Assert.Contains(Sta.Find<TextBox>(editor.Pages[1]), b => b.Text == "~$*; *.tmp; *.log");
     });
 
     [Fact]
@@ -84,6 +87,35 @@ public sealed class EditorTests
         var collected = OpenAndCollect(task);
 
         Assert.Equal("Copies", collected.Destinations[2].Path);
+    });
+
+    [Fact]
+    public void The_filters_are_on_the_sources_page_and_a_picked_folder_is_added_once() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        // No page of its own any more.
+        Assert.Equal(8, editor.Pages.Count);
+        Assert.DoesNotContain(editor.Pages, p => p.Title == Strings.FiltersHeading);
+
+        var sources = Assert.IsType<SourcesPage>(editor.Pages[1]);
+        editor.SelectPage(sources);
+        Sta.Pump();
+        var folders = Sta.Find<TextBox>(sources).Single(b => b.Multiline);
+        Assert.Equal(["Cache", @"C:\Data\Office\Old"], folders.Lines);
+
+        // "Browse…" adds the picked folder as a line of its own, once.
+        sources.AddExcludedFolder(@"C:\Data\Office\Archive");
+        sources.AddExcludedFolder(@"c:\data\office\archive");
+        Sta.Pump();
+
+        var task = editor.Collect(out string? problem);
+        Assert.Null(problem);
+        Assert.Equal(["Cache", @"C:\Data\Office\Old", @"C:\Data\Office\Archive"], task!.Filters.ExcludeDirs);
+        Assert.Equal(["*.docx", "*.xlsx"], task.Filters.Include);
     });
 
     /// <summary>Opens the editor, shows every page as a user clicking through them would, and collects the task.</summary>

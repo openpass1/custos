@@ -38,28 +38,6 @@ internal static class Ui
     public static string Time(DateTimeOffset? time) =>
         time is { } value ? value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) : "—";
 
-    /// <summary>A date without the year when it is this year: "04.11 16:41".</summary>
-    public static string ShortTime(DateTimeOffset? time)
-    {
-        if (time is not { } value)
-        {
-            return "—";
-        }
-
-        var local = value.ToLocalTime();
-        if (local.Year != DateTime.Now.Year)
-        {
-            return local.ToString("g", CultureInfo.CurrentCulture);
-        }
-
-        // The month-day pattern of the culture without the month name: dd.MM in Russian, M/d in English.
-        string pattern = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern
-            .Replace("yyyy", string.Empty, StringComparison.Ordinal)
-            .Replace("yy", string.Empty, StringComparison.Ordinal)
-            .Trim('.', '/', '-', ' ');
-        return local.ToString(pattern + " " + CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern, CultureInfo.CurrentCulture);
-    }
-
     public static string Number(long value) => value.ToString("N0", CultureInfo.CurrentCulture);
 
     /// <summary>A grey "?" that explains a setting when the mouse rests on it.</summary>

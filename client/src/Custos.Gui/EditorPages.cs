@@ -150,13 +150,17 @@ internal sealed class BasicPage : EditorPage
     private void UpdateForceFull() => _forceGroup.Enabled = !_full.Checked && !_mirror.Checked;
 }
 
-/// <summary>"Sources": folders, files and network folders with their accounts (section 6.2).</summary>
+/// <summary>
+/// "Sources": folders, files and network folders with their accounts, and under them the filters of the task: masks of
+/// files to skip, folders to skip (typed or picked with "Browse…"), hidden, system and temporary files, and "only
+/// files" (section 6.2).
+/// </summary>
 internal sealed class SourcesPage : EditorPage
 {
     private readonly ListView _list = new()
     {
         Dock = DockStyle.Fill,
-        Height = 200,
+        Height = 160,
         View = View.Details,
         FullRowSelect = true,
         MultiSelect = false,
@@ -167,6 +171,24 @@ internal sealed class SourcesPage : EditorPage
     private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly CheckBox _keepTopDir = new() { Text = Strings.KeepTopDir, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
+    private readonly TextBox _exclude = new() { Dock = DockStyle.Fill };
+
+    // One folder per line; Enter starts a new line instead of pressing OK.
+    private readonly TextBox _excludeDirs = new()
+    {
+        Dock = DockStyle.Fill,
+        Multiline = true,
+        AcceptsReturn = true,
+        ScrollBars = ScrollBars.Vertical,
+        Height = 76,
+        Margin = new Padding(0),
+    };
+
+    private readonly Button _browseDirs = new() { Text = Strings.ButtonBrowse, AutoSize = true, MinimumSize = new Size(100, 0), Margin = new Padding(8, 0, 0, 0) };
+    private readonly CheckBox _skipHidden = new() { Text = Strings.SkipHidden, AutoSize = true };
+    private readonly CheckBox _skipSystem = new() { Text = Strings.SkipSystem, AutoSize = true };
+    private readonly CheckBox _skipTemp = new() { Text = Strings.SkipTemp, AutoSize = true };
+    private readonly TextBox _include = new() { Dock = DockStyle.Fill };
     private readonly List<TaskSource> _sources = [];
 
     public SourcesPage(EditorContext context)
@@ -188,6 +210,22 @@ internal sealed class SourcesPage : EditorPage
         AddWide(row);
         AddWide(_keepTopDir, Strings.KeepTopDirHelp);
 
+        var dirs = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+        dirs.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        dirs.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        dirs.Controls.Add(_excludeDirs, 0, 0);
+        dirs.Controls.Add(_browseDirs, 1, 0);
+
+        AddHeading(Strings.FiltersHeading);
+        AddNote(Strings.FiltersNote);
+        AddRow(Strings.FilterExclude, _exclude, Strings.FilterExcludeHelp);
+        AddRow(Strings.FilterExcludeDirs, dirs, Strings.FilterExcludeDirsHelp, alignTop: true);
+        AddWide(_skipHidden);
+        AddWide(_skipSystem);
+        AddWide(_skipTemp, Strings.SkipTempHelp);
+        AddRow(Strings.FilterInclude, _include, Strings.FilterIncludeHelp);
+
+        _browseDirs.Click += (_, _) => BrowseExcludedFolder();
         _add.Click += (_, _) => AddSource();
         _edit.Click += (_, _) => EditSource();
         _remove.Click += (_, _) => RemoveSource();
@@ -201,6 +239,13 @@ internal sealed class SourcesPage : EditorPage
         _sources.Clear();
         _sources.AddRange(task.Sources);
         _keepTopDir.Checked = task.Layout.KeepTopDir;
+        var filters = task.Filters;
+        _exclude.Text = string.Join("; ", filters.Exclude);
+        _excludeDirs.Text = string.Join(Environment.NewLine, filters.ExcludeDirs);
+        _skipHidden.Checked = filters.SkipHidden;
+        _skipSystem.Checked = filters.SkipSystem;
+        _skipTemp.Checked = filters.SkipTemp;
+        _include.Text = string.Join("; ", filters.Include);
         Fill();
     }
 
@@ -213,8 +258,19 @@ internal sealed class SourcesPage : EditorPage
 
         task.Sources = [.. _sources];
         task.Layout.KeepTopDir = _keepTopDir.Checked;
+        var filters = task.Filters;
+        filters.Exclude = Masks(_exclude.Text);
+        filters.ExcludeDirs = Masks(_excludeDirs.Text);
+        filters.SkipHidden = _skipHidden.Checked;
+        filters.SkipSystem = _skipSystem.Checked;
+        filters.SkipTemp = _skipTemp.Checked;
+        filters.Include = Masks(_include.Text);
         return null;
     }
+
+    /// <summary>Masks separated by semicolons or line breaks, without repeats.</summary>
+    internal static List<string> Masks(string text) =>
+        [.. text.Split([';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase)];
 
     private void Fill()
     {
@@ -282,6 +338,39 @@ internal sealed class SourcesPage : EditorPage
 
         _sources.RemoveAt(_list.SelectedIndices[0]);
         Fill();
+    }
+
+    /// <summary>Adds a folder picked like a source folder as a line of "Skip folders"; it starts in the first source.</summary>
+    private void BrowseExcludedFolder()
+    {
+        using var dialog = new FolderBrowserDialog { ShowNewFolderButton = false, UseDescriptionForTitle = true, Description = Strings.FilterExcludeDirsBrowse };
+        string? start = _sources.Where(s => s.Kind != SourceKinds.File).Select(s => s.Path).FirstOrDefault(Directory.Exists);
+        if (start is not null)
+        {
+            dialog.InitialDirectory = start;
+        }
+
+        if (dialog.ShowDialog(FindForm()) != DialogResult.OK)
+        {
+            return;
+        }
+
+        AddExcludedFolder(dialog.SelectedPath);
+    }
+
+    /// <summary>Adds a line to "Skip folders" unless it is there already.</summary>
+    internal void AddExcludedFolder(string path)
+    {
+        var lines = Masks(_excludeDirs.Text);
+        if (lines.Contains(path, StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        lines.Add(path);
+        _excludeDirs.Text = string.Join(Environment.NewLine, lines);
+        _excludeDirs.SelectionStart = _excludeDirs.TextLength;
+        _excludeDirs.ScrollToCaret();
     }
 }
 
@@ -1056,53 +1145,6 @@ internal sealed class RetentionPage : EditorPage
         task.Retention.KeepFull = (int)_keepFull.Value;
         return null;
     }
-}
-
-/// <summary>"Filters": file masks to include and exclude, folders to skip, hidden, system and temporary files.</summary>
-internal sealed class FiltersPage : EditorPage
-{
-    private readonly TextBox _include = new() { Dock = DockStyle.Fill };
-    private readonly TextBox _exclude = new() { Dock = DockStyle.Fill };
-    private readonly TextBox _excludeDirs = new() { Dock = DockStyle.Fill };
-    private readonly CheckBox _skipHidden = new() { Text = Strings.SkipHidden, AutoSize = true };
-    private readonly CheckBox _skipSystem = new() { Text = Strings.SkipSystem, AutoSize = true };
-    private readonly CheckBox _skipTemp = new() { Text = Strings.SkipTemp, AutoSize = true };
-
-    public FiltersPage(EditorContext context)
-        : base(context, Strings.PageFilters, Glyph.Funnel)
-    {
-        AddNote(Strings.FiltersNote);
-        AddRow(Strings.FilterInclude, _include, Strings.FilterIncludeHelp);
-        AddRow(Strings.FilterExclude, _exclude, Strings.FilterExcludeHelp);
-        AddRow(Strings.FilterExcludeDirs, _excludeDirs, Strings.FilterExcludeDirsHelp);
-        AddWide(_skipHidden);
-        AddWide(_skipSystem);
-        AddWide(_skipTemp, Strings.SkipTempHelp);
-    }
-
-    public override void LoadFrom(TaskDefinition task)
-    {
-        _include.Text = string.Join("; ", task.Filters.Include);
-        _exclude.Text = string.Join("; ", task.Filters.Exclude);
-        _excludeDirs.Text = string.Join("; ", task.Filters.ExcludeDirs);
-        _skipHidden.Checked = task.Filters.SkipHidden;
-        _skipSystem.Checked = task.Filters.SkipSystem;
-        _skipTemp.Checked = task.Filters.SkipTemp;
-    }
-
-    public override string? SaveTo(TaskDefinition task)
-    {
-        task.Filters.Include = Masks(_include.Text);
-        task.Filters.Exclude = Masks(_exclude.Text);
-        task.Filters.ExcludeDirs = Masks(_excludeDirs.Text);
-        task.Filters.SkipHidden = _skipHidden.Checked;
-        task.Filters.SkipSystem = _skipSystem.Checked;
-        task.Filters.SkipTemp = _skipTemp.Checked;
-        return null;
-    }
-
-    private static List<string> Masks(string text) =>
-        [.. text.Split([';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase)];
 }
 
 /// <summary>"Events": scripts and services before and after, shutdown after the run; they come in version 2.</summary>

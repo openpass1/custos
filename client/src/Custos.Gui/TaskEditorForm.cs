@@ -67,7 +67,6 @@ internal sealed class TaskEditorForm : Form
             new SchedulePage(context),
             new ArchivePage(context),
             new RetentionPage(context),
-            new FiltersPage(context),
             new EventsPage(context),
             new AdvancedPage(context),
         ];
@@ -382,9 +381,16 @@ internal abstract class EditorPage : UserControl
     }
 
     /// <summary>A caption, the control and an optional "?" with an explanation.</summary>
-    protected void AddRow(string caption, Control control, string? help = null)
+    /// <param name="alignTop">For a tall control: the caption stays at its top instead of the middle.</param>
+    protected void AddRow(string caption, Control control, string? help = null, bool alignTop = false)
     {
-        _table.Controls.Add(new Label { Text = caption, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) });
+        _table.Controls.Add(new Label
+        {
+            Text = caption,
+            AutoSize = true,
+            Anchor = alignTop ? AnchorStyles.Top | AnchorStyles.Left : AnchorStyles.Left,
+            Margin = new Padding(0, 6, 12, 6),
+        });
         control.Margin = new Padding(0, 3, 0, 3);
         _table.Controls.Add(control);
         AddHelp(help);

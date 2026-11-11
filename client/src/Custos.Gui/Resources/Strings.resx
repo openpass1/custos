@@ -139,9 +139,6 @@
   <data name="ColumnNextRun" xml:space="preserve">
     <value>Next run</value>
   </data>
-  <data name="ColumnNextShort" xml:space="preserve">
-    <value>Next</value>
-  </data>
   <data name="ResultRunning" xml:space="preserve">
     <value>Running {0} %</value>
   </data>
@@ -782,11 +779,11 @@ Off: the files go straight into the destination folder and are updated there at 
 • The backups are found by looking into the destination itself, so the ones made before a reinstall count too.
 • Retention works only with «A separate folder for each backup» on.</value>
   </data>
-  <data name="PageFilters" xml:space="preserve">
+  <data name="FiltersHeading" xml:space="preserve">
     <value>Filters</value>
   </data>
   <data name="FiltersNote" xml:space="preserve">
-    <value>Masks are separated by semicolons. * stands for any characters, ? for one character.</value>
+    <value>They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? for one character.</value>
   </data>
   <data name="FilterInclude" xml:space="preserve">
     <value>Only files:</value>
@@ -798,13 +795,16 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Skip files:</value>
   </data>
   <data name="FilterExcludeHelp" xml:space="preserve">
-    <value>The files matching these masks are not copied, for example *.tmp; ~$*.</value>
+    <value>The files matching these masks are not copied, for example *.bak; Thumbs.db.</value>
   </data>
   <data name="FilterExcludeDirs" xml:space="preserve">
     <value>Skip folders:</value>
   </data>
   <data name="FilterExcludeDirsHelp" xml:space="preserve">
-    <value>Folders with these names are skipped with everything inside, for example Temp; Cache. A mask with a backslash is matched against the path, for example Projects\Old.</value>
+    <value>One folder per line; it is skipped with everything inside. A name (Temp, Cache) is skipped everywhere; a path from the source folder (Projects\Old) or a full path only in that place. «Browse…» adds a full path.</value>
+  </data>
+  <data name="FilterExcludeDirsBrowse" xml:space="preserve">
+    <value>Folder not to copy</value>
   </data>
   <data name="SkipHidden" xml:space="preserve">
     <value>Skip hidden files and folders</value>
@@ -1083,7 +1083,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>The fixed day of the full backup (Cobian value {0}) was read as a day of the week, counting Monday as 1: check it on the «Basic» page.</value>
   </data>
   <data name="WarnFiltersImported" xml:space="preserve">
-    <value>Filters were carried over, check them on the «Filters» page: {0}</value>
+    <value>Filters were carried over, check them on the «Sources» page: {0}</value>
   </data>
   <data name="WarnRunAsAccount" xml:space="preserve">
     <value>In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: enter its password below.</value>

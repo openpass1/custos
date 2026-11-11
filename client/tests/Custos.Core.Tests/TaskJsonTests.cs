@@ -42,7 +42,7 @@ public sealed class TaskJsonTests
         Assert.Equal(RetentionModes.Count, task.Retention.Mode);
         Assert.True(task.Layout.SeparateFolders);
         Assert.Equal(LayoutOptions.DefaultNameTemplate, task.Layout.NameTemplate);
-        Assert.Equal(["~$*", "*.tmp"], task.Filters.Exclude);
+        Assert.Equal(["~$*", "*.tmp", "*.log"], task.Filters.Exclude);
         Assert.True(task.Vss.Enabled);
         Assert.Equal(VssFailureActions.Abort, task.Vss.OnFailure);
         Assert.True(task.Schedule.CatchUp);

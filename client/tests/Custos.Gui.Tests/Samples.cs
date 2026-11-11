@@ -48,8 +48,8 @@ internal static class Samples
         Filters = new TaskFilters
         {
             Include = ["*.docx", "*.xlsx"],
-            Exclude = ["~$*", "*.tmp"],
-            ExcludeDirs = ["Cache"],
+            Exclude = ["~$*", "*.tmp", "*.log"],
+            ExcludeDirs = ["Cache", @"C:\Data\Office\Old"],
             SkipHidden = true,
             SkipTemp = false,
         },

@@ -114,7 +114,7 @@ public sealed class TaskFilters
     /// <summary>File masks; if any are given, only matching files are copied.</summary>
     public List<string> Include { get; set; } = [];
 
-    public List<string> Exclude { get; set; } = ["~$*", "*.tmp"];
+    public List<string> Exclude { get; set; } = ["~$*", "*.tmp", "*.log"];
 
     /// <summary>Folder names (or masks, or paths) to leave out with everything inside.</summary>
     public List<string> ExcludeDirs { get; set; } = [];

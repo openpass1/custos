@@ -72,19 +72,20 @@ public sealed class MainFormTests
             var list = Assert.Single(Sta.Find<TaskListView>(form));
             list.SelectTask(Samples.OfficeId);
             Sta.Pump();
-            Assert.Equal(3, list.Columns.Count);
 
-            // Without the card the list shows all its columns and keeps the selection.
+            // Next to the card the list keeps all six columns (it scrolls sideways when they do not fit).
+            Assert.Equal(6, list.Columns.Count);
+            list.Columns[2].Width = list.LogicalToDeviceUnits(300);
+
             CardButton(form).PerformClick();
             Sta.Pump();
-            Assert.False(list.Compact);
             Assert.Equal(6, list.Columns.Count);
             Assert.Equal(Samples.OfficeId, list.SelectedTaskId);
 
             CardButton(form).PerformClick();
             Sta.Pump();
-            Assert.True(list.Compact);
-            Assert.Equal(3, list.Columns.Count);
+            Assert.Equal(6, list.Columns.Count);
+            Assert.InRange(list.GetColumnWidths()["Schedule"], 299, 301);
             Assert.Equal(Samples.OfficeId, list.SelectedTaskId);
             Assert.True(Sta.Shows(Assert.Single(Sta.Find<TaskCard>(form)), "Office documents"));
 
@@ -96,12 +97,13 @@ public sealed class MainFormTests
             Assert.True(File.Exists(Path.Combine(UiState.Folder, "ui.json")));
         }
 
-        // A new window starts the way the last one was left: without the card.
+        // A new window starts the way the last one was left: without the card, with the same column widths.
         using var again = new MainForm(monitor);
         again.Show();
         Sta.Pump();
-        var columns = Assert.Single(Sta.Find<TaskListView>(again)).Columns;
-        Assert.Equal(6, columns.Count);
+        var columns = Assert.Single(Sta.Find<TaskListView>(again));
+        Assert.Equal(6, columns.Columns.Count);
+        Assert.InRange(columns.GetColumnWidths()["Schedule"], 299, 301);
         Assert.False(CardButton(again).Checked);
     });
 

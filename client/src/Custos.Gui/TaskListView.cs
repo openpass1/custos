@@ -5,17 +5,15 @@ using Custos.Core.Text;
 namespace Custos.Gui;
 
 /// <summary>
-/// The list of tasks (docs/client-ui.md, 2.2): one row per task with a state icon. Next to the card it shows three
-/// columns, alone all six. Sorted by a click on a column header.
+/// The list of tasks (docs/client-ui.md, 2.2): one row per task with a state icon and all six columns, with or without
+/// the card; when they do not fit, the list scrolls sideways. Sorted by a click on a column header.
 /// </summary>
 internal sealed class TaskListView : ListView
 {
     private static readonly TaskColumn[] AllColumns =
         [TaskColumn.Name, TaskColumn.Type, TaskColumn.Schedule, TaskColumn.LastRun, TaskColumn.Result, TaskColumn.NextRun];
 
-    private static readonly TaskColumn[] CompactColumns = [TaskColumn.Name, TaskColumn.Result, TaskColumn.NextRun];
-
-    private TaskColumn[] _columns = AllColumns;
+    private readonly TaskColumn[] _columns = AllColumns;
     private TaskColumn _sortColumn = TaskColumn.Name;
     private bool _sortAscending = true;
     private List<Row> _rows = [];
@@ -49,14 +47,10 @@ internal sealed class TaskListView : ListView
 
     public string? SelectedTaskId => _selectedId;
 
-    public bool Compact { get; private set; }
-
-    /// <summary>Switches between the three columns next to the card and all six.</summary>
+    /// <summary>Creates the columns.</summary>
     /// <param name="widths">Column widths at 100 % scale by column name; missing ones get defaults.</param>
-    public void SetColumns(bool compact, IReadOnlyDictionary<string, int> widths)
+    public void SetColumns(IReadOnlyDictionary<string, int> widths)
     {
-        Compact = compact;
-        _columns = compact ? CompactColumns : AllColumns;
         BeginUpdate();
         try
         {
@@ -64,8 +58,8 @@ internal sealed class TaskListView : ListView
             Columns.Clear();
             foreach (var column in _columns)
             {
-                int width = widths.TryGetValue(column.ToString(), out int saved) && saved > 10 ? saved : DefaultWidth(column, compact);
-                Columns.Add(new ColumnHeader { Text = Title(column, compact), Width = LogicalToDeviceUnits(width), Tag = column });
+                int width = widths.TryGetValue(column.ToString(), out int saved) && saved > 10 ? saved : DefaultWidth(column);
+                Columns.Add(new ColumnHeader { Text = Title(column), Width = LogicalToDeviceUnits(width), Tag = column });
             }
 
             Fill();
@@ -184,7 +178,7 @@ internal sealed class TaskListView : ListView
     {
         for (int i = 0; i < _columns.Length; i++)
         {
-            string text = row.Text(_columns[i], Compact);
+            string text = row.Text(_columns[i]);
             if (item.SubItems[i].Text != text)
             {
                 item.SubItems[i].Text = text;
@@ -262,7 +256,7 @@ internal sealed class TaskListView : ListView
             TaskColumn.LastRun => (a, b) => Nullable.Compare(a.LastRun, b.LastRun),
             TaskColumn.NextRun => (a, b) => CompareNullsLast(a.NextRun, b.NextRun),
             TaskColumn.Result => (a, b) => a.Icon.CompareTo(b.Icon) is var c && c != 0 ? c : names.Compare(a.Result, b.Result),
-            _ => (a, b) => names.Compare(a.Text(_sortColumn, false), b.Text(_sortColumn, false)),
+            _ => (a, b) => names.Compare(a.Text(_sortColumn), b.Text(_sortColumn)),
         };
         _rows.Sort((a, b) =>
         {
@@ -323,24 +317,24 @@ internal sealed class TaskListView : ListView
             icon);
     }
 
-    private static string Title(TaskColumn column, bool compact) => column switch
+    private static string Title(TaskColumn column) => column switch
     {
         TaskColumn.Name => Strings.ColumnTask,
         TaskColumn.Type => Strings.ColumnType,
         TaskColumn.Schedule => Strings.ColumnSchedule,
         TaskColumn.LastRun => Strings.ColumnLastRun,
         TaskColumn.Result => Strings.ColumnResult,
-        _ => compact ? Strings.ColumnNextShort : Strings.ColumnNextRun,
+        _ => Strings.ColumnNextRun,
     };
 
-    private static int DefaultWidth(TaskColumn column, bool compact) => column switch
+    private static int DefaultWidth(TaskColumn column) => column switch
     {
-        TaskColumn.Name => compact ? 190 : 210,
+        TaskColumn.Name => 210,
         TaskColumn.Type => 110,
         TaskColumn.Schedule => 220,
         TaskColumn.LastRun => 120,
-        TaskColumn.Result => compact ? 140 : 150,
-        _ => compact ? 95 : 120,
+        TaskColumn.Result => 150,
+        _ => 120,
     };
 
     private sealed record Row(
@@ -353,14 +347,14 @@ internal sealed class TaskListView : ListView
         DateTimeOffset? NextRun,
         StateIcon Icon)
     {
-        public string Text(TaskColumn column, bool compact) => column switch
+        public string Text(TaskColumn column) => column switch
         {
             TaskColumn.Name => Name,
             TaskColumn.Type => Type,
             TaskColumn.Schedule => Schedule,
             TaskColumn.LastRun => Ui.Time(LastRun),
             TaskColumn.Result => Result,
-            _ => compact ? Ui.ShortTime(NextRun) : Ui.Time(NextRun),
+            _ => Ui.Time(NextRun),
         };
     }
 }

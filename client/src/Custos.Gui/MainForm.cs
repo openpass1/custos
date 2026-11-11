@@ -96,7 +96,7 @@ internal sealed class MainForm : Form
         ResumeLayout(performLayout: true);
 
         CreateImages();
-        _tasks.SetColumns(compact: _uiState.CardVisible, _uiState.CardVisible ? _uiState.ColumnsWithCard : _uiState.ColumnsWithoutCard);
+        _tasks.SetColumns(_uiState.TaskColumns);
         _card.Checked = _uiState.CardVisible;
         _inner.Panel2Collapsed = !_uiState.CardVisible;
         if (_uiState.BottomTab >= 0 && _uiState.BottomTab < _tabs.TabCount)
@@ -419,21 +419,9 @@ internal sealed class MainForm : Form
             }
         }
 
-        SaveColumns();
+        _uiState.TaskColumns = _tasks.GetColumnWidths();
         _uiState.BottomTab = _tabs.SelectedIndex;
         _uiState.Save();
-    }
-
-    private void SaveColumns()
-    {
-        if (_tasks.Compact)
-        {
-            _uiState.ColumnsWithCard = _tasks.GetColumnWidths();
-        }
-        else
-        {
-            _uiState.ColumnsWithoutCard = _tasks.GetColumnWidths();
-        }
     }
 
     private int ToLogical(int pixels) => (int)Math.Round(pixels * 96.0 / DeviceDpi);
@@ -442,19 +430,18 @@ internal sealed class MainForm : Form
 
     private void ShowCard(bool visible)
     {
-        if (visible == !_inner.Panel2Collapsed && _tasks.Compact == visible)
+        if (visible == !_inner.Panel2Collapsed)
         {
             return;
         }
 
-        SaveColumns();
+        // The list keeps all its columns; next to the card it scrolls sideways when they do not fit.
         if (!visible && !_inner.Panel2Collapsed && _layoutRestored)
         {
             _uiState.CardWidth = ToLogical(_inner.Panel2.Width);
         }
 
         _inner.Panel2Collapsed = !visible;
-        _tasks.SetColumns(compact: visible, visible ? _uiState.ColumnsWithCard : _uiState.ColumnsWithoutCard);
         if (visible && _layoutRestored)
         {
             PlaceCardSplitter();

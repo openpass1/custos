@@ -28,9 +28,8 @@ internal sealed class UiState
     /// <summary>Height of the tabs at the bottom.</summary>
     public int? TabsHeight { get; set; }
 
-    public Dictionary<string, int> ColumnsWithCard { get; set; } = [];
-
-    public Dictionary<string, int> ColumnsWithoutCard { get; set; } = [];
+    /// <summary>Widths of the columns of the task list, the same with and without the card.</summary>
+    public Dictionary<string, int> TaskColumns { get; set; } = [];
 
     public int BottomTab { get; set; }
 

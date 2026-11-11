@@ -139,9 +139,6 @@
   <data name="ColumnNextRun" xml:space="preserve">
     <value>Следующий запуск</value>
   </data>
-  <data name="ColumnNextShort" xml:space="preserve">
-    <value>Следующий</value>
-  </data>
   <data name="ResultRunning" xml:space="preserve">
     <value>Выполняется {0} %</value>
   </data>
@@ -782,11 +779,11 @@ USB-диск — ищется по метке тома, поэтому смен�
 • Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.
 • Хранение работает, только если включено «Отдельная папка для каждой копии».</value>
   </data>
-  <data name="PageFilters" xml:space="preserve">
+  <data name="FiltersHeading" xml:space="preserve">
     <value>Фильтры</value>
   </data>
   <data name="FiltersNote" xml:space="preserve">
-    <value>Маски разделяются точкой с запятой. * — любые символы, ? — один символ.</value>
+    <value>Действуют на все источники задания. Маски разделяются точкой с запятой: * — любые символы, ? — один символ.</value>
   </data>
   <data name="FilterInclude" xml:space="preserve">
     <value>Только файлы:</value>
@@ -798,13 +795,16 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Пропускать файлы:</value>
   </data>
   <data name="FilterExcludeHelp" xml:space="preserve">
-    <value>Файлы по этим маскам не копируются, например *.tmp; ~$*.</value>
+    <value>Файлы по этим маскам не копируются, например *.bak; Thumbs.db.</value>
   </data>
   <data name="FilterExcludeDirs" xml:space="preserve">
     <value>Пропускать папки:</value>
   </data>
   <data name="FilterExcludeDirsHelp" xml:space="preserve">
-    <value>Папки с такими именами пропускаются со всем содержимым, например Temp; Cache. Маска с обратной косой чертой сравнивается с путём, например Projects\Old.</value>
+    <value>По одной папке на строке, она пропускается со всем содержимым. Имя (Temp, Cache) пропускается везде; путь от папки источника (Projects\Old) или полный путь — только в этом месте. «Обзор…» добавляет полный путь.</value>
+  </data>
+  <data name="FilterExcludeDirsBrowse" xml:space="preserve">
+    <value>Папка, которую не нужно копировать</value>
   </data>
   <data name="SkipHidden" xml:space="preserve">
     <value>Пропускать скрытые файлы и папки</value>
@@ -1083,7 +1083,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>День полной копии (значение Cobian {0}) прочитан как день недели, считая понедельник за 1: проверьте его на странице «Основное».</value>
   </data>
   <data name="WarnFiltersImported" xml:space="preserve">
-    <value>Фильтры перенесены, проверьте их на странице «Фильтры»: {0}</value>
+    <value>Фильтры перенесены, проверьте их на странице «Источники»: {0}</value>
   </data>
   <data name="WarnRunAsAccount" xml:space="preserve">
     <value>В Cobian задание выполнялось от имени {0}. В CUSTOS эта учётная запись используется только для сетевых папок задания: введите её пароль ниже.</value>

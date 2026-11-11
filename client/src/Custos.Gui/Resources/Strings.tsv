@@ -45,7 +45,6 @@ ColumnSchedule	Schedule	Расписание
 ColumnLastRun	Last run	Последний запуск
 ColumnResult	Result	Результат
 ColumnNextRun	Next run	Следующий запуск
-ColumnNextShort	Next	Следующий
 ResultRunning	Running {0} %	Выполняется {0} %
 ResultPaused	Paused {0} %	Пауза {0} %
 ResultStopping	Stopping…	Останавливается…
@@ -264,14 +263,15 @@ RetentionGfs	Grandfather-father-son: daily, weekly and monthly backups	Дед-о
 RetentionLater	These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.	Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.
 RetentionRules	Rules that always apply	Правила, которые действуют всегда
 RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works only with «A separate folder for each backup» on.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает, только если включено «Отдельная папка для каждой копии».
-PageFilters	Filters	Фильтры
-FiltersNote	Masks are separated by semicolons. * stands for any characters, ? for one character.	Маски разделяются точкой с запятой. * — любые символы, ? — один символ.
+FiltersHeading	Filters	Фильтры
+FiltersNote	They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? for one character.	Действуют на все источники задания. Маски разделяются точкой с запятой: * — любые символы, ? — один символ.
 FilterInclude	Only files:	Только файлы:
 FilterIncludeHelp	If set, only the files matching these masks are copied, for example *.docx; *.xlsx. Empty: all files.	Если задано, копируются только файлы по этим маскам, например *.docx; *.xlsx. Пусто — все файлы.
 FilterExclude	Skip files:	Пропускать файлы:
-FilterExcludeHelp	The files matching these masks are not copied, for example *.tmp; ~$*.	Файлы по этим маскам не копируются, например *.tmp; ~$*.
+FilterExcludeHelp	The files matching these masks are not copied, for example *.bak; Thumbs.db.	Файлы по этим маскам не копируются, например *.bak; Thumbs.db.
 FilterExcludeDirs	Skip folders:	Пропускать папки:
-FilterExcludeDirsHelp	Folders with these names are skipped with everything inside, for example Temp; Cache. A mask with a backslash is matched against the path, for example Projects\Old.	Папки с такими именами пропускаются со всем содержимым, например Temp; Cache. Маска с обратной косой чертой сравнивается с путём, например Projects\Old.
+FilterExcludeDirsHelp	One folder per line; it is skipped with everything inside. A name (Temp, Cache) is skipped everywhere; a path from the source folder (Projects\Old) or a full path only in that place. «Browse…» adds a full path.	По одной папке на строке, она пропускается со всем содержимым. Имя (Temp, Cache) пропускается везде; путь от папки источника (Projects\Old) или полный путь — только в этом месте. «Обзор…» добавляет полный путь.
+FilterExcludeDirsBrowse	Folder not to copy	Папка, которую не нужно копировать
 SkipHidden	Skip hidden files and folders	Пропускать скрытые файлы и папки
 SkipSystem	Skip system files and folders	Пропускать системные файлы и папки
 SkipTemp	Skip temporary files	Пропускать временные файлы
@@ -367,6 +367,6 @@ WarnFtpNotSupported	The FTP entry «{0}» was skipped: CUSTOS does not read from
 WarnNoSources	The task has no sources: add them before switching it on.	В задании нет источников: добавьте их, прежде чем включать задание.
 WarnNoDestinations	The task has no destinations: add them before switching it on.	В задании нет назначений: добавьте их, прежде чем включать задание.
 WarnFixedDayAssumed	The fixed day of the full backup (Cobian value {0}) was read as a day of the week, counting Monday as 1: check it on the «Basic» page.	День полной копии (значение Cobian {0}) прочитан как день недели, считая понедельник за 1: проверьте его на странице «Основное».
-WarnFiltersImported	Filters were carried over, check them on the «Filters» page: {0}	Фильтры перенесены, проверьте их на странице «Фильтры»: {0}
+WarnFiltersImported	Filters were carried over, check them on the «Sources» page: {0}	Фильтры перенесены, проверьте их на странице «Источники»: {0}
 WarnRunAsAccount	In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: enter its password below.	В Cobian задание выполнялось от имени {0}. В CUSTOS эта учётная запись используется только для сетевых папок задания: введите её пароль ниже.
 WarnRunAsLocalOnly	In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so the account is not needed.	В Cobian задание выполнялось от имени {0}, но сетевых папок в нём нет: локальные файлы CUSTOS читает от имени службы, учётная запись не нужна.

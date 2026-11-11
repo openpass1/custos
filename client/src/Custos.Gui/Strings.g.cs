@@ -131,9 +131,6 @@ static partial class Strings
     /// <summary>Next run</summary>
     public static string ColumnNextRun => Get(nameof(ColumnNextRun));
 
-    /// <summary>Next</summary>
-    public static string ColumnNextShort => Get(nameof(ColumnNextShort));
-
     /// <summary>Running {0} %</summary>
     public static string ResultRunning => Get(nameof(ResultRunning));
 
@@ -762,9 +759,9 @@ static partial class Strings
     public static string RetentionRulesText => Get(nameof(RetentionRulesText));
 
     /// <summary>Filters</summary>
-    public static string PageFilters => Get(nameof(PageFilters));
+    public static string FiltersHeading => Get(nameof(FiltersHeading));
 
-    /// <summary>Masks are separated by semicolons. * stands for any characters, ? for one character.</summary>
+    /// <summary>They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? fo...</summary>
     public static string FiltersNote => Get(nameof(FiltersNote));
 
     /// <summary>Only files:</summary>
@@ -776,14 +773,17 @@ static partial class Strings
     /// <summary>Skip files:</summary>
     public static string FilterExclude => Get(nameof(FilterExclude));
 
-    /// <summary>The files matching these masks are not copied, for example *.tmp; ~$*.</summary>
+    /// <summary>The files matching these masks are not copied, for example *.bak; Thumbs.db.</summary>
     public static string FilterExcludeHelp => Get(nameof(FilterExcludeHelp));
 
     /// <summary>Skip folders:</summary>
     public static string FilterExcludeDirs => Get(nameof(FilterExcludeDirs));
 
-    /// <summary>Folders with these names are skipped with everything inside, for example Temp; Cache. A mask with a backsla...</summary>
+    /// <summary>One folder per line; it is skipped with everything inside. A name (Temp, Cache) is skipped everywhere; a pa...</summary>
     public static string FilterExcludeDirsHelp => Get(nameof(FilterExcludeDirsHelp));
+
+    /// <summary>Folder not to copy</summary>
+    public static string FilterExcludeDirsBrowse => Get(nameof(FilterExcludeDirsBrowse));
 
     /// <summary>Skip hidden files and folders</summary>
     public static string SkipHidden => Get(nameof(SkipHidden));
@@ -1061,7 +1061,7 @@ static partial class Strings
     /// <summary>The fixed day of the full backup (Cobian value {0}) was read as a day of the week, counting Monday as 1: ch...</summary>
     public static string WarnFixedDayAssumed => Get(nameof(WarnFixedDayAssumed));
 
-    /// <summary>Filters were carried over, check them on the «Filters» page: {0}</summary>
+    /// <summary>Filters were carried over, check them on the «Sources» page: {0}</summary>
     public static string WarnFiltersImported => Get(nameof(WarnFiltersImported));
 
     /// <summary>In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: ent...</summary>
