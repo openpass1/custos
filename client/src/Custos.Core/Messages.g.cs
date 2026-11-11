@@ -488,6 +488,9 @@ static partial class Messages
     /// <summary>the file could not be read to the end ({0}); it is in the archive incomplete and counts as not copied</summary>
     public static string FileCutInArchive => Get(nameof(FileCutInArchive));
 
+    /// <summary>{0} could not be read to the end, after the list of files was already packed into the 7z archive. The archi...</summary>
+    public static string ArchiveListedFileCut => Get(nameof(ArchiveListedFileCut));
+
     /// <summary>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 64-bit 7-Zip there.</summary>
     public static string SevenZipMissing => Get(nameof(SevenZipMissing));
 

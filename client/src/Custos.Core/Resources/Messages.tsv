@@ -163,6 +163,7 @@ ArchivePasswordNotSet	Encryption is on, but the task has no archive password. Se
 ArchivePasswordMissing	The archive password of the task is not stored on this computer. Enter it again in the task editor.	Пароль архива задания не сохранён на этом компьютере. Введите его заново в редакторе задания.
 PartialFileNotRemoved	Could not remove the unfinished file {0}: {1}	Не удалось удалить незавершённый файл {0}: {1}
 FileCutInArchive	the file could not be read to the end ({0}); it is in the archive incomplete and counts as not copied	файл не удалось прочитать до конца ({0}); в архиве он неполный и считается нескопированным
+ArchiveListedFileCut	{0} could not be read to the end, after the list of files was already packed into the 7z archive. The archive is not finished; the next run tries again.	{0} не удалось прочитать до конца, а список файлов уже упакован в архив 7z. Архив не дописан; следующий запуск попробует снова.
 SevenZipMissing	7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 64-bit 7-Zip there.	Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя: переустановите CUSTOS или положите туда 7z.dll из 64-битного 7-Zip.
 SevenZipNot64Bit	{0} is not a 64-bit 7z.dll. Take 7z.dll from the 64-bit (x64) 7-Zip.	{0} — не 64-битный 7z.dll. Возьмите 7z.dll из 64-битного (x64) 7-Zip.
 SevenZipBroken	7z.dll cannot be used ({0}): {1}	7z.dll нельзя использовать ({0}): {1}

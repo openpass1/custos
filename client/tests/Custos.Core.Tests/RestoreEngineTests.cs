@@ -123,6 +123,57 @@ public sealed class RestoreEngineTests : IDisposable
         Assert.Throws<InvalidDataException>(() => Restore([sets[1], sets[2]], sets[2], _temp.Combine("Target")));
     }
 
+    [Fact]
+    public void Files_packed_after_the_manifest_come_back_without_a_checksum()
+    {
+        // As 7-Zip does: custos-set.json is packed before Data\…, so it cannot hold their SHA-256 yet.
+        _platform.ArchivesOverride = new NameSortingArchives(_platform.Archives);
+        var task = MakeChain(ArchiveFormats.Zip);
+        var sets = Scan(task);
+        var (_, files) = SetCatalog.ReadManifest(sets[0], new ArchiveAccess(_platform.Archives, null));
+        Assert.All(files, f =>
+        {
+            Assert.True(f.InSet);
+            Assert.Null(f.Sha256);
+        });
+
+        string latest = _temp.Combine("Latest");
+        var result = Restore(sets, sets[2], latest);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.Equal("alpha 2", Read(latest, "Data", "a.txt"));
+        Assert.Equal("gamma", Read(latest, "Data", "c.txt"));
+        Assert.False(File.Exists(Path.Combine(latest, "Data", "sub", "b.txt")));
+    }
+
+    [Fact]
+    public void A_file_gone_after_the_manifest_was_packed_comes_from_the_older_set()
+    {
+        var archives = new NameSortingArchives(_platform.Archives);
+        _platform.ArchivesOverride = archives;
+        var task = NewTask(ArchiveFormats.Zip);
+        Assert.Equal(RunStatuses.Success, Run(task, Start).Status);
+        _temp.WriteFile("Data/a.txt", "alpha 2", Modified.AddHours(1));
+        archives.BeforeOpen = item =>
+        {
+            if (item.Path.EndsWith("a.txt", StringComparison.Ordinal))
+            {
+                File.Delete(_temp.Combine("Data", "a.txt"));
+            }
+        };
+        Assert.Equal(RunStatuses.Success, Run(task, Start.AddDays(1)).Status);
+        archives.BeforeOpen = null;
+        var sets = Scan(task);
+        Assert.Equal(2, sets.Count);
+
+        string target = _temp.Combine("Target");
+        var result = Restore(sets, sets[1], target);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.Equal("alpha", Read(target, "Data", "a.txt"));
+        Assert.Equal("beta", Read(target, "Data", "sub", "b.txt"));
+    }
+
     [Theory]
     [InlineData(@"Docs\a.txt", @"C:\Data\Docs\a.txt")]
     [InlineData(@"Docs\sub\b.txt", @"C:\Data\Docs\sub\b.txt")]
@@ -148,16 +199,7 @@ public sealed class RestoreEngineTests : IDisposable
     /// <summary>Full, then incremental (a changed), then incremental (c added, b deleted).</summary>
     private TaskDefinition MakeChain(string format)
     {
-        var task = new TaskDefinition
-        {
-            Name = "Docs",
-            BackupType = BackupTypes.Incremental,
-            Sources = [new TaskSource { Path = _source }],
-            Destinations = [new TaskDestination { Kind = DestinationKinds.Local, Path = _backup }],
-            Vss = new VssOptions { Enabled = false },
-            Copy = new CopyOptions { ReadRetries = 0 },
-            Archive = new ArchiveOptions { Format = format },
-        };
+        var task = NewTask(format);
         Assert.Equal(RunStatuses.Success, Run(task, Start).Status);
         _temp.WriteFile("Data/a.txt", "alpha 2", Modified.AddHours(1));
         Assert.Equal(RunStatuses.Success, Run(task, Start.AddDays(1)).Status);
@@ -166,6 +208,17 @@ public sealed class RestoreEngineTests : IDisposable
         Assert.Equal(RunStatuses.Success, Run(task, Start.AddDays(2)).Status);
         return task;
     }
+
+    private TaskDefinition NewTask(string format) => new()
+    {
+        Name = "Docs",
+        BackupType = BackupTypes.Incremental,
+        Sources = [new TaskSource { Path = _source }],
+        Destinations = [new TaskDestination { Kind = DestinationKinds.Local, Path = _backup }],
+        Vss = new VssOptions { Enabled = false },
+        Copy = new CopyOptions { ReadRetries = 0 },
+        Archive = new ArchiveOptions { Format = format },
+    };
 
     private List<StoredSet> Scan(TaskDefinition task) => SetCatalog.Scan(_backup, task.Id, new ArchiveAccess(_platform.Archives, null));
 

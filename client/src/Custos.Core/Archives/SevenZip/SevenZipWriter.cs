@@ -9,10 +9,10 @@ namespace Custos.Core.Archives.SevenZip;
 /// anywhere first and items of unknown length (program output) work too.
 /// </summary>
 /// <remarks>
-/// Settings passed to 7-Zip: <c>x</c> = level; <c>f=off</c> = no executable filters, because they make 7-Zip read
-/// files grouped by type instead of in the given order, and the manifest must be read last; <c>tc=on</c> = keep the
-/// creation times; <c>he=on</c> = encrypt the names. A <see cref="ArchiveItem.Separate"/> item is reported as huge,
-/// which puts it into a solid block of its own; the real size is counted while it is read.
+/// Settings passed to 7-Zip: <c>x</c> = level; <c>f=off</c> = no executable filters, which would also read the start of
+/// every .exe and .dll ahead of time; <c>tc=on</c> = keep the creation times; <c>he=on</c> = encrypt the names. 7-Zip
+/// reads the files sorted by path (case-insensitive), not in the given order. A <see cref="ArchiveItem.Separate"/>
+/// item is reported as huge, which puts it into a solid block of its own; the real size is counted while it is read.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter

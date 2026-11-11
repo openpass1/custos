@@ -298,7 +298,11 @@ public sealed partial class BackupEngine
         }
     }
 
-    /// <summary>The items in the order they are packed: folders (full copies), files, and the manifest last.</summary>
+    /// <summary>
+    /// Folders (full copies), files, and the manifest last. ZIP packs them in this order. 7-Zip packs the files sorted
+    /// by path, so the manifest («custos-set.json») comes before every path that sorts after it; see
+    /// <see cref="ManifestStream"/>.
+    /// </summary>
     private List<ArchiveItem> ArchiveItems(RunContext run)
     {
         var items = new List<ArchiveItem>();
@@ -336,15 +340,31 @@ public sealed partial class BackupEngine
         return items;
     }
 
-    /// <summary>The manifest, made when the writer gets to it: by then every file has been read.</summary>
+    /// <summary>
+    /// The manifest, made when the writer gets to it. In ZIP every file has been read by then. In 7z the files whose
+    /// path sorts after «custos-set.json» are still to come: the manifest lists them as in the set without a SHA-256
+    /// (the CRC of 7z guards them), one that turns out to be unreadable stays out of the archive (restore takes it
+    /// from an older set), and one that breaks off in the middle stops the archive (see <see cref="SourceReader"/>).
+    /// </summary>
     private MemoryStream ManifestStream(RunContext run)
     {
         lock (_sync)
         {
+            var pending = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            long pendingBytes = 0;
+            foreach (var (_, file) in run.ToCopy)
+            {
+                if (!run.Copied.ContainsKey(file.OriginalPath) && !run.Failed.Contains(file.OriginalPath) && !run.Vanished.Contains(file.OriginalPath))
+                {
+                    pending.Add(file.OriginalPath);
+                    pendingBytes += file.Size;
+                }
+            }
+
             string status = run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
-            run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, status);
+            run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, status, pending.Count, pendingBytes);
             var stream = new MemoryStream();
-            SetManifest.Write(stream, run.Header, ManifestFiles(run));
+            SetManifest.Write(stream, run.Header, ManifestFiles(run, pending));
             stream.Position = 0;
             return stream;
         }
@@ -438,6 +458,7 @@ public sealed partial class BackupEngine
         {
             run.Result.Warnings++;
             run.FailedFiles++;
+            run.Failed.Add(file.OriginalPath);
             _progress.FilesDone++;
             _log.Write(RunLogLevel.Warning, Messages.Format(Messages.FileFailed, file.OriginalPath, reason));
         }
@@ -511,6 +532,12 @@ public sealed partial class BackupEngine
             {
                 _ended = true;
                 _failed = true;
+                if (ListedAlready())
+                {
+                    // The manifest is packed and says this file is whole: a cut file would be restored cut.
+                    throw new ArchiveException(Messages.Format(Messages.ArchiveListedFileCut, file.OriginalPath));
+                }
+
                 return 0;
             }
 
@@ -558,6 +585,14 @@ public sealed partial class BackupEngine
         {
             _ended = true;
             engine.SourceDone(run, file, SetManifest.ToHex(_hash.GetHashAndReset()), _position);
+        }
+
+        private bool ListedAlready()
+        {
+            lock (engine._sync)
+            {
+                return run.Header is not null;
+            }
         }
     }
 }

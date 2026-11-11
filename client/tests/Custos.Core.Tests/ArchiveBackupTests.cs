@@ -58,11 +58,22 @@ public sealed class ArchiveBackupTests : IDisposable
         Assert.Equal("alpha", contents[@"Data\a.txt"]);
         Assert.Equal("beta", contents[@"Data\sub\b.txt"]);
         var (_, files) = SetCatalog.ReadManifest(set, Access());
-        Assert.Equal(Sha256("alpha"), files.Single(f => ArchivePaths.ToWindows(f.Path) == @"Data\a.txt").Sha256);
-
+        var a = files.Single(f => ArchivePaths.ToWindows(f.Path) == @"Data\a.txt");
+        Assert.True(a.InSet);
         using var reader = Access().Open(set);
         Assert.Contains(reader.Entries, e => e.IsFolder && e.Path == @"Data\empty");
-        Assert.Equal(SetManifest.FileName, reader.Entries[^1].Path);
+        if (format == ArchiveFormats.Zip)
+        {
+            Assert.Equal(Sha256("alpha"), a.Sha256);
+            Assert.Equal(SetManifest.FileName, reader.Entries[^1].Path);
+        }
+        else
+        {
+            // 7-Zip packs by path: custos-set.json before Data\, so the manifest has no SHA-256 for these files.
+            Assert.Null(a.Sha256);
+            Assert.Contains(reader.Entries, e => e.Path == SetManifest.FileName);
+        }
+
         Assert.NotNull(_store.GetBackupState(task.Id).CompressionRatio);
     }
 

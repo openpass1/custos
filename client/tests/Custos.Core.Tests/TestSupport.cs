@@ -97,3 +97,45 @@ internal static class SevenZipCheck
         Assert.SkipUnless(available, "7z needs Windows and 7z.dll (CUSTOS_7Z_DLL).");
     }
 }
+
+/// <summary>
+/// The usual archives, but every writer opens the files sorted by path the way 7-Zip does (upper case, ordinal), so
+/// that what 7z does on Windows can be tested with ZIP anywhere: «custos-set.json» comes before «Data\…».
+/// </summary>
+internal sealed class NameSortingArchives(IArchiveProvider inner) : IArchiveProvider
+{
+    /// <summary>Called just before an item is opened (to delete or lock its file at that moment).</summary>
+    public Action<ArchiveItem>? BeforeOpen { get; set; }
+
+    public string? SevenZipVersion => inner.SevenZipVersion;
+
+    public IArchiveWriter CreateWriter(string format) => new Writer(inner.CreateWriter(format), this);
+
+    public IArchiveReader OpenReader(string format, Stream stream, string? password) => inner.OpenReader(format, stream, password);
+
+    private sealed class Writer(IArchiveWriter inner, NameSortingArchives owner) : IArchiveWriter
+    {
+        public void Write(IReadOnlyList<ArchiveItem> items, Stream output, ArchiveWriteOptions options, CancellationToken cancellationToken)
+        {
+            var sorted = items.Where(i => i.IsFolder)
+                .Concat(items.Where(i => !i.IsFolder).OrderBy(i => ArchivePaths.ToWindows(i.Path).ToUpperInvariant(), StringComparer.Ordinal))
+                .Select(item => item.Open is null ? item : new ArchiveItem
+                {
+                    Path = item.Path,
+                    IsFolder = item.IsFolder,
+                    Size = item.Size,
+                    ModifiedUtc = item.ModifiedUtc,
+                    CreatedUtc = item.CreatedUtc,
+                    Attributes = item.Attributes,
+                    Separate = item.Separate,
+                    Open = () =>
+                    {
+                        owner.BeforeOpen?.Invoke(item);
+                        return item.Open();
+                    },
+                })
+                .ToList();
+            inner.Write(sorted, output, options, cancellationToken);
+        }
+    }
+}

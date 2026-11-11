@@ -496,6 +496,9 @@
   <data name="FileCutInArchive" xml:space="preserve">
     <value>файл не удалось прочитать до конца ({0}); в архиве он неполный и считается нескопированным</value>
   </data>
+  <data name="ArchiveListedFileCut" xml:space="preserve">
+    <value>{0} не удалось прочитать до конца, а список файлов уже упакован в архив 7z. Архив не дописан; следующий запуск попробует снова.</value>
+  </data>
   <data name="SevenZipMissing" xml:space="preserve">
     <value>Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя: переустановите CUSTOS или положите туда 7z.dll из 64-битного 7-Zip.</value>
   </data>

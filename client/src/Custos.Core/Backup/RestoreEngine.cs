@@ -112,11 +112,38 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
             manifests.Add((set, files.ToDictionary(f => Key(f.Path), StringComparer.OrdinalIgnoreCase)));
         }
 
-        // Each file of the date, from the newest set of the chain that holds it.
+        // Each file of the date, from the newest set of the chain that holds it. A 7z archive lists some files before
+        // they are packed (7-Zip packs by name), without a SHA-256; one that could not be read after all is not in
+        // that archive, so it comes from an older set.
+        var entries = new Dictionary<StoredSet, HashSet<string>>();
+        bool Holds(StoredSet set, Dictionary<string, ManifestFile> files, string key)
+        {
+            if (!files.TryGetValue(key, out var stored) || !stored.InSet)
+            {
+                return false;
+            }
+
+            if (stored.Sha256 is not null || set.Storage != SetStorage.Archive)
+            {
+                return true;
+            }
+
+            if (!entries.TryGetValue(set, out var present))
+            {
+                entries[set] = present = request.Access.Session.Run(() =>
+                {
+                    using var reader = request.Access.Open(set);
+                    return reader.Entries.Where(e => !e.IsFolder).Select(e => Key(e.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                });
+            }
+
+            return present.Contains(key);
+        }
+
         var work = new Dictionary<StoredSet, List<Planned>>();
         foreach (var file in manifests[^1].Files.Values)
         {
-            var holder = manifests.LastOrDefault(m => m.Files.TryGetValue(Key(file.Path), out var stored) && stored.InSet);
+            var holder = manifests.LastOrDefault(m => Holds(m.Set, m.Files, Key(file.Path)));
             if (holder.Set is null)
             {
                 Failed(result, Messages.Format(Messages.RestoreNotInChain, file.Path));

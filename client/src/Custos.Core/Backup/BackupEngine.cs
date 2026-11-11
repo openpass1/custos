@@ -762,7 +762,7 @@ public sealed partial class BackupEngine
         run.Verified = run.VerifyNew && run.SetsFinished;
     }
 
-    private SetManifestHeader BuildHeader(RunContext run, string setName, DateTimeOffset finished, string status) => new()
+    private SetManifestHeader BuildHeader(RunContext run, string setName, DateTimeOffset finished, string status, int pendingFiles = 0, long pendingBytes = 0) => new()
     {
         SetName = setName,
         TaskId = run.Task.Id,
@@ -777,11 +777,13 @@ public sealed partial class BackupEngine
         Status = status,
         Sources = [.. run.Sources.Where(s => s.Scan is { Found: true }).Select(s => new ManifestSource { Id = s.Source.Id, Path = s.Source.Path, Target = s.Target })],
         FileCount = run.Result.SourceFiles,
-        SetFileCount = run.Copied.Count,
-        SetBytes = run.StoredBytes,
+        SetFileCount = run.Copied.Count + pendingFiles,
+        SetBytes = run.StoredBytes + pendingBytes,
     };
 
-    private static IEnumerable<ManifestFile> ManifestFiles(RunContext run)
+    /// <param name="pending">Files the archive writer has yet to read (7-Zip packs by name, so the manifest can come
+    /// before them): they count as in the set, without a SHA-256.</param>
+    private static IEnumerable<ManifestFile> ManifestFiles(RunContext run, HashSet<string>? pending = null)
     {
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
@@ -792,7 +794,7 @@ public sealed partial class BackupEngine
                     continue;
                 }
 
-                bool inSet = run.Copied.TryGetValue(file.OriginalPath, out string? hash);
+                bool inSet = run.Copied.TryGetValue(file.OriginalPath, out string? hash) || pending?.Contains(file.OriginalPath) == true;
                 yield return new ManifestFile(StoredPath(context, file), file.Size, file.LastWriteUtc, inSet, hash);
             }
         }
@@ -1126,6 +1128,9 @@ public sealed partial class BackupEngine
 
         /// <summary>Files deleted between the scan and the copy.</summary>
         public HashSet<string> Vanished { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Files that could not be read (archives only; the copy counts them in <see cref="FailedFiles"/>).</summary>
+        public HashSet<string> Failed { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public string? SetName { get; set; }
 

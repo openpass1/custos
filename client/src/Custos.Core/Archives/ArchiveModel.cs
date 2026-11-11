@@ -86,7 +86,8 @@ public enum ExtractOutcome
 public interface IArchiveWriter
 {
     /// <summary>Writes all items into <paramref name="output"/>. 7z needs a stream that can seek (it goes back to the
-    /// start to write the header position); ZIP never seeks.</summary>
+    /// start to write the header position); ZIP never seeks. ZIP opens the items in the given order; 7-Zip opens the
+    /// files sorted by path.</summary>
     /// <exception cref="ArchiveException">Packing failed.</exception>
     void Write(IReadOnlyList<ArchiveItem> items, Stream output, ArchiveWriteOptions options, CancellationToken cancellationToken);
 }
