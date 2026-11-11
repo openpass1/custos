@@ -86,6 +86,7 @@ root       = /var/spool/cron/crontabs
 exclude    = /var/www/*/data/logs
 exclude    = /var/www/*/data/tmp
 exclude    = /var/www/*/data/mod-tmp
+exclude    = /var/www/httpd-logs
 # СУБД: mariadb | mysql | postgresql, ключ можно повторить; нет строки — без баз
 db_engine  = mariadb
 # Пусто = вход root в MariaDB/MySQL через сокет, без пароля
@@ -97,7 +98,7 @@ db_defaults_file =
 - Неизвестный ключ — ошибка конфига (код 78). Файл `helper.conf` должен принадлежать root и не быть доступным на запись группе и остальным, иначе тоже 78.
 - Корни не должны вкладываться друг в друга (например, `/etc` и `/etc/nginx`): файлы попали бы в выборку дважды. Мастер не даёт сохранить такой список.
 - Пресеты (что забирать — выбирается в мастере, см. 4.2):
-  - **«ispmanager: только сайты»** (по умолчанию, конфиг выше) — чтобы перенести сайты на любой сервер или панель: файлы сайтов (SSL-сертификаты ispmanager тоже лежат в `/var/www`, в `httpd-cert`), базы, а для справки — настройки nginx и задания cron. Если сайты работают и через Apache, в список добавляется `root = /etc/apache2`.
+  - **«ispmanager: только сайты»** (по умолчанию, конфиг выше) — чтобы перенести сайты на любой сервер или панель: файлы сайтов (SSL-сертификаты ispmanager тоже лежат в `/var/www`, в `httpd-cert`), базы, а для справки — настройки nginx и задания cron. Логи веб-сервера (`/var/www/httpd-logs`) и временные папки сайтов исключены: для переноса они не нужны, а живой лог давал бы предупреждение «file changed as we read it» при каждом заборе. Если сайты работают и через Apache, в список добавляется `root = /etc/apache2`.
   - **«ispmanager: сайты и панель»** — чтобы поднять тот же сервер с ispmanager целиком: `root` = `/var/www`, `/etc`, `/usr/local/mgr5/etc`, `/var/spool/cron/crontabs`, исключения и базы те же. Весь `/etc` содержит хеши паролей и закрытые ключи SSH сервера, поэтому мастер при выборе этого варианта предупреждает, что они окажутся в копиях.
   - **«Обычный Linux»** — сервер без панели: `root` = `/etc`, `/home`, `/root`, `/var/www`, `/var/spool/cron`; базы — все, кроме системных. Предупреждение про `/etc` то же.
 - `db_engine` можно указать дважды, если на сервере две СУБД: `mariadb` или `mysql` плюс `postgresql`. `mariadb` и `mysql` вместе указать нельзя.
@@ -371,6 +372,7 @@ root       = /var/spool/cron/crontabs
 exclude    = /var/www/*/data/logs
 exclude    = /var/www/*/data/tmp
 exclude    = /var/www/*/data/mod-tmp
+exclude    = /var/www/httpd-logs
 db_engine  = mariadb
 CUSTOS_CONF_EOF
 chmod 0600 /etc/custos/helper.conf
