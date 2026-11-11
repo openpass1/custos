@@ -830,11 +830,104 @@ static partial class Strings
     /// <summary>Events</summary>
     public static string PageEvents => Get(nameof(PageEvents));
 
-    /// <summary>Scripts and services before and after the backup, and shutting the computer down after it, arrive in the ne...</summary>
-    public static string EventsLater => Get(nameof(EventsLater));
+    /// <summary>Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends wi...</summary>
+    public static string EventsNote => Get(nameof(EventsNote));
 
-    /// <summary>This task has events. They are kept in the task but not run in this version.</summary>
-    public static string EventsSetButUnsupported => Get(nameof(EventsSetButUnsupported));
+    /// <summary>Before the backup</summary>
+    public static string EventsPreHeading => Get(nameof(EventsPreHeading));
+
+    /// <summary>After the backup</summary>
+    public static string EventsPostHeading => Get(nameof(EventsPostHeading));
+
+    /// <summary>Stop the task if an event before fails</summary>
+    public static string EventsAbortOnPre => Get(nameof(EventsAbortOnPre));
+
+    /// <summary>The events after run even when the backup failed or was stopped, so that a service stopped before starts ag...</summary>
+    public static string EventsPostNote => Get(nameof(EventsPostNote));
+
+    /// <summary>Event</summary>
+    public static string ColumnEvent => Get(nameof(ColumnEvent));
+
+    /// <summary>Time limit</summary>
+    public static string ColumnTimeout => Get(nameof(ColumnTimeout));
+
+    /// <summary>{0} min</summary>
+    public static string EventTimeoutShown => Get(nameof(EventTimeoutShown));
+
+    /// <summary>Stop the service {0}</summary>
+    public static string EventShowStop => Get(nameof(EventShowStop));
+
+    /// <summary>Start the service {0}</summary>
+    public static string EventShowStart => Get(nameof(EventShowStart));
+
+    /// <summary>Add event</summary>
+    public static string EventAddTitle => Get(nameof(EventAddTitle));
+
+    /// <summary>Event</summary>
+    public static string EventEditTitle => Get(nameof(EventEditTitle));
+
+    /// <summary>Run a program or script</summary>
+    public static string EventKindRun => Get(nameof(EventKindRun));
+
+    /// <summary>Stop a Windows service</summary>
+    public static string EventKindStop => Get(nameof(EventKindStop));
+
+    /// <summary>Start a Windows service</summary>
+    public static string EventKindStart => Get(nameof(EventKindStart));
+
+    /// <summary>Program:</summary>
+    public static string EventProgram => Get(nameof(EventProgram));
+
+    /// <summary>Arguments:</summary>
+    public static string EventArguments => Get(nameof(EventArguments));
+
+    /// <summary>Service:</summary>
+    public static string EventService => Get(nameof(EventService));
+
+    /// <summary>Time limit, minutes:</summary>
+    public static string EventTimeout => Get(nameof(EventTimeout));
+
+    /// <summary>A program still running after this time is stopped together with everything it started, and the event count...</summary>
+    public static string EventTimeoutHelp => Get(nameof(EventTimeoutHelp));
+
+    /// <summary>.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Varia...</summary>
+    public static string EventProgramHelp => Get(nameof(EventProgramHelp));
+
+    /// <summary>Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*</summary>
+    public static string EventProgramFilter => Get(nameof(EventProgramFilter));
+
+    /// <summary>Enter the program or script.</summary>
+    public static string ErrorEventProgramRequired => Get(nameof(ErrorEventProgramRequired));
+
+    /// <summary>Enter the name of the service.</summary>
+    public static string ErrorEventServiceRequired => Get(nameof(ErrorEventServiceRequired));
+
+    /// <summary>Up</summary>
+    public static string ButtonUp => Get(nameof(ButtonUp));
+
+    /// <summary>Down</summary>
+    public static string ButtonDown => Get(nameof(ButtonDown));
+
+    /// <summary>When the run is over</summary>
+    public static string AfterHeading => Get(nameof(AfterHeading));
+
+    /// <summary>Do nothing</summary>
+    public static string AfterNone => Get(nameof(AfterNone));
+
+    /// <summary>Shut the computer down</summary>
+    public static string AfterShutdown => Get(nameof(AfterShutdown));
+
+    /// <summary>Restart the computer</summary>
+    public static string AfterRestart => Get(nameof(AfterRestart));
+
+    /// <summary>Put the computer to sleep</summary>
+    public static string AfterSleep => Get(nameof(AfterSleep));
+
+    /// <summary>Hibernate the computer</summary>
+    public static string AfterHibernate => Get(nameof(AfterHibernate));
+
+    /// <summary>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-se...</summary>
+    public static string AfterNote => Get(nameof(AfterNote));
 
     /// <summary>Advanced</summary>
     public static string PageAdvanced => Get(nameof(PageAdvanced));
@@ -1067,7 +1160,7 @@ static partial class Strings
     /// <summary>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks...</summary>
     public static string WarnSplitIgnored => Get(nameof(WarnSplitIgnored));
 
-    /// <summary>Events before and after the backup are not run yet; they were written into the comment: {0}</summary>
+    /// <summary>The events before and after were written into the comment: set them again on the «Events» page. {0}</summary>
     public static string WarnEventsInComment => Get(nameof(WarnEventsInComment));
 
     /// <summary>The entry «{0}» was skipped: its type is unknown or it is not a full path.</summary>

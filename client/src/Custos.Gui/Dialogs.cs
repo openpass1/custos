@@ -466,6 +466,152 @@ internal sealed class DestinationDialog : DialogForm
 }
 
 /// <summary>
+/// Adds or changes one event (section 6.9): a program or script with its arguments, or a Windows service to stop or
+/// start, each with a time limit.
+/// </summary>
+internal sealed class EventDialog : DialogForm
+{
+    private readonly TaskEvent _original;
+    private readonly RadioButton _run = new() { Text = Strings.EventKindRun, AutoSize = true };
+    private readonly RadioButton _stop = new() { Text = Strings.EventKindStop, AutoSize = true };
+    private readonly RadioButton _start = new() { Text = Strings.EventKindStart, AutoSize = true };
+    private readonly Label _programLabel = Caption(Strings.EventProgram);
+    private readonly TextBox _program = new() { Dock = DockStyle.Fill };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Label _argumentsLabel = Caption(Strings.EventArguments);
+    private readonly TextBox _arguments = new() { Dock = DockStyle.Fill };
+    private readonly Label _serviceLabel = Caption(Strings.EventService);
+    private readonly ComboBox _service = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
+    private readonly NumericUpDown _timeout = new() { Minimum = 1, Maximum = 10080, Width = 80 };
+    private readonly int _shownMinutes;
+
+    public EventDialog(EditorContext context, TaskEvent item, bool isNew)
+        : base(isNew ? Strings.EventAddTitle : Strings.EventEditTitle, new Size(640, 290))
+    {
+        _original = item;
+        var kinds = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(0, 0, 0, 6) };
+        kinds.Controls.AddRange([_run, _stop, _start]);
+        AddWide(kinds);
+        AddGridRow(_programLabel, _program, _browse);
+        AddGridRow(_argumentsLabel, _arguments, new Label { AutoSize = true });
+        AddGridRow(_serviceLabel, _service, new Label { AutoSize = true });
+        AddGridRow(Caption(Strings.EventTimeout), _timeout, Ui.HelpIcon(context.ToolTip, Strings.EventTimeoutHelp));
+        AddNote(Strings.EventProgramHelp);
+        EndBuild();
+
+        FillServices();
+        _run.Checked = item.Kind is not (TaskEventKinds.ServiceStop or TaskEventKinds.ServiceStart);
+        _stop.Checked = item.Kind == TaskEventKinds.ServiceStop;
+        _start.Checked = item.Kind == TaskEventKinds.ServiceStart;
+        _program.Text = item.Command ?? string.Empty;
+        _arguments.Text = item.Args;
+        _service.Text = item.Service ?? string.Empty;
+        _shownMinutes = (int)Math.Clamp((item.TimeoutS + 59) / 60, _timeout.Minimum, _timeout.Maximum);
+        _timeout.Value = _shownMinutes;
+        UpdateFields();
+
+        _run.CheckedChanged += (_, _) => UpdateFields();
+        _stop.CheckedChanged += (_, _) => UpdateFields();
+        _start.CheckedChanged += (_, _) => UpdateFields();
+        _browse.Click += (_, _) => Browse();
+    }
+
+    /// <summary>The event as entered, after "OK".</summary>
+    public TaskEvent Event { get; private set; } = new();
+
+    protected override void OnOk()
+    {
+        string kind = _stop.Checked ? TaskEventKinds.ServiceStop : _start.Checked ? TaskEventKinds.ServiceStart : TaskEventKinds.Run;
+        string program = _program.Text.Trim().Trim('"');
+        string service = _service.Text.Trim();
+        string? problem = kind == TaskEventKinds.Run
+            ? program.Length == 0 ? Strings.ErrorEventProgramRequired : null
+            : service.Length == 0 ? Strings.ErrorEventServiceRequired : null;
+        if (problem is not null)
+        {
+            Ui.ShowWarning(this, problem);
+            return;
+        }
+
+        int minutes = (int)_timeout.Value;
+        Event = new TaskEvent
+        {
+            Kind = kind,
+            Command = kind == TaskEventKinds.Run ? program : null,
+            Args = kind == TaskEventKinds.Run ? _arguments.Text.Trim() : string.Empty,
+            Service = kind == TaskEventKinds.Run ? null : service,
+            // Seconds that do not make whole minutes stay as they were unless the minutes were changed.
+            TimeoutS = minutes == _shownMinutes ? _original.TimeoutS : minutes * 60,
+            ExtensionData = _original.ExtensionData,
+        };
+        DialogResult = DialogResult.OK;
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+
+    private void AddGridRow(Control caption, Control control, Control extra)
+    {
+        control.Margin = new Padding(0, 3, 0, 3);
+        extra.Margin = new Padding(6, 3, 0, 3);
+        Body.Controls.Add(caption);
+        Body.Controls.Add(control);
+        Body.Controls.Add(extra);
+    }
+
+    private void UpdateFields()
+    {
+        bool run = _run.Checked;
+        _programLabel.Visible = _program.Visible = _browse.Visible = run;
+        _argumentsLabel.Visible = _arguments.Visible = run;
+        _serviceLabel.Visible = _service.Visible = !run;
+    }
+
+    /// <summary>The services of this computer by name, for the list.</summary>
+    private void FillServices()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        try
+        {
+            // The services (not the drivers) as the registry lists them: readable by every user.
+            using var services = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services");
+            var names = new List<string>();
+            foreach (string name in services?.GetSubKeyNames() ?? [])
+            {
+                using var key = services!.OpenSubKey(name);
+                if (key?.GetValue("Type") is int type && (type & 0x30) != 0 && key.GetValue("ImagePath") is not null)
+                {
+                    names.Add(name);
+                }
+            }
+
+            _service.Items.AddRange([.. names.Order(StringComparer.OrdinalIgnoreCase)]);
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException)
+        {
+            // The list is only a help: the name can be typed.
+        }
+    }
+
+    private void Browse()
+    {
+        using var dialog = new OpenFileDialog { CheckFileExists = true, Title = Strings.EventProgram, Filter = Strings.EventProgramFilter };
+        if (File.Exists(_program.Text))
+        {
+            dialog.FileName = _program.Text;
+        }
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _program.Text = dialog.FileName;
+        }
+    }
+}
+
+/// <summary>
 /// Adds a Windows account for network folders, or changes its password. The password goes straight to the service,
 /// which keeps it encrypted with DPAPI; it is never shown or sent back.
 /// </summary>

@@ -851,11 +851,104 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="PageEvents" xml:space="preserve">
     <value>Events</value>
   </data>
-  <data name="EventsLater" xml:space="preserve">
-    <value>Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.</value>
+  <data name="EventsNote" xml:space="preserve">
+    <value>Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends with code 0. What it prints goes to the run log.</value>
   </data>
-  <data name="EventsSetButUnsupported" xml:space="preserve">
-    <value>This task has events. They are kept in the task but not run in this version.</value>
+  <data name="EventsPreHeading" xml:space="preserve">
+    <value>Before the backup</value>
+  </data>
+  <data name="EventsPostHeading" xml:space="preserve">
+    <value>After the backup</value>
+  </data>
+  <data name="EventsAbortOnPre" xml:space="preserve">
+    <value>Stop the task if an event before fails</value>
+  </data>
+  <data name="EventsPostNote" xml:space="preserve">
+    <value>The events after run even when the backup failed or was stopped, so that a service stopped before starts again. A failed event after is a warning.</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="ColumnTimeout" xml:space="preserve">
+    <value>Time limit</value>
+  </data>
+  <data name="EventTimeoutShown" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="EventShowStop" xml:space="preserve">
+    <value>Stop the service {0}</value>
+  </data>
+  <data name="EventShowStart" xml:space="preserve">
+    <value>Start the service {0}</value>
+  </data>
+  <data name="EventAddTitle" xml:space="preserve">
+    <value>Add event</value>
+  </data>
+  <data name="EventEditTitle" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="EventKindRun" xml:space="preserve">
+    <value>Run a program or script</value>
+  </data>
+  <data name="EventKindStop" xml:space="preserve">
+    <value>Stop a Windows service</value>
+  </data>
+  <data name="EventKindStart" xml:space="preserve">
+    <value>Start a Windows service</value>
+  </data>
+  <data name="EventProgram" xml:space="preserve">
+    <value>Program:</value>
+  </data>
+  <data name="EventArguments" xml:space="preserve">
+    <value>Arguments:</value>
+  </data>
+  <data name="EventService" xml:space="preserve">
+    <value>Service:</value>
+  </data>
+  <data name="EventTimeout" xml:space="preserve">
+    <value>Time limit, minutes:</value>
+  </data>
+  <data name="EventTimeoutHelp" xml:space="preserve">
+    <value>A program still running after this time is stopped together with everything it started, and the event counts as failed. For a service: how long to wait until it has stopped or started.</value>
+  </data>
+  <data name="EventProgramHelp" xml:space="preserve">
+    <value>.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Variables like %SystemRoot% are filled in. For a service, enter its name as the list shows it (the service name, not the display name).</value>
+  </data>
+  <data name="EventProgramFilter" xml:space="preserve">
+    <value>Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*</value>
+  </data>
+  <data name="ErrorEventProgramRequired" xml:space="preserve">
+    <value>Enter the program or script.</value>
+  </data>
+  <data name="ErrorEventServiceRequired" xml:space="preserve">
+    <value>Enter the name of the service.</value>
+  </data>
+  <data name="ButtonUp" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="ButtonDown" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="AfterHeading" xml:space="preserve">
+    <value>When the run is over</value>
+  </data>
+  <data name="AfterNone" xml:space="preserve">
+    <value>Do nothing</value>
+  </data>
+  <data name="AfterShutdown" xml:space="preserve">
+    <value>Shut the computer down</value>
+  </data>
+  <data name="AfterRestart" xml:space="preserve">
+    <value>Restart the computer</value>
+  </data>
+  <data name="AfterSleep" xml:space="preserve">
+    <value>Put the computer to sleep</value>
+  </data>
+  <data name="AfterHibernate" xml:space="preserve">
+    <value>Hibernate the computer</value>
+  </data>
+  <data name="AfterNote" xml:space="preserve">
+    <value>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel».</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Advanced</value>
@@ -1089,7 +1182,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.</value>
   </data>
   <data name="WarnEventsInComment" xml:space="preserve">
-    <value>Events before and after the backup are not run yet; they were written into the comment: {0}</value>
+    <value>The events before and after were written into the comment: set them again on the «Events» page. {0}</value>
   </data>
   <data name="WarnSourceUnknown" xml:space="preserve">
     <value>The entry «{0}» was skipped: its type is unknown or it is not a full path.</value>

@@ -128,6 +128,63 @@ static partial class Messages
     /// <summary>Could not delete the old set «{0}» in {1}: {2}</summary>
     public static string SetDeleteFailed => Get(nameof(SetDeleteFailed));
 
+    /// <summary>Event: {0} {1}</summary>
+    public static string EventRunning => Get(nameof(EventRunning));
+
+    /// <summary>&gt; {0}</summary>
+    public static string EventOutput => Get(nameof(EventOutput));
+
+    /// <summary>&gt; … {0} more lines not shown.</summary>
+    public static string EventOutputCut => Get(nameof(EventOutputCut));
+
+    /// <summary>Event finished: {0}</summary>
+    public static string EventDone => Get(nameof(EventDone));
+
+    /// <summary>{0} ended with code {1}.</summary>
+    public static string EventExitCode => Get(nameof(EventExitCode));
+
+    /// <summary>{0} could not be started: {1}</summary>
+    public static string EventNotStarted => Get(nameof(EventNotStarted));
+
+    /// <summary>{0} did not end within {1} s and was stopped.</summary>
+    public static string EventTimedOut => Get(nameof(EventTimedOut));
+
+    /// <summary>An event has no program set.</summary>
+    public static string EventNoCommand => Get(nameof(EventNoCommand));
+
+    /// <summary>Event: stopping the service {0}</summary>
+    public static string EventServiceStopping => Get(nameof(EventServiceStopping));
+
+    /// <summary>Event: starting the service {0}</summary>
+    public static string EventServiceStarting => Get(nameof(EventServiceStarting));
+
+    /// <summary>The service {0} is stopped.</summary>
+    public static string EventServiceStopped => Get(nameof(EventServiceStopped));
+
+    /// <summary>The service {0} is running.</summary>
+    public static string EventServiceStarted => Get(nameof(EventServiceStarted));
+
+    /// <summary>The service {0} did not get there within {1} s.</summary>
+    public static string EventServiceTimedOut => Get(nameof(EventServiceTimedOut));
+
+    /// <summary>The service {0}: {1}</summary>
+    public static string EventServiceFailed => Get(nameof(EventServiceFailed));
+
+    /// <summary>Services cannot be controlled here: {0}</summary>
+    public static string EventServiceUnsupported => Get(nameof(EventServiceUnsupported));
+
+    /// <summary>An event of an unknown kind «{0}» was skipped.</summary>
+    public static string EventKindUnknown => Get(nameof(EventKindUnknown));
+
+    /// <summary>The event before the backup failed, the task was not run: {0}</summary>
+    public static string PreEventFailedAbort => Get(nameof(PreEventFailedAbort));
+
+    /// <summary>The event before the backup failed, the backup goes on: {0}</summary>
+    public static string PreEventFailed => Get(nameof(PreEventFailed));
+
+    /// <summary>The event after the backup failed: {0}</summary>
+    public static string PostEventFailed => Get(nameof(PostEventFailed));
+
     /// <summary>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</summary>
     public static string MirrorDeletionsSkipped => Get(nameof(MirrorDeletionsSkipped));
 

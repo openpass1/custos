@@ -53,29 +53,32 @@ public sealed partial class BackupEngine
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(pause);
         var run = new RunContext(request, pause, cancellationToken);
-        try
+        using (_platform.KeepAwake(Messages.Format(Messages.KeepAwakeReason, request.Task.Name)))
         {
-            using (_platform.KeepAwake(Messages.Format(Messages.KeepAwakeReason, request.Task.Name)))
+            try
             {
                 Execute(run);
             }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            run.Result.Status = RunStatuses.Aborted;
-            _log.Write(RunLogLevel.Warning, Messages.RunAborted);
-        }
-        catch (BackupException ex)
-        {
-            Fail(run, ex.Message);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            Fail(run, ex.Message);
-        }
-        finally
-        {
-            Cleanup(run);
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                run.Result.Status = RunStatuses.Aborted;
+                _log.Write(RunLogLevel.Warning, Messages.RunAborted);
+            }
+            catch (BackupException ex)
+            {
+                Fail(run, ex.Message);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Fail(run, ex.Message);
+            }
+            finally
+            {
+                Cleanup(run);
+            }
+
+            // After the shadow copies and network logons are released: a service stopped before starts again now.
+            RunPostEvents(run);
         }
 
         FinishResult(run);
@@ -87,6 +90,8 @@ public sealed partial class BackupEngine
         var task = run.Task;
         Phase(BackupPhases.Scan);
         CheckSupported(task);
+        RunPreEvents(run);
+        Phase(BackupPhases.Scan);
         if (IsArchive(task))
         {
             PrepareArchive(run);
@@ -1190,6 +1195,9 @@ public sealed partial class BackupEngine
 
         /// <summary>Sources that were missing or could not be read at all.</summary>
         public int SourceErrors { get; set; }
+
+        /// <summary>The events before were started, so the events after run too.</summary>
+        public bool EventsStarted { get; set; }
 
         /// <summary>Folders of the sources that could not be read: their files look deleted, but are not.</summary>
         public int UnreadableFolders { get; set; }

@@ -136,6 +136,63 @@
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Could not delete the old set «{0}» in {1}: {2}</value>
   </data>
+  <data name="EventRunning" xml:space="preserve">
+    <value>Event: {0} {1}</value>
+  </data>
+  <data name="EventOutput" xml:space="preserve">
+    <value>&gt; {0}</value>
+  </data>
+  <data name="EventOutputCut" xml:space="preserve">
+    <value>&gt; … {0} more lines not shown.</value>
+  </data>
+  <data name="EventDone" xml:space="preserve">
+    <value>Event finished: {0}</value>
+  </data>
+  <data name="EventExitCode" xml:space="preserve">
+    <value>{0} ended with code {1}.</value>
+  </data>
+  <data name="EventNotStarted" xml:space="preserve">
+    <value>{0} could not be started: {1}</value>
+  </data>
+  <data name="EventTimedOut" xml:space="preserve">
+    <value>{0} did not end within {1} s and was stopped.</value>
+  </data>
+  <data name="EventNoCommand" xml:space="preserve">
+    <value>An event has no program set.</value>
+  </data>
+  <data name="EventServiceStopping" xml:space="preserve">
+    <value>Event: stopping the service {0}</value>
+  </data>
+  <data name="EventServiceStarting" xml:space="preserve">
+    <value>Event: starting the service {0}</value>
+  </data>
+  <data name="EventServiceStopped" xml:space="preserve">
+    <value>The service {0} is stopped.</value>
+  </data>
+  <data name="EventServiceStarted" xml:space="preserve">
+    <value>The service {0} is running.</value>
+  </data>
+  <data name="EventServiceTimedOut" xml:space="preserve">
+    <value>The service {0} did not get there within {1} s.</value>
+  </data>
+  <data name="EventServiceFailed" xml:space="preserve">
+    <value>The service {0}: {1}</value>
+  </data>
+  <data name="EventServiceUnsupported" xml:space="preserve">
+    <value>Services cannot be controlled here: {0}</value>
+  </data>
+  <data name="EventKindUnknown" xml:space="preserve">
+    <value>An event of an unknown kind «{0}» was skipped.</value>
+  </data>
+  <data name="PreEventFailedAbort" xml:space="preserve">
+    <value>The event before the backup failed, the task was not run: {0}</value>
+  </data>
+  <data name="PreEventFailed" xml:space="preserve">
+    <value>The event before the backup failed, the backup goes on: {0}</value>
+  </data>
+  <data name="PostEventFailed" xml:space="preserve">
+    <value>The event after the backup failed: {0}</value>
+  </data>
   <data name="MirrorDeletionsSkipped" xml:space="preserve">
     <value>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</value>
   </data>

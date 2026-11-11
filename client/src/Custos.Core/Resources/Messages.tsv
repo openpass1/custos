@@ -41,6 +41,25 @@ FileVanished	{0} was deleted before it could be copied.	Файл {0} удалё�
 SetWritten	Set «{0}» written to {1}: {2} files, {3}.	Набор «{0}» записан в {1}: файлов {2}, {3}.
 SetDeleted	Old set «{0}» deleted from {1}.	Удалён старый набор «{0}» в {1}.
 SetDeleteFailed	Could not delete the old set «{0}» in {1}: {2}	Не удалось удалить старый набор «{0}» в {1}: {2}
+EventRunning	Event: {0} {1}	Событие: {0} {1}
+EventOutput	> {0}	> {0}
+EventOutputCut	> … {0} more lines not shown.	> … ещё строк не показано: {0}.
+EventDone	Event finished: {0}	Событие выполнено: {0}
+EventExitCode	{0} ended with code {1}.	{0} завершилась с кодом {1}.
+EventNotStarted	{0} could not be started: {1}	Не удалось запустить {0}: {1}
+EventTimedOut	{0} did not end within {1} s and was stopped.	{0} не завершилась за {1} с и была остановлена.
+EventNoCommand	An event has no program set.	У события не указана программа.
+EventServiceStopping	Event: stopping the service {0}	Событие: останавливаю службу {0}
+EventServiceStarting	Event: starting the service {0}	Событие: запускаю службу {0}
+EventServiceStopped	The service {0} is stopped.	Служба {0} остановлена.
+EventServiceStarted	The service {0} is running.	Служба {0} запущена.
+EventServiceTimedOut	The service {0} did not get there within {1} s.	Служба {0} не перешла в нужное состояние за {1} с.
+EventServiceFailed	The service {0}: {1}	Служба {0}: {1}
+EventServiceUnsupported	Services cannot be controlled here: {0}	Управление службами здесь недоступно: {0}
+EventKindUnknown	An event of an unknown kind «{0}» was skipped.	Событие неизвестного вида «{0}» пропущено.
+PreEventFailedAbort	The event before the backup failed, the task was not run: {0}	Событие «до» не удалось, задание не выполнено: {0}
+PreEventFailed	The event before the backup failed, the backup goes on: {0}	Событие «до» не удалось, копирование продолжается: {0}
+PostEventFailed	The event after the backup failed: {0}	Событие «после» не удалось: {0}
 MirrorDeletionsSkipped	Some folders of the sources could not be read, so this time nothing is deleted from the mirror.	Часть папок источников не прочиталась, поэтому в этот раз из зеркала ничего не удаляется.
 MirrorFileDeleted	Deleted from the mirror: {0}	Удалён из зеркала: {0}
 MirrorFileMoved	Moved to {1}: {0}	Перенесён в {1}: {0}

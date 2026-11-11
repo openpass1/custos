@@ -287,8 +287,39 @@ SkipSystem	Skip system files and folders	Пропускать системные
 SkipTemp	Skip temporary files	Пропускать временные файлы
 SkipTempHelp	Files that Windows marks as temporary (the «temporary» attribute). Masks like *.tmp go into «Skip files».	Файлы, которые Windows пометила как временные (атрибут «временный»). Маски вроде *.tmp задайте в «Пропускать файлы».
 PageEvents	Events	События
-EventsLater	Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.	Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.
-EventsSetButUnsupported	This task has events. They are kept in the task but not run in this version.	В задании есть события. Они сохранены в задании, но в этой версии не выполняются.
+EventsNote	Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends with code 0. What it prints goes to the run log.	Программы и скрипты выполняются от имени SYSTEM, без окна. Событие считается успешным, если программа завершилась с кодом 0. Что она выводит, попадает в журнал запуска.
+EventsPreHeading	Before the backup	До копирования
+EventsPostHeading	After the backup	После копирования
+EventsAbortOnPre	Stop the task if an event before fails	Прервать задание, если событие «до» завершилось ошибкой
+EventsPostNote	The events after run even when the backup failed or was stopped, so that a service stopped before starts again. A failed event after is a warning.	События «после» выполняются, даже если копирование не удалось или было остановлено, — чтобы остановленная служба снова запустилась. Ошибка события «после» даёт предупреждение.
+ColumnEvent	Event	Событие
+ColumnTimeout	Time limit	Тайм-аут
+EventTimeoutShown	{0} min	{0} мин
+EventShowStop	Stop the service {0}	Остановить службу {0}
+EventShowStart	Start the service {0}	Запустить службу {0}
+EventAddTitle	Add event	Добавить событие
+EventEditTitle	Event	Событие
+EventKindRun	Run a program or script	Запустить программу или скрипт
+EventKindStop	Stop a Windows service	Остановить службу Windows
+EventKindStart	Start a Windows service	Запустить службу Windows
+EventProgram	Program:	Программа:
+EventArguments	Arguments:	Аргументы:
+EventService	Service:	Служба:
+EventTimeout	Time limit, minutes:	Тайм-аут, минут:
+EventTimeoutHelp	A program still running after this time is stopped together with everything it started, and the event counts as failed. For a service: how long to wait until it has stopped or started.	Программа, которая работает дольше, останавливается вместе со всем, что она запустила, и событие считается неудачным. Для службы — сколько ждать, пока она остановится или запустится.
+EventProgramHelp	.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Variables like %SystemRoot% are filled in. For a service, enter its name as the list shows it (the service name, not the display name).	.exe запускается напрямую, .bat и .cmd — через cmd.exe, .ps1 — через PowerShell (с ExecutionPolicy Bypass). Переменные вида %SystemRoot% подставляются. Для службы укажите имя, как в списке (имя службы, а не отображаемое название).
+EventProgramFilter	Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*	Программы и скрипты (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|Все файлы (*.*)|*.*
+ErrorEventProgramRequired	Enter the program or script.	Укажите программу или скрипт.
+ErrorEventServiceRequired	Enter the name of the service.	Укажите имя службы.
+ButtonUp	Up	Выше
+ButtonDown	Down	Ниже
+AfterHeading	When the run is over	После выполнения
+AfterNone	Do nothing	Ничего не делать
+AfterShutdown	Shut the computer down	Выключить компьютер
+AfterRestart	Restart the computer	Перезагрузить компьютер
+AfterSleep	Put the computer to sleep	Перевести в сон
+AfterHibernate	Hibernate the computer	Перевести в гибернацию
+AfterNote	If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel».	Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отмена».
 PageAdvanced	Advanced	Дополнительно
 EditorVss	Open files	Открытые файлы
 VssEnabled	Use a shadow copy (VSS)	Использовать теневую копию (VSS)
@@ -369,7 +400,7 @@ WarnBackupTypeNotSupported	Cobian backup type {0} (for example «dummy») does n
 WarnCompressionAssumed	The compression type was read as ZIP: check it.	Тип сжатия прочитан как ZIP: проверьте его.
 WarnEncryptionPassword	The archive is encrypted in Cobian. Its password is not carried over: set it on the «Compression and checks» page, otherwise the task does not run.	В Cobian архив шифруется. Пароль не переносится: задайте его на странице «Сжатие и проверка», иначе задание не выполнится.
 WarnSplitIgnored	Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.	Разбиение архива на тома не перенесено: при необходимости задайте размер тома на странице «Сжатие и проверка».
-WarnEventsInComment	Events before and after the backup are not run yet; they were written into the comment: {0}	События до и после копирования пока не выполняются, они записаны в комментарий: {0}
+WarnEventsInComment	The events before and after were written into the comment: set them again on the «Events» page. {0}	События до и после записаны в комментарий: задайте их заново на странице «События». {0}
 WarnSourceUnknown	The entry «{0}» was skipped: its type is unknown or it is not a full path.	Запись «{0}» пропущена: неизвестный тип или не полный путь.
 WarnFtpNotSupported	The FTP entry «{0}» was skipped: CUSTOS does not read from FTP, and writing to FTP arrives in a later version.	FTP-запись «{0}» пропущена: читать с FTP CUSTOS не умеет, а запись на FTP появится в следующих версиях.
 WarnNoSources	The task has no sources: add them before switching it on.	В задании нет источников: добавьте их, прежде чем включать задание.

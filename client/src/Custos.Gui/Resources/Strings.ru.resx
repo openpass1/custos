@@ -851,11 +851,104 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="PageEvents" xml:space="preserve">
     <value>События</value>
   </data>
-  <data name="EventsLater" xml:space="preserve">
-    <value>Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.</value>
+  <data name="EventsNote" xml:space="preserve">
+    <value>Программы и скрипты выполняются от имени SYSTEM, без окна. Событие считается успешным, если программа завершилась с кодом 0. Что она выводит, попадает в журнал запуска.</value>
   </data>
-  <data name="EventsSetButUnsupported" xml:space="preserve">
-    <value>В задании есть события. Они сохранены в задании, но в этой версии не выполняются.</value>
+  <data name="EventsPreHeading" xml:space="preserve">
+    <value>До копирования</value>
+  </data>
+  <data name="EventsPostHeading" xml:space="preserve">
+    <value>После копирования</value>
+  </data>
+  <data name="EventsAbortOnPre" xml:space="preserve">
+    <value>Прервать задание, если событие «до» завершилось ошибкой</value>
+  </data>
+  <data name="EventsPostNote" xml:space="preserve">
+    <value>События «после» выполняются, даже если копирование не удалось или было остановлено, — чтобы остановленная служба снова запустилась. Ошибка события «после» даёт предупреждение.</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>Событие</value>
+  </data>
+  <data name="ColumnTimeout" xml:space="preserve">
+    <value>Тайм-аут</value>
+  </data>
+  <data name="EventTimeoutShown" xml:space="preserve">
+    <value>{0} мин</value>
+  </data>
+  <data name="EventShowStop" xml:space="preserve">
+    <value>Остановить службу {0}</value>
+  </data>
+  <data name="EventShowStart" xml:space="preserve">
+    <value>Запустить службу {0}</value>
+  </data>
+  <data name="EventAddTitle" xml:space="preserve">
+    <value>Добавить событие</value>
+  </data>
+  <data name="EventEditTitle" xml:space="preserve">
+    <value>Событие</value>
+  </data>
+  <data name="EventKindRun" xml:space="preserve">
+    <value>Запустить программу или скрипт</value>
+  </data>
+  <data name="EventKindStop" xml:space="preserve">
+    <value>Остановить службу Windows</value>
+  </data>
+  <data name="EventKindStart" xml:space="preserve">
+    <value>Запустить службу Windows</value>
+  </data>
+  <data name="EventProgram" xml:space="preserve">
+    <value>Программа:</value>
+  </data>
+  <data name="EventArguments" xml:space="preserve">
+    <value>Аргументы:</value>
+  </data>
+  <data name="EventService" xml:space="preserve">
+    <value>Служба:</value>
+  </data>
+  <data name="EventTimeout" xml:space="preserve">
+    <value>Тайм-аут, минут:</value>
+  </data>
+  <data name="EventTimeoutHelp" xml:space="preserve">
+    <value>Программа, которая работает дольше, останавливается вместе со всем, что она запустила, и событие считается неудачным. Для службы — сколько ждать, пока она остановится или запустится.</value>
+  </data>
+  <data name="EventProgramHelp" xml:space="preserve">
+    <value>.exe запускается напрямую, .bat и .cmd — через cmd.exe, .ps1 — через PowerShell (с ExecutionPolicy Bypass). Переменные вида %SystemRoot% подставляются. Для службы укажите имя, как в списке (имя службы, а не отображаемое название).</value>
+  </data>
+  <data name="EventProgramFilter" xml:space="preserve">
+    <value>Программы и скрипты (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="ErrorEventProgramRequired" xml:space="preserve">
+    <value>Укажите программу или скрипт.</value>
+  </data>
+  <data name="ErrorEventServiceRequired" xml:space="preserve">
+    <value>Укажите имя службы.</value>
+  </data>
+  <data name="ButtonUp" xml:space="preserve">
+    <value>Выше</value>
+  </data>
+  <data name="ButtonDown" xml:space="preserve">
+    <value>Ниже</value>
+  </data>
+  <data name="AfterHeading" xml:space="preserve">
+    <value>После выполнения</value>
+  </data>
+  <data name="AfterNone" xml:space="preserve">
+    <value>Ничего не делать</value>
+  </data>
+  <data name="AfterShutdown" xml:space="preserve">
+    <value>Выключить компьютер</value>
+  </data>
+  <data name="AfterRestart" xml:space="preserve">
+    <value>Перезагрузить компьютер</value>
+  </data>
+  <data name="AfterSleep" xml:space="preserve">
+    <value>Перевести в сон</value>
+  </data>
+  <data name="AfterHibernate" xml:space="preserve">
+    <value>Перевести в гибернацию</value>
+  </data>
+  <data name="AfterNote" xml:space="preserve">
+    <value>Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отмена».</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Дополнительно</value>
@@ -1089,7 +1182,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Разбиение архива на тома не перенесено: при необходимости задайте размер тома на странице «Сжатие и проверка».</value>
   </data>
   <data name="WarnEventsInComment" xml:space="preserve">
-    <value>События до и после копирования пока не выполняются, они записаны в комментарий: {0}</value>
+    <value>События до и после записаны в комментарий: задайте их заново на странице «События». {0}</value>
   </data>
   <data name="WarnSourceUnknown" xml:space="preserve">
     <value>Запись «{0}» пропущена: неизвестный тип или не полный путь.</value>

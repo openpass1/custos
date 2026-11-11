@@ -136,6 +136,63 @@
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Не удалось удалить старый набор «{0}» в {1}: {2}</value>
   </data>
+  <data name="EventRunning" xml:space="preserve">
+    <value>Событие: {0} {1}</value>
+  </data>
+  <data name="EventOutput" xml:space="preserve">
+    <value>&gt; {0}</value>
+  </data>
+  <data name="EventOutputCut" xml:space="preserve">
+    <value>&gt; … ещё строк не показано: {0}.</value>
+  </data>
+  <data name="EventDone" xml:space="preserve">
+    <value>Событие выполнено: {0}</value>
+  </data>
+  <data name="EventExitCode" xml:space="preserve">
+    <value>{0} завершилась с кодом {1}.</value>
+  </data>
+  <data name="EventNotStarted" xml:space="preserve">
+    <value>Не удалось запустить {0}: {1}</value>
+  </data>
+  <data name="EventTimedOut" xml:space="preserve">
+    <value>{0} не завершилась за {1} с и была остановлена.</value>
+  </data>
+  <data name="EventNoCommand" xml:space="preserve">
+    <value>У события не указана программа.</value>
+  </data>
+  <data name="EventServiceStopping" xml:space="preserve">
+    <value>Событие: останавливаю службу {0}</value>
+  </data>
+  <data name="EventServiceStarting" xml:space="preserve">
+    <value>Событие: запускаю службу {0}</value>
+  </data>
+  <data name="EventServiceStopped" xml:space="preserve">
+    <value>Служба {0} остановлена.</value>
+  </data>
+  <data name="EventServiceStarted" xml:space="preserve">
+    <value>Служба {0} запущена.</value>
+  </data>
+  <data name="EventServiceTimedOut" xml:space="preserve">
+    <value>Служба {0} не перешла в нужное состояние за {1} с.</value>
+  </data>
+  <data name="EventServiceFailed" xml:space="preserve">
+    <value>Служба {0}: {1}</value>
+  </data>
+  <data name="EventServiceUnsupported" xml:space="preserve">
+    <value>Управление службами здесь недоступно: {0}</value>
+  </data>
+  <data name="EventKindUnknown" xml:space="preserve">
+    <value>Событие неизвестного вида «{0}» пропущено.</value>
+  </data>
+  <data name="PreEventFailedAbort" xml:space="preserve">
+    <value>Событие «до» не удалось, задание не выполнено: {0}</value>
+  </data>
+  <data name="PreEventFailed" xml:space="preserve">
+    <value>Событие «до» не удалось, копирование продолжается: {0}</value>
+  </data>
+  <data name="PostEventFailed" xml:space="preserve">
+    <value>Событие «после» не удалось: {0}</value>
+  </data>
   <data name="MirrorDeletionsSkipped" xml:space="preserve">
     <value>Часть папок источников не прочиталась, поэтому в этот раз из зеркала ничего не удаляется.</value>
   </data>

@@ -66,6 +66,28 @@ public sealed class DialogTests
             (dialog.Destination.Id, dialog.Destination.Kind, dialog.Destination.Path, dialog.Destination.UsbLabel, dialog.Destination.CredentialId, dialog.Destination.DisconnectAfter));
     });
 
+    [Theory]
+    [InlineData(TaskEventKinds.Run)]
+    [InlineData(TaskEventKinds.ServiceStop)]
+    public void The_event_dialog_gives_back_the_event(string kind) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var item = kind == TaskEventKinds.Run
+            ? new TaskEvent { Command = @"C:\Scripts\dump.cmd", Args = "-full", TimeoutS = 90 }
+            : new TaskEvent { Kind = kind, Service = "Spooler", TimeoutS = 120 };
+        using var dialog = new EventDialog(new EditorContext(monitor, toolTip), item, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal((item.Kind, item.Command, item.Args, item.Service, item.TimeoutS),
+            (dialog.Event.Kind, dialog.Event.Command, dialog.Event.Args, dialog.Event.Service, dialog.Event.TimeoutS));
+    });
+
     [Fact]
     public void A_destination_needs_its_folder_or_label() => Sta.Run("en-US", () =>
     {

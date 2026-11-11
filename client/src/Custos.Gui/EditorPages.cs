@@ -1169,28 +1169,203 @@ internal sealed class RetentionPage : EditorPage
     }
 }
 
-/// <summary>"Events": scripts and services before and after, shutdown after the run; they come in version 2.</summary>
+/// <summary>
+/// "Events": programs, scripts and services before and after the backup, whether a failed event before stops the
+/// task, and what to do with the computer when the run is over (section 6.9).
+/// </summary>
 internal sealed class EventsPage : EditorPage
 {
-    private readonly Label _present = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText };
+    private static readonly string[] AfterValues = [AfterActions.None, AfterActions.Shutdown, AfterActions.Restart, AfterActions.Sleep, AfterActions.Hibernate];
+
+    private readonly EventList _pre;
+    private readonly EventList _post;
+    private readonly CheckBox _abortOnPre = new() { Text = Strings.EventsAbortOnPre, AutoSize = true, Margin = new Padding(0, 4, 0, 0) };
+    private readonly ComboBox _after = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private string _unknownAfter = AfterActions.None;
 
     public EventsPage(EditorContext context)
         : base(context, Strings.PageEvents, Glyph.Bolt)
     {
-        AddNote(Strings.EventsLater);
-        AddWide(_present);
-    }
+        _pre = new EventList(context);
+        _post = new EventList(context);
+        _after.Items.AddRange([Strings.AfterNone, Strings.AfterShutdown, Strings.AfterRestart, Strings.AfterSleep, Strings.AfterHibernate]);
 
-    public override bool Available => false;
+        AddNote(Strings.EventsNote);
+        AddHeading(Strings.EventsPreHeading);
+        AddWide(_pre);
+        AddWide(_abortOnPre);
+        AddHeading(Strings.EventsPostHeading);
+        AddWide(_post);
+        AddNote(Strings.EventsPostNote);
+        AddHeading(Strings.AfterHeading);
+        AddWide(_after);
+        AddNote(Strings.AfterNote);
+    }
 
     public override void LoadFrom(TaskDefinition task)
     {
-        int count = task.Events.Pre.Count + task.Events.Post.Count;
-        _present.Visible = count > 0 || task.Events.After != AfterActions.None;
-        _present.Text = Strings.EventsSetButUnsupported;
+        var events = task.Events;
+        _pre.Load(events.Pre);
+        _post.Load(events.Post);
+        _abortOnPre.Checked = events.AbortOnPreFailure;
+        int index = Array.IndexOf(AfterValues, events.After);
+        _unknownAfter = events.After;
+        _after.SelectedIndex = Math.Max(0, index);
     }
 
-    public override string? SaveTo(TaskDefinition task) => null;
+    public override string? SaveTo(TaskDefinition task)
+    {
+        var events = task.Events;
+        events.Pre = _pre.Items;
+        events.Post = _post.Items;
+        events.AbortOnPreFailure = _abortOnPre.Checked;
+        string after = AfterValues[Math.Max(0, _after.SelectedIndex)];
+        // A value of a later version stays unless something else was picked.
+        events.After = after == AfterActions.None && Array.IndexOf(AfterValues, _unknownAfter) < 0 ? _unknownAfter : after;
+        return null;
+    }
+
+    /// <summary>One list of events with Add, Edit, Remove, Up and Down.</summary>
+    private sealed class EventList : TableLayoutPanel
+    {
+        private readonly EditorContext _context;
+        private readonly ListView _list = new()
+        {
+            Dock = DockStyle.Fill,
+            Height = 110,
+            View = View.Details,
+            FullRowSelect = true,
+            MultiSelect = false,
+            HideSelection = false,
+        };
+
+        private readonly Button _add = new() { Text = Strings.ButtonAdd, AutoSize = true, MinimumSize = new Size(100, 0) };
+        private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
+        private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
+        private readonly Button _up = new() { Text = Strings.ButtonUp, AutoSize = true, MinimumSize = new Size(100, 0) };
+        private readonly Button _down = new() { Text = Strings.ButtonDown, AutoSize = true, MinimumSize = new Size(100, 0) };
+        private readonly List<TaskEvent> _events = [];
+
+        public EventList(EditorContext context)
+        {
+            _context = context;
+            Dock = DockStyle.Fill;
+            AutoSize = true;
+            ColumnCount = 2;
+            Margin = new Padding(0);
+            ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            _list.Columns.Add(Strings.ColumnEvent, 420);
+            _list.Columns.Add(Strings.ColumnTimeout, 110);
+            var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(8, 0, 0, 0) };
+            buttons.Controls.AddRange([_add, _edit, _remove, _up, _down]);
+            Controls.Add(_list, 0, 0);
+            Controls.Add(buttons, 1, 0);
+
+            _add.Click += (_, _) => AddEvent();
+            _edit.Click += (_, _) => EditEvent();
+            _list.ItemActivate += (_, _) => EditEvent();
+            _remove.Click += (_, _) => RemoveEvent();
+            _up.Click += (_, _) => Shift(-1);
+            _down.Click += (_, _) => Shift(1);
+            _list.SelectedIndexChanged += (_, _) => UpdateButtons();
+        }
+
+        public List<TaskEvent> Items => [.. _events];
+
+        public void Load(List<TaskEvent> events)
+        {
+            _events.Clear();
+            _events.AddRange(events);
+            Fill();
+        }
+
+        /// <summary>The event in words, for the list.</summary>
+        internal static string Describe(TaskEvent item) => item.Kind switch
+        {
+            TaskEventKinds.ServiceStop => Strings.Format(Strings.EventShowStop, item.Service),
+            TaskEventKinds.ServiceStart => Strings.Format(Strings.EventShowStart, item.Service),
+            _ => string.IsNullOrWhiteSpace(item.Args) ? item.Command ?? string.Empty : $"{item.Command} {item.Args}",
+        };
+
+        private int Selected => _list.SelectedIndices.Count > 0 ? _list.SelectedIndices[0] : -1;
+
+        private void Fill(int select = -1)
+        {
+            _list.BeginUpdate();
+            _list.Items.Clear();
+            foreach (var item in _events)
+            {
+                int minutes = Math.Max(1, (item.TimeoutS + 59) / 60);
+                _list.Items.Add(new ListViewItem([Describe(item), Strings.Format(Strings.EventTimeoutShown, minutes)]));
+            }
+
+            _list.EndUpdate();
+            if (select >= 0 && select < _list.Items.Count)
+            {
+                _list.Items[select].Selected = true;
+            }
+
+            UpdateButtons();
+        }
+
+        private void UpdateButtons()
+        {
+            int index = Selected;
+            _edit.Enabled = _remove.Enabled = index >= 0;
+            _up.Enabled = index > 0;
+            _down.Enabled = index >= 0 && index < _events.Count - 1;
+        }
+
+        private void AddEvent()
+        {
+            using var dialog = new EventDialog(_context, new TaskEvent(), isNew: true);
+            if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+            {
+                _events.Add(dialog.Event);
+                Fill(_events.Count - 1);
+            }
+        }
+
+        private void EditEvent()
+        {
+            int index = Selected;
+            if (index < 0)
+            {
+                return;
+            }
+
+            using var dialog = new EventDialog(_context, _events[index], isNew: false);
+            if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+            {
+                _events[index] = dialog.Event;
+                Fill(index);
+            }
+        }
+
+        private void RemoveEvent()
+        {
+            int index = Selected;
+            if (index >= 0)
+            {
+                _events.RemoveAt(index);
+                Fill(Math.Min(index, _events.Count - 1));
+            }
+        }
+
+        private void Shift(int step)
+        {
+            int index = Selected;
+            int other = index + step;
+            if (index < 0 || other < 0 || other >= _events.Count)
+            {
+                return;
+            }
+
+            (_events[index], _events[other]) = (_events[other], _events[index]);
+            Fill(other);
+        }
+    }
 }
 
 /// <summary>"Advanced": shadow copies (VSS), read retries, log detail and priority in the queue.</summary>

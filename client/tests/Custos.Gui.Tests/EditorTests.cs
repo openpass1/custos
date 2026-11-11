@@ -83,6 +83,25 @@ public sealed class EditorTests
     });
 
     [Fact]
+    public void Events_come_back_unchanged() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.Events = new TaskEvents
+        {
+            Pre =
+            [
+                new TaskEvent { Command = @"C:\Scripts\dump.cmd", Args = "-full \"D:\\Dumps\"", TimeoutS = 600 },
+                new TaskEvent { Kind = TaskEventKinds.ServiceStop, Service = "MSSQLSERVER", TimeoutS = 90 },
+            ],
+            Post = [new TaskEvent { Kind = TaskEventKinds.ServiceStart, Service = "MSSQLSERVER" }],
+            AbortOnPreFailure = false,
+            After = AfterActions.Shutdown,
+        };
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Fact]
     public void A_mirror_keeps_plain_files() => Sta.Run("en-US", () =>
     {
         var task = Samples.Office();

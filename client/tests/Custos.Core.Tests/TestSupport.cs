@@ -73,6 +73,22 @@ internal sealed class TestPlatform : LocalBackupPlatform
     public override string? FindVolumeByLabel(string label) => Volumes.TryGetValue(label, out string? root) ? root : null;
 
     public override long? GetFreeSpace(string path) => FreeSpace;
+
+    /// <summary>Services started (true) or stopped (false) by events, in order.</summary>
+    public List<(string Name, bool Start)> Services { get; } = [];
+
+    /// <summary>A service name that fails to start or stop.</summary>
+    public string? BrokenService { get; set; }
+
+    public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        if (string.Equals(name, BrokenService, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BackupException(Messages.Format(Messages.EventServiceFailed, name, "broken"));
+        }
+
+        Services.Add((name, start));
+    }
 }
 
 /// <summary>7z works only on Windows with a 7z.dll (CUSTOS_7Z_DLL, set by build.ps1).</summary>
