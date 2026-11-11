@@ -1,0 +1,2 @@
+# custos-helper and its tests run on Linux: keep LF line endings even in a Windows checkout.
+* text eol=lf

@@ -1,0 +1,241 @@
+#!/bin/bash
+# custos-helper 1.0.0: read-only access for the CUSTOS agent to a Linux server.
+#
+# Runs as root through sudo behind an SSH forced command and gives out only what
+# /etc/custos/helper.conf allows: database dumps, a file list and a tar of changed
+# files. It takes no paths from the caller and writes nothing to disk except syslog.
+# Operations and the config format: docs/CUSTOS-remote-pull.md, section 3.
+#
+# Copyright (C) 2026 CUSTOS contributors. Licensed under GPL-3.0.
+
+set -euo pipefail
+shopt -s inherit_errexit 2>/dev/null || { echo 'custos-helper: bash 4.4 or newer is required' >&2; exit 78; }
+export LC_ALL=C
+umask 077
+
+readonly VERSION=1.0.0 PROTOCOL=1 CONF=/etc/custos/helper.conf
+ROOTS=() EXCLUDES=() ENGINES=() DB_EXCLUDES=() DB_DEFAULTS='' CMD='' GZ=0
+SQL='' DUMP='' DB_OPTS=()
+
+die() { local code=$1; shift; printf 'custos-helper: %s\n' "$*" >&2; exit "$code"; }
+usage() { die 64 "$@"; }
+warn() { printf 'custos-helper: warning: %s\n' "$*" >&2; }
+
+# Every call goes to syslog: the command as received and the exit code.
+log_exit() { logger -t custos-helper -- "$(printf 'cmd=%q exit=%s' "${CMD:0:200}" "$1")" 2>/dev/null || true; }
+
+trim() { local s=$1; s=${s#"${s%%[![:space:]]*}"}; REPLY=${s%"${s##*[![:space:]]}"}; }
+
+# Reads helper.conf ("key = value" lines, "#" comments). The file is parsed, never executed.
+load_config() {
+  local line key value n=0 uid mode
+  [[ -f $CONF && -r $CONF ]] || die 78 "cannot read $CONF"
+  read -r uid mode < <(stat -c '%u %a' -- "$CONF")
+  (( uid == 0 && (8#$mode & 8#022) == 0 )) || die 78 "$CONF must belong to root and be writable only by root"
+  while IFS= read -r line || [[ -n $line ]]; do
+    n=$((n + 1))
+    trim "$line"; line=$REPLY
+    [[ -z $line || $line == '#'* ]] && continue
+    [[ $line == *=* ]] || die 78 "$CONF:$n: expected 'key = value'"
+    trim "${line%%=*}"; key=$REPLY
+    trim "${line#*=}"; value=$REPLY
+    case $key in
+      root | exclude)
+        [[ $value == /?* ]] || die 78 "$CONF:$n: $key must be an absolute path"
+        value=${value%"${value##*[!/]}"}
+        [[ -n $value ]] || die 78 "$CONF:$n: $key cannot be /"
+        if [[ $key == root ]]; then ROOTS+=("$value"); else EXCLUDES+=("$value"); fi ;;
+      db_engine)
+        [[ $value =~ ^(mariadb|mysql|postgresql)$ ]] || die 78 "$CONF:$n: db_engine must be mariadb, mysql or postgresql"
+        has_engine "$value" || ENGINES+=("$value") ;;
+      db_exclude) DB_EXCLUDES+=("$value") ;;
+      db_defaults_file)
+        [[ -z $value || ( $value == /* && -f $value && -r $value ) ]] || die 78 "$CONF:$n: cannot read $value"
+        DB_DEFAULTS=$value ;;
+      *) die 78 "$CONF:$n: unknown setting '$key'" ;;
+    esac
+  done < "$CONF"
+  if has_engine mariadb && has_engine mysql; then die 78 "$CONF: db_engine cannot be both mariadb and mysql"; fi
+}
+
+has_engine() { [[ " ${ENGINES[*]} " == *" $1 "* ]]; }
+
+json() { # prints $1 as a JSON string
+  local s=$1 i c
+  s=${s//"\\"/"\\\\"}
+  s=${s//'"'/'\"'}
+  for ((i = 1; i < 32; i++)); do
+    printf -v c '%b' "\\x$(printf %02x "$i")"
+    s=${s//"$c"/"$(printf '\\u%04x' "$i")"}
+  done
+  printf '"%s"' "$s"
+}
+
+op_info() {
+  local roots='' engines='' r s free os
+  for r in "${ENGINES[@]}"; do engines+="${engines:+, }\"$r\""; done
+  for r in "${ROOTS[@]}"; do
+    free=null
+    s=$(stat -f -c '%a*%S' -- "$r" 2>/dev/null) && free=$((s))
+    roots+="${roots:+, }{\"path\": $(json "$r"), \"free_bytes\": $free}"
+  done
+  os=$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release 2>/dev/null | tr -d '"') || true
+  s=$(sha256sum < "$CONF")
+  printf '{"helper_version": "%s", "protocol": %d, "hostname": %s, "os": %s, "now": %d, ' \
+    "$VERSION" "$PROTOCOL" "$(json "$(uname -n)")" "$(json "${os:-$(uname -sr)}")" "$(date +%s)"
+  printf '"config_sha256": "%s", "db_engines": [%s], "roots": [%s]}\n' "${s%% *}" "$engines" "$roots"
+}
+
+# --- Databases -------------------------------------------------------------------
+
+need_engine() { has_engine "$1" || usage "database engine is not configured: $1"; }
+
+# MySQL family: MariaDB's own tool names first; MySQL and old MariaDB have only mysql*.
+my_tools() {
+  if [[ $1 == mariadb ]] && command -v mariadb >/dev/null; then SQL=mariadb DUMP=mariadb-dump
+  else SQL=mysql DUMP=mysqldump; fi
+  [[ -z $DB_DEFAULTS ]] || DB_OPTS=("--defaults-extra-file=$DB_DEFAULTS")
+}
+
+sql() { "$SQL" "${DB_OPTS[@]}" --batch --skip-column-names "$@"; }
+
+# PostgreSQL: the postgres OS user over the local socket (peer authentication).
+pg() { runuser -u postgres -- "$@"; }
+
+# Databases of the engine that may be dumped, one per line. System databases and
+# db_exclude are left out; names outside [A-Za-z0-9_$-] are reported on stderr instead.
+db_list() {
+  need_engine "$1"
+  local names name x re='^[A-Za-z0-9_$-]+$'
+  local -a skip=("${DB_EXCLUDES[@]}")
+  if [[ $1 == postgresql ]]; then
+    names=$(pg psql -XAtq --no-password -d postgres \
+      -c 'SELECT datname FROM pg_database WHERE datallowconn AND NOT datistemplate ORDER BY 1')
+    skip+=(template0 template1)
+  else
+    my_tools "$1"
+    names=$(sql -e 'SHOW DATABASES')
+    skip+=(information_schema performance_schema sys mysql)
+  fi
+  while IFS= read -r name; do
+    [[ -n $name ]] || continue
+    for x in "${skip[@]}"; do [[ $name == "$x" ]] && continue 2; done
+    if [[ $name =~ $re && $name != -* ]]; then printf '%s\n' "$name"
+    else warn "skipped database with an unsupported name: $(printf %q "$name")"; fi
+  done < <(printf '%s\n' "$names")
+}
+
+op_db_dump() {
+  local engine=$1 name=$2 list re='^[A-Za-z0-9_$-]+$'
+  need_engine "$engine"
+  [[ $name =~ $re && $name != -* ]] || usage "invalid database name"
+  list=$(db_list "$engine")
+  [[ $'\n'$list$'\n' == *$'\n'"$name"$'\n'* ]] || usage "database is not in db-list: $name"
+  if [[ $engine == postgresql ]]; then pg pg_dump --no-password "$name"; return; fi
+  my_tools "$engine"
+  "$DUMP" "${DB_OPTS[@]}" --single-transaction --quick --routines --triggers --events --hex-blob \
+    --default-character-set=utf8mb4 "$name"
+}
+
+op_db_users() {
+  need_engine "$1"
+  if [[ $1 == postgresql ]]; then pg pg_dumpall --globals-only --no-password; return; fi
+  my_tools "$1"
+  if [[ $1 == mariadb ]]; then "$DUMP" "${DB_OPTS[@]}" --system=users --insert-ignore; return; fi
+  # MySQL has no --system=users: SHOW CREATE USER and SHOW GRANTS for every account but mysql.*.
+  local accounts acct script='SET SESSION print_identified_with_as_hex = ON;'
+  accounts=$(sql --raw -e "SELECT CONCAT(QUOTE(user), '@', QUOTE(host)) FROM mysql.user
+    WHERE user NOT LIKE 'mysql.%' ORDER BY user, host")
+  while IFS= read -r acct; do
+    [[ -z $acct ]] || script+=" SHOW CREATE USER $acct; SHOW GRANTS FOR $acct;"
+  done < <(printf '%s\n' "$accounts")
+  printf -- '-- custos-helper %s: MySQL accounts and grants\n' "$VERSION"
+  sql --raw -e "$script" | sed -e 's/^CREATE USER /CREATE USER IF NOT EXISTS /' -e 's/$/;/'
+  printf -- '-- Dump completed on %s\n' "$(date '+%F %T')"
+}
+
+# --- Files -----------------------------------------------------------------------
+
+# find over the roots, run from / so that tar stores relative names. Excluded paths
+# are skipped with everything inside; sockets are skipped (tar cannot store them).
+walk() {
+  local -a roots=() prune=(-type s) r e
+  for r in "${ROOTS[@]}"; do
+    if [[ -d $r && ! -L $r ]]; then roots+=("${r#/}"); else warn "root skipped, not a directory: $r"; fi
+  done
+  (( ${#roots[@]} )) || return 0
+  for e in "${EXCLUDES[@]}"; do prune+=(-o -path "${e#/}"); done
+  find "${roots[@]}" \( "${prune[@]}" \) -prune -o "$@"
+}
+
+manifest_stream() {
+  walk -printf '%y\0%s\0%T@\0%C@\0%m\0%U\0%G\0%u\0%g\0%l\0/%p\0' | gzip -c
+}
+
+tar_stream() {
+  local since=$1; shift
+  walk \( -type d -o -newerct "@$since" \) -print0 | tar "$@"
+}
+
+pass_stderr() { # copies lines to stderr; fails if there were any
+  local line seen=0
+  while IFS= read -r line || [[ -n $line ]]; do printf '%s\n' "$line" >&2; seen=1; done
+  return "$seen"
+}
+
+# Runs "$@" with its stderr passed through. Any message there (a file that vanished,
+# a skipped root) turns exit code 0 into 1, a warning for the agent; higher codes stay.
+with_warnings() {
+  local -a st
+  set +e
+  "$@" 2>&1 >&3 3>&- | pass_stderr 3>&-
+  st=("${PIPESTATUS[@]}")
+  set -e
+  return $(( st[0] > st[1] ? st[0] : st[1] ))
+}
+
+op_tar_since() {
+  local since=$1 kbps=${2:-0} re='^[0-9]{1,12}$'
+  [[ $since =~ $re && $kbps =~ $re ]] || usage "time and speed must be numbers"
+  since=$((10#$since)) kbps=$((10#$kbps))
+  local -a opts=(--create --file=- --format=pax --null --no-recursion --files-from=- --ignore-failed-read
+    '--pax-option=exthdr.name=%d/PaxHeaders/%f,delete=atime')
+  # One tar record is 10 KB: a second of sleep every N records keeps the speed under the limit.
+  (( kbps == 0 )) || opts+=("--checkpoint=$(( kbps >= 20 ? kbps / 10 : 1 ))" --checkpoint-action=sleep=1)
+  with_warnings tar_stream "$since" "${opts[@]}"
+}
+
+# --- Entry point -----------------------------------------------------------------
+
+# Optional gzip on the way out ("... gzip"). Fd 3 follows stdout into gzip, and -n
+# leaves out the time, so the stream stays the same from run to run.
+out() { if (( GZ )); then { exec 3>&1; "$@"; } | gzip -6 -n; else "$@"; fi; }
+
+main() {
+  trap 'log_exit $?' EXIT
+  # Over SSH the command comes in SSH_ORIGINAL_COMMAND; root may also pass it as arguments.
+  CMD=${SSH_ORIGINAL_COMMAND-}
+  (( $# == 0 )) || CMD="$*"
+  local re='^[A-Za-z0-9_$ -]*$' op
+  [[ $CMD =~ $re ]] || usage "invalid characters in the command"
+  local -a words
+  read -ra words < <(printf '%s\n' "$CMD")
+  set -- "${words[@]}"
+  op=${1-}
+  (( $# == 0 )) || shift
+  if [[ $op =~ ^(db-dump|db-users|tar-since)$ && ${*: -1} == gzip ]]; then GZ=1; set -- "${@:1:$#-1}"; fi
+  load_config
+  cd /
+  exec 3>&1
+  case "$op:$#" in
+    info:0) op_info ;;
+    db-list:1) db_list "$1" ;;
+    db-dump:2) out op_db_dump "$1" "$2" ;;
+    db-users:1) out op_db_users "$1" ;;
+    manifest:0) with_warnings manifest_stream ;;
+    tar-since:1 | tar-since:2) out op_tar_since "$@" ;;
+    *) usage "unknown operation or wrong number of arguments: '$op'" ;;
+  esac
+}
+
+main "$@"
