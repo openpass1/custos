@@ -86,9 +86,6 @@ static partial class Strings
     /// <summary>Restore</summary>
     public static string ToolRestore => Get(nameof(ToolRestore));
 
-    /// <summary>Restoring backups arrives in a later version of CUSTOS.</summary>
-    public static string RestoreLater => Get(nameof(RestoreLater));
-
     /// <summary>Card</summary>
     public static string ToolCard => Get(nameof(ToolCard));
 
@@ -713,23 +710,11 @@ static partial class Strings
     /// <summary>Enter at least one day of the month, or tick «last day of the month».</summary>
     public static string ErrorNoMonthDays => Get(nameof(ErrorNoMonthDays));
 
-    /// <summary>Archive</summary>
-    public static string PageArchive => Get(nameof(PageArchive));
-
-    /// <summary>Compression and encryption arrive in the next version of CUSTOS. Until then backups are plain copies of the...</summary>
-    public static string ArchiveLater => Get(nameof(ArchiveLater));
-
-    /// <summary>No compression, plain files</summary>
-    public static string ArchiveNone => Get(nameof(ArchiveNone));
-
     /// <summary>ZIP</summary>
     public static string ArchiveZip => Get(nameof(ArchiveZip));
 
     /// <summary>7z</summary>
     public static string ArchiveSevenZip => Get(nameof(ArchiveSevenZip));
-
-    /// <summary>This task is set to compress (for example after an import from Cobian). It does not run until compression a...</summary>
-    public static string ArchiveSetButUnsupported => Get(nameof(ArchiveSetButUnsupported));
 
     /// <summary>Retention</summary>
     public static string PageRetention => Get(nameof(PageRetention));
@@ -1034,16 +1019,13 @@ static partial class Strings
     /// <summary>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</summary>
     public static string WarnMirrorLater => Get(nameof(WarnMirrorLater));
 
-    /// <summary>The task compresses into {0}. Compression arrives in the next version, so until then the task does not run;...</summary>
-    public static string WarnCompressionLater => Get(nameof(WarnCompressionLater));
-
     /// <summary>The compression type was read as ZIP: check it.</summary>
     public static string WarnCompressionAssumed => Get(nameof(WarnCompressionAssumed));
 
-    /// <summary>The archive is encrypted in Cobian. Its password is not carried over: enter it again when encryption arrives.</summary>
+    /// <summary>The archive is encrypted in Cobian. Its password is not carried over: set it on the «Compression and checks...</summary>
     public static string WarnEncryptionPassword => Get(nameof(WarnEncryptionPassword));
 
-    /// <summary>Splitting the archive into volumes was not carried over.</summary>
+    /// <summary>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks...</summary>
     public static string WarnSplitIgnored => Get(nameof(WarnSplitIgnored));
 
     /// <summary>Events before and after the backup are not run yet; they were written into the comment: {0}</summary>
@@ -1072,4 +1054,244 @@ static partial class Strings
 
     /// <summary>In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so t...</summary>
     public static string WarnRunAsLocalOnly => Get(nameof(WarnRunAsLocalOnly));
+
+    /// <summary>Restore files from a backup</summary>
+    public static string ToolRestoreHint => Get(nameof(ToolRestoreHint));
+
+    /// <summary>Restore — administrators only</summary>
+    public static string RestoreAdminsOnly => Get(nameof(RestoreAdminsOnly));
+
+    /// <summary>Restore</summary>
+    public static string RestoreTitle => Get(nameof(RestoreTitle));
+
+    /// <summary>Backups of the task:</summary>
+    public static string RestoreByTask => Get(nameof(RestoreByTask));
+
+    /// <summary>Backups in the folder:</summary>
+    public static string RestoreByFolder => Get(nameof(RestoreByFolder));
+
+    /// <summary>Account for a network folder:</summary>
+    public static string RestoreAccount => Get(nameof(RestoreAccount));
+
+    /// <summary>The service account (SYSTEM)</summary>
+    public static string RestoreServiceAccount => Get(nameof(RestoreServiceAccount));
+
+    /// <summary>Archive password:</summary>
+    public static string RestorePassword => Get(nameof(RestorePassword));
+
+    /// <summary>Only for encrypted archives without their task on this computer, or with an older password. Otherwise leave...</summary>
+    public static string RestorePasswordNote => Get(nameof(RestorePasswordNote));
+
+    /// <summary>Find backups</summary>
+    public static string RestoreSearch => Get(nameof(RestoreSearch));
+
+    /// <summary>Looking for backups…</summary>
+    public static string RestoreSearching => Get(nameof(RestoreSearching));
+
+    /// <summary>Backups found: {0}. Choose the date to restore.</summary>
+    public static string RestoreFound => Get(nameof(RestoreFound));
+
+    /// <summary>No backups found here.</summary>
+    public static string RestoreNothingFound => Get(nameof(RestoreNothingFound));
+
+    /// <summary>Set</summary>
+    public static string ColumnSet => Get(nameof(ColumnSet));
+
+    /// <summary>Where</summary>
+    public static string ColumnWhere => Get(nameof(ColumnWhere));
+
+    /// <summary>({0})</summary>
+    public static string RestoreArchive => Get(nameof(RestoreArchive));
+
+    /// <summary>({0}, {1} volumes)</summary>
+    public static string RestoreArchiveVolumes => Get(nameof(RestoreArchiveVolumes));
+
+    /// <summary>Restore to</summary>
+    public static string RestoreWhereTo => Get(nameof(RestoreWhereTo));
+
+    /// <summary>The original places (where the files were copied from)</summary>
+    public static string RestoreToOriginal => Get(nameof(RestoreToOriginal));
+
+    /// <summary>Another folder:</summary>
+    public static string RestoreToFolder => Get(nameof(RestoreToFolder));
+
+    /// <summary>If a file is already there:</summary>
+    public static string RestoreExisting => Get(nameof(RestoreExisting));
+
+    /// <summary>Skip it</summary>
+    public static string RestoreExistingSkip => Get(nameof(RestoreExistingSkip));
+
+    /// <summary>Replace it</summary>
+    public static string RestoreExistingOverwrite => Get(nameof(RestoreExistingOverwrite));
+
+    /// <summary>Replace it only if it is older</summary>
+    public static string RestoreExistingOlder => Get(nameof(RestoreExistingOlder));
+
+    /// <summary>Restore</summary>
+    public static string RestoreStart => Get(nameof(RestoreStart));
+
+    /// <summary>Starting the restore…</summary>
+    public static string RestoreStarting => Get(nameof(RestoreStarting));
+
+    /// <summary>Restoring «{0}»: {1} of {2} files, {3}</summary>
+    public static string RestoreProgressText => Get(nameof(RestoreProgressText));
+
+    /// <summary>Restore finished: {0}. Restored {1}, skipped {2}, failed {3}.</summary>
+    public static string RestoreResultText => Get(nameof(RestoreResultText));
+
+    /// <summary>Details: {0}</summary>
+    public static string RestoreLogFile => Get(nameof(RestoreLogFile));
+
+    /// <summary>Choose a folder</summary>
+    public static string RestoreChooseFolder => Get(nameof(RestoreChooseFolder));
+
+    /// <summary>Choose the folder to restore into.</summary>
+    public static string RestoreChooseTarget => Get(nameof(RestoreChooseTarget));
+
+    /// <summary>Restore «{0}» to the original places? Files that are already there stay as they are.</summary>
+    public static string RestoreConfirmOriginal => Get(nameof(RestoreConfirmOriginal));
+
+    /// <summary>Restore «{0}» to the original places? Files that are already there will be replaced.</summary>
+    public static string RestoreConfirmOriginalOverwrite => Get(nameof(RestoreConfirmOriginalOverwrite));
+
+    /// <summary>Restore «{0}» into {1}?</summary>
+    public static string RestoreConfirmFolder => Get(nameof(RestoreConfirmFolder));
+
+    /// <summary>The restore goes on in the service. Open this window again to see how it ends.</summary>
+    public static string RestoreGoesOn => Get(nameof(RestoreGoesOn));
+
+    /// <summary>Compression and checks</summary>
+    public static string PageArchive => Get(nameof(PageArchive));
+
+    /// <summary>Format</summary>
+    public static string ArchiveFormat => Get(nameof(ArchiveFormat));
+
+    /// <summary>No compression: plain files</summary>
+    public static string ArchiveNone => Get(nameof(ArchiveNone));
+
+    /// <summary>A ZIP archive opens in Windows and in any archiver. Written as a stream, so it suits every kind of destinat...</summary>
+    public static string ArchiveZipHelp => Get(nameof(ArchiveZipHelp));
+
+    /// <summary>7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in th...</summary>
+    public static string ArchiveSevenZipHelp => Get(nameof(ArchiveSevenZipHelp));
+
+    /// <summary>7z.dll cannot be used: {0}</summary>
+    public static string ArchiveSevenZipProblem => Get(nameof(ArchiveSevenZipProblem));
+
+    /// <summary>Archives stay ordinary 7z and ZIP files: 7-Zip opens them without CUSTOS.</summary>
+    public static string ArchiveOpenAnywhere => Get(nameof(ArchiveOpenAnywhere));
+
+    /// <summary>Compression level:</summary>
+    public static string ArchiveLevel => Get(nameof(ArchiveLevel));
+
+    /// <summary>Higher levels make smaller archives but take longer. Level 5 is the usual balance.</summary>
+    public static string ArchiveLevelHelp => Get(nameof(ArchiveLevelHelp));
+
+    /// <summary>0 — store only, no compression</summary>
+    public static string ArchiveLevel0 => Get(nameof(ArchiveLevel0));
+
+    /// <summary>1 — fastest</summary>
+    public static string ArchiveLevel1 => Get(nameof(ArchiveLevel1));
+
+    /// <summary>5 — normal (recommended)</summary>
+    public static string ArchiveLevel5 => Get(nameof(ArchiveLevel5));
+
+    /// <summary>9 — ultra (slow)</summary>
+    public static string ArchiveLevel9 => Get(nameof(ArchiveLevel9));
+
+    /// <summary>Split into volumes of</summary>
+    public static string ArchiveSplit => Get(nameof(ArchiveSplit));
+
+    /// <summary>7z only. The volumes are name.7z.001, .002 …; 7-Zip opens them from the first one.</summary>
+    public static string ArchiveSplitHelp => Get(nameof(ArchiveSplitHelp));
+
+    /// <summary>700 MB (CD)</summary>
+    public static string ArchiveVolume700 => Get(nameof(ArchiveVolume700));
+
+    /// <summary>4 GB (FAT32 limit)</summary>
+    public static string ArchiveVolumeFat32 => Get(nameof(ArchiveVolumeFat32));
+
+    /// <summary>4.3 GB (DVD)</summary>
+    public static string ArchiveVolumeDvd => Get(nameof(ArchiveVolumeDvd));
+
+    /// <summary>Own size:</summary>
+    public static string ArchiveVolumeCustom => Get(nameof(ArchiveVolumeCustom));
+
+    /// <summary>MB</summary>
+    public static string ArchiveMb => Get(nameof(ArchiveMb));
+
+    /// <summary>Encryption</summary>
+    public static string ArchiveEncryption => Get(nameof(ArchiveEncryption));
+
+    /// <summary>Encrypt with a password (AES-256)</summary>
+    public static string ArchiveEncrypt => Get(nameof(ArchiveEncrypt));
+
+    /// <summary>Password…</summary>
+    public static string ArchiveSetPassword => Get(nameof(ArchiveSetPassword));
+
+    /// <summary>password is set</summary>
+    public static string ArchivePasswordSet => Get(nameof(ArchivePasswordSet));
+
+    /// <summary>no password yet</summary>
+    public static string ArchivePasswordNotSet => Get(nameof(ArchivePasswordNotSet));
+
+    /// <summary>Encrypt the file names too (7z only)</summary>
+    public static string ArchiveEncryptNames => Get(nameof(ArchiveEncryptNames));
+
+    /// <summary>Without the password nobody even sees which files the archive holds.</summary>
+    public static string ArchiveEncryptNamesHelp => Get(nameof(ArchiveEncryptNamesHelp));
+
+    /// <summary>Write the password down and keep it apart from the backups: without it the archives cannot be opened by any...</summary>
+    public static string ArchivePasswordWarning => Get(nameof(ArchivePasswordWarning));
+
+    /// <summary>Archives made before keep the old password: keep it too, you will need it to restore them.</summary>
+    public static string ArchivePasswordChangeNote => Get(nameof(ArchivePasswordChangeNote));
+
+    /// <summary>Archive password</summary>
+    public static string ArchivePasswordTitle => Get(nameof(ArchivePasswordTitle));
+
+    /// <summary>Repeat the password:</summary>
+    public static string ArchivePasswordRepeat => Get(nameof(ArchivePasswordRepeat));
+
+    /// <summary>The passwords do not match.</summary>
+    public static string ArchivePasswordMismatch => Get(nameof(ArchivePasswordMismatch));
+
+    /// <summary>Archive password: {0}</summary>
+    public static string ArchivePasswordName => Get(nameof(ArchivePasswordName));
+
+    /// <summary>new task</summary>
+    public static string ArchivePasswordNewTask => Get(nameof(ArchivePasswordNewTask));
+
+    /// <summary>Encryption is on: set the password (button «Password…»).</summary>
+    public static string ArchivePasswordRequired => Get(nameof(ArchivePasswordRequired));
+
+    /// <summary>7z cannot be written to {0}: choose ZIP or no compression for this task.</summary>
+    public static string ArchiveSevenZipNeedsSeek => Get(nameof(ArchiveSevenZipNeedsSeek));
+
+    /// <summary>Verification</summary>
+    public static string ArchiveVerify => Get(nameof(ArchiveVerify));
+
+    /// <summary>Verify the new backup every N-th run:</summary>
+    public static string VerifyEveryRuns => Get(nameof(VerifyEveryRuns));
+
+    /// <summary>0 = never, 1 = every run. Archives are unpacked into nowhere with their checksums checked; plain copies are...</summary>
+    public static string VerifyEveryRunsHelp => Get(nameof(VerifyEveryRunsHelp));
+
+    /// <summary>Verify all stored backups every N days:</summary>
+    public static string VerifyStoredDays => Get(nameof(VerifyStoredDays));
+
+    /// <summary>0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.</summary>
+    public static string VerifyStoredDaysHelp => Get(nameof(VerifyStoredDaysHelp));
+
+    /// <summary>Archiver</summary>
+    public static string Settings7Zip => Get(nameof(Settings7Zip));
+
+    /// <summary>7-Zip (7z.dll) version {0}</summary>
+    public static string Settings7ZipVersion => Get(nameof(Settings7ZipVersion));
+
+    /// <summary>7z.dll cannot be used: {0}</summary>
+    public static string Settings7ZipProblem => Get(nameof(Settings7ZipProblem));
+
+    /// <summary>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the...</summary>
+    public static string Settings7ZipNote => Get(nameof(Settings7ZipNote));
 }

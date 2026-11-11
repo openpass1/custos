@@ -27,6 +27,16 @@ internal static class Samples
         HasSecret = true,
     };
 
+    public const string ArchivePasswordId = "44444444-0000-4000-8000-000000000004";
+
+    public static Credential ArchivePassword() => new()
+    {
+        Id = ArchivePasswordId,
+        Kind = CredentialKinds.ArchivePassword,
+        User = "Archive password: Office documents",
+        HasSecret = true,
+    };
+
     /// <summary>A task that uses every page of the editor, with values as the editor writes them.</summary>
     public static TaskDefinition Office() => new()
     {
@@ -106,7 +116,7 @@ internal static class Samples
             ConfigRevision = version,
             ComputerName = "PC01",
             Tasks = [Office(), Photos(), Archive()],
-            Credentials = [Account()],
+            Credentials = [Account(), ArchivePassword()],
             States =
             [
                 new TaskState

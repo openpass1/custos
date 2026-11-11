@@ -94,9 +94,6 @@
   <data name="ToolRestore" xml:space="preserve">
     <value>Restore</value>
   </data>
-  <data name="RestoreLater" xml:space="preserve">
-    <value>Restoring backups arrives in a later version of CUSTOS.</value>
-  </data>
   <data name="ToolCard" xml:space="preserve">
     <value>Card</value>
   </data>
@@ -731,23 +728,11 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="ErrorNoMonthDays" xml:space="preserve">
     <value>Enter at least one day of the month, or tick «last day of the month».</value>
   </data>
-  <data name="PageArchive" xml:space="preserve">
-    <value>Archive</value>
-  </data>
-  <data name="ArchiveLater" xml:space="preserve">
-    <value>Compression and encryption arrive in the next version of CUSTOS. Until then backups are plain copies of the files, which open without any program.</value>
-  </data>
-  <data name="ArchiveNone" xml:space="preserve">
-    <value>No compression, plain files</value>
-  </data>
   <data name="ArchiveZip" xml:space="preserve">
     <value>ZIP</value>
   </data>
   <data name="ArchiveSevenZip" xml:space="preserve">
     <value>7z</value>
-  </data>
-  <data name="ArchiveSetButUnsupported" xml:space="preserve">
-    <value>This task is set to compress (for example after an import from Cobian). It does not run until compression arrives; choose «No compression» to run it now.</value>
   </data>
   <data name="PageRetention" xml:space="preserve">
     <value>Retention</value>
@@ -1055,17 +1040,14 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="WarnMirrorLater" xml:space="preserve">
     <value>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</value>
   </data>
-  <data name="WarnCompressionLater" xml:space="preserve">
-    <value>The task compresses into {0}. Compression arrives in the next version, so until then the task does not run; to use it now, choose «No compression» on the «Archive» page.</value>
-  </data>
   <data name="WarnCompressionAssumed" xml:space="preserve">
     <value>The compression type was read as ZIP: check it.</value>
   </data>
   <data name="WarnEncryptionPassword" xml:space="preserve">
-    <value>The archive is encrypted in Cobian. Its password is not carried over: enter it again when encryption arrives.</value>
+    <value>The archive is encrypted in Cobian. Its password is not carried over: set it on the «Compression and checks» page, otherwise the task does not run.</value>
   </data>
   <data name="WarnSplitIgnored" xml:space="preserve">
-    <value>Splitting the archive into volumes was not carried over.</value>
+    <value>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.</value>
   </data>
   <data name="WarnEventsInComment" xml:space="preserve">
     <value>Events before and after the backup are not run yet; they were written into the comment: {0}</value>
@@ -1093,5 +1075,245 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="WarnRunAsLocalOnly" xml:space="preserve">
     <value>In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so the account is not needed.</value>
+  </data>
+  <data name="ToolRestoreHint" xml:space="preserve">
+    <value>Restore files from a backup</value>
+  </data>
+  <data name="RestoreAdminsOnly" xml:space="preserve">
+    <value>Restore — administrators only</value>
+  </data>
+  <data name="RestoreTitle" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreByTask" xml:space="preserve">
+    <value>Backups of the task:</value>
+  </data>
+  <data name="RestoreByFolder" xml:space="preserve">
+    <value>Backups in the folder:</value>
+  </data>
+  <data name="RestoreAccount" xml:space="preserve">
+    <value>Account for a network folder:</value>
+  </data>
+  <data name="RestoreServiceAccount" xml:space="preserve">
+    <value>The service account (SYSTEM)</value>
+  </data>
+  <data name="RestorePassword" xml:space="preserve">
+    <value>Archive password:</value>
+  </data>
+  <data name="RestorePasswordNote" xml:space="preserve">
+    <value>Only for encrypted archives without their task on this computer, or with an older password. Otherwise leave it empty.</value>
+  </data>
+  <data name="RestoreSearch" xml:space="preserve">
+    <value>Find backups</value>
+  </data>
+  <data name="RestoreSearching" xml:space="preserve">
+    <value>Looking for backups…</value>
+  </data>
+  <data name="RestoreFound" xml:space="preserve">
+    <value>Backups found: {0}. Choose the date to restore.</value>
+  </data>
+  <data name="RestoreNothingFound" xml:space="preserve">
+    <value>No backups found here.</value>
+  </data>
+  <data name="ColumnSet" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="ColumnWhere" xml:space="preserve">
+    <value>Where</value>
+  </data>
+  <data name="RestoreArchive" xml:space="preserve">
+    <value>({0})</value>
+  </data>
+  <data name="RestoreArchiveVolumes" xml:space="preserve">
+    <value>({0}, {1} volumes)</value>
+  </data>
+  <data name="RestoreWhereTo" xml:space="preserve">
+    <value>Restore to</value>
+  </data>
+  <data name="RestoreToOriginal" xml:space="preserve">
+    <value>The original places (where the files were copied from)</value>
+  </data>
+  <data name="RestoreToFolder" xml:space="preserve">
+    <value>Another folder:</value>
+  </data>
+  <data name="RestoreExisting" xml:space="preserve">
+    <value>If a file is already there:</value>
+  </data>
+  <data name="RestoreExistingSkip" xml:space="preserve">
+    <value>Skip it</value>
+  </data>
+  <data name="RestoreExistingOverwrite" xml:space="preserve">
+    <value>Replace it</value>
+  </data>
+  <data name="RestoreExistingOlder" xml:space="preserve">
+    <value>Replace it only if it is older</value>
+  </data>
+  <data name="RestoreStart" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreStarting" xml:space="preserve">
+    <value>Starting the restore…</value>
+  </data>
+  <data name="RestoreProgressText" xml:space="preserve">
+    <value>Restoring «{0}»: {1} of {2} files, {3}</value>
+  </data>
+  <data name="RestoreResultText" xml:space="preserve">
+    <value>Restore finished: {0}. Restored {1}, skipped {2}, failed {3}.</value>
+  </data>
+  <data name="RestoreLogFile" xml:space="preserve">
+    <value>Details: {0}</value>
+  </data>
+  <data name="RestoreChooseFolder" xml:space="preserve">
+    <value>Choose a folder</value>
+  </data>
+  <data name="RestoreChooseTarget" xml:space="preserve">
+    <value>Choose the folder to restore into.</value>
+  </data>
+  <data name="RestoreConfirmOriginal" xml:space="preserve">
+    <value>Restore «{0}» to the original places? Files that are already there stay as they are.</value>
+  </data>
+  <data name="RestoreConfirmOriginalOverwrite" xml:space="preserve">
+    <value>Restore «{0}» to the original places? Files that are already there will be replaced.</value>
+  </data>
+  <data name="RestoreConfirmFolder" xml:space="preserve">
+    <value>Restore «{0}» into {1}?</value>
+  </data>
+  <data name="RestoreGoesOn" xml:space="preserve">
+    <value>The restore goes on in the service. Open this window again to see how it ends.</value>
+  </data>
+  <data name="PageArchive" xml:space="preserve">
+    <value>Compression and checks</value>
+  </data>
+  <data name="ArchiveFormat" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="ArchiveNone" xml:space="preserve">
+    <value>No compression: plain files</value>
+  </data>
+  <data name="ArchiveZipHelp" xml:space="preserve">
+    <value>A ZIP archive opens in Windows and in any archiver. Written as a stream, so it suits every kind of destination.</value>
+  </data>
+  <data name="ArchiveSevenZipHelp" xml:space="preserve">
+    <value>7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in the file: a folder, a network folder or a USB disk.</value>
+  </data>
+  <data name="ArchiveSevenZipProblem" xml:space="preserve">
+    <value>7z.dll cannot be used: {0}</value>
+  </data>
+  <data name="ArchiveOpenAnywhere" xml:space="preserve">
+    <value>Archives stay ordinary 7z and ZIP files: 7-Zip opens them without CUSTOS.</value>
+  </data>
+  <data name="ArchiveLevel" xml:space="preserve">
+    <value>Compression level:</value>
+  </data>
+  <data name="ArchiveLevelHelp" xml:space="preserve">
+    <value>Higher levels make smaller archives but take longer. Level 5 is the usual balance.</value>
+  </data>
+  <data name="ArchiveLevel0" xml:space="preserve">
+    <value>0 — store only, no compression</value>
+  </data>
+  <data name="ArchiveLevel1" xml:space="preserve">
+    <value>1 — fastest</value>
+  </data>
+  <data name="ArchiveLevel5" xml:space="preserve">
+    <value>5 — normal (recommended)</value>
+  </data>
+  <data name="ArchiveLevel9" xml:space="preserve">
+    <value>9 — ultra (slow)</value>
+  </data>
+  <data name="ArchiveSplit" xml:space="preserve">
+    <value>Split into volumes of</value>
+  </data>
+  <data name="ArchiveSplitHelp" xml:space="preserve">
+    <value>7z only. The volumes are name.7z.001, .002 …; 7-Zip opens them from the first one.</value>
+  </data>
+  <data name="ArchiveVolume700" xml:space="preserve">
+    <value>700 MB (CD)</value>
+  </data>
+  <data name="ArchiveVolumeFat32" xml:space="preserve">
+    <value>4 GB (FAT32 limit)</value>
+  </data>
+  <data name="ArchiveVolumeDvd" xml:space="preserve">
+    <value>4.3 GB (DVD)</value>
+  </data>
+  <data name="ArchiveVolumeCustom" xml:space="preserve">
+    <value>Own size:</value>
+  </data>
+  <data name="ArchiveMb" xml:space="preserve">
+    <value>MB</value>
+  </data>
+  <data name="ArchiveEncryption" xml:space="preserve">
+    <value>Encryption</value>
+  </data>
+  <data name="ArchiveEncrypt" xml:space="preserve">
+    <value>Encrypt with a password (AES-256)</value>
+  </data>
+  <data name="ArchiveSetPassword" xml:space="preserve">
+    <value>Password…</value>
+  </data>
+  <data name="ArchivePasswordSet" xml:space="preserve">
+    <value>password is set</value>
+  </data>
+  <data name="ArchivePasswordNotSet" xml:space="preserve">
+    <value>no password yet</value>
+  </data>
+  <data name="ArchiveEncryptNames" xml:space="preserve">
+    <value>Encrypt the file names too (7z only)</value>
+  </data>
+  <data name="ArchiveEncryptNamesHelp" xml:space="preserve">
+    <value>Without the password nobody even sees which files the archive holds.</value>
+  </data>
+  <data name="ArchivePasswordWarning" xml:space="preserve">
+    <value>Write the password down and keep it apart from the backups: without it the archives cannot be opened by anyone, CUSTOS included.</value>
+  </data>
+  <data name="ArchivePasswordChangeNote" xml:space="preserve">
+    <value>Archives made before keep the old password: keep it too, you will need it to restore them.</value>
+  </data>
+  <data name="ArchivePasswordTitle" xml:space="preserve">
+    <value>Archive password</value>
+  </data>
+  <data name="ArchivePasswordRepeat" xml:space="preserve">
+    <value>Repeat the password:</value>
+  </data>
+  <data name="ArchivePasswordMismatch" xml:space="preserve">
+    <value>The passwords do not match.</value>
+  </data>
+  <data name="ArchivePasswordName" xml:space="preserve">
+    <value>Archive password: {0}</value>
+  </data>
+  <data name="ArchivePasswordNewTask" xml:space="preserve">
+    <value>new task</value>
+  </data>
+  <data name="ArchivePasswordRequired" xml:space="preserve">
+    <value>Encryption is on: set the password (button «Password…»).</value>
+  </data>
+  <data name="ArchiveSevenZipNeedsSeek" xml:space="preserve">
+    <value>7z cannot be written to {0}: choose ZIP or no compression for this task.</value>
+  </data>
+  <data name="ArchiveVerify" xml:space="preserve">
+    <value>Verification</value>
+  </data>
+  <data name="VerifyEveryRuns" xml:space="preserve">
+    <value>Verify the new backup every N-th run:</value>
+  </data>
+  <data name="VerifyEveryRunsHelp" xml:space="preserve">
+    <value>0 = never, 1 = every run. Archives are unpacked into nowhere with their checksums checked; plain copies are read back and compared. Nothing is written to disk.</value>
+  </data>
+  <data name="VerifyStoredDays" xml:space="preserve">
+    <value>Verify all stored backups every N days:</value>
+  </data>
+  <data name="VerifyStoredDaysHelp" xml:space="preserve">
+    <value>0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.</value>
+  </data>
+  <data name="Settings7Zip" xml:space="preserve">
+    <value>Archiver</value>
+  </data>
+  <data name="Settings7ZipVersion" xml:space="preserve">
+    <value>7-Zip (7z.dll) version {0}</value>
+  </data>
+  <data name="Settings7ZipProblem" xml:space="preserve">
+    <value>7z.dll cannot be used: {0}</value>
+  </data>
+  <data name="Settings7ZipNote" xml:space="preserve">
+    <value>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.</value>
   </data>
 </root>

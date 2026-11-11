@@ -147,7 +147,6 @@ internal sealed class CobianImportForm : Form
             ImportWarningCodes.BackupTypeAssumed => Strings.WarnBackupTypeAssumed,
             ImportWarningCodes.BackupTypeNotSupported => Strings.Format(Strings.WarnBackupTypeNotSupported, argument),
             ImportWarningCodes.MirrorLater => Strings.WarnMirrorLater,
-            ImportWarningCodes.CompressionLater => Strings.Format(Strings.WarnCompressionLater, argument.ToUpperInvariant()),
             ImportWarningCodes.CompressionAssumed => Strings.WarnCompressionAssumed,
             ImportWarningCodes.EncryptionPassword => Strings.WarnEncryptionPassword,
             ImportWarningCodes.SplitIgnored => Strings.WarnSplitIgnored,

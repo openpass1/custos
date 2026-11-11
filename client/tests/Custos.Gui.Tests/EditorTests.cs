@@ -37,6 +37,41 @@ public sealed class EditorTests
         Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
     });
 
+    [Theory]
+    [InlineData(ArchiveFormats.Zip, 0)]
+    [InlineData(ArchiveFormats.SevenZip, 4095)]
+    [InlineData(ArchiveFormats.SevenZip, 1234)]
+    public void Archive_settings_come_back_unchanged(string format, int splitMb) => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions
+        {
+            Format = format,
+            Level = 7,
+            SplitMb = splitMb,
+            Encrypt = true,
+            EncryptNames = format == ArchiveFormats.SevenZip,
+            PasswordCredentialId = Samples.ArchivePasswordId,
+        };
+        task.Verify = new VerifyOptions { EveryRuns = 3, StoredEveryDays = 7 };
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Fact]
+    public void Encryption_needs_a_password() => Sta.Run("en-US", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions { Format = ArchiveFormats.Zip, Encrypt = true };
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        Assert.Null(editor.Collect(out string? problem));
+        Assert.Equal(Strings.ArchivePasswordRequired, problem);
+    });
+
     [Fact]
     public void A_disabled_task_needs_neither_sources_nor_destinations() => Sta.Run("en-US", () =>
     {
