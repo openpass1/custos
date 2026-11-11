@@ -80,6 +80,9 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_PASSWORD: custos-test
+          # The image trusts 127.0.0.1 without a password, and the programs run inside the container:
+          # ask for the password there too, or a wrong one is never noticed.
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
         options: >-
           --health-cmd "pg_isready -h 127.0.0.1 -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 30
