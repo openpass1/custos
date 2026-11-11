@@ -134,12 +134,11 @@ $sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
 <div data-live="<?= e(url('/agents/' . $agent['id'] . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
     <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
     <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
+    <?php if ($storages !== []): ?>
+        <?php /* Not a live part: the inventory changes after runs, not every few seconds. */ include __DIR__ . '/_storage.php' ?>
+    <?php endif ?>
     <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 </div>
-
-<?php if ($storages !== []): ?>
-    <?php include __DIR__ . '/_storage.php' ?>
-<?php endif ?>
 
 <?php if ($commands !== []): ?>
     <section class="panel">
