@@ -49,6 +49,12 @@ internal abstract class DialogForm : Form
 
     protected Button OkButton { get; } = new() { Text = Strings.ButtonOk, AutoSize = true, MinimumSize = new Size(88, 0) };
 
+    /// <summary>
+    /// The hints of the «?» icons of this dialog. A tooltip of the editor would not do: it belongs to the editor
+    /// window, which is inactive while the dialog is open, and Windows shows no hints of an inactive window.
+    /// </summary>
+    protected ToolTip Tips { get; } = new() { AutoPopDelay = 20000 };
+
     protected Button CancelButtonControl { get; } = new() { Text = Strings.ButtonCancel, AutoSize = true, MinimumSize = new Size(88, 0), DialogResult = DialogResult.Cancel };
 
     /// <summary>Called by "OK": check, save, and set <see cref="Form.DialogResult"/> when done.</summary>
@@ -84,6 +90,16 @@ internal abstract class DialogForm : Form
         var note = new Label { Text = text, AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 4, 0, 6) };
         AddWide(note);
         return note;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            Tips.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 
     /// <summary>Disables the buttons while a request to the service runs.</summary>
@@ -122,7 +138,7 @@ internal sealed class SourceDialog : DialogForm
         Body.Controls.Add(_accountLabel);
         _account.Margin = new Padding(0, 3, 0, 3);
         Body.Controls.Add(_account);
-        _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.SourceAccountHelp);
+        _accountHelp = Ui.HelpIcon(Tips, Strings.SourceAccountHelp);
         Body.Controls.Add(_accountHelp);
         AddNote(Strings.SourceNote);
         AddNote(Strings.PathVariablesNote);
@@ -259,8 +275,8 @@ internal sealed class DestinationDialog : DialogForm
         _original = destination;
         _supported = DestinationKinds.IsSupported(destination.Kind);
         _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
-        _usbHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationUsbHelp);
-        _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationAccountHelp);
+        _usbHelp = Ui.HelpIcon(Tips, Strings.DestinationUsbHelp);
+        _accountHelp = Ui.HelpIcon(Tips, Strings.DestinationAccountHelp);
         foreach (string kind in Kinds)
         {
             _kind.Items.Add(DestinationsPage.KindText(kind));
@@ -272,7 +288,7 @@ internal sealed class DestinationDialog : DialogForm
             _kind.Items.Add(DestinationsPage.KindText(destination.Kind));
         }
 
-        AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(context.ToolTip, Strings.DestinationKindHelp));
+        AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(Tips, Strings.DestinationKindHelp));
         AddGridRow(_pathLabel, _path, _browse);
         AddGridRow(_labelLabel, _usbLabel, _usbHelp);
         AddGridRow(_accountLabel, _account, _accountHelp);
@@ -504,7 +520,7 @@ internal sealed class EventDialog : DialogForm
         AddGridRow(_programLabel, _program, _browse);
         AddGridRow(_argumentsLabel, _arguments, new Label { AutoSize = true });
         AddGridRow(_serviceLabel, _service, new Label { AutoSize = true });
-        AddGridRow(Caption(Strings.EventTimeout), _timeout, Ui.HelpIcon(context.ToolTip, Strings.EventTimeoutHelp));
+        AddGridRow(Caption(Strings.EventTimeout), _timeout, Ui.HelpIcon(Tips, Strings.EventTimeoutHelp));
         AddNote(Strings.EventProgramHelp);
         EndBuild();
 
@@ -1110,7 +1126,7 @@ internal sealed class DbServerDialog : DialogForm
         AddRow(Strings.DbEngine, _engine);
         AddRow(Strings.DbBinDir, _binDir, folderButtons);
         AddWide(Help(Strings.DbBinDirHelp));
-        AddRow(Strings.DbHost, _host, Ui.HelpIcon(context.ToolTip, Strings.DbHostHelp));
+        AddRow(Strings.DbHost, _host, Ui.HelpIcon(Tips, Strings.DbHostHelp));
         AddRow(Strings.DbPort, _port);
         AddRow(Strings.DbUser, _user);
         AddRow(Strings.DbPassword, _password);

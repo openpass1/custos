@@ -1684,6 +1684,15 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   <data name="RemoteEngines" xml:space="preserve">
     <value>Databases:</value>
   </data>
+  <data name="RemoteDbChoice" xml:space="preserve">
+    <value>Databases to copy:</value>
+  </data>
+  <data name="RemoteDbChoiceHelp" xml:space="preserve">
+    <value>A ticked database goes into the copy. «All databases» takes every database of the server, new ones too; unticking one switches to «Selected databases». System databases are never dumped; users and rights go to _users.sql. The choice is kept in the task: the block need not be run on the server again.</value>
+  </data>
+  <data name="RemoteDbListEmpty" xml:space="preserve">
+    <value>The list fills in on «Test connection» at the bottom of the window.</value>
+  </data>
   <data name="RemoteSpeed" xml:space="preserve">
     <value>Speed limit:</value>
   </data>
@@ -1729,8 +1738,8 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
   <data name="RemoteCheckHeading" xml:space="preserve">
     <value>Check</value>
   </data>
-  <data name="RemoteDbHeading" xml:space="preserve">
-    <value>Databases in the copy</value>
+  <data name="RemoteMoreHeading" xml:space="preserve">
+    <value>More</value>
   </data>
   <data name="RemoteHostKeyNone" xml:space="preserve">
     <value>The key of the server is not confirmed yet: press «Test connection».</value>

@@ -1661,6 +1661,15 @@ static partial class Strings
     /// <summary>Databases:</summary>
     public static string RemoteEngines => Get(nameof(RemoteEngines));
 
+    /// <summary>Databases to copy:</summary>
+    public static string RemoteDbChoice => Get(nameof(RemoteDbChoice));
+
+    /// <summary>A ticked database goes into the copy. «All databases» takes every database of the server, new ones too; unt...</summary>
+    public static string RemoteDbChoiceHelp => Get(nameof(RemoteDbChoiceHelp));
+
+    /// <summary>The list fills in on «Test connection» at the bottom of the window.</summary>
+    public static string RemoteDbListEmpty => Get(nameof(RemoteDbListEmpty));
+
     /// <summary>Speed limit:</summary>
     public static string RemoteSpeed => Get(nameof(RemoteSpeed));
 
@@ -1706,8 +1715,8 @@ static partial class Strings
     /// <summary>Check</summary>
     public static string RemoteCheckHeading => Get(nameof(RemoteCheckHeading));
 
-    /// <summary>Databases in the copy</summary>
-    public static string RemoteDbHeading => Get(nameof(RemoteDbHeading));
+    /// <summary>More</summary>
+    public static string RemoteMoreHeading => Get(nameof(RemoteMoreHeading));
 
     /// <summary>The key of the server is not confirmed yet: press «Test connection».</summary>
     public static string RemoteHostKeyNone => Get(nameof(RemoteHostKeyNone));

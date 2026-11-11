@@ -314,6 +314,7 @@ public sealed class DialogTests
             Assert.Equal(Strings.RemoteAddTitle, empty.Text);
             Assert.Equal(Strings.RemoteBlockNeedsKey, empty.BlockText);
             Assert.True(Sta.Find<Label>(empty).Single(l => l.Text == Strings.RemoteOfficeEmpty).Visible);
+            Assert.True(Sta.Find<Label>(empty).Single(l => l.Text == Strings.RemoteDbListEmpty).Visible);
         }
 
         var original = Samples.Server().Sources[0];
@@ -344,6 +345,15 @@ public sealed class DialogTests
         Sta.Pump();
         Assert.Equal(RemoteSourceDialog.PresetTitle(RemotePresets.Custom), preset.Text);
 
+        // «Copy» and «Save as» stand side by side, at one height; the databases come before the key, the speed after the check.
+        var copy = Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonCopy);
+        var saveAs = Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonSaveAs);
+        Assert.Equal(copy.Top, saveAs.Top);
+        var databaseChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
+        Assert.True(dialog.PointToClient(databaseChoice.PointToScreen(Point.Empty)).Y < dialog.PointToClient(copy.PointToScreen(Point.Empty)).Y);
+        var speedBox = Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum > 65535);
+        Assert.True(dialog.PointToClient(speedBox.PointToScreen(Point.Empty)).Y > dialog.PointToClient(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonTestConnection).PointToScreen(Point.Empty)).Y);
+
         // The test: an unknown key of the server is to be confirmed first, then the answer of custos-helper is shown.
         Assert.True(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult { HostKeySha256 = Samples.ServerKey, HostKeyUnconfirmed = true }));
         Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.RemoteKeyToConfirm);
@@ -367,7 +377,9 @@ public sealed class DialogTests
         var allChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
         var onlyChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceOnly);
         Assert.True(allChoice.Checked);
-        Assert.Equal(allChoice.Left, onlyChoice.Left);
+        Assert.Equal(allChoice.Top, onlyChoice.Top);
+        Assert.True(allChoice.Right < onlyChoice.Left);
+        Assert.False(Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteDbListEmpty).Visible);
         Assert.Equal(["old_db", "site_db", "shop_db"], databases.Items.Cast<object>().Select(i => i.ToString()));
         Assert.Equal(["site_db", "shop_db"], databases.CheckedItems.Cast<object>().Select(i => i.ToString()));
 

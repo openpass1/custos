@@ -45,14 +45,15 @@ internal sealed class RemoteSourceDialog : DialogForm
         Font = new Font(FontFamily.GenericMonospace, 8.5F),
     };
 
-    private readonly Button _copy = new() { Text = Strings.ButtonCopy, AutoSize = true };
+    private readonly Button _copy = new() { Text = Strings.ButtonCopy, AutoSize = true, Margin = new Padding(0) };
     private readonly Button _saveBlock = new() { Text = Strings.ButtonSaveAs, AutoSize = true, Margin = new Padding(6, 0, 0, 0) };
     private readonly Label _hostKey = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 6) };
     private readonly Button _test = new() { Text = Strings.ButtonTestConnection, AutoSize = true };
     private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
-    private readonly RadioButton _dbAll = new() { Text = Strings.DbChoiceAll, AutoSize = true, Checked = true };
-    private readonly RadioButton _dbOnly = new() { Text = Strings.DbChoiceOnly, AutoSize = true };
-    private readonly CheckedListBox _dbList = new() { Dock = DockStyle.Fill, Height = 110, CheckOnClick = true, IntegralHeight = false };
+    private readonly RadioButton _dbAll = new() { Text = Strings.DbChoiceAll, AutoSize = true, Checked = true, Margin = new Padding(0, 3, 16, 0) };
+    private readonly RadioButton _dbOnly = new() { Text = Strings.DbChoiceOnly, AutoSize = true, Margin = new Padding(0, 3, 0, 0) };
+    private readonly CheckedListBox _dbList = new() { Dock = DockStyle.Fill, CheckOnClick = true, IntegralHeight = true };
+    private readonly Label _dbListEmpty = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6), Text = Strings.RemoteDbListEmpty };
     private string? _credentialId;
     private string? _publicKey;
     private string? _pinned;
@@ -64,6 +65,11 @@ internal sealed class RemoteSourceDialog : DialogForm
     {
         _context = context;
         _original = source;
+
+        // A long window: it may be made larger, up to the whole screen.
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MaximizeBox = true;
+        MinimumSize = new Size(640, 480);
         foreach (string preset in Presets)
         {
             _preset.Items.Add(PresetTitle(preset));
@@ -73,22 +79,29 @@ internal sealed class RemoteSourceDialog : DialogForm
         where.Controls.AddRange([_port, new Label { Text = Strings.RemoteUser, AutoSize = true, Margin = new Padding(16, 6, 6, 0) }, _user]);
         _user.Width = 140;
         _user.Dock = DockStyle.None;
-        AddRow(Strings.RemoteHost, _host, Ui.HelpIcon(context.ToolTip, Strings.RemoteHostHelp));
+        AddRow(Strings.RemoteHost, _host, Ui.HelpIcon(Tips, Strings.RemoteHostHelp));
         AddRow(Strings.RemotePort, where);
-        AddRow(Strings.RemoteOfficeIp, _officeIp, Ui.HelpIcon(context.ToolTip, Strings.RemoteOfficeIpHelp));
+        AddRow(Strings.RemoteOfficeIp, _officeIp, Ui.HelpIcon(Tips, Strings.RemoteOfficeIpHelp));
         AddWide(_officeWarning);
 
         AddHeading(Strings.RemoteWhatHeading);
         AddRow(Strings.RemotePreset, _preset);
-        AddRow(Strings.RemoteRoots, _roots, Ui.HelpIcon(context.ToolTip, Strings.RemoteRootsHelp));
+        AddRow(Strings.RemoteRoots, _roots, Ui.HelpIcon(Tips, Strings.RemoteRootsHelp));
         AddWide(_etcWarning);
-        AddRow(Strings.RemoteExcludes, _excludes, Ui.HelpIcon(context.ToolTip, Strings.RemoteExcludesHelp));
+        AddRow(Strings.RemoteExcludes, _excludes, Ui.HelpIcon(Tips, Strings.RemoteExcludesHelp));
         var engines = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
         engines.Controls.AddRange(_engines);
         AddRow(Strings.RemoteEngines, engines);
-        var speed = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
-        speed.Controls.AddRange([_speed, new Label { Text = Strings.RemoteSpeedUnit, AutoSize = true, Margin = new Padding(6, 6, 0, 0) }]);
-        AddRow(Strings.RemoteSpeed, speed, Ui.HelpIcon(context.ToolTip, Strings.RemoteSpeedHelp));
+
+        // The databases to dump: the list fills in on «Test connection» at the bottom; four lines are seen at once.
+        var choice = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        choice.Controls.AddRange([_dbAll, _dbOnly]);
+        AddRow(Strings.RemoteDbChoice, choice, Ui.HelpIcon(Tips, Strings.RemoteDbChoiceHelp));
+        _dbList.Height = (_dbList.ItemHeight * 4) + 6;
+        AddRow(string.Empty, _dbList);
+        Body.Controls.Add(new Label { AutoSize = true });
+        Body.Controls.Add(_dbListEmpty);
+        Body.SetColumnSpan(_dbListEmpty, 2);
 
         AddHeading(Strings.RemoteKeyHeading);
         AddRow(Strings.RemoteKey, _key, _createKey);
@@ -104,11 +117,10 @@ internal sealed class RemoteSourceDialog : DialogForm
         test.Controls.AddRange([_test, _testResult]);
         AddWide(test);
 
-        AddHeading(Strings.RemoteDbHeading);
-        AddWide(_dbAll);
-        AddWide(_dbOnly);
-        AddWide(_dbList);
-        AddNote(Strings.DbListNote);
+        AddHeading(Strings.RemoteMoreHeading);
+        var speed = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        speed.Controls.AddRange([_speed, new Label { Text = Strings.RemoteSpeedUnit, AutoSize = true, Margin = new Padding(6, 6, 0, 0) }]);
+        AddRow(Strings.RemoteSpeed, speed, Ui.HelpIcon(Tips, Strings.RemoteSpeedHelp));
         AddNote(Strings.RemoteNextPages);
         EndBuild();
 
@@ -582,6 +594,7 @@ internal sealed class RemoteSourceDialog : DialogForm
         _dbAll.Enabled = any;
         _dbOnly.Enabled = any;
         _dbList.Enabled = any;
+        _dbListEmpty.Visible = any && rows.Count == 0;
     }
 
     /// <summary>Databases of an engine no longer chosen leave the list.</summary>
