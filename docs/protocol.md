@@ -288,7 +288,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 }
 ```
 
-Для FTP, WebDAV и S3 поля `total_bytes` и `free_bytes` могут быть `null`. Если набор ещё не проверялся, `verified_at` и `verify_ok` равны `null`.
+Для FTP, WebDAV и S3 поля `total_bytes` и `free_bytes` могут быть `null`, у облачного диска — если у тарифа нет предела объёма. Если набор ещё не проверялся, `verified_at` и `verify_ok` равны `null`.
 
 ### A.9. Объекты: задание, учётные данные, настройки
 
@@ -317,8 +317,9 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "profile_sid": null,                 // чей профиль для %USERPROFILE% и т.п.; null = кто создал задание
   "destinations": [
     {
-      "id": "uuid", "kind": "unc",     // local | unc | usb | ftp | ftps | sftp | s3 | webdav
-      "path": "\\\\fileserver\\docs",
+      "id": "uuid", "kind": "unc",     // local | unc | usb | ftp | ftps | sftp | s3 | webdav | gdrive | yadisk | dropbox
+      "path": "\\\\fileserver\\docs",  // gdrive/yadisk/dropbox: папка внутри папки приложения CUSTOS
+      "part_mb": 0,                    // gdrive/yadisk/dropbox: архив частями .001, .002…; 0 = одним файлом
       "usb_label": null,               // для usb: метка тома; path тогда относительный
       "host": null, "port": null,      // ftp/ftps/sftp/webdav
       "endpoint": null, "bucket": null, "region": null,   // s3
@@ -378,7 +379,9 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 { "id": "uuid", "kind": "windows", "user": "backup1", "domain": ".", "has_secret": true }
 ```
 
-`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`. Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `gdrive`, `yadisk`, `dropbox` (облачные диски, см. ниже). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+
+Учётные данные облачных дисков (`gdrive`, `yadisk`, `dropbox`) создаёт только агент: аккаунт подключается через браузер на самом компьютере (6.3 ТЗ клиента). `user` — адрес почты или логин аккаунта, только для показа; секрет — токен обновления OAuth. В `secrets` команды `task.upsert` (A.4) такие виды не принимаются: агент отвечает `failed`. Задание с сайта ссылается на уже подключённый аккаунт по `credential_id`.
 
 **Настройки агента** (`settings`):
 
@@ -469,3 +472,9 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - A.4, A.10. Команда `sevenzip.update {version, sha256, signature}` и загрузка установщика `GET agent/sevenzip/{version}`. Подпись — от строки `"7zip\n{version}\n{sha256}"`.
 - A.4. Уточнено: `secrets` в `task.upsert` создают учётные записи с указанными `id` или заменяют существующие.
 - A.2. Если запрошенного пакета нет на сервере, ответ — подписанный `400 bad_request`: `404` агент понимает только как `unknown_agent` (A.11).
+
+**11.11.2026 — протокол 1, до первого выпуска.** Облачные диски Google Drive, Яндекс Диск и Dropbox (этап 4б клиента). Правки только добавляющие.
+
+- A.9. Новые виды назначения `gdrive`, `yadisk`, `dropbox`. У них `path` — папка внутри папки приложения CUSTOS, а необязательное поле `part_mb` задаёт запись архива частями.
+- A.9. Новые виды учётных данных `gdrive`, `yadisk`, `dropbox`. Создаёт их только агент, через `secrets` команды `task.upsert` они не передаются.
+- A.8. У облачного диска без предела объёма `total_bytes` и `free_bytes` равны `null`.
