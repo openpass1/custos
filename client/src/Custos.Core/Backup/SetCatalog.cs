@@ -95,15 +95,23 @@ public static partial class SetCatalog
     /// <summary>
     /// Sets of <paramref name="taskId"/> (null = of any task) directly below <paramref name="root"/>, oldest first: set
     /// folders, and archives when <paramref name="archives"/> is given. Folders and files without a readable manifest of this task are left
-    /// alone; <paramref name="onProblem"/> hears about archives that could not be opened.
+    /// alone; <paramref name="onProblem"/> hears about archives that could not be opened. With
+    /// <paramref name="mirror"/> a mirror in <paramref name="root"/> itself counts too.
     /// </summary>
-    public static List<StoredSet> Scan(string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null)
+    public static List<StoredSet> Scan(string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null, bool mirror = false)
     {
         ArgumentNullException.ThrowIfNull(root);
         var sets = new List<StoredSet>();
         if (!Directory.Exists(root))
         {
             return sets;
+        }
+
+        if (mirror && TryReadHeader(Path.Combine(root, SetManifest.FileName)) is { BackupType: BackupTypes.Mirror } own
+            && (taskId is null || string.Equals(own.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
+        {
+            // Never offered to retention: deleting this "set" would delete the destination folder.
+            sets.Add(new StoredSet(root, own));
         }
 
         foreach (string folder in Directory.EnumerateDirectories(root))

@@ -7,9 +7,9 @@ using Custos.Core.Text;
 namespace Custos.Core.Backup;
 
 /// <summary>
-/// Performs one run of a task: full, incremental or differential copy into one or more local, network or USB
-/// destinations, as plain files or as a 7z or ZIP archive, with change tracking, set manifests, verification and
-/// retention by count (sections 6.1–6.8 and 7 of the client spec).
+/// Performs one run of a task: full, incremental or differential copy or a mirror into one or more local, network or
+/// USB destinations, as plain files or as a 7z or ZIP archive, with change tracking, set manifests, verification and
+/// retention (sections 6.1–6.8 and 7 of the client spec).
 /// </summary>
 /// <remarks>
 /// Every file is read once and written to all destinations at the same time; a destination that fails is dropped,
@@ -108,7 +108,7 @@ public sealed partial class BackupEngine
         ScanSources(run);
         SelectFiles(run);
 
-        if (run.ToCopy.Count == 0 && run.BackupType != BackupTypes.Full)
+        if (run.ToCopy.Count == 0 && run.BackupType is not (BackupTypes.Full or BackupTypes.Mirror))
         {
             run.Result.NothingToDo = true;
             _log.Write(RunLogLevel.Info, Messages.NothingChanged);
@@ -131,6 +131,11 @@ public sealed partial class BackupEngine
         {
             OpenSets(run);
             CopyFiles(run);
+            if (run.BackupType == BackupTypes.Mirror)
+            {
+                DeleteFromMirror(run);
+            }
+
             FinishSets(run);
         }
 
@@ -141,6 +146,7 @@ public sealed partial class BackupEngine
 
         Commit(run);
         ApplyRetention(run);
+        CleanMirrorBins(run);
         VerifyStored(run);
     }
 
@@ -148,12 +154,12 @@ public sealed partial class BackupEngine
 
     private static void CheckSupported(TaskDefinition task)
     {
-        if (task.BackupType == BackupTypes.Mirror)
+        if (task.BackupType == BackupTypes.Mirror && IsArchive(task))
         {
-            throw new BackupException(Messages.MirrorNotSupported);
+            throw new BackupException(Messages.MirrorNeedsPlainFiles);
         }
 
-        if (task.BackupType is not (BackupTypes.Full or BackupTypes.Incremental or BackupTypes.Differential))
+        if (task.BackupType is not (BackupTypes.Full or BackupTypes.Incremental or BackupTypes.Differential or BackupTypes.Mirror))
         {
             throw new BackupException(Messages.Format(Messages.BackupTypeNotSupported, task.BackupType));
         }
@@ -189,6 +195,11 @@ public sealed partial class BackupEngine
                 }
 
                 target.Root = ResolveRoot(destination);
+                if (run.Task.BackupType == BackupTypes.Mirror)
+                {
+                    CheckMirrorRoot(run.Task, target.Root);
+                }
+
                 target.Session = Session(destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null);
                 target.Session.Run(() =>
                 {
@@ -198,6 +209,10 @@ public sealed partial class BackupEngine
                         // Archives always carry their date: every run is a set of its own.
                         target.Sets = SetCatalog.Scan(target.Root, run.Task.Id, access.WithSession(target.Session), (path, reason) =>
                             _log.Write(RunLogLevel.Detail, Messages.Format(Messages.ArchiveSkipped, path, reason)));
+                    }
+                    else if (run.Task.BackupType == BackupTypes.Mirror)
+                    {
+                        ReadMirror(run, target);
                     }
                     else if (run.Task.Layout.SeparateFolders)
                     {
@@ -247,7 +262,7 @@ public sealed partial class BackupEngine
         var task = run.Task;
         run.BackupType = task.BackupType;
         run.State = _store.GetBackupState(task.Id);
-        if (run.BackupType == BackupTypes.Full)
+        if (run.BackupType is BackupTypes.Full or BackupTypes.Mirror)
         {
             return;
         }
@@ -347,6 +362,7 @@ public sealed partial class BackupEngine
                     (path, reason) =>
                     {
                         run.Result.Warnings++;
+                        run.UnreadableFolders++;
                         _log.Write(RunLogLevel.Warning, Messages.Format(Messages.FolderUnreadable, path, reason));
                     },
                     run.Cancellation));
@@ -383,11 +399,32 @@ public sealed partial class BackupEngine
             _ => null,
         };
 
+        var targets = run.ActiveTargets;
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
             foreach (var file in context.Scan!.Files)
             {
-                if (reference is null || !reference.TryGetValue(file.OriginalPath, out var known) || known != file.Stamp)
+                bool copy;
+                if (run.BackupType == BackupTypes.Mirror)
+                {
+                    // Each destination gets what it lacks or holds in another version; the file is read once for all.
+                    copy = false;
+                    string stored = StoredPath(context, file);
+                    foreach (var target in targets)
+                    {
+                        if (!target.Existing.TryGetValue(stored, out var held) || !SameFile(held, file.Size, file.LastWriteUtc))
+                        {
+                            target.Needed.Add(stored);
+                            copy = true;
+                        }
+                    }
+                }
+                else
+                {
+                    copy = reference is null || !reference.TryGetValue(file.OriginalPath, out var known) || known != file.Stamp;
+                }
+
+                if (copy)
                 {
                     run.ToCopy.Add((context, file));
                     run.BytesToCopy += file.Size;
@@ -430,7 +467,7 @@ public sealed partial class BackupEngine
             {
                 target.Session.Run(() =>
                 {
-                    if (task.Layout.SeparateFolders)
+                    if (SeparateSets(task))
                     {
                         target.SetName = SetNaming.MakeUnique(target.Root, run.SetName);
                         target.SetFolder = Path.Combine(target.Root, target.SetName);
@@ -444,9 +481,9 @@ public sealed partial class BackupEngine
                         target.WriteFolder = target.Root;
                     }
 
-                    if (run.BackupType == BackupTypes.Full && !task.Layout.DeleteEmptyDirs)
+                    if (run.BackupType is BackupTypes.Full or BackupTypes.Mirror && !task.Layout.DeleteEmptyDirs)
                     {
-                        // A full copy reproduces the folder tree, empty folders included.
+                        // A full copy and a mirror reproduce the folder tree, empty folders included.
                         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true, IsFile: false }))
                         {
                             foreach (string folder in context.Scan!.Folders)
@@ -583,6 +620,12 @@ public sealed partial class BackupEngine
     {
         foreach (var target in run.ActiveTargets)
         {
+            if (run.BackupType == BackupTypes.Mirror && !target.Needed.Contains(targetPath))
+            {
+                // This mirror holds the file already.
+                continue;
+            }
+
             string final = Path.Combine(target.WriteFolder, targetPath);
             string temp = final + TempSuffix;
             try
@@ -631,7 +674,15 @@ public sealed partial class BackupEngine
                 {
                     if (File.Exists(output.Final))
                     {
-                        File.SetAttributes(output.Final, FileAttributes.Normal);
+                        if (IsSafeMirror(run))
+                        {
+                            // A safe mirror keeps the version it replaces (section 6.1).
+                            MoveToBin(run, output.Target, output.Final);
+                        }
+                        else
+                        {
+                            File.SetAttributes(output.Final, FileAttributes.Normal);
+                        }
                     }
 
                     File.Move(output.Temp, output.Final, overwrite: true);
@@ -714,7 +765,14 @@ public sealed partial class BackupEngine
 
         foreach (var target in run.ActiveTargets)
         {
+            var files = run.BackupType == BackupTypes.Mirror ? MirrorFiles(run, target) : null;
             var header = BuildHeader(run, target.SetName, finished, status);
+            if (files is not null)
+            {
+                header.SetFileCount = files.Count(f => f.InSet);
+                header.SetBytes = files.Where(f => f.InSet).Sum(f => f.Size);
+            }
+
             try
             {
                 if (run.VerifyNew)
@@ -728,7 +786,7 @@ public sealed partial class BackupEngine
                     string temp = manifest + TempSuffix;
                     using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024))
                     {
-                        SetManifest.Write(stream, header, ManifestFiles(run));
+                        SetManifest.Write(stream, header, files ?? ManifestFiles(run));
                         stream.Flush(flushToDisk: true);
                     }
 
@@ -738,7 +796,7 @@ public sealed partial class BackupEngine
                         Directory.Move(target.WriteFolder, target.SetFolder);
                     }
 
-                    if (run.Task.Layout.DeleteEmptyDirs && !run.Task.Layout.SeparateFolders)
+                    if (run.Task.Layout.DeleteEmptyDirs && !SeparateSets(run.Task))
                     {
                         RemoveEmptyFolders(target.SetFolder);
                     }
@@ -769,8 +827,8 @@ public sealed partial class BackupEngine
         TaskName = run.Task.Name,
         RunId = run.Request.RunId,
         BackupType = run.BackupType,
-        ParentFullRunId = run.BackupType == BackupTypes.Full ? null : run.State.FullRunId,
-        ParentFullSetName = run.BackupType == BackupTypes.Full ? null : run.State.FullSetName,
+        ParentFullRunId = run.BackupType is BackupTypes.Full or BackupTypes.Mirror ? null : run.State.FullRunId,
+        ParentFullSetName = run.BackupType is BackupTypes.Full or BackupTypes.Mirror ? null : run.State.FullSetName,
         Computer = _platform.ComputerName,
         StartedAt = run.Request.StartedAt,
         FinishedAt = finished,
@@ -844,10 +902,10 @@ public sealed partial class BackupEngine
         var retention = run.Task.Retention;
         foreach (var target in run.Targets.Where(t => t.Completed && t.NewSet is not null))
         {
-            target.Kept = run.Task.Layout.SeparateFolders || IsArchive(run.Task) ? [.. target.Sets, target.NewSet!] : [target.NewSet!];
+            target.Kept = SeparateSets(run.Task) || IsArchive(run.Task) ? [.. target.Sets, target.NewSet!] : [target.NewSet!];
         }
 
-        if (!(run.Task.Layout.SeparateFolders || IsArchive(run.Task))
+        if (!(SeparateSets(run.Task) || IsArchive(run.Task))
             || retention.Mode is not (RetentionModes.Count or RetentionModes.Age or RetentionModes.Gfs))
         {
             return;
@@ -1133,6 +1191,9 @@ public sealed partial class BackupEngine
         /// <summary>Sources that were missing or could not be read at all.</summary>
         public int SourceErrors { get; set; }
 
+        /// <summary>Folders of the sources that could not be read: their files look deleted, but are not.</summary>
+        public int UnreadableFolders { get; set; }
+
         /// <summary>Files deleted between the scan and the copy.</summary>
         public HashSet<string> Vanished { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -1231,7 +1292,25 @@ public sealed partial class BackupEngine
 
         /// <summary>Files already given their final name.</summary>
         public List<string> Renamed { get; } = [];
+
+        // ---- Mirror
+
+        /// <summary>The files in the mirror before the run: path in the mirror → size and time.</summary>
+        public Dictionary<string, MirrorEntry> Existing { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>The files the last run put into the mirror (its manifest): only these are ever deleted.</summary>
+        public Dictionary<string, ManifestFile> Previous { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Files this mirror lacks or holds in another version.</summary>
+        public HashSet<string> Needed { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Where a safe mirror puts what this run replaces or deletes; made when first needed.</summary>
+        public string? Bin { get; set; }
+
+        public int MirrorRemoved { get; set; }
     }
+
+    private readonly record struct MirrorEntry(long Size, DateTime ModifiedUtc);
 
     private sealed record Output(Target Target, FileStream Stream, string Temp, string Final);
 

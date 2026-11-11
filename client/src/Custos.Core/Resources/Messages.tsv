@@ -5,7 +5,8 @@ RunStarted	Task «{0}» started: {1} backup, {2}.	Задание «{0}» нач�
 RunFinished	Task «{0}» finished: {1}. Files copied: {2}, {3}, in {4}.	Задание «{0}» завершено: {1}. Скопировано файлов: {2}, {3}, за {4}.
 RunAborted	The run was stopped.	Задание прервано.
 NothingChanged	No file has changed since the last backup, so no new set was made.	С прошлой копии файлы не менялись, новый набор не создан.
-MirrorNotSupported	Mirror tasks arrive in the next version of CUSTOS. The task was not run.	Зеркало появится в следующей версии CUSTOS. Задание не выполнено.
+MirrorNeedsPlainFiles	A mirror keeps plain files: switch compression off for this task.	Зеркало хранит обычные файлы: выключите сжатие для этого задания.
+MirrorOverlapsSource	{0}: the mirror folder and the source {1} lie inside each other.	{0}: папка зеркала и источник {1} вложены друг в друга.
 BackupTypeNotSupported	Unknown backup type «{0}».	Неизвестный тип копии «{0}».
 ArchiveFormatUnknown	Unknown archive format «{0}». The task was not run.	Неизвестный формат архива «{0}». Задание не выполнено.
 NoSources	The task has no sources.	В задании нет источников.
@@ -40,6 +41,14 @@ FileVanished	{0} was deleted before it could be copied.	Файл {0} удалё�
 SetWritten	Set «{0}» written to {1}: {2} files, {3}.	Набор «{0}» записан в {1}: файлов {2}, {3}.
 SetDeleted	Old set «{0}» deleted from {1}.	Удалён старый набор «{0}» в {1}.
 SetDeleteFailed	Could not delete the old set «{0}» in {1}: {2}	Не удалось удалить старый набор «{0}» в {1}: {2}
+MirrorDeletionsSkipped	Some folders of the sources could not be read, so this time nothing is deleted from the mirror.	Часть папок источников не прочиталась, поэтому в этот раз из зеркала ничего не удаляется.
+MirrorFileDeleted	Deleted from the mirror: {0}	Удалён из зеркала: {0}
+MirrorFileMoved	Moved to {1}: {0}	Перенесён в {1}: {0}
+MirrorDeleted	{1}: {0} files deleted in the sources were deleted from the mirror.	{1}: удалено из зеркала файлов, удалённых в источниках: {0}.
+MirrorMoved	{1}: {0} replaced or deleted files were moved to {2}.	{1}: заменённых и удалённых файлов перенесено в {2}: {0}.
+MirrorDeleteFailed	Could not delete {0} from the mirror: {1}	Не удалось удалить {0} из зеркала: {1}
+MirrorBinRemoved	{1}: removed {0}, its time is up.	{1}: удалена папка {0}, срок хранения истёк.
+MirrorBinRemoveFailed	{1}: could not remove {0}: {2}	{1}: не удалось удалить папку {0}: {2}
 PartialNotRemoved	Could not remove the unfinished folder {0}: {1}	Не удалось удалить незавершённую папку {0}: {1}
 CopyIncomplete	The backup was not made completely.	Копия создана не полностью.
 Queued	Task «{0}» is queued: {1}.	Задание «{0}» поставлено в очередь: {1}.
@@ -150,6 +159,10 @@ DescKeepAgeOne	Backups older than {0} day are deleted; a full backup stays while
 DescKeepAgeFew	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
 DescKeepAgeMany	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
 DescKeepGfs	The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.	Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.
+DescMirrorExact	Files deleted in the sources are deleted from the mirror too.	Файлы, удалённые в источниках, удаляются и из зеркала.
+DescMirrorSafeOne	Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.	Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} день.
+DescMirrorSafeFew	Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.	Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дня.
+DescMirrorSafeMany	Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.	Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дней.
 MissedTooOld	Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.	Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.
 DeleteWhileRunning	The task is running now. Stop it first, then delete it.	Задание сейчас выполняется. Сначала остановите его, потом удаляйте.
 DatabaseRecreated	The database of the service was damaged and has been started anew. The history of earlier runs is gone; the next run of each task makes a full backup.	База службы была повреждена и создана заново. История прежних запусков потеряна, следующий запуск каждого задания сделает полную копию.

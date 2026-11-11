@@ -193,6 +193,14 @@ public static class TaskDescriber
 
     private static string Retention(TaskDefinition task)
     {
+        if (task.BackupType == BackupTypes.Mirror)
+        {
+            int keep = Math.Max(1, task.Retention.SafeMirrorDays);
+            return task.MirrorMode == MirrorModes.Safe
+                ? Messages.Format(Sizes.Plural(keep, Messages.DescMirrorSafeOne, Messages.DescMirrorSafeFew, Messages.DescMirrorSafeMany), keep)
+                : Messages.DescMirrorExact;
+        }
+
         if (!task.Layout.SeparateFolders && task.Archive.Format == ArchiveFormats.None)
         {
             return Messages.DescOneFolder;

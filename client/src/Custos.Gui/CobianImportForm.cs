@@ -146,7 +146,6 @@ internal sealed class CobianImportForm : Form
             ImportWarningCodes.WeekdaysAssumed => Strings.Format(Strings.WarnWeekdaysAssumed, argument),
             ImportWarningCodes.BackupTypeAssumed => Strings.WarnBackupTypeAssumed,
             ImportWarningCodes.BackupTypeNotSupported => Strings.Format(Strings.WarnBackupTypeNotSupported, argument),
-            ImportWarningCodes.MirrorLater => Strings.WarnMirrorLater,
             ImportWarningCodes.CompressionAssumed => Strings.WarnCompressionAssumed,
             ImportWarningCodes.EncryptionPassword => Strings.WarnEncryptionPassword,
             ImportWarningCodes.SplitIgnored => Strings.WarnSplitIgnored,

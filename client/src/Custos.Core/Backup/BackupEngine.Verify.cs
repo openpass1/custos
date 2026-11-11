@@ -28,6 +28,12 @@ public sealed partial class BackupEngine
             }
 
             string stored = StoredPath(context, file);
+            if (run.BackupType == BackupTypes.Mirror && !target.Needed.Contains(stored))
+            {
+                // This mirror had the file already; the stored check looks at it.
+                continue;
+            }
+
             string? problem = CheckFile(run, target.Session, Path.Combine(target.WriteFolder, stored), expected);
             if (problem is not null)
             {

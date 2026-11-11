@@ -382,14 +382,6 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
-    public void Mirrors_are_refused_in_this_version()
-    {
-        var mirror = NewTask(BackupTypes.Mirror, _temp.Combine("Backup"));
-
-        Assert.Equal(RunStatuses.Error, Run(mirror, Start).Status);
-    }
-
-    [Fact]
     public void Progress_reaches_the_total()
     {
         var reports = new List<BackupProgress>();

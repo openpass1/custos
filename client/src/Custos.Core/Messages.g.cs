@@ -20,8 +20,11 @@ static partial class Messages
     /// <summary>No file has changed since the last backup, so no new set was made.</summary>
     public static string NothingChanged => Get(nameof(NothingChanged));
 
-    /// <summary>Mirror tasks arrive in the next version of CUSTOS. The task was not run.</summary>
-    public static string MirrorNotSupported => Get(nameof(MirrorNotSupported));
+    /// <summary>A mirror keeps plain files: switch compression off for this task.</summary>
+    public static string MirrorNeedsPlainFiles => Get(nameof(MirrorNeedsPlainFiles));
+
+    /// <summary>{0}: the mirror folder and the source {1} lie inside each other.</summary>
+    public static string MirrorOverlapsSource => Get(nameof(MirrorOverlapsSource));
 
     /// <summary>Unknown backup type «{0}».</summary>
     public static string BackupTypeNotSupported => Get(nameof(BackupTypeNotSupported));
@@ -124,6 +127,30 @@ static partial class Messages
 
     /// <summary>Could not delete the old set «{0}» in {1}: {2}</summary>
     public static string SetDeleteFailed => Get(nameof(SetDeleteFailed));
+
+    /// <summary>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</summary>
+    public static string MirrorDeletionsSkipped => Get(nameof(MirrorDeletionsSkipped));
+
+    /// <summary>Deleted from the mirror: {0}</summary>
+    public static string MirrorFileDeleted => Get(nameof(MirrorFileDeleted));
+
+    /// <summary>Moved to {1}: {0}</summary>
+    public static string MirrorFileMoved => Get(nameof(MirrorFileMoved));
+
+    /// <summary>{1}: {0} files deleted in the sources were deleted from the mirror.</summary>
+    public static string MirrorDeleted => Get(nameof(MirrorDeleted));
+
+    /// <summary>{1}: {0} replaced or deleted files were moved to {2}.</summary>
+    public static string MirrorMoved => Get(nameof(MirrorMoved));
+
+    /// <summary>Could not delete {0} from the mirror: {1}</summary>
+    public static string MirrorDeleteFailed => Get(nameof(MirrorDeleteFailed));
+
+    /// <summary>{1}: removed {0}, its time is up.</summary>
+    public static string MirrorBinRemoved => Get(nameof(MirrorBinRemoved));
+
+    /// <summary>{1}: could not remove {0}: {2}</summary>
+    public static string MirrorBinRemoveFailed => Get(nameof(MirrorBinRemoveFailed));
 
     /// <summary>Could not remove the unfinished folder {0}: {1}</summary>
     public static string PartialNotRemoved => Get(nameof(PartialNotRemoved));
@@ -454,6 +481,18 @@ static partial class Messages
 
     /// <summary>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</summary>
     public static string DescKeepGfs => Get(nameof(DescKeepGfs));
+
+    /// <summary>Files deleted in the sources are deleted from the mirror too.</summary>
+    public static string DescMirrorExact => Get(nameof(DescMirrorExact));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.</summary>
+    public static string DescMirrorSafeOne => Get(nameof(DescMirrorSafeOne));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</summary>
+    public static string DescMirrorSafeFew => Get(nameof(DescMirrorSafeFew));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</summary>
+    public static string DescMirrorSafeMany => Get(nameof(DescMirrorSafeMany));
 
     /// <summary>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</summary>
     public static string MissedTooOld => Get(nameof(MissedTooOld));

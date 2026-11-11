@@ -28,8 +28,11 @@
   <data name="NothingChanged" xml:space="preserve">
     <value>No file has changed since the last backup, so no new set was made.</value>
   </data>
-  <data name="MirrorNotSupported" xml:space="preserve">
-    <value>Mirror tasks arrive in the next version of CUSTOS. The task was not run.</value>
+  <data name="MirrorNeedsPlainFiles" xml:space="preserve">
+    <value>A mirror keeps plain files: switch compression off for this task.</value>
+  </data>
+  <data name="MirrorOverlapsSource" xml:space="preserve">
+    <value>{0}: the mirror folder and the source {1} lie inside each other.</value>
   </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Unknown backup type «{0}».</value>
@@ -132,6 +135,30 @@
   </data>
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Could not delete the old set «{0}» in {1}: {2}</value>
+  </data>
+  <data name="MirrorDeletionsSkipped" xml:space="preserve">
+    <value>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</value>
+  </data>
+  <data name="MirrorFileDeleted" xml:space="preserve">
+    <value>Deleted from the mirror: {0}</value>
+  </data>
+  <data name="MirrorFileMoved" xml:space="preserve">
+    <value>Moved to {1}: {0}</value>
+  </data>
+  <data name="MirrorDeleted" xml:space="preserve">
+    <value>{1}: {0} files deleted in the sources were deleted from the mirror.</value>
+  </data>
+  <data name="MirrorMoved" xml:space="preserve">
+    <value>{1}: {0} replaced or deleted files were moved to {2}.</value>
+  </data>
+  <data name="MirrorDeleteFailed" xml:space="preserve">
+    <value>Could not delete {0} from the mirror: {1}</value>
+  </data>
+  <data name="MirrorBinRemoved" xml:space="preserve">
+    <value>{1}: removed {0}, its time is up.</value>
+  </data>
+  <data name="MirrorBinRemoveFailed" xml:space="preserve">
+    <value>{1}: could not remove {0}: {2}</value>
   </data>
   <data name="PartialNotRemoved" xml:space="preserve">
     <value>Could not remove the unfinished folder {0}: {1}</value>
@@ -462,6 +489,18 @@
   </data>
   <data name="DescKeepGfs" xml:space="preserve">
     <value>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</value>
+  </data>
+  <data name="DescMirrorExact" xml:space="preserve">
+    <value>Files deleted in the sources are deleted from the mirror too.</value>
+  </data>
+  <data name="DescMirrorSafeOne" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.</value>
+  </data>
+  <data name="DescMirrorSafeFew" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</value>
+  </data>
+  <data name="DescMirrorSafeMany" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</value>

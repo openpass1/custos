@@ -258,7 +258,7 @@ internal sealed partial class AgentService
                     throw new DirectoryNotFoundException(Messages.Format(Messages.RestoreFolderMissing, folder));
                 }
 
-                return SetCatalog.Scan(folder, taskId, access, (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)));
+                return SetCatalog.Scan(folder, taskId, access, (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)), mirror: true);
             });
             var place = new Place(label, session, access, sets);
             session = null;

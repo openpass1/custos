@@ -28,8 +28,11 @@
   <data name="NothingChanged" xml:space="preserve">
     <value>С прошлой копии файлы не менялись, новый набор не создан.</value>
   </data>
-  <data name="MirrorNotSupported" xml:space="preserve">
-    <value>Зеркало появится в следующей версии CUSTOS. Задание не выполнено.</value>
+  <data name="MirrorNeedsPlainFiles" xml:space="preserve">
+    <value>Зеркало хранит обычные файлы: выключите сжатие для этого задания.</value>
+  </data>
+  <data name="MirrorOverlapsSource" xml:space="preserve">
+    <value>{0}: папка зеркала и источник {1} вложены друг в друга.</value>
   </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Неизвестный тип копии «{0}».</value>
@@ -132,6 +135,30 @@
   </data>
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Не удалось удалить старый набор «{0}» в {1}: {2}</value>
+  </data>
+  <data name="MirrorDeletionsSkipped" xml:space="preserve">
+    <value>Часть папок источников не прочиталась, поэтому в этот раз из зеркала ничего не удаляется.</value>
+  </data>
+  <data name="MirrorFileDeleted" xml:space="preserve">
+    <value>Удалён из зеркала: {0}</value>
+  </data>
+  <data name="MirrorFileMoved" xml:space="preserve">
+    <value>Перенесён в {1}: {0}</value>
+  </data>
+  <data name="MirrorDeleted" xml:space="preserve">
+    <value>{1}: удалено из зеркала файлов, удалённых в источниках: {0}.</value>
+  </data>
+  <data name="MirrorMoved" xml:space="preserve">
+    <value>{1}: заменённых и удалённых файлов перенесено в {2}: {0}.</value>
+  </data>
+  <data name="MirrorDeleteFailed" xml:space="preserve">
+    <value>Не удалось удалить {0} из зеркала: {1}</value>
+  </data>
+  <data name="MirrorBinRemoved" xml:space="preserve">
+    <value>{1}: удалена папка {0}, срок хранения истёк.</value>
+  </data>
+  <data name="MirrorBinRemoveFailed" xml:space="preserve">
+    <value>{1}: не удалось удалить папку {0}: {2}</value>
   </data>
   <data name="PartialNotRemoved" xml:space="preserve">
     <value>Не удалось удалить незавершённую папку {0}: {1}</value>
@@ -462,6 +489,18 @@
   </data>
   <data name="DescKeepGfs" xml:space="preserve">
     <value>Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.</value>
+  </data>
+  <data name="DescMirrorExact" xml:space="preserve">
+    <value>Файлы, удалённые в источниках, удаляются и из зеркала.</value>
+  </data>
+  <data name="DescMirrorSafeOne" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} день.</value>
+  </data>
+  <data name="DescMirrorSafeFew" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дня.</value>
+  </data>
+  <data name="DescMirrorSafeMany" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дней.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.</value>
