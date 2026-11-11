@@ -95,7 +95,23 @@ internal static partial class ServiceLog
         Message = "The database of the service failed; the history and the change tracking may be incomplete")]
     public static partial void DatabaseFailed(ILogger logger, Exception exception);
 
+    [LoggerMessage(EventId = 209, Level = LogLevel.Information,
+        Message = "7z.dll {Version} loaded from {Path}")]
+    public static partial void SevenZipLoaded(ILogger logger, string version, string path);
+
+    [LoggerMessage(EventId = 210, Level = LogLevel.Information,
+        Message = "Restore of {Set} to {Target} started by {User}")]
+    public static partial void RestoreStarted(ILogger logger, string set, string target, string user);
+
+    [LoggerMessage(EventId = 211, Level = LogLevel.Information,
+        Message = "Restore of {Set} finished: {Status}, {Restored} files restored, {Failed} failed")]
+    public static partial void RestoreFinished(ILogger logger, string set, string status, long restored, long failed);
+
     // ---- Agent: events of the Windows event log (section 6.10) --------------------------------------------------
+
+    [LoggerMessage(EventId = CustosEventIds.SevenZipUnavailable, Level = LogLevel.Warning,
+        Message = "7z.dll cannot be used: {Reason} Tasks with the 7z format will fail; ZIP and plain copies work")]
+    public static partial void SevenZipUnavailable(ILogger logger, string reason);
 
     [LoggerMessage(EventId = CustosEventIds.TaskStarted, Level = LogLevel.Information,
         Message = "Task {Task} started ({Trigger}). Run log: {LogFile}")]

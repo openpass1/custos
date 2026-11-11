@@ -29,7 +29,7 @@ internal sealed class AgentRequestException(string code, string message) : Excep
 /// guarded by <see cref="_lock"/> or is thread-safe by itself.
 /// </remarks>
 [SupportedOSPlatform("windows")]
-internal sealed class AgentService(ServiceInfo info, AgentEvents events, ILogger<AgentService> logger) : BackgroundService
+internal sealed partial class AgentService(ServiceInfo info, AgentEvents events, ILogger<AgentService> logger) : BackgroundService
 {
     private const int HistoryLimit = 1000;
     private const int SqliteCorrupt = 11;
@@ -53,6 +53,7 @@ internal sealed class AgentService(ServiceInfo info, AgentEvents events, ILogger
     private AgentDatabase? _database;
     private WindowsBackupPlatform? _platform;
     private ActiveRun? _current;
+    private string? _sevenZipProblem;
     private long _version;
     private CancellationToken _stopping;
 
@@ -164,6 +165,8 @@ internal sealed class AgentService(ServiceInfo info, AgentEvents events, ILogger
             Queue = queue,
             Current = current?.Describe(),
             Problems = [.. problems, .. _config.Problems],
+            SevenZipVersion = _platform?.Archives.SevenZipVersion,
+            SevenZipProblem = _sevenZipProblem,
         };
     }
 
@@ -461,6 +464,7 @@ internal sealed class AgentService(ServiceInfo info, AgentEvents events, ILogger
         }
 
         _platform = new WindowsBackupPlatform(_config, shadows);
+        LoadSevenZip();
 
         // A task the database has no slot for starts counting now; the others catch up what they missed.
         var now = DateTimeOffset.UtcNow;

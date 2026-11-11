@@ -150,4 +150,32 @@ public sealed class DialogTests
 
     /// <summary>A Delphi TDateTime as Cobian writes it: the bits of the double.</summary>
     private static string Bits(double value) => Convert.ToString(BitConverter.DoubleToInt64Bits(value), 2).PadLeft(64, '0');
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_restore_window_lists_the_sets_newest_first(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new RestoreForm(monitor, Samples.OfficeId);
+        form.Show();
+        Sta.Pump();
+
+        var header = new Custos.Core.Backup.SetManifestHeader { SetName = "Office documents 2026-11-02 21-00 (Incremental)", BackupType = BackupTypes.Incremental, StartedAt = new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero), SetFileCount = 12 };
+        var full = new Custos.Core.Backup.SetManifestHeader { SetName = "Office documents 2026-11-01 21-00 (Full)", BackupType = BackupTypes.Full, StartedAt = new DateTimeOffset(2026, 11, 1, 18, 0, 0, TimeSpan.Zero), SetFileCount = 340 };
+        form.ShowSets(new Custos.Core.Ipc.RestoreListResult
+        {
+            Sets =
+            [
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\b.7z", Where = @"D:\Backup", Header = header, Storage = ArchiveFormats.SevenZip, Bytes = 1024, Parts = 3 },
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\a", Where = @"D:\Backup", Header = full },
+            ],
+        });
+        Sta.Pump();
+
+        Assert.Equal(2, form.SetList.Items.Count);
+        Assert.StartsWith(header.SetName, form.SetList.Items[0].SubItems[2].Text, StringComparison.Ordinal);
+        Assert.True(form.SetList.Items[0].Selected);
+        Assert.Equal(full.SetName, form.SetList.Items[1].SubItems[2].Text);
+    });
 }

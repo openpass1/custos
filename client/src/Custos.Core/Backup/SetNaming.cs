@@ -56,15 +56,39 @@ public static class SetNaming
         return clean.Length == 0 ? "CUSTOS" : clean;
     }
 
-    /// <summary><paramref name="name"/>, or "name (2)", "name (3)" … if a folder or a partial folder with it exists.</summary>
+    /// <summary><paramref name="name"/>, or "name (2)", "name (3)" … if a set with it exists in any form.</summary>
     public static string MakeUnique(string root, string name)
     {
         string candidate = name;
-        for (int i = 2; Directory.Exists(Path.Combine(root, candidate)) || Directory.Exists(Path.Combine(root, candidate + SetCatalog.PartialSuffix)); i++)
+        for (int i = 2; IsTaken(root, candidate); i++)
         {
-            candidate = string.Create(CultureInfo.InvariantCulture, $"{name} ({i})");
+            candidate = Numbered(name, i);
         }
 
         return candidate;
+    }
+
+    /// <summary>"name (i)".</summary>
+    public static string Numbered(string name, int i) => string.Create(CultureInfo.InvariantCulture, $"{name} ({i})");
+
+    /// <summary>Whether <paramref name="root"/> holds a set called <paramref name="name"/>: a folder, an archive or
+    /// its volumes, finished or still partial.</summary>
+    public static bool IsTaken(string root, string name)
+    {
+        string path = Path.Combine(root, name);
+        if (Directory.Exists(path) || Directory.Exists(path + SetCatalog.PartialSuffix))
+        {
+            return true;
+        }
+
+        foreach (string extension in (string[])[".7z", ".zip", ".7z.001"])
+        {
+            if (File.Exists(path + extension) || File.Exists(path + extension + SetCatalog.PartialSuffix))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

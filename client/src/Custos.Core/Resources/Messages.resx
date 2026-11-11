@@ -34,8 +34,8 @@
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Unknown backup type «{0}».</value>
   </data>
-  <data name="ArchiveNotSupported" xml:space="preserve">
-    <value>Compression ({0}) arrives in the next version of CUSTOS. The task was not run.</value>
+  <data name="ArchiveFormatUnknown" xml:space="preserve">
+    <value>Unknown archive format «{0}». The task was not run.</value>
   </data>
   <data name="NoSources" xml:space="preserve">
     <value>The task has no sources.</value>
@@ -459,5 +459,167 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Only administrators of this computer may change tasks and settings.</value>
+  </data>
+  <data name="ArchiveSettings" xml:space="preserve">
+    <value>Archive: {0}, compression level {1}{2}.</value>
+  </data>
+  <data name="ArchiveEncryptedPart" xml:space="preserve">
+    <value>, AES-256 encryption</value>
+  </data>
+  <data name="ArchiveNamesEncryptedPart" xml:space="preserve">
+    <value>including file names</value>
+  </data>
+  <data name="ArchiveVolumesPart" xml:space="preserve">
+    <value>, volumes of {0}</value>
+  </data>
+  <data name="ArchiveLibraryPart" xml:space="preserve">
+    <value>, 7z.dll {0}</value>
+  </data>
+  <data name="ArchiveWritten" xml:space="preserve">
+    <value>Archive {0} written to {1}: {2} files, {3}{4}.</value>
+  </data>
+  <data name="ArchiveVolumeCount" xml:space="preserve">
+    <value>, {0} volumes</value>
+  </data>
+  <data name="ArchiveSkipped" xml:space="preserve">
+    <value>Skipped {0}: {1}</value>
+  </data>
+  <data name="ArchivePasswordNotSet" xml:space="preserve">
+    <value>Encryption is on, but the task has no archive password. Set it in the task editor, page «Compression».</value>
+  </data>
+  <data name="ArchivePasswordMissing" xml:space="preserve">
+    <value>The archive password of the task is not stored on this computer. Enter it again in the task editor.</value>
+  </data>
+  <data name="PartialFileNotRemoved" xml:space="preserve">
+    <value>Could not remove the unfinished file {0}: {1}</value>
+  </data>
+  <data name="FileCutInArchive" xml:space="preserve">
+    <value>the file could not be read to the end ({0}); it is in the archive incomplete and counts as not copied</value>
+  </data>
+  <data name="ArchiveListedFileCut" xml:space="preserve">
+    <value>{0} could not be read to the end, after the list of files was already packed into the 7z archive. The archive is not finished; the next run tries again.</value>
+  </data>
+  <data name="SevenZipMissing" xml:space="preserve">
+    <value>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 64-bit 7-Zip there.</value>
+  </data>
+  <data name="SevenZipNot64Bit" xml:space="preserve">
+    <value>{0} is not a 64-bit 7z.dll. Take 7z.dll from the 64-bit (x64) 7-Zip.</value>
+  </data>
+  <data name="SevenZipBroken" xml:space="preserve">
+    <value>7z.dll cannot be used ({0}): {1}</value>
+  </data>
+  <data name="SevenZipWriteFailed" xml:space="preserve">
+    <value>7-Zip could not write the archive: {0}</value>
+  </data>
+  <data name="SevenZipWindowsOnly" xml:space="preserve">
+    <value>The 7z format works only on Windows.</value>
+  </data>
+  <data name="ZipWriteFailed" xml:space="preserve">
+    <value>The ZIP archive could not be written: {0}</value>
+  </data>
+  <data name="ArchiveNeedsPassword" xml:space="preserve">
+    <value>The archive is encrypted, and no password was given.</value>
+  </data>
+  <data name="ArchiveWrongPassword" xml:space="preserve">
+    <value>The password does not fit the archive.</value>
+  </data>
+  <data name="ArchiveUnreadable" xml:space="preserve">
+    <value>The archive cannot be opened: {0}</value>
+  </data>
+  <data name="ArchiveItemDamaged" xml:space="preserve">
+    <value>{0} in the archive is damaged.</value>
+  </data>
+  <data name="ManifestMissing" xml:space="preserve">
+    <value>{0} has no custos-set.json: it was not made by CUSTOS or is damaged.</value>
+  </data>
+  <data name="OutcomeDamaged" xml:space="preserve">
+    <value>damaged (checksum does not match)</value>
+  </data>
+  <data name="OutcomeWrongPassword" xml:space="preserve">
+    <value>wrong password</value>
+  </data>
+  <data name="OutcomeUnsupported" xml:space="preserve">
+    <value>packed with a method this 7z.dll does not know</value>
+  </data>
+  <data name="OutcomeTruncated" xml:space="preserve">
+    <value>the archive ends too early (a volume missing or cut off?)</value>
+  </data>
+  <data name="VerifyNewOk" xml:space="preserve">
+    <value>The new copy in {0} is verified: all files match.</value>
+  </data>
+  <data name="VerifyNewFailed" xml:space="preserve">
+    <value>The new copy in {0} did not pass verification: {1}</value>
+  </data>
+  <data name="VerifyFileProblem" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="VerifyContentDiffers" xml:space="preserve">
+    <value>the content differs from what was copied</value>
+  </data>
+  <data name="VerifyFileMissing" xml:space="preserve">
+    <value>missing</value>
+  </data>
+  <data name="StoredVerifyStarted" xml:space="preserve">
+    <value>Verifying the stored copies.</value>
+  </data>
+  <data name="StoredSetOk" xml:space="preserve">
+    <value>Set «{0}» in {1} is whole.</value>
+  </data>
+  <data name="StoredSetDamaged" xml:space="preserve">
+    <value>Set «{0}» in {1} is damaged: {2}</value>
+  </data>
+  <data name="StoredVerifyDone" xml:space="preserve">
+    <value>Stored copies verified: {0} sets, damaged: {1}.</value>
+  </data>
+  <data name="RestoreFullMissing" xml:space="preserve">
+    <value>The full copy «{0}» this set builds on is not in the destination.</value>
+  </data>
+  <data name="RestoreStarted" xml:space="preserve">
+    <value>Restoring «{0}» to {1}. Sets used: {2}.</value>
+  </data>
+  <data name="RestoreToOriginal" xml:space="preserve">
+    <value>the original places</value>
+  </data>
+  <data name="RestoreNotInChain" xml:space="preserve">
+    <value>{0} is in no set of the chain and was not restored.</value>
+  </data>
+  <data name="RestoreNoPlace" xml:space="preserve">
+    <value>{0}: no source of the set fits this path; restore it into a folder instead.</value>
+  </data>
+  <data name="RestoreSkipped" xml:space="preserve">
+    <value>Skipped, already there: {0}</value>
+  </data>
+  <data name="RestoreFileFailed" xml:space="preserve">
+    <value>Not restored: {0}: {1}</value>
+  </data>
+  <data name="RestoreFileDone" xml:space="preserve">
+    <value>Restored {0} ({1})</value>
+  </data>
+  <data name="RestoreFinished" xml:space="preserve">
+    <value>Restore finished: {0} files restored ({1}), {2} skipped, {3} failed.</value>
+  </data>
+  <data name="RestoreNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may restore.</value>
+  </data>
+  <data name="RestoreAlreadyRunning" xml:space="preserve">
+    <value>A restore is already running. Wait for it to finish or stop it.</value>
+  </data>
+  <data name="RestoreNotRunning" xml:space="preserve">
+    <value>No restore is running.</value>
+  </data>
+  <data name="RestoreSetGone" xml:space="preserve">
+    <value>The set {0} is no longer there. Search again.</value>
+  </data>
+  <data name="RestoreLogName" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="RestoreStopRequested" xml:space="preserve">
+    <value>Restore stopped by {0}.</value>
+  </data>
+  <data name="RestoreAborted" xml:space="preserve">
+    <value>The restore was stopped. Files restored so far stay.</value>
+  </data>
+  <data name="RestoreFolderMissing" xml:space="preserve">
+    <value>The folder {0} does not exist.</value>
   </data>
 </root>

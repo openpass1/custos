@@ -14,7 +14,7 @@ namespace Custos.Core.Storage;
 /// </summary>
 public sealed class AgentDatabase : IFileStateStore
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
 
     private readonly string _connectionString;
 
@@ -38,7 +38,7 @@ public sealed class AgentDatabase : IFileStateStore
     public TaskBackupState GetBackupState(string taskId)
     {
         using var connection = Open();
-        using var command = Command(connection, "SELECT full_run_id, full_set_name, full_at, runs_since_full FROM task_state WHERE task_id = $task");
+        using var command = Command(connection, "SELECT full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, stored_checked_at, compression_ratio FROM task_state WHERE task_id = $task");
         command.Parameters.AddWithValue("$task", taskId);
         using var reader = command.ExecuteReader();
         if (!reader.Read())
@@ -50,7 +50,10 @@ public sealed class AgentDatabase : IFileStateStore
             reader.IsDBNull(0) ? null : reader.GetString(0),
             reader.IsDBNull(1) ? null : reader.GetString(1),
             reader.IsDBNull(2) ? null : ParseTime(reader.GetString(2)),
-            reader.IsDBNull(3) ? 0 : reader.GetInt32(3));
+            reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
+            reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+            reader.IsDBNull(5) ? null : ParseTime(reader.GetString(5)),
+            reader.IsDBNull(6) ? null : reader.GetDouble(6));
     }
 
     public Dictionary<string, FileStamp> LoadFileState(string taskId, bool baseFull)
@@ -108,18 +111,26 @@ public sealed class AgentDatabase : IFileStateStore
 
         using (var state = Command(connection, full
             ? """
-              INSERT INTO task_state (task_id, full_run_id, full_set_name, full_at, runs_since_full) VALUES ($task, $run, $set, $at, 0)
-              ON CONFLICT(task_id) DO UPDATE SET full_run_id = $run, full_set_name = $set, full_at = $at, runs_since_full = 0
+              INSERT INTO task_state (task_id, full_run_id, full_set_name, full_at, runs_since_full, runs_since_verify, compression_ratio)
+              VALUES ($task, $run, $set, $at, 0, $verify, $ratio)
+              ON CONFLICT(task_id) DO UPDATE SET full_run_id = $run, full_set_name = $set, full_at = $at, runs_since_full = 0,
+                runs_since_verify = CASE WHEN $verified THEN 0 ELSE runs_since_verify + 1 END,
+                compression_ratio = COALESCE($ratio, compression_ratio)
               """
             : """
-              INSERT INTO task_state (task_id, runs_since_full) VALUES ($task, 1)
-              ON CONFLICT(task_id) DO UPDATE SET runs_since_full = runs_since_full + 1
+              INSERT INTO task_state (task_id, runs_since_full, runs_since_verify, compression_ratio) VALUES ($task, 1, $verify, $ratio)
+              ON CONFLICT(task_id) DO UPDATE SET runs_since_full = runs_since_full + 1,
+                runs_since_verify = CASE WHEN $verified THEN 0 ELSE runs_since_verify + 1 END,
+                compression_ratio = COALESCE($ratio, compression_ratio)
               """, transaction))
         {
             state.Parameters.AddWithValue("$task", taskId);
             state.Parameters.AddWithValue("$run", run.RunId);
             state.Parameters.AddWithValue("$set", (object?)run.SetName ?? DBNull.Value);
             state.Parameters.AddWithValue("$at", UtcTimeConverter.ToText(run.StartedAt));
+            state.Parameters.AddWithValue("$verified", run.Verified ? 1 : 0);
+            state.Parameters.AddWithValue("$verify", run.Verified ? 0 : 1);
+            state.Parameters.AddWithValue("$ratio", run.CompressionRatio is { } ratio ? ratio : DBNull.Value);
             state.ExecuteNonQuery();
         }
 
@@ -139,6 +150,18 @@ public sealed class AgentDatabase : IFileStateStore
         }
 
         transaction.Commit();
+    }
+
+    public void SetStoredChecked(string taskId, DateTimeOffset checkedAt)
+    {
+        using var connection = Open();
+        using var command = Command(connection, """
+            INSERT INTO task_state (task_id, stored_checked_at) VALUES ($task, $at)
+            ON CONFLICT(task_id) DO UPDATE SET stored_checked_at = $at
+            """);
+        command.Parameters.AddWithValue("$task", taskId);
+        command.Parameters.AddWithValue("$at", UtcTimeConverter.ToText(checkedAt));
+        command.ExecuteNonQuery();
     }
 
     // ---- Schedule ----------------------------------------------------------------------------------------------
@@ -308,6 +331,17 @@ public sealed class AgentDatabase : IFileStateStore
         }
 
         using var transaction = connection.BeginTransaction();
+        if (version == 1)
+        {
+            // Stage 2: verification counters and the compression ratio of the last archive.
+            using var alter = Command(connection, """
+                ALTER TABLE task_state ADD COLUMN runs_since_verify INTEGER NOT NULL DEFAULT 0;
+                ALTER TABLE task_state ADD COLUMN stored_checked_at TEXT;
+                ALTER TABLE task_state ADD COLUMN compression_ratio REAL;
+                """, transaction);
+            alter.ExecuteNonQuery();
+        }
+
         using (var create = Command(connection, """
             CREATE TABLE IF NOT EXISTS file_state (
                 task_id TEXT NOT NULL,
@@ -324,7 +358,10 @@ public sealed class AgentDatabase : IFileStateStore
                 full_set_name TEXT,
                 full_at TEXT,
                 runs_since_full INTEGER NOT NULL DEFAULT 0,
-                last_slot TEXT
+                last_slot TEXT,
+                runs_since_verify INTEGER NOT NULL DEFAULT 0,
+                stored_checked_at TEXT,
+                compression_ratio REAL
             );
 
             CREATE TABLE IF NOT EXISTS runs (

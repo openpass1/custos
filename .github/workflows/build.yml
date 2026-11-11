@@ -39,10 +39,13 @@ jobs:
           choco install innosetup --yes --no-progress
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      # Windows PowerShell 5.1, the same shell the build is run with on a test machine.
+      # Windows PowerShell 5.1, the same shell the build is run with on a test machine. CUSTOS_REQUIRE_7Z makes the 7z
+      # tests fail instead of being skipped if 7z.dll went missing.
       - name: Build, test and make the installer
         shell: powershell
         working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
         run: .\build.ps1 -Configuration Release
 
       - name: Upload the installer

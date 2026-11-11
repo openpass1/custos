@@ -313,6 +313,81 @@ internal sealed class CredentialDialog : DialogForm
 }
 
 /// <summary>
+/// Sets the archive password of a task (section 6.5). It is stored by the service like an account password (DPAPI,
+/// kind <c>archive_password</c>) and never shown again.
+/// </summary>
+internal sealed class ArchivePasswordDialog : DialogForm
+{
+    private readonly ServiceMonitor _monitor;
+    private readonly string? _existingId;
+    private readonly string _taskName;
+    private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
+    private readonly TextBox _repeat = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
+    private readonly CheckBox _show = new() { Text = Strings.ShowPassword, AutoSize = true };
+
+    public ArchivePasswordDialog(ServiceMonitor monitor, string? existingId, string taskName)
+        : base(Strings.ArchivePasswordTitle, new Size(540, 300))
+    {
+        _monitor = monitor;
+        _existingId = existingId;
+        _taskName = taskName;
+        AddRow(Strings.AccountPassword, _password);
+        AddRow(Strings.ArchivePasswordRepeat, _repeat);
+        AddWide(_show);
+        AddNote(existingId is null ? Strings.ArchivePasswordWarning : Strings.ArchivePasswordChangeNote);
+        EndBuild();
+        _show.CheckedChanged += (_, _) =>
+        {
+            _password.UseSystemPasswordChar = !_show.Checked;
+            _repeat.UseSystemPasswordChar = !_show.Checked;
+        };
+    }
+
+    /// <summary>The id of the stored password, after "OK".</summary>
+    public string? SavedId { get; private set; }
+
+    protected override void OnOk()
+    {
+        if (_password.Text.Length == 0)
+        {
+            Ui.ShowWarning(this, Strings.ErrorPasswordRequired);
+            return;
+        }
+
+        if (!string.Equals(_password.Text, _repeat.Text, StringComparison.Ordinal))
+        {
+            Ui.ShowWarning(this, Strings.ArchivePasswordMismatch);
+            return;
+        }
+
+        var credential = new Credential
+        {
+            Id = _existingId ?? TaskDefinition.NewId(),
+            Kind = CredentialKinds.ArchivePassword,
+            User = Strings.Format(Strings.ArchivePasswordName, _taskName.Length == 0 ? Strings.ArchivePasswordNewTask : _taskName),
+        };
+        string password = _password.Text;
+        SetBusy(true);
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _monitor.RequestAsync(PipeProtocol.Methods.CredentialSave, new CredentialInput { Credential = credential, Password = password },
+                    IpcJsonContext.Default.CredentialInput, IpcJsonContext.Default.CredentialSaveResult);
+                SavedId = result.Credential.Id;
+                _password.Clear();
+                _repeat.Clear();
+                DialogResult = DialogResult.OK;
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        });
+    }
+}
+
+/// <summary>
 /// Settings of the program: log detail and retention, copy priority, language of the service's messages, and the
 /// stored accounts. Everyone may look; only administrators may change (section 4).
 /// </summary>
@@ -342,7 +417,7 @@ internal sealed class SettingsForm : DialogForm
     private readonly bool _canEdit;
 
     public SettingsForm(ServiceMonitor monitor)
-        : base(Strings.SettingsTitle, new Size(640, 520))
+        : base(Strings.SettingsTitle, new Size(640, 620))
     {
         _monitor = monitor;
         _canEdit = monitor.CanEdit;
@@ -359,6 +434,22 @@ internal sealed class SettingsForm : DialogForm
         AddRow(Strings.LogRetention, _retention);
         AddRow(Strings.CopyPriority, _priority, Ui.HelpIcon(_toolTip, Strings.CopyPriorityHelp));
         AddRow(Strings.ServiceLanguage, _language, Ui.HelpIcon(_toolTip, Strings.ServiceLanguageHelp));
+
+        var archiverHeading = new Label { Text = Strings.Settings7Zip, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+        archiverHeading.Font = heading.Font;
+        AddWide(archiverHeading);
+        var snapshot = monitor.Snapshot;
+        var archiver = new Label
+        {
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 2, 0, 2),
+            Text = snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
+                : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—"),
+            ForeColor = snapshot?.SevenZipProblem is null ? SystemColors.ControlText : Glyphs.WarningText,
+        };
+        AddWide(archiver);
+        AddNote(Strings.Settings7ZipNote);
 
         var accountsHeading = new Label { Text = Strings.SettingsAccounts, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         accountsHeading.Font = heading.Font;

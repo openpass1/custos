@@ -29,7 +29,6 @@ ToolStop	Stop	Остановить
 ToolPause	Pause	Пауза
 ToolPauseHint	Pause or resume the running task	Приостановить или продолжить выполняемое задание
 ToolRestore	Restore	Восстановить
-RestoreLater	Restoring backups arrives in a later version of CUSTOS.	Восстановление появится в следующих версиях CUSTOS.
 ToolCard	Card	Карточка
 ToolCardHint	Show or hide the task card	Показать или скрыть карточку задания
 ToolSettings	Settings	Настройки
@@ -248,12 +247,8 @@ ErrorNoTimes	Enter at least one time.	Укажите хотя бы одно вр
 ErrorNoWeekdays	Tick at least one day of the week.	Отметьте хотя бы один день недели.
 ErrorNoMonthDays	Enter at least one day of the month, or tick «last day of the month».	Укажите хотя бы одно число месяца или отметьте «последний день месяца».
 # ---- Task editor: Archive, Retention, Filters, Events, Advanced
-PageArchive	Archive	Архив
-ArchiveLater	Compression and encryption arrive in the next version of CUSTOS. Until then backups are plain copies of the files, which open without any program.	Сжатие и шифрование появятся в следующей версии CUSTOS. Пока копии — обычные файлы, которые открываются без всяких программ.
-ArchiveNone	No compression, plain files	Без сжатия, обычные файлы
 ArchiveZip	ZIP	ZIP
 ArchiveSevenZip	7z	7z
-ArchiveSetButUnsupported	This task is set to compress (for example after an import from Cobian). It does not run until compression arrives; choose «No compression» to run it now.	В задании задано сжатие (например, после импорта из Cobian). Такое задание не выполняется, пока сжатие не появится; выберите «Без сжатия», чтобы оно заработало сейчас.
 PageRetention	Retention	Хранение
 RetentionNone	Keep all backups	Хранить все копии
 RetentionCount	Keep the last	Хранить последние
@@ -358,10 +353,9 @@ WarnWeekdaysAssumed	Days of the week {0} were read counting Monday as 1: check t
 WarnBackupTypeAssumed	The backup type was read as differential: check it.	Тип копии прочитан как дифференциальный: проверьте его.
 WarnBackupTypeNotSupported	Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.	Типа копии Cobian {0} (например, «dummy») в CUSTOS нет: задание сделано полным. Проверьте его.
 WarnMirrorLater	Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.	Зеркало появится в следующей версии CUSTOS, пока это задание не выполняется.
-WarnCompressionLater	The task compresses into {0}. Compression arrives in the next version, so until then the task does not run; to use it now, choose «No compression» on the «Archive» page.	Задание сжимает в {0}. Сжатие появится в следующей версии, и пока задание не выполняется; чтобы пользоваться им сейчас, выберите «Без сжатия» на странице «Архив».
 WarnCompressionAssumed	The compression type was read as ZIP: check it.	Тип сжатия прочитан как ZIP: проверьте его.
-WarnEncryptionPassword	The archive is encrypted in Cobian. Its password is not carried over: enter it again when encryption arrives.	В Cobian архив шифруется. Пароль не переносится: его нужно будет ввести заново, когда появится шифрование.
-WarnSplitIgnored	Splitting the archive into volumes was not carried over.	Разбиение архива на тома не перенесено.
+WarnEncryptionPassword	The archive is encrypted in Cobian. Its password is not carried over: set it on the «Compression and checks» page, otherwise the task does not run.	В Cobian архив шифруется. Пароль не переносится: задайте его на странице «Сжатие и проверка», иначе задание не выполнится.
+WarnSplitIgnored	Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.	Разбиение архива на тома не перенесено: при необходимости задайте размер тома на странице «Сжатие и проверка».
 WarnEventsInComment	Events before and after the backup are not run yet; they were written into the comment: {0}	События до и после копирования пока не выполняются, они записаны в комментарий: {0}
 WarnSourceUnknown	The entry «{0}» was skipped: its type is unknown or it is not a full path.	Запись «{0}» пропущена: неизвестный тип или не полный путь.
 WarnFtpNotSupported	The FTP entry «{0}» was skipped: CUSTOS does not read from FTP, and writing to FTP arrives in a later version.	FTP-запись «{0}» пропущена: читать с FTP CUSTOS не умеет, а запись на FTP появится в следующих версиях.
@@ -371,3 +365,87 @@ WarnFixedDayAssumed	The fixed day of the full backup (Cobian value {0}) was read
 WarnFiltersImported	Filters were carried over, check them on the «Sources» page: {0}	Фильтры перенесены, проверьте их на странице «Источники»: {0}
 WarnRunAsAccount	In Cobian the task ran as {0}. In CUSTOS this account is used only for the network folders of the task: enter its password below.	В Cobian задание выполнялось от имени {0}. В CUSTOS эта учётная запись используется только для сетевых папок задания: введите её пароль ниже.
 WarnRunAsLocalOnly	In Cobian the task ran as {0}, but it has no network folders: CUSTOS reads local files as the service, so the account is not needed.	В Cobian задание выполнялось от имени {0}, но сетевых папок в нём нет: локальные файлы CUSTOS читает от имени службы, учётная запись не нужна.
+
+# Restore (section 6.11)
+ToolRestoreHint	Restore files from a backup	Восстановить файлы из копии
+RestoreAdminsOnly	Restore — administrators only	Восстановление — только для администраторов
+RestoreTitle	Restore	Восстановление
+RestoreByTask	Backups of the task:	Копии задания:
+RestoreByFolder	Backups in the folder:	Копии в папке:
+RestoreAccount	Account for a network folder:	Учётная запись для сетевой папки:
+RestoreServiceAccount	The service account (SYSTEM)	Учётная запись службы (SYSTEM)
+RestorePassword	Archive password:	Пароль архивов:
+RestorePasswordNote	Only for encrypted archives without their task on this computer, or with an older password. Otherwise leave it empty.	Нужен только для зашифрованных архивов, если их задания нет на этом компьютере или пароль был другим. Иначе оставьте пустым.
+RestoreSearch	Find backups	Найти копии
+RestoreSearching	Looking for backups…	Поиск копий…
+RestoreFound	Backups found: {0}. Choose the date to restore.	Найдено копий: {0}. Выберите дату, на которую восстановить.
+RestoreNothingFound	No backups found here.	Копий здесь не найдено.
+ColumnSet	Set	Набор
+ColumnWhere	Where	Где
+RestoreArchive	 ({0})	 ({0})
+RestoreArchiveVolumes	 ({0}, {1} volumes)	 ({0}, томов: {1})
+RestoreWhereTo	Restore to	Куда восстановить
+RestoreToOriginal	The original places (where the files were copied from)	В исходные места (откуда файлы копировались)
+RestoreToFolder	Another folder:	В другую папку:
+RestoreExisting	If a file is already there:	Если файл уже есть:
+RestoreExistingSkip	Skip it	Пропустить
+RestoreExistingOverwrite	Replace it	Перезаписать
+RestoreExistingOlder	Replace it only if it is older	Перезаписать, только если он старее
+RestoreStart	Restore	Восстановить
+RestoreStarting	Starting the restore…	Запуск восстановления…
+RestoreProgressText	Restoring «{0}»: {1} of {2} files, {3}	Восстановление «{0}»: файлов {1} из {2}, {3}
+RestoreResultText	Restore finished: {0}. Restored {1}, skipped {2}, failed {3}.	Восстановление завершено: {0}. Восстановлено {1}, пропущено {2}, с ошибкой {3}.
+RestoreLogFile	Details: {0}	Подробности: {0}
+RestoreChooseFolder	Choose a folder	Выберите папку
+RestoreChooseTarget	Choose the folder to restore into.	Выберите папку, в которую восстановить.
+RestoreConfirmOriginal	Restore «{0}» to the original places? Files that are already there stay as they are.	Восстановить «{0}» в исходные места? Файлы, которые там уже есть, останутся как есть.
+RestoreConfirmOriginalOverwrite	Restore «{0}» to the original places? Files that are already there will be replaced.	Восстановить «{0}» в исходные места? Файлы, которые там уже есть, будут заменены.
+RestoreConfirmFolder	Restore «{0}» into {1}?	Восстановить «{0}» в папку {1}?
+RestoreGoesOn	The restore goes on in the service. Open this window again to see how it ends.	Восстановление продолжается в службе. Откройте это окно снова, чтобы увидеть результат.
+
+# Archive page (section 6.5)
+PageArchive	Compression and checks	Сжатие и проверка
+ArchiveFormat	Format	Формат
+ArchiveNone	No compression: plain files	Без сжатия: обычные файлы
+ArchiveZipHelp	A ZIP archive opens in Windows and in any archiver. Written as a stream, so it suits every kind of destination.	ZIP открывается средствами Windows и любым архиватором. Пишется потоком, поэтому подходит для любых назначений.
+ArchiveSevenZipHelp	7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in the file: a folder, a network folder or a USB disk.	7z сжимает лучше и умеет шифровать имена файлов. Нужно назначение, в котором можно вернуться к началу файла: папка, сетевая папка или USB-диск.
+ArchiveSevenZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
+ArchiveOpenAnywhere	Archives stay ordinary 7z and ZIP files: 7-Zip opens them without CUSTOS.	Архивы остаются обычными файлами 7z и ZIP: их можно открыть 7-Zip и без CUSTOS.
+ArchiveLevel	Compression level:	Уровень сжатия:
+ArchiveLevelHelp	Higher levels make smaller archives but take longer. Level 5 is the usual balance.	Чем выше уровень, тем меньше архив, но тем дольше упаковка. Уровень 5 — обычный баланс.
+ArchiveLevel0	0 — store only, no compression	0 — только упаковка, без сжатия
+ArchiveLevel1	1 — fastest	1 — самое быстрое
+ArchiveLevel5	5 — normal (recommended)	5 — обычное (рекомендуется)
+ArchiveLevel9	9 — ultra (slow)	9 — ультра (медленно)
+ArchiveSplit	Split into volumes of	Разбить на тома по
+ArchiveSplitHelp	7z only. The volumes are name.7z.001, .002 …; 7-Zip opens them from the first one.	Только для 7z. Тома называются имя.7z.001, .002 …; 7-Zip открывает их с первого.
+ArchiveVolume700	700 MB (CD)	700 МБ (CD)
+ArchiveVolumeFat32	4 GB (FAT32 limit)	4 ГБ (лимит FAT32)
+ArchiveVolumeDvd	4.3 GB (DVD)	4,3 ГБ (DVD)
+ArchiveVolumeCustom	Own size:	Свой размер:
+ArchiveMb	MB	МБ
+ArchiveEncryption	Encryption	Шифрование
+ArchiveEncrypt	Encrypt with a password (AES-256)	Шифровать паролем (AES-256)
+ArchiveSetPassword	Password…	Пароль…
+ArchivePasswordSet	password is set	пароль задан
+ArchivePasswordNotSet	no password yet	пароль не задан
+ArchiveEncryptNames	Encrypt the file names too (7z only)	Шифровать и имена файлов (только 7z)
+ArchiveEncryptNamesHelp	Without the password nobody even sees which files the archive holds.	Без пароля нельзя даже увидеть, какие файлы лежат в архиве.
+ArchivePasswordWarning	Write the password down and keep it apart from the backups: without it the archives cannot be opened by anyone, CUSTOS included.	Запишите пароль и храните его отдельно от копий: без него архивы не откроет никто, в том числе CUSTOS.
+ArchivePasswordChangeNote	Archives made before keep the old password: keep it too, you will need it to restore them.	Архивы, сделанные раньше, останутся со старым паролем: сохраните и его, он понадобится для их восстановления.
+ArchivePasswordTitle	Archive password	Пароль архивов
+ArchivePasswordRepeat	Repeat the password:	Повторите пароль:
+ArchivePasswordMismatch	The passwords do not match.	Пароли не совпадают.
+ArchivePasswordName	Archive password: {0}	Пароль архивов: {0}
+ArchivePasswordNewTask	new task	новое задание
+ArchivePasswordRequired	Encryption is on: set the password (button «Password…»).	Шифрование включено: задайте пароль (кнопка «Пароль…»).
+ArchiveSevenZipNeedsSeek	7z cannot be written to {0}: choose ZIP or no compression for this task.	7z нельзя записать в {0}: выберите для этого задания ZIP или копию без сжатия.
+ArchiveVerify	Verification	Проверка
+VerifyEveryRuns	Verify the new backup every N-th run:	Проверять новую копию каждый N-й запуск:
+VerifyEveryRunsHelp	0 = never, 1 = every run. Archives are unpacked into nowhere with their checksums checked; plain copies are read back and compared. Nothing is written to disk.	0 — никогда, 1 — каждый раз. Архивы распаковываются «в никуда» с контролем сумм, копии без сжатия читаются и сверяются. На диск ничего не пишется.
+VerifyStoredDays	Verify all stored backups every N days:	Проверять все хранящиеся копии раз в N дней:
+VerifyStoredDaysHelp	0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.	0 — выключено. Выполняется после успешного запуска, когда подошёл срок. Повреждённая копия делает запуск ошибочным.
+Settings7Zip	Archiver	Архиватор
+Settings7ZipVersion	7-Zip (7z.dll) version {0}	7-Zip (7z.dll) версии {0}
+Settings7ZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
+Settings7ZipNote	To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.	Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.

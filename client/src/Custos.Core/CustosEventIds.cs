@@ -18,6 +18,9 @@ public static class CustosEventIds
     public const int CatchUpRun = 2005;
     public const int VssFailed = 3000;
     public const int DestinationFull = 3001;
+
+    /// <summary>7z.dll is missing, not 64-bit or broken: tasks with 7z fail until it is replaced.</summary>
+    public const int SevenZipUnavailable = 3002;
     public const int UpdateInstalled = 4000;
     public const int UpdateRejected = 4001;
 
@@ -28,7 +31,7 @@ public static class CustosEventIds
     [
         ServiceStarted, ServiceStopped, ServerConnectionLost, ServerConnectionRestored,
         TaskStarted, TaskSucceeded, TaskCompletedWithWarnings, TaskFailed, TaskAborted, CatchUpRun,
-        VssFailed, DestinationFull, UpdateInstalled, UpdateRejected, UnexpectedError,
+        VssFailed, DestinationFull, SevenZipUnavailable, UpdateInstalled, UpdateRejected, UnexpectedError,
     ];
 
     /// <summary>True for the IDs listed in the spec, which always go to the Windows event log.</summary>

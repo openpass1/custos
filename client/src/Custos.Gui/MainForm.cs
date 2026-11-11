@@ -232,8 +232,8 @@ internal sealed class MainForm : Form
         _stop.Click += (_, _) => StopTask();
         _pause.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolPauseHint, "F6");
         _pause.Click += (_, _) => PauseTask();
-        _restore.ToolTipText = Strings.RestoreLater;
-        _restore.Enabled = false;
+        _restore.ToolTipText = Strings.ToolRestoreHint;
+        _restore.Click += (_, _) => OpenRestore();
         _card.CheckOnClick = true;
         _card.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolCardHint, "Alt+P");
         _card.CheckedChanged += (_, _) => ShowCard(_card.Checked);
@@ -552,6 +552,9 @@ internal sealed class MainForm : Form
         _pause.Enabled = connected && current is not null && !current.Stopping && (task is null || selectedRunning);
         _pause.Checked = current is not null && (_monitor.Progress?.RunId == current.RunId ? _monitor.Progress.Paused : current.Paused);
         _settings.Enabled = connected;
+        bool isAdmin = connected && _monitor.Status.Hello?.IsAdmin == true;
+        _restore.Enabled = isAdmin;
+        _restore.ToolTipText = connected && !isAdmin ? Strings.RestoreAdminsOnly : Strings.ToolRestoreHint;
         _lock.Visible = connected && !canEdit;
     }
 
@@ -730,6 +733,17 @@ internal sealed class MainForm : Form
     private void OpenSettings()
     {
         using var form = new SettingsForm(_monitor);
+        form.ShowDialog(this);
+    }
+
+    private void OpenRestore()
+    {
+        if (_monitor.Status.Hello?.IsAdmin != true)
+        {
+            return;
+        }
+
+        using var form = new RestoreForm(_monitor, SelectedTask()?.Id);
         form.ShowDialog(this);
     }
 

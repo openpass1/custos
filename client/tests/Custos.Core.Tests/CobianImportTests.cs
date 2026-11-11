@@ -122,7 +122,6 @@ public sealed class CobianImportTests
         var codes = imported.Warnings.Select(w => w.Code).ToList();
         Assert.Contains(ImportWarningCodes.BackupTypeAssumed, codes);
         Assert.Contains(ImportWarningCodes.WeekdaysAssumed, codes);
-        Assert.Contains(ImportWarningCodes.CompressionLater, codes);
         Assert.Contains(ImportWarningCodes.EventsInComment, codes);
     }
 

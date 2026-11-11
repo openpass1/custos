@@ -36,7 +36,6 @@ public static class ImportWarningCodes
     public const string MirrorLater = "mirror_later";
 
     /// <summary>The task compresses (zip or 7z); compression arrives in a later version. Argument: the format.</summary>
-    public const string CompressionLater = "compression_later";
 
     /// <summary>The compression code was interpreted by assumption (zip).</summary>
     public const string CompressionAssumed = "compression_assumed";
@@ -350,11 +349,9 @@ public static partial class CobianImporter
             case 1:
                 task.Archive.Format = ArchiveFormats.Zip;
                 warnings.Add(new ImportWarning(ImportWarningCodes.CompressionAssumed));
-                warnings.Add(new ImportWarning(ImportWarningCodes.CompressionLater, ArchiveFormats.Zip));
                 break;
             default:
                 task.Archive.Format = ArchiveFormats.SevenZip;
-                warnings.Add(new ImportWarning(ImportWarningCodes.CompressionLater, ArchiveFormats.SevenZip));
                 break;
         }
 

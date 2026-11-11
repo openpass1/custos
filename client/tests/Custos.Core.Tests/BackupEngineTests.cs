@@ -349,14 +349,11 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
-    public void Archives_and_mirrors_are_refused_in_this_version()
+    public void Mirrors_are_refused_in_this_version()
     {
         var mirror = NewTask(BackupTypes.Mirror, _temp.Combine("Backup"));
-        var zip = NewTask(BackupTypes.Full, _temp.Combine("Backup"));
-        zip.Archive.Format = ArchiveFormats.Zip;
 
         Assert.Equal(RunStatuses.Error, Run(mirror, Start).Status);
-        Assert.Equal(RunStatuses.Error, Run(zip, Start).Status);
     }
 
     [Fact]

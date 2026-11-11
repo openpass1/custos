@@ -42,6 +42,9 @@ public static class DestinationKinds
     /// <summary>Kinds this version can write to.</summary>
     public static bool IsSupported(string kind) => kind is Local or Unc or Usb;
 
+    /// <summary>Kinds that let a writer go back in the file, which 7z needs to finish its header (section 6.5).</summary>
+    public static bool CanSeek(string kind) => kind is Local or Unc or Usb or Sftp;
+
     /// <summary>
     /// The folder of a <see cref="Usb"/> destination relative to the root of the disk. A drive letter typed by mistake
     /// is dropped: the disk is found by its label, and writing to "E:\..." would go to whatever disk has that letter.

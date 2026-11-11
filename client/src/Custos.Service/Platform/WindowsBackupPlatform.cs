@@ -4,7 +4,9 @@ using System.Runtime.Versioning;
 using System.Security.Principal;
 using Custos.Core;
 using Custos.Core.Agent;
+using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Model;
 using Microsoft.Win32.SafeHandles;
 
 namespace Custos.Service.Platform;
@@ -16,6 +18,29 @@ namespace Custos.Service.Platform;
 [SupportedOSPlatform("windows")]
 internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies shadows) : LocalBackupPlatform
 {
+    // Only the 7z.dll in the program folder: the service runs as SYSTEM and must not load a DLL from anywhere else.
+    private readonly ArchiveProvider _archives = new(Path.Combine(AppContext.BaseDirectory, "7z.dll"));
+
+    public override IArchiveProvider Archives => _archives;
+
+    public override string GetArchivePassword(string credentialId)
+    {
+        var credential = config.GetCredential(credentialId);
+        if (credential is null || credential.Kind != CredentialKinds.ArchivePassword)
+        {
+            throw new BackupException(Messages.ArchivePasswordMissing);
+        }
+
+        try
+        {
+            return config.GetPassword(credentialId) is { Length: > 0 } password ? password : throw new BackupException(Messages.ArchivePasswordMissing);
+        }
+        catch (ConfigException ex)
+        {
+            throw new BackupException(ex.Message, ex);
+        }
+    }
+
     public override INetworkSession OpenSession(string? credentialId)
     {
         if (credentialId is null)

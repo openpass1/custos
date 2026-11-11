@@ -1041,45 +1041,176 @@ internal sealed class SchedulePage : EditorPage
     }
 }
 
-/// <summary>"Archive": compression and encryption come in version 2; until then copies are plain files.</summary>
+/// <summary>"Archive": format, compression level, volumes, encryption and verification (section 6.5).</summary>
 internal sealed class ArchivePage : EditorPage
 {
+    // Volume sizes in MB as 7-Zip offers them: CD, the FAT32 limit, DVD.
+    private static readonly int[] VolumePresets = [700, 4095, 4480];
+
     private readonly RadioButton _none = new() { Text = Strings.ArchiveNone, AutoSize = true };
-    private readonly RadioButton _zip = new() { Text = Strings.ArchiveZip, AutoSize = true, Enabled = false };
-    private readonly RadioButton _sevenZip = new() { Text = Strings.ArchiveSevenZip, AutoSize = true, Enabled = false };
-    private readonly Label _imported = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 6, 0, 6) };
+    private readonly RadioButton _zip = new() { Text = Strings.ArchiveZip, AutoSize = true };
+    private readonly RadioButton _sevenZip = new() { Text = Strings.ArchiveSevenZip, AutoSize = true };
+    private readonly Label _sevenZipProblem = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(18, 0, 0, 6), Visible = false };
+    private readonly ComboBox _level = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
+    private readonly CheckBox _split = new() { Text = Strings.ArchiveSplit, AutoSize = true };
+    private readonly ComboBox _volume = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
+    private readonly NumericUpDown _volumeMb = new() { Minimum = 1, Maximum = 1_000_000, Value = 1024, Width = 90 };
+    private readonly CheckBox _encrypt = new() { Text = Strings.ArchiveEncrypt, AutoSize = true };
+    private readonly Button _setPassword = new() { Text = Strings.ArchiveSetPassword, AutoSize = true };
+    private readonly Label _passwordState = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(8, 6, 0, 6) };
+    private readonly CheckBox _encryptNames = new() { Text = Strings.ArchiveEncryptNames, AutoSize = true };
+    private readonly NumericUpDown _verifyRuns = new() { Minimum = 0, Maximum = 1000, Width = 70 };
+    private readonly NumericUpDown _verifyDays = new() { Minimum = 0, Maximum = 3650, Width = 70 };
+    private string? _passwordId;
+    private bool _passwordSaved;
+    private string _taskName = string.Empty;
 
     public ArchivePage(EditorContext context)
         : base(context, Strings.PageArchive, Glyph.Box)
     {
-        AddNote(Strings.ArchiveLater);
+        for (int level = 0; level <= 9; level++)
+        {
+            _level.Items.Add(level switch
+            {
+                0 => Strings.ArchiveLevel0,
+                1 => Strings.ArchiveLevel1,
+                5 => Strings.ArchiveLevel5,
+                9 => Strings.ArchiveLevel9,
+                _ => level.ToString(System.Globalization.CultureInfo.CurrentCulture),
+            });
+        }
+
+        _volume.Items.AddRange([Strings.ArchiveVolume700, Strings.ArchiveVolumeFat32, Strings.ArchiveVolumeDvd, Strings.ArchiveVolumeCustom]);
+
+        AddHeading(Strings.ArchiveFormat);
         AddWide(_none);
-        AddWide(_zip);
-        AddWide(_sevenZip);
-        AddWide(_imported);
+        AddWide(_zip, Strings.ArchiveZipHelp);
+        AddWide(_sevenZip, Strings.ArchiveSevenZipHelp);
+        AddWide(_sevenZipProblem);
+        AddNote(Strings.ArchiveOpenAnywhere);
+        AddRow(Strings.ArchiveLevel, _level, Strings.ArchiveLevelHelp);
+
+        var volumes = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        volumes.Controls.AddRange([_split, _volume, _volumeMb, new Label { Text = Strings.ArchiveMb, AutoSize = true, Margin = new Padding(4, 8, 0, 0) }]);
+        AddWide(volumes, Strings.ArchiveSplitHelp);
+
+        AddHeading(Strings.ArchiveEncryption);
+        var password = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        password.Controls.AddRange([_encrypt, _setPassword, _passwordState]);
+        AddWide(password);
+        AddWide(_encryptNames, Strings.ArchiveEncryptNamesHelp, 18);
+        AddNote(Strings.ArchivePasswordWarning, 18);
+
+        AddHeading(Strings.ArchiveVerify);
+        AddRow(Strings.VerifyEveryRuns, _verifyRuns, Strings.VerifyEveryRunsHelp);
+        AddRow(Strings.VerifyStoredDays, _verifyDays, Strings.VerifyStoredDaysHelp);
+
+        foreach (var control in new Control[] { _none, _zip, _sevenZip, _split, _encrypt })
+        {
+            switch (control)
+            {
+                case RadioButton radio:
+                    radio.CheckedChanged += (_, _) => UpdateControls();
+                    break;
+                case CheckBox box:
+                    box.CheckedChanged += (_, _) => UpdateControls();
+                    break;
+            }
+        }
+
+        _volume.SelectedIndexChanged += (_, _) => UpdateControls();
+        _setPassword.Click += (_, _) => SetPassword();
     }
 
-    public override bool Available => false;
+    public override void Shown()
+    {
+        string? problem = Context.Monitor.Snapshot?.SevenZipProblem;
+        _sevenZipProblem.Text = problem is null ? string.Empty : Strings.Format(Strings.ArchiveSevenZipProblem, problem);
+        _sevenZipProblem.Visible = problem is not null;
+    }
 
     public override void LoadFrom(TaskDefinition task)
     {
-        _none.Checked = task.Archive.Format == ArchiveFormats.None;
-        _zip.Checked = task.Archive.Format == ArchiveFormats.Zip;
-        _sevenZip.Checked = task.Archive.Format == ArchiveFormats.SevenZip;
-        _imported.Visible = task.Archive.Format != ArchiveFormats.None;
-        _imported.Text = Strings.ArchiveSetButUnsupported;
+        var archive = task.Archive;
+        _taskName = task.Name;
+        _none.Checked = archive.Format is not (ArchiveFormats.Zip or ArchiveFormats.SevenZip);
+        _zip.Checked = archive.Format == ArchiveFormats.Zip;
+        _sevenZip.Checked = archive.Format == ArchiveFormats.SevenZip;
+        _level.SelectedIndex = Math.Clamp(archive.Level, 0, 9);
+        _split.Checked = archive.SplitMb > 0;
+        int preset = Array.IndexOf(VolumePresets, archive.SplitMb);
+        _volume.SelectedIndex = archive.SplitMb <= 0 ? 0 : preset >= 0 ? preset : VolumePresets.Length;
+        _volumeMb.Value = archive.SplitMb > 0 ? Math.Clamp(archive.SplitMb, 1, 1_000_000) : 1024;
+        _encrypt.Checked = archive.Encrypt;
+        _encryptNames.Checked = archive.EncryptNames;
+        _passwordId = archive.PasswordCredentialId;
+        _verifyRuns.Value = Math.Clamp(task.Verify.EveryRuns, 0, 1000);
+        _verifyDays.Value = Math.Clamp(task.Verify.StoredEveryDays, 0, 3650);
+        ShowPasswordState();
+        UpdateControls();
     }
 
     public override string? SaveTo(TaskDefinition task)
     {
-        if (_none.Checked)
+        var archive = task.Archive;
+        archive.Format = _zip.Checked ? ArchiveFormats.Zip : _sevenZip.Checked ? ArchiveFormats.SevenZip : ArchiveFormats.None;
+        archive.Level = Math.Max(0, _level.SelectedIndex);
+        archive.SplitMb = _sevenZip.Checked && _split.Checked
+            ? _volume.SelectedIndex < VolumePresets.Length ? VolumePresets[Math.Max(0, _volume.SelectedIndex)] : (int)_volumeMb.Value
+            : 0;
+        bool packed = archive.Format != ArchiveFormats.None;
+        archive.Encrypt = packed && _encrypt.Checked;
+        archive.EncryptNames = archive.Encrypt && _sevenZip.Checked && _encryptNames.Checked;
+        archive.PasswordCredentialId = archive.Encrypt ? _passwordId : archive.PasswordCredentialId;
+        task.Verify.EveryRuns = (int)_verifyRuns.Value;
+        task.Verify.StoredEveryDays = (int)_verifyDays.Value;
+
+        if (archive.Format == ArchiveFormats.SevenZip && task.Destinations.FirstOrDefault(d => !DestinationKinds.CanSeek(d.Kind)) is { } stream)
         {
-            task.Archive.Format = ArchiveFormats.None;
-            task.Archive.Encrypt = false;
-            task.Archive.EncryptNames = false;
+            return Strings.Format(Strings.ArchiveSevenZipNeedsSeek, TaskDescriber.Destination(stream));
+        }
+
+        if (archive.Encrypt && !HasPassword())
+        {
+            return Strings.ArchivePasswordRequired;
         }
 
         return null;
+    }
+
+    private void UpdateControls()
+    {
+        bool packed = !_none.Checked;
+        _level.Enabled = packed;
+        _split.Enabled = _sevenZip.Checked;
+        _volume.Enabled = _sevenZip.Checked && _split.Checked;
+        _volumeMb.Enabled = _volume.Enabled && _volume.SelectedIndex == VolumePresets.Length;
+        _encrypt.Enabled = packed;
+        _setPassword.Enabled = packed && _encrypt.Checked;
+        _passwordState.Visible = packed && _encrypt.Checked;
+        _encryptNames.Enabled = _sevenZip.Checked && _encrypt.Checked;
+    }
+
+    /// <summary>A password is stored for the task, or was just set in this editor.</summary>
+    private bool HasPassword() => _passwordId is { } id && (_passwordSaved
+        || Context.Monitor.Snapshot?.Credentials.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase)) is { HasSecret: true });
+
+    private void ShowPasswordState()
+    {
+        bool set = HasPassword();
+        _passwordState.Text = set ? Strings.ArchivePasswordSet : Strings.ArchivePasswordNotSet;
+        _passwordState.ForeColor = set ? SystemColors.GrayText : Glyphs.WarningText;
+    }
+
+    private void SetPassword()
+    {
+        using var dialog = new ArchivePasswordDialog(Context.Monitor, _passwordId, _taskName);
+        if (dialog.ShowDialog(FindForm()) == DialogResult.OK && dialog.SavedId is { } id)
+        {
+            _passwordId = id;
+            _passwordSaved = true;
+            ShowPasswordState();
+        }
     }
 }
 

@@ -63,7 +63,10 @@ en.RemoveData=Also delete the CUSTOS settings, logs and database in %1?%n%nThe b
 ru.RemoveData=Удалить также настройки, журналы и базу CUSTOS в папке %1?%n%nСами резервные копии не удаляются никогда.
 
 [Files]
-Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#PublishDir}\*"; Excludes: "7z.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 7z.dll has its own entry without ignoreversion: Setup compares the file versions, so a newer 7z.dll that an
+; administrator put in by hand stays (section 10.2). An older one is replaced, the same version is left alone.
+Source: "{#PublishDir}\7z.dll"; DestDir: "{app}"
 #ifdef RuntimeInstaller
 Source: "{#RuntimeInstaller}"; DestDir: "{tmp}"; Flags: dontcopy
 #endif
@@ -80,6 +83,10 @@ Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\Custos.exe"; Description: "{cm:LaunchGui}"; Flags: postinstall nowait skipifsilent runasoriginaluser
+
+[UninstallDelete]
+; The previous 7z.dll, kept by hand for a rollback (client README).
+Type: files; Name: "{app}\7z.dll.old"
 
 [UninstallRun]
 Filename: "{sys}\net.exe"; Parameters: "stop {#ServiceName}"; Flags: runhidden; RunOnceId: "StopService"

@@ -30,6 +30,15 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
     private static readonly TimeSpan StoppingNoticeTimeout = TimeSpan.FromSeconds(2);
 
     /// <summary>Methods that change what the service does as SYSTEM.</summary>
+    // Restoring writes anywhere as SYSTEM: only administrators, even when everybody may edit tasks (section 4).
+    private static readonly HashSet<string> AdminOnlyMethods =
+    [
+        PipeProtocol.Methods.RestoreList,
+        PipeProtocol.Methods.RestoreStart,
+        PipeProtocol.Methods.RestoreStatus,
+        PipeProtocol.Methods.RestoreStop,
+    ];
+
     private static readonly HashSet<string> AdminMethods =
     [
         PipeProtocol.Methods.TaskSave,
@@ -313,10 +322,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         try
         {
             await agent.Ready.WaitAsync(connection.Closing).ConfigureAwait(false);
-            if (AdminMethods.Contains(method) && !identity.IsAdmin && !agent.AllUsersMayEdit)
+            if ((AdminOnlyMethods.Contains(method) && !identity.IsAdmin) || (AdminMethods.Contains(method) && !identity.IsAdmin && !agent.AllUsersMayEdit))
             {
                 ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
-                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, Messages.NotAllowed);
+                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed : Messages.NotAllowed);
             }
             else
             {
@@ -381,6 +390,14 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest)), json.DestinationTestResult),
             PipeProtocol.Methods.SettingsSave =>
                 Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
+            PipeProtocol.Methods.RestoreList =>
+                PipeMessage.Success(id, agent.ListRestoreSets(request.GetData(json.RestoreListRequest)), json.RestoreListResult),
+            PipeProtocol.Methods.RestoreStart =>
+                Ok(id, agent.StartRestore(request.GetData(json.RestoreStartRequest), user)),
+            PipeProtocol.Methods.RestoreStatus =>
+                PipeMessage.Success(id, agent.GetRestoreStatus(), json.RestoreStatusResult),
+            PipeProtocol.Methods.RestoreStop =>
+                Ok(id, agent.StopRestore(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
         };
     }

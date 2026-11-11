@@ -1,3 +1,5 @@
+using Custos.Core.Archives;
+
 namespace Custos.Core.Backup;
 
 /// <summary>
@@ -27,6 +29,13 @@ public interface IBackupPlatform
 
     /// <summary>Keeps the computer from going to sleep until disposed (section 6.7).</summary>
     IDisposable KeepAwake(string reason);
+
+    /// <summary>Writers and readers of 7z and ZIP archives.</summary>
+    IArchiveProvider Archives { get; }
+
+    /// <summary>The password of an <c>archive_password</c> credential (section 6.5).</summary>
+    /// <exception cref="BackupException">There is no such credential or it has no password.</exception>
+    string GetArchivePassword(string credentialId);
 }
 
 /// <summary>A network logon. File operations on shares run inside <see cref="Run"/>; a file opened there stays usable
@@ -106,6 +115,18 @@ public sealed class NoSnapshots : ISnapshotSet
 /// <summary>Platform without Windows specifics: the process account everywhere, no VSS, no sleep prevention.</summary>
 public class LocalBackupPlatform : IBackupPlatform
 {
+    private IArchiveProvider? _archives;
+
+    /// <summary>7z.dll next to the program; the variable CUSTOS_7Z_DLL can point elsewhere (tests, development).</summary>
+    public virtual IArchiveProvider Archives => _archives ??= new ArchiveProvider(
+        Environment.GetEnvironmentVariable("CUSTOS_7Z_DLL") is { Length: > 0 } path ? path : Path.Combine(AppContext.BaseDirectory, "7z.dll"));
+
+    /// <summary>Passwords by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, string> ArchivePasswords { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual string GetArchivePassword(string credentialId) =>
+        ArchivePasswords.TryGetValue(credentialId, out string? password) ? password : throw new BackupException(Messages.ArchivePasswordMissing);
+
     public virtual string ComputerName => Environment.MachineName;
 
     public virtual INetworkSession OpenSession(string? credentialId) => ProcessSession.Instance;

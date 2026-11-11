@@ -1,0 +1,70 @@
+name: 7-Zip release check
+
+# Once a month: if 7-Zip has a newer release than the one pinned in client/installer/7-zip.json, opens an issue with
+# the new version and the checksums to pin. Nothing is downloaded or changed by this job.
+on:
+  schedule:
+    - cron: '17 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: client/installer/7-zip.json
+          sparse-checkout-cone-mode: false
+
+      - name: Compare with the newest 7-Zip release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pinned=$(jq -r .version client/installer/7-zip.json)
+          # The newest stable release by version number (the "latest" mark on GitHub is not always moved).
+          latest=$(gh api 'repos/ip7z/7zip/releases?per_page=30' --jq '
+            [.[] | select(.draft == false and .prerelease == false) | .tag_name | select(test("^[0-9]+\\.[0-9]+$"))]
+            | sort_by(split(".") | map(tonumber)) | last')
+          echo "Pinned: $pinned, newest release: $latest"
+          if [ -z "$latest" ] || [ "$latest" = "null" ]; then
+            echo "::error::No 7-Zip release found."
+            exit 1
+          fi
+          newer=$(jq -n --arg a "$latest" --arg b "$pinned" '($a | split(".") | map(tonumber)) > ($b | split(".") | map(tonumber))')
+          if [ "$newer" != "true" ]; then
+            echo "CUSTOS already ships the newest 7-Zip."
+            exit 0
+          fi
+
+          title="7-Zip $latest is out (CUSTOS ships $pinned)"
+          if [ "$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq length)" != "0" ]; then
+            echo "The issue is already open."
+            exit 0
+          fi
+
+          short=${latest//./}
+          assets=$(gh api "repos/ip7z/7zip/releases/tags/$latest" --jq '.assets[] | "\(.name) \(.digest // "")"')
+          digest() { echo "$assets" | awk -v n="$1" '$1 == n { sub(/^sha256:/, "", $2); print $2 }'; }
+          installer="7z${short}-x64.exe"
+          {
+            echo "Вышла 7-Zip $latest, в CUSTOS сейчас $pinned. Перейти на новую версию: заменить значения в \`client/installer/7-zip.json\` на эти, собрать и проверить на виртуалке. Уже установленные компьютеры можно обновить и без новой сборки: раздел «Замена 7z.dll» в \`client/README.md\`."
+            echo
+            echo "7-Zip $latest is out; CUSTOS ships $pinned. Release: https://github.com/ip7z/7zip/releases/tag/$latest"
+            echo
+            echo '```json'
+            echo "  \"version\": \"$latest\","
+            echo "  \"installerUrl\": \"https://github.com/ip7z/7zip/releases/download/$latest/$installer\","
+            echo "  \"installerSha256\": \"$(digest "$installer")\","
+            echo "  \"extractorUrl\": \"https://github.com/ip7z/7zip/releases/download/$latest/7zr.exe\","
+            echo "  \"extractorSha256\": \"$(digest 7zr.exe)\""
+            echo '```'
+            echo
+            echo "An empty checksum means GitHub shows no digest for that file: then do not move to this release yet."
+          } > body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file body.md
