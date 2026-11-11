@@ -339,7 +339,7 @@ public sealed class DialogTests
         Sta.Pump();
         Assert.True(etc.Visible);
         Assert.Contains("root       = /home\n", dialog.BlockText.ReplaceLineEndings("\n"), StringComparison.Ordinal);
-        var roots = Sta.Find<TextBox>(dialog).Single(b => b.Multiline && b.Text.Contains("/home", StringComparison.Ordinal));
+        var roots = Sta.Find<TextBox>(dialog).Single(b => b.Multiline && !b.ReadOnly && b.Text.Contains("/home", StringComparison.Ordinal));
         roots.Text += Environment.NewLine + "/srv";
         Sta.Pump();
         Assert.Equal(RemoteSourceDialog.PresetTitle(RemotePresets.Custom), preset.Text);
