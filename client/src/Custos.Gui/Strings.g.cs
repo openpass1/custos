@@ -731,14 +731,32 @@ static partial class Strings
     /// <summary>A full backup is deleted together with the incremental and differential backups made after it, never on its...</summary>
     public static string RetentionCountHint => Get(nameof(RetentionCountHint));
 
-    /// <summary>Delete backups older than N days</summary>
+    /// <summary>Delete backups older than</summary>
     public static string RetentionAge => Get(nameof(RetentionAge));
 
-    /// <summary>Grandfather-father-son: daily, weekly and monthly backups</summary>
+    /// <summary>days</summary>
+    public static string RetentionAgeSuffix => Get(nameof(RetentionAgeSuffix));
+
+    /// <summary>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that ...</summary>
+    public static string RetentionAgeHint => Get(nameof(RetentionAgeHint));
+
+    /// <summary>Grandfather-father-son: keep the last backup of each day, week and month</summary>
     public static string RetentionGfs => Get(nameof(RetentionGfs));
 
-    /// <summary>These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its ba...</summary>
-    public static string RetentionLater => Get(nameof(RetentionLater));
+    /// <summary>Days:</summary>
+    public static string GfsDaily => Get(nameof(GfsDaily));
+
+    /// <summary>Weeks:</summary>
+    public static string GfsWeekly => Get(nameof(GfsWeekly));
+
+    /// <summary>Months:</summary>
+    public static string GfsMonthly => Get(nameof(GfsMonthly));
+
+    /// <summary>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a k...</summary>
+    public static string RetentionGfsHint => Get(nameof(RetentionGfsHint));
+
+    /// <summary>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</summary>
+    public static string RetentionGfsEmpty => Get(nameof(RetentionGfsEmpty));
 
     /// <summary>Rules that always apply</summary>
     public static string RetentionRules => Get(nameof(RetentionRules));

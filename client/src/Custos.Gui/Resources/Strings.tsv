@@ -254,11 +254,17 @@ RetentionNone	Keep all backups	Хранить все копии
 RetentionCount	Keep the last	Хранить последние
 RetentionCountSuffix	full backups with their chains	полных копий вместе с их цепочками
 RetentionCountHint	A full backup is deleted together with the incremental and differential backups made after it, never on its own.	Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.
-RetentionAge	Delete backups older than N days	Удалять копии старше N дней
-RetentionGfs	Grandfather-father-son: daily, weekly and monthly backups	Дед-отец-сын: дневные, недельные и месячные копии
-RetentionLater	These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.	Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.
+RetentionAge	Delete backups older than	Удалять копии старше
+RetentionAgeSuffix	days	дней
+RetentionAgeHint	A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.	Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.
+RetentionGfs	Grandfather-father-son: keep the last backup of each day, week and month	Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца
+GfsDaily	Days:	Дней:
+GfsWeekly	Weeks:	Недель:
+GfsMonthly	Months:	Месяцев:
+RetentionGfsHint	For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.	Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».
+RetentionGfsEmpty	Grandfather-father-son: keep at least one daily, weekly or monthly backup.	Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.
 RetentionRules	Rules that always apply	Правила, которые действуют всегда
-RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works only with «A separate folder for each backup» on.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает, только если включено «Отдельная папка для каждой копии».
+RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works with archives and with «A separate folder for each backup». One shared folder and a mirror are updated in place and have nothing to delete.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает для архивов и для «Отдельной папки для каждой копии». Общая папка и зеркало обновляются на месте, удалять в них нечего.
 FiltersHeading	Filters	Фильтры
 FiltersNote	They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? for one character.	Действуют на все источники задания. Маски разделяются точкой с запятой: * — любые символы, ? — один символ.
 FilterInclude	Only files:	Только файлы:

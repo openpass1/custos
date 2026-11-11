@@ -158,6 +158,39 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
+    public void Retention_by_age_deletes_sets_older_than_the_limit()
+    {
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 3 };
+
+        Run(task, Start);
+        Run(task, Start.AddDays(1));
+        var kept1 = Run(task, Start.AddDays(2));
+        var last = Run(task, Start.AddDays(5));
+
+        Assert.Equal(2, last.DeletedSets);
+        var left = Directory.GetDirectories(destination).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([kept1.SetName, last.SetName], left);
+    }
+
+    [Fact]
+    public void Gfs_retention_keeps_the_last_set_of_each_day()
+    {
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Gfs, Gfs = new GfsOptions { Daily = 2, Weekly = 0, Monthly = 0 } };
+
+        Run(task, Start);
+        Run(task, Start.AddDays(1));
+        var dayTwo = Run(task, Start.AddDays(1).AddHours(2));
+        var last = Run(task, Start.AddDays(2));
+
+        var left = Directory.GetDirectories(destination).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([dayTwo.SetName, last.SetName], left);
+    }
+
+    [Fact]
     public void A_missing_parent_set_makes_the_next_copy_full()
     {
         string destination = _temp.Combine("Backup");

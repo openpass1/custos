@@ -750,13 +750,31 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>A full backup is deleted together with the incremental and differential backups made after it, never on its own.</value>
   </data>
   <data name="RetentionAge" xml:space="preserve">
-    <value>Delete backups older than N days</value>
+    <value>Delete backups older than</value>
+  </data>
+  <data name="RetentionAgeSuffix" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="RetentionAgeHint" xml:space="preserve">
+    <value>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Grandfather-father-son: daily, weekly and monthly backups</value>
+    <value>Grandfather-father-son: keep the last backup of each day, week and month</value>
   </data>
-  <data name="RetentionLater" xml:space="preserve">
-    <value>These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.</value>
+  <data name="GfsDaily" xml:space="preserve">
+    <value>Days:</value>
+  </data>
+  <data name="GfsWeekly" xml:space="preserve">
+    <value>Weeks:</value>
+  </data>
+  <data name="GfsMonthly" xml:space="preserve">
+    <value>Months:</value>
+  </data>
+  <data name="RetentionGfsHint" xml:space="preserve">
+    <value>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.</value>
+  </data>
+  <data name="RetentionGfsEmpty" xml:space="preserve">
+    <value>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Rules that always apply</value>
@@ -765,7 +783,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>• The last successful full backup is never deleted.
 • If a run ends with an error, nothing is deleted.
 • The backups are found by looking into the destination itself, so the ones made before a reinstall count too.
-• Retention works only with «A separate folder for each backup» on.</value>
+• Retention works with archives and with «A separate folder for each backup». One shared folder and a mirror are updated in place and have nothing to delete.</value>
   </data>
   <data name="FiltersHeading" xml:space="preserve">
     <value>Filters</value>

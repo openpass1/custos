@@ -92,6 +92,8 @@ ConfigNameTooLong	The task name may have at most {0} characters.	Названи�
 ConfigBadTime	«{0}» is not a time. Use HH:MM, for example 21:30.	«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.
 ConfigBadInterval	The interval must be from {0} to {1} minutes.	Интервал — от {0} до {1} минут.
 ConfigBadKeepFull	Keep at least one full backup.	Нужно хранить хотя бы одну полную копию.
+ConfigBadMaxAge	Set how many days to keep backups: at least 1.	Укажите, сколько дней хранить копии: не меньше 1.
+ConfigBadGfs	Keep at least one daily, weekly or monthly backup.	Нужно хранить хотя бы одну дневную, недельную или месячную копию.
 ConfigUserRequired	Enter the user name.	Введите имя пользователя.
 ConfigRestoredFromBackup	{0} was missing; its backup copy was used.	Файл {0} не найден, использована его резервная копия.
 ConfigDamagedUsedBackup	{0} is damaged ({1}); its backup copy was used. The damaged file is kept as {2}.	Файл {0} повреждён ({1}), использована его резервная копия. Повреждённый файл сохранён как {2}.
@@ -144,7 +146,10 @@ DescKeepChainsFew	The last {0} full backups are kept, with their {1} backups.	Х
 DescKeepChainsMany	The last {0} full backups are kept, with their {1} backups.	Хранятся {0} последних полных копий вместе с их {1}.
 DescKindIncremental	incremental	инкрементальными
 DescKindDifferential	differential	дифференциальными
-DescRetentionLater	This retention mode arrives in the next version; until then old backups are not deleted.	Этот режим хранения появится в следующей версии, пока старые копии не удаляются.
+DescKeepAgeOne	Backups older than {0} day are deleted; a full backup stays while newer backups need it.	Копии старше {0} дня удаляются; полная копия остаётся, пока она нужна более новым.
+DescKeepAgeFew	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
+DescKeepAgeMany	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
+DescKeepGfs	The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.	Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.
 MissedTooOld	Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.	Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.
 DeleteWhileRunning	The task is running now. Stop it first, then delete it.	Задание сейчас выполняется. Сначала остановите его, потом удаляйте.
 DatabaseRecreated	The database of the service was damaged and has been started anew. The history of earlier runs is gone; the next run of each task makes a full backup.	База службы была повреждена и создана заново. История прежних запусков потеряна, следующий запуск каждого задания сделает полную копию.

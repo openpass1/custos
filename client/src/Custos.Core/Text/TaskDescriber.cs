@@ -193,7 +193,7 @@ public static class TaskDescriber
 
     private static string Retention(TaskDefinition task)
     {
-        if (!task.Layout.SeparateFolders)
+        if (!task.Layout.SeparateFolders && task.Archive.Format == ArchiveFormats.None)
         {
             return Messages.DescOneFolder;
         }
@@ -212,8 +212,13 @@ public static class TaskDescriber
 
                 string kind = task.BackupType == BackupTypes.Differential ? Messages.DescKindDifferential : Messages.DescKindIncremental;
                 return Messages.Format(Sizes.Plural(keep, Messages.DescKeepChainsOne, Messages.DescKeepChainsFew, Messages.DescKeepChainsMany), keep, kind);
+            case RetentionModes.Age:
+                int days = Math.Max(1, retention.MaxAgeDays);
+                return Messages.Format(Sizes.Plural(days, Messages.DescKeepAgeOne, Messages.DescKeepAgeFew, Messages.DescKeepAgeMany), days);
+            case RetentionModes.Gfs:
+                return Messages.Format(Messages.DescKeepGfs, retention.Gfs.Daily, retention.Gfs.Weekly, retention.Gfs.Monthly);
             default:
-                return Messages.DescRetentionLater;
+                return Messages.DescKeepAll;
         }
     }
 

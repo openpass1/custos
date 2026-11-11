@@ -1220,61 +1220,94 @@ internal sealed class RetentionPage : EditorPage
     private readonly RadioButton _keepAll = new() { Text = Strings.RetentionNone, AutoSize = true };
     private readonly RadioButton _byCount = new() { Text = Strings.RetentionCount, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
     private readonly NumericUpDown _keepFull = new() { Minimum = 1, Maximum = 1000, Value = 12, Width = 70 };
-    private readonly RadioButton _byAge = new() { Text = Strings.RetentionAge, AutoSize = true, Enabled = false };
-    private readonly RadioButton _gfs = new() { Text = Strings.RetentionGfs, AutoSize = true, Enabled = false };
-    private string _otherMode = RetentionModes.Count;
+    private readonly RadioButton _byAge = new() { Text = Strings.RetentionAge, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly NumericUpDown _maxAge = new() { Minimum = 1, Maximum = 3650, Value = 30, Width = 70 };
+    private readonly RadioButton _gfs = new() { Text = Strings.RetentionGfs, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly NumericUpDown _daily = new() { Minimum = 0, Maximum = 1000, Value = 7, Width = 60 };
+    private readonly NumericUpDown _weekly = new() { Minimum = 0, Maximum = 1000, Value = 4, Width = 60 };
+    private readonly NumericUpDown _monthly = new() { Minimum = 0, Maximum = 1000, Value = 12, Width = 60 };
+    private readonly FlowLayoutPanel _gfsCounts = new() { AutoSize = true, WrapContents = true, Margin = new Padding(18, 0, 0, 0) };
 
     public RetentionPage(EditorContext context)
         : base(context, Strings.PageRetention, Glyph.Layers)
     {
         AddWide(_keepAll);
-        var count = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
-        count.Controls.AddRange([_byCount, _keepFull, new Label { Text = Strings.RetentionCountSuffix, AutoSize = true, Margin = new Padding(4, 8, 0, 0) }]);
-        AddWide(count);
+        AddWide(Line(_byCount, _keepFull, Strings.RetentionCountSuffix));
         AddNote(Strings.RetentionCountHint, 18);
-        AddWide(_byAge);
+        AddWide(Line(_byAge, _maxAge, Strings.RetentionAgeSuffix));
+        AddNote(Strings.RetentionAgeHint, 18);
         AddWide(_gfs);
-        AddNote(Strings.RetentionLater, 18);
+        _gfsCounts.Controls.AddRange([Caption(Strings.GfsDaily), _daily, Caption(Strings.GfsWeekly), _weekly, Caption(Strings.GfsMonthly), _monthly]);
+        AddWide(_gfsCounts);
+        AddNote(Strings.RetentionGfsHint, 18);
         AddHeading(Strings.RetentionRules);
         AddNote(Strings.RetentionRulesText);
 
-        _byCount.CheckedChanged += (_, _) => _keepFull.Enabled = _byCount.Checked;
-        _keepAll.CheckedChanged += (_, _) =>
+        // The radio buttons sit in different panels, so they are kept exclusive by hand.
+        RadioButton[] modes = [_keepAll, _byCount, _byAge, _gfs];
+        foreach (var mode in modes)
         {
-            // The radio buttons sit in different panels, so they are kept exclusive by hand.
-            if (_keepAll.Checked)
+            mode.CheckedChanged += (_, _) =>
             {
-                _byCount.Checked = false;
-            }
-        };
-        _byCount.CheckedChanged += (_, _) =>
-        {
-            if (_byCount.Checked)
-            {
-                _keepAll.Checked = false;
-                _byAge.Checked = false;
-                _gfs.Checked = false;
-            }
-        };
+                if (mode.Checked)
+                {
+                    foreach (var other in modes.Where(m => m != mode))
+                    {
+                        other.Checked = false;
+                    }
+                }
+
+                UpdateEnabled();
+            };
+        }
     }
 
     public override void LoadFrom(TaskDefinition task)
     {
         var retention = task.Retention;
         _keepFull.Value = Math.Clamp(retention.KeepFull, 1, 1000);
-        _otherMode = retention.Mode;
-        _keepAll.Checked = retention.Mode == RetentionModes.None;
+        _maxAge.Value = retention.MaxAgeDays > 0 ? Math.Clamp(retention.MaxAgeDays, 1, 3650) : 30;
+        _daily.Value = Math.Clamp(retention.Gfs.Daily, 0, 1000);
+        _weekly.Value = Math.Clamp(retention.Gfs.Weekly, 0, 1000);
+        _monthly.Value = Math.Clamp(retention.Gfs.Monthly, 0, 1000);
+        _keepAll.Checked = retention.Mode is not (RetentionModes.Count or RetentionModes.Age or RetentionModes.Gfs);
         _byCount.Checked = retention.Mode == RetentionModes.Count;
         _byAge.Checked = retention.Mode == RetentionModes.Age;
         _gfs.Checked = retention.Mode == RetentionModes.Gfs;
-        _keepFull.Enabled = _byCount.Checked;
+        UpdateEnabled();
     }
 
     public override string? SaveTo(TaskDefinition task)
     {
-        task.Retention.Mode = _keepAll.Checked ? RetentionModes.None : _byCount.Checked ? RetentionModes.Count : _otherMode;
-        task.Retention.KeepFull = (int)_keepFull.Value;
+        if (_gfs.Checked && _daily.Value + _weekly.Value + _monthly.Value == 0)
+        {
+            return Strings.RetentionGfsEmpty;
+        }
+
+        var retention = task.Retention;
+        retention.Mode = _byCount.Checked ? RetentionModes.Count : _byAge.Checked ? RetentionModes.Age : _gfs.Checked ? RetentionModes.Gfs : RetentionModes.None;
+        retention.KeepFull = (int)_keepFull.Value;
+        retention.MaxAgeDays = (int)_maxAge.Value;
+        retention.Gfs.Daily = (int)_daily.Value;
+        retention.Gfs.Weekly = (int)_weekly.Value;
+        retention.Gfs.Monthly = (int)_monthly.Value;
         return null;
+    }
+
+    private static FlowLayoutPanel Line(RadioButton radio, NumericUpDown number, string suffix)
+    {
+        var line = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        line.Controls.AddRange([radio, number, new Label { Text = suffix, AutoSize = true, Margin = new Padding(4, 8, 0, 0) }]);
+        return line;
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Margin = new Padding(0, 6, 4, 0) };
+
+    private void UpdateEnabled()
+    {
+        _keepFull.Enabled = _byCount.Checked;
+        _maxAge.Enabled = _byAge.Checked;
+        _gfsCounts.Enabled = _gfs.Checked;
     }
 }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -348,6 +349,83 @@ public static partial class SetCatalog
     }
 
     /// <summary>
+    /// Which sets retention by age removes (section 6.6): sets older than <paramref name="maxAgeDays"/> days, except
+    /// what a younger set still needs (its full set, and for an incremental set the incremental sets before it). So a
+    /// full set goes only when every set built on it is old too. The newest full set and the protected set stay.
+    /// </summary>
+    public static List<StoredSet> PlanAgeRetention(IReadOnlyList<StoredSet> sets, int maxAgeDays, DateTimeOffset now, string? protectedRunId)
+    {
+        ArgumentNullException.ThrowIfNull(sets);
+        if (maxAgeDays <= 0)
+        {
+            return [];
+        }
+
+        var limit = now - TimeSpan.FromDays(maxAgeDays);
+        return Unneeded(sets, sets.Where(s => s.Header.StartedAt >= limit), protectedRunId);
+    }
+
+    /// <summary>
+    /// Which sets grandfather-father-son retention removes (section 6.6): of the newest days, weeks (ISO) and months
+    /// that have sets, the last set of each stays, as many as <paramref name="gfs"/> says, with what those sets need.
+    /// The newest full set and the protected set stay.
+    /// </summary>
+    public static List<StoredSet> PlanGfsRetention(IReadOnlyList<StoredSet> sets, GfsOptions gfs, TimeZoneInfo timeZone, string? protectedRunId)
+    {
+        ArgumentNullException.ThrowIfNull(sets);
+        ArgumentNullException.ThrowIfNull(gfs);
+        ArgumentNullException.ThrowIfNull(timeZone);
+        var newestFirst = sets.OrderByDescending(s => s.Header.StartedAt).ToList();
+        var points = new List<StoredSet>();
+        void Pick(int count, Func<DateTime, (int, int, int)> period)
+        {
+            // GroupBy keeps the order in which periods first appear: newest first.
+            points.AddRange(newestFirst.GroupBy(s => period(TimeZoneInfo.ConvertTime(s.Header.StartedAt, timeZone).DateTime))
+                .Take(Math.Max(0, count))
+                .Select(g => g.First()));
+        }
+
+        Pick(gfs.Daily, d => (d.Year, d.Month, d.Day));
+        Pick(gfs.Weekly, d => (ISOWeek.GetYear(d), ISOWeek.GetWeekOfYear(d), 0));
+        Pick(gfs.Monthly, d => (d.Year, d.Month, 0));
+        return Unneeded(sets, points, protectedRunId);
+    }
+
+    /// <summary>Every set that neither <paramref name="wanted"/> nor what it needs, the newest full set and the
+    /// protected set include.</summary>
+    private static List<StoredSet> Unneeded(IReadOnlyList<StoredSet> sets, IEnumerable<StoredSet> wanted, string? protectedRunId)
+    {
+        var keep = new HashSet<StoredSet>(wanted, ReferenceEqualityComparer.Instance);
+        keep.UnionWith(sets.Where(s => string.Equals(s.Header.RunId, protectedRunId, StringComparison.OrdinalIgnoreCase)));
+        if (sets.Where(s => s.Header.BackupType == BackupTypes.Full).MaxBy(s => s.Header.StartedAt) is { } newestFull)
+        {
+            keep.Add(newestFull);
+        }
+
+        foreach (var set in keep.ToList())
+        {
+            keep.UnionWith(Needs(sets, set));
+        }
+
+        return [.. sets.Where(s => !keep.Contains(s))];
+    }
+
+    /// <summary>The sets <paramref name="set"/> builds on (those that are there): its full set, and for an incremental
+    /// set the incremental sets of the chain before it.</summary>
+    private static IEnumerable<StoredSet> Needs(IReadOnlyList<StoredSet> sets, StoredSet set)
+    {
+        string? parent = set.Header.ParentFullRunId;
+        if (set.Header.BackupType is BackupTypes.Full or BackupTypes.Mirror || parent is null)
+        {
+            return [];
+        }
+
+        return sets.Where(s => string.Equals(s.Header.ParentFullRunId ?? s.Header.RunId, parent, StringComparison.OrdinalIgnoreCase)
+            && (string.Equals(s.Header.RunId, parent, StringComparison.OrdinalIgnoreCase)
+                || (set.Header.BackupType == BackupTypes.Incremental && s.Header.BackupType == BackupTypes.Incremental && s.Header.StartedAt < set.Header.StartedAt)));
+    }
+
+    /// <summary>
     /// The sets a restore of <paramref name="target"/> needs, oldest first (section 6.11): the full set it builds on,
     /// then for an incremental set every incremental set of the chain up to it, for a differential set only itself.
     /// </summary>
@@ -356,7 +434,7 @@ public static partial class SetCatalog
     {
         ArgumentNullException.ThrowIfNull(sets);
         ArgumentNullException.ThrowIfNull(target);
-        if (target.Header.BackupType == BackupTypes.Full)
+        if (target.Header.BackupType is BackupTypes.Full or BackupTypes.Mirror)
         {
             return [target];
         }

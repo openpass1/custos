@@ -63,6 +63,86 @@ public sealed class SetCatalogTests
     }
 
     [Fact]
+    public void Age_removes_sets_older_than_the_limit()
+    {
+        var sets = new[]
+        {
+            Full("F1", 0), Incremental("I1", 1, "F1"), Incremental("I2", 2, "F1"), Full("F2", 10), Incremental("I3", 11, "F2"),
+        };
+
+        var removed = SetCatalog.PlanAgeRetention(sets, maxAgeDays: 5, now: Day0.AddDays(12), protectedRunId: "I3");
+
+        Assert.Equal(["F1", "I1", "I2"], removed.Select(s => s.Header.RunId));
+    }
+
+    [Fact]
+    public void Age_keeps_old_sets_a_young_set_needs()
+    {
+        // I2 is young: its full set and the incremental set before it stay. D2 needs only its full set.
+        var incremental = new[] { Full("F1", 0), Incremental("I1", 1, "F1"), Incremental("I2", 8, "F1") };
+        var differential = new[] { Full("F1", 0), Differential("D1", 1, "F1"), Differential("D2", 8, "F1") };
+
+        Assert.Empty(SetCatalog.PlanAgeRetention(incremental, maxAgeDays: 5, now: Day0.AddDays(10), protectedRunId: "I2"));
+        Assert.Equal(["D1"], SetCatalog.PlanAgeRetention(differential, maxAgeDays: 5, now: Day0.AddDays(10), protectedRunId: "D2")
+            .Select(s => s.Header.RunId));
+    }
+
+    [Fact]
+    public void Age_never_removes_the_newest_full_set()
+    {
+        var sets = new[] { Full("F1", 0), Full("F2", 1) };
+
+        Assert.Equal(["F1"], SetCatalog.PlanAgeRetention(sets, maxAgeDays: 5, now: Day0.AddDays(100), protectedRunId: null)
+            .Select(s => s.Header.RunId));
+        Assert.Empty(SetCatalog.PlanAgeRetention(sets, maxAgeDays: 0, now: Day0.AddDays(100), protectedRunId: null));
+    }
+
+    [Fact]
+    public void Gfs_keeps_the_last_set_of_each_day_week_and_month()
+    {
+        // One full set a day from Thursday 1 January to Wednesday 21 January, and one more earlier on the 21st.
+        var sets = Enumerable.Range(0, 21).Select(d => Full("D" + (d + 1), d)).ToList();
+        sets.Add(At("Early21", Day0.AddDays(20).AddHours(-12), BackupTypes.Full, null));
+        var gfs = new GfsOptions { Daily = 3, Weekly = 2, Monthly = 1 };
+
+        var removed = SetCatalog.PlanGfsRetention(sets, gfs, TimeZoneInfo.Utc, protectedRunId: "D21");
+
+        // Days: 21, 20, 19. Weeks: the one of 19-25 January (21st) and of 12-18 January (18th). Month: the 21st.
+        var kept = sets.Except(removed).Select(s => s.Header.RunId).Order(StringComparer.Ordinal);
+        Assert.Equal(["D18", "D19", "D20", "D21"], kept);
+    }
+
+    [Fact]
+    public void Gfs_counts_days_in_local_time()
+    {
+        var utcPlus3 = TimeZoneInfo.CreateCustomTimeZone("UTC+3", TimeSpan.FromHours(3), "UTC+3", "UTC+3");
+        var sets = new[]
+        {
+            At("Jan1", new DateTimeOffset(2026, 1, 1, 20, 0, 0, TimeSpan.Zero), BackupTypes.Full, null),
+            At("Jan2a", new DateTimeOffset(2026, 1, 1, 22, 0, 0, TimeSpan.Zero), BackupTypes.Full, null),
+            At("Jan2b", new DateTimeOffset(2026, 1, 1, 23, 0, 0, TimeSpan.Zero), BackupTypes.Full, null),
+        };
+
+        var removed = SetCatalog.PlanGfsRetention(sets, new GfsOptions { Daily = 2, Weekly = 0, Monthly = 0 }, utcPlus3, protectedRunId: null);
+
+        Assert.Equal(["Jan2a"], removed.Select(s => s.Header.RunId));
+    }
+
+    [Fact]
+    public void Gfs_keeps_what_the_chosen_sets_build_on()
+    {
+        var incremental = new List<StoredSet> { Full("F1", 0) };
+        incremental.AddRange(Enumerable.Range(1, 5).Select(d => Incremental("I" + d, d, "F1")));
+        var differential = new List<StoredSet> { Full("F1", 0) };
+        differential.AddRange(Enumerable.Range(1, 5).Select(d => Differential("D" + d, d, "F1")));
+        var gfs = new GfsOptions { Daily = 2, Weekly = 0, Monthly = 0 };
+
+        Assert.Empty(SetCatalog.PlanGfsRetention(incremental, gfs, TimeZoneInfo.Utc, protectedRunId: "I5"));
+        Assert.Equal(["D1", "D2", "D3"], SetCatalog.PlanGfsRetention(differential, gfs, TimeZoneInfo.Utc, protectedRunId: "D5")
+            .Select(s => s.Header.RunId));
+    }
+
+    [Fact]
     public void Scan_finds_the_sets_of_the_task_and_skips_partial_and_foreign_folders()
     {
         using var temp = new TempFolder();
@@ -117,9 +197,11 @@ public sealed class SetCatalogTests
 
     private static StoredSet Differential(string runId, int day, string parent) => Set(runId, day, BackupTypes.Differential, parent);
 
-    private static StoredSet Set(string runId, int day, string type, string? parent) => new(
+    private static StoredSet Set(string runId, int day, string type, string? parent) => At(runId, Day0.AddDays(day), type, parent);
+
+    private static StoredSet At(string runId, DateTimeOffset startedAt, string type, string? parent) => new(
         "/sets/" + runId,
-        new SetManifestHeader { RunId = runId, TaskId = "task", BackupType = type, ParentFullRunId = parent, StartedAt = Day0.AddDays(day) });
+        new SetManifestHeader { RunId = runId, TaskId = "task", BackupType = type, ParentFullRunId = parent, StartedAt = startedAt });
 
     private static void WriteSet(string folder, string taskId, string runId, DateTimeOffset startedAt)
     {

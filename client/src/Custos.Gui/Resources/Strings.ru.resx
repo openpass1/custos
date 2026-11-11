@@ -750,13 +750,31 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.</value>
   </data>
   <data name="RetentionAge" xml:space="preserve">
-    <value>Удалять копии старше N дней</value>
+    <value>Удалять копии старше</value>
+  </data>
+  <data name="RetentionAgeSuffix" xml:space="preserve">
+    <value>дней</value>
+  </data>
+  <data name="RetentionAgeHint" xml:space="preserve">
+    <value>Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Дед-отец-сын: дневные, недельные и месячные копии</value>
+    <value>Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца</value>
   </data>
-  <data name="RetentionLater" xml:space="preserve">
-    <value>Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.</value>
+  <data name="GfsDaily" xml:space="preserve">
+    <value>Дней:</value>
+  </data>
+  <data name="GfsWeekly" xml:space="preserve">
+    <value>Недель:</value>
+  </data>
+  <data name="GfsMonthly" xml:space="preserve">
+    <value>Месяцев:</value>
+  </data>
+  <data name="RetentionGfsHint" xml:space="preserve">
+    <value>Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».</value>
+  </data>
+  <data name="RetentionGfsEmpty" xml:space="preserve">
+    <value>Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Правила, которые действуют всегда</value>
@@ -765,7 +783,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>• Последняя успешная полная копия не удаляется никогда.
 • Если запуск завершился ошибкой, ничего не удаляется.
 • Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.
-• Хранение работает, только если включено «Отдельная папка для каждой копии».</value>
+• Хранение работает для архивов и для «Отдельной папки для каждой копии». Общая папка и зеркало обновляются на месте, удалять в них нечего.</value>
   </data>
   <data name="FiltersHeading" xml:space="preserve">
     <value>Фильтры</value>

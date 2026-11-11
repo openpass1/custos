@@ -847,7 +847,8 @@ public sealed partial class BackupEngine
             target.Kept = run.Task.Layout.SeparateFolders || IsArchive(run.Task) ? [.. target.Sets, target.NewSet!] : [target.NewSet!];
         }
 
-        if (!(run.Task.Layout.SeparateFolders || IsArchive(run.Task)) || retention.Mode != RetentionModes.Count)
+        if (!(run.Task.Layout.SeparateFolders || IsArchive(run.Task))
+            || retention.Mode is not (RetentionModes.Count or RetentionModes.Age or RetentionModes.Gfs))
         {
             return;
         }
@@ -855,7 +856,13 @@ public sealed partial class BackupEngine
         Phase(BackupPhases.Retention);
         foreach (var target in run.Targets.Where(t => t.Completed && t.NewSet is not null))
         {
-            foreach (var set in SetCatalog.PlanCountRetention(target.Kept, retention.KeepFull, run.Request.RunId))
+            var plan = retention.Mode switch
+            {
+                RetentionModes.Age => SetCatalog.PlanAgeRetention(target.Kept, retention.MaxAgeDays, run.Request.StartedAt, run.Request.RunId),
+                RetentionModes.Gfs => SetCatalog.PlanGfsRetention(target.Kept, retention.Gfs, run.Request.TimeZone, run.Request.RunId),
+                _ => SetCatalog.PlanCountRetention(target.Kept, retention.KeepFull, run.Request.RunId),
+            };
+            foreach (var set in plan)
             {
                 run.Cancellation.ThrowIfCancellationRequested();
                 try

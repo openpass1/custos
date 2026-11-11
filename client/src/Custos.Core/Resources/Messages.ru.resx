@@ -289,6 +289,12 @@
   <data name="ConfigBadKeepFull" xml:space="preserve">
     <value>Нужно хранить хотя бы одну полную копию.</value>
   </data>
+  <data name="ConfigBadMaxAge" xml:space="preserve">
+    <value>Укажите, сколько дней хранить копии: не меньше 1.</value>
+  </data>
+  <data name="ConfigBadGfs" xml:space="preserve">
+    <value>Нужно хранить хотя бы одну дневную, недельную или месячную копию.</value>
+  </data>
   <data name="ConfigUserRequired" xml:space="preserve">
     <value>Введите имя пользователя.</value>
   </data>
@@ -445,8 +451,17 @@
   <data name="DescKindDifferential" xml:space="preserve">
     <value>дифференциальными</value>
   </data>
-  <data name="DescRetentionLater" xml:space="preserve">
-    <value>Этот режим хранения появится в следующей версии, пока старые копии не удаляются.</value>
+  <data name="DescKeepAgeOne" xml:space="preserve">
+    <value>Копии старше {0} дня удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepAgeFew" xml:space="preserve">
+    <value>Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepAgeMany" xml:space="preserve">
+    <value>Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepGfs" xml:space="preserve">
+    <value>Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.</value>

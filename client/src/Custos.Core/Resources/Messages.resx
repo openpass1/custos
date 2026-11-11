@@ -289,6 +289,12 @@
   <data name="ConfigBadKeepFull" xml:space="preserve">
     <value>Keep at least one full backup.</value>
   </data>
+  <data name="ConfigBadMaxAge" xml:space="preserve">
+    <value>Set how many days to keep backups: at least 1.</value>
+  </data>
+  <data name="ConfigBadGfs" xml:space="preserve">
+    <value>Keep at least one daily, weekly or monthly backup.</value>
+  </data>
   <data name="ConfigUserRequired" xml:space="preserve">
     <value>Enter the user name.</value>
   </data>
@@ -445,8 +451,17 @@
   <data name="DescKindDifferential" xml:space="preserve">
     <value>differential</value>
   </data>
-  <data name="DescRetentionLater" xml:space="preserve">
-    <value>This retention mode arrives in the next version; until then old backups are not deleted.</value>
+  <data name="DescKeepAgeOne" xml:space="preserve">
+    <value>Backups older than {0} day are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepAgeFew" xml:space="preserve">
+    <value>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepAgeMany" xml:space="preserve">
+    <value>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepGfs" xml:space="preserve">
+    <value>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</value>

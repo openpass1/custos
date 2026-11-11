@@ -441,6 +441,17 @@ public sealed class ConfigStore
         {
             throw new ConfigException(Messages.ConfigBadKeepFull);
         }
+
+        if (task.Retention.Mode == RetentionModes.Age && task.Retention.MaxAgeDays < 1)
+        {
+            throw new ConfigException(Messages.ConfigBadMaxAge);
+        }
+
+        var gfs = task.Retention.Gfs;
+        if (task.Retention.Mode == RetentionModes.Gfs && (gfs.Daily < 0 || gfs.Weekly < 0 || gfs.Monthly < 0 || gfs.Daily + gfs.Weekly + gfs.Monthly == 0))
+        {
+            throw new ConfigException(Messages.ConfigBadGfs);
+        }
     }
 
     private static void ValidateCredential(Credential credential)
@@ -468,6 +479,7 @@ public sealed class ConfigStore
         task.Schedule.DaysOfWeek ??= [];
         task.Schedule.DaysOfMonth ??= [];
         task.Retention ??= new RetentionOptions();
+        task.Retention.Gfs ??= new GfsOptions();
         task.Layout ??= new LayoutOptions();
         task.Copy ??= new CopyOptions();
         task.Copy.ReadRetries = Math.Clamp(task.Copy.ReadRetries, 0, 5);

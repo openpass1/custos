@@ -281,6 +281,12 @@ static partial class Messages
     /// <summary>Keep at least one full backup.</summary>
     public static string ConfigBadKeepFull => Get(nameof(ConfigBadKeepFull));
 
+    /// <summary>Set how many days to keep backups: at least 1.</summary>
+    public static string ConfigBadMaxAge => Get(nameof(ConfigBadMaxAge));
+
+    /// <summary>Keep at least one daily, weekly or monthly backup.</summary>
+    public static string ConfigBadGfs => Get(nameof(ConfigBadGfs));
+
     /// <summary>Enter the user name.</summary>
     public static string ConfigUserRequired => Get(nameof(ConfigUserRequired));
 
@@ -437,8 +443,17 @@ static partial class Messages
     /// <summary>differential</summary>
     public static string DescKindDifferential => Get(nameof(DescKindDifferential));
 
-    /// <summary>This retention mode arrives in the next version; until then old backups are not deleted.</summary>
-    public static string DescRetentionLater => Get(nameof(DescRetentionLater));
+    /// <summary>Backups older than {0} day are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeOne => Get(nameof(DescKeepAgeOne));
+
+    /// <summary>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeFew => Get(nameof(DescKeepAgeFew));
+
+    /// <summary>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeMany => Get(nameof(DescKeepAgeMany));
+
+    /// <summary>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</summary>
+    public static string DescKeepGfs => Get(nameof(DescKeepGfs));
 
     /// <summary>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</summary>
     public static string MissedTooOld => Get(nameof(MissedTooOld));
