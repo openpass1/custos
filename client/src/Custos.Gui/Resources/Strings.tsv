@@ -533,16 +533,16 @@ DbPassword	Password:	Пароль:
 DbNoPassword	No password	Без пароля
 DbAccountNote	An account that may read every database: root for MySQL and MariaDB, postgres for PostgreSQL. The password is kept by the service, encrypted.	Учётная запись, которой можно читать все базы: root для MySQL и MariaDB, postgres для PostgreSQL. Пароль хранит служба в зашифрованном виде.
 DbKeepPasswordNote	Leave the password empty to keep the stored one.	Оставьте пароль пустым, чтобы не менять сохранённый.
-DbChoiceAll	All databases but the ticked ones	Все базы, кроме отмеченных
-DbChoiceOnly	Only the ticked databases	Только отмеченные базы
-DbListNote	The list fills in on «Test connection». System databases are never dumped as databases; users and rights go to _users.sql.	Список заполняется по кнопке «Проверить подключение». Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.
+DbChoiceAll	All databases	Все базы
+DbChoiceOnly	Selected databases	Выбранные базы
+DbListNote	The list fills in on «Test connection». A ticked database goes into the copy: with «All databases» untick one to leave it out, new databases are added by themselves. System databases are never dumped as databases; users and rights go to _users.sql.	Список заполняется по кнопке «Проверить подключение». Отмеченная база попадает в копию: при «Все базы» снимите галочку, чтобы исключить базу, а новые базы добавятся сами. Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.
 ButtonTestConnection	Test connection	Проверить подключение
 DbTestOk	Connected: version {0}, databases: {1}.	Подключение есть: версия {0}, баз: {1}.
 DbTestDataDir	Data folder of the server: {0}	Папка данных сервера: {0}
 DbTestFailed	No connection: {0}	Нет подключения: {0}
 ErrorDbBinDirRequired	Choose the folder of the server's programs.	Укажите папку программ сервера.
 ErrorDbHostRequired	Enter the address of the server.	Введите адрес сервера.
-ErrorDbNothingChosen	Tick at least one database, or choose «All databases but the ticked ones».	Отметьте хотя бы одну базу или выберите «Все базы, кроме отмеченных».
+ErrorDbNothingChosen	Tick at least one database, or choose «All databases».	Отметьте хотя бы одну базу или выберите «Все базы».
 DbFindTitle	Database servers on this computer	Серверы баз данных на этом компьютере
 DbFindRunning	Looking for servers…	Ищу серверы…
 DbFindNothing	No MySQL, MariaDB or PostgreSQL was found. Choose the folder of the programs yourself.	MySQL, MariaDB и PostgreSQL не найдены. Укажите папку программ вручную.

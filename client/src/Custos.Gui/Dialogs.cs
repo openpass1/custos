@@ -1139,12 +1139,15 @@ internal sealed class DbServerDialog : DialogForm
         _dataDir = server.DataDir;
         _all.Checked = server.AllDatabases;
         _only.Checked = !server.AllDatabases;
+
+        // A tick always means "dumped": with «All databases» the stored exclusions are the unticked ones.
         foreach (string name in server.AllDatabases ? server.Exclude : server.Include)
         {
-            _databases.Items.Add(name, isChecked: true);
+            _databases.Items.Add(name, isChecked: !server.AllDatabases);
         }
 
         UpdatePassword();
+        _all.CheckedChanged += (_, _) => ChoiceChanged();
         _engine.SelectedIndexChanged += (_, _) => EngineChanged();
         _noPassword.CheckedChanged += (_, _) => UpdatePassword();
         _browse.Click += (_, _) => Browse();
@@ -1224,9 +1227,10 @@ internal sealed class DbServerDialog : DialogForm
         new() { Text = text, AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6) };
 
     /// <summary>The server from the fields; the account is set on "OK".</summary>
-    private TaskDatabaseServer Build()
+    internal TaskDatabaseServer Build()
     {
         var chosen = _databases.CheckedItems.Cast<string>().ToList();
+        var left = _databases.Items.Cast<string>().Where(n => !chosen.Contains(n, StringComparer.Ordinal)).ToList();
         return new TaskDatabaseServer
         {
             Id = _original.Id,
@@ -1236,11 +1240,25 @@ internal sealed class DbServerDialog : DialogForm
             Port = (int)_port.Value,
             CredentialId = _original.CredentialId,
             AllDatabases = _all.Checked,
-            Exclude = _all.Checked ? chosen : [],
+            Exclude = _all.Checked ? left : [],
             Include = _all.Checked ? [] : chosen,
             DataDir = _dataDir,
             ExtensionData = _original.ExtensionData,
         };
+    }
+
+    /// <summary>«All databases» starts with every database ticked; «Selected databases» keeps the ticks as they are.</summary>
+    private void ChoiceChanged()
+    {
+        if (!_all.Checked)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _databases.Items.Count; i++)
+        {
+            _databases.SetItemChecked(i, true);
+        }
     }
 
     private void UpdatePassword()
@@ -1361,7 +1379,7 @@ internal sealed class DbServerDialog : DialogForm
         var present = _databases.Items.Cast<string>().ToHashSet(StringComparer.Ordinal);
         foreach (string name in result.Databases.Where(n => !present.Contains(n)))
         {
-            _databases.Items.Add(name, isChecked: false);
+            _databases.Items.Add(name, isChecked: _all.Checked);
         }
 
         _testResult.ForeColor = Glyphs.Green;

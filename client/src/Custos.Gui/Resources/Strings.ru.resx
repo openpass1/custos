@@ -1553,13 +1553,13 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Оставьте пароль пустым, чтобы не менять сохранённый.</value>
   </data>
   <data name="DbChoiceAll" xml:space="preserve">
-    <value>Все базы, кроме отмеченных</value>
+    <value>Все базы</value>
   </data>
   <data name="DbChoiceOnly" xml:space="preserve">
-    <value>Только отмеченные базы</value>
+    <value>Выбранные базы</value>
   </data>
   <data name="DbListNote" xml:space="preserve">
-    <value>Список заполняется по кнопке «Проверить подключение». Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.</value>
+    <value>Список заполняется по кнопке «Проверить подключение». Отмеченная база попадает в копию: при «Все базы» снимите галочку, чтобы исключить базу, а новые базы добавятся сами. Системные базы отдельно не выгружаются; пользователи и права попадают в _users.sql.</value>
   </data>
   <data name="ButtonTestConnection" xml:space="preserve">
     <value>Проверить подключение</value>
@@ -1580,7 +1580,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Введите адрес сервера.</value>
   </data>
   <data name="ErrorDbNothingChosen" xml:space="preserve">
-    <value>Отметьте хотя бы одну базу или выберите «Все базы, кроме отмеченных».</value>
+    <value>Отметьте хотя бы одну базу или выберите «Все базы».</value>
   </data>
   <data name="DbFindTitle" xml:space="preserve">
     <value>Серверы баз данных на этом компьютере</value>

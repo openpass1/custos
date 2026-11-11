@@ -1553,13 +1553,13 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
     <value>Leave the password empty to keep the stored one.</value>
   </data>
   <data name="DbChoiceAll" xml:space="preserve">
-    <value>All databases but the ticked ones</value>
+    <value>All databases</value>
   </data>
   <data name="DbChoiceOnly" xml:space="preserve">
-    <value>Only the ticked databases</value>
+    <value>Selected databases</value>
   </data>
   <data name="DbListNote" xml:space="preserve">
-    <value>The list fills in on «Test connection». System databases are never dumped as databases; users and rights go to _users.sql.</value>
+    <value>The list fills in on «Test connection». A ticked database goes into the copy: with «All databases» untick one to leave it out, new databases are added by themselves. System databases are never dumped as databases; users and rights go to _users.sql.</value>
   </data>
   <data name="ButtonTestConnection" xml:space="preserve">
     <value>Test connection</value>
@@ -1580,7 +1580,7 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
     <value>Enter the address of the server.</value>
   </data>
   <data name="ErrorDbNothingChosen" xml:space="preserve">
-    <value>Tick at least one database, or choose «All databases but the ticked ones».</value>
+    <value>Tick at least one database, or choose «All databases».</value>
   </data>
   <data name="DbFindTitle" xml:space="preserve">
     <value>Database servers on this computer</value>

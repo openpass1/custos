@@ -1529,13 +1529,13 @@ static partial class Strings
     /// <summary>Leave the password empty to keep the stored one.</summary>
     public static string DbKeepPasswordNote => Get(nameof(DbKeepPasswordNote));
 
-    /// <summary>All databases but the ticked ones</summary>
+    /// <summary>All databases</summary>
     public static string DbChoiceAll => Get(nameof(DbChoiceAll));
 
-    /// <summary>Only the ticked databases</summary>
+    /// <summary>Selected databases</summary>
     public static string DbChoiceOnly => Get(nameof(DbChoiceOnly));
 
-    /// <summary>The list fills in on «Test connection». System databases are never dumped as databases; users and rights go...</summary>
+    /// <summary>The list fills in on «Test connection». A ticked database goes into the copy: with «All databases» untick o...</summary>
     public static string DbListNote => Get(nameof(DbListNote));
 
     /// <summary>Test connection</summary>
@@ -1556,7 +1556,7 @@ static partial class Strings
     /// <summary>Enter the address of the server.</summary>
     public static string ErrorDbHostRequired => Get(nameof(ErrorDbHostRequired));
 
-    /// <summary>Tick at least one database, or choose «All databases but the ticked ones».</summary>
+    /// <summary>Tick at least one database, or choose «All databases».</summary>
     public static string ErrorDbNothingChosen => Get(nameof(ErrorDbNothingChosen));
 
     /// <summary>Database servers on this computer</summary>
