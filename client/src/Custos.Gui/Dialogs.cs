@@ -226,6 +226,246 @@ internal sealed class SourceDialog : DialogForm
 }
 
 /// <summary>
+/// Adds or changes one destination of a task: a local folder, a network folder with its account, or a USB disk found by
+/// its label (section 6.3), with "Check access". A destination of a kind of a later version is shown, not changed.
+/// </summary>
+internal sealed class DestinationDialog : DialogForm
+{
+    private static readonly string[] Kinds = [DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb];
+
+    private readonly EditorContext _context;
+    private readonly TaskDestination _original;
+    private readonly bool _supported;
+    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+    private readonly Label _pathLabel = Caption(Strings.DestinationFolder);
+    private readonly TextBox _path = new() { Dock = DockStyle.Fill };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Label _labelLabel = Caption(Strings.DestinationUsbLabel);
+    private readonly ComboBox _usbLabel = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 220 };
+    private readonly PictureBox _usbHelp;
+    private readonly Label _accountLabel = Caption(Strings.DestinationAccount);
+    private readonly CredentialPicker _account;
+    private readonly PictureBox _accountHelp;
+    private readonly Label _unsupported = new() { Text = Strings.DestinationLater, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 4, 0, 6) };
+    private readonly Button _test = new() { Text = Strings.ButtonTestAccess, AutoSize = true };
+    private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
+
+    public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew)
+        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(660, 320))
+    {
+        _context = context;
+        _original = destination;
+        _supported = DestinationKinds.IsSupported(destination.Kind);
+        _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
+        _usbHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationUsbHelp);
+        _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationAccountHelp);
+        foreach (string kind in Kinds)
+        {
+            _kind.Items.Add(DestinationsPage.KindText(kind));
+        }
+
+        if (!_supported)
+        {
+            // A kind of a later version, set from the server: shown, not editable here.
+            _kind.Items.Add(DestinationsPage.KindText(destination.Kind));
+        }
+
+        AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(context.ToolTip, Strings.DestinationKindHelp));
+        AddGridRow(_pathLabel, _path, _browse);
+        AddGridRow(_labelLabel, _usbLabel, _usbHelp);
+        AddGridRow(_accountLabel, _account, _accountHelp);
+        AddWide(_unsupported);
+        var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        testRow.Controls.Add(_test, 0, 0);
+        testRow.Controls.Add(_testResult, 1, 0);
+        AddWide(testRow);
+        EndBuild();
+
+        FillUsbLabels();
+        int index = Array.IndexOf(Kinds, destination.Kind);
+        _kind.SelectedIndex = index >= 0 ? index : Kinds.Length;
+        _path.Text = destination.Path;
+        _usbLabel.Text = destination.UsbLabel ?? string.Empty;
+        _account.SelectedId = destination.CredentialId;
+        UpdateFields();
+
+        _kind.SelectedIndexChanged += (_, _) => UpdateFields();
+        _path.TextChanged += (_, _) =>
+        {
+            _testResult.Text = string.Empty;
+            if (_path.Text.StartsWith(@"\\", StringComparison.Ordinal) && Kind == DestinationKinds.Local)
+            {
+                _kind.SelectedIndex = Array.IndexOf(Kinds, DestinationKinds.Unc);
+            }
+        };
+        _browse.Click += (_, _) => Browse();
+        _test.Click += (_, _) => TestAccess();
+    }
+
+    /// <summary>The destination as entered, after "OK".</summary>
+    public TaskDestination Destination { get; private set; } = new();
+
+    /// <summary>What is wrong with a destination of a supported kind, in words, or null.</summary>
+    public static string? Check(TaskDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        string path = destination.Path;
+        return destination.Kind == DestinationKinds.Usb
+                ? string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null
+            : string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
+            : !Path.IsPathFullyQualified(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : destination.Kind == DestinationKinds.Unc && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
+            : destination.Kind == DestinationKinds.Local && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
+            : null;
+    }
+
+    protected override void OnOk()
+    {
+        if (!_supported)
+        {
+            Destination = _original;
+            DialogResult = DialogResult.OK;
+            return;
+        }
+
+        var destination = Build();
+        if (Check(destination) is { } problem)
+        {
+            Ui.ShowWarning(this, problem);
+            return;
+        }
+
+        Destination = destination;
+        DialogResult = DialogResult.OK;
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+
+    private string Kind => _kind.SelectedIndex >= 0 && _kind.SelectedIndex < Kinds.Length ? Kinds[_kind.SelectedIndex] : _original.Kind;
+
+    private void AddGridRow(Control caption, Control control, Control extra)
+    {
+        control.Margin = new Padding(0, 3, 0, 3);
+        extra.Margin = new Padding(6, 3, 0, 3);
+        Body.Controls.Add(caption);
+        Body.Controls.Add(control);
+        Body.Controls.Add(extra);
+    }
+
+    /// <summary>The destination from the fields; what the dialog does not show is kept as it was.</summary>
+    private TaskDestination Build()
+    {
+        string kind = Kind;
+        string path = _path.Text.Trim().Trim('"');
+        return new TaskDestination
+        {
+            Id = _original.Id,
+            Kind = kind,
+            Path = kind == DestinationKinds.Usb ? DestinationKinds.UsbFolder(path) : path,
+            UsbLabel = kind == DestinationKinds.Usb ? _usbLabel.Text.Trim() : null,
+            CredentialId = kind == DestinationKinds.Unc ? _account.SelectedId : null,
+            Host = _original.Host,
+            Port = _original.Port,
+            Endpoint = _original.Endpoint,
+            Bucket = _original.Bucket,
+            Region = _original.Region,
+            DisconnectAfter = _original.DisconnectAfter,
+            SpeedLimitKbps = _original.SpeedLimitKbps,
+            ExtensionData = _original.ExtensionData,
+        };
+    }
+
+    private void UpdateFields()
+    {
+        string kind = Kind;
+        bool usb = kind == DestinationKinds.Usb;
+        bool unc = kind == DestinationKinds.Unc;
+        _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk : Strings.DestinationFolder;
+        _browse.Visible = kind == DestinationKinds.Local;
+        _labelLabel.Visible = _usbLabel.Visible = _usbHelp.Visible = usb;
+        _accountLabel.Visible = _account.Visible = _accountHelp.Visible = unc;
+        _unsupported.Visible = !_supported;
+        _kind.Enabled = _path.Enabled = _test.Enabled = _supported;
+        _testResult.Text = string.Empty;
+    }
+
+    private void Browse()
+    {
+        using var dialog = new FolderBrowserDialog { ShowNewFolderButton = true, UseDescriptionForTitle = true, Description = Strings.DestinationFolder };
+        if (Directory.Exists(_path.Text))
+        {
+            dialog.InitialDirectory = _path.Text;
+        }
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _path.Text = dialog.SelectedPath;
+        }
+    }
+
+    /// <summary>Labels of the disks connected now, for the USB label list.</summary>
+    private void FillUsbLabels()
+    {
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (drive.IsReady && drive.DriveType is DriveType.Removable or DriveType.Fixed && !string.IsNullOrWhiteSpace(drive.VolumeLabel)
+                    && !_usbLabel.Items.Contains(drive.VolumeLabel))
+                {
+                    _usbLabel.Items.Add(drive.VolumeLabel);
+                }
+            }
+            catch (IOException)
+            {
+                // The disk went away while we looked.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    private void TestAccess()
+    {
+        var destination = Build();
+        if (Check(destination) is { } problem)
+        {
+            _testResult.ForeColor = Glyphs.ErrorText;
+            _testResult.Text = problem;
+            return;
+        }
+
+        _test.Enabled = false;
+        _testResult.ForeColor = SystemColors.GrayText;
+        _testResult.Text = Strings.TestRunning;
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest { Destination = destination },
+                    IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(2));
+                _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
+                _testResult.Text = result.Ok
+                    ? Strings.Format(Strings.TestOk, result.Folder, result.FreeBytes is { } free ? Custos.Core.Text.Sizes.Format(free) : "?")
+                    : Strings.Format(Strings.TestFailed, result.Error);
+            }
+            catch (ServiceUnavailableException ex)
+            {
+                _testResult.ForeColor = Glyphs.ErrorText;
+                _testResult.Text = ex.Message;
+            }
+            finally
+            {
+                _test.Enabled = true;
+            }
+        });
+    }
+}
+
+/// <summary>
 /// Adds a Windows account for network folders, or changes its password. The password goes straight to the service,
 /// which keeps it encrypted with DPAPI; it is never shown or sent back.
 /// </summary>

@@ -7,7 +7,8 @@ using Custos.Core.Text;
 
 namespace Custos.Gui;
 
-/// <summary>"Basic": name, on/off, backup type with the explanations of section 6.1, forced full copies, comment.</summary>
+/// <summary>"Basic": name, on/off, backup type with the explanations of section 6.1 (for a mirror exact or safe),
+/// forced full copies, comment.</summary>
 internal sealed class BasicPage : EditorPage
 {
     private readonly TextBox _name = new() { Dock = DockStyle.Fill, MaxLength = 200 };
@@ -24,7 +25,10 @@ internal sealed class BasicPage : EditorPage
     private readonly ComboBox _monthDay = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 140 };
     private readonly Panel _forceGroup = new() { AutoSize = true, Dock = DockStyle.Fill };
     private readonly TextBox _comment = new() { Multiline = true, AcceptsReturn = true, ScrollBars = ScrollBars.Vertical, Height = 64, Dock = DockStyle.Fill };
-    private string? _mirrorMode;
+    private readonly RadioButton _mirrorExact = new() { Text = Strings.MirrorExact, AutoSize = true, Margin = new Padding(0, 2, 0, 2) };
+    private readonly RadioButton _mirrorSafe = new() { Text = Strings.MirrorSafe, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly NumericUpDown _safeDays = new() { Minimum = 1, Maximum = 3650, Value = 30, Width = 70 };
+    private readonly FlowLayoutPanel _mirrorOptions = new() { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(18, 0, 0, 0) };
 
     public BasicPage(EditorContext context)
         : base(context, Strings.PageBasic, Glyph.Info)
@@ -43,7 +47,6 @@ internal sealed class BasicPage : EditorPage
         _monthDay.Items.Add(Strings.LastDayOfMonth);
         _weekday.SelectedIndex = 6;
         _monthDay.SelectedIndex = 0;
-        _mirror.Enabled = false;
 
         AddRow(Strings.EditorName, _name);
         AddWide(_enabled);
@@ -55,7 +58,10 @@ internal sealed class BasicPage : EditorPage
         AddWide(_differential);
         AddNote(Strings.TypeDifferentialHint, 18);
         AddWide(_mirror);
-        AddNote(Strings.TypeMirrorLater, 18);
+        AddNote(Strings.TypeMirrorHint, 18);
+        _mirrorOptions.Controls.AddRange([_mirrorExact, Inline(_mirrorSafe, _safeDays, new Label { Text = Strings.MirrorSafeDays, AutoSize = true, Margin = new Padding(4, 8, 0, 0) })]);
+        AddWide(_mirrorOptions);
+        AddNote(Strings.MirrorNote, 18);
 
         AddHeading(Strings.EditorForceFull);
         var force = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(0) };
@@ -69,8 +75,19 @@ internal sealed class BasicPage : EditorPage
         AddHeading(Strings.EditorComment);
         AddWide(_comment);
 
-        _full.CheckedChanged += (_, _) => UpdateForceFull();
-        _mirror.CheckedChanged += (_, _) => UpdateForceFull();
+        foreach (var type in new[] { _full, _incremental, _differential, _mirror })
+        {
+            type.CheckedChanged += (_, _) => UpdateType();
+        }
+
+        // The two sit in different panels, so they are kept exclusive by hand.
+        _mirrorExact.CheckedChanged += (_, _) => _mirrorSafe.Checked = !_mirrorExact.Checked;
+        _mirrorSafe.CheckedChanged += (_, _) =>
+        {
+            _mirrorExact.Checked = !_mirrorSafe.Checked;
+            _safeDays.Enabled = _mirrorSafe.Checked && _mirror.Checked;
+        };
+        _name.TextChanged += (_, _) => Context.SetShape(taskName: _name.Text.Trim());
         _forceEvery.CheckedChanged += (_, _) => _forceEveryRuns.Enabled = _forceEvery.Checked;
         _forceWeekday.CheckedChanged += (_, _) => _weekday.Enabled = _forceWeekday.Checked;
         _forceMonthDay.CheckedChanged += (_, _) => _monthDay.Enabled = _forceMonthDay.Checked;
@@ -80,7 +97,9 @@ internal sealed class BasicPage : EditorPage
     {
         _name.Text = task.Name;
         _enabled.Checked = task.Enabled;
-        _mirrorMode = task.MirrorMode;
+        _mirrorSafe.Checked = task.MirrorMode == MirrorModes.Safe;
+        _mirrorExact.Checked = !_mirrorSafe.Checked;
+        _safeDays.Value = Math.Clamp(task.Retention.SafeMirrorDays > 0 ? task.Retention.SafeMirrorDays : 30, 1, 3650);
         switch (task.BackupType)
         {
             case BackupTypes.Full:
@@ -113,7 +132,7 @@ internal sealed class BasicPage : EditorPage
         _forceEveryRuns.Enabled = _forceEvery.Checked;
         _weekday.Enabled = _forceWeekday.Checked;
         _monthDay.Enabled = _forceMonthDay.Checked;
-        UpdateForceFull();
+        UpdateType();
     }
 
     public override string? SaveTo(TaskDefinition task)
@@ -130,7 +149,12 @@ internal sealed class BasicPage : EditorPage
             : _differential.Checked ? BackupTypes.Differential
             : _mirror.Checked ? BackupTypes.Mirror
             : BackupTypes.Incremental;
-        task.MirrorMode = task.BackupType == BackupTypes.Mirror ? _mirrorMode : null;
+        task.MirrorMode = task.BackupType == BackupTypes.Mirror ? _mirrorSafe.Checked ? MirrorModes.Safe : MirrorModes.Exact : null;
+        if (task.BackupType == BackupTypes.Mirror && _mirrorSafe.Checked)
+        {
+            task.Retention.SafeMirrorDays = (int)_safeDays.Value;
+        }
+
         task.ForceFull.EveryRuns = _forceEvery.Checked ? (int)_forceEveryRuns.Value : 0;
         task.ForceFull.Weekday = _forceWeekday.Checked ? _weekday.SelectedIndex + 1 : null;
         task.ForceFull.MonthDay = _forceMonthDay.Checked ? (_monthDay.SelectedIndex == 31 ? -1 : _monthDay.SelectedIndex + 1) : null;
@@ -147,7 +171,14 @@ internal sealed class BasicPage : EditorPage
         return panel;
     }
 
-    private void UpdateForceFull() => _forceGroup.Enabled = !_full.Checked && !_mirror.Checked;
+    private void UpdateType()
+    {
+        _forceGroup.Enabled = !_full.Checked && !_mirror.Checked;
+        _mirrorOptions.Enabled = _mirror.Checked;
+        _safeDays.Enabled = _mirror.Checked && _mirrorSafe.Checked;
+        string type = _full.Checked ? BackupTypes.Full : _differential.Checked ? BackupTypes.Differential : _mirror.Checked ? BackupTypes.Mirror : BackupTypes.Incremental;
+        Context.SetShape(taskName: _name.Text.Trim(), backupType: type);
+    }
 }
 
 /// <summary>
@@ -376,11 +407,20 @@ internal sealed class SourcesPage : EditorPage
 
 /// <summary>
 /// "Destinations": local folders, network folders with an account and USB disks found by their label (section 6.3),
-/// "Check access", and how the copies are laid out (section 6.4).
+/// added and changed in a dialog of their own as the sources are, and how the copies are laid out (section 6.4): a
+/// folder per copy, named by a template picked from a list or typed, with an example of the name it gives.
 /// </summary>
 internal sealed class DestinationsPage : EditorPage
 {
-    private static readonly string[] Kinds = [DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb];
+    /// <summary>Name templates offered in the list; any other text can be typed.</summary>
+    internal static readonly string[] TemplatePresets =
+    [
+        LayoutOptions.DefaultNameTemplate,
+        "{task} {yyyy}-{MM}-{dd} {HH}-{mm}",
+        "{task} {yyyy}-{MM}-{dd} ({type})",
+        "{yyyy}-{MM}-{dd} {HH}-{mm} {task} ({type})",
+        "{computer} {task} {yyyy}-{MM}-{dd} {HH}-{mm} ({type})",
+    ];
 
     private readonly ListView _list = new()
     {
@@ -393,86 +433,46 @@ internal sealed class DestinationsPage : EditorPage
     };
 
     private readonly Button _add = new() { Text = Strings.ButtonAdd, AutoSize = true, MinimumSize = new Size(100, 0) };
+    private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
-    private readonly GroupBox _properties = new() { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10, 6, 10, 8), Text = Strings.DestinationProperties };
-    private readonly TableLayoutPanel _grid = new() { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 3 };
-    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
-    private readonly Label _pathLabel = Caption(Strings.DestinationFolder);
-    private readonly TextBox _path = new() { Dock = DockStyle.Fill };
-    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
-    private readonly Label _labelLabel = Caption(Strings.DestinationUsbLabel);
-    private readonly ComboBox _usbLabel = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 220 };
-    private readonly Label _accountLabel = Caption(Strings.DestinationAccount);
-    private readonly CredentialPicker _account;
-    private readonly PictureBox _usbHelp;
-    private readonly PictureBox _accountHelp;
-    private readonly Label _unsupported = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText };
-    private readonly Button _test = new() { Text = Strings.ButtonTestAccess, AutoSize = true };
-    private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 0) };
+    private readonly Label _mirrorNote = new() { Text = Strings.LayoutMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly CheckBox _separate = new() { Text = Strings.SeparateFolders, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
-    private readonly TextBox _template = new() { Dock = DockStyle.Fill };
+    private readonly ComboBox _template = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
+    private readonly Label _example = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6) };
     private readonly List<TaskDestination> _destinations = [];
-    private TaskDestination? _current;
-    private bool _loading;
 
     public DestinationsPage(EditorContext context)
         : base(context, Strings.PageDestinations, Glyph.Drive)
     {
-        _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
-        _usbHelp = Ui.HelpIcon(ToolTip, Strings.DestinationUsbHelp);
-        _accountHelp = Ui.HelpIcon(ToolTip, Strings.DestinationAccountHelp);
         _list.Columns.Add(Strings.ColumnDestination, 330);
         _list.Columns.Add(Strings.ColumnType, 120);
         _list.Columns.Add(Strings.ColumnAccount, 150);
-        foreach (string kind in Kinds)
-        {
-            _kind.Items.Add(KindText(kind));
-        }
+        _template.Items.AddRange(TemplatePresets);
 
         var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(8, 0, 0, 0) };
-        buttons.Controls.AddRange([_add, _remove]);
+        buttons.Controls.AddRange([_add, _edit, _remove]);
         var row = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         row.Controls.Add(_list, 0, 0);
         row.Controls.Add(buttons, 1, 0);
 
-        _grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        _grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(ToolTip, Strings.DestinationKindHelp));
-        AddGridRow(_pathLabel, _path, _browse);
-        AddGridRow(_labelLabel, _usbLabel, _usbHelp);
-        AddGridRow(_accountLabel, _account, _accountHelp);
-        _grid.Controls.Add(_unsupported);
-        _grid.SetColumnSpan(_unsupported, 3);
-        var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
-        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        testRow.Controls.Add(_test, 0, 0);
-        testRow.Controls.Add(_testResult, 1, 0);
-        _testResult.Margin = new Padding(8, 6, 0, 0);
-        _grid.Controls.Add(testRow);
-        _grid.SetColumnSpan(testRow, 3);
-        _properties.Controls.Add(_grid);
-
         AddNote(Strings.DestinationsNote);
         AddWide(row);
-        AddWide(_properties);
         AddHeading(Strings.EditorLayout);
+        AddWide(_mirrorNote);
         AddWide(_separate, Strings.SeparateFoldersHelp);
         AddRow(Strings.NameTemplate, _template, Strings.NameTemplateHelp);
+        AddWide(_example);
 
         _add.Click += (_, _) => AddDestination();
+        _edit.Click += (_, _) => EditDestination();
         _remove.Click += (_, _) => RemoveDestination();
-        _list.SelectedIndexChanged += (_, _) => ShowSelected();
-        _kind.SelectedIndexChanged += (_, _) => OnKindChanged();
-        _path.TextChanged += (_, _) => Edit(d => d.Path = _path.Text.Trim());
-        _usbLabel.TextChanged += (_, _) => Edit(d => d.UsbLabel = _usbLabel.Text.Trim());
-        _account.SelectionChanged += (_, _) => Edit(d => d.CredentialId = _account.SelectedId);
-        _browse.Click += (_, _) => Browse();
-        _test.Click += (_, _) => TestAccess();
-        _separate.CheckedChanged += (_, _) => _template.Enabled = _separate.Checked;
+        _list.ItemActivate += (_, _) => EditDestination();
+        _list.SelectedIndexChanged += (_, _) => UpdateButtons();
+        _separate.CheckedChanged += (_, _) => UpdateLayout();
+        _template.TextChanged += (_, _) => ShowExample();
+        Context.ShapeChanged += (_, _) => UpdateLayout();
         Context.CredentialsChanged += (_, _) => Fill();
     }
 
@@ -482,17 +482,14 @@ internal sealed class DestinationsPage : EditorPage
         _destinations.AddRange(task.Destinations);
         _separate.Checked = task.Layout.SeparateFolders;
         _template.Text = task.Layout.NameTemplate;
-        _template.Enabled = _separate.Checked;
         Fill();
         if (_list.Items.Count > 0)
         {
             _list.Items[0].Selected = true;
         }
 
-        ShowSelected();
+        UpdateLayout();
     }
-
-    public override void Shown() => FillUsbLabels();
 
     public override string? SaveTo(TaskDefinition task)
     {
@@ -501,44 +498,38 @@ internal sealed class DestinationsPage : EditorPage
             return Strings.ErrorNoDestinations;
         }
 
-        foreach (var destination in _destinations.Where(d => DestinationKinds.IsSupported(d.Kind)))
+        // The dialog checks what it saves; this catches tasks that came in from elsewhere (the server, a file).
+        for (int i = 0; i < _destinations.Count; i++)
         {
-            string? problem = null;
+            var destination = _destinations[i];
+            if (!DestinationKinds.IsSupported(destination.Kind))
+            {
+                continue;
+            }
+
             if (destination.Kind == DestinationKinds.Usb)
             {
                 // The disk is found by its label; a drive letter in the folder would only mislead.
                 destination.Path = DestinationKinds.UsbFolder(destination.Path);
-                problem = string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null;
-            }
-            else if (string.IsNullOrWhiteSpace(destination.Path))
-            {
-                problem = Strings.ErrorDestinationFolderRequired;
-            }
-            else if (!Path.IsPathFullyQualified(destination.Path))
-            {
-                problem = Strings.Format(Strings.ErrorPathNotAbsolute, destination.Path);
-            }
-            else if (destination.Kind == DestinationKinds.Unc && !destination.Path.StartsWith(@"\\", StringComparison.Ordinal))
-            {
-                problem = Strings.Format(Strings.ErrorNotUnc, destination.Path);
             }
 
-            if (problem is not null)
+            if (DestinationDialog.Check(destination) is { } problem)
             {
                 // The destination with the problem is shown, so that it is clear which one is meant.
-                _list.Items[_destinations.IndexOf(destination)].Selected = true;
+                _list.Items[i].Selected = true;
                 return problem;
             }
         }
 
-        if (_separate.Checked && string.IsNullOrWhiteSpace(_template.Text))
+        bool named = UsesTemplate;
+        if (named && string.IsNullOrWhiteSpace(_template.Text))
         {
             return Strings.ErrorTemplateRequired;
         }
 
         task.Destinations = [.. _destinations];
         task.Layout.SeparateFolders = _separate.Checked;
-        if (_separate.Checked)
+        if (named)
         {
             task.Layout.NameTemplate = _template.Text.Trim();
         }
@@ -546,9 +537,10 @@ internal sealed class DestinationsPage : EditorPage
         return null;
     }
 
-    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+    /// <summary>The name template is used: a folder per copy, or archives (always named by date); never a mirror.</summary>
+    private bool UsesTemplate => !Context.IsMirror && (_separate.Checked || Context.ArchiveFormat != ArchiveFormats.None);
 
-    private static string KindText(string kind) => kind switch
+    internal static string KindText(string kind) => kind switch
     {
         DestinationKinds.Local => Strings.KindLocal,
         DestinationKinds.Unc => Strings.KindUnc,
@@ -556,20 +548,10 @@ internal sealed class DestinationsPage : EditorPage
         _ => Strings.Format(Strings.KindLater, kind.ToUpperInvariant()),
     };
 
-    private void AddGridRow(Control caption, Control control, Control extra)
-    {
-        control.Margin = new Padding(0, 3, 0, 3);
-        extra.Margin = new Padding(6, 3, 0, 3);
-        _grid.Controls.Add(caption);
-        _grid.Controls.Add(control);
-        _grid.Controls.Add(extra);
-    }
-
     private void Fill()
     {
         int selected = _list.SelectedIndices.Count > 0 ? _list.SelectedIndices[0] : -1;
         var accounts = Context.Credentials;
-        _loading = true;
         _list.BeginUpdate();
         _list.Items.Clear();
         foreach (var destination in _destinations)
@@ -586,134 +568,71 @@ internal sealed class DestinationsPage : EditorPage
             _list.Items[selected].Selected = true;
         }
 
-        _loading = false;
+        UpdateButtons();
     }
 
-    private void RefreshRow()
+    private void UpdateButtons()
     {
-        if (_current is null || _list.SelectedIndices.Count == 0)
+        bool any = _list.SelectedIndices.Count > 0;
+        _edit.Enabled = any;
+        _remove.Enabled = any;
+    }
+
+    private void UpdateLayout()
+    {
+        bool mirror = Context.IsMirror;
+        _mirrorNote.Visible = mirror;
+        _separate.Enabled = !mirror;
+        _template.Enabled = UsesTemplate;
+        ShowExample();
+    }
+
+    /// <summary>The name the template gives now, so that a typing slip shows before the first run.</summary>
+    private void ShowExample()
+    {
+        if (!UsesTemplate || string.IsNullOrWhiteSpace(_template.Text))
         {
+            _example.Text = string.Empty;
             return;
         }
 
-        var item = _list.Items[_list.SelectedIndices[0]];
-        item.SubItems[0].Text = TaskDescriber.Destination(_current);
-        item.SubItems[1].Text = KindText(_current.Kind);
-        item.SubItems[2].Text = _current.CredentialId is { } id
-            ? Context.Credentials.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? Strings.AccountUnknown
-            : _current.Kind == DestinationKinds.Unc ? Strings.AccountService : string.Empty;
-    }
-
-    private void ShowSelected()
-    {
-        if (_loading)
+        string name = Context.TaskName.Length > 0 ? Context.TaskName : Strings.NewTaskName;
+        string type = Context.BackupType == BackupTypes.Mirror ? BackupTypes.Full : Context.BackupType;
+        string example = Custos.Core.Backup.SetNaming.Expand(_template.Text.Trim(), name, DateTime.Now, Environment.MachineName, type);
+        example += Context.ArchiveFormat switch
         {
-            return;
-        }
-
-        _current = _list.SelectedIndices.Count > 0 ? _destinations[_list.SelectedIndices[0]] : null;
-        _remove.Enabled = _current is not null;
-        _properties.Enabled = _current is not null;
-        _testResult.Text = string.Empty;
-        _loading = true;
-        try
-        {
-            if (_current is null)
-            {
-                _kind.SelectedIndex = -1;
-                _path.Text = string.Empty;
-                _usbLabel.Text = string.Empty;
-                _account.SelectedId = null;
-                UpdateFields(DestinationKinds.Local, supported: true);
-                return;
-            }
-
-            int index = Array.IndexOf(Kinds, _current.Kind);
-            if (index < 0)
-            {
-                // A kind of a later version, set from the server: shown, not editable here.
-                while (_kind.Items.Count > Kinds.Length)
-                {
-                    _kind.Items.RemoveAt(Kinds.Length);
-                }
-
-                _kind.Items.Add(KindText(_current.Kind));
-                index = Kinds.Length;
-            }
-
-            _kind.SelectedIndex = index;
-            _path.Text = _current.Path;
-            _usbLabel.Text = _current.UsbLabel ?? string.Empty;
-            _account.SelectedId = _current.CredentialId;
-            UpdateFields(_current.Kind, DestinationKinds.IsSupported(_current.Kind));
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private void UpdateFields(string kind, bool supported)
-    {
-        bool usb = kind == DestinationKinds.Usb;
-        bool unc = kind == DestinationKinds.Unc;
-        _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk : Strings.DestinationFolder;
-        _browse.Visible = kind == DestinationKinds.Local;
-        _labelLabel.Visible = usb;
-        _usbLabel.Visible = usb;
-        _usbHelp.Visible = usb;
-        _accountLabel.Visible = unc;
-        _account.Visible = unc;
-        _accountHelp.Visible = unc;
-        _unsupported.Visible = !supported;
-        _unsupported.Text = supported ? string.Empty : Strings.DestinationLater;
-        _path.Enabled = supported;
-        _kind.Enabled = supported;
-        _test.Enabled = supported;
-    }
-
-    private void OnKindChanged()
-    {
-        if (_loading || _current is null || _kind.SelectedIndex < 0 || _kind.SelectedIndex >= Kinds.Length)
-        {
-            return;
-        }
-
-        string kind = Kinds[_kind.SelectedIndex];
-        Edit(d =>
-        {
-            d.Kind = kind;
-            if (kind != DestinationKinds.Unc)
-            {
-                d.CredentialId = null;
-            }
-
-            if (kind != DestinationKinds.Usb)
-            {
-                d.UsbLabel = null;
-            }
-        });
-        UpdateFields(kind, supported: true);
-    }
-
-    private void Edit(Action<TaskDestination> change)
-    {
-        if (_loading || _current is null)
-        {
-            return;
-        }
-
-        change(_current);
-        _testResult.Text = string.Empty;
-        RefreshRow();
+            ArchiveFormats.Zip => ".zip",
+            ArchiveFormats.SevenZip => ".7z",
+            _ => string.Empty,
+        };
+        _example.Text = Strings.Format(Strings.NameTemplateExample, example);
     }
 
     private void AddDestination()
     {
-        _destinations.Add(new TaskDestination { Kind = DestinationKinds.Local });
-        Fill();
-        _list.Items[^1].Selected = true;
-        _path.Focus();
+        using var dialog = new DestinationDialog(Context, new TaskDestination { Kind = DestinationKinds.Local }, isNew: true);
+        if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+        {
+            _destinations.Add(dialog.Destination);
+            Fill();
+            _list.Items[^1].Selected = true;
+        }
+    }
+
+    private void EditDestination()
+    {
+        if (_list.SelectedIndices.Count == 0)
+        {
+            return;
+        }
+
+        int index = _list.SelectedIndices[0];
+        using var dialog = new DestinationDialog(Context, _destinations[index], isNew: false);
+        if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+        {
+            _destinations[index] = dialog.Destination;
+            Fill();
+        }
     }
 
     private void RemoveDestination()
@@ -725,89 +644,6 @@ internal sealed class DestinationsPage : EditorPage
 
         _destinations.RemoveAt(_list.SelectedIndices[0]);
         Fill();
-        ShowSelected();
-    }
-
-    private void Browse()
-    {
-        using var dialog = new FolderBrowserDialog { ShowNewFolderButton = true, UseDescriptionForTitle = true, Description = Strings.DestinationFolder };
-        if (Directory.Exists(_path.Text))
-        {
-            dialog.InitialDirectory = _path.Text;
-        }
-
-        if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
-        {
-            _path.Text = dialog.SelectedPath;
-        }
-    }
-
-    /// <summary>Labels of the disks connected now, for the USB label list.</summary>
-    private void FillUsbLabels()
-    {
-        string text = _usbLabel.Text;
-        _usbLabel.Items.Clear();
-        foreach (var drive in DriveInfo.GetDrives())
-        {
-            try
-            {
-                if (drive.IsReady && drive.DriveType is DriveType.Removable or DriveType.Fixed && !string.IsNullOrWhiteSpace(drive.VolumeLabel)
-                    && !_usbLabel.Items.Contains(drive.VolumeLabel))
-                {
-                    _usbLabel.Items.Add(drive.VolumeLabel);
-                }
-            }
-            catch (IOException)
-            {
-                // The disk went away while we looked.
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-        }
-
-        _usbLabel.Text = text;
-    }
-
-    private void TestAccess()
-    {
-        if (_current is null)
-        {
-            return;
-        }
-
-        var destination = new TaskDestination
-        {
-            Id = _current.Id,
-            Kind = _current.Kind,
-            Path = _current.Path,
-            UsbLabel = _current.UsbLabel,
-            CredentialId = _current.CredentialId,
-        };
-        _test.Enabled = false;
-        _testResult.ForeColor = SystemColors.GrayText;
-        _testResult.Text = Strings.TestRunning;
-        Ui.Run(FindForm(), async () =>
-        {
-            try
-            {
-                var result = await Context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest { Destination = destination },
-                    IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(2));
-                _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
-                _testResult.Text = result.Ok
-                    ? Strings.Format(Strings.TestOk, result.Folder, result.FreeBytes is { } free ? Sizes.Format(free) : "?")
-                    : Strings.Format(Strings.TestFailed, result.Error);
-            }
-            catch (ServiceUnavailableException ex)
-            {
-                _testResult.ForeColor = Glyphs.ErrorText;
-                _testResult.Text = ex.Message;
-            }
-            finally
-            {
-                _test.Enabled = true;
-            }
-        });
     }
 }
 
@@ -1051,6 +887,7 @@ internal sealed class ArchivePage : EditorPage
     private readonly RadioButton _zip = new() { Text = Strings.ArchiveZip, AutoSize = true };
     private readonly RadioButton _sevenZip = new() { Text = Strings.ArchiveSevenZip, AutoSize = true };
     private readonly Label _sevenZipProblem = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(18, 0, 0, 6), Visible = false };
+    private readonly Label _mirrorNote = new() { Text = Strings.ArchiveMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly ComboBox _level = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly CheckBox _split = new() { Text = Strings.ArchiveSplit, AutoSize = true };
     private readonly ComboBox _volume = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
@@ -1083,6 +920,7 @@ internal sealed class ArchivePage : EditorPage
         _volume.Items.AddRange([Strings.ArchiveVolume700, Strings.ArchiveVolumeFat32, Strings.ArchiveVolumeDvd, Strings.ArchiveVolumeCustom]);
 
         AddHeading(Strings.ArchiveFormat);
+        AddWide(_mirrorNote);
         AddWide(_none);
         AddWide(_zip, Strings.ArchiveZipHelp);
         AddWide(_sevenZip, Strings.ArchiveSevenZipHelp);
@@ -1120,6 +958,7 @@ internal sealed class ArchivePage : EditorPage
 
         _volume.SelectedIndexChanged += (_, _) => UpdateControls();
         _setPassword.Click += (_, _) => SetPassword();
+        Context.ShapeChanged += (_, _) => UpdateControls();
     }
 
     public override void Shown()
@@ -1153,7 +992,7 @@ internal sealed class ArchivePage : EditorPage
     public override string? SaveTo(TaskDefinition task)
     {
         var archive = task.Archive;
-        archive.Format = _zip.Checked ? ArchiveFormats.Zip : _sevenZip.Checked ? ArchiveFormats.SevenZip : ArchiveFormats.None;
+        archive.Format = Context.IsMirror ? ArchiveFormats.None : SelectedFormat;
         archive.Level = Math.Max(0, _level.SelectedIndex);
         archive.SplitMb = _sevenZip.Checked && _split.Checked
             ? _volume.SelectedIndex < VolumePresets.Length ? VolumePresets[Math.Max(0, _volume.SelectedIndex)] : (int)_volumeMb.Value
@@ -1178,17 +1017,24 @@ internal sealed class ArchivePage : EditorPage
         return null;
     }
 
+    private string SelectedFormat => _zip.Checked ? ArchiveFormats.Zip : _sevenZip.Checked ? ArchiveFormats.SevenZip : ArchiveFormats.None;
+
     private void UpdateControls()
     {
-        bool packed = !_none.Checked;
+        // A mirror keeps plain files: the format is "none" whatever is ticked.
+        bool mirror = Context.IsMirror;
+        _mirrorNote.Visible = mirror;
+        _none.Enabled = _zip.Enabled = _sevenZip.Enabled = !mirror;
+        Context.SetShape(archiveFormat: mirror ? ArchiveFormats.None : SelectedFormat);
+        bool packed = !_none.Checked && !mirror;
         _level.Enabled = packed;
-        _split.Enabled = _sevenZip.Checked;
-        _volume.Enabled = _sevenZip.Checked && _split.Checked;
+        _split.Enabled = _sevenZip.Checked && packed;
+        _volume.Enabled = _split.Enabled && _split.Checked;
         _volumeMb.Enabled = _volume.Enabled && _volume.SelectedIndex == VolumePresets.Length;
         _encrypt.Enabled = packed;
         _setPassword.Enabled = packed && _encrypt.Checked;
         _passwordState.Visible = packed && _encrypt.Checked;
-        _encryptNames.Enabled = _sevenZip.Checked && _encrypt.Checked;
+        _encryptNames.Enabled = _sevenZip.Checked && _encrypt.Checked && packed;
     }
 
     /// <summary>A password is stored for the task, or was just set in this editor.</summary>
@@ -1214,7 +1060,7 @@ internal sealed class ArchivePage : EditorPage
     }
 }
 
-/// <summary>"Retention": how many full copies to keep with their chains (section 6.6).</summary>
+/// <summary>"Retention": by count of full copies with their chains, by age, or grandfather-father-son (section 6.6).</summary>
 internal sealed class RetentionPage : EditorPage
 {
     private readonly RadioButton _keepAll = new() { Text = Strings.RetentionNone, AutoSize = true };
@@ -1227,10 +1073,12 @@ internal sealed class RetentionPage : EditorPage
     private readonly NumericUpDown _weekly = new() { Minimum = 0, Maximum = 1000, Value = 4, Width = 60 };
     private readonly NumericUpDown _monthly = new() { Minimum = 0, Maximum = 1000, Value = 12, Width = 60 };
     private readonly FlowLayoutPanel _gfsCounts = new() { AutoSize = true, WrapContents = true, Margin = new Padding(18, 0, 0, 0) };
+    private readonly Label _mirrorNote = new() { Text = Strings.RetentionMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
 
     public RetentionPage(EditorContext context)
         : base(context, Strings.PageRetention, Glyph.Layers)
     {
+        AddWide(_mirrorNote);
         AddWide(_keepAll);
         AddWide(Line(_byCount, _keepFull, Strings.RetentionCountSuffix));
         AddNote(Strings.RetentionCountHint, 18);
@@ -1260,6 +1108,8 @@ internal sealed class RetentionPage : EditorPage
                 UpdateEnabled();
             };
         }
+
+        Context.ShapeChanged += (_, _) => UpdateEnabled();
     }
 
     public override void LoadFrom(TaskDefinition task)
@@ -1287,7 +1137,12 @@ internal sealed class RetentionPage : EditorPage
         var retention = task.Retention;
         retention.Mode = _byCount.Checked ? RetentionModes.Count : _byAge.Checked ? RetentionModes.Age : _gfs.Checked ? RetentionModes.Gfs : RetentionModes.None;
         retention.KeepFull = (int)_keepFull.Value;
-        retention.MaxAgeDays = (int)_maxAge.Value;
+        if (_byAge.Checked)
+        {
+            // Unset (0) shows as 30 days; it is written only when this mode is chosen.
+            retention.MaxAgeDays = (int)_maxAge.Value;
+        }
+
         retention.Gfs.Daily = (int)_daily.Value;
         retention.Gfs.Weekly = (int)_weekly.Value;
         retention.Gfs.Monthly = (int)_monthly.Value;
@@ -1305,9 +1160,12 @@ internal sealed class RetentionPage : EditorPage
 
     private void UpdateEnabled()
     {
-        _keepFull.Enabled = _byCount.Checked;
-        _maxAge.Enabled = _byAge.Checked;
-        _gfsCounts.Enabled = _gfs.Checked;
+        bool mirror = Context.IsMirror;
+        _mirrorNote.Visible = mirror;
+        _keepAll.Enabled = _byCount.Enabled = _byAge.Enabled = _gfs.Enabled = !mirror;
+        _keepFull.Enabled = _byCount.Checked && !mirror;
+        _maxAge.Enabled = _byAge.Checked && !mirror;
+        _gfsCounts.Enabled = _gfs.Checked && !mirror;
     }
 }
 

@@ -43,6 +43,39 @@ public sealed class DialogTests
     });
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void The_destination_dialog_gives_back_the_destination(int index) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Office().Destinations[index];
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.Equal(Strings.DestinationEditTitle, dialog.Text);
+        Assert.Equal(destination.Kind == DestinationKinds.Unc, Sta.Find<CredentialPicker>(dialog).Single().Visible);
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal(
+            (destination.Id, destination.Kind, destination.Path, destination.UsbLabel, destination.CredentialId, destination.DisconnectAfter),
+            (dialog.Destination.Id, dialog.Destination.Kind, dialog.Destination.Path, dialog.Destination.UsbLabel, dialog.Destination.CredentialId, dialog.Destination.DisconnectAfter));
+    });
+
+    [Fact]
+    public void A_destination_needs_its_folder_or_label() => Sta.Run("en-US", () =>
+    {
+        Assert.Equal(Strings.ErrorDestinationFolderRequired, DestinationDialog.Check(new TaskDestination()));
+        Assert.Equal(Strings.ErrorUsbLabelRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Usb, Path = "Copies" }));
+        Assert.Equal(Strings.Format(Strings.ErrorNotUnc, @"D:\Backup"), DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Unc, Path = @"D:\Backup" }));
+        Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Local, Path = @"D:\Backup" }));
+    });
+
+    [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]
     public void The_account_dialog_shows_the_account_but_never_a_password(string culture) => Sta.Run(culture, () =>

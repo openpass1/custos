@@ -461,8 +461,20 @@ static partial class Strings
     /// <summary>Mirror</summary>
     public static string TypeMirrorTitle => Get(nameof(TypeMirrorTitle));
 
-    /// <summary>An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.</summary>
-    public static string TypeMirrorLater => Get(nameof(TypeMirrorLater));
+    /// <summary>The destination folder is kept the same as the sources: only new and changed files are copied. No compressi...</summary>
+    public static string TypeMirrorHint => Get(nameof(TypeMirrorHint));
+
+    /// <summary>Exact: files deleted in the sources are deleted from the mirror too</summary>
+    public static string MirrorExact => Get(nameof(MirrorExact));
+
+    /// <summary>Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for</summary>
+    public static string MirrorSafe => Get(nameof(MirrorSafe));
+
+    /// <summary>days</summary>
+    public static string MirrorSafeDays => Get(nameof(MirrorSafeDays));
+
+    /// <summary>Only files CUSTOS put into the mirror are ever deleted; other files in that folder stay. If a folder of the...</summary>
+    public static string MirrorNote => Get(nameof(MirrorNote));
 
     /// <summary>Forced full backup</summary>
     public static string EditorForceFull => Get(nameof(EditorForceFull));
@@ -560,8 +572,11 @@ static partial class Strings
     /// <summary>Where the backups go. With several destinations the files are read once and written to all of them; if one ...</summary>
     public static string DestinationsNote => Get(nameof(DestinationsNote));
 
-    /// <summary>Selected destination</summary>
-    public static string DestinationProperties => Get(nameof(DestinationProperties));
+    /// <summary>Add destination</summary>
+    public static string DestinationAddTitle => Get(nameof(DestinationAddTitle));
+
+    /// <summary>Destination</summary>
+    public static string DestinationEditTitle => Get(nameof(DestinationEditTitle));
 
     /// <summary>Type:</summary>
     public static string DestinationKind => Get(nameof(DestinationKind));
@@ -623,8 +638,14 @@ static partial class Strings
     /// <summary>Folder name:</summary>
     public static string NameTemplate => Get(nameof(NameTemplate));
 
-    /// <summary>The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and tim...</summary>
+    /// <summary>The name of the folder (or archive) of each backup. Pick a variant from the list or type your own. {task} i...</summary>
     public static string NameTemplateHelp => Get(nameof(NameTemplateHelp));
+
+    /// <summary>Example: {0}</summary>
+    public static string NameTemplateExample => Get(nameof(NameTemplateExample));
+
+    /// <summary>A mirror writes the files straight into the destination folder, without folders per backup.</summary>
+    public static string LayoutMirrorNote => Get(nameof(LayoutMirrorNote));
 
     /// <summary>Add at least one destination, or switch the task off.</summary>
     public static string ErrorNoDestinations => Get(nameof(ErrorNoDestinations));
@@ -718,6 +739,9 @@ static partial class Strings
 
     /// <summary>Retention</summary>
     public static string PageRetention => Get(nameof(PageRetention));
+
+    /// <summary>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror ke...</summary>
+    public static string RetentionMirrorNote => Get(nameof(RetentionMirrorNote));
 
     /// <summary>Keep all backups</summary>
     public static string RetentionNone => Get(nameof(RetentionNone));
@@ -1034,9 +1058,6 @@ static partial class Strings
     /// <summary>Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.</summary>
     public static string WarnBackupTypeNotSupported => Get(nameof(WarnBackupTypeNotSupported));
 
-    /// <summary>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</summary>
-    public static string WarnMirrorLater => Get(nameof(WarnMirrorLater));
-
     /// <summary>The compression type was read as ZIP: check it.</summary>
     public static string WarnCompressionAssumed => Get(nameof(WarnCompressionAssumed));
 
@@ -1183,6 +1204,9 @@ static partial class Strings
 
     /// <summary>Format</summary>
     public static string ArchiveFormat => Get(nameof(ArchiveFormat));
+
+    /// <summary>A mirror keeps plain files: compression and encryption do not apply to it. Verification does.</summary>
+    public static string ArchiveMirrorNote => Get(nameof(ArchiveMirrorNote));
 
     /// <summary>No compression: plain files</summary>
     public static string ArchiveNone => Get(nameof(ArchiveNone));

@@ -58,6 +58,73 @@ public sealed class EditorTests
         Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
     });
 
+    [Theory]
+    [InlineData(RetentionModes.Age)]
+    [InlineData(RetentionModes.Gfs)]
+    public void Retention_by_age_and_gfs_comes_back_unchanged(string mode) => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.Retention = new RetentionOptions { Mode = mode, KeepFull = 5, MaxAgeDays = 45, Gfs = new GfsOptions { Daily = 10, Weekly = 0, Monthly = 6 } };
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Theory]
+    [InlineData(MirrorModes.Exact)]
+    [InlineData(MirrorModes.Safe)]
+    public void A_mirror_comes_back_unchanged(string mode) => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Mirror;
+        task.MirrorMode = mode;
+        task.Retention.SafeMirrorDays = 14;
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Fact]
+    public void A_mirror_keeps_plain_files() => Sta.Run("en-US", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions { Format = ArchiveFormats.Zip, Level = 7 };
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        Sta.Find<RadioButton>(editor.Pages[0]).Single(r => r.Text == Strings.TypeMirrorTitle).Checked = true;
+        Sta.Pump();
+        var collected = editor.Collect(out string? problem);
+
+        Assert.Null(problem);
+        Assert.Equal(BackupTypes.Mirror, collected!.BackupType);
+        Assert.Equal(MirrorModes.Exact, collected.MirrorMode);
+        Assert.Equal(ArchiveFormats.None, collected.Archive.Format);
+        Assert.False(Sta.Find<RadioButton>(editor.Pages[4]).Single(r => r.Text == Strings.ArchiveZip).Enabled);
+    });
+
+    [Fact]
+    public void The_folder_name_is_picked_from_a_list_and_shows_an_example() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var page = Assert.IsType<DestinationsPage>(editor.Pages[2]);
+        editor.SelectPage(page);
+        Sta.Pump();
+
+        var template = Sta.Find<ComboBox>(page).Single(c => c.DropDownStyle == ComboBoxStyle.DropDown);
+        Assert.Equal(DestinationsPage.TemplatePresets, template.Items.Cast<string>());
+        Assert.Equal(LayoutOptions.DefaultNameTemplate, template.Text);
+        template.Text = "{task} {yyyy}";
+        Sta.Pump();
+
+        string year = DateTime.Now.Year.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains(Sta.Find<Label>(page), l => l.Text == Strings.Format(Strings.NameTemplateExample, "Office documents " + year));
+        Assert.Equal("{task} {yyyy}", editor.Collect(out _)!.Layout.NameTemplate);
+    });
+
     [Fact]
     public void Encryption_needs_a_password() => Sta.Run("en-US", () =>
     {
