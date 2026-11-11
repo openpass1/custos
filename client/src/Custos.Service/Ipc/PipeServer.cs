@@ -37,6 +37,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.RestoreStart,
         PipeProtocol.Methods.RestoreStatus,
         PipeProtocol.Methods.RestoreStop,
+
+        // A new 7z.dll is loaded by SYSTEM.
+        PipeProtocol.Methods.SevenZipCheck,
+        PipeProtocol.Methods.SevenZipUpdate,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -325,11 +329,22 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             if ((AdminOnlyMethods.Contains(method) && !identity.IsAdmin) || (AdminMethods.Contains(method) && !identity.IsAdmin && !agent.AllUsersMayEdit))
             {
                 ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
-                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed : Messages.NotAllowed);
+                string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
+                    : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
+                    : Messages.NotAllowed;
+                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
             }
             else
             {
-                response = Dispatch(identity, requestId, request);
+                response = method switch
+                {
+                    // These wait for GitHub (and the update for a download), so they do not block a thread meanwhile.
+                    PipeProtocol.Methods.SevenZipCheck => PipeMessage.Success(requestId,
+                        await agent.CheckSevenZipAsync(connection.Closing).ConfigureAwait(false), IpcJsonContext.Default.SevenZipCheckResult),
+                    PipeProtocol.Methods.SevenZipUpdate => Ok(requestId,
+                        await agent.UpdateSevenZipAsync(identity.User, connection.Closing).ConfigureAwait(false)),
+                    _ => Dispatch(identity, requestId, request),
+                };
             }
         }
         catch (OperationCanceledException) when (connection.Closing.IsCancellationRequested)
@@ -377,17 +392,17 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.RunResume =>
                 Ok(id, agent.SetPaused(request.GetData(json.RunControlRequest).TaskId, paused: false, user)),
             PipeProtocol.Methods.TaskSave =>
-                PipeMessage.Success(id, new TaskSaveResult { Task = agent.SaveTask(request.GetData(json.TaskSaveRequest), user) }, json.TaskSaveResult),
+                PipeMessage.Success(id, new TaskSaveResult { Task = agent.SaveTask(request.GetData(json.TaskSaveRequest), user, identity.Sid) }, json.TaskSaveResult),
             PipeProtocol.Methods.TaskDelete =>
                 Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.TasksImport =>
-                Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user)),
+                Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user, identity.Sid)),
             PipeProtocol.Methods.CredentialSave =>
                 PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.SaveCredential(request.GetData(json.CredentialInput)) }, json.CredentialSaveResult),
             PipeProtocol.Methods.CredentialDelete =>
                 Ok(id, agent.DeleteCredential(request.GetData(json.CredentialRequest).CredentialId)),
             PipeProtocol.Methods.DestinationTest =>
-                PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest)), json.DestinationTestResult),
+                PipeMessage.Success(id, agent.TestDestination(request.GetData(json.DestinationTestRequest), identity.Sid), json.DestinationTestResult),
             PipeProtocol.Methods.SettingsSave =>
                 Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
             PipeProtocol.Methods.RestoreList =>
@@ -398,6 +413,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.GetRestoreStatus(), json.RestoreStatusResult),
             PipeProtocol.Methods.RestoreStop =>
                 Ok(id, agent.StopRestore(user)),
+            PipeProtocol.Methods.PowerCancel =>
+                Ok(id, agent.CancelPower(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
         };
     }

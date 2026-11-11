@@ -32,9 +32,6 @@ public static class ImportWarningCodes
     /// <summary>The backup type is unknown or "dummy"; the task copies nothing until it is changed.</summary>
     public const string BackupTypeNotSupported = "backup_type_not_supported";
 
-    /// <summary>Mirror tasks arrive in a later version.</summary>
-    public const string MirrorLater = "mirror_later";
-
     /// <summary>The task compresses (zip or 7z); compression arrives in a later version. Argument: the format.</summary>
 
     /// <summary>The compression code was interpreted by assumption (zip).</summary>
@@ -175,7 +172,6 @@ public static partial class CobianImporter
         {
             task.BackupType = BackupTypes.Mirror;
             task.MirrorMode = MirrorModes.Exact;
-            warnings.Add(new ImportWarning(ImportWarningCodes.MirrorLater));
             return;
         }
 
@@ -341,6 +337,13 @@ public static partial class CobianImporter
 
     private static void ReadArchive(CobianTaskBlock block, TaskDefinition task, List<ImportWarning> warnings)
     {
+        if (task.BackupType == BackupTypes.Mirror)
+        {
+            // A mirror keeps plain files.
+            task.Archive.Format = ArchiveFormats.None;
+            return;
+        }
+
         switch (GetInt(block, "Compression"))
         {
             case null or 0:

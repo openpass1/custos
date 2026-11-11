@@ -16,11 +16,26 @@ public static class CustosEventIds
     public const int TaskFailed = 2003;
     public const int TaskAborted = 2004;
     public const int CatchUpRun = 2005;
+
+    /// <summary>The computer is shut down, restarted or put to sleep after a run (section 6.9).</summary>
+    public const int PowerAction = 2006;
+
+    /// <summary>A user cancelled the shutdown, restart or sleep after a run.</summary>
+    public const int PowerCancelled = 2007;
+
+    /// <summary>Windows refused to shut down, restart or sleep after a run.</summary>
+    public const int PowerFailed = 2008;
     public const int VssFailed = 3000;
     public const int DestinationFull = 3001;
 
     /// <summary>7z.dll is missing, not 64-bit or broken: tasks with 7z fail until it is replaced.</summary>
     public const int SevenZipUnavailable = 3002;
+
+    /// <summary>An administrator updated 7z.dll with the button (or, later, the server did).</summary>
+    public const int SevenZipUpdated = 3003;
+
+    /// <summary>An update of 7z.dll failed; the old one stays.</summary>
+    public const int SevenZipUpdateFailed = 3004;
     public const int UpdateInstalled = 4000;
     public const int UpdateRejected = 4001;
 
@@ -31,7 +46,8 @@ public static class CustosEventIds
     [
         ServiceStarted, ServiceStopped, ServerConnectionLost, ServerConnectionRestored,
         TaskStarted, TaskSucceeded, TaskCompletedWithWarnings, TaskFailed, TaskAborted, CatchUpRun,
-        VssFailed, DestinationFull, SevenZipUnavailable, UpdateInstalled, UpdateRejected, UnexpectedError,
+        PowerAction, PowerCancelled, PowerFailed,
+        VssFailed, DestinationFull, SevenZipUnavailable, SevenZipUpdated, SevenZipUpdateFailed, UpdateInstalled, UpdateRejected, UnexpectedError,
     ];
 
     /// <summary>True for the IDs listed in the spec, which always go to the Windows event log.</summary>

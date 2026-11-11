@@ -475,8 +475,20 @@
   <data name="TypeMirrorTitle" xml:space="preserve">
     <value>Зеркало</value>
   </data>
-  <data name="TypeMirrorLater" xml:space="preserve">
-    <value>В назначении поддерживается точная копия источника. Появится в следующей версии CUSTOS.</value>
+  <data name="TypeMirrorHint" xml:space="preserve">
+    <value>Папка назначения поддерживается такой же, как источники: копируются только новые и изменённые файлы. Без сжатия и отдельных папок, файлы открываются как есть.</value>
+  </data>
+  <data name="MirrorExact" xml:space="preserve">
+    <value>Точное: файлы, удалённые в источниках, удаляются и из зеркала</value>
+  </data>
+  <data name="MirrorSafe" xml:space="preserve">
+    <value>Безопасное: заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся</value>
+  </data>
+  <data name="MirrorSafeDays" xml:space="preserve">
+    <value>дней</value>
+  </data>
+  <data name="MirrorNote" xml:space="preserve">
+    <value>Удаляются только файлы, которые положил в зеркало сам CUSTOS, остальные файлы в папке не трогаются. Если папка источника не прочиталась, в этот раз ничего не удаляется.</value>
   </data>
   <data name="EditorForceFull" xml:space="preserve">
     <value>Принудительная полная копия</value>
@@ -575,8 +587,11 @@
   <data name="DestinationsNote" xml:space="preserve">
     <value>Куда записываются копии. Если назначений несколько, файлы читаются один раз и пишутся во все, а сбой одного не мешает остальным.</value>
   </data>
-  <data name="DestinationProperties" xml:space="preserve">
-    <value>Выбранное назначение</value>
+  <data name="DestinationAddTitle" xml:space="preserve">
+    <value>Добавить назначение</value>
+  </data>
+  <data name="DestinationEditTitle" xml:space="preserve">
+    <value>Назначение</value>
   </data>
   <data name="DestinationKind" xml:space="preserve">
     <value>Тип:</value>
@@ -642,7 +657,13 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Имя папки:</value>
   </data>
   <data name="NameTemplateHelp" xml:space="preserve">
-    <value>Имя папки каждой копии. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.</value>
+    <value>Имя папки (или архива) каждой копии. Выберите вариант из списка или наберите свой. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.</value>
+  </data>
+  <data name="NameTemplateExample" xml:space="preserve">
+    <value>Например: {0}</value>
+  </data>
+  <data name="LayoutMirrorNote" xml:space="preserve">
+    <value>Зеркало пишет файлы прямо в папку назначения, без отдельных папок для копий.</value>
   </data>
   <data name="ErrorNoDestinations" xml:space="preserve">
     <value>Добавьте хотя бы одно назначение или отключите задание.</value>
@@ -737,6 +758,9 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="PageRetention" xml:space="preserve">
     <value>Хранение</value>
   </data>
+  <data name="RetentionMirrorNote" xml:space="preserve">
+    <value>Зеркало — одна копия, которая обновляется, поэтому удалять здесь нечего. Сколько безопасное зеркало хранит заменённые и удалённые файлы, задаётся на странице «Основное».</value>
+  </data>
   <data name="RetentionNone" xml:space="preserve">
     <value>Хранить все копии</value>
   </data>
@@ -750,13 +774,31 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.</value>
   </data>
   <data name="RetentionAge" xml:space="preserve">
-    <value>Удалять копии старше N дней</value>
+    <value>Удалять копии старше</value>
+  </data>
+  <data name="RetentionAgeSuffix" xml:space="preserve">
+    <value>дней</value>
+  </data>
+  <data name="RetentionAgeHint" xml:space="preserve">
+    <value>Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Дед-отец-сын: дневные, недельные и месячные копии</value>
+    <value>Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца</value>
   </data>
-  <data name="RetentionLater" xml:space="preserve">
-    <value>Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.</value>
+  <data name="GfsDaily" xml:space="preserve">
+    <value>Дней:</value>
+  </data>
+  <data name="GfsWeekly" xml:space="preserve">
+    <value>Недель:</value>
+  </data>
+  <data name="GfsMonthly" xml:space="preserve">
+    <value>Месяцев:</value>
+  </data>
+  <data name="RetentionGfsHint" xml:space="preserve">
+    <value>Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».</value>
+  </data>
+  <data name="RetentionGfsEmpty" xml:space="preserve">
+    <value>Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Правила, которые действуют всегда</value>
@@ -765,7 +807,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>• Последняя успешная полная копия не удаляется никогда.
 • Если запуск завершился ошибкой, ничего не удаляется.
 • Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.
-• Хранение работает, только если включено «Отдельная папка для каждой копии».</value>
+• Хранение работает для архивов и для «Отдельной папки для каждой копии». Общая папка и зеркало обновляются на месте, удалять в них нечего.</value>
   </data>
   <data name="FiltersHeading" xml:space="preserve">
     <value>Фильтры</value>
@@ -809,11 +851,104 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="PageEvents" xml:space="preserve">
     <value>События</value>
   </data>
-  <data name="EventsLater" xml:space="preserve">
-    <value>Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.</value>
+  <data name="EventsNote" xml:space="preserve">
+    <value>Программы и скрипты выполняются от имени SYSTEM, без окна. Событие считается успешным, если программа завершилась с кодом 0. Что она выводит, попадает в журнал запуска.</value>
   </data>
-  <data name="EventsSetButUnsupported" xml:space="preserve">
-    <value>В задании есть события. Они сохранены в задании, но в этой версии не выполняются.</value>
+  <data name="EventsPreHeading" xml:space="preserve">
+    <value>До копирования</value>
+  </data>
+  <data name="EventsPostHeading" xml:space="preserve">
+    <value>После копирования</value>
+  </data>
+  <data name="EventsAbortOnPre" xml:space="preserve">
+    <value>Прервать задание, если событие «до» завершилось ошибкой</value>
+  </data>
+  <data name="EventsPostNote" xml:space="preserve">
+    <value>События «после» выполняются, даже если копирование не удалось или было остановлено, — чтобы остановленная служба снова запустилась. Ошибка события «после» даёт предупреждение.</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>Событие</value>
+  </data>
+  <data name="ColumnTimeout" xml:space="preserve">
+    <value>Тайм-аут</value>
+  </data>
+  <data name="EventTimeoutShown" xml:space="preserve">
+    <value>{0} мин</value>
+  </data>
+  <data name="EventShowStop" xml:space="preserve">
+    <value>Остановить службу {0}</value>
+  </data>
+  <data name="EventShowStart" xml:space="preserve">
+    <value>Запустить службу {0}</value>
+  </data>
+  <data name="EventAddTitle" xml:space="preserve">
+    <value>Добавить событие</value>
+  </data>
+  <data name="EventEditTitle" xml:space="preserve">
+    <value>Событие</value>
+  </data>
+  <data name="EventKindRun" xml:space="preserve">
+    <value>Запустить программу или скрипт</value>
+  </data>
+  <data name="EventKindStop" xml:space="preserve">
+    <value>Остановить службу Windows</value>
+  </data>
+  <data name="EventKindStart" xml:space="preserve">
+    <value>Запустить службу Windows</value>
+  </data>
+  <data name="EventProgram" xml:space="preserve">
+    <value>Программа:</value>
+  </data>
+  <data name="EventArguments" xml:space="preserve">
+    <value>Аргументы:</value>
+  </data>
+  <data name="EventService" xml:space="preserve">
+    <value>Служба:</value>
+  </data>
+  <data name="EventTimeout" xml:space="preserve">
+    <value>Тайм-аут, минут:</value>
+  </data>
+  <data name="EventTimeoutHelp" xml:space="preserve">
+    <value>Программа, которая работает дольше, останавливается вместе со всем, что она запустила, и событие считается неудачным. Для службы — сколько ждать, пока она остановится или запустится.</value>
+  </data>
+  <data name="EventProgramHelp" xml:space="preserve">
+    <value>.exe запускается напрямую, .bat и .cmd — через cmd.exe, .ps1 — через PowerShell (с ExecutionPolicy Bypass). Переменные вида %SystemRoot% подставляются. Для службы укажите имя, как в списке (имя службы, а не отображаемое название).</value>
+  </data>
+  <data name="EventProgramFilter" xml:space="preserve">
+    <value>Программы и скрипты (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="ErrorEventProgramRequired" xml:space="preserve">
+    <value>Укажите программу или скрипт.</value>
+  </data>
+  <data name="ErrorEventServiceRequired" xml:space="preserve">
+    <value>Укажите имя службы.</value>
+  </data>
+  <data name="ButtonUp" xml:space="preserve">
+    <value>Выше</value>
+  </data>
+  <data name="ButtonDown" xml:space="preserve">
+    <value>Ниже</value>
+  </data>
+  <data name="AfterHeading" xml:space="preserve">
+    <value>После выполнения</value>
+  </data>
+  <data name="AfterNone" xml:space="preserve">
+    <value>Ничего не делать</value>
+  </data>
+  <data name="AfterShutdown" xml:space="preserve">
+    <value>Выключить компьютер</value>
+  </data>
+  <data name="AfterRestart" xml:space="preserve">
+    <value>Перезагрузить компьютер</value>
+  </data>
+  <data name="AfterSleep" xml:space="preserve">
+    <value>Перевести в сон</value>
+  </data>
+  <data name="AfterHibernate" xml:space="preserve">
+    <value>Перевести в гибернацию</value>
+  </data>
+  <data name="AfterNote" xml:space="preserve">
+    <value>Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отменить». После остановленного запуска ничего не происходит.</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Дополнительно</value>
@@ -837,7 +972,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>копировать без неё, с предупреждением</value>
   </data>
   <data name="EditorReading" xml:space="preserve">
-    <value>Чтение файлов</value>
+    <value>Чтение и копирование файлов</value>
   </data>
   <data name="ReadRetries" xml:space="preserve">
     <value>Повторов при ошибке чтения:</value>
@@ -1037,9 +1172,6 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="WarnBackupTypeNotSupported" xml:space="preserve">
     <value>Типа копии Cobian {0} (например, «dummy») в CUSTOS нет: задание сделано полным. Проверьте его.</value>
   </data>
-  <data name="WarnMirrorLater" xml:space="preserve">
-    <value>Зеркало появится в следующей версии CUSTOS, пока это задание не выполняется.</value>
-  </data>
   <data name="WarnCompressionAssumed" xml:space="preserve">
     <value>Тип сжатия прочитан как ZIP: проверьте его.</value>
   </data>
@@ -1050,7 +1182,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Разбиение архива на тома не перенесено: при необходимости задайте размер тома на странице «Сжатие и проверка».</value>
   </data>
   <data name="WarnEventsInComment" xml:space="preserve">
-    <value>События до и после копирования пока не выполняются, они записаны в комментарий: {0}</value>
+    <value>События до и после записаны в комментарий: задайте их заново на странице «События». {0}</value>
   </data>
   <data name="WarnSourceUnknown" xml:space="preserve">
     <value>Запись «{0}» пропущена: неизвестный тип или не полный путь.</value>
@@ -1187,6 +1319,9 @@ USB-диск — ищется по метке тома, поэтому смен�
   <data name="ArchiveFormat" xml:space="preserve">
     <value>Формат</value>
   </data>
+  <data name="ArchiveMirrorNote" xml:space="preserve">
+    <value>Зеркало хранит обычные файлы: сжатие и шифрование к нему не применяются, проверка — применяется.</value>
+  </data>
   <data name="ArchiveNone" xml:space="preserve">
     <value>Без сжатия: обычные файлы</value>
   </data>
@@ -1314,6 +1449,41 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>7z.dll нельзя использовать: {0}</value>
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
-    <value>Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.</value>
+    <value>Кнопка смотрит официальные выпуски 7-Zip на GitHub, только когда её нажимают, и обновляет только с вашего согласия. Вручную: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу.</value>
+  </data>
+  <data name="PowerCountdownText" xml:space="preserve">
+    <value>Задание «{0}» выполнено. Через {2} с: {1}.</value>
+  </data>
+  <data name="PowerCancel" xml:space="preserve">
+    <value>Отменить</value>
+  </data>
+  <data name="PowerCancelFailed" xml:space="preserve">
+    <value>Служба не отменила действие.</value>
+  </data>
+  <data name="PathVariablesNote" xml:space="preserve">
+    <value>В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
+  <data name="PreserveAcl" xml:space="preserve">
+    <value>Сохранять права NTFS файлов и папок</value>
+  </data>
+  <data name="PreserveAclHelp" xml:space="preserve">
+    <value>Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.</value>
+  </data>
+  <data name="SevenZipCheckButton" xml:space="preserve">
+    <value>Проверить обновление 7-Zip</value>
+  </data>
+  <data name="SevenZipAdminOnly" xml:space="preserve">
+    <value>Обновлять 7-Zip могут только администраторы.</value>
+  </data>
+  <data name="SevenZipNothingNew" xml:space="preserve">
+    <value>У вас 7-Zip {0}, последняя версия {1}. Обновлять нечего.</value>
+  </data>
+  <data name="SevenZipAskUpdate" xml:space="preserve">
+    <value>У вас 7-Zip {0}, последняя версия {1}.
+
+Обновить сейчас? Служба скачает 64-битный установщик с официальной страницы 7-Zip на GitHub, проверит его SHA-256, возьмёт из него 7z.dll, проверит его в работе и только потом заменит старый файл (он сохранится как 7z.dll.old). Задания на это время ждут; это около минуты.</value>
+  </data>
+  <data name="SevenZipUpdatingTo" xml:space="preserve">
+    <value>Обновление 7-Zip до {0}…</value>
   </data>
 </root>

@@ -20,7 +20,7 @@ public interface IArchiveProvider
 /// <summary>ZIP through SharpZipLib everywhere; 7z through the 7z.dll at <see cref="SevenZipPath"/> on Windows.</summary>
 public sealed class ArchiveProvider(string sevenZipPath) : IArchiveProvider
 {
-    private SevenZipLibrary? _library;
+    private volatile SevenZipLibrary? _library;
 
     public string SevenZipPath { get; } = sevenZipPath;
 
@@ -30,6 +30,15 @@ public sealed class ArchiveProvider(string sevenZipPath) : IArchiveProvider
     /// <returns>The version.</returns>
     /// <exception cref="ArchiveException">7z.dll is missing, not 64-bit or broken.</exception>
     public string LoadSevenZip() => OperatingSystem.IsWindows() ? Library().Version : throw new ArchiveException(Messages.SevenZipWindowsOnly);
+
+    /// <summary>The 7z.dll in use, loaded now if it is not yet.</summary>
+    /// <exception cref="ArchiveException">7z.dll is missing, not 64-bit or broken.</exception>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    public SevenZipLibrary CurrentSevenZip() => Library();
+
+    /// <summary>Uses another 7z.dll from now on: the one an update installed (see <see cref="SevenZipInstaller"/>).</summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    public void UseSevenZip(SevenZipLibrary library) => _library = library ?? throw new ArgumentNullException(nameof(library));
 
     public IArchiveWriter CreateWriter(string format) => format switch
     {

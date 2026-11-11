@@ -28,8 +28,11 @@
   <data name="NothingChanged" xml:space="preserve">
     <value>С прошлой копии файлы не менялись, новый набор не создан.</value>
   </data>
-  <data name="MirrorNotSupported" xml:space="preserve">
-    <value>Зеркало появится в следующей версии CUSTOS. Задание не выполнено.</value>
+  <data name="MirrorNeedsPlainFiles" xml:space="preserve">
+    <value>Зеркало хранит обычные файлы: выключите сжатие для этого задания.</value>
+  </data>
+  <data name="MirrorOverlapsSource" xml:space="preserve">
+    <value>{0}: папка зеркала и источник {1} вложены друг в друга.</value>
   </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Неизвестный тип копии «{0}».</value>
@@ -132,6 +135,87 @@
   </data>
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Не удалось удалить старый набор «{0}» в {1}: {2}</value>
+  </data>
+  <data name="EventRunning" xml:space="preserve">
+    <value>Событие: {0} {1}</value>
+  </data>
+  <data name="EventOutput" xml:space="preserve">
+    <value>&gt; {0}</value>
+  </data>
+  <data name="EventOutputCut" xml:space="preserve">
+    <value>&gt; … ещё строк не показано: {0}.</value>
+  </data>
+  <data name="EventDone" xml:space="preserve">
+    <value>Событие выполнено: {0}</value>
+  </data>
+  <data name="EventExitCode" xml:space="preserve">
+    <value>{0} завершилась с кодом {1}.</value>
+  </data>
+  <data name="EventNotStarted" xml:space="preserve">
+    <value>Не удалось запустить {0}: {1}</value>
+  </data>
+  <data name="EventTimedOut" xml:space="preserve">
+    <value>{0} не завершилась за {1} с и была остановлена.</value>
+  </data>
+  <data name="EventNoCommand" xml:space="preserve">
+    <value>У события не указана программа.</value>
+  </data>
+  <data name="EventServiceStopping" xml:space="preserve">
+    <value>Событие: останавливаю службу {0}</value>
+  </data>
+  <data name="EventServiceStarting" xml:space="preserve">
+    <value>Событие: запускаю службу {0}</value>
+  </data>
+  <data name="EventServiceStopped" xml:space="preserve">
+    <value>Служба {0} остановлена.</value>
+  </data>
+  <data name="EventServiceStarted" xml:space="preserve">
+    <value>Служба {0} запущена.</value>
+  </data>
+  <data name="EventServiceTimedOut" xml:space="preserve">
+    <value>Служба {0} не перешла в нужное состояние за {1} с.</value>
+  </data>
+  <data name="EventServiceFailed" xml:space="preserve">
+    <value>Служба {0}: {1}</value>
+  </data>
+  <data name="EventServiceUnsupported" xml:space="preserve">
+    <value>Управление службами здесь недоступно: {0}</value>
+  </data>
+  <data name="EventKindUnknown" xml:space="preserve">
+    <value>Событие неизвестного вида «{0}» пропущено.</value>
+  </data>
+  <data name="PreEventFailedAbort" xml:space="preserve">
+    <value>Событие «до» не удалось, задание не выполнено: {0}</value>
+  </data>
+  <data name="PreEventFailed" xml:space="preserve">
+    <value>Событие «до» не удалось, копирование продолжается: {0}</value>
+  </data>
+  <data name="PostEventFailed" xml:space="preserve">
+    <value>Событие «после» не удалось: {0}</value>
+  </data>
+  <data name="MirrorDeletionsSkipped" xml:space="preserve">
+    <value>Часть папок источников не прочиталась, поэтому в этот раз из зеркала ничего не удаляется.</value>
+  </data>
+  <data name="MirrorFileDeleted" xml:space="preserve">
+    <value>Удалён из зеркала: {0}</value>
+  </data>
+  <data name="MirrorFileMoved" xml:space="preserve">
+    <value>Перенесён в {1}: {0}</value>
+  </data>
+  <data name="MirrorDeleted" xml:space="preserve">
+    <value>{1}: удалено из зеркала файлов, удалённых в источниках: {0}.</value>
+  </data>
+  <data name="MirrorMoved" xml:space="preserve">
+    <value>{1}: заменённых и удалённых файлов перенесено в {2}: {0}.</value>
+  </data>
+  <data name="MirrorDeleteFailed" xml:space="preserve">
+    <value>Не удалось удалить {0} из зеркала: {1}</value>
+  </data>
+  <data name="MirrorBinRemoved" xml:space="preserve">
+    <value>{1}: удалена папка {0}, срок хранения истёк.</value>
+  </data>
+  <data name="MirrorBinRemoveFailed" xml:space="preserve">
+    <value>{1}: не удалось удалить папку {0}: {2}</value>
   </data>
   <data name="PartialNotRemoved" xml:space="preserve">
     <value>Не удалось удалить незавершённую папку {0}: {1}</value>
@@ -289,6 +373,12 @@
   <data name="ConfigBadKeepFull" xml:space="preserve">
     <value>Нужно хранить хотя бы одну полную копию.</value>
   </data>
+  <data name="ConfigBadMaxAge" xml:space="preserve">
+    <value>Укажите, сколько дней хранить копии: не меньше 1.</value>
+  </data>
+  <data name="ConfigBadGfs" xml:space="preserve">
+    <value>Нужно хранить хотя бы одну дневную, недельную или месячную копию.</value>
+  </data>
   <data name="ConfigUserRequired" xml:space="preserve">
     <value>Введите имя пользователя.</value>
   </data>
@@ -445,8 +535,29 @@
   <data name="DescKindDifferential" xml:space="preserve">
     <value>дифференциальными</value>
   </data>
-  <data name="DescRetentionLater" xml:space="preserve">
-    <value>Этот режим хранения появится в следующей версии, пока старые копии не удаляются.</value>
+  <data name="DescKeepAgeOne" xml:space="preserve">
+    <value>Копии старше {0} дня удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepAgeFew" xml:space="preserve">
+    <value>Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepAgeMany" xml:space="preserve">
+    <value>Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.</value>
+  </data>
+  <data name="DescKeepGfs" xml:space="preserve">
+    <value>Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.</value>
+  </data>
+  <data name="DescMirrorExact" xml:space="preserve">
+    <value>Файлы, удалённые в источниках, удаляются и из зеркала.</value>
+  </data>
+  <data name="DescMirrorSafeOne" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} день.</value>
+  </data>
+  <data name="DescMirrorSafeFew" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дня.</value>
+  </data>
+  <data name="DescMirrorSafeMany" xml:space="preserve">
+    <value>Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дней.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Задание «{0}» пропустило запуск в {1}. Это было больше 7 дней назад, догонять его поздно.</value>
@@ -621,5 +732,119 @@
   </data>
   <data name="RestoreFolderMissing" xml:space="preserve">
     <value>Папка {0} не существует.</value>
+  </data>
+  <data name="PowerShutdown" xml:space="preserve">
+    <value>выключение компьютера</value>
+  </data>
+  <data name="PowerRestart" xml:space="preserve">
+    <value>перезагрузка компьютера</value>
+  </data>
+  <data name="PowerSleep" xml:space="preserve">
+    <value>переход в сон</value>
+  </data>
+  <data name="PowerHibernate" xml:space="preserve">
+    <value>переход в гибернацию</value>
+  </data>
+  <data name="PowerCountdown" xml:space="preserve">
+    <value>После задания «{0}»: {1} через {2} с, если никто не отменит.</value>
+  </data>
+  <data name="PowerNow" xml:space="preserve">
+    <value>Сейчас: {0} (после задания «{1}»).</value>
+  </data>
+  <data name="PowerCancelled" xml:space="preserve">
+    <value>Отменено пользователем {1}: {0}.</value>
+  </data>
+  <data name="PowerFailed" xml:space="preserve">
+    <value>Не удалось выключить, перезагрузить или усыпить компьютер: {0}</value>
+  </data>
+  <data name="PowerNothingToCancel" xml:space="preserve">
+    <value>Отменять нечего.</value>
+  </data>
+  <data name="PathVariableUnknown" xml:space="preserve">
+    <value>Переменная {0} в пути {1} на этом компьютере не задана.</value>
+  </data>
+  <data name="PathVariableNoProfile" xml:space="preserve">
+    <value>Для переменной {0} в пути {1} нужен профиль пользователя, а у задания его нет. Откройте задание и сохраните его: оно получит профиль того, кто сохранил.</value>
+  </data>
+  <data name="SecurityNotCopied" xml:space="preserve">
+    <value>{0}: не удалось задать права NTFS ({1}). Файлы копируются, но права в это место до конца запуска не переносятся.</value>
+  </data>
+  <data name="SevenZipCheckFailed" xml:space="preserve">
+    <value>Не удалось узнать последнюю версию 7-Zip: {0}</value>
+  </data>
+  <data name="SevenZipNoRelease" xml:space="preserve">
+    <value>На GitHub нет ни одного выпуска 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoInstaller" xml:space="preserve">
+    <value>В выпуске 7-Zip {0} нет файла {1}.</value>
+  </data>
+  <data name="SevenZipNoDigest" xml:space="preserve">
+    <value>GitHub не показывает SHA-256 для {0}, поэтому файл нельзя проверить. Он не скачивается; попробуйте через несколько дней.</value>
+  </data>
+  <data name="SevenZipDownloading" xml:space="preserve">
+    <value>Скачивается {0} ({1}).</value>
+  </data>
+  <data name="SevenZipDownloadFailed" xml:space="preserve">
+    <value>Не удалось скачать {0}: {1}</value>
+  </data>
+  <data name="SevenZipChecksumMismatch" xml:space="preserve">
+    <value>У {0} SHA-256 {1}, а GitHub указывает {2}. Файл удалён и не использован.</value>
+  </data>
+  <data name="SevenZipVerified" xml:space="preserve">
+    <value>{0}: SHA-256 совпадает с указанным на GitHub.</value>
+  </data>
+  <data name="SevenZipUnpacking" xml:space="preserve">
+    <value>Распаковка 7z.dll из {0}.</value>
+  </data>
+  <data name="SevenZipNotInInstaller" xml:space="preserve">
+    <value>Не удалось распаковать 7z.dll из {0}.</value>
+  </data>
+  <data name="SevenZipNeedsCurrent" xml:space="preserve">
+    <value>Установщик 7-Zip распаковывается текущим 7z.dll, а его нельзя использовать: {0} Замените 7z.dll вручную.</value>
+  </data>
+  <data name="SevenZipSelfTestFailed" xml:space="preserve">
+    <value>Новый 7z.dll ({0}) не прошёл проверку упаковки и распаковки: {1}</value>
+  </data>
+  <data name="SevenZipSelfTestOk" xml:space="preserve">
+    <value>Новый 7z.dll ({0}) правильно упаковывает и распаковывает.</value>
+  </data>
+  <data name="SevenZipCopyDiffers" xml:space="preserve">
+    <value>Копия {0} отличается от распакованного файла.</value>
+  </data>
+  <data name="SevenZipSwapFailed" xml:space="preserve">
+    <value>Не удалось заменить 7z.dll в {0}: {1} Остаётся прежний.</value>
+  </data>
+  <data name="SevenZipUpdated" xml:space="preserve">
+    <value>7-Zip обновлён с {0} до {1}, обновил {2}. Прежний файл сохранён как 7z.dll.old.</value>
+  </data>
+  <data name="SevenZipUpdateFailed" xml:space="preserve">
+    <value>7-Zip не обновлён: {0}</value>
+  </data>
+  <data name="SevenZipUpToDate" xml:space="preserve">
+    <value>7-Zip {0} — последняя версия.</value>
+  </data>
+  <data name="SevenZipNotNewer" xml:space="preserve">
+    <value>В установщике 7-Zip {0}, это не новее используемого 7z.dll ({1}).</value>
+  </data>
+  <data name="SevenZipBusyRun" xml:space="preserve">
+    <value>Выполняется задание «{0}». Обновите 7-Zip, когда оно закончится.</value>
+  </data>
+  <data name="SevenZipBusyRestore" xml:space="preserve">
+    <value>Идёт восстановление. Обновите 7-Zip, когда оно закончится.</value>
+  </data>
+  <data name="SevenZipBusyUpdate" xml:space="preserve">
+    <value>Идёт обновление 7-Zip. Попробуйте через минуту.</value>
+  </data>
+  <data name="SevenZipNotAllowed" xml:space="preserve">
+    <value>Обновлять 7-Zip могут только администраторы.</value>
+  </data>
+  <data name="SevenZipNoAnswer" xml:space="preserve">
+    <value>нет ответа за {0} с</value>
+  </data>
+  <data name="DescEvents" xml:space="preserve">
+    <value>События: до копирования — {0}, после — {1}.</value>
+  </data>
+  <data name="DescAfter" xml:space="preserve">
+    <value>После выполнения: {0}.</value>
   </data>
 </root>

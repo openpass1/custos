@@ -21,6 +21,9 @@ public sealed class BackupRequest
 
     /// <summary>Time zone for set names and for "full copy on Sunday".</summary>
     public TimeZoneInfo TimeZone { get; init; } = TimeZoneInfo.Local;
+
+    /// <summary>Read and write the files with low I/O priority (the program setting "Low", the default).</summary>
+    public bool LowPriority { get; init; }
 }
 
 /// <summary>What a run did (the fields of <c>runs/finish</c>, A.5).</summary>

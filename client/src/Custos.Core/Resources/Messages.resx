@@ -28,8 +28,11 @@
   <data name="NothingChanged" xml:space="preserve">
     <value>No file has changed since the last backup, so no new set was made.</value>
   </data>
-  <data name="MirrorNotSupported" xml:space="preserve">
-    <value>Mirror tasks arrive in the next version of CUSTOS. The task was not run.</value>
+  <data name="MirrorNeedsPlainFiles" xml:space="preserve">
+    <value>A mirror keeps plain files: switch compression off for this task.</value>
+  </data>
+  <data name="MirrorOverlapsSource" xml:space="preserve">
+    <value>{0}: the mirror folder and the source {1} lie inside each other.</value>
   </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Unknown backup type «{0}».</value>
@@ -132,6 +135,87 @@
   </data>
   <data name="SetDeleteFailed" xml:space="preserve">
     <value>Could not delete the old set «{0}» in {1}: {2}</value>
+  </data>
+  <data name="EventRunning" xml:space="preserve">
+    <value>Event: {0} {1}</value>
+  </data>
+  <data name="EventOutput" xml:space="preserve">
+    <value>&gt; {0}</value>
+  </data>
+  <data name="EventOutputCut" xml:space="preserve">
+    <value>&gt; … {0} more lines not shown.</value>
+  </data>
+  <data name="EventDone" xml:space="preserve">
+    <value>Event finished: {0}</value>
+  </data>
+  <data name="EventExitCode" xml:space="preserve">
+    <value>{0} ended with code {1}.</value>
+  </data>
+  <data name="EventNotStarted" xml:space="preserve">
+    <value>{0} could not be started: {1}</value>
+  </data>
+  <data name="EventTimedOut" xml:space="preserve">
+    <value>{0} did not end within {1} s and was stopped.</value>
+  </data>
+  <data name="EventNoCommand" xml:space="preserve">
+    <value>An event has no program set.</value>
+  </data>
+  <data name="EventServiceStopping" xml:space="preserve">
+    <value>Event: stopping the service {0}</value>
+  </data>
+  <data name="EventServiceStarting" xml:space="preserve">
+    <value>Event: starting the service {0}</value>
+  </data>
+  <data name="EventServiceStopped" xml:space="preserve">
+    <value>The service {0} is stopped.</value>
+  </data>
+  <data name="EventServiceStarted" xml:space="preserve">
+    <value>The service {0} is running.</value>
+  </data>
+  <data name="EventServiceTimedOut" xml:space="preserve">
+    <value>The service {0} did not get there within {1} s.</value>
+  </data>
+  <data name="EventServiceFailed" xml:space="preserve">
+    <value>The service {0}: {1}</value>
+  </data>
+  <data name="EventServiceUnsupported" xml:space="preserve">
+    <value>Services cannot be controlled here: {0}</value>
+  </data>
+  <data name="EventKindUnknown" xml:space="preserve">
+    <value>An event of an unknown kind «{0}» was skipped.</value>
+  </data>
+  <data name="PreEventFailedAbort" xml:space="preserve">
+    <value>The event before the backup failed, the task was not run: {0}</value>
+  </data>
+  <data name="PreEventFailed" xml:space="preserve">
+    <value>The event before the backup failed, the backup goes on: {0}</value>
+  </data>
+  <data name="PostEventFailed" xml:space="preserve">
+    <value>The event after the backup failed: {0}</value>
+  </data>
+  <data name="MirrorDeletionsSkipped" xml:space="preserve">
+    <value>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</value>
+  </data>
+  <data name="MirrorFileDeleted" xml:space="preserve">
+    <value>Deleted from the mirror: {0}</value>
+  </data>
+  <data name="MirrorFileMoved" xml:space="preserve">
+    <value>Moved to {1}: {0}</value>
+  </data>
+  <data name="MirrorDeleted" xml:space="preserve">
+    <value>{1}: {0} files deleted in the sources were deleted from the mirror.</value>
+  </data>
+  <data name="MirrorMoved" xml:space="preserve">
+    <value>{1}: {0} replaced or deleted files were moved to {2}.</value>
+  </data>
+  <data name="MirrorDeleteFailed" xml:space="preserve">
+    <value>Could not delete {0} from the mirror: {1}</value>
+  </data>
+  <data name="MirrorBinRemoved" xml:space="preserve">
+    <value>{1}: removed {0}, its time is up.</value>
+  </data>
+  <data name="MirrorBinRemoveFailed" xml:space="preserve">
+    <value>{1}: could not remove {0}: {2}</value>
   </data>
   <data name="PartialNotRemoved" xml:space="preserve">
     <value>Could not remove the unfinished folder {0}: {1}</value>
@@ -289,6 +373,12 @@
   <data name="ConfigBadKeepFull" xml:space="preserve">
     <value>Keep at least one full backup.</value>
   </data>
+  <data name="ConfigBadMaxAge" xml:space="preserve">
+    <value>Set how many days to keep backups: at least 1.</value>
+  </data>
+  <data name="ConfigBadGfs" xml:space="preserve">
+    <value>Keep at least one daily, weekly or monthly backup.</value>
+  </data>
   <data name="ConfigUserRequired" xml:space="preserve">
     <value>Enter the user name.</value>
   </data>
@@ -445,8 +535,29 @@
   <data name="DescKindDifferential" xml:space="preserve">
     <value>differential</value>
   </data>
-  <data name="DescRetentionLater" xml:space="preserve">
-    <value>This retention mode arrives in the next version; until then old backups are not deleted.</value>
+  <data name="DescKeepAgeOne" xml:space="preserve">
+    <value>Backups older than {0} day are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepAgeFew" xml:space="preserve">
+    <value>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepAgeMany" xml:space="preserve">
+    <value>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</value>
+  </data>
+  <data name="DescKeepGfs" xml:space="preserve">
+    <value>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</value>
+  </data>
+  <data name="DescMirrorExact" xml:space="preserve">
+    <value>Files deleted in the sources are deleted from the mirror too.</value>
+  </data>
+  <data name="DescMirrorSafeOne" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.</value>
+  </data>
+  <data name="DescMirrorSafeFew" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</value>
+  </data>
+  <data name="DescMirrorSafeMany" xml:space="preserve">
+    <value>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</value>
   </data>
   <data name="MissedTooOld" xml:space="preserve">
     <value>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</value>
@@ -621,5 +732,119 @@
   </data>
   <data name="RestoreFolderMissing" xml:space="preserve">
     <value>The folder {0} does not exist.</value>
+  </data>
+  <data name="PowerShutdown" xml:space="preserve">
+    <value>shutdown of the computer</value>
+  </data>
+  <data name="PowerRestart" xml:space="preserve">
+    <value>restart of the computer</value>
+  </data>
+  <data name="PowerSleep" xml:space="preserve">
+    <value>sleep</value>
+  </data>
+  <data name="PowerHibernate" xml:space="preserve">
+    <value>hibernation</value>
+  </data>
+  <data name="PowerCountdown" xml:space="preserve">
+    <value>After the task «{0}»: {1} in {2} s unless someone cancels it.</value>
+  </data>
+  <data name="PowerNow" xml:space="preserve">
+    <value>Now: {0} (after the task «{1}»).</value>
+  </data>
+  <data name="PowerCancelled" xml:space="preserve">
+    <value>Cancelled by {1}: {0}.</value>
+  </data>
+  <data name="PowerFailed" xml:space="preserve">
+    <value>The computer could not be shut down, restarted or put to sleep: {0}</value>
+  </data>
+  <data name="PowerNothingToCancel" xml:space="preserve">
+    <value>There is nothing to cancel.</value>
+  </data>
+  <data name="PathVariableUnknown" xml:space="preserve">
+    <value>The variable {0} in {1} is not known on this computer.</value>
+  </data>
+  <data name="PathVariableNoProfile" xml:space="preserve">
+    <value>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes the profile of whoever saves it.</value>
+  </data>
+  <data name="SecurityNotCopied" xml:space="preserve">
+    <value>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied there for the rest of this run.</value>
+  </data>
+  <data name="SevenZipCheckFailed" xml:space="preserve">
+    <value>Could not find out the newest 7-Zip: {0}</value>
+  </data>
+  <data name="SevenZipNoRelease" xml:space="preserve">
+    <value>GitHub lists no release of 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoInstaller" xml:space="preserve">
+    <value>The release {0} of 7-Zip has no file {1}.</value>
+  </data>
+  <data name="SevenZipNoDigest" xml:space="preserve">
+    <value>GitHub shows no SHA-256 for {0}, so the file cannot be checked. It is not downloaded; try again in a few days.</value>
+  </data>
+  <data name="SevenZipDownloading" xml:space="preserve">
+    <value>Downloading {0} ({1}).</value>
+  </data>
+  <data name="SevenZipDownloadFailed" xml:space="preserve">
+    <value>Could not download {0}: {1}</value>
+  </data>
+  <data name="SevenZipChecksumMismatch" xml:space="preserve">
+    <value>{0} has SHA-256 {1}, but GitHub publishes {2}. The file was deleted and not used.</value>
+  </data>
+  <data name="SevenZipVerified" xml:space="preserve">
+    <value>{0}: SHA-256 matches the one published on GitHub.</value>
+  </data>
+  <data name="SevenZipUnpacking" xml:space="preserve">
+    <value>Unpacking 7z.dll from {0}.</value>
+  </data>
+  <data name="SevenZipNotInInstaller" xml:space="preserve">
+    <value>7z.dll could not be unpacked from {0}.</value>
+  </data>
+  <data name="SevenZipNeedsCurrent" xml:space="preserve">
+    <value>The 7z.dll in use unpacks the 7-Zip installer, but it cannot be used: {0} Replace 7z.dll by hand.</value>
+  </data>
+  <data name="SevenZipSelfTestFailed" xml:space="preserve">
+    <value>The new 7z.dll ({0}) failed the test of packing and unpacking: {1}</value>
+  </data>
+  <data name="SevenZipSelfTestOk" xml:space="preserve">
+    <value>The new 7z.dll ({0}) packs and unpacks correctly.</value>
+  </data>
+  <data name="SevenZipCopyDiffers" xml:space="preserve">
+    <value>The copy {0} differs from the unpacked file.</value>
+  </data>
+  <data name="SevenZipSwapFailed" xml:space="preserve">
+    <value>7z.dll could not be replaced in {0}: {1} The old one stays.</value>
+  </data>
+  <data name="SevenZipUpdated" xml:space="preserve">
+    <value>7-Zip updated from {0} to {1} by {2}. The old file is kept as 7z.dll.old.</value>
+  </data>
+  <data name="SevenZipUpdateFailed" xml:space="preserve">
+    <value>7-Zip was not updated: {0}</value>
+  </data>
+  <data name="SevenZipUpToDate" xml:space="preserve">
+    <value>7-Zip {0} is the newest version.</value>
+  </data>
+  <data name="SevenZipNotNewer" xml:space="preserve">
+    <value>The installer has 7-Zip {0}, which is not newer than the 7z.dll in use ({1}).</value>
+  </data>
+  <data name="SevenZipBusyRun" xml:space="preserve">
+    <value>The task «{0}» is running. Update 7-Zip when it has finished.</value>
+  </data>
+  <data name="SevenZipBusyRestore" xml:space="preserve">
+    <value>A restore is running. Update 7-Zip when it has finished.</value>
+  </data>
+  <data name="SevenZipBusyUpdate" xml:space="preserve">
+    <value>7-Zip is being updated. Try again in a minute.</value>
+  </data>
+  <data name="SevenZipNotAllowed" xml:space="preserve">
+    <value>Only administrators may update 7-Zip.</value>
+  </data>
+  <data name="SevenZipNoAnswer" xml:space="preserve">
+    <value>no answer in {0} s</value>
+  </data>
+  <data name="DescEvents" xml:space="preserve">
+    <value>Events: {0} before the backup, {1} after.</value>
+  </data>
+  <data name="DescAfter" xml:space="preserve">
+    <value>Afterwards: {0}.</value>
   </data>
 </root>

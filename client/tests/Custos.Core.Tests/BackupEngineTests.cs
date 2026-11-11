@@ -158,6 +158,39 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
+    public void Retention_by_age_deletes_sets_older_than_the_limit()
+    {
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 3 };
+
+        Run(task, Start);
+        Run(task, Start.AddDays(1));
+        var kept1 = Run(task, Start.AddDays(2));
+        var last = Run(task, Start.AddDays(5));
+
+        Assert.Equal(2, last.DeletedSets);
+        var left = Directory.GetDirectories(destination).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([kept1.SetName, last.SetName], left);
+    }
+
+    [Fact]
+    public void Gfs_retention_keeps_the_last_set_of_each_day()
+    {
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Gfs, Gfs = new GfsOptions { Daily = 2, Weekly = 0, Monthly = 0 } };
+
+        Run(task, Start);
+        Run(task, Start.AddDays(1));
+        var dayTwo = Run(task, Start.AddDays(1).AddHours(2));
+        var last = Run(task, Start.AddDays(2));
+
+        var left = Directory.GetDirectories(destination).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([dayTwo.SetName, last.SetName], left);
+    }
+
+    [Fact]
     public void A_missing_parent_set_makes_the_next_copy_full()
     {
         string destination = _temp.Combine("Backup");
@@ -349,14 +382,6 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
-    public void Mirrors_are_refused_in_this_version()
-    {
-        var mirror = NewTask(BackupTypes.Mirror, _temp.Combine("Backup"));
-
-        Assert.Equal(RunStatuses.Error, Run(mirror, Start).Status);
-    }
-
-    [Fact]
     public void Progress_reaches_the_total()
     {
         var reports = new List<BackupProgress>();
@@ -382,6 +407,34 @@ public sealed class BackupEngineTests : IDisposable
         Vss = new VssOptions { Enabled = false },
         Copy = new CopyOptions { ReadRetries = 0 },
     };
+
+    [Fact]
+    public void Low_priority_asks_for_low_io_on_every_file_read_and_written()
+    {
+        var task = NewTask(BackupTypes.Full, _temp.Combine("Backup"));
+        task.Verify.EveryRuns = 1;
+        var engine = new BackupEngine(_platform, _store, _log);
+        using var gate = new PauseGate();
+        var normal = engine.Run(Request(task, Start, Guid.NewGuid().ToString()), gate, TestContext.Current.CancellationToken);
+        Assert.Equal(RunStatuses.Success, normal.Status);
+        Assert.Equal(0, _platform.LoweredFiles);
+
+        var request = Request(task, Start.AddHours(1), Guid.NewGuid().ToString());
+        var low = new BackupEngine(_platform, _store, _log).Run(new BackupRequest
+        {
+            Task = request.Task,
+            RunId = request.RunId,
+            Trigger = request.Trigger,
+            StartedAt = request.StartedAt,
+            TimeZone = request.TimeZone,
+            LowPriority = true,
+        }, gate, TestContext.Current.CancellationToken);
+
+        Assert.Equal(RunStatuses.Success, low.Status);
+
+        // Two sources read, two copies written, two copies read back by the check.
+        Assert.Equal(6, _platform.LoweredFiles);
+    }
 
     private BackupResult Run(TaskDefinition task, DateTimeOffset startedAt, string? runId = null) =>
         RunWith(task, startedAt, runId, TestContext.Current.CancellationToken);

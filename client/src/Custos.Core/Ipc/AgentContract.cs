@@ -41,6 +41,22 @@ public sealed class AgentSnapshot
 
     /// <summary>Why 7z.dll cannot be used (tasks with 7z fail); null when it works.</summary>
     public string? SevenZipProblem { get; set; }
+
+    /// <summary>The computer is about to shut down, restart or sleep (section 6.9); every session shows a countdown.</summary>
+    public PowerCountdown? Power { get; set; }
+}
+
+/// <summary>An action after a run that is counting down; <c>power.cancel</c> stops it.</summary>
+public sealed class PowerCountdown
+{
+    /// <summary>One of <see cref="Model.AfterActions"/>.</summary>
+    public string Action { get; set; } = Model.AfterActions.Shutdown;
+
+    /// <summary>The task whose run asked for it.</summary>
+    public string TaskName { get; set; } = string.Empty;
+
+    /// <summary>When it happens unless cancelled.</summary>
+    public DateTimeOffset Deadline { get; set; }
 }
 
 /// <summary>What the service knows about the runs of one task.</summary>
@@ -234,6 +250,15 @@ public sealed class DestinationTestRequest
 
     /// <summary>A password typed in the editor but not saved yet; null uses the stored one.</summary>
     public CredentialInput? Credential { get; set; }
+
+    /// <summary>The task being edited, for the variables in the path (section 6.2); null for none.</summary>
+    public string? TaskName { get; set; }
+
+    /// <summary>One of <see cref="Model.BackupTypes"/>, for <c>{type}</c>.</summary>
+    public string? BackupType { get; set; }
+
+    /// <summary>The profile of the task; null takes the profile of whoever asks, as saving would.</summary>
+    public string? ProfileSid { get; set; }
 }
 
 public sealed class DestinationTestResult
@@ -255,6 +280,21 @@ public sealed class SettingsSaveRequest
 }
 
 /// <summary>Result of requests that only say "done".</summary>
+/// <summary>What <see cref="PipeProtocol.Methods.SevenZipCheck"/> found out.</summary>
+public sealed class SevenZipCheckResult
+{
+    /// <summary>The version of the 7z.dll in use, or null if none works.</summary>
+    public string? Installed { get; set; }
+
+    /// <summary>The newest release on GitHub, or null if it could not be found out.</summary>
+    public string? Latest { get; set; }
+
+    public bool UpdateAvailable { get; set; }
+
+    /// <summary>Why the newest version is not known (offline, GitHub refused).</summary>
+    public string? Error { get; set; }
+}
+
 public sealed class OkResult
 {
     public static readonly OkResult Instance = new();

@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
+using System.ServiceProcess;
+using System.Text;
 using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Archives;
@@ -12,8 +14,8 @@ using Microsoft.Win32.SafeHandles;
 namespace Custos.Service.Platform;
 
 /// <summary>
-/// The backup engine's view of Windows: network logons with stored accounts, shadow copies, sleep prevention and free
-/// space (sections 6.3, 6.7, 6.8).
+/// The backup engine's view of Windows: network logons with stored accounts, shadow copies, sleep prevention, free
+/// space, and the programs and services of events (sections 6.3, 6.7, 6.8, 6.9).
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies shadows) : LocalBackupPlatform
@@ -76,6 +78,130 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
     }
 
     public override IDisposable KeepAwake(string reason) => PowerRequest.Create(reason);
+
+    /// <summary>Console programs write in the OEM code page (866 on Russian Windows), not in UTF-8.</summary>
+    protected override Encoding? ConsoleEncoding => OemEncoding.Value;
+
+    private static readonly Lazy<Encoding?> OemEncoding = new(() =>
+    {
+        try
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return Encoding.GetEncoding((int)NativeMethods.GetOEMCP());
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    });
+
+    /// <summary>
+    /// Shuts the computer down, restarts it, or puts it to sleep or into hibernation (section 6.9). Programs that are
+    /// still open are closed without asking: everyone signed in had the countdown to cancel it.
+    /// </summary>
+    /// <exception cref="BackupException">Windows refused.</exception>
+    public static void PowerAction(string action)
+    {
+        try
+        {
+            Privileges.Enable(Privileges.Shutdown);
+            switch (action)
+            {
+                case AfterActions.Shutdown or AfterActions.Restart:
+                    string mode = action == AfterActions.Shutdown ? "/s" : "/r";
+                    using (var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                        Path.Combine(Environment.SystemDirectory, "shutdown.exe"), $"{mode} /f /t 0 /d p:0:0")
+                    {
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    }))
+                    {
+                        if (process is not null && process.WaitForExit(30_000) && process.ExitCode != 0)
+                        {
+                            throw new BackupException(Messages.Format(Messages.PowerFailed, $"shutdown.exe: {process.ExitCode}"));
+                        }
+                    }
+
+                    break;
+                case AfterActions.Sleep or AfterActions.Hibernate:
+                    if (!NativeMethods.SetSuspendState(action == AfterActions.Hibernate, false, false))
+                    {
+                        throw new Win32Exception(Marshal.GetLastPInvokeError());
+                    }
+
+                    break;
+            }
+        }
+        catch (Win32Exception ex)
+        {
+            throw new BackupException(Messages.Format(Messages.PowerFailed, ex.Message), ex);
+        }
+    }
+
+    public override Func<string, string?> Variables(string? profileSid) => ProfileVariables.For(profileSid);
+
+    public override void LowerIoPriority(SafeFileHandle handle)
+    {
+        // FILE_IO_PRIORITY_HINT_INFO is one enum value. Network files and some drivers say no: then it stays as it was.
+        int hint = NativeMethods.IoPriorityHintLow;
+        _ = NativeMethods.SetFileInformationByHandle(handle, NativeMethods.FileIoPriorityHintInfo, ref hint, sizeof(int));
+    }
+
+    public override byte[]? ReadSecurity(string path, bool folder) => FileSecurityCopy.Read(path, folder);
+
+    public override bool WriteSecurity(string path, bool folder, byte[] descriptor) => FileSecurityCopy.Write(path, folder, descriptor);
+
+    public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var service = new ServiceController(name);
+            var wanted = start ? ServiceControllerStatus.Running : ServiceControllerStatus.Stopped;
+            service.Refresh();
+            if (service.Status == wanted)
+            {
+                return;
+            }
+
+            if (start)
+            {
+                if (service.Status is not (ServiceControllerStatus.StartPending or ServiceControllerStatus.ContinuePending))
+                {
+                    service.Start();
+                }
+            }
+            else if (service.Status != ServiceControllerStatus.StopPending)
+            {
+                service.Stop();
+            }
+
+            var limit = DateTime.UtcNow + timeout;
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var left = limit - DateTime.UtcNow;
+                if (left <= TimeSpan.Zero)
+                {
+                    throw new BackupException(Messages.Format(Messages.EventServiceTimedOut, name, (int)timeout.TotalSeconds));
+                }
+
+                try
+                {
+                    service.WaitForStatus(wanted, left < TimeSpan.FromSeconds(1) ? left : TimeSpan.FromSeconds(1));
+                    return;
+                }
+                catch (System.ServiceProcess.TimeoutException)
+                {
+                    // Not yet: look at the clock and the stop button again.
+                }
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            // No such service, no right to control it, or it refused.
+            throw new BackupException(Messages.Format(Messages.EventServiceFailed, name, ex.InnerException?.Message ?? ex.Message), ex);
+        }
+    }
 }
 
 /// <summary>

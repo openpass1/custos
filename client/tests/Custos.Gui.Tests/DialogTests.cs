@@ -43,6 +43,61 @@ public sealed class DialogTests
     });
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void The_destination_dialog_gives_back_the_destination(int index) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Office().Destinations[index];
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.Equal(Strings.DestinationEditTitle, dialog.Text);
+        Assert.Equal(destination.Kind == DestinationKinds.Unc, Sta.Find<CredentialPicker>(dialog).Single().Visible);
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal(
+            (destination.Id, destination.Kind, destination.Path, destination.UsbLabel, destination.CredentialId, destination.DisconnectAfter),
+            (dialog.Destination.Id, dialog.Destination.Kind, dialog.Destination.Path, dialog.Destination.UsbLabel, dialog.Destination.CredentialId, dialog.Destination.DisconnectAfter));
+    });
+
+    [Theory]
+    [InlineData(TaskEventKinds.Run)]
+    [InlineData(TaskEventKinds.ServiceStop)]
+    public void The_event_dialog_gives_back_the_event(string kind) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var item = kind == TaskEventKinds.Run
+            ? new TaskEvent { Command = @"C:\Scripts\dump.cmd", Args = "-full", TimeoutS = 90 }
+            : new TaskEvent { Kind = kind, Service = "Spooler", TimeoutS = 120 };
+        using var dialog = new EventDialog(new EditorContext(monitor, toolTip), item, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal((item.Kind, item.Command, item.Args, item.Service, item.TimeoutS),
+            (dialog.Event.Kind, dialog.Event.Command, dialog.Event.Args, dialog.Event.Service, dialog.Event.TimeoutS));
+    });
+
+    [Fact]
+    public void A_destination_needs_its_folder_or_label() => Sta.Run("en-US", () =>
+    {
+        Assert.Equal(Strings.ErrorDestinationFolderRequired, DestinationDialog.Check(new TaskDestination()));
+        Assert.Equal(Strings.ErrorUsbLabelRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Usb, Path = "Copies" }));
+        Assert.Equal(Strings.Format(Strings.ErrorNotUnc, @"D:\Backup"), DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Unc, Path = @"D:\Backup" }));
+        Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Local, Path = @"D:\Backup" }));
+    });
+
+    [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]
     public void The_account_dialog_shows_the_account_but_never_a_password(string culture) => Sta.Run(culture, () =>
@@ -75,6 +130,8 @@ public sealed class DialogTests
         var row = Assert.Single(accounts.Items.Cast<ListViewItem>());
         Assert.Equal(Samples.Account().DisplayName, row.Text);
         Assert.Equal("Office documents", row.SubItems[1].Text);
+        var sevenZip = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.SevenZipCheckButton);
+        Assert.False(sevenZip.Enabled);
     });
 
     [Theory]
@@ -177,5 +234,31 @@ public sealed class DialogTests
         Assert.StartsWith(header.SetName, form.SetList.Items[0].SubItems[2].Text, StringComparison.Ordinal);
         Assert.True(form.SetList.Items[0].Selected);
         Assert.Equal(full.SetName, form.SetList.Items[1].SubItems[2].Text);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_countdown_names_the_task_the_action_and_the_seconds_left(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        var countdown = new Custos.Core.Ipc.PowerCountdown
+        {
+            Action = AfterActions.Shutdown,
+            TaskName = "Office documents",
+            Deadline = DateTimeOffset.UtcNow.AddSeconds(42),
+        };
+        using var form = new PowerCountdownForm(monitor, countdown);
+        form.Show();
+        Sta.Pump();
+
+        Assert.InRange(form.SecondsLeft, 40, 42);
+        Assert.Contains("Office documents", form.Message, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Messages.PowerShutdown, form.Message, StringComparison.Ordinal);
+        Assert.True(form.TopMost);
+
+        form.ShowCountdown(new Custos.Core.Ipc.PowerCountdown { Action = AfterActions.Sleep, TaskName = "Photos", Deadline = DateTimeOffset.UtcNow.AddSeconds(-5) });
+        Assert.Equal(0, form.SecondsLeft);
+        Assert.Contains(Custos.Core.Messages.PowerSleep, form.Message, StringComparison.Ordinal);
     });
 }

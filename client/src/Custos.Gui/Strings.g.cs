@@ -461,8 +461,20 @@ static partial class Strings
     /// <summary>Mirror</summary>
     public static string TypeMirrorTitle => Get(nameof(TypeMirrorTitle));
 
-    /// <summary>An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.</summary>
-    public static string TypeMirrorLater => Get(nameof(TypeMirrorLater));
+    /// <summary>The destination folder is kept the same as the sources: only new and changed files are copied. No compressi...</summary>
+    public static string TypeMirrorHint => Get(nameof(TypeMirrorHint));
+
+    /// <summary>Exact: files deleted in the sources are deleted from the mirror too</summary>
+    public static string MirrorExact => Get(nameof(MirrorExact));
+
+    /// <summary>Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for</summary>
+    public static string MirrorSafe => Get(nameof(MirrorSafe));
+
+    /// <summary>days</summary>
+    public static string MirrorSafeDays => Get(nameof(MirrorSafeDays));
+
+    /// <summary>Only files CUSTOS put into the mirror are ever deleted; other files in that folder stay. If a folder of the...</summary>
+    public static string MirrorNote => Get(nameof(MirrorNote));
 
     /// <summary>Forced full backup</summary>
     public static string EditorForceFull => Get(nameof(EditorForceFull));
@@ -560,8 +572,11 @@ static partial class Strings
     /// <summary>Where the backups go. With several destinations the files are read once and written to all of them; if one ...</summary>
     public static string DestinationsNote => Get(nameof(DestinationsNote));
 
-    /// <summary>Selected destination</summary>
-    public static string DestinationProperties => Get(nameof(DestinationProperties));
+    /// <summary>Add destination</summary>
+    public static string DestinationAddTitle => Get(nameof(DestinationAddTitle));
+
+    /// <summary>Destination</summary>
+    public static string DestinationEditTitle => Get(nameof(DestinationEditTitle));
 
     /// <summary>Type:</summary>
     public static string DestinationKind => Get(nameof(DestinationKind));
@@ -623,8 +638,14 @@ static partial class Strings
     /// <summary>Folder name:</summary>
     public static string NameTemplate => Get(nameof(NameTemplate));
 
-    /// <summary>The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and tim...</summary>
+    /// <summary>The name of the folder (or archive) of each backup. Pick a variant from the list or type your own. {task} i...</summary>
     public static string NameTemplateHelp => Get(nameof(NameTemplateHelp));
+
+    /// <summary>Example: {0}</summary>
+    public static string NameTemplateExample => Get(nameof(NameTemplateExample));
+
+    /// <summary>A mirror writes the files straight into the destination folder, without folders per backup.</summary>
+    public static string LayoutMirrorNote => Get(nameof(LayoutMirrorNote));
 
     /// <summary>Add at least one destination, or switch the task off.</summary>
     public static string ErrorNoDestinations => Get(nameof(ErrorNoDestinations));
@@ -719,6 +740,9 @@ static partial class Strings
     /// <summary>Retention</summary>
     public static string PageRetention => Get(nameof(PageRetention));
 
+    /// <summary>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror ke...</summary>
+    public static string RetentionMirrorNote => Get(nameof(RetentionMirrorNote));
+
     /// <summary>Keep all backups</summary>
     public static string RetentionNone => Get(nameof(RetentionNone));
 
@@ -731,14 +755,32 @@ static partial class Strings
     /// <summary>A full backup is deleted together with the incremental and differential backups made after it, never on its...</summary>
     public static string RetentionCountHint => Get(nameof(RetentionCountHint));
 
-    /// <summary>Delete backups older than N days</summary>
+    /// <summary>Delete backups older than</summary>
     public static string RetentionAge => Get(nameof(RetentionAge));
 
-    /// <summary>Grandfather-father-son: daily, weekly and monthly backups</summary>
+    /// <summary>days</summary>
+    public static string RetentionAgeSuffix => Get(nameof(RetentionAgeSuffix));
+
+    /// <summary>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that ...</summary>
+    public static string RetentionAgeHint => Get(nameof(RetentionAgeHint));
+
+    /// <summary>Grandfather-father-son: keep the last backup of each day, week and month</summary>
     public static string RetentionGfs => Get(nameof(RetentionGfs));
 
-    /// <summary>These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its ba...</summary>
-    public static string RetentionLater => Get(nameof(RetentionLater));
+    /// <summary>Days:</summary>
+    public static string GfsDaily => Get(nameof(GfsDaily));
+
+    /// <summary>Weeks:</summary>
+    public static string GfsWeekly => Get(nameof(GfsWeekly));
+
+    /// <summary>Months:</summary>
+    public static string GfsMonthly => Get(nameof(GfsMonthly));
+
+    /// <summary>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a k...</summary>
+    public static string RetentionGfsHint => Get(nameof(RetentionGfsHint));
+
+    /// <summary>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</summary>
+    public static string RetentionGfsEmpty => Get(nameof(RetentionGfsEmpty));
 
     /// <summary>Rules that always apply</summary>
     public static string RetentionRules => Get(nameof(RetentionRules));
@@ -788,11 +830,104 @@ static partial class Strings
     /// <summary>Events</summary>
     public static string PageEvents => Get(nameof(PageEvents));
 
-    /// <summary>Scripts and services before and after the backup, and shutting the computer down after it, arrive in the ne...</summary>
-    public static string EventsLater => Get(nameof(EventsLater));
+    /// <summary>Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends wi...</summary>
+    public static string EventsNote => Get(nameof(EventsNote));
 
-    /// <summary>This task has events. They are kept in the task but not run in this version.</summary>
-    public static string EventsSetButUnsupported => Get(nameof(EventsSetButUnsupported));
+    /// <summary>Before the backup</summary>
+    public static string EventsPreHeading => Get(nameof(EventsPreHeading));
+
+    /// <summary>After the backup</summary>
+    public static string EventsPostHeading => Get(nameof(EventsPostHeading));
+
+    /// <summary>Stop the task if an event before fails</summary>
+    public static string EventsAbortOnPre => Get(nameof(EventsAbortOnPre));
+
+    /// <summary>The events after run even when the backup failed or was stopped, so that a service stopped before starts ag...</summary>
+    public static string EventsPostNote => Get(nameof(EventsPostNote));
+
+    /// <summary>Event</summary>
+    public static string ColumnEvent => Get(nameof(ColumnEvent));
+
+    /// <summary>Time limit</summary>
+    public static string ColumnTimeout => Get(nameof(ColumnTimeout));
+
+    /// <summary>{0} min</summary>
+    public static string EventTimeoutShown => Get(nameof(EventTimeoutShown));
+
+    /// <summary>Stop the service {0}</summary>
+    public static string EventShowStop => Get(nameof(EventShowStop));
+
+    /// <summary>Start the service {0}</summary>
+    public static string EventShowStart => Get(nameof(EventShowStart));
+
+    /// <summary>Add event</summary>
+    public static string EventAddTitle => Get(nameof(EventAddTitle));
+
+    /// <summary>Event</summary>
+    public static string EventEditTitle => Get(nameof(EventEditTitle));
+
+    /// <summary>Run a program or script</summary>
+    public static string EventKindRun => Get(nameof(EventKindRun));
+
+    /// <summary>Stop a Windows service</summary>
+    public static string EventKindStop => Get(nameof(EventKindStop));
+
+    /// <summary>Start a Windows service</summary>
+    public static string EventKindStart => Get(nameof(EventKindStart));
+
+    /// <summary>Program:</summary>
+    public static string EventProgram => Get(nameof(EventProgram));
+
+    /// <summary>Arguments:</summary>
+    public static string EventArguments => Get(nameof(EventArguments));
+
+    /// <summary>Service:</summary>
+    public static string EventService => Get(nameof(EventService));
+
+    /// <summary>Time limit, minutes:</summary>
+    public static string EventTimeout => Get(nameof(EventTimeout));
+
+    /// <summary>A program still running after this time is stopped together with everything it started, and the event count...</summary>
+    public static string EventTimeoutHelp => Get(nameof(EventTimeoutHelp));
+
+    /// <summary>.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Varia...</summary>
+    public static string EventProgramHelp => Get(nameof(EventProgramHelp));
+
+    /// <summary>Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*</summary>
+    public static string EventProgramFilter => Get(nameof(EventProgramFilter));
+
+    /// <summary>Enter the program or script.</summary>
+    public static string ErrorEventProgramRequired => Get(nameof(ErrorEventProgramRequired));
+
+    /// <summary>Enter the name of the service.</summary>
+    public static string ErrorEventServiceRequired => Get(nameof(ErrorEventServiceRequired));
+
+    /// <summary>Up</summary>
+    public static string ButtonUp => Get(nameof(ButtonUp));
+
+    /// <summary>Down</summary>
+    public static string ButtonDown => Get(nameof(ButtonDown));
+
+    /// <summary>When the run is over</summary>
+    public static string AfterHeading => Get(nameof(AfterHeading));
+
+    /// <summary>Do nothing</summary>
+    public static string AfterNone => Get(nameof(AfterNone));
+
+    /// <summary>Shut the computer down</summary>
+    public static string AfterShutdown => Get(nameof(AfterShutdown));
+
+    /// <summary>Restart the computer</summary>
+    public static string AfterRestart => Get(nameof(AfterRestart));
+
+    /// <summary>Put the computer to sleep</summary>
+    public static string AfterSleep => Get(nameof(AfterSleep));
+
+    /// <summary>Hibernate the computer</summary>
+    public static string AfterHibernate => Get(nameof(AfterHibernate));
+
+    /// <summary>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-se...</summary>
+    public static string AfterNote => Get(nameof(AfterNote));
 
     /// <summary>Advanced</summary>
     public static string PageAdvanced => Get(nameof(PageAdvanced));
@@ -815,7 +950,7 @@ static partial class Strings
     /// <summary>copy without it, with a warning</summary>
     public static string VssContinue => Get(nameof(VssContinue));
 
-    /// <summary>Reading files</summary>
+    /// <summary>Reading and copying files</summary>
     public static string EditorReading => Get(nameof(EditorReading));
 
     /// <summary>Retries after a read error:</summary>
@@ -1016,9 +1151,6 @@ static partial class Strings
     /// <summary>Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.</summary>
     public static string WarnBackupTypeNotSupported => Get(nameof(WarnBackupTypeNotSupported));
 
-    /// <summary>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</summary>
-    public static string WarnMirrorLater => Get(nameof(WarnMirrorLater));
-
     /// <summary>The compression type was read as ZIP: check it.</summary>
     public static string WarnCompressionAssumed => Get(nameof(WarnCompressionAssumed));
 
@@ -1028,7 +1160,7 @@ static partial class Strings
     /// <summary>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks...</summary>
     public static string WarnSplitIgnored => Get(nameof(WarnSplitIgnored));
 
-    /// <summary>Events before and after the backup are not run yet; they were written into the comment: {0}</summary>
+    /// <summary>The events before and after were written into the comment: set them again on the «Events» page. {0}</summary>
     public static string WarnEventsInComment => Get(nameof(WarnEventsInComment));
 
     /// <summary>The entry «{0}» was skipped: its type is unknown or it is not a full path.</summary>
@@ -1166,6 +1298,9 @@ static partial class Strings
     /// <summary>Format</summary>
     public static string ArchiveFormat => Get(nameof(ArchiveFormat));
 
+    /// <summary>A mirror keeps plain files: compression and encryption do not apply to it. Verification does.</summary>
+    public static string ArchiveMirrorNote => Get(nameof(ArchiveMirrorNote));
+
     /// <summary>No compression: plain files</summary>
     public static string ArchiveNone => Get(nameof(ArchiveNone));
 
@@ -1292,6 +1427,39 @@ static partial class Strings
     /// <summary>7z.dll cannot be used: {0}</summary>
     public static string Settings7ZipProblem => Get(nameof(Settings7ZipProblem));
 
-    /// <summary>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the...</summary>
+    /// <summary>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agr...</summary>
     public static string Settings7ZipNote => Get(nameof(Settings7ZipNote));
+
+    /// <summary>The task «{0}» has finished. In {2} s: {1}.</summary>
+    public static string PowerCountdownText => Get(nameof(PowerCountdownText));
+
+    /// <summary>Cancel</summary>
+    public static string PowerCancel => Get(nameof(PowerCancel));
+
+    /// <summary>The service did not cancel it.</summary>
+    public static string PowerCancelFailed => Get(nameof(PowerCancelFailed));
+
+    /// <summary>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the tas...</summary>
+    public static string PathVariablesNote => Get(nameof(PathVariablesNote));
+
+    /// <summary>Keep NTFS permissions of files and folders</summary>
+    public static string PreserveAcl => Get(nameof(PreserveAcl));
+
+    /// <summary>For copies without compression: files and folders in the copy get the permissions and the owner of the orig...</summary>
+    public static string PreserveAclHelp => Get(nameof(PreserveAclHelp));
+
+    /// <summary>Check for a 7-Zip update</summary>
+    public static string SevenZipCheckButton => Get(nameof(SevenZipCheckButton));
+
+    /// <summary>Only administrators may update 7-Zip.</summary>
+    public static string SevenZipAdminOnly => Get(nameof(SevenZipAdminOnly));
+
+    /// <summary>You have 7-Zip {0}; the newest is {1}. There is nothing to update.</summary>
+    public static string SevenZipNothingNew => Get(nameof(SevenZipNothingNew));
+
+    /// <summary>You have 7-Zip {0}; the newest is {1}.</summary>
+    public static string SevenZipAskUpdate => Get(nameof(SevenZipAskUpdate));
+
+    /// <summary>Updating 7-Zip to {0}…</summary>
+    public static string SevenZipUpdatingTo => Get(nameof(SevenZipUpdatingTo));
 }

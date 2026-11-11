@@ -58,7 +58,7 @@ internal sealed class TaskEditorForm : Form
         AcceptButton = _ok;
         CancelButton = _cancel;
 
-        var context = new EditorContext(monitor, _toolTip);
+        var context = new EditorContext(monitor, _toolTip) { ProfileSid = task.ProfileSid };
         _pages =
         [
             new BasicPage(context),
@@ -277,6 +277,38 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
 
     /// <summary>Raised when an account was added while the editor is open.</summary>
     public event EventHandler? CredentialsChanged;
+
+    /// <summary>Raised when the name, the backup type or the archive format changed on their pages.</summary>
+    public event EventHandler? ShapeChanged;
+
+    /// <summary>The name as typed on the first page.</summary>
+    public string TaskName { get; private set; } = string.Empty;
+
+    /// <summary>The backup type chosen on the first page.</summary>
+    public string BackupType { get; private set; } = BackupTypes.Incremental;
+
+    /// <summary>The format chosen on the archive page.</summary>
+    public string ArchiveFormat { get; private set; } = ArchiveFormats.None;
+
+    public bool IsMirror => BackupType == BackupTypes.Mirror;
+
+    /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
+    public string? ProfileSid { get; init; }
+
+    /// <summary>Tells the other pages what changed; null leaves a value as it is.</summary>
+    public void SetShape(string? taskName = null, string? backupType = null, string? archiveFormat = null)
+    {
+        bool changed = (taskName is not null && taskName != TaskName)
+            || (backupType is not null && backupType != BackupType)
+            || (archiveFormat is not null && archiveFormat != ArchiveFormat);
+        TaskName = taskName ?? TaskName;
+        BackupType = backupType ?? BackupType;
+        ArchiveFormat = archiveFormat ?? ArchiveFormat;
+        if (changed)
+        {
+            ShapeChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     /// <summary>The stored Windows accounts, including the ones added in this editor.</summary>
     public List<Credential> Credentials

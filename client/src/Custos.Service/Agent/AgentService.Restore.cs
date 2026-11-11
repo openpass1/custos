@@ -72,6 +72,11 @@ internal sealed partial class AgentService
             {
                 throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.RestoreAlreadyRunning);
             }
+
+            if (_sevenZipUpdating)
+            {
+                throw new AgentRequestException(PipeProtocol.Errors.Conflict, Messages.SevenZipBusyUpdate);
+            }
         }
 
         if (request.TargetFolder is { } folder && !Path.IsPathFullyQualified(folder))
@@ -107,11 +112,11 @@ internal sealed partial class AgentService
         var job = new RestoreJob(set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
         lock (_restoreLock)
         {
-            if (_restore is { Running: true })
+            if (_restore is { Running: true } || _sevenZipUpdating)
             {
                 found.Dispose();
                 file.Dispose();
-                throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.RestoreAlreadyRunning);
+                throw new AgentRequestException(PipeProtocol.Errors.Invalid, _sevenZipUpdating ? Messages.SevenZipBusyUpdate : Messages.RestoreAlreadyRunning);
             }
 
             _restore?.Dispose();
@@ -217,8 +222,17 @@ internal sealed partial class AgentService
                 }
             }
 
-            foreach (var destination in task.Destinations)
+            var variables = PathVariables.For(Platform, task, DateTime.Now);
+            foreach (var destination in task.Clone().Destinations)
             {
+                // Variables in the path are filled in as for a run now; a date in the path finds this month's sets.
+                destination.Path = variables.Expand(destination.Path, out string? problem);
+                if (problem is not null)
+                {
+                    problems.Add(problem);
+                    continue;
+                }
+
                 string label = destination.Kind == DestinationKinds.Usb ? Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel) : destination.Path;
                 if (OpenPlace(label, () => BackupEngine.ResolveRoot(Platform, destination),
                     destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null, password, taskId, problems) is { } place)
@@ -258,7 +272,7 @@ internal sealed partial class AgentService
                     throw new DirectoryNotFoundException(Messages.Format(Messages.RestoreFolderMissing, folder));
                 }
 
-                return SetCatalog.Scan(folder, taskId, access, (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)));
+                return SetCatalog.Scan(folder, taskId, access, (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)), mirror: true);
             });
             var place = new Place(label, session, access, sets);
             session = null;

@@ -1,3 +1,4 @@
+using Custos.Core.Backup;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 
@@ -109,7 +110,7 @@ internal sealed class SourceDialog : DialogForm
     private readonly PictureBox _accountHelp;
 
     public SourceDialog(EditorContext context, TaskSource source)
-        : base(source.Path.Length == 0 ? Strings.SourceAddTitle : Strings.SourceEditTitle, new Size(620, 300))
+        : base(source.Path.Length == 0 ? Strings.SourceAddTitle : Strings.SourceEditTitle, new Size(620, 340))
     {
         _original = source;
         _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
@@ -124,6 +125,7 @@ internal sealed class SourceDialog : DialogForm
         _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.SourceAccountHelp);
         Body.Controls.Add(_accountHelp);
         AddNote(Strings.SourceNote);
+        AddNote(Strings.PathVariablesNote);
         EndBuild();
 
         switch (source.Kind)
@@ -164,7 +166,7 @@ internal sealed class SourceDialog : DialogForm
     {
         string path = _path.Text.Trim().Trim('"');
         string? problem = path.Length == 0 ? Strings.ErrorPathRequired
-            : !Path.IsPathFullyQualified(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
             : _network.Checked && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
             : !_network.Checked && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
             : null;
@@ -221,6 +223,399 @@ internal sealed class SourceDialog : DialogForm
         if (folders.ShowDialog(this) == DialogResult.OK)
         {
             _path.Text = folders.SelectedPath;
+        }
+    }
+}
+
+/// <summary>
+/// Adds or changes one destination of a task: a local folder, a network folder with its account, or a USB disk found by
+/// its label (section 6.3), with "Check access". A destination of a kind of a later version is shown, not changed.
+/// </summary>
+internal sealed class DestinationDialog : DialogForm
+{
+    private static readonly string[] Kinds = [DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb];
+
+    private readonly EditorContext _context;
+    private readonly TaskDestination _original;
+    private readonly bool _supported;
+    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+    private readonly Label _pathLabel = Caption(Strings.DestinationFolder);
+    private readonly TextBox _path = new() { Dock = DockStyle.Fill };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Label _labelLabel = Caption(Strings.DestinationUsbLabel);
+    private readonly ComboBox _usbLabel = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 220 };
+    private readonly PictureBox _usbHelp;
+    private readonly Label _accountLabel = Caption(Strings.DestinationAccount);
+    private readonly CredentialPicker _account;
+    private readonly PictureBox _accountHelp;
+    private readonly Label _unsupported = new() { Text = Strings.DestinationLater, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 4, 0, 6) };
+    private readonly Button _test = new() { Text = Strings.ButtonTestAccess, AutoSize = true };
+    private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
+
+    public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew)
+        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(660, 360))
+    {
+        _context = context;
+        _original = destination;
+        _supported = DestinationKinds.IsSupported(destination.Kind);
+        _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
+        _usbHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationUsbHelp);
+        _accountHelp = Ui.HelpIcon(context.ToolTip, Strings.DestinationAccountHelp);
+        foreach (string kind in Kinds)
+        {
+            _kind.Items.Add(DestinationsPage.KindText(kind));
+        }
+
+        if (!_supported)
+        {
+            // A kind of a later version, set from the server: shown, not editable here.
+            _kind.Items.Add(DestinationsPage.KindText(destination.Kind));
+        }
+
+        AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(context.ToolTip, Strings.DestinationKindHelp));
+        AddGridRow(_pathLabel, _path, _browse);
+        AddGridRow(_labelLabel, _usbLabel, _usbHelp);
+        AddGridRow(_accountLabel, _account, _accountHelp);
+        AddWide(_unsupported);
+        AddNote(Strings.PathVariablesNote);
+        var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        testRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        testRow.Controls.Add(_test, 0, 0);
+        testRow.Controls.Add(_testResult, 1, 0);
+        AddWide(testRow);
+        EndBuild();
+
+        FillUsbLabels();
+        int index = Array.IndexOf(Kinds, destination.Kind);
+        _kind.SelectedIndex = index >= 0 ? index : Kinds.Length;
+        _path.Text = destination.Path;
+        _usbLabel.Text = destination.UsbLabel ?? string.Empty;
+        _account.SelectedId = destination.CredentialId;
+        UpdateFields();
+
+        _kind.SelectedIndexChanged += (_, _) => UpdateFields();
+        _path.TextChanged += (_, _) =>
+        {
+            _testResult.Text = string.Empty;
+            if (_path.Text.StartsWith(@"\\", StringComparison.Ordinal) && Kind == DestinationKinds.Local)
+            {
+                _kind.SelectedIndex = Array.IndexOf(Kinds, DestinationKinds.Unc);
+            }
+        };
+        _browse.Click += (_, _) => Browse();
+        _test.Click += (_, _) => TestAccess();
+    }
+
+    /// <summary>The destination as entered, after "OK".</summary>
+    public TaskDestination Destination { get; private set; } = new();
+
+    /// <summary>What is wrong with a destination of a supported kind, in words, or null.</summary>
+    public static string? Check(TaskDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        string path = destination.Path;
+        return destination.Kind == DestinationKinds.Usb
+                ? string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null
+            : string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
+            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : destination.Kind == DestinationKinds.Unc && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
+            : destination.Kind == DestinationKinds.Local && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
+            : null;
+    }
+
+    protected override void OnOk()
+    {
+        if (!_supported)
+        {
+            Destination = _original;
+            DialogResult = DialogResult.OK;
+            return;
+        }
+
+        var destination = Build();
+        if (Check(destination) is { } problem)
+        {
+            Ui.ShowWarning(this, problem);
+            return;
+        }
+
+        Destination = destination;
+        DialogResult = DialogResult.OK;
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+
+    private string Kind => _kind.SelectedIndex >= 0 && _kind.SelectedIndex < Kinds.Length ? Kinds[_kind.SelectedIndex] : _original.Kind;
+
+    private void AddGridRow(Control caption, Control control, Control extra)
+    {
+        control.Margin = new Padding(0, 3, 0, 3);
+        extra.Margin = new Padding(6, 3, 0, 3);
+        Body.Controls.Add(caption);
+        Body.Controls.Add(control);
+        Body.Controls.Add(extra);
+    }
+
+    /// <summary>The destination from the fields; what the dialog does not show is kept as it was.</summary>
+    private TaskDestination Build()
+    {
+        string kind = Kind;
+        string path = _path.Text.Trim().Trim('"');
+        return new TaskDestination
+        {
+            Id = _original.Id,
+            Kind = kind,
+            Path = kind == DestinationKinds.Usb ? DestinationKinds.UsbFolder(path) : path,
+            UsbLabel = kind == DestinationKinds.Usb ? _usbLabel.Text.Trim() : null,
+            CredentialId = kind == DestinationKinds.Unc ? _account.SelectedId : null,
+            Host = _original.Host,
+            Port = _original.Port,
+            Endpoint = _original.Endpoint,
+            Bucket = _original.Bucket,
+            Region = _original.Region,
+            DisconnectAfter = _original.DisconnectAfter,
+            SpeedLimitKbps = _original.SpeedLimitKbps,
+            ExtensionData = _original.ExtensionData,
+        };
+    }
+
+    private void UpdateFields()
+    {
+        string kind = Kind;
+        bool usb = kind == DestinationKinds.Usb;
+        bool unc = kind == DestinationKinds.Unc;
+        _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk : Strings.DestinationFolder;
+        _browse.Visible = kind == DestinationKinds.Local;
+        _labelLabel.Visible = _usbLabel.Visible = _usbHelp.Visible = usb;
+        _accountLabel.Visible = _account.Visible = _accountHelp.Visible = unc;
+        _unsupported.Visible = !_supported;
+        _kind.Enabled = _path.Enabled = _test.Enabled = _supported;
+        _testResult.Text = string.Empty;
+    }
+
+    private void Browse()
+    {
+        using var dialog = new FolderBrowserDialog { ShowNewFolderButton = true, UseDescriptionForTitle = true, Description = Strings.DestinationFolder };
+        if (Directory.Exists(_path.Text))
+        {
+            dialog.InitialDirectory = _path.Text;
+        }
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _path.Text = dialog.SelectedPath;
+        }
+    }
+
+    /// <summary>Labels of the disks connected now, for the USB label list.</summary>
+    private void FillUsbLabels()
+    {
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (drive.IsReady && drive.DriveType is DriveType.Removable or DriveType.Fixed && !string.IsNullOrWhiteSpace(drive.VolumeLabel)
+                    && !_usbLabel.Items.Contains(drive.VolumeLabel))
+                {
+                    _usbLabel.Items.Add(drive.VolumeLabel);
+                }
+            }
+            catch (IOException)
+            {
+                // The disk went away while we looked.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    private void TestAccess()
+    {
+        var destination = Build();
+        if (Check(destination) is { } problem)
+        {
+            _testResult.ForeColor = Glyphs.ErrorText;
+            _testResult.Text = problem;
+            return;
+        }
+
+        _test.Enabled = false;
+        _testResult.ForeColor = SystemColors.GrayText;
+        _testResult.Text = Strings.TestRunning;
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest
+                {
+                    Destination = destination,
+                    TaskName = _context.TaskName,
+                    BackupType = _context.BackupType,
+                    ProfileSid = _context.ProfileSid,
+                },
+                    IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(2));
+                _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
+                _testResult.Text = result.Ok
+                    ? Strings.Format(Strings.TestOk, result.Folder, result.FreeBytes is { } free ? Custos.Core.Text.Sizes.Format(free) : "?")
+                    : Strings.Format(Strings.TestFailed, result.Error);
+            }
+            catch (ServiceUnavailableException ex)
+            {
+                _testResult.ForeColor = Glyphs.ErrorText;
+                _testResult.Text = ex.Message;
+            }
+            finally
+            {
+                _test.Enabled = true;
+            }
+        });
+    }
+}
+
+/// <summary>
+/// Adds or changes one event (section 6.9): a program or script with its arguments, or a Windows service to stop or
+/// start, each with a time limit.
+/// </summary>
+internal sealed class EventDialog : DialogForm
+{
+    private readonly TaskEvent _original;
+    private readonly RadioButton _run = new() { Text = Strings.EventKindRun, AutoSize = true };
+    private readonly RadioButton _stop = new() { Text = Strings.EventKindStop, AutoSize = true };
+    private readonly RadioButton _start = new() { Text = Strings.EventKindStart, AutoSize = true };
+    private readonly Label _programLabel = Caption(Strings.EventProgram);
+    private readonly TextBox _program = new() { Dock = DockStyle.Fill };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Label _argumentsLabel = Caption(Strings.EventArguments);
+    private readonly TextBox _arguments = new() { Dock = DockStyle.Fill };
+    private readonly Label _serviceLabel = Caption(Strings.EventService);
+    private readonly ComboBox _service = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
+    private readonly NumericUpDown _timeout = new() { Minimum = 1, Maximum = 10080, Width = 80 };
+    private readonly int _shownMinutes;
+
+    public EventDialog(EditorContext context, TaskEvent item, bool isNew)
+        : base(isNew ? Strings.EventAddTitle : Strings.EventEditTitle, new Size(640, 290))
+    {
+        _original = item;
+        var kinds = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(0, 0, 0, 6) };
+        kinds.Controls.AddRange([_run, _stop, _start]);
+        AddWide(kinds);
+        AddGridRow(_programLabel, _program, _browse);
+        AddGridRow(_argumentsLabel, _arguments, new Label { AutoSize = true });
+        AddGridRow(_serviceLabel, _service, new Label { AutoSize = true });
+        AddGridRow(Caption(Strings.EventTimeout), _timeout, Ui.HelpIcon(context.ToolTip, Strings.EventTimeoutHelp));
+        AddNote(Strings.EventProgramHelp);
+        EndBuild();
+
+        FillServices();
+        _run.Checked = item.Kind is not (TaskEventKinds.ServiceStop or TaskEventKinds.ServiceStart);
+        _stop.Checked = item.Kind == TaskEventKinds.ServiceStop;
+        _start.Checked = item.Kind == TaskEventKinds.ServiceStart;
+        _program.Text = item.Command ?? string.Empty;
+        _arguments.Text = item.Args;
+        _service.Text = item.Service ?? string.Empty;
+        _shownMinutes = (int)Math.Clamp((item.TimeoutS + 59) / 60, _timeout.Minimum, _timeout.Maximum);
+        _timeout.Value = _shownMinutes;
+        UpdateFields();
+
+        _run.CheckedChanged += (_, _) => UpdateFields();
+        _stop.CheckedChanged += (_, _) => UpdateFields();
+        _start.CheckedChanged += (_, _) => UpdateFields();
+        _browse.Click += (_, _) => Browse();
+    }
+
+    /// <summary>The event as entered, after "OK".</summary>
+    public TaskEvent Event { get; private set; } = new();
+
+    protected override void OnOk()
+    {
+        string kind = _stop.Checked ? TaskEventKinds.ServiceStop : _start.Checked ? TaskEventKinds.ServiceStart : TaskEventKinds.Run;
+        string program = _program.Text.Trim().Trim('"');
+        string service = _service.Text.Trim();
+        string? problem = kind == TaskEventKinds.Run
+            ? program.Length == 0 ? Strings.ErrorEventProgramRequired : null
+            : service.Length == 0 ? Strings.ErrorEventServiceRequired : null;
+        if (problem is not null)
+        {
+            Ui.ShowWarning(this, problem);
+            return;
+        }
+
+        int minutes = (int)_timeout.Value;
+        Event = new TaskEvent
+        {
+            Kind = kind,
+            Command = kind == TaskEventKinds.Run ? program : null,
+            Args = kind == TaskEventKinds.Run ? _arguments.Text.Trim() : string.Empty,
+            Service = kind == TaskEventKinds.Run ? null : service,
+            // Seconds that do not make whole minutes stay as they were unless the minutes were changed.
+            TimeoutS = minutes == _shownMinutes ? _original.TimeoutS : minutes * 60,
+            ExtensionData = _original.ExtensionData,
+        };
+        DialogResult = DialogResult.OK;
+    }
+
+    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+
+    private void AddGridRow(Control caption, Control control, Control extra)
+    {
+        control.Margin = new Padding(0, 3, 0, 3);
+        extra.Margin = new Padding(6, 3, 0, 3);
+        Body.Controls.Add(caption);
+        Body.Controls.Add(control);
+        Body.Controls.Add(extra);
+    }
+
+    private void UpdateFields()
+    {
+        bool run = _run.Checked;
+        _programLabel.Visible = _program.Visible = _browse.Visible = run;
+        _argumentsLabel.Visible = _arguments.Visible = run;
+        _serviceLabel.Visible = _service.Visible = !run;
+    }
+
+    /// <summary>The services of this computer by name, for the list.</summary>
+    private void FillServices()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        try
+        {
+            // The services (not the drivers) as the registry lists them: readable by every user.
+            using var services = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services");
+            var names = new List<string>();
+            foreach (string name in services?.GetSubKeyNames() ?? [])
+            {
+                using var key = services!.OpenSubKey(name);
+                if (key?.GetValue("Type") is int type && (type & 0x30) != 0 && key.GetValue("ImagePath") is not null)
+                {
+                    names.Add(name);
+                }
+            }
+
+            _service.Items.AddRange([.. names.Order(StringComparer.OrdinalIgnoreCase)]);
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException)
+        {
+            // The list is only a help: the name can be typed.
+        }
+    }
+
+    private void Browse()
+    {
+        using var dialog = new OpenFileDialog { CheckFileExists = true, Title = Strings.EventProgram, Filter = Strings.EventProgramFilter };
+        if (File.Exists(_program.Text))
+        {
+            dialog.FileName = _program.Text;
+        }
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _program.Text = dialog.FileName;
         }
     }
 }
@@ -415,6 +810,8 @@ internal sealed class SettingsForm : DialogForm
     private readonly Button _deleteAccount = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly ToolTip _toolTip = new();
     private readonly bool _canEdit;
+    private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
+    private readonly Button _sevenZipCheck = new() { Text = Strings.SevenZipCheckButton, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
 
     public SettingsForm(ServiceMonitor monitor)
         : base(Strings.SettingsTitle, new Size(640, 620))
@@ -438,18 +835,22 @@ internal sealed class SettingsForm : DialogForm
         var archiverHeading = new Label { Text = Strings.Settings7Zip, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         archiverHeading.Font = heading.Font;
         AddWide(archiverHeading);
-        var snapshot = monitor.Snapshot;
-        var archiver = new Label
-        {
-            AutoSize = true,
-            Dock = DockStyle.Fill,
-            Margin = new Padding(0, 2, 0, 2),
-            Text = snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
-                : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—"),
-            ForeColor = snapshot?.SevenZipProblem is null ? SystemColors.ControlText : Glyphs.WarningText,
-        };
-        AddWide(archiver);
+        var archiverRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+        archiverRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        archiverRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        archiverRow.Controls.Add(_archiver, 0, 0);
+        archiverRow.Controls.Add(_sevenZipCheck, 1, 0);
+        AddWide(archiverRow);
         AddNote(Strings.Settings7ZipNote);
+        ShowArchiver();
+        bool admin = monitor.Status.Hello?.IsAdmin == true;
+        _sevenZipCheck.Enabled = admin && monitor.IsConnected;
+        if (!admin)
+        {
+            _toolTip.SetToolTip(_sevenZipCheck, Strings.SevenZipAdminOnly);
+        }
+
+        _sevenZipCheck.Click += (_, _) => Ui.Run(this, CheckSevenZipAsync);
 
         var accountsHeading = new Label { Text = Strings.SettingsAccounts, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         accountsHeading.Font = heading.Font;
@@ -503,6 +904,69 @@ internal sealed class SettingsForm : DialogForm
         }
 
         base.Dispose(disposing);
+    }
+
+    /// <summary>The version of 7z.dll the service uses, or what is wrong with it.</summary>
+    private void ShowArchiver()
+    {
+        var snapshot = _monitor.Snapshot;
+        _archiver.Text = snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
+            : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—");
+        _archiver.ForeColor = snapshot?.SevenZipProblem is null ? SystemColors.ControlText : Glyphs.WarningText;
+    }
+
+    /// <summary>«Проверить обновление 7-Zip»: asks the service, which asks GitHub; updates only after "Yes".</summary>
+    private async Task CheckSevenZipAsync()
+    {
+        var json = IpcJsonContext.Default;
+        _sevenZipCheck.Enabled = false;
+        UseWaitCursor = true;
+        try
+        {
+            var check = await _monitor.RequestAsync(PipeProtocol.Methods.SevenZipCheck, EmptyRequest.Instance,
+                json.EmptyRequest, json.SevenZipCheckResult, TimeSpan.FromMinutes(1));
+            UseWaitCursor = false;
+            if (check.Error is { } error)
+            {
+                Ui.ShowWarning(this, error);
+                return;
+            }
+
+            if (!check.UpdateAvailable)
+            {
+                Ui.ShowInfo(this, Strings.Format(Strings.SevenZipNothingNew, check.Installed ?? "—", check.Latest));
+                return;
+            }
+
+            if (!Ui.Confirm(this, Strings.Format(Strings.SevenZipAskUpdate, check.Installed ?? "—", check.Latest)))
+            {
+                return;
+            }
+
+            UseWaitCursor = true;
+            _archiver.Text = Strings.Format(Strings.SevenZipUpdatingTo, check.Latest);
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.SevenZipUpdate, EmptyRequest.Instance,
+                json.EmptyRequest, json.OkResult, TimeSpan.FromMinutes(15));
+            UseWaitCursor = false;
+            ShowArchiver();
+            if (result.Ok)
+            {
+                Ui.ShowInfo(this, result.Message ?? Strings.Format(Strings.Settings7ZipVersion, check.Latest));
+            }
+            else
+            {
+                Ui.ShowWarning(this, result.Message ?? Strings.ProblemNoAnswer);
+            }
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            if (!IsDisposed)
+            {
+                _sevenZipCheck.Enabled = true;
+                ShowArchiver();
+            }
+        }
     }
 
     protected override void OnOk()

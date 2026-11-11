@@ -93,6 +93,16 @@ public static class Words
         _ => status,
     };
 
+    /// <summary>What happens to the computer after a run: "выключение компьютера", "переход в сон".</summary>
+    public static string PowerAction(string action) => action switch
+    {
+        Model.AfterActions.Shutdown => Messages.PowerShutdown,
+        Model.AfterActions.Restart => Messages.PowerRestart,
+        Model.AfterActions.Sleep => Messages.PowerSleep,
+        Model.AfterActions.Hibernate => Messages.PowerHibernate,
+        _ => action,
+    };
+
     /// <summary>How a run was started: "по расписанию", "вручную, OFFICE\anna", "догоняющий за 27.10 00:00".</summary>
     public static string Trigger(string trigger, DateTimeOffset? scheduledFor, string? requestedBy) => trigger switch
     {

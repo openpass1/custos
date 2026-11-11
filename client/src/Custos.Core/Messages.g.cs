@@ -20,8 +20,11 @@ static partial class Messages
     /// <summary>No file has changed since the last backup, so no new set was made.</summary>
     public static string NothingChanged => Get(nameof(NothingChanged));
 
-    /// <summary>Mirror tasks arrive in the next version of CUSTOS. The task was not run.</summary>
-    public static string MirrorNotSupported => Get(nameof(MirrorNotSupported));
+    /// <summary>A mirror keeps plain files: switch compression off for this task.</summary>
+    public static string MirrorNeedsPlainFiles => Get(nameof(MirrorNeedsPlainFiles));
+
+    /// <summary>{0}: the mirror folder and the source {1} lie inside each other.</summary>
+    public static string MirrorOverlapsSource => Get(nameof(MirrorOverlapsSource));
 
     /// <summary>Unknown backup type «{0}».</summary>
     public static string BackupTypeNotSupported => Get(nameof(BackupTypeNotSupported));
@@ -124,6 +127,87 @@ static partial class Messages
 
     /// <summary>Could not delete the old set «{0}» in {1}: {2}</summary>
     public static string SetDeleteFailed => Get(nameof(SetDeleteFailed));
+
+    /// <summary>Event: {0} {1}</summary>
+    public static string EventRunning => Get(nameof(EventRunning));
+
+    /// <summary>&gt; {0}</summary>
+    public static string EventOutput => Get(nameof(EventOutput));
+
+    /// <summary>&gt; … {0} more lines not shown.</summary>
+    public static string EventOutputCut => Get(nameof(EventOutputCut));
+
+    /// <summary>Event finished: {0}</summary>
+    public static string EventDone => Get(nameof(EventDone));
+
+    /// <summary>{0} ended with code {1}.</summary>
+    public static string EventExitCode => Get(nameof(EventExitCode));
+
+    /// <summary>{0} could not be started: {1}</summary>
+    public static string EventNotStarted => Get(nameof(EventNotStarted));
+
+    /// <summary>{0} did not end within {1} s and was stopped.</summary>
+    public static string EventTimedOut => Get(nameof(EventTimedOut));
+
+    /// <summary>An event has no program set.</summary>
+    public static string EventNoCommand => Get(nameof(EventNoCommand));
+
+    /// <summary>Event: stopping the service {0}</summary>
+    public static string EventServiceStopping => Get(nameof(EventServiceStopping));
+
+    /// <summary>Event: starting the service {0}</summary>
+    public static string EventServiceStarting => Get(nameof(EventServiceStarting));
+
+    /// <summary>The service {0} is stopped.</summary>
+    public static string EventServiceStopped => Get(nameof(EventServiceStopped));
+
+    /// <summary>The service {0} is running.</summary>
+    public static string EventServiceStarted => Get(nameof(EventServiceStarted));
+
+    /// <summary>The service {0} did not get there within {1} s.</summary>
+    public static string EventServiceTimedOut => Get(nameof(EventServiceTimedOut));
+
+    /// <summary>The service {0}: {1}</summary>
+    public static string EventServiceFailed => Get(nameof(EventServiceFailed));
+
+    /// <summary>Services cannot be controlled here: {0}</summary>
+    public static string EventServiceUnsupported => Get(nameof(EventServiceUnsupported));
+
+    /// <summary>An event of an unknown kind «{0}» was skipped.</summary>
+    public static string EventKindUnknown => Get(nameof(EventKindUnknown));
+
+    /// <summary>The event before the backup failed, the task was not run: {0}</summary>
+    public static string PreEventFailedAbort => Get(nameof(PreEventFailedAbort));
+
+    /// <summary>The event before the backup failed, the backup goes on: {0}</summary>
+    public static string PreEventFailed => Get(nameof(PreEventFailed));
+
+    /// <summary>The event after the backup failed: {0}</summary>
+    public static string PostEventFailed => Get(nameof(PostEventFailed));
+
+    /// <summary>Some folders of the sources could not be read, so this time nothing is deleted from the mirror.</summary>
+    public static string MirrorDeletionsSkipped => Get(nameof(MirrorDeletionsSkipped));
+
+    /// <summary>Deleted from the mirror: {0}</summary>
+    public static string MirrorFileDeleted => Get(nameof(MirrorFileDeleted));
+
+    /// <summary>Moved to {1}: {0}</summary>
+    public static string MirrorFileMoved => Get(nameof(MirrorFileMoved));
+
+    /// <summary>{1}: {0} files deleted in the sources were deleted from the mirror.</summary>
+    public static string MirrorDeleted => Get(nameof(MirrorDeleted));
+
+    /// <summary>{1}: {0} replaced or deleted files were moved to {2}.</summary>
+    public static string MirrorMoved => Get(nameof(MirrorMoved));
+
+    /// <summary>Could not delete {0} from the mirror: {1}</summary>
+    public static string MirrorDeleteFailed => Get(nameof(MirrorDeleteFailed));
+
+    /// <summary>{1}: removed {0}, its time is up.</summary>
+    public static string MirrorBinRemoved => Get(nameof(MirrorBinRemoved));
+
+    /// <summary>{1}: could not remove {0}: {2}</summary>
+    public static string MirrorBinRemoveFailed => Get(nameof(MirrorBinRemoveFailed));
 
     /// <summary>Could not remove the unfinished folder {0}: {1}</summary>
     public static string PartialNotRemoved => Get(nameof(PartialNotRemoved));
@@ -281,6 +365,12 @@ static partial class Messages
     /// <summary>Keep at least one full backup.</summary>
     public static string ConfigBadKeepFull => Get(nameof(ConfigBadKeepFull));
 
+    /// <summary>Set how many days to keep backups: at least 1.</summary>
+    public static string ConfigBadMaxAge => Get(nameof(ConfigBadMaxAge));
+
+    /// <summary>Keep at least one daily, weekly or monthly backup.</summary>
+    public static string ConfigBadGfs => Get(nameof(ConfigBadGfs));
+
     /// <summary>Enter the user name.</summary>
     public static string ConfigUserRequired => Get(nameof(ConfigUserRequired));
 
@@ -437,8 +527,29 @@ static partial class Messages
     /// <summary>differential</summary>
     public static string DescKindDifferential => Get(nameof(DescKindDifferential));
 
-    /// <summary>This retention mode arrives in the next version; until then old backups are not deleted.</summary>
-    public static string DescRetentionLater => Get(nameof(DescRetentionLater));
+    /// <summary>Backups older than {0} day are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeOne => Get(nameof(DescKeepAgeOne));
+
+    /// <summary>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeFew => Get(nameof(DescKeepAgeFew));
+
+    /// <summary>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</summary>
+    public static string DescKeepAgeMany => Get(nameof(DescKeepAgeMany));
+
+    /// <summary>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</summary>
+    public static string DescKeepGfs => Get(nameof(DescKeepGfs));
+
+    /// <summary>Files deleted in the sources are deleted from the mirror too.</summary>
+    public static string DescMirrorExact => Get(nameof(DescMirrorExact));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.</summary>
+    public static string DescMirrorSafeOne => Get(nameof(DescMirrorSafeOne));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</summary>
+    public static string DescMirrorSafeFew => Get(nameof(DescMirrorSafeFew));
+
+    /// <summary>Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.</summary>
+    public static string DescMirrorSafeMany => Get(nameof(DescMirrorSafeMany));
 
     /// <summary>Task «{0}» missed its run at {1}. That was more than 7 days ago, too long ago to catch up.</summary>
     public static string MissedTooOld => Get(nameof(MissedTooOld));
@@ -613,4 +724,118 @@ static partial class Messages
 
     /// <summary>The folder {0} does not exist.</summary>
     public static string RestoreFolderMissing => Get(nameof(RestoreFolderMissing));
+
+    /// <summary>shutdown of the computer</summary>
+    public static string PowerShutdown => Get(nameof(PowerShutdown));
+
+    /// <summary>restart of the computer</summary>
+    public static string PowerRestart => Get(nameof(PowerRestart));
+
+    /// <summary>sleep</summary>
+    public static string PowerSleep => Get(nameof(PowerSleep));
+
+    /// <summary>hibernation</summary>
+    public static string PowerHibernate => Get(nameof(PowerHibernate));
+
+    /// <summary>After the task «{0}»: {1} in {2} s unless someone cancels it.</summary>
+    public static string PowerCountdown => Get(nameof(PowerCountdown));
+
+    /// <summary>Now: {0} (after the task «{1}»).</summary>
+    public static string PowerNow => Get(nameof(PowerNow));
+
+    /// <summary>Cancelled by {1}: {0}.</summary>
+    public static string PowerCancelled => Get(nameof(PowerCancelled));
+
+    /// <summary>The computer could not be shut down, restarted or put to sleep: {0}</summary>
+    public static string PowerFailed => Get(nameof(PowerFailed));
+
+    /// <summary>There is nothing to cancel.</summary>
+    public static string PowerNothingToCancel => Get(nameof(PowerNothingToCancel));
+
+    /// <summary>The variable {0} in {1} is not known on this computer.</summary>
+    public static string PathVariableUnknown => Get(nameof(PathVariableUnknown));
+
+    /// <summary>The variable {0} in {1} needs a user profile, and the task has none. Open the task and save it: it takes th...</summary>
+    public static string PathVariableNoProfile => Get(nameof(PathVariableNoProfile));
+
+    /// <summary>{0}: the NTFS permissions could not be set ({1}). The files are copied; their permissions are not copied th...</summary>
+    public static string SecurityNotCopied => Get(nameof(SecurityNotCopied));
+
+    /// <summary>Could not find out the newest 7-Zip: {0}</summary>
+    public static string SevenZipCheckFailed => Get(nameof(SevenZipCheckFailed));
+
+    /// <summary>GitHub lists no release of 7-Zip.</summary>
+    public static string SevenZipNoRelease => Get(nameof(SevenZipNoRelease));
+
+    /// <summary>The release {0} of 7-Zip has no file {1}.</summary>
+    public static string SevenZipNoInstaller => Get(nameof(SevenZipNoInstaller));
+
+    /// <summary>GitHub shows no SHA-256 for {0}, so the file cannot be checked. It is not downloaded; try again in a few days.</summary>
+    public static string SevenZipNoDigest => Get(nameof(SevenZipNoDigest));
+
+    /// <summary>Downloading {0} ({1}).</summary>
+    public static string SevenZipDownloading => Get(nameof(SevenZipDownloading));
+
+    /// <summary>Could not download {0}: {1}</summary>
+    public static string SevenZipDownloadFailed => Get(nameof(SevenZipDownloadFailed));
+
+    /// <summary>{0} has SHA-256 {1}, but GitHub publishes {2}. The file was deleted and not used.</summary>
+    public static string SevenZipChecksumMismatch => Get(nameof(SevenZipChecksumMismatch));
+
+    /// <summary>{0}: SHA-256 matches the one published on GitHub.</summary>
+    public static string SevenZipVerified => Get(nameof(SevenZipVerified));
+
+    /// <summary>Unpacking 7z.dll from {0}.</summary>
+    public static string SevenZipUnpacking => Get(nameof(SevenZipUnpacking));
+
+    /// <summary>7z.dll could not be unpacked from {0}.</summary>
+    public static string SevenZipNotInInstaller => Get(nameof(SevenZipNotInInstaller));
+
+    /// <summary>The 7z.dll in use unpacks the 7-Zip installer, but it cannot be used: {0} Replace 7z.dll by hand.</summary>
+    public static string SevenZipNeedsCurrent => Get(nameof(SevenZipNeedsCurrent));
+
+    /// <summary>The new 7z.dll ({0}) failed the test of packing and unpacking: {1}</summary>
+    public static string SevenZipSelfTestFailed => Get(nameof(SevenZipSelfTestFailed));
+
+    /// <summary>The new 7z.dll ({0}) packs and unpacks correctly.</summary>
+    public static string SevenZipSelfTestOk => Get(nameof(SevenZipSelfTestOk));
+
+    /// <summary>The copy {0} differs from the unpacked file.</summary>
+    public static string SevenZipCopyDiffers => Get(nameof(SevenZipCopyDiffers));
+
+    /// <summary>7z.dll could not be replaced in {0}: {1} The old one stays.</summary>
+    public static string SevenZipSwapFailed => Get(nameof(SevenZipSwapFailed));
+
+    /// <summary>7-Zip updated from {0} to {1} by {2}. The old file is kept as 7z.dll.old.</summary>
+    public static string SevenZipUpdated => Get(nameof(SevenZipUpdated));
+
+    /// <summary>7-Zip was not updated: {0}</summary>
+    public static string SevenZipUpdateFailed => Get(nameof(SevenZipUpdateFailed));
+
+    /// <summary>7-Zip {0} is the newest version.</summary>
+    public static string SevenZipUpToDate => Get(nameof(SevenZipUpToDate));
+
+    /// <summary>The installer has 7-Zip {0}, which is not newer than the 7z.dll in use ({1}).</summary>
+    public static string SevenZipNotNewer => Get(nameof(SevenZipNotNewer));
+
+    /// <summary>The task «{0}» is running. Update 7-Zip when it has finished.</summary>
+    public static string SevenZipBusyRun => Get(nameof(SevenZipBusyRun));
+
+    /// <summary>A restore is running. Update 7-Zip when it has finished.</summary>
+    public static string SevenZipBusyRestore => Get(nameof(SevenZipBusyRestore));
+
+    /// <summary>7-Zip is being updated. Try again in a minute.</summary>
+    public static string SevenZipBusyUpdate => Get(nameof(SevenZipBusyUpdate));
+
+    /// <summary>Only administrators may update 7-Zip.</summary>
+    public static string SevenZipNotAllowed => Get(nameof(SevenZipNotAllowed));
+
+    /// <summary>no answer in {0} s</summary>
+    public static string SevenZipNoAnswer => Get(nameof(SevenZipNoAnswer));
+
+    /// <summary>Events: {0} before the backup, {1} after.</summary>
+    public static string DescEvents => Get(nameof(DescEvents));
+
+    /// <summary>Afterwards: {0}.</summary>
+    public static string DescAfter => Get(nameof(DescAfter));
 }

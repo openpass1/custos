@@ -27,6 +27,16 @@ public static class TaskDescriber
         }
 
         sentences.Add(Retention(task));
+        if (task.Events.Pre.Count + task.Events.Post.Count > 0)
+        {
+            sentences.Add(Messages.Format(Messages.DescEvents, task.Events.Pre.Count, task.Events.Post.Count));
+        }
+
+        if (task.Events.After is AfterActions.Shutdown or AfterActions.Restart or AfterActions.Sleep or AfterActions.Hibernate)
+        {
+            sentences.Add(Messages.Format(Messages.DescAfter, Words.PowerAction(task.Events.After)));
+        }
+
         return string.Join(" ", sentences);
     }
 
@@ -193,7 +203,15 @@ public static class TaskDescriber
 
     private static string Retention(TaskDefinition task)
     {
-        if (!task.Layout.SeparateFolders)
+        if (task.BackupType == BackupTypes.Mirror)
+        {
+            int keep = Math.Max(1, task.Retention.SafeMirrorDays);
+            return task.MirrorMode == MirrorModes.Safe
+                ? Messages.Format(Sizes.Plural(keep, Messages.DescMirrorSafeOne, Messages.DescMirrorSafeFew, Messages.DescMirrorSafeMany), keep)
+                : Messages.DescMirrorExact;
+        }
+
+        if (!task.Layout.SeparateFolders && task.Archive.Format == ArchiveFormats.None)
         {
             return Messages.DescOneFolder;
         }
@@ -212,8 +230,13 @@ public static class TaskDescriber
 
                 string kind = task.BackupType == BackupTypes.Differential ? Messages.DescKindDifferential : Messages.DescKindIncremental;
                 return Messages.Format(Sizes.Plural(keep, Messages.DescKeepChainsOne, Messages.DescKeepChainsFew, Messages.DescKeepChainsMany), keep, kind);
+            case RetentionModes.Age:
+                int days = Math.Max(1, retention.MaxAgeDays);
+                return Messages.Format(Sizes.Plural(days, Messages.DescKeepAgeOne, Messages.DescKeepAgeFew, Messages.DescKeepAgeMany), days);
+            case RetentionModes.Gfs:
+                return Messages.Format(Messages.DescKeepGfs, retention.Gfs.Daily, retention.Gfs.Weekly, retention.Gfs.Monthly);
             default:
-                return Messages.DescRetentionLater;
+                return Messages.DescKeepAll;
         }
     }
 

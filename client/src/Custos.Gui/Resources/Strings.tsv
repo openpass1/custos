@@ -160,7 +160,11 @@ TypeIncrementalHint	Only the files changed since the last backup of any type are
 TypeDifferentialTitle	Differential	Дифференциальная
 TypeDifferentialHint	The files changed since the last full backup are copied. The backup grows each time, but a restore needs only the full and the last differential backup.	Копируются файлы, изменившиеся с последней полной копии. С каждым разом копия растёт, зато для восстановления нужны только полная и последняя дифференциальная.
 TypeMirrorTitle	Mirror	Зеркало
-TypeMirrorLater	An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.	В назначении поддерживается точная копия источника. Появится в следующей версии CUSTOS.
+TypeMirrorHint	The destination folder is kept the same as the sources: only new and changed files are copied. No compression and no separate folders, the files open as they are.	Папка назначения поддерживается такой же, как источники: копируются только новые и изменённые файлы. Без сжатия и отдельных папок, файлы открываются как есть.
+MirrorExact	Exact: files deleted in the sources are deleted from the mirror too	Точное: файлы, удалённые в источниках, удаляются и из зеркала
+MirrorSafe	Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for	Безопасное: заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся
+MirrorSafeDays	days	дней
+MirrorNote	Only files CUSTOS put into the mirror are ever deleted; other files in that folder stay. If a folder of the sources cannot be read, nothing is deleted that time.	Удаляются только файлы, которые положил в зеркало сам CUSTOS, остальные файлы в папке не трогаются. Если папка источника не прочиталась, в этот раз ничего не удаляется.
 EditorForceFull	Forced full backup	Принудительная полная копия
 ForceEvery	Every	Каждый
 ForceEveryRunsSuffix	runs	-й запуск
@@ -195,7 +199,8 @@ ErrorUncNeedsNetwork	«{0}» is a network path: choose «Network folder».	«{0}
 # ---- Task editor: Destinations
 PageDestinations	Destinations	Назначения
 DestinationsNote	Where the backups go. With several destinations the files are read once and written to all of them; if one fails, the others still get the backup.	Куда записываются копии. Если назначений несколько, файлы читаются один раз и пишутся во все, а сбой одного не мешает остальным.
-DestinationProperties	Selected destination	Выбранное назначение
+DestinationAddTitle	Add destination	Добавить назначение
+DestinationEditTitle	Destination	Назначение
 DestinationKind	Type:	Тип:
 DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск — ищется по метке тома, поэтому смена буквы диска не мешает.
 KindLocal	Local folder	Локальная папка
@@ -216,7 +221,9 @@ EditorLayout	Layout of the backups	Размещение копий
 SeparateFolders	A separate folder for each backup	Отдельная папка для каждой копии
 SeparateFoldersHelp	On: each backup goes into its own folder, named by the template below, and old backups are deleted by the retention rules.\nOff: the files go straight into the destination folder and are updated there at each run; earlier versions are not kept.	Включено: каждая копия ложится в свою папку с именем по шаблону ниже, а старые копии удаляются по правилам хранения.\nВыключено: файлы пишутся прямо в папку назначения и обновляются там при каждом запуске; прежние версии не сохраняются.
 NameTemplate	Folder name:	Имя папки:
-NameTemplateHelp	The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.	Имя папки каждой копии. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.
+NameTemplateHelp	The name of the folder (or archive) of each backup. Pick a variant from the list or type your own. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.	Имя папки (или архива) каждой копии. Выберите вариант из списка или наберите свой. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.
+NameTemplateExample	Example: {0}	Например: {0}
+LayoutMirrorNote	A mirror writes the files straight into the destination folder, without folders per backup.	Зеркало пишет файлы прямо в папку назначения, без отдельных папок для копий.
 ErrorNoDestinations	Add at least one destination, or switch the task off.	Добавьте хотя бы одно назначение или отключите задание.
 ErrorDestinationFolderRequired	Enter the folder of the destination.	Укажите папку назначения.
 ErrorUsbLabelRequired	Enter the label of the USB disk.	Укажите метку USB-диска.
@@ -250,15 +257,22 @@ ErrorNoMonthDays	Enter at least one day of the month, or tick «last day of the 
 ArchiveZip	ZIP	ZIP
 ArchiveSevenZip	7z	7z
 PageRetention	Retention	Хранение
+RetentionMirrorNote	A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror keeps replaced and deleted files is set on the «Basic» page.	Зеркало — одна копия, которая обновляется, поэтому удалять здесь нечего. Сколько безопасное зеркало хранит заменённые и удалённые файлы, задаётся на странице «Основное».
 RetentionNone	Keep all backups	Хранить все копии
 RetentionCount	Keep the last	Хранить последние
 RetentionCountSuffix	full backups with their chains	полных копий вместе с их цепочками
 RetentionCountHint	A full backup is deleted together with the incremental and differential backups made after it, never on its own.	Полная копия удаляется вместе со сделанными после неё инкрементальными и дифференциальными, а не по отдельности.
-RetentionAge	Delete backups older than N days	Удалять копии старше N дней
-RetentionGfs	Grandfather-father-son: daily, weekly and monthly backups	Дед-отец-сын: дневные, недельные и месячные копии
-RetentionLater	These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.	Эти два режима появятся в следующей версии CUSTOS. Пока задание с таким режимом хранит все копии.
+RetentionAge	Delete backups older than	Удалять копии старше
+RetentionAgeSuffix	days	дней
+RetentionAgeHint	A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.	Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.
+RetentionGfs	Grandfather-father-son: keep the last backup of each day, week and month	Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца
+GfsDaily	Days:	Дней:
+GfsWeekly	Weeks:	Недель:
+GfsMonthly	Months:	Месяцев:
+RetentionGfsHint	For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.	Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».
+RetentionGfsEmpty	Grandfather-father-son: keep at least one daily, weekly or monthly backup.	Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.
 RetentionRules	Rules that always apply	Правила, которые действуют всегда
-RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works only with «A separate folder for each backup» on.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает, только если включено «Отдельная папка для каждой копии».
+RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works with archives and with «A separate folder for each backup». One shared folder and a mirror are updated in place and have nothing to delete.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает для архивов и для «Отдельной папки для каждой копии». Общая папка и зеркало обновляются на месте, удалять в них нечего.
 FiltersHeading	Filters	Фильтры
 FiltersNote	They apply to all sources of the task. Masks are separated by semicolons: * stands for any characters, ? for one character.	Действуют на все источники задания. Маски разделяются точкой с запятой: * — любые символы, ? — один символ.
 FilterInclude	Only files:	Только файлы:
@@ -273,8 +287,39 @@ SkipSystem	Skip system files and folders	Пропускать системные
 SkipTemp	Skip temporary files	Пропускать временные файлы
 SkipTempHelp	Files that Windows marks as temporary (the «temporary» attribute). Masks like *.tmp go into «Skip files».	Файлы, которые Windows пометила как временные (атрибут «временный»). Маски вроде *.tmp задайте в «Пропускать файлы».
 PageEvents	Events	События
-EventsLater	Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.	Скрипты и службы до и после копирования, а также выключение компьютера после него появятся в следующей версии CUSTOS.
-EventsSetButUnsupported	This task has events. They are kept in the task but not run in this version.	В задании есть события. Они сохранены в задании, но в этой версии не выполняются.
+EventsNote	Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends with code 0. What it prints goes to the run log.	Программы и скрипты выполняются от имени SYSTEM, без окна. Событие считается успешным, если программа завершилась с кодом 0. Что она выводит, попадает в журнал запуска.
+EventsPreHeading	Before the backup	До копирования
+EventsPostHeading	After the backup	После копирования
+EventsAbortOnPre	Stop the task if an event before fails	Прервать задание, если событие «до» завершилось ошибкой
+EventsPostNote	The events after run even when the backup failed or was stopped, so that a service stopped before starts again. A failed event after is a warning.	События «после» выполняются, даже если копирование не удалось или было остановлено, — чтобы остановленная служба снова запустилась. Ошибка события «после» даёт предупреждение.
+ColumnEvent	Event	Событие
+ColumnTimeout	Time limit	Тайм-аут
+EventTimeoutShown	{0} min	{0} мин
+EventShowStop	Stop the service {0}	Остановить службу {0}
+EventShowStart	Start the service {0}	Запустить службу {0}
+EventAddTitle	Add event	Добавить событие
+EventEditTitle	Event	Событие
+EventKindRun	Run a program or script	Запустить программу или скрипт
+EventKindStop	Stop a Windows service	Остановить службу Windows
+EventKindStart	Start a Windows service	Запустить службу Windows
+EventProgram	Program:	Программа:
+EventArguments	Arguments:	Аргументы:
+EventService	Service:	Служба:
+EventTimeout	Time limit, minutes:	Тайм-аут, минут:
+EventTimeoutHelp	A program still running after this time is stopped together with everything it started, and the event counts as failed. For a service: how long to wait until it has stopped or started.	Программа, которая работает дольше, останавливается вместе со всем, что она запустила, и событие считается неудачным. Для службы — сколько ждать, пока она остановится или запустится.
+EventProgramHelp	.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Variables like %SystemRoot% are filled in. For a service, enter its name as the list shows it (the service name, not the display name).	.exe запускается напрямую, .bat и .cmd — через cmd.exe, .ps1 — через PowerShell (с ExecutionPolicy Bypass). Переменные вида %SystemRoot% подставляются. Для службы укажите имя, как в списке (имя службы, а не отображаемое название).
+EventProgramFilter	Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*	Программы и скрипты (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|Все файлы (*.*)|*.*
+ErrorEventProgramRequired	Enter the program or script.	Укажите программу или скрипт.
+ErrorEventServiceRequired	Enter the name of the service.	Укажите имя службы.
+ButtonUp	Up	Выше
+ButtonDown	Down	Ниже
+AfterHeading	When the run is over	После выполнения
+AfterNone	Do nothing	Ничего не делать
+AfterShutdown	Shut the computer down	Выключить компьютер
+AfterRestart	Restart the computer	Перезагрузить компьютер
+AfterSleep	Put the computer to sleep	Перевести в сон
+AfterHibernate	Hibernate the computer	Перевести в гибернацию
+AfterNote	If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel». Nothing happens after a run that was stopped.	Если в очереди есть другие задания, действие ждёт, пока очередь опустеет. Затем все вошедшие пользователи видят отсчёт 60 секунд с кнопкой «Отменить». После остановленного запуска ничего не происходит.
 PageAdvanced	Advanced	Дополнительно
 EditorVss	Open files	Открытые файлы
 VssEnabled	Use a shadow copy (VSS)	Использовать теневую копию (VSS)
@@ -282,7 +327,7 @@ VssHelp	Windows takes a snapshot of the disks with the sources, and files open i
 VssOnFailure	If the shadow copy fails:	Если теневая копия не удалась:
 VssAbort	stop the task	прервать задание
 VssContinue	copy without it, with a warning	копировать без неё, с предупреждением
-EditorReading	Reading files	Чтение файлов
+EditorReading	Reading and copying files	Чтение и копирование файлов
 ReadRetries	Retries after a read error:	Повторов при ошибке чтения:
 ReadRetriesHelp	How many more times to try a file that could not be read, 2 seconds apart. 0: no retries.	Сколько раз ещё пробовать прочитать файл после ошибки, с паузой 2 секунды. 0 — не повторять.
 EditorLogAndQueue	Log and queue	Журнал и очередь
@@ -352,11 +397,10 @@ WarnTimeUnreadable	The time of the run could not be read, 00:00 is set: check it
 WarnWeekdaysAssumed	Days of the week {0} were read counting Monday as 1: check them on the «Schedule» page.	Дни недели {0} прочитаны, считая понедельник за 1: проверьте их на странице «Расписание».
 WarnBackupTypeAssumed	The backup type was read as differential: check it.	Тип копии прочитан как дифференциальный: проверьте его.
 WarnBackupTypeNotSupported	Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.	Типа копии Cobian {0} (например, «dummy») в CUSTOS нет: задание сделано полным. Проверьте его.
-WarnMirrorLater	Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.	Зеркало появится в следующей версии CUSTOS, пока это задание не выполняется.
 WarnCompressionAssumed	The compression type was read as ZIP: check it.	Тип сжатия прочитан как ZIP: проверьте его.
 WarnEncryptionPassword	The archive is encrypted in Cobian. Its password is not carried over: set it on the «Compression and checks» page, otherwise the task does not run.	В Cobian архив шифруется. Пароль не переносится: задайте его на странице «Сжатие и проверка», иначе задание не выполнится.
 WarnSplitIgnored	Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.	Разбиение архива на тома не перенесено: при необходимости задайте размер тома на странице «Сжатие и проверка».
-WarnEventsInComment	Events before and after the backup are not run yet; they were written into the comment: {0}	События до и после копирования пока не выполняются, они записаны в комментарий: {0}
+WarnEventsInComment	The events before and after were written into the comment: set them again on the «Events» page. {0}	События до и после записаны в комментарий: задайте их заново на странице «События». {0}
 WarnSourceUnknown	The entry «{0}» was skipped: its type is unknown or it is not a full path.	Запись «{0}» пропущена: неизвестный тип или не полный путь.
 WarnFtpNotSupported	The FTP entry «{0}» was skipped: CUSTOS does not read from FTP, and writing to FTP arrives in a later version.	FTP-запись «{0}» пропущена: читать с FTP CUSTOS не умеет, а запись на FTP появится в следующих версиях.
 WarnNoSources	The task has no sources: add them before switching it on.	В задании нет источников: добавьте их, прежде чем включать задание.
@@ -406,6 +450,7 @@ RestoreGoesOn	The restore goes on in the service. Open this window again to see 
 # Archive page (section 6.5)
 PageArchive	Compression and checks	Сжатие и проверка
 ArchiveFormat	Format	Формат
+ArchiveMirrorNote	A mirror keeps plain files: compression and encryption do not apply to it. Verification does.	Зеркало хранит обычные файлы: сжатие и шифрование к нему не применяются, проверка — применяется.
 ArchiveNone	No compression: plain files	Без сжатия: обычные файлы
 ArchiveZipHelp	A ZIP archive opens in Windows and in any archiver. Written as a stream, so it suits every kind of destination.	ZIP открывается средствами Windows и любым архиватором. Пишется потоком, поэтому подходит для любых назначений.
 ArchiveSevenZipHelp	7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in the file: a folder, a network folder or a USB disk.	7z сжимает лучше и умеет шифровать имена файлов. Нужно назначение, в котором можно вернуться к началу файла: папка, сетевая папка или USB-диск.
@@ -448,4 +493,19 @@ VerifyStoredDaysHelp	0 = off. Done after a successful run when the time has come
 Settings7Zip	Archiver	Архиватор
 Settings7ZipVersion	7-Zip (7z.dll) version {0}	7-Zip (7z.dll) версии {0}
 Settings7ZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
-Settings7ZipNote	To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.	Обновление 7-Zip: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу. Старый файл сохраните, чтобы вернуться к нему.
+Settings7ZipNote	The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agree. By hand: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service.	Кнопка смотрит официальные выпуски 7-Zip на GitHub, только когда её нажимают, и обновляет только с вашего согласия. Вручную: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 64-битного 7-Zip, запустите службу.
+# ---- Shutdown or sleep after a run
+PowerCountdownText	The task «{0}» has finished. In {2} s: {1}.	Задание «{0}» выполнено. Через {2} с: {1}.
+PowerCancel	Cancel	Отменить
+PowerCancelFailed	The service did not cancel it.	Служба не отменила действие.
+# ---- Variables in paths
+PathVariablesNote	The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.	В пути можно использовать переменные: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (пользователя, который первым сохранил задание), другие переменные Windows, например %SystemDrive%, а также {computer}, {task}, {yyyy}, {MM}, {dd}.
+# ---- NTFS permissions
+PreserveAcl	Keep NTFS permissions of files and folders	Сохранять права NTFS файлов и папок
+PreserveAclHelp	For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.	Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.
+# ---- 7-Zip update
+SevenZipCheckButton	Check for a 7-Zip update	Проверить обновление 7-Zip
+SevenZipAdminOnly	Only administrators may update 7-Zip.	Обновлять 7-Zip могут только администраторы.
+SevenZipNothingNew	You have 7-Zip {0}; the newest is {1}. There is nothing to update.	У вас 7-Zip {0}, последняя версия {1}. Обновлять нечего.
+SevenZipAskUpdate	You have 7-Zip {0}; the newest is {1}.\n\nUpdate now? The service downloads the 64-bit installer from the official 7-Zip page on GitHub, checks its SHA-256, takes 7z.dll from it, tests it and only then replaces the old file (kept as 7z.dll.old). Tasks wait meanwhile; it takes about a minute.	У вас 7-Zip {0}, последняя версия {1}.\n\nОбновить сейчас? Служба скачает 64-битный установщик с официальной страницы 7-Zip на GitHub, проверит его SHA-256, возьмёт из него 7z.dll, проверит его в работе и только потом заменит старый файл (он сохранится как 7z.dll.old). Задания на это время ждут; это около минуты.
+SevenZipUpdatingTo	Updating 7-Zip to {0}…	Обновление 7-Zip до {0}…

@@ -475,8 +475,20 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="TypeMirrorTitle" xml:space="preserve">
     <value>Mirror</value>
   </data>
-  <data name="TypeMirrorLater" xml:space="preserve">
-    <value>An exact copy of the sources is kept in the destination. Arrives in the next version of CUSTOS.</value>
+  <data name="TypeMirrorHint" xml:space="preserve">
+    <value>The destination folder is kept the same as the sources: only new and changed files are copied. No compression and no separate folders, the files open as they are.</value>
+  </data>
+  <data name="MirrorExact" xml:space="preserve">
+    <value>Exact: files deleted in the sources are deleted from the mirror too</value>
+  </data>
+  <data name="MirrorSafe" xml:space="preserve">
+    <value>Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for</value>
+  </data>
+  <data name="MirrorSafeDays" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="MirrorNote" xml:space="preserve">
+    <value>Only files CUSTOS put into the mirror are ever deleted; other files in that folder stay. If a folder of the sources cannot be read, nothing is deleted that time.</value>
   </data>
   <data name="EditorForceFull" xml:space="preserve">
     <value>Forced full backup</value>
@@ -575,8 +587,11 @@ Off: the contents of D:\Data go straight into &lt;backup&gt;\…</value>
   <data name="DestinationsNote" xml:space="preserve">
     <value>Where the backups go. With several destinations the files are read once and written to all of them; if one fails, the others still get the backup.</value>
   </data>
-  <data name="DestinationProperties" xml:space="preserve">
-    <value>Selected destination</value>
+  <data name="DestinationAddTitle" xml:space="preserve">
+    <value>Add destination</value>
+  </data>
+  <data name="DestinationEditTitle" xml:space="preserve">
+    <value>Destination</value>
   </data>
   <data name="DestinationKind" xml:space="preserve">
     <value>Type:</value>
@@ -642,7 +657,13 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Folder name:</value>
   </data>
   <data name="NameTemplateHelp" xml:space="preserve">
-    <value>The name of the folder of each backup. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.</value>
+    <value>The name of the folder (or archive) of each backup. Pick a variant from the list or type your own. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.</value>
+  </data>
+  <data name="NameTemplateExample" xml:space="preserve">
+    <value>Example: {0}</value>
+  </data>
+  <data name="LayoutMirrorNote" xml:space="preserve">
+    <value>A mirror writes the files straight into the destination folder, without folders per backup.</value>
   </data>
   <data name="ErrorNoDestinations" xml:space="preserve">
     <value>Add at least one destination, or switch the task off.</value>
@@ -737,6 +758,9 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="PageRetention" xml:space="preserve">
     <value>Retention</value>
   </data>
+  <data name="RetentionMirrorNote" xml:space="preserve">
+    <value>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror keeps replaced and deleted files is set on the «Basic» page.</value>
+  </data>
   <data name="RetentionNone" xml:space="preserve">
     <value>Keep all backups</value>
   </data>
@@ -750,13 +774,31 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>A full backup is deleted together with the incremental and differential backups made after it, never on its own.</value>
   </data>
   <data name="RetentionAge" xml:space="preserve">
-    <value>Delete backups older than N days</value>
+    <value>Delete backups older than</value>
+  </data>
+  <data name="RetentionAgeSuffix" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="RetentionAgeHint" xml:space="preserve">
+    <value>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Grandfather-father-son: daily, weekly and monthly backups</value>
+    <value>Grandfather-father-son: keep the last backup of each day, week and month</value>
   </data>
-  <data name="RetentionLater" xml:space="preserve">
-    <value>These two modes arrive in the next version of CUSTOS. Until then a task set to one of them keeps all its backups.</value>
+  <data name="GfsDaily" xml:space="preserve">
+    <value>Days:</value>
+  </data>
+  <data name="GfsWeekly" xml:space="preserve">
+    <value>Weeks:</value>
+  </data>
+  <data name="GfsMonthly" xml:space="preserve">
+    <value>Months:</value>
+  </data>
+  <data name="RetentionGfsHint" xml:space="preserve">
+    <value>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.</value>
+  </data>
+  <data name="RetentionGfsEmpty" xml:space="preserve">
+    <value>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Rules that always apply</value>
@@ -765,7 +807,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>• The last successful full backup is never deleted.
 • If a run ends with an error, nothing is deleted.
 • The backups are found by looking into the destination itself, so the ones made before a reinstall count too.
-• Retention works only with «A separate folder for each backup» on.</value>
+• Retention works with archives and with «A separate folder for each backup». One shared folder and a mirror are updated in place and have nothing to delete.</value>
   </data>
   <data name="FiltersHeading" xml:space="preserve">
     <value>Filters</value>
@@ -809,11 +851,104 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="PageEvents" xml:space="preserve">
     <value>Events</value>
   </data>
-  <data name="EventsLater" xml:space="preserve">
-    <value>Scripts and services before and after the backup, and shutting the computer down after it, arrive in the next version of CUSTOS.</value>
+  <data name="EventsNote" xml:space="preserve">
+    <value>Programs and scripts run as SYSTEM, without a window. An event counts as done well when the program ends with code 0. What it prints goes to the run log.</value>
   </data>
-  <data name="EventsSetButUnsupported" xml:space="preserve">
-    <value>This task has events. They are kept in the task but not run in this version.</value>
+  <data name="EventsPreHeading" xml:space="preserve">
+    <value>Before the backup</value>
+  </data>
+  <data name="EventsPostHeading" xml:space="preserve">
+    <value>After the backup</value>
+  </data>
+  <data name="EventsAbortOnPre" xml:space="preserve">
+    <value>Stop the task if an event before fails</value>
+  </data>
+  <data name="EventsPostNote" xml:space="preserve">
+    <value>The events after run even when the backup failed or was stopped, so that a service stopped before starts again. A failed event after is a warning.</value>
+  </data>
+  <data name="ColumnEvent" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="ColumnTimeout" xml:space="preserve">
+    <value>Time limit</value>
+  </data>
+  <data name="EventTimeoutShown" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
+  <data name="EventShowStop" xml:space="preserve">
+    <value>Stop the service {0}</value>
+  </data>
+  <data name="EventShowStart" xml:space="preserve">
+    <value>Start the service {0}</value>
+  </data>
+  <data name="EventAddTitle" xml:space="preserve">
+    <value>Add event</value>
+  </data>
+  <data name="EventEditTitle" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="EventKindRun" xml:space="preserve">
+    <value>Run a program or script</value>
+  </data>
+  <data name="EventKindStop" xml:space="preserve">
+    <value>Stop a Windows service</value>
+  </data>
+  <data name="EventKindStart" xml:space="preserve">
+    <value>Start a Windows service</value>
+  </data>
+  <data name="EventProgram" xml:space="preserve">
+    <value>Program:</value>
+  </data>
+  <data name="EventArguments" xml:space="preserve">
+    <value>Arguments:</value>
+  </data>
+  <data name="EventService" xml:space="preserve">
+    <value>Service:</value>
+  </data>
+  <data name="EventTimeout" xml:space="preserve">
+    <value>Time limit, minutes:</value>
+  </data>
+  <data name="EventTimeoutHelp" xml:space="preserve">
+    <value>A program still running after this time is stopped together with everything it started, and the event counts as failed. For a service: how long to wait until it has stopped or started.</value>
+  </data>
+  <data name="EventProgramHelp" xml:space="preserve">
+    <value>.exe runs directly, .bat and .cmd through cmd.exe, .ps1 through PowerShell (execution policy Bypass). Variables like %SystemRoot% are filled in. For a service, enter its name as the list shows it (the service name, not the display name).</value>
+  </data>
+  <data name="EventProgramFilter" xml:space="preserve">
+    <value>Programs and scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1|All files (*.*)|*.*</value>
+  </data>
+  <data name="ErrorEventProgramRequired" xml:space="preserve">
+    <value>Enter the program or script.</value>
+  </data>
+  <data name="ErrorEventServiceRequired" xml:space="preserve">
+    <value>Enter the name of the service.</value>
+  </data>
+  <data name="ButtonUp" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="ButtonDown" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="AfterHeading" xml:space="preserve">
+    <value>When the run is over</value>
+  </data>
+  <data name="AfterNone" xml:space="preserve">
+    <value>Do nothing</value>
+  </data>
+  <data name="AfterShutdown" xml:space="preserve">
+    <value>Shut the computer down</value>
+  </data>
+  <data name="AfterRestart" xml:space="preserve">
+    <value>Restart the computer</value>
+  </data>
+  <data name="AfterSleep" xml:space="preserve">
+    <value>Put the computer to sleep</value>
+  </data>
+  <data name="AfterHibernate" xml:space="preserve">
+    <value>Hibernate the computer</value>
+  </data>
+  <data name="AfterNote" xml:space="preserve">
+    <value>If other tasks wait in the queue, this waits until the queue is empty. Everyone signed in then sees a 60-second countdown with «Cancel». Nothing happens after a run that was stopped.</value>
   </data>
   <data name="PageAdvanced" xml:space="preserve">
     <value>Advanced</value>
@@ -837,7 +972,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>copy without it, with a warning</value>
   </data>
   <data name="EditorReading" xml:space="preserve">
-    <value>Reading files</value>
+    <value>Reading and copying files</value>
   </data>
   <data name="ReadRetries" xml:space="preserve">
     <value>Retries after a read error:</value>
@@ -1037,9 +1172,6 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="WarnBackupTypeNotSupported" xml:space="preserve">
     <value>Cobian backup type {0} (for example «dummy») does not exist in CUSTOS: the task is set to full. Check it.</value>
   </data>
-  <data name="WarnMirrorLater" xml:space="preserve">
-    <value>Mirror tasks arrive in the next version of CUSTOS: until then this task does not run.</value>
-  </data>
   <data name="WarnCompressionAssumed" xml:space="preserve">
     <value>The compression type was read as ZIP: check it.</value>
   </data>
@@ -1050,7 +1182,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Splitting the archive into volumes was not carried over: set the volume size on the «Compression and checks» page if you need it.</value>
   </data>
   <data name="WarnEventsInComment" xml:space="preserve">
-    <value>Events before and after the backup are not run yet; they were written into the comment: {0}</value>
+    <value>The events before and after were written into the comment: set them again on the «Events» page. {0}</value>
   </data>
   <data name="WarnSourceUnknown" xml:space="preserve">
     <value>The entry «{0}» was skipped: its type is unknown or it is not a full path.</value>
@@ -1187,6 +1319,9 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="ArchiveFormat" xml:space="preserve">
     <value>Format</value>
   </data>
+  <data name="ArchiveMirrorNote" xml:space="preserve">
+    <value>A mirror keeps plain files: compression and encryption do not apply to it. Verification does.</value>
+  </data>
   <data name="ArchiveNone" xml:space="preserve">
     <value>No compression: plain files</value>
   </data>
@@ -1314,6 +1449,41 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>7z.dll cannot be used: {0}</value>
   </data>
   <data name="Settings7ZipNote" xml:space="preserve">
-    <value>To update 7-Zip: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service. Keep the old file to go back.</value>
+    <value>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agree. By hand: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 64-bit 7-Zip, start the service.</value>
+  </data>
+  <data name="PowerCountdownText" xml:space="preserve">
+    <value>The task «{0}» has finished. In {2} s: {1}.</value>
+  </data>
+  <data name="PowerCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="PowerCancelFailed" xml:space="preserve">
+    <value>The service did not cancel it.</value>
+  </data>
+  <data name="PathVariablesNote" xml:space="preserve">
+    <value>The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALAPPDATA%, %OneDrive% (of whoever saved the task first), other Windows variables like %SystemDrive%, and {computer}, {task}, {yyyy}, {MM}, {dd}.</value>
+  </data>
+  <data name="PreserveAcl" xml:space="preserve">
+    <value>Keep NTFS permissions of files and folders</value>
+  </data>
+  <data name="PreserveAclHelp" xml:space="preserve">
+    <value>For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.</value>
+  </data>
+  <data name="SevenZipCheckButton" xml:space="preserve">
+    <value>Check for a 7-Zip update</value>
+  </data>
+  <data name="SevenZipAdminOnly" xml:space="preserve">
+    <value>Only administrators may update 7-Zip.</value>
+  </data>
+  <data name="SevenZipNothingNew" xml:space="preserve">
+    <value>You have 7-Zip {0}; the newest is {1}. There is nothing to update.</value>
+  </data>
+  <data name="SevenZipAskUpdate" xml:space="preserve">
+    <value>You have 7-Zip {0}; the newest is {1}.
+
+Update now? The service downloads the 64-bit installer from the official 7-Zip page on GitHub, checks its SHA-256, takes 7z.dll from it, tests it and only then replaces the old file (kept as 7z.dll.old). Tasks wait meanwhile; it takes about a minute.</value>
+  </data>
+  <data name="SevenZipUpdatingTo" xml:space="preserve">
+    <value>Updating 7-Zip to {0}…</value>
   </data>
 </root>

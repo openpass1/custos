@@ -85,8 +85,11 @@ Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\Custos.exe"; Description: "{cm:LaunchGui}"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
 [UninstallDelete]
-; The previous 7z.dll, kept by hand for a rollback (client README).
+; The previous 7z.dll, kept by hand or by the 7-Zip update button for a rollback (client README), and what an
+; update could not delete while the old file was still loaded.
 Type: files; Name: "{app}\7z.dll.old"
+Type: files; Name: "{app}\7z.dll.new"
+Type: files; Name: "{app}\7z.dll.old.*.delete"
 
 [UninstallRun]
 Filename: "{sys}\net.exe"; Parameters: "stop {#ServiceName}"; Flags: runhidden; RunOnceId: "StopService"

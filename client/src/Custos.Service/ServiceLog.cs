@@ -103,6 +103,10 @@ internal static partial class ServiceLog
         Message = "Restore of {Set} to {Target} started by {User}")]
     public static partial void RestoreStarted(ILogger logger, string set, string target, string user);
 
+    [LoggerMessage(EventId = 212, Level = LogLevel.Warning,
+        Message = "The priority of the service could not be changed: {Reason}")]
+    public static partial void PriorityNotSet(ILogger logger, string reason);
+
     [LoggerMessage(EventId = 211, Level = LogLevel.Information,
         Message = "Restore of {Set} finished: {Status}, {Restored} files restored, {Failed} failed")]
     public static partial void RestoreFinished(ILogger logger, string set, string status, long restored, long failed);
@@ -112,6 +116,14 @@ internal static partial class ServiceLog
     [LoggerMessage(EventId = CustosEventIds.SevenZipUnavailable, Level = LogLevel.Warning,
         Message = "7z.dll cannot be used: {Reason} Tasks with the 7z format will fail; ZIP and plain copies work")]
     public static partial void SevenZipUnavailable(ILogger logger, string reason);
+
+    [LoggerMessage(EventId = CustosEventIds.SevenZipUpdated, Level = LogLevel.Information,
+        Message = "7-Zip updated from {Old} to {New} by {User}; the old file is kept as 7z.dll.old")]
+    public static partial void SevenZipUpdated(ILogger logger, string old, string @new, string user);
+
+    [LoggerMessage(EventId = CustosEventIds.SevenZipUpdateFailed, Level = LogLevel.Error,
+        Message = "7-Zip was not updated: {Reason}")]
+    public static partial void SevenZipUpdateFailed(ILogger logger, string reason);
 
     [LoggerMessage(EventId = CustosEventIds.TaskStarted, Level = LogLevel.Information,
         Message = "Task {Task} started ({Trigger}). Run log: {LogFile}")]
@@ -136,6 +148,18 @@ internal static partial class ServiceLog
     [LoggerMessage(EventId = CustosEventIds.CatchUpRun, Level = LogLevel.Information,
         Message = "Task {Task} missed its run at {Slot}; a catch-up run is queued")]
     public static partial void CatchUpRun(ILogger logger, string task, string slot);
+
+    [LoggerMessage(EventId = CustosEventIds.PowerAction, Level = LogLevel.Information,
+        Message = "After task {Task}: {Action} of the computer now")]
+    public static partial void PowerAction(ILogger logger, string task, string action);
+
+    [LoggerMessage(EventId = CustosEventIds.PowerCancelled, Level = LogLevel.Information,
+        Message = "After task {Task}: {Action} of the computer cancelled by {User}")]
+    public static partial void PowerCancelled(ILogger logger, string task, string action, string user);
+
+    [LoggerMessage(EventId = CustosEventIds.PowerFailed, Level = LogLevel.Error,
+        Message = "After task {Task}: {Action} of the computer failed: {Error}")]
+    public static partial void PowerFailed(ILogger logger, string task, string action, string error);
 
     [LoggerMessage(EventId = CustosEventIds.VssFailed, Level = LogLevel.Warning,
         Message = "Task {Task}: the shadow copy (VSS) could not be made")]

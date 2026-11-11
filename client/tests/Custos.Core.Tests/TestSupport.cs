@@ -73,6 +73,58 @@ internal sealed class TestPlatform : LocalBackupPlatform
     public override string? FindVolumeByLabel(string label) => Volumes.TryGetValue(label, out string? root) ? root : null;
 
     public override long? GetFreeSpace(string path) => FreeSpace;
+
+    /// <summary>Files the engine asked to read and write with low I/O priority.</summary>
+    public int LoweredFiles => _loweredFiles;
+
+    private int _loweredFiles;
+
+    public override void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => Interlocked.Increment(ref _loweredFiles);
+
+    /// <summary>Permissions "set" by the engine: path, folder or file, and the descriptor (the source path in UTF-8).</summary>
+    public List<(string Path, bool Folder, string Descriptor)> SecurityWritten { get; } = [];
+
+    /// <summary>Setting permissions fails, as on a share that does not allow it.</summary>
+    public bool SecurityBroken { get; set; }
+
+    public override byte[]? ReadSecurity(string path, bool folder) => System.Text.Encoding.UTF8.GetBytes(path);
+
+    public override bool WriteSecurity(string path, bool folder, byte[] descriptor)
+    {
+        if (SecurityBroken)
+        {
+            throw new BackupException("access denied");
+        }
+
+        SecurityWritten.Add((path, folder, System.Text.Encoding.UTF8.GetString(descriptor)));
+        return true;
+    }
+
+    /// <summary>Environment variables of the test; the profile ones only for <see cref="ProfileSid"/>.</summary>
+    public Dictionary<string, string> EnvironmentValues { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The SID whose profile variables <see cref="EnvironmentValues"/> holds.</summary>
+    public string ProfileSid { get; set; } = "S-1-5-21-1-2-3-1001";
+
+    public override Func<string, string?> Variables(string? profileSid) => name =>
+        PathVariables.ProfileNames.Contains(name) && profileSid != ProfileSid ? null
+        : EnvironmentValues.TryGetValue(name, out string? value) ? value : Environment.GetEnvironmentVariable(name);
+
+    /// <summary>Services started (true) or stopped (false) by events, in order.</summary>
+    public List<(string Name, bool Start)> Services { get; } = [];
+
+    /// <summary>A service name that fails to start or stop.</summary>
+    public string? BrokenService { get; set; }
+
+    public override void ControlService(string name, bool start, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        if (string.Equals(name, BrokenService, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BackupException(Messages.Format(Messages.EventServiceFailed, name, "broken"));
+        }
+
+        Services.Add((name, start));
+    }
 }
 
 /// <summary>7z works only on Windows with a 7z.dll (CUSTOS_7Z_DLL, set by build.ps1).</summary>

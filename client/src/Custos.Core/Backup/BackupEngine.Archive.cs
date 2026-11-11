@@ -243,17 +243,17 @@ public sealed partial class BackupEngine
         return taken;
     }
 
-    private static FileStream CreatePart(Target target, string final)
+    private FileStream CreatePart(Target target, string final)
     {
         string temp = final + SetCatalog.PartialSuffix;
-        var stream = target.Session.Run(() => new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, ArchiveBufferSize));
+        var stream = Lowered(target.Session.Run(() => new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, ArchiveBufferSize)));
         target.Parts.Add(final);
         target.Temps.Add(temp);
         return stream;
     }
 
-    private static FileStream ReopenPart(Target target, int number) =>
-        target.Session.Run(() => new FileStream(target.Temps[number - 1], FileMode.Open, FileAccess.Write, FileShare.None, ArchiveBufferSize));
+    private FileStream ReopenPart(Target target, int number) =>
+        Lowered(target.Session.Run(() => new FileStream(target.Temps[number - 1], FileMode.Open, FileAccess.Write, FileShare.None, ArchiveBufferSize)));
 
     private static void CloseOutput(Target target)
     {
@@ -412,8 +412,8 @@ public sealed partial class BackupEngine
         }
     }
 
-    private static FileStream OpenSourceFile(SourceContext context, ScannedFile file) => context.Session.Run(() => new FileStream(
-        file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, BufferSize, FileOptions.SequentialScan));
+    private FileStream OpenSourceFile(SourceContext context, ScannedFile file) => Lowered(context.Session.Run(() => new FileStream(
+        file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, BufferSize, FileOptions.SequentialScan)));
 
     /// <summary>
     /// Reads on from <paramref name="position"/>. On a read error the file is opened again and read on from the same

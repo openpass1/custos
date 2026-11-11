@@ -133,9 +133,11 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         ActiveRun? current;
         Dictionary<string, DateTimeOffset> slots;
         List<string> problems;
+        PowerCountdown? power;
         lock (_lock)
         {
             current = _current;
+            power = _powerCountdown;
             slots = new Dictionary<string, DateTimeOffset>(_lastSlots, StringComparer.OrdinalIgnoreCase);
             problems = [.. _problems];
         }
@@ -167,6 +169,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             Problems = [.. problems, .. _config.Problems],
             SevenZipVersion = _platform?.Archives.SevenZipVersion,
             SevenZipProblem = _sevenZipProblem,
+            Power = power,
         };
     }
 
@@ -249,8 +252,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public TaskDefinition SaveTask(TaskSaveRequest request, string user)
+    public TaskDefinition SaveTask(TaskSaveRequest request, string user, string? sid)
     {
+        // %USERPROFILE% and the like in the paths refer to whoever made the task (section 6.2).
+        request.Task.ProfileSid ??= sid;
         TaskChange change;
         try
         {
@@ -299,8 +304,13 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public OkResult Import(TasksImportRequest request, string user)
+    public OkResult Import(TasksImportRequest request, string user, string? sid)
     {
+        foreach (var task in request.Tasks)
+        {
+            task.ProfileSid ??= sid;
+        }
+
         List<TaskChange> changes;
         try
         {
@@ -372,9 +382,18 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     }
 
     /// <summary>Tries to write to a destination as the task would ("Check access" in the editor).</summary>
-    public DestinationTestResult TestDestination(DestinationTestRequest request)
+    public DestinationTestResult TestDestination(DestinationTestRequest request, string? sid)
     {
         var destination = request.Destination;
+        string? profile = request.ProfileSid ?? sid;
+        var variables = new PathVariables(Platform.Variables(profile), profile is not null, request.TaskName ?? string.Empty,
+            Platform.ComputerName, request.BackupType ?? BackupTypes.Full, DateTime.Now);
+        destination.Path = variables.Expand(destination.Path ?? string.Empty, out string? problem);
+        if (problem is not null)
+        {
+            return new DestinationTestResult { Error = problem };
+        }
+
         if (!DestinationKinds.IsSupported(destination.Kind))
         {
             return new DestinationTestResult { Error = Messages.Format(Messages.DestinationKindNotSupported, destination.Kind) };
@@ -464,6 +483,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         _platform = new WindowsBackupPlatform(_config, shadows);
+        Core.Archives.SevenZip.SevenZipInstaller.CleanUp(AppContext.BaseDirectory, DataFolders.Updates);
         LoadSevenZip();
 
         // A task the database has no slot for starts counting now; the others catch up what they missed.
@@ -675,7 +695,12 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         {
             try
             {
-                _queueSignal.Wait(_stopping);
+                // With an action after a run waiting, the wait ends when its countdown is over.
+                if (!_queueSignal.Wait(PowerWait(), _stopping))
+                {
+                    FirePowerIfDue();
+                    continue;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -692,6 +717,17 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
                 try
                 {
+                    // An update of 7z.dll finishes first.
+                    _sevenZipGate.Wait(_stopping);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                PostponePower();
+                try
+                {
                     Execute(next);
                 }
 #pragma warning disable CA1031 // One broken run must not stop the queue.
@@ -705,6 +741,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                     }
 
                     PublishSnapshot();
+                }
+                finally
+                {
+                    _sevenZipGate.Release();
                 }
             }
         }
@@ -752,7 +792,8 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         PublishSnapshot();
         ServiceLog.TaskStarted(logger, task.Name, queued.Trigger, file.Path);
         var log = new RunLog(this, file, task.Id, runId);
-        Thread.CurrentThread.Priority = settings.ProcessPriority == "normal" ? ThreadPriority.Normal : ThreadPriority.BelowNormal;
+        bool low = settings.ProcessPriority != "normal";
+        SetPriority(low);
 
         BackupResult result;
         try
@@ -767,6 +808,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                 StartedAt = startedAt,
                 LogEveryFile = level == LogLevels.Files,
                 TimeZone = TimeZoneInfo.Local,
+                LowPriority = low,
             }, pause, cancel.Token);
         }
 #pragma warning disable CA1031 // Whatever broke, the run ends with an error and the queue goes on.
@@ -777,6 +819,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             string message = Messages.Format(Messages.InternalError, ex.Message);
             log.Write(RunLogLevel.Error, message);
             result = new BackupResult { BackupType = task.BackupType, Status = RunStatuses.Error, Errors = 1, ErrorMessage = message };
+        }
+        finally
+        {
+            SetPriority(low: false);
         }
 
         if (result.Status == RunStatuses.Aborted && _stopping.IsCancellationRequested)
@@ -811,6 +857,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }, Messages.Format(Messages.RunFinished, task.Name, Words.Status(result.Status), result.FilesProcessed,
             Sizes.Format(result.BytesWritten), Sizes.FormatDuration(finishedAt - startedAt)));
         ReportToEventLog(task, result);
+        NotePowerAction(task, result);
 
         lock (_lock)
         {
@@ -818,6 +865,23 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         PublishSnapshot();
+    }
+
+    /// <summary>
+    /// "Low" priority (section 6.6): the whole service, with the threads 7-Zip starts, runs below normal while a run
+    /// lasts, so the processor is used fully only while nobody else needs it. Files get low I/O priority in the engine.
+    /// </summary>
+    private void SetPriority(bool low)
+    {
+        try
+        {
+            using var self = System.Diagnostics.Process.GetCurrentProcess();
+            self.PriorityClass = low ? System.Diagnostics.ProcessPriorityClass.BelowNormal : System.Diagnostics.ProcessPriorityClass.Normal;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or NotSupportedException)
+        {
+            ServiceLog.PriorityNotSet(logger, ex.Message);
+        }
     }
 
     private void ReportToEventLog(TaskDefinition task, BackupResult result)
