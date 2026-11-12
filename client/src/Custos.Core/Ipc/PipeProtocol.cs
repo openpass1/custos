@@ -115,6 +115,12 @@ public static class PipeProtocol
         /// <summary>Administrators only, always: downloads, checks and installs the newest 7-Zip (takes up to a few
         /// minutes). <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SevenZipUpdate = "sevenzip.update";
+
+        /// <summary>The address of the monitoring server and the registration code (section 8, A.3). Administrators only.</summary>
+        public const string ServerConnect = "server.connect";
+
+        /// <summary>Forgets the monitoring server and its key (A.3). Administrators only.</summary>
+        public const string ServerReset = "server.reset";
     }
 
     /// <summary>Event names.</summary>

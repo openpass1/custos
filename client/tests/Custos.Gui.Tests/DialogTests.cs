@@ -1,6 +1,7 @@
 using System.Text;
 using Custos.Core.Cobian;
 using Custos.Core.Model;
+using Custos.Core.Monitor;
 
 namespace Custos.Gui.Tests;
 
@@ -132,6 +133,70 @@ public sealed class DialogTests
         Assert.Equal("Office documents", row.SubItems[1].Text);
         var sevenZip = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.SevenZipCheckButton);
         Assert.False(sevenZip.Enabled);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_settings_show_the_monitoring_server_but_only_administrators_connect(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var settings = new SettingsForm(monitor);
+        settings.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(settings, Strings.SettingsServer));
+        var connect = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.ServerConnectButton);
+        Assert.False(connect.Enabled);
+        Assert.Contains(Sta.Find<CheckBox>(settings), c => c.Text == Strings.AllowRemoteEdit);
+
+        // One field takes the whole connection line of the site; there are no separate address and code fields.
+        var line = Assert.Single(Sta.Find<TextBox>(settings), b => b.PlaceholderText.Length > 0);
+        Assert.Equal(SettingsForm.ConnectionExample, line.PlaceholderText);
+        Assert.False(line.Enabled);
+        Assert.True(RegistrationCode.TrySplitConnection(SettingsForm.ConnectionExample, out string url, out string code));
+        Assert.Equal("http://custos.example.lan", url);
+        Assert.NotNull(RegistrationCode.TryParse(code, out _));
+
+        // The button next to it puts in what was copied on the site, without the line break copied along.
+        var paste = Assert.Single(Sta.Find<Button>(settings), b => b.AccessibleName == Strings.ServerPasteTip);
+        Assert.False(paste.Enabled);
+        Assert.NotNull(paste.Image);
+        settings.ClipboardText = () => "\r\n  https://other.example.lan#AAAAA-BBBBB-CCCCC-DDDDD-EEEEE#0123-4567-89AB-CDEF \r\nsecond line";
+        line.Text = "old text";
+        settings.PasteServerLine();
+        Assert.Equal("https://other.example.lan#AAAAA-BBBBB-CCCCC-DDDDD-EEEEE#0123-4567-89AB-CDEF", line.Text);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_history_shows_whether_the_backup_was_verified(string culture) => Sta.Run(culture, () =>
+    {
+        using var view = new HistoryView();
+        var start = new DateTimeOffset(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
+        RunRecord Run(string id, string status, RunVerify? verify) => new()
+        {
+            RunId = id, TaskId = Samples.OfficeId, TaskName = "Office documents", BackupType = BackupTypes.Full,
+            Trigger = RunTriggers.Manual, StartedAt = start, FinishedAt = start.AddMinutes(1), Status = status, Verify = verify,
+        };
+
+        view.ShowRuns(
+        [
+            Run("a", RunStatuses.Success, new RunVerify { Ok = true, Scope = "new", SetsChecked = 1 }),
+            Run("b", RunStatuses.Success, new RunVerify { Ok = true, Scope = "stored", SetsChecked = 3 }),
+            Run("c", RunStatuses.Error, new RunVerify { Ok = false, Scope = "stored", SetsChecked = 3, FailedSets = ["Set 2"] }),
+            Run("d", RunStatuses.Success, null),
+        ]);
+
+        var cells = view.List.Items.Cast<ListViewItem>().Select(i => i.SubItems[7]).ToList();
+        Assert.Equal(Strings.ColumnVerify, view.List.Columns[7].Text);
+        Assert.Equal(Strings.HistoryVerifyOkNew, cells[0].Text);
+        Assert.Equal(Glyphs.Green, cells[0].ForeColor);
+        Assert.Equal(Strings.Format(Strings.HistoryVerifyOkStored, 3), cells[1].Text);
+        Assert.Contains("Set 2", cells[2].Text, StringComparison.Ordinal);
+        Assert.Equal(Glyphs.ErrorText, cells[2].ForeColor);
+        Assert.Equal("—", cells[3].Text);
     });
 
     [Theory]

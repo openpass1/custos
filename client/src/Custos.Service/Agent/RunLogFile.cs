@@ -80,6 +80,20 @@ internal sealed class RunLogFile : IDisposable
         }
     }
 
+    /// <summary>The log file of a run (its name ends with the first 8 characters of the run id), or null when it is gone.</summary>
+    public static string? Find(string folder, string runId)
+    {
+        ArgumentNullException.ThrowIfNull(runId);
+        if (!Directory.Exists(folder) || runId.Length < 8)
+        {
+            return null;
+        }
+
+        return new DirectoryInfo(folder).EnumerateFiles("* " + runId[..8].ToLowerInvariant() + ".log")
+            .OrderByDescending(f => f.LastWriteTimeUtc)
+            .FirstOrDefault()?.FullName;
+    }
+
     /// <summary>Deletes run logs older than the retention period.</summary>
     public static int DeleteOld(string folder, DateTimeOffset before)
     {

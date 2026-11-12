@@ -16,6 +16,14 @@
     Results:
         artifacts\publish\                 the program files, as installed to C:\Program Files\CUSTOS
         artifacts\installer\CUSTOS-Setup-<version>.exe
+        artifacts\update\custos-<version>.zip
+                                           the update package for the monitoring server (A.10 of docs/protocol.md):
+                                           the program files and manifest.json with the SHA-256 of each
+        artifacts\update-test\custos-<test version>-test.zip
+                                           with -TestUpdateVersion: the same programs built once more with a higher
+                                           version, to try an update from the server on a machine that was just
+                                           installed from this very build (its own update package has the version
+                                           the machine already runs, so the server has nothing to update)
 
     Code signing (optional): set CUSTOS_SIGN_PFX (path to a .pfx) and CUSTOS_SIGN_PASSWORD. Without them the
     files are left unsigned. CUSTOS_SIGNTOOL may point to signtool.exe if it is not found automatically.
@@ -39,7 +47,11 @@ param(
     [switch] $SkipInstaller,
 
     # Download the newest .NET 10 Desktop Runtime even if one is already in installer\redist.
-    [switch] $RefreshRuntime
+    [switch] $RefreshRuntime,
+
+    # Also build the programs with this version (higher than -Version, for example 0.3.15.1) into an update package
+    # of its own: install the setup, upload this package to the server and update to it.
+    [string] $TestUpdateVersion
 )
 
 Set-StrictMode -Version Latest
@@ -50,11 +62,15 @@ $Root = $PSScriptRoot
 $Artifacts = Join-Path $Root 'artifacts'
 $PublishDir = Join-Path $Artifacts 'publish'
 $InstallerOutDir = Join-Path $Artifacts 'installer'
+$UpdateOutDir = Join-Path $Artifacts 'update'
+$TestUpdateOutDir = Join-Path $Artifacts 'update-test'
 $RedistDir = Join-Path (Join-Path $Root 'installer') 'redist'
 $SevenZipPin = Join-Path (Join-Path $Root 'installer') '7-zip.json'
 $Programs = @('Custos.Service', 'Custos.Gui', 'Custos.Updater')
 $OwnFiles = @('Custos.exe', 'Custos.dll', 'CustosService.exe', 'CustosService.dll',
               'Custos.Updater.exe', 'Custos.Updater.dll', 'Custos.Core.dll')
+# The protocol of the monitoring server the programs speak (MonitorClient.ProtocolVersion); goes into manifest.json.
+$MinProtocol = 1
 
 function Write-Step([string] $Text) {
     Write-Host ''
@@ -223,6 +239,61 @@ function Get-SevenZip {
     return $out
 }
 
+# Publishes the three programs with $ProgramVersion into $Folder, with 7z.dll and the notices, and signs them.
+function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $SevenZipFolder) {
+    New-Item -ItemType Directory -Path $Folder -Force | Out-Null
+    foreach ($program in $Programs) {
+        $project = Join-Path $Root "src\$program\$program.csproj"
+        Invoke-Native 'dotnet' @('publish', $project, '-c', $Configuration, '-r', 'win-x64', '--self-contained', 'false',
+            "-p:Version=$ProgramVersion", '-o', $Folder)
+    }
+    Copy-Item (Join-Path $SevenZipFolder '7z.dll') $Folder
+    Copy-Item (Join-Path $SevenZipFolder 'License.txt') (Join-Path $Folder '7-Zip-License.txt')
+    Copy-Item (Join-Path $Root 'THIRD-PARTY-NOTICES.txt') $Folder
+    Invoke-Sign ($OwnFiles | ForEach-Object { Join-Path $Folder $_ })
+}
+
+# Makes the update package (A.10): every file of $Folder and manifest.json {version, min_protocol, files[{path,
+# sha256}]}. Paths use "/", as zip wants. $NameSuffix only marks the file (custos-<version><suffix>.zip): the server
+# reads the version from manifest.json. Returns the path of the zip.
+function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] $OutDir, [string] $NameSuffix = '') {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
+    $base = (Resolve-Path $Folder).Path.TrimEnd('\') + '\'
+    $files = @(Get-ChildItem -Path $Folder -File -Recurse | Sort-Object FullName)
+    $list = @()
+    foreach ($file in $files) {
+        $list += [ordered]@{
+            path   = $file.FullName.Substring($base.Length).Replace('\', '/')
+            sha256 = (Get-FileHash -Path $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    }
+    $manifest = [ordered]@{ version = $PackageVersion; min_protocol = $MinProtocol; files = $list }
+    $json = ConvertTo-Json -InputObject $manifest -Depth 5
+
+    $zipPath = Join-Path $OutDir "custos-$PackageVersion$NameSuffix.zip"
+    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+    $stream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew)
+    $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        $entry = $zip.CreateEntry('manifest.json', [IO.Compression.CompressionLevel]::Optimal)
+        $writer = New-Object IO.StreamWriter($entry.Open(), (New-Object Text.UTF8Encoding($false)))
+        try { $writer.Write($json) } finally { $writer.Dispose() }
+        for ($i = 0; $i -lt $files.Count; $i++) {
+            [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $files[$i].FullName, $list[$i].path,
+                [IO.Compression.CompressionLevel]::Optimal) | Out-Null
+        }
+    }
+    finally {
+        $zip.Dispose()
+        $stream.Dispose()
+    }
+    $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-Host "Update package: $zipPath ($($files.Count) files, SHA-256 $hash)"
+    return $zipPath
+}
+
 # ---------------------------------------------------------------------------------------------------------------
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -245,9 +316,16 @@ if (-not $Version) {
     [xml] $props = Get-Content (Join-Path $Root 'Directory.Build.props')
     $Version = $props.SelectSingleNode('/Project/PropertyGroup/VersionPrefix').InnerText
 }
+# The same rule as the server and the service (A.10).
+$versionPattern = '^\d{1,5}(\.\d{1,5}){1,3}([-+][0-9A-Za-z.-]{1,20})?$'
+if ($Version -notmatch $versionPattern) { Stop-Build "Version '$Version' is not like 0.3.0 or 0.3.15." }
 if ($Version -match '^(\d+\.\d+\.\d+)') { $fileVersion = $Matches[1] }
 else { Stop-Build "Version '$Version' must start with three numbers, like 0.1.0." }
 Write-Host "Version: $Version"
+if ($TestUpdateVersion) {
+    if ($TestUpdateVersion -notmatch $versionPattern) { Stop-Build "Test update version '$TestUpdateVersion' is not like 0.3.15.1." }
+    Write-Host "Test update version: $TestUpdateVersion"
+}
 
 Write-Step 'Getting 7z.dll'
 $sevenZip = Get-SevenZip
@@ -264,15 +342,17 @@ if (-not $SkipTests) {
 }
 
 Write-Step 'Publishing the programs'
-foreach ($program in $Programs) {
-    $project = Join-Path $Root "src\$program\$program.csproj"
-    Invoke-Native 'dotnet' @('publish', $project, '-c', $Configuration, '-r', 'win-x64', '--self-contained', 'false',
-        "-p:Version=$Version", '-o', $PublishDir)
+Publish-Programs $Version $PublishDir $sevenZip
+
+Write-Step 'Making the update package'
+$package = New-UpdatePackage $Version $PublishDir $UpdateOutDir
+$testPackage = $null
+if ($TestUpdateVersion) {
+    Write-Step "Building the test update $TestUpdateVersion"
+    $testPublish = Join-Path $Artifacts 'publish-test'
+    Publish-Programs $TestUpdateVersion $testPublish $sevenZip
+    $testPackage = New-UpdatePackage $TestUpdateVersion $testPublish $TestUpdateOutDir '-test'
 }
-Copy-Item (Join-Path $sevenZip '7z.dll') $PublishDir
-Copy-Item (Join-Path $sevenZip 'License.txt') (Join-Path $PublishDir '7-Zip-License.txt')
-Copy-Item (Join-Path $Root 'THIRD-PARTY-NOTICES.txt') $PublishDir
-Invoke-Sign ($OwnFiles | ForEach-Object { Join-Path $PublishDir $_ })
 
 if (-not $SkipInstaller) {
     Write-Step 'Getting the .NET Desktop Runtime for the installer'
@@ -287,5 +367,7 @@ if (-not $SkipInstaller) {
 }
 
 Write-Step 'Done'
-Write-Host "Program files: $PublishDir"
-if (-not $SkipInstaller) { Write-Host "Installer:     $setup" -ForegroundColor Green }
+Write-Host "Program files:  $PublishDir"
+Write-Host "Update package: $package"
+if ($testPackage) { Write-Host "Test update:    $testPackage" }
+if (-not $SkipInstaller) { Write-Host "Installer:      $setup" -ForegroundColor Green }

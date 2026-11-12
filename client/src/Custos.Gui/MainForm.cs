@@ -2,6 +2,8 @@ using System.Drawing.Drawing2D;
 using Custos.Core;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
+using Custos.Core.Monitor;
+using Custos.Core.Text;
 
 namespace Custos.Gui;
 
@@ -51,6 +53,7 @@ internal sealed class MainForm : Form
     private ImageList? _stateImages;
     private Bitmap? _greenDot;
     private Bitmap? _greyDot;
+    private Bitmap? _amberDot;
     private Bitmap? _emptyDot;
     private string? _historyKey;
     private string? _selectWhenShown;
@@ -305,6 +308,7 @@ internal sealed class MainForm : Form
 
         _greenDot = CreateDot(Color.FromArgb(46, 160, 67), filled: true);
         _greyDot = CreateDot(Glyphs.Grey, filled: true);
+        _amberDot = CreateDot(Glyphs.Amber, filled: true);
         _emptyDot = CreateDot(Glyphs.Grey, filled: false);
         _serverStatus.Image = _emptyDot;
         ShowStatus();
@@ -323,6 +327,7 @@ internal sealed class MainForm : Form
         _serverStatus.Image = null;
         _greenDot?.Dispose();
         _greyDot?.Dispose();
+        _amberDot?.Dispose();
         _emptyDot?.Dispose();
         _stateImages?.Dispose();
         _stateImages = null;
@@ -507,11 +512,43 @@ internal sealed class MainForm : Form
         }
 
         ShowSelectedTask();
+        ShowServer(snapshot?.Server);
         _progress.ShowRun(snapshot?.Current, _monitor.Progress);
         _userStatus.Text = _monitor.Status.Hello?.User is { } user && connected
             ? Strings.Format(Strings.UserWithRights, user, _monitor.CanEdit ? Strings.RightsAdmin : Strings.RightsUser)
             : _userStatus.Text;
         UpdateCommands();
+    }
+
+    /// <summary>The connection to the monitoring server in the status bar (docs/client-ui.md).</summary>
+    private void ShowServer(ServerLinkInfo? server)
+    {
+        string host = server?.ServerHost ?? string.Empty;
+        (string text, Image? image) = server?.State switch
+        {
+            null or ServerLinkStates.Off => (Strings.ServerNotConnected, _emptyDot),
+            ServerLinkStates.Approved => (Strings.Format(Strings.ServerOnline, host), _greenDot),
+            ServerLinkStates.Pending => (Strings.Format(Strings.ServerPending, host), _greyDot),
+            ServerLinkStates.Disabled => (Strings.Format(Strings.ServerDisabled, host), _greyDot),
+            ServerLinkStates.Connecting => (Strings.Format(Strings.ServerConnecting, host), _greyDot),
+            ServerLinkStates.Offline => (Offline(server), _amberDot),
+            _ => (Strings.Format(Strings.ServerProblem, host, ServerLink.StateText(server.State).TrimEnd('.')), _amberDot),
+        };
+        _serverStatus.Text = text;
+        _serverStatus.Image = image;
+        _serverStatus.ToolTipText = server?.Detail;
+    }
+
+    private static string Offline(ServerLinkInfo server)
+    {
+        int minutes = server.OfflineSince is { } since ? Math.Max(0, (int)(DateTimeOffset.UtcNow - since).TotalMinutes) : 0;
+        string text = Strings.Format(Strings.ServerOffline, minutes);
+        if (server.Waiting > 0)
+        {
+            text += " — " + Strings.Format(Sizes.Plural(server.Waiting, Strings.ServerReportsOne, Strings.ServerReportsFew, Strings.ServerReportsMany), server.Waiting);
+        }
+
+        return text;
     }
 
     private void OnSelectionChanged()

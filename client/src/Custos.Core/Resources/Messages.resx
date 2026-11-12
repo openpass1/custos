@@ -1236,4 +1236,289 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="RemoteTestTooLong" xml:space="preserve">
     <value>The server did not finish answering in {0} minutes.</value>
   </data>
+  <data name="MonitorCodeBad" xml:space="preserve">
+    <value>The registration code must start with a key of {0} letters and digits (as on the site: K7QHM-2XARV-…).</value>
+  </data>
+  <data name="MonitorCodeBadFingerprint" xml:space="preserve">
+    <value>After «#» the code must have the fingerprint of the server key: 16 characters 0–9 and A–F (3F2A-91C0-77DE-0B14).</value>
+  </data>
+  <data name="MonitorCodeUnreadable" xml:space="preserve">
+    <value>The stored registration code cannot be read on this computer: paste the connection line again.</value>
+  </data>
+  <data name="MonitorNoConnection" xml:space="preserve">
+    <value>no connection: {0}</value>
+  </data>
+  <data name="MonitorTimeout" xml:space="preserve">
+    <value>the server did not answer in time</value>
+  </data>
+  <data name="MonitorUnsigned" xml:space="preserve">
+    <value>{0} without a valid signature of the server</value>
+  </data>
+  <data name="MonitorAnswerTooBig" xml:space="preserve">
+    <value>the answer is larger than {0} MB</value>
+  </data>
+  <data name="MonitorDownloadTooBig" xml:space="preserve">
+    <value>the file is larger than {0} MB</value>
+  </data>
+  <data name="MonitorKeyRejected" xml:space="preserve">
+    <value>The server did not accept the registration key. Check the code on the site (Settings → Agents) and enter it again.</value>
+  </data>
+  <data name="MonitorCheckMac" xml:space="preserve">
+    <value>the answer is not confirmed by the registration key</value>
+  </data>
+  <data name="MonitorCheckBody" xml:space="preserve">
+    <value>the answer has no agent id or no server key</value>
+  </data>
+  <data name="MonitorCheckSignature" xml:space="preserve">
+    <value>the answer is not signed by the key it carries</value>
+  </data>
+  <data name="MonitorCheckFingerprint" xml:space="preserve">
+    <value>the key of the server has the fingerprint {0}, not the one in the code</value>
+  </data>
+  <data name="MonitorCheckPinned" xml:space="preserve">
+    <value>the server has another key than at the first registration. If the server was set up anew, reset the binding to the server in the settings</value>
+  </data>
+  <data name="MonitorRegistrationRefused" xml:space="preserve">
+    <value>Registration refused: {0}.</value>
+  </data>
+  <data name="MonitorKeyUnreadable" xml:space="preserve">
+    <value>The key of the agent cannot be read ({0}); a new one was made, the old file is kept as {1}. The computer registers on the server again with the stored code.</value>
+  </data>
+  <data name="MonitorStepFailed" xml:space="preserve">
+    <value>Connection to the server: internal error ({0}); trying again in a minute.</value>
+  </data>
+  <data name="MonitorRegistered" xml:space="preserve">
+    <value>Registered on the server {0}: agent {1}, server key {2}.</value>
+  </data>
+  <data name="MonitorApproved" xml:space="preserve">
+    <value>The server approved this computer: reports and commands go now.</value>
+  </data>
+  <data name="MonitorLogTooLarge" xml:space="preserve">
+    <value>The server did not take the whole log of a run (too large): the report goes without it; the log can be requested from the site later.</value>
+  </data>
+  <data name="MonitorLogTooLargeProxy" xml:space="preserve">
+    <value>The web server did not take the whole log of a run (413 without a signature): the report goes without it. Check client_max_body_size in nginx (at least 10m).</value>
+  </data>
+  <data name="MonitorConfigRefused" xml:space="preserve">
+    <value>The server did not take the configuration of this computer: {0}.</value>
+  </data>
+  <data name="MonitorCommandBadId" xml:space="preserve">
+    <value>A command of the server without a valid id ({0}, {1}) was ignored.</value>
+  </data>
+  <data name="MonitorCommandExpired" xml:space="preserve">
+    <value>the command expired before it reached this computer</value>
+  </data>
+  <data name="MonitorCommandUnknown" xml:space="preserve">
+    <value>unknown command «{0}»: this version of the program cannot do it</value>
+  </data>
+  <data name="MonitorRemoteEditOff" xml:space="preserve">
+    <value>«Allow the server to change tasks» is off on this computer</value>
+  </data>
+  <data name="MonitorCommandNotDone" xml:space="preserve">
+    <value>Command of the server {0}: {1} ({2}).</value>
+  </data>
+  <data name="MonitorNotConnected" xml:space="preserve">
+    <value>The computer is not connected to a monitoring server.</value>
+  </data>
+  <data name="MonitorUnknownAgent" xml:space="preserve">
+    <value>The server does not know this computer (it was deleted on the site?): registering again with the stored code.</value>
+  </data>
+  <data name="MonitorRateLimited" xml:space="preserve">
+    <value>The server asked to wait {0} s before the next request.</value>
+  </data>
+  <data name="MonitorClockSkew" xml:space="preserve">
+    <value>the clock of this computer differs from the server by more than 5 minutes (server time {0}). Set the time right (Windows time synchronization).</value>
+  </data>
+  <data name="MonitorConnectionLost" xml:space="preserve">
+    <value>No connection to the monitoring server {0} for {1} min: {2}. The reports wait on this computer and will be sent later.</value>
+  </data>
+  <data name="MonitorConnectionRestored" xml:space="preserve">
+    <value>The connection to the monitoring server {0} is back after {1} min.</value>
+  </data>
+  <data name="MonitorReportDropped" xml:space="preserve">
+    <value>The server refused the report {0}: {1}. It is not sent again.</value>
+  </data>
+  <data name="MonitorStateDetail" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="MonitorStateOff" xml:space="preserve">
+    <value>Not connected to a monitoring server.</value>
+  </data>
+  <data name="MonitorStateNoCode" xml:space="preserve">
+    <value>The server address is set, but there is no registration code: paste the connection line in the settings.</value>
+  </data>
+  <data name="MonitorStateConnecting" xml:space="preserve">
+    <value>Connecting to the monitoring server…</value>
+  </data>
+  <data name="MonitorStateKeyRejected" xml:space="preserve">
+    <value>The registration key was not accepted</value>
+  </data>
+  <data name="MonitorStateRefused" xml:space="preserve">
+    <value>The answer of the server failed a check</value>
+  </data>
+  <data name="MonitorStatePending" xml:space="preserve">
+    <value>The computer is registered and waits for approval on the site.</value>
+  </data>
+  <data name="MonitorStateApproved" xml:space="preserve">
+    <value>Connected to the monitoring server.</value>
+  </data>
+  <data name="MonitorStateDisabled" xml:space="preserve">
+    <value>The computer is disabled on the site: it works on its own and only checks in now and then.</value>
+  </data>
+  <data name="MonitorStateForbidden" xml:space="preserve">
+    <value>The server does not take agents from the address of this computer (Settings → Security on the site)</value>
+  </data>
+  <data name="MonitorStateClockSkew" xml:space="preserve">
+    <value>The clocks differ</value>
+  </data>
+  <data name="MonitorStateOffline" xml:space="preserve">
+    <value>No connection to the monitoring server</value>
+  </data>
+  <data name="MonitorTaskNotObject" xml:space="preserve">
+    <value>The task of the command is not an object.</value>
+  </data>
+  <data name="MonitorTaskUnreadable" xml:space="preserve">
+    <value>The task of the command cannot be read: {0}</value>
+  </data>
+  <data name="MonitorTaskBadId" xml:space="preserve">
+    <value>«{0}» is not a valid id (UUID).</value>
+  </data>
+  <data name="MonitorCredentialKindRefused" xml:space="preserve">
+    <value>Accounts of the kind «{0}» are not taken from the server.</value>
+  </data>
+  <data name="MonitorSettingsNotObject" xml:space="preserve">
+    <value>The settings of the command are not an object.</value>
+  </data>
+  <data name="MonitorSettingsUnreadable" xml:space="preserve">
+    <value>The settings of the command cannot be read: {0}</value>
+  </data>
+  <data name="MonitorPasswordHashBad" xml:space="preserve">
+    <value>The program password from the server is not a hash of the form pbkdf2-sha256$…</value>
+  </data>
+  <data name="MonitorSettingBad" xml:space="preserve">
+    <value>The setting {0} cannot be «{1}».</value>
+  </data>
+  <data name="MonitorSetupUnreadable" xml:space="preserve">
+    <value>The server settings from the installer were not taken: {0}</value>
+  </data>
+  <data name="MonitorByInstaller" xml:space="preserve">
+    <value>the installer</value>
+  </data>
+  <data name="MonitorUrlBad" xml:space="preserve">
+    <value>«{0}» is not an address of a server: it must start with http:// or https:// (http://custos.example.lan).</value>
+  </data>
+  <data name="MonitorConnectedBy" xml:space="preserve">
+    <value>Monitoring server {0} set by {1}: registering.</value>
+  </data>
+  <data name="MonitorResetBy" xml:space="preserve">
+    <value>The binding to the monitoring server was reset by {0}: the program works on its own.</value>
+  </data>
+  <data name="MonitorNotAllowed" xml:space="preserve">
+    <value>Only an administrator of this computer can connect it to a server or disconnect it.</value>
+  </data>
+  <data name="MonitorPayloadMissing" xml:space="preserve">
+    <value>The command has no «{0}».</value>
+  </data>
+  <data name="MonitorNothingToStop" xml:space="preserve">
+    <value>the task was not running or queued</value>
+  </data>
+  <data name="MonitorTaskNotRunning" xml:space="preserve">
+    <value>the task is not running</value>
+  </data>
+  <data name="MonitorTaskEnabled" xml:space="preserve">
+    <value>Task «{0}» enabled by the server.</value>
+  </data>
+  <data name="MonitorTaskDisabled" xml:space="preserve">
+    <value>Task «{0}» disabled by the server.</value>
+  </data>
+  <data name="MonitorSecretUnreadable" xml:space="preserve">
+    <value>The password of the account {0} cannot be decrypted with the key of this agent: {1}</value>
+  </data>
+  <data name="MonitorTaskOverwritten" xml:space="preserve">
+    <value>Task «{0}»: the change from the site replaced revision {1} made here ({2}); the site keeps that version.</value>
+  </data>
+  <data name="MonitorTaskCreated" xml:space="preserve">
+    <value>Task «{0}» created from the site by {1}.</value>
+  </data>
+  <data name="MonitorTaskChanged" xml:space="preserve">
+    <value>Task «{0}» changed from the site by {1}.</value>
+  </data>
+  <data name="MonitorSettingsChanged" xml:space="preserve">
+    <value>Settings changed from the site: {0}.</value>
+  </data>
+  <data name="MonitorLogGone" xml:space="preserve">
+    <value>the log of this run is no longer kept on the computer</value>
+  </data>
+  <data name="MonitorInventoryFailed" xml:space="preserve">
+    <value>The list of copies in the destinations was not made: {0}</value>
+  </data>
+  <data name="MonitorPackageBadCommand" xml:space="preserve">
+    <value>the command has no proper version, SHA-256 or signature</value>
+  </data>
+  <data name="MonitorPackageBadSignature" xml:space="preserve">
+    <value>the signature of the server does not match: the file is not taken</value>
+  </data>
+  <data name="MonitorPackageBadHash" xml:space="preserve">
+    <value>the SHA-256 of the downloaded file differs from the one in the command</value>
+  </data>
+  <data name="MonitorDownloadFailed" xml:space="preserve">
+    <value>the download failed: {0}</value>
+  </data>
+  <data name="MonitorSevenZipDownloading" xml:space="preserve">
+    <value>Downloading 7-Zip {0} from the monitoring server…</value>
+  </data>
+  <data name="MonitorUpdateSame" xml:space="preserve">
+    <value>version {0} is already installed</value>
+  </data>
+  <data name="MonitorUpdateConsole" xml:space="preserve">
+    <value>the service runs in a console window: updates are installed only to the installed service</value>
+  </data>
+  <data name="MonitorUpdateBusy" xml:space="preserve">
+    <value>another update is being installed</value>
+  </data>
+  <data name="MonitorUpdateDownloading" xml:space="preserve">
+    <value>Downloading the update of CUSTOS to {0} from the monitoring server…</value>
+  </data>
+  <data name="MonitorUpdateWaiting" xml:space="preserve">
+    <value>The update to {0} is checked; it is installed when the task in progress ends.</value>
+  </data>
+  <data name="MonitorUpdateRestoreRunning" xml:space="preserve">
+    <value>a restore is running; the update can be sent again when it is over</value>
+  </data>
+  <data name="MonitorUpdateInstalling" xml:space="preserve">
+    <value>Installing the update from {0} to {1}: the service stops for a minute and starts again.</value>
+  </data>
+  <data name="MonitorUpdateNoStop" xml:space="preserve">
+    <value>Custos.Updater did not stop the service in 10 minutes</value>
+  </data>
+  <data name="MonitorUpdateNoResult" xml:space="preserve">
+    <value>Custos.Updater did not report what it did (see C:\ProgramData\CUSTOS\logs\updater.log)</value>
+  </data>
+  <data name="MonitorUpdateDone" xml:space="preserve">
+    <value>CUSTOS updated from {0} to {1}.</value>
+  </data>
+  <data name="MonitorUpdateFailed" xml:space="preserve">
+    <value>The update of CUSTOS to {0} was not installed: {1}</value>
+  </data>
+  <data name="MonitorPackageBad" xml:space="preserve">
+    <value>the package is not right: {0}</value>
+  </data>
+  <data name="MonitorPackageNoManifest" xml:space="preserve">
+    <value>there is no manifest.json</value>
+  </data>
+  <data name="MonitorPackageOtherVersion" xml:space="preserve">
+    <value>manifest.json says version {0}, the command {1}</value>
+  </data>
+  <data name="MonitorPackageProtocol" xml:space="preserve">
+    <value>it needs protocol {0}, newer than this agent speaks</value>
+  </data>
+  <data name="MonitorPackageBadPath" xml:space="preserve">
+    <value>the path «{0}» leads outside the program folder</value>
+  </data>
+  <data name="MonitorPackageMissingFile" xml:space="preserve">
+    <value>the file {0} is missing</value>
+  </data>
+  <data name="MonitorPackageFileHash" xml:space="preserve">
+    <value>the SHA-256 of {0} differs from manifest.json</value>
+  </data>
 </root>

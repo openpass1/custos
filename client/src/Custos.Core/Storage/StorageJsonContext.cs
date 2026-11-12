@@ -8,4 +8,5 @@ namespace Custos.Core.Storage;
 [JsonSerializable(typeof(List<DestinationResult>))]
 [JsonSerializable(typeof(List<DatabaseResult>))]
 [JsonSerializable(typeof(RemoteResult))]
+[JsonSerializable(typeof(RunVerify))]
 internal sealed partial class StorageJsonContext : JsonSerializerContext;

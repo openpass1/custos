@@ -130,6 +130,9 @@
   <data name="ColumnResult" xml:space="preserve">
     <value>Результат</value>
   </data>
+  <data name="ColumnVerify" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
   <data name="ColumnNextRun" xml:space="preserve">
     <value>Следующий запуск</value>
   </data>
@@ -324,6 +327,15 @@
   </data>
   <data name="HistoryWarnings" xml:space="preserve">
     <value>Предупреждений: {0}</value>
+  </data>
+  <data name="HistoryVerifyOkNew" xml:space="preserve">
+    <value>пройдена (новая копия)</value>
+  </data>
+  <data name="HistoryVerifyOkStored" xml:space="preserve">
+    <value>пройдена (наборов: {0})</value>
+  </data>
+  <data name="HistoryVerifyFailed" xml:space="preserve">
+    <value>не пройдена: {0}</value>
   </data>
   <data name="ProgressIdle" xml:space="preserve">
     <value>Сейчас ничего не выполняется.</value>
@@ -1834,5 +1846,91 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   </data>
   <data name="RemoteNextPages" xml:space="preserve">
     <value>Расписание, архив, назначения и хранение задаются на остальных страницах, как в любом задании.</value>
+  </data>
+  <data name="ServerOnline" xml:space="preserve">
+    <value>Сервер: на связи — {0}</value>
+  </data>
+  <data name="ServerPending" xml:space="preserve">
+    <value>Сервер: ждёт подтверждения на сайте — {0}</value>
+  </data>
+  <data name="ServerDisabled" xml:space="preserve">
+    <value>Сервер: компьютер отключён на сайте — {0}</value>
+  </data>
+  <data name="ServerConnecting" xml:space="preserve">
+    <value>Сервер: подключение к {0}…</value>
+  </data>
+  <data name="ServerOffline" xml:space="preserve">
+    <value>Нет связи с сервером {0} мин</value>
+  </data>
+  <data name="ServerReportsOne" xml:space="preserve">
+    <value>{0} отчёт ждёт отправки</value>
+  </data>
+  <data name="ServerReportsFew" xml:space="preserve">
+    <value>{0} отчёта ждут отправки</value>
+  </data>
+  <data name="ServerReportsMany" xml:space="preserve">
+    <value>{0} отчётов ждут отправки</value>
+  </data>
+  <data name="ServerProblem" xml:space="preserve">
+    <value>Сервер {0}: {1}</value>
+  </data>
+  <data name="SettingsServer" xml:space="preserve">
+    <value>Сервер мониторинга</value>
+  </data>
+  <data name="ServerNamed" xml:space="preserve">
+    <value>(«{0}»)</value>
+  </data>
+  <data name="ServerLineLabel" xml:space="preserve">
+    <value>Строка подключения:</value>
+  </data>
+  <data name="ServerLineHelp" xml:space="preserve">
+    <value>Строка копируется на сайте: «Настройки» → «Подключение агентов». В ней адрес сайта и код регистрации. Она нужна один раз, для регистрации; после неё компьютер узнаёт сервер по его ключу. Последняя часть, после второго «#», — отпечаток ключа сервера: по нему программа проверяет, что говорит именно с вашим сервером. Повторно строка здесь не показывается.</value>
+  </data>
+  <data name="ServerConnectButton" xml:space="preserve">
+    <value>Подключить</value>
+  </data>
+  <data name="ServerResetButton" xml:space="preserve">
+    <value>Сбросить привязку к серверу…</value>
+  </data>
+  <data name="ServerResetConfirm" xml:space="preserve">
+    <value>Забыть сервер {0}? Программа продолжит работать автономно, ещё не отправленные отчёты будут удалены. Чтобы подключиться снова, понадобится строка подключения с сайта.</value>
+  </data>
+  <data name="ServerConnectDone" xml:space="preserve">
+    <value>Строка подключения принята, компьютер регистрируется на сервере. Если сервер требует подтверждения, подтвердите компьютер на сайте (раздел «Машины»).</value>
+  </data>
+  <data name="ServerAdminOnly" xml:space="preserve">
+    <value>Подключить компьютер к серверу или сбросить привязку может только администратор этого компьютера.</value>
+  </data>
+  <data name="ServerFingerprints" xml:space="preserve">
+    <value>Отпечатки ключей: сервера {0}, этого компьютера {1}</value>
+  </data>
+  <data name="ServerLastContact" xml:space="preserve">
+    <value>Последний ответ сервера: {0}</value>
+  </data>
+  <data name="ServerWaiting" xml:space="preserve">
+    <value>Отчётов ждут отправки: {0}</value>
+  </data>
+  <data name="ServerLineRequired" xml:space="preserve">
+    <value>Вставьте строку подключения с сайта («Настройки» → «Подключение агентов»).</value>
+  </data>
+  <data name="ServerLineBad" xml:space="preserve">
+    <value>Это не похоже на строку подключения. Скопируйте её на сайте целиком («Настройки» → «Подключение агентов»): адрес сайта, «#» и код регистрации, например
+
+{0}</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>Сервер: {0}</value>
+  </data>
+  <data name="ServerPasteTip" xml:space="preserve">
+    <value>Вставить из буфера обмена</value>
+  </data>
+  <data name="ServerPasteEmpty" xml:space="preserve">
+    <value>В буфере обмена нет текста. Скопируйте строку подключения на сайте («Настройки» → «Подключение агентов») и нажмите кнопку ещё раз.</value>
+  </data>
+  <data name="AllowRemoteEdit" xml:space="preserve">
+    <value>Разрешить серверу менять задания</value>
+  </data>
+  <data name="AllowRemoteEditHelp" xml:space="preserve">
+    <value>Если включено, задания, учётные записи и настройки можно менять с сайта. Если выключено, сайт их только показывает; запуск, остановка и обновления с сайта работают и так.</value>
   </data>
 </root>

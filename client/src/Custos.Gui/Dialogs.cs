@@ -1,5 +1,8 @@
+using System.ComponentModel;
+using System.Globalization;
 using Custos.Core.Backup;
 using Custos.Core.Ipc;
+using Custos.Core.Monitor;
 using Custos.Core.Model;
 
 namespace Custos.Gui;
@@ -850,9 +853,20 @@ internal sealed class SettingsForm : DialogForm
     private readonly bool _canEdit;
     private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
     private readonly Button _sevenZipCheck = new() { Text = Strings.SevenZipCheckButton, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
+    /// <summary>What a connection line looks like, with made-up values.</summary>
+    internal const string ConnectionExample = "http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14";
+
+    private readonly Label _serverState = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 6) };
+    private readonly TextBox _serverLine = new() { Dock = DockStyle.Fill, PlaceholderText = ConnectionExample };
+    private readonly Button _serverPaste = new() { Size = new Size(30, 25), Margin = new Padding(0), AccessibleName = Strings.ServerPasteTip };
+    private readonly Button _serverConnect = new() { Text = Strings.ServerConnectButton, AutoSize = true, MinimumSize = new Size(110, 0) };
+    private readonly Button _serverReset = new() { Text = Strings.ServerResetButton, AutoSize = true, Margin = new Padding(8, 3, 0, 3) };
+    private readonly Label _serverKeys = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 4, 0, 2) };
+    private readonly CheckBox _allowRemoteEdit = new() { Text = Strings.AllowRemoteEdit, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly bool _isAdmin;
 
     public SettingsForm(ServiceMonitor monitor)
-        : base(Strings.SettingsTitle, new Size(640, 620))
+        : base(Strings.SettingsTitle, new Size(680, 760))
     {
         _monitor = monitor;
         _canEdit = monitor.CanEdit;
@@ -862,8 +876,36 @@ internal sealed class SettingsForm : DialogForm
         _accounts.Columns.Add(Strings.ColumnAccount, 220);
         _accounts.Columns.Add(Strings.ColumnUsedBy, 330);
 
-        var heading = new Label { Text = Strings.SettingsLogs, AutoSize = true, Margin = new Padding(0, 0, 0, 4) };
+        _isAdmin = monitor.Status.Hello?.IsAdmin == true;
+        var serverHeading = new Label { Text = Strings.SettingsServer, AutoSize = true, Margin = new Padding(0, 0, 0, 4) };
+        var heading = new Label { Text = Strings.SettingsLogs, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         heading.Font = new Font(heading.Font, FontStyle.Bold);
+        serverHeading.Font = heading.Font;
+        AddWide(serverHeading);
+        AddWide(_serverState);
+        // The line is long and comes from the site: one press of the button puts it in.
+        _serverPaste.Image = Glyphs.Draw(Glyph.Paste, 16);
+        _toolTip.SetToolTip(_serverPaste, Strings.ServerPasteTip);
+        var lineHelp = Ui.HelpIcon(_toolTip, Strings.ServerLineHelp);
+        lineHelp.Margin = new Padding(4, 3, 0, 0);
+        var lineTools = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        lineTools.Controls.AddRange([_serverPaste, lineHelp]);
+        AddRow(Strings.ServerLineLabel, _serverLine, lineTools);
+        lineTools.Margin = new Padding(6, 2, 0, 2);
+        var serverButtons = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 0) };
+        serverButtons.Controls.AddRange([_serverConnect, _serverReset]);
+        AddWide(serverButtons);
+        AddWide(_serverKeys);
+        var remoteEdit = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        var remoteEditHelp = Ui.HelpIcon(_toolTip, Strings.AllowRemoteEditHelp);
+        remoteEditHelp.Margin = new Padding(6, 8, 0, 0);
+        remoteEdit.Controls.AddRange([_allowRemoteEdit, remoteEditHelp]);
+        AddWide(remoteEdit);
+        if (!_isAdmin)
+        {
+            AddNote(Strings.ServerAdminOnly);
+        }
+
         AddWide(heading);
         AddRow(Strings.DefaultLogLevel, _logLevel, Ui.HelpIcon(_toolTip, Strings.DefaultLogLevelHelp));
         AddRow(Strings.LogRetention, _retention);
@@ -916,10 +958,21 @@ internal sealed class SettingsForm : DialogForm
         int language = Array.IndexOf(Languages, settings.Language);
         _language.SelectedIndex = language < 0 ? 0 : language;
 
-        foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _addAccount })
+        _allowRemoteEdit.Checked = settings.AllowRemoteEdit;
+        foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _addAccount, _allowRemoteEdit })
         {
             control.Enabled = _canEdit;
         }
+
+        foreach (var control in new Control[] { _serverLine, _serverPaste, _serverConnect })
+        {
+            control.Enabled = _isAdmin && monitor.IsConnected;
+        }
+
+        _serverPaste.Click += (_, _) => PasteServerLine();
+        _serverConnect.Click += (_, _) => Ui.Run(this, ConnectServerAsync);
+        _serverReset.Click += (_, _) => Ui.Run(this, ResetServerAsync);
+        ShowServer();
 
         OkButton.Visible = _canEdit;
         CancelButtonControl.Text = _canEdit ? Strings.ButtonCancel : Strings.ButtonClose;
@@ -1023,6 +1076,7 @@ internal sealed class SettingsForm : DialogForm
         settings.LogRetentionDays = (int)_retention.Value;
         settings.ProcessPriority = _priority.SelectedIndex == 1 ? "normal" : "low";
         settings.Language = Languages[Math.Max(0, _language.SelectedIndex)];
+        settings.AllowRemoteEdit = _allowRemoteEdit.Checked;
         SetBusy(true);
         Ui.Run(this, async () =>
         {
@@ -1039,7 +1093,119 @@ internal sealed class SettingsForm : DialogForm
         });
     }
 
-    private void OnSnapshotChanged(object? sender, EventArgs e) => FillAccounts();
+    private void OnSnapshotChanged(object? sender, EventArgs e)
+    {
+        FillAccounts();
+        ShowServer();
+    }
+
+    /// <summary>The state of the connection to the monitoring server, the fingerprints and the reports waiting.</summary>
+    private void ShowServer()
+    {
+        var server = _monitor.Snapshot?.Server ?? new ServerLinkInfo();
+        string state = ServerLink.StateText(server.State);
+        if (server.ServerName is { Length: > 0 } name && server.State is ServerLinkStates.Approved or ServerLinkStates.Pending)
+        {
+            state += " " + Strings.Format(Strings.ServerNamed, name);
+        }
+
+        _serverState.Text = server.Detail is { } detail ? state.TrimEnd('.') + ": " + detail : state;
+        _serverState.ForeColor = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting
+            ? SystemColors.ControlText : Glyphs.WarningText;
+        // The line itself is not shown again (it holds the code): the address it gave is.
+        var lines = new List<string>();
+        if (server.ServerUrl is { } address)
+        {
+            lines.Add(Strings.Format(Strings.ServerAddress, address));
+        }
+
+        lines.Add(Strings.Format(Strings.ServerFingerprints, server.ServerFingerprint ?? "—", server.AgentFingerprint ?? "—"));
+        if (server.LastContact is { } contact)
+        {
+            lines.Add(Strings.Format(Strings.ServerLastContact, contact.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)));
+        }
+
+        if (server.Waiting > 0)
+        {
+            lines.Add(Strings.Format(Strings.ServerWaiting, server.Waiting));
+        }
+
+        _serverKeys.Text = string.Join(Environment.NewLine, lines);
+        _serverReset.Enabled = _isAdmin && _monitor.IsConnected && server.ServerUrl is not null;
+    }
+
+    /// <summary>Reads the text of the clipboard; the tests put their own text here.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal Func<string?> ClipboardText { get; set; } = Ui.ClipboardText;
+
+    /// <summary>
+    /// The button next to the field: the line copied on the site replaces what the field holds. Of several lines the
+    /// first one with text is taken, so a line copied together with its line break fits too.
+    /// </summary>
+    internal void PasteServerLine()
+    {
+        string? line = ClipboardText()?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+        if (string.IsNullOrEmpty(line))
+        {
+            Ui.ShowWarning(this, Strings.ServerPasteEmpty);
+            return;
+        }
+
+        _serverLine.Text = line;
+        _serverLine.SelectionStart = line.Length;
+        _serverLine.Focus();
+    }
+
+    /// <summary>
+    /// «Подключить»: the connection line of the site (A.3), the address and the registration code in one, goes to the
+    /// service, which registers.
+    /// </summary>
+    private async Task ConnectServerAsync()
+    {
+        string line = _serverLine.Text.Trim();
+        if (line.Length == 0)
+        {
+            Ui.ShowWarning(this, Strings.ServerLineRequired);
+            _serverLine.Focus();
+            return;
+        }
+
+        if (!RegistrationCode.TrySplitConnection(line, out string url, out string code) || RegistrationCode.TryParse(code, out _) is null)
+        {
+            Ui.ShowWarning(this, Strings.Format(Strings.ServerLineBad, ConnectionExample));
+            _serverLine.Focus();
+            return;
+        }
+
+        _serverConnect.Enabled = false;
+        try
+        {
+            await _monitor.RequestAsync(PipeProtocol.Methods.ServerConnect, new ServerConnectRequest { ServerUrl = url, Code = code },
+                IpcJsonContext.Default.ServerConnectRequest, IpcJsonContext.Default.OkResult);
+            _serverLine.Text = string.Empty;
+            Ui.ShowInfo(this, Strings.ServerConnectDone);
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                _serverConnect.Enabled = true;
+            }
+        }
+    }
+
+    /// <summary>«Сбросить привязку к серверу» (A.3): local, administrators only.</summary>
+    private async Task ResetServerAsync()
+    {
+        string server = _monitor.Snapshot?.Server.ServerHost ?? "?";
+        if (!Ui.Confirm(this, Strings.Format(Strings.ServerResetConfirm, server)))
+        {
+            return;
+        }
+
+        await _monitor.RequestAsync(PipeProtocol.Methods.ServerReset, EmptyRequest.Instance,
+            IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult);
+    }
 
     private void FillAccounts()
     {

@@ -28,6 +28,7 @@ internal enum Glyph
     Sliders,
     Help,
     Database,
+    Paste,
 }
 
 /// <summary>State of a task or a run, always shown with a picture and a color (docs/client-ui.md, section 1).</summary>
@@ -213,6 +214,14 @@ internal static class Glyphs
                 g.DrawLine(pen, 19, 5.5f, 19, 18.5f);
                 g.DrawArc(pen, 5, 9.5f, 14, 5, 0, 180);
                 g.DrawArc(pen, 5, 16, 14, 5, 0, 180);
+                break;
+
+            case Glyph.Paste:
+                // A clipboard: the board, its clip and two lines of text.
+                g.DrawLines(pen, [new PointF(9, 5), new PointF(5, 5), new PointF(5, 21), new PointF(19, 21), new PointF(19, 5), new PointF(15, 5)]);
+                g.FillRectangle(brush, 9, 2.5f, 6, 4.5f);
+                g.DrawLine(pen, 9, 12, 15, 12);
+                g.DrawLine(pen, 9, 16, 15, 16);
                 break;
 
             case Glyph.Help:

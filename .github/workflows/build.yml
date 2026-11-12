@@ -45,13 +45,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # Windows PowerShell 5.1, the same shell the build is run with on a test machine. CUSTOS_REQUIRE_7Z makes the 7z
-      # tests fail instead of being skipped if 7z.dll went missing.
+      # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.3.<run number>,
+      # so a later build can be installed over an earlier one by an update from the server; the test update
+      # 0.3.<run number>.1 is the same code with a higher version, to try that with a single build (the update
+      # package of a build has the version of its installer, so it cannot update a machine installed from it).
       - name: Build, test and make the installer
         shell: powershell
         working-directory: client
         env:
           CUSTOS_REQUIRE_7Z: '1'
-        run: .\build.ps1 -Configuration Release
+        run: .\build.ps1 -Configuration Release -Version 0.3.${{ github.run_number }} -TestUpdateVersion 0.3.${{ github.run_number }}.1
 
       - name: Upload the installer
         uses: actions/upload-artifact@v6
@@ -60,6 +63,40 @@ jobs:
           path: client/artifacts/installer/*.exe
           if-no-files-found: error
           retention-days: 14
+
+      # The update packages go up as they are (archive: false, the artifact is named after the file), so what is
+      # downloaded from the run page is the very zip the site takes. Wrapped into GitHub's own zip, it was refused
+      # by the site ("no manifest.json") when uploaded as downloaded.
+      - name: Upload the update package
+        uses: actions/upload-artifact@v7
+        with:
+          path: client/artifacts/update/custos-0.3.${{ github.run_number }}.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload the test update package
+        uses: actions/upload-artifact@v7
+        with:
+          path: client/artifacts/update-test/custos-0.3.${{ github.run_number }}.1-test.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      # Shown on the page of the run, above the files.
+      - name: Say what the files are for
+        shell: pwsh
+        run: |
+          $v = '0.3.${{ github.run_number }}'
+          @"
+          ### CUSTOS ${v}: что скачивать
+
+          | Файл | Что это |
+          |---|---|
+          | ``CUSTOS-Setup`` | Установщик версии ${v} (zip, внутри ``CUSTOS-Setup-${v}.exe``). |
+          | ``custos-${v}.zip`` | Пакет обновления ${v} для сайта, раздел «Обновления». Обновляет машины, где стоит более старая версия. Загружается на сайт как есть, без распаковки. |
+          | ``custos-${v}.1-test.zip`` | Пробное обновление: те же программы с версией ${v}.1. Нужно только для проверки обновления с сайта на машине, где уже стоит ${v}. Загружается на сайт как есть, без распаковки. |
+          "@ >> $env:GITHUB_STEP_SUMMARY
 
   # Dumps from real MySQL, MariaDB and PostgreSQL servers (section 6.2 of CUSTOS-client.md). Linux is enough: the
   # dumps are made by the servers' own programs, which run inside the containers (client/tools/ci-databases.sh).
@@ -131,3 +168,43 @@ jobs:
         env:
           CUSTOS_REQUIRE_SSH: '1'
         run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~RealRemote"
+
+  # The protocol against a real CUSTOS Monitor (server/): registration, approval, the configuration snapshot, run
+  # reports with a log, progress, the inventory and a command (RealMonitorTests). The server runs on PHP's own web
+  # server with MariaDB (client/tools/ci-monitor.sh).
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: custos-test
+          MARIADB_DATABASE: custos
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, openssl, curl, mbstring, zlib
+          tools: composer:v2
+          coverage: none
+
+      - name: Start the monitoring server
+        run: bash client/tools/ci-monitor.sh
+
+      - name: Test the protocol against it
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_MONITOR: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~RealMonitor"

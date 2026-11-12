@@ -44,6 +44,78 @@ public sealed class AgentSnapshot
 
     /// <summary>The computer is about to shut down, restart or sleep (section 6.9); every session shows a countdown.</summary>
     public PowerCountdown? Power { get; set; }
+
+    /// <summary>The connection to the monitoring server (section 8).</summary>
+    public ServerLinkInfo Server { get; set; } = new();
+}
+
+/// <summary>The connection to the monitoring server as the program window shows it.</summary>
+public sealed class ServerLinkInfo
+{
+    /// <summary>One of <see cref="ServerLinkStates"/>.</summary>
+    public string State { get; set; } = ServerLinkStates.Off;
+
+    /// <summary>What is wrong, in words, when the state is not a good one.</summary>
+    public string? Detail { get; set; }
+
+    public string? ServerUrl { get; set; }
+
+    /// <summary>The host name of <see cref="ServerUrl"/>, for the status bar.</summary>
+    public string? ServerHost { get; set; }
+
+    public string? ServerName { get; set; }
+
+    /// <summary>Fingerprint of the pinned server key (A.2), to compare with the site.</summary>
+    public string? ServerFingerprint { get; set; }
+
+    /// <summary>Fingerprint of the key of this agent; the site shows it on the machine page.</summary>
+    public string? AgentFingerprint { get; set; }
+
+    public string? AgentId { get; set; }
+
+    /// <summary>A registration code is stored (it is never shown again).</summary>
+    public bool HasCode { get; set; }
+
+    public DateTimeOffset? LastContact { get; set; }
+
+    /// <summary>Since when the server cannot be reached; null while it can.</summary>
+    public DateTimeOffset? OfflineSince { get; set; }
+
+    /// <summary>Reports waiting to be sent.</summary>
+    public int Waiting { get; set; }
+}
+
+/// <summary>Values of <see cref="ServerLinkInfo.State"/>.</summary>
+public static class ServerLinkStates
+{
+    /// <summary>No server: the program works on its own.</summary>
+    public const string Off = "off";
+
+    /// <summary>An address but no registration code.</summary>
+    public const string NoCode = "no_code";
+
+    public const string Connecting = "connecting";
+
+    /// <summary>The server did not accept the registration key (403 bad_registration_key).</summary>
+    public const string KeyRejected = "key_rejected";
+
+    /// <summary>The answer to the registration failed a check (signature, fingerprint, pinned key): see the detail.</summary>
+    public const string Refused = "refused";
+
+    public const string Pending = "pending";
+
+    public const string Approved = "approved";
+
+    public const string Disabled = "disabled";
+
+    /// <summary>The address of this computer is not in the networks the server allows for agents.</summary>
+    public const string Forbidden = "forbidden";
+
+    /// <summary>The clocks of this computer and of the server differ too much.</summary>
+    public const string ClockSkew = "clock_skew";
+
+    /// <summary>No answer, or no answer with a valid signature.</summary>
+    public const string Offline = "offline";
 }
 
 /// <summary>An action after a run that is counting down; <c>power.cancel</c> stops it.</summary>
@@ -517,4 +589,13 @@ public sealed class RestoreStatusResult
     public RestoreResult? Result { get; set; }
 
     public string? LogFile { get; set; }
+}
+
+/// <summary><see cref="PipeProtocol.Methods.ServerConnect"/>.</summary>
+public sealed class ServerConnectRequest
+{
+    public string ServerUrl { get; set; } = string.Empty;
+
+    /// <summary>The registration code as shown on the site: the key and, after «#», the fingerprint of the server key.</summary>
+    public string Code { get; set; } = string.Empty;
 }

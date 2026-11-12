@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Custos.Updater.exe: stops the service, replaces the program files, starts the service (section 3.1).
-       Only a placeholder until automatic updates arrive with the monitoring server (stage 3). -->
+  <!-- Custos.Updater.exe: stops the service, replaces the program files, starts the service (section 3.1, A.10).
+       The service runs a copy of it from C:\ProgramData\CUSTOS\updates, so it references nothing but .NET itself:
+       the four files Custos.Updater.* are all it needs. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -10,10 +11,7 @@
     <RootNamespace>Custos.Updater</RootNamespace>
     <AssemblyName>Custos.Updater</AssemblyName>
     <ApplicationIcon>..\Custos.Gui\Resources\custos.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Custos.Core\Custos.Core.csproj" />
-  </ItemGroup>
 
 </Project>
