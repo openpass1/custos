@@ -31,6 +31,21 @@ public interface IBackupPlatform
     /// <summary>Bytes the caller may still write at this path, or null if that is unknown.</summary>
     long? GetFreeSpace(string path);
 
+    /// <summary>Size of the volume at this path, or null if that is unknown.</summary>
+    long? GetTotalSpace(string path);
+
+    /// <summary>
+    /// The place a destination writes to (section 6.3): a folder of this computer, of a share or of a USB disk, or a
+    /// server. Nothing is connected yet; the first operation does that.
+    /// </summary>
+    /// <param name="session">The logon to use for a share; null = the store opens one of its own and closes it.</param>
+    /// <exception cref="BackupException">The destination cannot be used as it is set up (no such USB disk, no account).</exception>
+    Destinations.DestinationStore OpenStore(TaskDestination destination, INetworkSession? session = null);
+
+    /// <summary>Login and secret of an <c>ftp</c>, <c>sftp</c>, <c>s3</c> or <c>webdav</c> credential (section 6.3).</summary>
+    /// <exception cref="BackupException">There is no such credential or its secret cannot be read.</exception>
+    Destinations.StoreAccount GetStoreAccount(string credentialId);
+
     /// <summary>Keeps the computer from going to sleep until disposed (section 6.7).</summary>
     IDisposable KeepAwake(string reason);
 
@@ -233,6 +248,28 @@ public class LocalBackupPlatform : IBackupPlatform
             return null;
         }
     }
+
+    public virtual long? GetTotalSpace(string path)
+    {
+        try
+        {
+            string? root = Path.GetPathRoot(Path.GetFullPath(path));
+            return string.IsNullOrEmpty(root) ? null : new DriveInfo(root).TotalSize;
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    public virtual Destinations.DestinationStore OpenStore(TaskDestination destination, INetworkSession? session = null) =>
+        Destinations.DestinationStores.Open(this, destination, session);
+
+    /// <summary>Accounts of remote destinations by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, Destinations.StoreAccount> StoreAccounts { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual Destinations.StoreAccount GetStoreAccount(string credentialId) =>
+        StoreAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.StoreAccountMissing);
 
     public virtual IDisposable KeepAwake(string reason) => ProcessSession.Instance;
 

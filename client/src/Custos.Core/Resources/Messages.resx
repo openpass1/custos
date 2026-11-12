@@ -1521,4 +1521,82 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="MonitorPackageFileHash" xml:space="preserve">
     <value>the SHA-256 of {0} differs from manifest.json</value>
   </data>
+  <data name="StoreFileShorter" xml:space="preserve">
+    <value>The file in the destination is shorter than it should be.</value>
+  </data>
+  <data name="StoreFailed" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="StoreHttpFailed" xml:space="preserve">
+    <value>{0}: the server answered {1} ({2})</value>
+  </data>
+  <data name="StoreUnreachable" xml:space="preserve">
+    <value>{0}: no connection: {1}</value>
+  </data>
+  <data name="StoreNoAnswer" xml:space="preserve">
+    <value>the server did not answer in time</value>
+  </data>
+  <data name="StoreLoginRefused" xml:space="preserve">
+    <value>{0}: the server refused the login «{1}». Check the account of the destination.</value>
+  </data>
+  <data name="StoreFull" xml:space="preserve">
+    <value>{0}: there is no room left on the server.</value>
+  </data>
+  <data name="StoreUploadRefused" xml:space="preserve">
+    <value>the server did not take the file</value>
+  </data>
+  <data name="StoreHostMissing" xml:space="preserve">
+    <value>The server of the destination is not set.</value>
+  </data>
+  <data name="StoreBucketMissing" xml:space="preserve">
+    <value>The bucket of the destination is not set.</value>
+  </data>
+  <data name="StoreBucketNotFound" xml:space="preserve">
+    <value>{0}: there is no bucket «{1}».</value>
+  </data>
+  <data name="StoreAccountMissing" xml:space="preserve">
+    <value>The account of the destination is not set or its password cannot be read.</value>
+  </data>
+  <data name="StoreKeyBad" xml:space="preserve">
+    <value>The private key of the account cannot be read (a key protected by a passphrase is not supported): {0}</value>
+  </data>
+  <data name="StoreHostKeyNew" xml:space="preserve">
+    <value>{0}: the server shows the key {1}. Check it and confirm it in the destination («Test access»).</value>
+  </data>
+  <data name="StoreHostKeyChanged" xml:space="preserve">
+    <value>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If the server was reinstalled, check the new key and confirm it in the destination («Test access»); otherwise someone may be in the way.</value>
+  </data>
+  <data name="StoreCertificateUnknown" xml:space="preserve">
+    <value>{0}: Windows does not trust the certificate of the server (SHA-256 {1}). If it is your own server with a self-made certificate, check the fingerprint and confirm it in the destination («Test access»).</value>
+  </data>
+  <data name="StoreCertificateChanged" xml:space="preserve">
+    <value>{0}: THE CERTIFICATE OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If the certificate was renewed, check the new fingerprint and confirm it in the destination («Test access»); otherwise someone may be in the way.</value>
+  </data>
+  <data name="StoreObjectLockMissing" xml:space="preserve">
+    <value>The bucket «{0}» has no Object Lock, and the destination asks to protect the copies for {1} days. Object Lock is turned on when a bucket is created; make such a bucket or set the days to 0.</value>
+  </data>
+  <data name="StoreLockOn" xml:space="preserve">
+    <value>Object Lock: the bucket has it.</value>
+  </data>
+  <data name="StoreLockOnDefault" xml:space="preserve">
+    <value>Object Lock: the bucket has it; its own rule locks every object ({0}).</value>
+  </data>
+  <data name="StoreLockOff" xml:space="preserve">
+    <value>Object Lock: the bucket has none.</value>
+  </data>
+  <data name="StoreLockUnknown" xml:space="preserve">
+    <value>Object Lock: the server does not tell whether the bucket has it.</value>
+  </data>
+  <data name="StoreLockDefaultDays" xml:space="preserve">
+    <value>{0}, {1} days</value>
+  </data>
+  <data name="StoreLockDefaultYears" xml:space="preserve">
+    <value>{0}, {1} years</value>
+  </data>
+  <data name="StoreVersionsOn" xml:space="preserve">
+    <value>Versions: the bucket keeps versions of objects; CUSTOS deletes every version of what it deletes.</value>
+  </data>
+  <data name="StoreVersionsOff" xml:space="preserve">
+    <value>Versions: the bucket keeps none.</value>
+  </data>
 </root>

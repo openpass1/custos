@@ -303,6 +303,20 @@ public sealed class TaskDestination
     /// <summary>0 = no limit.</summary>
     public int SpeedLimitKbps { get; set; }
 
+    /// <summary>S3: every file of a set cannot be deleted for this many days after it is written (Object Lock,
+    /// section 6.3); 0 = off.</summary>
+    public int ObjectLockDays { get; set; }
+
+    /// <summary>S3: one of <see cref="ObjectLockModes"/>; null = <see cref="ObjectLockModes.Governance"/>.</summary>
+    public string? ObjectLockMode { get; set; }
+
+    /// <summary>
+    /// The server this destination trusts: the SSH key of an SFTP server ("SHA256:…") or the SHA-256 of a TLS
+    /// certificate Windows does not trust by itself ("AB:CD:…", FTPS, WebDAV, S3). Set on this computer only, by
+    /// «Проверить доступ»; null = an SFTP server is not confirmed yet, a TLS server must have a trusted certificate.
+    /// </summary>
+    public string? ServerFingerprint { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }

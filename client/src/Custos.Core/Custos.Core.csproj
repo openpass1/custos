@@ -19,6 +19,8 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SharpZipLib" />
     <PackageReference Include="SSH.NET" />
+    <PackageReference Include="FluentFTP" />
+    <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
   <ItemGroup>
