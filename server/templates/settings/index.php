@@ -57,6 +57,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     </label>
     <label><?= e(t('settings.heartbeat_interval_s')) ?>
         <input type="number" name="heartbeat_interval_s" value="<?= e($values['heartbeat_interval_s']) ?>" min="10" max="3600" required>
+        <span class="note"><?= e(t('settings.heartbeat_interval_s.hint')) ?></span>
     </label>
     <?= $error('heartbeat_interval_s') ?>
     <label><?= e(t('settings.offline_after_min')) ?>

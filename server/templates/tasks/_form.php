@@ -406,7 +406,7 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                 <input type="text" name="schedule[times]" value="<?= e(implode(', ', array_map('strval', (array) ($schedule['times'] ?? [])))) ?>"
                        class="mono" placeholder="00:00, 12:30" maxlength="500"></label>
             <label data-show-if="schedule[type]=interval"><?= e(t('task_form.schedule.interval')) ?>
-                <input type="number" name="schedule[interval_minutes]" value="<?= (int) ($schedule['interval_minutes'] ?? 0) ?>" min="1" max="1440" class="short"></label>
+                <input type="number" name="schedule[interval_minutes]" value="<?= (int) ($schedule['interval_minutes'] ?? 0) ?: 60 ?>" min="1" max="1440" class="short"></label>
         </div>
         <div data-show-if="schedule[type]=daily|weekly">
             <span class="label-text"><?= e(t('task_form.schedule.days_of_week')) ?></span>

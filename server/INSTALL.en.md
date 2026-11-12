@@ -418,6 +418,8 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.1.** No migrations. A new storage warning limit applies as soon as the settings are saved, not an hour later. Long pages get a "Back to top" button at the bottom right.
 
+**Version 0.4.2.** No migrations. Fixed: in the task and template editors, "Create task" and "Save" silently did not send the form when the schedule was not "by timer". The heartbeat interval has a hint: the smaller it is, the sooner a machine gets its approval and task edits.
+
 ## What to keep in backups
 
 - the `custos` database;

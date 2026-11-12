@@ -376,6 +376,8 @@ final class WebTest extends TestCase
         // A template from the task, applied to the machine: a second task appears there.
         [$status, $editor] = $this->http('GET', '/templates/new?agent=' . basename($agentUrl) . '&task=' . basename($taskUrl));
         $this->assertSame(200, $status);
+        // The timer field of a daily task is hidden; with 0 (below its min) the browser refused to send the form.
+        $this->assertMatchesRegularExpression('/name="schedule\[interval_minutes\]" value="60"/', $editor);
         $fields = self::withValues(self::formFields($editor, '/templates/new'), ['name' => 'Office documents']);
         [$status, , $headers] = $this->http('POST', '/templates/new', self::encode($fields));
         $this->assertSame(303, $status);

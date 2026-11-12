@@ -108,6 +108,9 @@ document.addEventListener('change', (event) => {
 //   the nearest [data-scope]; inside a row of a list the names are the last part: "kind" stands for sources[3][kind].
 // - [data-add-row="x"] adds a copy of <template data-row-template="x"> to [data-rows="x"]; [data-remove-row] removes
 //   its row ([data-row]).
+// - Hidden parts are left out of the browser's form check: a field of a hidden part (the timer interval of a daily
+//   task) cannot show its message, so the browser would silently refuse to send the form. Visible fields are checked
+//   as usual; the server checks everything again.
 // - In the task editor the account list of a row shows only accounts of the kind the row needs, and 7z is offered
 //   only while every destination can seek (client spec 6.5).
 (() => {
@@ -217,7 +220,35 @@ document.addEventListener('change', (event) => {
             update(event.target);
         }
     });
+    // Capture phase: runs before the data-confirm question, so nothing is asked about a form that cannot be sent yet.
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!form.hasAttribute('data-check-visible')) {
+            return;
+        }
+        for (const field of form.elements) {
+            if (!field.willValidate || field.closest('[hidden]') || field.checkValidity()) {
+                continue;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            const folded = field.closest('details:not([open])');
+            if (folded) {
+                folded.open = true;
+            }
+            field.reportValidity();
+            return;
+        }
+    }, true);
+
     if (document.querySelector('[data-show-if], [data-editor]')) {
+        for (const el of document.querySelectorAll('[data-show-if]')) {
+            const form = el.closest('form');
+            if (form) {
+                form.noValidate = true;
+                form.setAttribute('data-check-visible', '');
+            }
+        }
         update(null);
     }
 })();

@@ -1001,6 +1001,7 @@ return [
     'settings.general' => 'General',
     'settings.server_name' => 'Server name',
     'settings.heartbeat_interval_s' => 'Agent heartbeat interval, seconds',
+    'settings.heartbeat_interval_s.hint' => 'How often agents contact the site. Approval, task edits and commands reach a machine within this time. Less means a faster reaction but more requests: 15 seconds suit dozens of machines. An agent picks up the new value at its next contact.',
     'settings.offline_after_min' => 'A machine is "offline" after, minutes without heartbeat',
     'settings.networks' => 'Allowed networks',
     'settings.networks.hint' => 'Addresses or CIDR networks, one per line. An empty list means no limits. Your address now: {ip}.',
