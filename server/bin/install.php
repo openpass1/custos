@@ -124,8 +124,15 @@ if (is_string($language)) {
 
 Cli::info('');
 Cli::info('Server key fingerprint:  ' . $keys->fingerprint());
-Cli::info('Registration code:       ' . RegistrationKey::code($settings->get('registration_key'), $keys->fingerprint()));
-Cli::info('The code is also shown on the site under Settings.');
+// What a machine needs to connect, in one line: the site address and the registration code (A.3).
+$code = RegistrationKey::code($settings->get('registration_key'), $keys->fingerprint());
+if ($app->config->url() === '') {
+    Cli::info('Registration code:       ' . $code);
+    Cli::info("Set 'url' in config/config.php: the site then shows the connection string for the machines under Settings.");
+} else {
+    Cli::info('Connection string:       ' . RegistrationKey::connection($app->config->url(), $code));
+    Cli::info('It is also shown on the site under Settings.');
+}
 Cli::info('');
 Cli::info('Add a cron job that runs every minute:');
 Cli::info('  * * * * * ' . PHP_BINARY . ' ' . $app->root() . '/bin/cron.php');

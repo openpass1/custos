@@ -192,7 +192,7 @@ final class FakeAgent
         $this->registrationTried = true;
         $code = $this->options['code'];
         if ($code === null || $code === '') {
-            $this->problem('cannot register: no registration code, pass --code=KEY#FINGERPRINT');
+            $this->problem("cannot register: no registration code, pass --connect='CONNECTION STRING' from the site (Settings)");
             $this->nextRegistration = microtime(true) + 3600;
             return;
         }

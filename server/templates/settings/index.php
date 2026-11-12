@@ -1,10 +1,9 @@
 <?php
 /**
- * @var array $values @var array $errors @var ?string $registrationCode @var string $serverFingerprint
- * @var string $serverUrl @var string $myIp
+ * @var array $values @var array $errors @var string $serverFingerprint @var string $myIp
+ * @var ?string $connection the site address and the registration code in one line (A.3), null if it cannot be built
+ * @var string $connectionProblem the message key that says why
  */
-use Custos\Domain\RegistrationKey;
-
 $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">' . e($errors[$name]) . '</div>' : '';
 ?>
 <h1><?= e(t('settings.title')) ?></h1>
@@ -19,26 +18,14 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     <h2><?= e(t('settings.agents')) ?></h2>
     <p class="hint"><?= e(t('settings.agents.hint')) ?></p>
     <dl class="props">
-        <?php if ($registrationCode !== null && $serverUrl !== ''): ?>
-            <dt><?= e(t('settings.connection')) ?></dt>
-            <dd>
-                <span class="copy-row">
-                    <input type="text" id="connection-string" class="mono" value="<?= e(RegistrationKey::connection($serverUrl, $registrationCode)) ?>" readonly size="72">
-                    <button type="button" data-copy="connection-string"><?= e(t('common.copy')) ?></button>
-                </span>
-                <div class="note"><?= e(t('settings.connection.hint')) ?></div>
-            </dd>
-        <?php endif ?>
-        <dt><?= e(t('settings.server_url')) ?></dt>
-        <dd><code><?= e($serverUrl !== '' ? $serverUrl : '—') ?></code></dd>
-        <dt><?= e(t('settings.registration_code')) ?></dt>
+        <dt><?= e(t('settings.connection')) ?></dt>
         <dd>
-            <?php if ($registrationCode === null): ?>
-                <?= e(t('settings.registration_code.none')) ?>
+            <?php if ($connection === null): ?>
+                <?= e(t($connectionProblem)) ?>
             <?php else: ?>
                 <span class="copy-row">
-                    <input type="text" id="registration-code" class="mono" value="<?= e($registrationCode) ?>" readonly size="52">
-                    <button type="button" data-copy="registration-code"><?= e(t('common.copy')) ?></button>
+                    <input type="text" id="connection-string" class="mono" value="<?= e($connection) ?>" readonly size="72">
+                    <button type="button" data-copy="connection-string"><?= e(t('common.copy')) ?></button>
                 </span>
             <?php endif ?>
         </dd>

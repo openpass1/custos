@@ -13,12 +13,13 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use Custos\Tools\FakeAgent;
 
 const HELP = <<<'TEXT'
-Usage: php tools/fake-agent.php --url=http://custos.lan --code=KEY#FINGERPRINT [options]
-       php tools/fake-agent.php --code='http://custos.lan#KEY#FINGERPRINT' [options]
+Usage: php tools/fake-agent.php --connect='http://custos.lan#KEY#FINGERPRINT' [options]
+       php tools/fake-agent.php --url=http://custos.lan [options]
 
-  --url=URL          server address, as typed into the agent (no trailing slash)
-  --code=CODE        registration code from the site (Settings); needed for the first registration. The connection
-                     string from the site (address#code) also works and then gives the address too
+  --connect=STRING   connection string from the site (Settings): the server address and the registration code in one
+                     line; needed for the first registration
+  --url=URL          server address alone (no trailing slash), enough once the agent is registered
+  --code=CODE        registration code alone (KEY#FINGERPRINT), together with --url
   --count=N          number of agents, default 1 (FAKE-PC-01 ... FAKE-PC-NN)
   --name=PREFIX      host name prefix, default FAKE-PC
   --tz=ZONE          agent time zone (IANA), default UTC
@@ -66,14 +67,15 @@ if (isset($options['reset'])) {
 }
 
 // The connection string from the site is the address, "#" and the code (A.3).
-$code = is_string($options['code'] ?? null) ? trim($options['code']) : null;
+$code = $options['connect'] ?? $options['code'] ?? null;
+$code = is_string($code) ? trim($code) : null;
 if ($code !== null && preg_match('~^(https?://[^#]+)#(.+)$~i', $code, $m)) {
     $options['url'] ??= $m[1];
     $code = $m[2];
 }
 $url = rtrim((string) ($options['url'] ?? ''), '/');
 if (!preg_match('#^https?://#', $url)) {
-    fwrite(STDERR, "--url is required, for example --url=http://custos.lan\n");
+    fwrite(STDERR, "The server address is required: --connect='http://custos.lan#KEY#FINGERPRINT' or --url=http://custos.lan\n");
     exit(2);
 }
 $timeZone = (string) ($options['tz'] ?? 'UTC');
