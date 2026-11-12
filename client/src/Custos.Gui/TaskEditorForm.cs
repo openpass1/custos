@@ -280,7 +280,8 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     /// <summary>Raised when an account was added while the editor is open.</summary>
     public event EventHandler? CredentialsChanged;
 
-    /// <summary>Raised when the name, the backup type, the forced full backup or the archive format changed on their pages.</summary>
+    /// <summary>Raised when the name, the backup type, the forced full backup, the archive format or what the
+    /// destinations can take changed on their pages.</summary>
     public event EventHandler? ShapeChanged;
 
     /// <summary>The name as typed on the first page.</summary>
@@ -296,6 +297,23 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
 
     /// <summary>Whether a full backup is forced on the first page (every N-th run, a weekday or a day of the month).</summary>
     public bool HasForcedFull { get; private set; }
+
+    /// <summary>
+    /// A destination of the task that takes a file only from its start to its end (FTP, WebDAV, S3), in words; null
+    /// if there is none. A 7z archive cannot be written there (section 6.5).
+    /// </summary>
+    public string? StreamOnlyDestination
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
 
     /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
     public int DbServerCount { get; set; }

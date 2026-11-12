@@ -791,6 +791,10 @@ internal sealed class DestinationsPage : EditorPage
             _list.Items[selected].Selected = true;
         }
 
+        // The archive page offers 7z only while every destination lets a writer go back in the file.
+        Context.StreamOnlyDestination = _destinations.FirstOrDefault(d => !DestinationKinds.CanSeek(d.Kind)) is { } stream
+            ? TaskDescriber.Destination(stream)
+            : null;
         UpdateButtons();
     }
 
@@ -1110,6 +1114,7 @@ internal sealed class ArchivePage : EditorPage
     private readonly RadioButton _zip = new() { Text = Strings.ArchiveZip, AutoSize = true };
     private readonly RadioButton _sevenZip = new() { Text = Strings.ArchiveSevenZip, AutoSize = true };
     private readonly Label _sevenZipProblem = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(18, 0, 0, 6), Visible = false };
+    private readonly Label _sevenZipStream = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(18, 0, 0, 6), Visible = false };
     private readonly Label _mirrorNote = new() { Text = Strings.ArchiveMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly ComboBox _level = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 300 };
     private readonly CheckBox _split = new() { Text = Strings.ArchiveSplit, AutoSize = true };
@@ -1148,6 +1153,7 @@ internal sealed class ArchivePage : EditorPage
         AddWide(_zip, Strings.ArchiveZipHelp);
         AddWide(_sevenZip, Strings.ArchiveSevenZipHelp);
         AddWide(_sevenZipProblem);
+        AddWide(_sevenZipStream);
         AddNote(Strings.ArchiveOpenAnywhere);
         AddRow(Strings.ArchiveLevel, _level, Strings.ArchiveLevelHelp);
 
@@ -1247,7 +1253,14 @@ internal sealed class ArchivePage : EditorPage
         // A mirror keeps plain files: the format is "none" whatever is ticked.
         bool mirror = Context.IsMirror;
         _mirrorNote.Visible = mirror;
-        _none.Enabled = _zip.Enabled = _sevenZip.Enabled = !mirror;
+        _none.Enabled = _zip.Enabled = !mirror;
+
+        // 7z is not offered while a destination takes files from start to end only (section 6.5). A task that has
+        // both keeps its choice visible, with the reason why it cannot be saved like that.
+        string? stream = Context.StreamOnlyDestination;
+        _sevenZip.Enabled = !mirror && (stream is null || _sevenZip.Checked);
+        _sevenZipStream.Text = stream is null ? string.Empty : Strings.Format(Strings.ArchiveSevenZipNeedsSeek, stream);
+        _sevenZipStream.Visible = stream is not null && !mirror;
         Context.SetShape(archiveFormat: mirror ? ArchiveFormats.None : SelectedFormat);
         bool packed = !_none.Checked && !mirror;
         _level.Enabled = packed;

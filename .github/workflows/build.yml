@@ -172,9 +172,13 @@ jobs:
   # Remote destinations of stage 4 (section 6.3 of CUSTOS-client.md) against real servers on the runner: OpenSSH,
   # vsftpd with and without TLS, Apache WebDAV over http and https, and MinIO with Object Lock
   # (client/tools/ci-destinations.sh). Whole runs go through the backup engine: copy, verify, restore, retention.
+  # MinIO publishes neither images nor programs any more, so the script builds the server from its source with Go
+  # (the version below, checked by Go's checksum database); the cache keeps the built program for the next runs.
   destinations:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      MINIO_VERSION: v0.0.0-20260212201848-7aac2a2c5b7c
     steps:
       - uses: actions/checkout@v6
 
@@ -182,7 +186,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Keep the built S3 server between runs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/custos-ci
+          key: minio-${{ env.MINIO_VERSION }}
+
       - name: Start the servers
+        env:
+          CUSTOS_MINIO: build
         run: bash client/tools/ci-destinations.sh
 
       - name: Test the destinations

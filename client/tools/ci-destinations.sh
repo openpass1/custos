@@ -6,7 +6,9 @@
 #   FTP      vsftpd on port 2121
 #   FTPS     vsftpd on port 2122, explicit TLS with a self-signed certificate
 #   WebDAV   Apache mod_dav on http://127.0.0.1:8081/dav and https://127.0.0.1:8443/dav (the same certificate)
-#   S3       MinIO in Docker on port 9000; without Docker, moto_server if it is installed (development)
+#   S3       MinIO on port 9000, built from its source with Go when CUSTOS_MINIO=build (the CI job; MinIO no longer
+#            publishes programs or images); otherwise moto_server if it is installed (development: it checks no
+#            passwords and has no Object Lock, so those tests are skipped)
 #
 # Needs root (or sudo without a password) and the packages openssh-server, vsftpd, apache2. Writes the variables
 # CUSTOS_TEST_SFTP, _FTP, _FTPS, _WEBDAV, _WEBDAVS and _S3 to GITHUB_ENV. Run again, it starts everything afresh.
@@ -151,15 +153,21 @@ EOF
 s3_key=custosminio
 s3_secret='Minio-Test-Secret-2026'
 s3_kind=
-if docker info > /dev/null 2>&1; then
-  # A fixed release, so that a change of MinIO does not break the tests; the latest one if that release is gone.
-  image=${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}
-  docker pull --quiet "$image" > /dev/null 2>&1 || image=minio/minio:latest
-  echo "S3: $image"
-  docker rm -f custos-minio > /dev/null 2>&1 || true
-  docker run --detach --name custos-minio --publish 127.0.0.1:9000:9000 \
-    --env MINIO_ROOT_USER="$s3_key" --env MINIO_ROOT_PASSWORD="$s3_secret" \
-    "$image" server /data > /dev/null
+# The last version of the MinIO server, as the Go module proxy names it; its checksum is checked by Go (sum.golang.org).
+minio_version=${MINIO_VERSION:-v0.0.0-20260212201848-7aac2a2c5b7c}
+minio=${CUSTOS_CI_CACHE:-$HOME/.cache/custos-ci}/minio-$minio_version
+if [[ ${CUSTOS_MINIO:-} == build && ! -x $minio ]]; then
+  echo "S3: building MinIO $minio_version (a few minutes; the CI job keeps the result for the next runs)"
+  command -v go > /dev/null || { echo "Go is needed to build MinIO" >&2; exit 1; }
+  mkdir -p "$(dirname "$minio")"
+  GOBIN=$dir/gobin GOTOOLCHAIN=auto CGO_ENABLED=0 go install -ldflags '-s -w' "github.com/minio/minio@$minio_version"
+  mv "$dir/gobin/minio" "$minio"
+fi
+if [[ ${CUSTOS_MINIO:-} == build ]]; then
+  mkdir -p "$dir/minio-data"
+  MINIO_ROOT_USER="$s3_key" MINIO_ROOT_PASSWORD="$s3_secret" MINIO_BROWSER=off MINIO_UPDATE=off \
+    nohup "$minio" server --quiet --address 127.0.0.1:9000 "$dir/minio-data" > "$dir/minio.log" 2>&1 &
+  echo $! > "$dir/minio.pid"
   s3_kind=minio
 else
   moto=$(command -v moto_server || true)
@@ -195,6 +203,6 @@ ssh-keyscan -p 2223 127.0.0.1 2> /dev/null | ssh-keygen -lf -
   echo "CUSTOS_TEST_WEBDAVS=https://127.0.0.1:8443/dav|$user|$password"
 } >> "$out"
 if [[ -n $s3_kind ]]; then
-  wait_port 9000
+  wait_port 9000 || { cat "$dir"/minio.log "$dir"/moto.log 2> /dev/null; exit 1; }
   echo "CUSTOS_TEST_S3=http://127.0.0.1:9000|$s3_key|$s3_secret|$s3_kind" >> "$out"
 fi

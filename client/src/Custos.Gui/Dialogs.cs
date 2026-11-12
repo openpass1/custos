@@ -417,9 +417,11 @@ internal sealed class DestinationDialog : DialogForm
         _lockMode.SelectedIndex = destination.ObjectLockMode == ObjectLockModes.Compliance ? 1 : 0;
         _account.SelectedId = destination.CredentialId;
         _fingerprint = string.IsNullOrWhiteSpace(destination.ServerFingerprint) ? null : destination.ServerFingerprint;
+
+        // Before the fields are shown: showing them looks whether the server is still the one the key belongs to.
+        _fingerprintOf = ServerOf();
         _filling = false;
         UpdateFields();
-        _fingerprintOf = ServerOf();
 
         _kind.SelectedIndexChanged += (_, _) => UpdateFields();
         _path.TextChanged += (_, _) =>

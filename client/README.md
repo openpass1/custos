@@ -24,8 +24,8 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 The installer appears in `artifacts\installer\CUSTOS-Setup-<version>.exe`, the update package for the monitoring
 server in `artifacts\update\custos-<version>.zip` (the program files and `manifest.json` with the SHA-256 of each).
-Options: `-SkipTests`, `-SkipInstaller`, `-Version 0.3.1`, `-TestUpdateVersion 0.3.1.1` (also builds the same code
-with a higher version into `artifacts\update-test\custos-0.3.1.1-test.zip`, to try an update from the server on a
+Options: `-SkipTests`, `-SkipInstaller`, `-Version 0.4.1`, `-TestUpdateVersion 0.4.1.1` (also builds the same code
+with a higher version into `artifacts\update-test\custos-0.4.1.1-test.zip`, to try an update from the server on a
 machine installed from this very build), `-RefreshRuntime`. The first build downloads the .NET Desktop Runtime
 installer (about 60 MB) into `installer\redist`; it is bundled into setup.exe so that target machines need no internet.
 
@@ -38,13 +38,17 @@ newer 7-Zip is out, with the values to paste.
 
 GitHub Actions runs the same script on every change under `client/` (workflow `Client build`) and keeps three files
 for 14 days: the installer (`CUSTOS-Setup`, a zip around the .exe) and two files that go to the site as they are,
-without unpacking: the update package `custos-0.3.<run number>.zip` and a test update
-`custos-0.3.<run number>.1-test.zip`. Each run has its own version `0.3.<run number>`, so a newer build can be
+without unpacking: the update package `custos-0.4.<run number>.zip` and a test update
+`custos-0.4.<run number>.1-test.zip`. Each run has its own version `0.4.<run number>`, so a newer build can be
 installed over an older one from the server. The update package has the version of the installer of the same run: it
 updates machines that run an older build. The test update is the same code with a higher version, to try an update
 from the site on a machine that was just installed from this run. The page of a run says the same above the files.
 The job `monitor` checks the whole protocol against a real CUSTOS Monitor (`server/`, PHP's own web server and
-MariaDB).
+MariaDB). The job `destinations` runs whole backups into real servers on the runner: OpenSSH, vsftpd with and without
+TLS, Apache WebDAV over http and https, MinIO with Object Lock ([`tools/ci-destinations.sh`](tools/ci-destinations.sh);
+the same script starts the servers on a development machine and prints the `CUSTOS_TEST_*` variables the tests read).
+MinIO no longer publishes programs or images, so the job builds the server from its source with Go at a fixed version
+and keeps the result in the Actions cache.
 
 For development: `dotnet build Custos.sln` and `dotnet test Custos.sln`. The solution also builds on Linux and macOS
 (tests that need Windows are skipped there, and the window tests are not run).
@@ -105,6 +109,86 @@ open the first part.
   для сервера. Настройки (`/etc` и папки `etc`) распаковываются на сервере в `/root/old-etc`, не поверх системы.
 - Если сервер отдаёт данные быстрее, чем архив успевает сжимать (больше 256 МБ ждут в памяти), запуск прерывается:
   задайте ограничение скорости в окне сервера или уменьшите степень сжатия.
+
+## Копии на серверах: SFTP, FTP, WebDAV, S3
+
+Назначением задания может быть сервер: «Сервер SFTP», «Сервер FTP», «Сервер FTP с шифрованием (FTPS)», «WebDAV»
+(в том числе Nextcloud) и «Хранилище S3» (Amazon S3 и совместимые: MinIO, облачные провайдеры). На сервере работает
+всё то же, что в папке: архивы и копии без сжатия, зеркало, хранение, проверка, восстановление.
+
+- **Учётные записи** серверов добавляются там же, где учётные записи сетевых папок: «Настройки» → «Учётные записи»
+  или кнопкой «Добавить…» в окне назначения. FTP и WebDAV: пользователь и пароль. S3: ключ доступа и секретный ключ.
+  SFTP: пароль или закрытый ключ в формате OpenSSH или PEM без пароля на ключе (ключ PuTTY `.ppk` сначала
+  преобразуйте: PuTTYgen → Conversions → Export OpenSSH key).
+- **Ключ сервера.** При первом «Проверить доступ» к серверу SFTP программа показывает отпечаток его ключа
+  (`SHA256:…`). Сравните его с тем, что показывает на сервере `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`, и
+  подтвердите. То же с сертификатом FTPS, WebDAV или S3, которому Windows не доверяет (самоподписанный). Если ключ
+  или сертификат потом изменится, задание остановится, ничего не отправив, и скажет об этом в журнале: подтвердите
+  новый в окне назначения, только если знаете, почему он изменился. С сайта мониторинга подтвердить ключ нельзя.
+- **7z** пишется только туда, где можно вернуться к началу файла: папка, сетевая папка, USB-диск, SFTP. Для FTP,
+  WebDAV и S3 выберите ZIP или копию без сжатия.
+- **Ограничение скорости** задаётся у назначения в КБ/с (сетевые папки и серверы), 0 — без ограничения.
+- **Зеркало на сервере** сравнивает файлы по размеру и по времени из своего списка прошлого запуска: большинство
+  серверов не хранит время файла таким, каким его прислали. Файл, который кто-то заменил прямо на сервере другим
+  того же размера, зеркало не заметит.
+- Права NTFS и время изменения файлов на серверах не хранятся; при восстановлении время берётся из списка набора.
+
+### S3: права ключа и защита от удаления (Object Lock)
+
+CUSTOS бакеты не создаёт и их настройки не меняет. Создайте бакет сами и дайте ключу CUSTOS только эти права
+(пример политики AWS; `office-backup` замените именем своего бакета):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:ListBucketVersions",
+        "s3:GetBucketVersioning",
+        "s3:GetBucketObjectLockConfiguration"
+      ],
+      "Resource": "arn:aws:s3:::office-backup"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:GetObjectRetention",
+        "s3:PutObject",
+        "s3:PutObjectRetention",
+        "s3:AbortMultipartUpload",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion"
+      ],
+      "Resource": "arn:aws:s3:::office-backup/*"
+    }
+  ]
+}
+```
+
+Чего в политике быть **не должно**: `s3:BypassGovernanceRetention` (снимает защиту в режиме Governance),
+`s3:PutBucketObjectLockConfiguration`, `s3:PutBucketVersioning`, `s3:PutLifecycleConfiguration`, `s3:DeleteBucket`
+и вообще `s3:*`. Тогда тот, кто получил ключ CUSTOS (например, шифровальщик на этом компьютере), защищённые копии
+до срока удалить не сможет.
+
+- **Object Lock включают при создании бакета**, потом это сделать нельзя (у MinIO: `mc mb --with-lock`). В окне
+  назначения «Проверить доступ» пишет, есть ли он у бакета.
+- «Защита от удаления», дней: каждый файл набора нельзя удалить или заменить столько дней после записи. Режим
+  **Governance** (по умолчанию): владелец хранилища с особым правом может снять защиту, например чтобы освободить
+  место после ошибки. Режим **Compliance**: до срока защиту не снимет никто, включая владельца и провайдера; место
+  под такие копии оплачивается до конца срока.
+- Защита работает с архивами и с «отдельной папкой для каждой копии». Зеркало и общая папка заменяют файлы, поэтому
+  с защитой не сохраняются.
+- Хранение пропускает набор, срок защиты которого не вышел (в журнале: «защищён от удаления до …»), и удаляет его
+  первым запуском после срока, вместе со всеми версиями объектов. Дней защиты разумно ставить не больше срока
+  хранения.
+- Что неудачный запуск успел записать в бакет с защитой, лежит там до конца срока, как и всё остальное.
+- Добавьте в бакет правило жизненного цикла, которое удаляет незавершённые загрузки (incomplete multipart uploads)
+  старше нескольких дней: после сбоя связи или питания такие части остаются и занимают место.
 
 ## Сервер мониторинга
 

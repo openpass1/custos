@@ -171,10 +171,7 @@ public sealed partial class ConfigStore
 
             Normalize(task);
             var existing = Find(task.Id);
-            if (existing is not null)
-            {
-                KeepLocalFields(task, existing);
-            }
+            KeepLocalFields(task, existing);
 
             Validate(task, stored.Select(c => c.Credential.Id).ToHashSet(StringComparer.OrdinalIgnoreCase));
             bool conflict = existing is not null && existing.Revision != baseRevision;
@@ -335,22 +332,30 @@ public sealed partial class ConfigStore
         }
     }
 
-    /// <summary>What only this computer knows stays as it is (A.9): the pinned keys of Linux servers and of the
-    /// servers of destinations, whose profile the paths use.</summary>
-    private static void KeepLocalFields(TaskDefinition task, TaskDefinition existing)
+    /// <summary>
+    /// What only this computer knows stays as it is (A.9): the pinned keys of Linux servers and of the servers of
+    /// destinations, whose profile the paths use. The key or certificate of a destination is confirmed by an
+    /// administrator of this computer; one that comes from the site is never taken, or whoever changes tasks on the
+    /// site could point a destination at a server of their own.
+    /// </summary>
+    private static void KeepLocalFields(TaskDefinition task, TaskDefinition? existing)
     {
-        task.ProfileSid ??= existing.ProfileSid;
-        foreach (var destination in task.Destinations.Where(d => !DestinationKinds.IsFileSystem(d.Kind)))
+        foreach (var destination in task.Destinations)
         {
-            var old = existing.Destinations.FirstOrDefault(d => string.Equals(d.Id, destination.Id, StringComparison.OrdinalIgnoreCase));
-            if (old is not null && old.Kind == destination.Kind && old.Port == destination.Port
-                && string.Equals(old.Host, destination.Host, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(old.Endpoint, destination.Endpoint, StringComparison.OrdinalIgnoreCase))
-            {
-                destination.ServerFingerprint = old.ServerFingerprint;
-            }
+            var old = existing?.Destinations.FirstOrDefault(d => string.Equals(d.Id, destination.Id, StringComparison.OrdinalIgnoreCase));
+            bool sameServer = old is not null && !DestinationKinds.IsFileSystem(destination.Kind)
+                && old.Kind == destination.Kind && old.Port == destination.Port
+                && string.Equals(old.Host?.Trim(), destination.Host?.Trim(), StringComparison.OrdinalIgnoreCase)
+                && string.Equals(old.Endpoint?.Trim(), destination.Endpoint?.Trim(), StringComparison.OrdinalIgnoreCase);
+            destination.ServerFingerprint = sameServer ? old!.ServerFingerprint : null;
         }
 
+        if (existing is null)
+        {
+            return;
+        }
+
+        task.ProfileSid ??= existing.ProfileSid;
         foreach (var source in task.Sources.Where(s => s.Kind == SourceKinds.Ssh))
         {
             var old = existing.Sources.FirstOrDefault(s => string.Equals(s.Id, source.Id, StringComparison.OrdinalIgnoreCase) && s.Kind == SourceKinds.Ssh);

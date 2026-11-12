@@ -147,7 +147,9 @@ public sealed class DialogTests
         Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Ftp, Host = "ftp.example.org" }));
         Assert.Equal(Strings.ErrorPortBad, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Ftps, Host = "ftp.example.org", Port = 70000 }));
         Assert.Equal(Strings.ErrorAccountRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Sftp, Host = "backup.example.org" }));
-        Assert.Equal(Strings.ErrorAddressRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.WebDav, Host = "dav" }));
+        Assert.Equal(Strings.ErrorAddressRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.WebDav, Path = "office" }));
+        Assert.Equal(Strings.ErrorAddressRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.WebDav, Host = "ftp://dav.example.org" }));
+        Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.WebDav, Host = "dav.example.org" }));
         Assert.Equal(Strings.ErrorBucketRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.S3, CredentialId = Samples.S3AccountId }));
         Assert.Equal(Strings.ErrorAccountRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.S3, Bucket = "office-backup" }));
         foreach (string kind in new[] { DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3 })

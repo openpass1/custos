@@ -130,8 +130,20 @@ public sealed class EditorTests
         editor.Show();
         Sta.Pump();
 
+        string why = Strings.Format(Strings.ArchiveSevenZipNeedsSeek, TaskDescriber.Destination(Samples.Remote(kind)));
         Assert.Null(editor.Collect(out string? problem));
-        Assert.Equal(Strings.Format(Strings.ArchiveSevenZipNeedsSeek, TaskDescriber.Destination(Samples.Remote(kind))), problem);
+        Assert.Equal(why, problem);
+
+        // The page says why, and once another format is chosen 7z is no longer offered.
+        editor.SelectPage(editor.Pages[5]);
+        Sta.Pump();
+        Assert.True(Sta.Shows(editor.Pages[5], why));
+        Sta.Find<RadioButton>(editor.Pages[5]).Single(r => r.Text == Strings.ArchiveZip).Checked = true;
+        Sta.Pump();
+
+        Assert.False(Sta.Find<RadioButton>(editor.Pages[5]).Single(r => r.Text == Strings.ArchiveSevenZip).Enabled);
+        Assert.Equal(ArchiveFormats.Zip, editor.Collect(out problem)!.Archive.Format);
+        Assert.Null(problem);
     });
 
     [Fact]
