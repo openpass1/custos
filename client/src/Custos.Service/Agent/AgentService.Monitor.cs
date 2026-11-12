@@ -4,6 +4,7 @@ using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Destinations;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Monitor;
@@ -633,7 +634,10 @@ internal sealed partial class AgentService : IMonitorHost
                 continue;
             }
 
-            string shownPath = destination.Kind == DestinationKinds.Usb ? Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel) : destination.Path;
+            // What the server shows: the path as it was typed, or the address of a remote destination.
+            string shownPath = DestinationKinds.IsFileSystem(destination.Kind) && destination.Kind != DestinationKinds.Usb
+                ? destination.Path
+                : DestinationStores.Label(destination);
             destination.Path = variables.Expand(destination.Path, out string? problem);
             if (problem is not null)
             {
@@ -642,52 +646,43 @@ internal sealed partial class AgentService : IMonitorHost
 
             try
             {
-                using var session = Platform.OpenSession(destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null);
-                var access = new ArchiveAccess(Platform.Archives, password, session);
-                var entry = session.Run(() =>
+                using var store = Platform.OpenStore(destination);
+                if (store.HasFolders && !store.FolderExists(store.Root))
                 {
-                    string root = BackupEngine.ResolveRoot(Platform, destination);
-                    if (!Directory.Exists(root))
-                    {
-                        return null;
-                    }
-
-                    var sets = SetCatalog.Scan(root, task.Id, access, mirror: true);
-                    bool space = NativeMethods.GetDiskFreeSpaceEx(root, out ulong free, out ulong total, out _);
-                    return new InventoryDestination
-                    {
-                        TaskId = task.Id,
-                        DestinationId = destination.Id,
-                        Kind = destination.Kind,
-                        Path = shownPath,
-                        TotalBytes = space ? (long)total : null,
-                        FreeBytes = space ? (long)free : null,
-                        Sets =
-                        [
-                            .. sets.Select(set =>
-                            {
-                                var found = checks.TryGetValue((destination.Id.ToUpperInvariant(), set.Header.SetName), out var check);
-                                return new InventorySet
-                                {
-                                    Name = set.Header.SetName,
-                                    Type = set.Header.BackupType,
-                                    Time = set.Header.StartedAt,
-                                    Bytes = set.Storage == SetStorage.Archive ? set.Bytes : set.Header.SetBytes,
-                                    VerifiedAt = found ? check.CheckedAt : null,
-                                    VerifyOk = found ? check.Ok : null,
-                                };
-                            }),
-                        ],
-                    };
-                });
-                if (entry is not null)
-                {
-                    result.Add(entry);
+                    continue;
                 }
+
+                var sets = SetCatalog.Scan(store, store.Root, task.Id, new ArchiveAccess(Platform.Archives, password, store), mirror: true);
+                var space = store.GetSpace(store.Root);
+                result.Add(new InventoryDestination
+                {
+                    TaskId = task.Id,
+                    DestinationId = destination.Id,
+                    Kind = destination.Kind,
+                    Path = shownPath,
+                    TotalBytes = space.TotalBytes,
+                    FreeBytes = space.FreeBytes,
+                    Sets =
+                    [
+                        .. sets.Select(set =>
+                        {
+                            var found = checks.TryGetValue((destination.Id.ToUpperInvariant(), set.Header.SetName), out var check);
+                            return new InventorySet
+                            {
+                                Name = set.Header.SetName,
+                                Type = set.Header.BackupType,
+                                Time = set.Header.StartedAt,
+                                Bytes = set.Storage == SetStorage.Archive ? set.Bytes : set.Header.SetBytes,
+                                VerifiedAt = found ? check.CheckedAt : null,
+                                VerifyOk = found ? check.Ok : null,
+                            };
+                        }),
+                    ],
+                });
             }
             catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException)
             {
-                // Not reachable now (a USB disk that is not plugged in, a share that is down).
+                // Not reachable now (a USB disk that is not plugged in, a share or a server that is down).
             }
         }
 

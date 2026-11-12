@@ -9,6 +9,7 @@ using Custos.Core.Agent;
 using Custos.Core.Archives;
 using Custos.Core.Backup;
 using Custos.Core.Databases;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Microsoft.Win32.SafeHandles;
 
@@ -113,6 +114,32 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
     {
         string directory = Path.TrimEndingDirectorySeparator(path) + "\\";
         return NativeMethods.GetDiskFreeSpaceEx(directory, out ulong available, out _, out _) ? (long)Math.Min(available, long.MaxValue) : null;
+    }
+
+    public override long? GetTotalSpace(string path)
+    {
+        string directory = Path.TrimEndingDirectorySeparator(path) + "\\";
+        return NativeMethods.GetDiskFreeSpaceEx(directory, out _, out ulong total, out _) ? (long)Math.Min(total, long.MaxValue) : null;
+    }
+
+    /// <summary>The stored account of an FTP, SFTP or WebDAV server or of an S3 bucket (section 6.3).</summary>
+    public override StoreAccount GetStoreAccount(string credentialId)
+    {
+        var credential = config.GetCredential(credentialId);
+        if (credential is null
+            || credential.Kind is not (CredentialKinds.Ftp or CredentialKinds.Sftp or CredentialKinds.WebDav or CredentialKinds.S3))
+        {
+            throw new BackupException(Messages.StoreAccountMissing);
+        }
+
+        try
+        {
+            return new StoreAccount(credential.User, config.GetPassword(credentialId) ?? string.Empty);
+        }
+        catch (ConfigException ex)
+        {
+            throw new BackupException(ex.Message, ex);
+        }
     }
 
     public override IDisposable KeepAwake(string reason) => PowerRequest.Create(reason);

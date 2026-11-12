@@ -39,7 +39,8 @@ public sealed class RestoreRequest
     /// <see cref="TargetFolder"/>. With both null the dumps are not restored.</summary>
     public string? DumpsFolder { get; init; }
 
-    /// <summary>Reads the sets (password and network logon of the destination).</summary>
+    /// <summary>Reads the sets: the destination they lie in (a folder, a share with its logon, a server) and the
+    /// password of the archives.</summary>
     public required ArchiveAccess Access { get; init; }
 
     /// <summary>The logon to write the restored files with.</summary>
@@ -111,6 +112,12 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
     {
         ArgumentNullException.ThrowIfNull(request);
         var result = new RestoreResult();
+        if (!ReferenceEquals(request.Access.Store, Destinations.LocalStore.Default))
+        {
+            // Stopping the restore also stops a download that is under way.
+            request.Access.Store.Cancellation = cancellationToken;
+        }
+
         var chain = SetCatalog.RestoreChain(request.Sets, request.Set);
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreStarted, request.Set.Header.SetName,
             request.TargetFolder ?? Messages.RestoreToOriginal, string.Join(", ", chain.Select(s => s.Header.SetName))));
@@ -122,7 +129,7 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
         var manifests = new List<(StoredSet Set, Dictionary<string, ManifestFile> Files)>();
         foreach (var set in chain)
         {
-            var files = request.Access.Session.Run(() => SetCatalog.ReadManifest(set, request.Access).Files);
+            var files = SetCatalog.ReadManifest(set, request.Access).Files;
             manifests.Add((set, files.ToDictionary(f => Key(f.Path), StringComparer.OrdinalIgnoreCase)));
         }
 
@@ -144,11 +151,8 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
 
             if (!entries.TryGetValue(set, out var present))
             {
-                entries[set] = present = request.Access.Session.Run(() =>
-                {
-                    using var reader = request.Access.Open(set);
-                    return reader.Entries.Where(e => !e.IsFolder).Select(e => Key(e.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                });
+                using var reader = request.Access.Open(set);
+                entries[set] = present = reader.Entries.Where(e => !e.IsFolder).Select(e => Key(e.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
             }
 
             return present.Contains(key);
@@ -296,8 +300,8 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
         Output? output = null;
         try
         {
-            using var input = request.Access.Session.Run(() => new FileStream(
-                Path.Combine(set.Location, Local(ArchivePaths.ToWindows(planned.File.Path))), FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan));
+            var store = request.Access.Store;
+            using var input = store.OpenRead(store.Combine(set.Location, planned.File.Path));
             output = Output.Create(request.WriteSession, planned.Destination);
             var buffer = new byte[BufferSize];
             int read;

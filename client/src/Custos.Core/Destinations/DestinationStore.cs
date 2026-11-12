@@ -56,6 +56,12 @@ public abstract class DestinationStore : IDisposable
     /// <summary>Stops long network operations when the run is stopped.</summary>
     public CancellationToken Cancellation { get; set; }
 
+    /// <summary>
+    /// Files are written with the protection from deletion the destination asks for (S3 Object Lock, section 6.3).
+    /// «Проверить доступ» turns it off for its trial file, which it deletes at once. Means something for S3 only.
+    /// </summary>
+    public bool LockWrites { get; set; } = true;
+
     /// <summary>Files are opened with low I/O priority (section 6.5); only local stores have such a thing.</summary>
     public bool LowPriority { get; set; }
 
@@ -175,6 +181,35 @@ public abstract class DestinationStore : IDisposable
     /// <summary>Facts about the destination for «Проверить доступ», in words; empty for most kinds.</summary>
     public virtual IReadOnlyList<string> Describe() => [];
 
+    /// <summary>
+    /// Tries what a run does here («Проверить доступ»): makes the folder, writes a small file, gives it its name and
+    /// deletes it. Nothing is left behind, and the trial file is not protected from deletion.
+    /// </summary>
+    public virtual void Probe()
+    {
+        bool locks = LockWrites;
+        LockWrites = false;
+        try
+        {
+            CreateFolder(Root);
+            string path = Combine(Root, ProbeName());
+            using (var writer = BeginWrite(path, Backup.BackupEngine.TempSuffix, StoreWriteMode.Stream))
+            {
+                writer.Stream.Write("CUSTOS"u8);
+                writer.Commit();
+            }
+
+            DeleteFile(path);
+        }
+        finally
+        {
+            LockWrites = locks;
+        }
+    }
+
+    /// <summary>A name for the trial file of <see cref="Probe"/>.</summary>
+    protected static string ProbeName() => ".custos-test-" + Guid.NewGuid().ToString("N")[..8] + ".tmp";
+
     public void Dispose()
     {
         Dispose(disposing: true);
@@ -212,6 +247,10 @@ public abstract class StoreWriter : IDisposable
 
     /// <summary>The file has its name already after <see cref="Close"/> (no temporary name: S3).</summary>
     public virtual bool VisibleWhenClosed => false;
+
+    /// <summary>The file is on the disk, not in the cache of the system, when <see cref="Close"/> returns (a manifest).
+    /// Means something for local stores only.</summary>
+    public bool Durable { get; set; }
 
     /// <summary>Ends the writing: everything is in the destination. May be called more than once.</summary>
     public abstract void Close();

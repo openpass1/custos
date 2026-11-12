@@ -1599,4 +1599,13 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="StoreVersionsOff" xml:space="preserve">
     <value>Versions: the bucket keeps none.</value>
   </data>
+  <data name="SevenZipNeedsSeek" xml:space="preserve">
+    <value>A 7z archive cannot be written to {0}: such a destination takes a file only from its start to its end, and 7z goes back to the start when the archive is complete. Choose ZIP or no compression, or another destination.</value>
+  </data>
+  <data name="ObjectLockNeedsSets" xml:space="preserve">
+    <value>{0}: protection from deletion (Object Lock) works only with copies that are never overwritten: archives or a separate folder for each copy. A mirror and a shared folder replace files, and a locked file cannot be replaced.</value>
+  </data>
+  <data name="SetLocked" xml:space="preserve">
+    <value>Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.</value>
+  </data>
 </root>

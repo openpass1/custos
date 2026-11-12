@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Custos.Core.Archives;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 
 namespace Custos.Core.Backup;
@@ -36,18 +37,19 @@ public sealed record StoredSet(string Location, SetManifestHeader Header)
     public IReadOnlyList<string> AllParts => Storage == SetStorage.Folder ? [Location] : Parts;
 }
 
-/// <summary>Opens archives of a task: the formats, the password of the task and the network logon of the destination.</summary>
-public sealed class ArchiveAccess(IArchiveProvider provider, string? password, INetworkSession? session = null)
+/// <summary>Opens archives of a task: the formats, the password of the task and the destination they lie in.</summary>
+public sealed class ArchiveAccess(IArchiveProvider provider, string? password, DestinationStore? store = null)
 {
     public IArchiveProvider Provider { get; } = provider;
 
     public string? Password { get; } = password;
 
-    /// <summary>Every file is opened inside this logon, also the volumes 7-Zip reaches later from its own threads.</summary>
-    public INetworkSession Session { get; } = session ?? ProcessSession.Instance;
+    /// <summary>Where the sets lie: every file is opened through it, also the volumes 7-Zip reaches later from its
+    /// own threads. Without one: plain files of this computer.</summary>
+    public DestinationStore Store { get; } = store ?? LocalStore.Default;
 
-    /// <summary>The same access through another network logon.</summary>
-    public ArchiveAccess WithSession(INetworkSession other) => new(Provider, Password, other);
+    /// <summary>The same access to another destination.</summary>
+    public ArchiveAccess WithStore(DestinationStore other) => new(Provider, Password, other);
 
     /// <summary>Opens a stored archive set.</summary>
     /// <exception cref="ArchiveException">It cannot be opened.</exception>
@@ -62,18 +64,27 @@ public sealed class ArchiveAccess(IArchiveProvider provider, string? password, I
     public IArchiveReader Open(string format, IReadOnlyList<string> parts)
     {
         ArgumentNullException.ThrowIfNull(parts);
-        var session = Session;
+        var store = Store;
         Stream stream = parts.Count == 1
-            ? session.Run(() => OpenPart(parts[0]))
-            : new ConcatenatedStream(session.Run(() => parts.Select(p => new FileInfo(p).Length).ToList()), i => session.Run(() => OpenPart(parts[i])));
-        return Provider.OpenReader(format, stream, Password);
+            ? OpenPart(store, parts[0])
+            : new ConcatenatedStream([.. parts.Select(store.GetFileSize)], i => OpenPart(store, parts[i]));
+        try
+        {
+            return Provider.OpenReader(format, stream, Password);
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
     }
 
     /// <summary>A short fingerprint of the password, so that cached results of one password are not used for another.</summary>
     internal string PasswordKey => Password is null ? "-" : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Password)), 0, 8);
 
-    private static FileStream OpenPart(string path) =>
-        new(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.RandomAccess);
+    /// <summary>An archive is read here and there, not from its start to its end.</summary>
+    private static Stream OpenPart(DestinationStore store, string path) =>
+        store is LocalStore local ? local.OpenRandom(path) : store.OpenRead(path);
 }
 
 /// <summary>
@@ -89,7 +100,7 @@ public static partial class SetCatalog
 
     // Headers of archives read before, by path, size, time and password: reading them again means opening (and for
     // encrypted names, decrypting) every archive of the destination on every run.
-    private static readonly Dictionary<string, SetManifestHeader?> HeaderCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, SetManifestHeader?> HeaderCache = new(StringComparer.Ordinal);
     private static readonly Lock CacheLock = new();
 
     /// <summary>
@@ -98,39 +109,42 @@ public static partial class SetCatalog
     /// alone; <paramref name="onProblem"/> hears about archives that could not be opened. With
     /// <paramref name="mirror"/> a mirror in <paramref name="root"/> itself counts too.
     /// </summary>
-    public static List<StoredSet> Scan(string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null, bool mirror = false)
+    public static List<StoredSet> Scan(string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null, bool mirror = false) =>
+        Scan(archives?.Store ?? LocalStore.Default, root, taskId, archives, onProblem, mirror);
+
+    /// <summary>The same in any kind of destination.</summary>
+    public static List<StoredSet> Scan(DestinationStore store, string root, string? taskId, ArchiveAccess? archives = null, Action<string, string>? onProblem = null, bool mirror = false)
     {
+        ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(root);
         var sets = new List<StoredSet>();
-        if (!Directory.Exists(root))
-        {
-            return sets;
-        }
-
-        if (mirror && TryReadHeader(Path.Combine(root, SetManifest.FileName)) is { BackupType: BackupTypes.Mirror } own
+        var entries = store.List(root);
+        if (mirror && entries.Any(e => !e.IsFolder && IsManifest(e.Name))
+            && TryReadHeader(store, store.Combine(root, SetManifest.FileName)) is { BackupType: BackupTypes.Mirror } own
             && (taskId is null || string.Equals(own.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
         {
             // Never offered to retention: deleting this "set" would delete the destination folder.
             sets.Add(new StoredSet(root, own));
         }
 
-        foreach (string folder in Directory.EnumerateDirectories(root))
+        foreach (var folder in entries.Where(e => e.IsFolder))
         {
-            if (folder.EndsWith(PartialSuffix, StringComparison.OrdinalIgnoreCase))
+            if (folder.Name.EndsWith(PartialSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            if (TryReadHeader(Path.Combine(folder, SetManifest.FileName)) is { } header
+            if (TryReadHeader(store, store.Combine(folder.Path, SetManifest.FileName)) is { } header
                 && (taskId is null || string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
             {
-                sets.Add(new StoredSet(folder, header));
+                sets.Add(new StoredSet(folder.Path, header));
             }
         }
 
         if (archives is not null)
         {
-            foreach (var found in FindArchives(root))
+            archives = ReferenceEquals(archives.Store, store) ? archives : archives.WithStore(store);
+            foreach (var found in FindArchives(entries))
             {
                 var header = ReadArchiveHeader(found, archives, onProblem);
                 if (header is not null && (taskId is null || string.Equals(header.TaskId, taskId, StringComparison.OrdinalIgnoreCase)))
@@ -150,21 +164,26 @@ public static partial class SetCatalog
         return sets;
     }
 
+    /// <summary>The header of a manifest file of this computer, or null if it is missing or not a manifest.</summary>
+    public static SetManifestHeader? TryReadHeader(string manifestPath) => TryReadHeader(LocalStore.Default, manifestPath);
+
     /// <summary>The header of a manifest file, or null if it is missing or not a manifest.</summary>
-    public static SetManifestHeader? TryReadHeader(string manifestPath)
+    /// <exception cref="IOException">The destination failed (a missing file is not a failure).</exception>
+    public static SetManifestHeader? TryReadHeader(DestinationStore store, string manifestPath)
     {
+        ArgumentNullException.ThrowIfNull(store);
         try
         {
-            if (!File.Exists(manifestPath))
-            {
-                return null;
-            }
-
-            using var stream = new FileStream(manifestPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096);
+            using var stream = store.OpenRead(manifestPath);
             return SetManifest.ReadHeader(stream);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException or InvalidDataException)
         {
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && DestinationKinds.IsFileSystem(store.Kind))
+        {
+            // A file that cannot be read on a disk is not a manifest; a server that fails is a failed destination.
             return null;
         }
     }
@@ -173,20 +192,26 @@ public static partial class SetCatalog
     public sealed record FoundArchive(string Format, IReadOnlyList<string> Parts, long Bytes, DateTime ModifiedUtc);
 
     /// <summary>Finished archives directly in <paramref name="root"/>: *.7z, *.zip and complete runs of *.7z.001, .002 ….</summary>
-    public static List<FoundArchive> FindArchives(string root)
+    public static List<FoundArchive> FindArchives(DestinationStore store, string root)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return FindArchives(store.List(root));
+    }
+
+    private static List<FoundArchive> FindArchives(List<StoreEntry> entries)
     {
         var result = new List<FoundArchive>();
-        var volumes = new Dictionary<string, SortedDictionary<int, FileInfo>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var file in new DirectoryInfo(root).EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+        var volumes = new Dictionary<string, SortedDictionary<int, StoreEntry>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in entries.Where(e => !e.IsFolder))
         {
             string name = file.Name;
             if (name.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
             {
-                result.Add(new FoundArchive(ArchiveFormats.SevenZip, [file.FullName], file.Length, file.LastWriteTimeUtc));
+                result.Add(new FoundArchive(ArchiveFormats.SevenZip, [file.Path], file.Size, file.ModifiedUtc));
             }
             else if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                result.Add(new FoundArchive(ArchiveFormats.Zip, [file.FullName], file.Length, file.LastWriteTimeUtc));
+                result.Add(new FoundArchive(ArchiveFormats.Zip, [file.Path], file.Size, file.ModifiedUtc));
             }
             else if (VolumeName().Match(name) is { Success: true } match)
             {
@@ -208,23 +233,26 @@ public static partial class SetCatalog
                 continue;
             }
 
-            result.Add(new FoundArchive(ArchiveFormats.SevenZip, [.. parts.Values.Select(f => f.FullName)],
-                parts.Values.Sum(f => f.Length), parts.Values.Max(f => f.LastWriteTimeUtc)));
+            result.Add(new FoundArchive(ArchiveFormats.SevenZip, [.. parts.Values.Select(f => f.Path)],
+                parts.Values.Sum(f => f.Size), parts.Values.Max(f => f.ModifiedUtc)));
         }
 
         return result;
     }
 
+    private static bool IsManifest(string name) => string.Equals(name, SetManifest.FileName, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Reads the whole manifest of a set: header and file list.</summary>
     /// <exception cref="InvalidDataException">The set has no readable manifest.</exception>
     /// <exception cref="ArchiveException">The archive cannot be opened.</exception>
-    public static (SetManifestHeader Header, List<ManifestFile> Files) ReadManifest(StoredSet set, ArchiveAccess? archives)
+    /// <param name="store">Where a set folder lies; null = where <paramref name="archives"/> points, or this computer.</param>
+    public static (SetManifestHeader Header, List<ManifestFile> Files) ReadManifest(StoredSet set, ArchiveAccess? archives, DestinationStore? store = null)
     {
         ArgumentNullException.ThrowIfNull(set);
+        store ??= archives?.Store ?? LocalStore.Default;
         if (set.Storage == SetStorage.Folder)
         {
-            string path = Path.Combine(set.Location, SetManifest.FileName);
-            using var headerStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024);
+            using var headerStream = store.OpenRead(store.Combine(set.Location, SetManifest.FileName));
             var header = SetManifest.ReadHeader(headerStream);
             headerStream.Position = 0;
             return (header, SetManifest.ReadFiles(headerStream));
@@ -235,7 +263,7 @@ public static partial class SetCatalog
             throw new InvalidDataException("No access to archives.");
         }
 
-        using var reader = archives.Open(set);
+        using var reader = (ReferenceEquals(archives.Store, store) ? archives : archives.WithStore(store)).Open(set);
         using var manifest = ExtractManifest(reader) ?? throw new InvalidDataException(Messages.Format(Messages.ManifestMissing, set.Location));
         var parsed = SetManifest.ReadHeader(manifest);
         manifest.Position = 0;
@@ -270,7 +298,7 @@ public static partial class SetCatalog
 
     private static SetManifestHeader? ReadArchiveHeader(FoundArchive found, ArchiveAccess archives, Action<string, string>? onProblem)
     {
-        string key = string.Join('|', found.Parts[0], found.Bytes, found.ModifiedUtc.Ticks, archives.PasswordKey);
+        string key = string.Join('|', archives.Store.CacheKey, found.Parts[0], found.Bytes, found.ModifiedUtc.Ticks, archives.PasswordKey);
         lock (CacheLock)
         {
             if (HeaderCache.TryGetValue(key, out var cached))
@@ -471,76 +499,39 @@ public static partial class SetCatalog
     }
 
     /// <summary>Deletes a set: its folder, or all files of its archive.</summary>
-    public static void DeleteSet(StoredSet set)
+    /// <param name="store">Where the set lies; null = on this computer.</param>
+    public static void DeleteSet(StoredSet set, DestinationStore? store = null)
     {
         ArgumentNullException.ThrowIfNull(set);
+        store ??= LocalStore.Default;
         if (set.Storage == SetStorage.Folder)
         {
-            DeleteSetFolder(set.Location);
+            store.DeleteFolder(set.Location);
             return;
         }
 
         foreach (string part in set.Parts)
         {
-            var file = new FileInfo(part);
-            if (!file.Exists)
-            {
-                continue;
-            }
-
-            if (file.IsReadOnly)
-            {
-                file.IsReadOnly = false;
-            }
-
-            file.Delete();
+            store.DeleteFile(part);
         }
     }
 
-    /// <summary>Deletes a set folder. Read-only files are deleted too; links inside are removed, never followed.</summary>
+    /// <summary>
+    /// The file of a set that is written last (the manifest of a folder, the last volume of an archive): where files
+    /// are locked for a time (S3 Object Lock), its lock is the one that ends last.
+    /// </summary>
+    public static string LastWritten(StoredSet set, DestinationStore store)
+    {
+        ArgumentNullException.ThrowIfNull(set);
+        ArgumentNullException.ThrowIfNull(store);
+        return set.Storage == SetStorage.Folder ? store.Combine(set.Location, SetManifest.FileName) : set.Parts[^1];
+    }
+
+    /// <summary>Deletes a folder of this computer. Read-only files are deleted too; links inside are removed, never followed.</summary>
     public static void DeleteSetFolder(string folder)
     {
         ArgumentNullException.ThrowIfNull(folder);
-        var root = new DirectoryInfo(folder);
-        if (!root.Exists)
-        {
-            return;
-        }
-
-        DeleteTree(root);
-    }
-
-    private static void DeleteTree(DirectoryInfo directory)
-    {
-        foreach (var entry in directory.EnumerateFileSystemInfos("*", new EnumerationOptions { AttributesToSkip = 0, IgnoreInaccessible = false }))
-        {
-            if (entry is DirectoryInfo child && (entry.Attributes & FileAttributes.ReparsePoint) == 0)
-            {
-                DeleteTree(child);
-                continue;
-            }
-
-            if ((entry.Attributes & FileAttributes.ReadOnly) != 0)
-            {
-                entry.Attributes &= ~FileAttributes.ReadOnly;
-            }
-
-            if (entry is DirectoryInfo link)
-            {
-                link.Delete(recursive: false);
-            }
-            else
-            {
-                entry.Delete();
-            }
-        }
-
-        if ((directory.Attributes & FileAttributes.ReadOnly) != 0)
-        {
-            directory.Attributes &= ~FileAttributes.ReadOnly;
-        }
-
-        directory.Delete(recursive: false);
+        LocalStore.Default.DeleteFolder(folder);
     }
 
     [GeneratedRegex(@"^(.+\.7z)\.(\d{3,})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

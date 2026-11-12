@@ -335,10 +335,22 @@ public sealed partial class ConfigStore
         }
     }
 
-    /// <summary>What only this computer knows stays as it is (A.9): the pinned keys of Linux servers, whose profile the paths use.</summary>
+    /// <summary>What only this computer knows stays as it is (A.9): the pinned keys of Linux servers and of the
+    /// servers of destinations, whose profile the paths use.</summary>
     private static void KeepLocalFields(TaskDefinition task, TaskDefinition existing)
     {
         task.ProfileSid ??= existing.ProfileSid;
+        foreach (var destination in task.Destinations.Where(d => !DestinationKinds.IsFileSystem(d.Kind)))
+        {
+            var old = existing.Destinations.FirstOrDefault(d => string.Equals(d.Id, destination.Id, StringComparison.OrdinalIgnoreCase));
+            if (old is not null && old.Kind == destination.Kind && old.Port == destination.Port
+                && string.Equals(old.Host, destination.Host, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(old.Endpoint, destination.Endpoint, StringComparison.OrdinalIgnoreCase))
+            {
+                destination.ServerFingerprint = old.ServerFingerprint;
+            }
+        }
+
         foreach (var source in task.Sources.Where(s => s.Kind == SourceKinds.Ssh))
         {
             var old = existing.Sources.FirstOrDefault(s => string.Equals(s.Id, source.Id, StringComparison.OrdinalIgnoreCase) && s.Kind == SourceKinds.Ssh);

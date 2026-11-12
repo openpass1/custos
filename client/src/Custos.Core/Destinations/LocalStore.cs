@@ -76,9 +76,10 @@ public sealed class LocalStore : DestinationStore
 
         foreach (var entry in directory.EnumerateFileSystemInfos("*", new EnumerationOptions { AttributesToSkip = 0, IgnoreInaccessible = false }))
         {
+            // A link to a folder is a file here: it is removed, never followed.
             result.Add(entry is FileInfo file
                 ? new StoreEntry(file.FullName, file.Name, false, file.Length, file.LastWriteTimeUtc)
-                : new StoreEntry(entry.FullName, entry.Name, true, 0, entry.LastWriteTimeUtc));
+                : new StoreEntry(entry.FullName, entry.Name, (entry.Attributes & FileAttributes.ReparsePoint) == 0, 0, entry.LastWriteTimeUtc));
         }
 
         return result;
@@ -133,6 +134,10 @@ public sealed class LocalStore : DestinationStore
 
     public override Stream OpenRead(string path) => Lowered(_session.Run(() =>
         new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
+
+    /// <summary>Opens a file that is read here and there (an archive), not from its start to its end.</summary>
+    public Stream OpenRandom(string path) => Lowered(_session.Run(() =>
+        new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.RandomAccess)));
 
     public override long GetFileSize(string path) => _session.Run(() =>
     {
@@ -264,6 +269,14 @@ public sealed class LocalStore : DestinationStore
         public override Stream Reopen() => _store.Limited(
             _store.Lowered(_store._session.Run(() => new FileStream(TempPath, FileMode.Open, FileAccess.Write, FileShare.None, BufferSize))));
 
-        protected override void CloseCore() => _stream.Dispose();
+        protected override void CloseCore()
+        {
+            if (Durable)
+            {
+                _stream.Flush(flushToDisk: true);
+            }
+
+            _stream.Dispose();
+        }
     }
 }

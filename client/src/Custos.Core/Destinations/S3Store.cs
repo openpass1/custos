@@ -109,12 +109,6 @@ public sealed class S3Store : RemoteStore
 
     public override bool HasFolders => false;
 
-    /// <summary>
-    /// Files are uploaded with the lock of the destination (<c>object_lock_days</c>). «Проверить доступ» turns it off
-    /// for its trial file, which it wants to delete at once.
-    /// </summary>
-    public bool LockWrites { get; set; } = true;
-
     /// <summary>The bucket has Object Lock; null if the server does not tell.</summary>
     public bool? HasObjectLock
     {
@@ -179,6 +173,21 @@ public sealed class S3Store : RemoteStore
         }
 
         return lines;
+    }
+
+    public override void Probe()
+    {
+        if (HasObjectLock == true && _defaultRetention is not null)
+        {
+            // The bucket locks every file from the start, a trial file too, and it could not be deleted. Only the
+            // right to write is tried: an upload in parts is begun and given up.
+            string key = Combine(Root, ProbeName());
+            string uploadId = Call(token => _client.InitiateMultipartUploadAsync(new InitiateMultipartUploadRequest { BucketName = _bucket, Key = key }, token), key).UploadId;
+            Call(token => _client.AbortMultipartUploadAsync(new AbortMultipartUploadRequest { BucketName = _bucket, Key = key, UploadId = uploadId }, token), key);
+            return;
+        }
+
+        base.Probe();
     }
 
     public override void CreateFolder(string path)

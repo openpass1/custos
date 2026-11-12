@@ -8,8 +8,9 @@ public static class DestinationStores
 {
     /// <summary>Opens the store of a destination. Nothing is connected yet; the first operation does that.</summary>
     /// <param name="session">The logon to use for a share; null = the store opens one of its own and closes it.</param>
+    /// <param name="account">The account of a server typed in the editor and not saved yet; null = the stored one.</param>
     /// <exception cref="BackupException">The destination cannot be used as it is set up.</exception>
-    public static DestinationStore Open(IBackupPlatform platform, TaskDestination destination, INetworkSession? session = null)
+    public static DestinationStore Open(IBackupPlatform platform, TaskDestination destination, INetworkSession? session = null, StoreAccount? account = null)
     {
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(destination);
@@ -24,14 +25,14 @@ public static class DestinationStores
                 bool owns = session is null;
                 return new LocalStore(root, destination.Kind, platform, session ?? platform.OpenSession(destination.CredentialId), owns) { Limiter = limiter };
             case DestinationKinds.Sftp:
-                return new SftpStore(destination, Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
+                return new SftpStore(destination, account ?? Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
             case DestinationKinds.Ftp:
             case DestinationKinds.Ftps:
-                return new FtpStore(destination, Account(platform, destination), limiter);
+                return new FtpStore(destination, account ?? Account(platform, destination), limiter);
             case DestinationKinds.WebDav:
-                return new WebDavStore(destination, Account(platform, destination), limiter);
+                return new WebDavStore(destination, account ?? Account(platform, destination), limiter);
             case DestinationKinds.S3:
-                return new S3Store(destination, Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
+                return new S3Store(destination, account ?? Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
             default:
                 throw new BackupException(Messages.Format(Messages.DestinationKindNotSupported, destination.Kind));
         }

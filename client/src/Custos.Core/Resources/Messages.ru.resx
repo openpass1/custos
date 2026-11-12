@@ -1599,4 +1599,13 @@
   <data name="StoreVersionsOff" xml:space="preserve">
     <value>Версии: бакет их не хранит.</value>
   </data>
+  <data name="SevenZipNeedsSeek" xml:space="preserve">
+    <value>Архив 7z нельзя записать в {0}: такое назначение принимает файл только подряд, а 7z в конце возвращается к началу архива. Выберите ZIP или «без сжатия» либо другое назначение.</value>
+  </data>
+  <data name="ObjectLockNeedsSets" xml:space="preserve">
+    <value>{0}: защита от удаления (Object Lock) работает только с копиями, которые не перезаписываются: архивы или отдельная папка для каждой копии. Зеркало и общая папка заменяют файлы, а запертый файл заменить нельзя.</value>
+  </data>
+  <data name="SetLocked" xml:space="preserve">
+    <value>Набор «{0}» в {1} защищён от удаления до {2} (Object Lock); хранение удалит его после этого срока.</value>
+  </data>
 </root>

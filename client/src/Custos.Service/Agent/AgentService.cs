@@ -4,6 +4,7 @@ using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Backup;
 using Custos.Core.Databases;
+using Custos.Core.Destinations;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Storage;
@@ -493,56 +494,57 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             return new DestinationTestResult { Error = Messages.Format(Messages.DestinationKindNotSupported, destination.Kind) };
         }
 
-        string root;
-        if (destination.Kind == DestinationKinds.Usb)
+        if (DestinationStores.Problem(destination) is { } lacking)
         {
-            string label = destination.UsbLabel ?? string.Empty;
-            string? volume = Platform.FindVolumeByLabel(label);
-            if (volume is null)
-            {
-                return new DestinationTestResult { Error = Messages.Format(Messages.UsbDiskNotFound, label) };
-            }
-
-            root = Path.Combine(volume, DestinationKinds.UsbFolder(destination.Path));
-        }
-        else if (string.IsNullOrWhiteSpace(destination.Path) || !Path.IsPathFullyQualified(destination.Path))
-        {
-            return new DestinationTestResult { Error = Messages.Format(Messages.PathNotAbsolute, destination.Path) };
-        }
-        else
-        {
-            root = destination.Path;
+            return new DestinationTestResult { Error = lacking };
         }
 
-        INetworkSession session = ProcessSession.Instance;
+        NetworkLogon? session = null;
+        DestinationStore? store = null;
+        string? folder = null;
         try
         {
-            if (destination.Kind == DestinationKinds.Unc && request.Credential is { Password: { } password } typed)
+            if (destination.Kind == DestinationKinds.Unc && request.Credential is { Password: { } password } logon)
             {
-                session = NetworkLogon.Open(typed.Credential.User, typed.Credential.Domain, password);
-            }
-            else if (destination.Kind == DestinationKinds.Unc && destination.CredentialId is { } credentialId)
-            {
-                session = Platform.OpenSession(credentialId);
+                session = NetworkLogon.Open(logon.Credential.User, logon.Credential.Domain, password);
             }
 
-            session.Run(() =>
+            // An account typed in the editor and not saved yet is tried as it is.
+            var account = !DestinationKinds.IsFileSystem(destination.Kind) && request.Credential is { Password: { } secret } typed
+                ? new StoreAccount(typed.Credential.User, secret)
+                : null;
+            store = DestinationStores.Open(Platform, destination, session, account);
+            folder = DestinationKinds.IsFileSystem(destination.Kind) ? store.Root : store.Label;
+            store.CheckReady();
+            store.Probe();
+            return new DestinationTestResult
             {
-                Directory.CreateDirectory(root);
-                string probe = Path.Combine(root, ".custos-test-" + Guid.NewGuid().ToString("N")[..8] + ".tmp");
-                File.WriteAllText(probe, "CUSTOS");
-                File.Delete(probe);
-            });
-            long? free = session.Run(() => Platform.GetFreeSpace(root));
-            return new DestinationTestResult { Ok = true, Folder = root, FreeBytes = free };
+                Ok = true,
+                Folder = folder,
+                FreeBytes = store.GetSpace(store.Root).FreeBytes,
+                Fingerprint = (store as RemoteStore)?.SeenFingerprint,
+                Details = [.. store.Describe()],
+            };
+        }
+        catch (ServerTrustException ex)
+        {
+            return new DestinationTestResult
+            {
+                Folder = folder,
+                Error = ex.Message,
+                Fingerprint = ex.Seen.Length > 0 ? ex.Seen : null,
+                TrustNeeded = ex.Seen.Length > 0,
+                FingerprintChanged = ex.Expected is not null,
+            };
         }
         catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            return new DestinationTestResult { Folder = root, Error = ex.Message };
+            return new DestinationTestResult { Folder = folder, Error = ex.Message };
         }
         finally
         {
-            session.Dispose();
+            store?.Dispose();
+            session?.Dispose();
         }
     }
 

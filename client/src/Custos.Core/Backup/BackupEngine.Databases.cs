@@ -1,6 +1,7 @@
 using System.Globalization;
 using Custos.Core.Archives;
 using Custos.Core.Databases;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
@@ -132,16 +133,16 @@ public sealed partial class BackupEngine
             {
                 foreach (var target in run.ActiveTargets)
                 {
-                    string final = Path.Combine(target.WriteFolder, relative);
-                    string temp = final + TempSuffix;
+                    var store = target.Store;
+                    string final = store.Combine(target.WriteFolder, relative);
                     try
                     {
-                        var stream = target.Session.Run(() =>
+                        if (store.Parent(final) is { } folder)
                         {
-                            CreateFolder(target, Path.GetDirectoryName(final)!);
-                            return Lowered(new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 1));
-                        });
-                        outputs.Add(new Output(target, stream, temp, final));
+                            CreateFolder(target, folder);
+                        }
+
+                        outputs.Add(new Output(target, store.BeginWrite(final, TempSuffix, StoreWriteMode.Stream), final));
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                     {
@@ -174,16 +175,7 @@ public sealed partial class BackupEngine
                     var output = outputs[i];
                     try
                     {
-                        output.Stream.Dispose();
-                        output.Target.Session.Run(() =>
-                        {
-                            if (File.Exists(output.Final))
-                            {
-                                File.SetAttributes(output.Final, FileAttributes.Normal);
-                            }
-
-                            File.Move(output.Temp, output.Final, overwrite: true);
-                        });
+                        output.Writer.Commit();
                         output.Target.Files++;
                         output.Target.Bytes += dump.Bytes;
                     }

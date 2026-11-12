@@ -1582,4 +1582,13 @@ static partial class Messages
 
     /// <summary>Versions: the bucket keeps none.</summary>
     public static string StoreVersionsOff => Get(nameof(StoreVersionsOff));
+
+    /// <summary>A 7z archive cannot be written to {0}: such a destination takes a file only from its start to its end, and ...</summary>
+    public static string SevenZipNeedsSeek => Get(nameof(SevenZipNeedsSeek));
+
+    /// <summary>{0}: protection from deletion (Object Lock) works only with copies that are never overwritten: archives or ...</summary>
+    public static string ObjectLockNeedsSets => Get(nameof(ObjectLockNeedsSets));
+
+    /// <summary>Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.</summary>
+    public static string SetLocked => Get(nameof(SetLocked));
 }
