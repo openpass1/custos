@@ -393,6 +393,7 @@ internal sealed class RestoreForm : Form
             CredentialId = source.CredentialId,
             Password = source.Password,
             Location = set.Location,
+            Where = set.Where,
             TargetFolder = target,
             DumpsFolder = dumps,
             Existing = existing,

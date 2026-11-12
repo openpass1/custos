@@ -27,6 +27,75 @@ internal static class Samples
         HasSecret = true,
     };
 
+    public const string SftpAccountId = "aaaaaaaa-0000-4000-8000-000000000002";
+    public const string FtpAccountId = "aaaaaaaa-0000-4000-8000-000000000003";
+    public const string WebDavAccountId = "aaaaaaaa-0000-4000-8000-000000000004";
+    public const string S3AccountId = "aaaaaaaa-0000-4000-8000-000000000005";
+
+    /// <summary>An account of a server: the kind and a made-up login (for S3 the access key).</summary>
+    public static Credential ServerAccount(string kind) => new()
+    {
+        Id = kind switch
+        {
+            CredentialKinds.Sftp => SftpAccountId,
+            CredentialKinds.Ftp => FtpAccountId,
+            CredentialKinds.WebDav => WebDavAccountId,
+            _ => S3AccountId,
+        },
+        Kind = kind,
+        User = kind == CredentialKinds.S3 ? "EXAMPLEACCESSKEY" : "backup-" + kind,
+        HasSecret = true,
+    };
+
+    /// <summary>A destination on a server, every field of its kind filled in (example.org is reserved for examples).</summary>
+    public static TaskDestination Remote(string kind) => kind switch
+    {
+        DestinationKinds.Sftp => new TaskDestination
+        {
+            Id = "r1",
+            Kind = kind,
+            Host = "backup.example.org",
+            Port = 2222,
+            Path = "/srv/backup/office",
+            CredentialId = SftpAccountId,
+            SpeedLimitKbps = 2000,
+            ServerFingerprint = ServerKey,
+        },
+        DestinationKinds.Ftp => new TaskDestination { Id = "r2", Kind = kind, Host = "ftp.example.org", Path = "backup/office" },
+        DestinationKinds.Ftps => new TaskDestination
+        {
+            Id = "r3",
+            Kind = kind,
+            Host = "ftp.example.org",
+            Port = 990,
+            Path = "backup",
+            CredentialId = FtpAccountId,
+            ServerFingerprint = "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08",
+        },
+        DestinationKinds.WebDav => new TaskDestination
+        {
+            Id = "r4",
+            Kind = kind,
+            Host = "https://dav.example.org/remote.php/dav/files/backup",
+            Path = "office",
+            CredentialId = WebDavAccountId,
+            SpeedLimitKbps = 300,
+        },
+        _ => new TaskDestination
+        {
+            Id = "r5",
+            Kind = DestinationKinds.S3,
+            Endpoint = "https://s3.example.org",
+            Bucket = "office-backup",
+            Region = "eu-central-1",
+            Path = "pc01",
+            CredentialId = S3AccountId,
+            SpeedLimitKbps = 500,
+            ObjectLockDays = 30,
+            ObjectLockMode = ObjectLockModes.Compliance,
+        },
+    };
+
     public const string ArchivePasswordId = "44444444-0000-4000-8000-000000000004";
 
     public static Credential ArchivePassword() => new()
@@ -157,7 +226,11 @@ internal static class Samples
             ConfigRevision = version,
             ComputerName = "PC01",
             Tasks = [Office(), Photos(), Archive()],
-            Credentials = [Account(), ArchivePassword(), SshKey()],
+            Credentials =
+            [
+                Account(), ArchivePassword(), SshKey(),
+                ServerAccount(CredentialKinds.S3), ServerAccount(CredentialKinds.WebDav), ServerAccount(CredentialKinds.Ftp), ServerAccount(CredentialKinds.Sftp),
+            ],
             States =
             [
                 new TaskState
@@ -222,6 +295,8 @@ internal static class Samples
     }
 
     public static string Json(TaskDefinition task) => JsonSerializer.Serialize(task, ConfigJsonContext.Default.TaskDefinition);
+
+    public static string Json(TaskDestination destination) => JsonSerializer.Serialize(destination, ConfigJsonContext.Default.TaskDestination);
 
     private static RunRecord Run(string taskId, string taskName, string status, string? error = null) => new()
     {

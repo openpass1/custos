@@ -60,6 +60,9 @@ internal abstract class DialogForm : Form
 
     protected Button CancelButtonControl { get; } = new() { Text = Strings.ButtonCancel, AutoSize = true, MinimumSize = new Size(88, 0), DialogResult = DialogResult.Cancel };
 
+    /// <summary>The caption of a row, for dialogs that show and hide their rows.</summary>
+    protected static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
+
     /// <summary>Called by "OK": check, save, and set <see cref="Form.DialogResult"/> when done.</summary>
     protected abstract void OnOk();
 
@@ -269,39 +272,86 @@ internal sealed class SourceDialog : DialogForm
 }
 
 /// <summary>
-/// Adds or changes one destination of a task: a local folder, a network folder with its account, or a USB disk found by
-/// its label (section 6.3), with "Check access". A destination of a kind of a later version is shown, not changed.
+/// Adds or changes one destination of a task (section 6.3): a local folder, a network folder with its account, a USB
+/// disk found by its label, or a folder on an SFTP, FTP or WebDAV server or in an S3 bucket, with "Check access".
+/// A destination of a kind of a later version is shown, not changed.
 /// </summary>
 internal sealed class DestinationDialog : DialogForm
 {
-    private static readonly string[] Kinds = [DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb];
+    private static readonly string[] Kinds =
+    [
+        DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb,
+        DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3,
+    ];
+
+    private static readonly string[] LockModes = [ObjectLockModes.Governance, ObjectLockModes.Compliance];
 
     private readonly EditorContext _context;
     private readonly TaskDestination _original;
     private readonly bool _supported;
-    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
+    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly Label _hostLabel = Caption(Strings.DestinationHost);
+    private readonly TextBox _host = new() { Dock = DockStyle.Fill };
+    private readonly Label _portLabel = new() { Text = Strings.DestinationPort, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(8, 0, 4, 0) };
+    private readonly TextBox _port = new() { Width = 64, MaxLength = 5, Margin = new Padding(0) };
+    private readonly TableLayoutPanel _hostRow = new() { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 3 };
+    private readonly PictureBox _hostHelp;
+    private readonly Label _endpointLabel = Caption(Strings.DestinationEndpoint);
+    private readonly TextBox _endpoint = new() { Dock = DockStyle.Fill };
+    private readonly PictureBox _endpointHelp;
+    private readonly Label _bucketLabel = Caption(Strings.DestinationBucket);
+    private readonly TextBox _bucket = new() { Dock = DockStyle.Fill };
+    private readonly PictureBox _bucketHelp;
+    private readonly Label _regionLabel = Caption(Strings.DestinationRegion);
+    private readonly TextBox _region = new() { Width = 260 };
+    private readonly PictureBox _regionHelp;
     private readonly Label _pathLabel = Caption(Strings.DestinationFolder);
     private readonly TextBox _path = new() { Dock = DockStyle.Fill };
-    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true, Margin = new Padding(0) };
+    private readonly PictureBox _pathHelp;
     private readonly Label _labelLabel = Caption(Strings.DestinationUsbLabel);
-    private readonly ComboBox _usbLabel = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 220 };
+    private readonly ComboBox _usbLabel = new() { DropDownStyle = ComboBoxStyle.DropDown, Width = 260 };
     private readonly PictureBox _usbHelp;
     private readonly Label _accountLabel = Caption(Strings.DestinationAccount);
     private readonly CredentialPicker _account;
     private readonly PictureBox _accountHelp;
+    private readonly Label _speedLabel = Caption(Strings.DestinationSpeed);
+    private readonly NumericUpDown _speed = new() { Minimum = 0, Maximum = 10_000_000, Increment = 100, Width = 90, Margin = new Padding(0) };
+    private readonly FlowLayoutPanel _speedRow = new() { AutoSize = true, WrapContents = false };
+    private readonly PictureBox _speedHelp;
+    private readonly Label _lockLabel = Caption(Strings.DestinationLock);
+    private readonly NumericUpDown _lockDays = new() { Minimum = 0, Maximum = 36500, Width = 90, Margin = new Padding(0) };
+    private readonly FlowLayoutPanel _lockRow = new() { AutoSize = true, WrapContents = false };
+    private readonly PictureBox _lockHelp;
+    private readonly Label _lockModeLabel = Caption(Strings.DestinationLockMode);
+    private readonly ComboBox _lockMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 380 };
+    private readonly Label _lockModeGap = new() { AutoSize = true };
+    private readonly Label _keyLabel = Caption(Strings.DestinationServerKey);
+    private readonly Label _key = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 0, 6) };
+    private readonly Button _forgetKey = new() { Text = Strings.ButtonForgetKey, AutoSize = true };
     private readonly Label _unsupported = new() { Text = Strings.DestinationLater, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 4, 0, 6) };
     private readonly Button _test = new() { Text = Strings.ButtonTestAccess, AutoSize = true };
     private readonly Label _testResult = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(8, 6, 0, 0) };
+    private string? _fingerprint;
+    private string _fingerprintOf = string.Empty;
+    private bool _filling = true;
 
     public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew)
-        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(660, 360))
+        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(700, 500))
     {
         _context = context;
         _original = destination;
         _supported = DestinationKinds.IsSupported(destination.Kind);
         _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
+        _hostHelp = Ui.HelpIcon(Tips, Strings.DestinationHostHelp);
+        _endpointHelp = Ui.HelpIcon(Tips, Strings.DestinationEndpointHelp);
+        _bucketHelp = Ui.HelpIcon(Tips, Strings.DestinationBucketHelp);
+        _regionHelp = Ui.HelpIcon(Tips, Strings.DestinationRegionHelp);
+        _pathHelp = Ui.HelpIcon(Tips, Strings.DestinationFolderServerHelp);
         _usbHelp = Ui.HelpIcon(Tips, Strings.DestinationUsbHelp);
         _accountHelp = Ui.HelpIcon(Tips, Strings.DestinationAccountHelp);
+        _speedHelp = Ui.HelpIcon(Tips, Strings.DestinationSpeedHelp);
+        _lockHelp = Ui.HelpIcon(Tips, Strings.DestinationLockHelp);
         foreach (string kind in Kinds)
         {
             _kind.Items.Add(DestinationsPage.KindText(kind));
@@ -313,10 +363,34 @@ internal sealed class DestinationDialog : DialogForm
             _kind.Items.Add(DestinationsPage.KindText(destination.Kind));
         }
 
+        _lockMode.Items.AddRange([Strings.LockModeGovernance, Strings.LockModeCompliance]);
+        _hostRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _hostRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _hostRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _host.Margin = new Padding(0);
+        _hostRow.Controls.Add(_host, 0, 0);
+        _hostRow.Controls.Add(_portLabel, 1, 0);
+        _hostRow.Controls.Add(_port, 2, 0);
+        _speedRow.Controls.Add(_speed);
+        _speedRow.Controls.Add(new Label { Text = Strings.RemoteSpeedUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
+        _lockRow.Controls.Add(_lockDays);
+        _lockRow.Controls.Add(new Label { Text = Strings.DestinationLockUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
+        var pathExtra = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        pathExtra.Controls.Add(_browse);
+        pathExtra.Controls.Add(_pathHelp);
+
         AddGridRow(Caption(Strings.DestinationKind), _kind, Ui.HelpIcon(Tips, Strings.DestinationKindHelp));
-        AddGridRow(_pathLabel, _path, _browse);
+        AddGridRow(_hostLabel, _hostRow, _hostHelp);
+        AddGridRow(_endpointLabel, _endpoint, _endpointHelp);
+        AddGridRow(_bucketLabel, _bucket, _bucketHelp);
+        AddGridRow(_regionLabel, _region, _regionHelp);
+        AddGridRow(_pathLabel, _path, pathExtra);
         AddGridRow(_labelLabel, _usbLabel, _usbHelp);
         AddGridRow(_accountLabel, _account, _accountHelp);
+        AddGridRow(_speedLabel, _speedRow, _speedHelp);
+        AddGridRow(_lockLabel, _lockRow, _lockHelp);
+        AddGridRow(_lockModeLabel, _lockMode, _lockModeGap);
+        AddGridRow(_keyLabel, _key, _forgetKey);
         AddWide(_unsupported);
         AddNote(Strings.PathVariablesNote);
         var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
@@ -325,6 +399,7 @@ internal sealed class DestinationDialog : DialogForm
         testRow.Controls.Add(_test, 0, 0);
         testRow.Controls.Add(_testResult, 1, 0);
         AddWide(testRow);
+        MakeSizable(new Size(620, 420));
         EndBuild();
 
         FillUsbLabels();
@@ -332,8 +407,19 @@ internal sealed class DestinationDialog : DialogForm
         _kind.SelectedIndex = index >= 0 ? index : Kinds.Length;
         _path.Text = destination.Path;
         _usbLabel.Text = destination.UsbLabel ?? string.Empty;
+        _host.Text = destination.Host ?? string.Empty;
+        _port.Text = destination.Port is { } port ? port.ToString(CultureInfo.InvariantCulture) : string.Empty;
+        _endpoint.Text = destination.Endpoint ?? string.Empty;
+        _bucket.Text = destination.Bucket ?? string.Empty;
+        _region.Text = destination.Region ?? string.Empty;
+        _speed.Value = Math.Clamp(destination.SpeedLimitKbps, 0, (int)_speed.Maximum);
+        _lockDays.Value = Math.Clamp(destination.ObjectLockDays, 0, (int)_lockDays.Maximum);
+        _lockMode.SelectedIndex = destination.ObjectLockMode == ObjectLockModes.Compliance ? 1 : 0;
         _account.SelectedId = destination.CredentialId;
+        _fingerprint = string.IsNullOrWhiteSpace(destination.ServerFingerprint) ? null : destination.ServerFingerprint;
+        _filling = false;
         UpdateFields();
+        _fingerprintOf = ServerOf();
 
         _kind.SelectedIndexChanged += (_, _) => UpdateFields();
         _path.TextChanged += (_, _) =>
@@ -343,6 +429,15 @@ internal sealed class DestinationDialog : DialogForm
             {
                 _kind.SelectedIndex = Array.IndexOf(Kinds, DestinationKinds.Unc);
             }
+        };
+        _host.TextChanged += (_, _) => ServerChanged();
+        _port.TextChanged += (_, _) => ServerChanged();
+        _endpoint.TextChanged += (_, _) => ServerChanged();
+        _lockDays.ValueChanged += (_, _) => UpdateLock();
+        _forgetKey.Click += (_, _) =>
+        {
+            _fingerprint = null;
+            ShowKey();
         };
         _browse.Click += (_, _) => Browse();
         _test.Click += (_, _) => TestAccess();
@@ -356,13 +451,28 @@ internal sealed class DestinationDialog : DialogForm
     {
         ArgumentNullException.ThrowIfNull(destination);
         string path = destination.Path;
-        return destination.Kind == DestinationKinds.Usb
-                ? string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null
-            : string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
-            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
-            : destination.Kind == DestinationKinds.Unc && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
-            : destination.Kind == DestinationKinds.Local && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
-            : null;
+        switch (destination.Kind)
+        {
+            case DestinationKinds.Usb:
+                return string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null;
+            case DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps:
+                return string.IsNullOrWhiteSpace(destination.Host) ? Strings.ErrorHostRequired
+                    : destination.Port is < 1 or > 65535 ? Strings.ErrorPortBad
+                    : destination.Kind == DestinationKinds.Sftp && string.IsNullOrEmpty(destination.CredentialId) ? Strings.ErrorAccountRequired
+                    : null;
+            case DestinationKinds.WebDav:
+                return Custos.Core.Destinations.DestinationStores.Problem(destination) is null ? null : Strings.ErrorAddressRequired;
+            case DestinationKinds.S3:
+                return string.IsNullOrWhiteSpace(destination.Bucket) ? Strings.ErrorBucketRequired
+                    : string.IsNullOrEmpty(destination.CredentialId) ? Strings.ErrorAccountRequired
+                    : null;
+            default:
+                return string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
+                    : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+                    : destination.Kind == DestinationKinds.Unc && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
+                    : destination.Kind == DestinationKinds.Local && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
+                    : null;
+        }
     }
 
     protected override void OnOk()
@@ -381,11 +491,14 @@ internal sealed class DestinationDialog : DialogForm
             return;
         }
 
+        if (destination.Kind == DestinationKinds.Sftp && destination.ServerFingerprint is null && !Ui.Confirm(this, Strings.DestinationKeyAsk))
+        {
+            return;
+        }
+
         Destination = destination;
         DialogResult = DialogResult.OK;
     }
-
-    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
 
     private string Kind => _kind.SelectedIndex >= 0 && _kind.SelectedIndex < Kinds.Length ? Kinds[_kind.SelectedIndex] : _original.Kind;
 
@@ -402,37 +515,136 @@ internal sealed class DestinationDialog : DialogForm
     private TaskDestination Build()
     {
         string kind = Kind;
+        bool server = kind is DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps;
+        bool s3 = kind == DestinationKinds.S3;
         string path = _path.Text.Trim().Trim('"');
+        int lockDays = s3 ? (int)_lockDays.Value : 0;
         return new TaskDestination
         {
             Id = _original.Id,
             Kind = kind,
             Path = kind == DestinationKinds.Usb ? DestinationKinds.UsbFolder(path) : path,
             UsbLabel = kind == DestinationKinds.Usb ? _usbLabel.Text.Trim() : null,
-            CredentialId = kind == DestinationKinds.Unc ? _account.SelectedId : null,
-            Host = _original.Host,
-            Port = _original.Port,
-            Endpoint = _original.Endpoint,
-            Bucket = _original.Bucket,
-            Region = _original.Region,
+            CredentialId = DestinationKinds.CredentialKind(kind) is null ? null : _account.SelectedId,
+            Host = server || kind == DestinationKinds.WebDav ? _host.Text.Trim() : null,
+            // The address of WebDAV holds its port; one that came with the task from the server is kept.
+            Port = !server ? (kind == DestinationKinds.WebDav && _original.Kind == DestinationKinds.WebDav ? _original.Port : null)
+                : _port.Text.Trim().Length == 0 ? null
+                : int.TryParse(_port.Text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int port) ? port : 0,
+            Endpoint = s3 && _endpoint.Text.Trim().Length > 0 ? _endpoint.Text.Trim() : null,
+            Bucket = s3 ? _bucket.Text.Trim() : null,
+            Region = s3 && _region.Text.Trim().Length > 0 ? _region.Text.Trim() : null,
             DisconnectAfter = _original.DisconnectAfter,
-            SpeedLimitKbps = _original.SpeedLimitKbps,
+            SpeedLimitKbps = DestinationKinds.CredentialKind(kind) is null ? 0 : (int)_speed.Value,
+            ObjectLockDays = lockDays,
+            ObjectLockMode = lockDays > 0 ? LockModes[Math.Max(0, _lockMode.SelectedIndex)] : null,
+            ServerFingerprint = DestinationKinds.IsFileSystem(kind) ? null : _fingerprint,
             ExtensionData = _original.ExtensionData,
         };
     }
 
     private void UpdateFields()
     {
+        if (_filling)
+        {
+            return;
+        }
+
         string kind = Kind;
         bool usb = kind == DestinationKinds.Usb;
-        bool unc = kind == DestinationKinds.Unc;
-        _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk : Strings.DestinationFolder;
+        bool server = kind is DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps;
+        bool dav = kind == DestinationKinds.WebDav;
+        bool s3 = kind == DestinationKinds.S3;
+        bool files = DestinationKinds.IsFileSystem(kind) || !_supported;
+        string? accountKind = _supported ? DestinationKinds.CredentialKind(kind) : null;
+
+        _hostLabel.Text = dav ? Strings.DestinationAddress : Strings.DestinationHost;
+        _hostLabel.Visible = _hostRow.Visible = _hostHelp.Visible = server || dav;
+        _portLabel.Visible = _port.Visible = server;
+        _port.PlaceholderText = kind == DestinationKinds.Sftp ? "22" : "21";
+        Tips.SetToolTip(_hostHelp, Custos.Core.Text.LineWrap.Wrap(dav ? Strings.DestinationAddressHelp : Strings.DestinationHostHelp));
+        _endpointLabel.Visible = _endpoint.Visible = _endpointHelp.Visible = s3;
+        _bucketLabel.Visible = _bucket.Visible = _bucketHelp.Visible = s3;
+        _regionLabel.Visible = _region.Visible = _regionHelp.Visible = s3;
+
+        _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk
+            : server ? Strings.DestinationFolderOnServer
+            : s3 ? Strings.DestinationFolderInBucket
+            : Strings.DestinationFolder;
         _browse.Visible = kind == DestinationKinds.Local;
+        _pathHelp.Visible = !files;
+        Tips.SetToolTip(_pathHelp, Custos.Core.Text.LineWrap.Wrap(
+            s3 ? Strings.DestinationFolderBucketHelp : dav ? Strings.DestinationFolderWebDavHelp : Strings.DestinationFolderServerHelp));
         _labelLabel.Visible = _usbLabel.Visible = _usbHelp.Visible = usb;
-        _accountLabel.Visible = _account.Visible = _accountHelp.Visible = unc;
+
+        _accountLabel.Visible = _account.Visible = _accountHelp.Visible = accountKind is not null;
+        if (accountKind is not null)
+        {
+            _account.SetKind(accountKind, accountKind switch
+            {
+                CredentialKinds.Windows => Strings.AccountService,
+                CredentialKinds.Ftp or CredentialKinds.WebDav => Strings.AccountNone,
+                _ => null,
+            });
+            Tips.SetToolTip(_accountHelp, Custos.Core.Text.LineWrap.Wrap(accountKind switch
+            {
+                CredentialKinds.Sftp => Strings.DestinationAccountHelpSftp,
+                CredentialKinds.Ftp => Strings.DestinationAccountHelpFtp,
+                CredentialKinds.WebDav => Strings.DestinationAccountHelpWebDav,
+                CredentialKinds.S3 => Strings.DestinationAccountHelpS3,
+                _ => Strings.DestinationAccountHelp,
+            }));
+        }
+
+        _speedLabel.Visible = _speedRow.Visible = _speedHelp.Visible = accountKind is not null;
+        _lockLabel.Visible = _lockRow.Visible = _lockHelp.Visible = s3;
         _unsupported.Visible = !_supported;
         _kind.Enabled = _path.Enabled = _test.Enabled = _supported;
         _testResult.Text = string.Empty;
+        UpdateLock();
+        ServerChanged();
+    }
+
+    private void UpdateLock()
+    {
+        bool shown = Kind == DestinationKinds.S3 && _lockDays.Value > 0;
+        _lockModeLabel.Visible = _lockMode.Visible = _lockModeGap.Visible = shown;
+    }
+
+    /// <summary>What the trusted key belongs to: the kind of the destination and its server.</summary>
+    private string ServerOf() => Kind == DestinationKinds.S3
+        ? Kind + "|" + _endpoint.Text.Trim()
+        : Kind + "|" + _host.Text.Trim() + "|" + _port.Text.Trim();
+
+    /// <summary>A key or a certificate is trusted for one server: another address has to be confirmed anew.</summary>
+    private void ServerChanged()
+    {
+        if (_filling)
+        {
+            return;
+        }
+
+        string now = ServerOf();
+        if (!string.Equals(now, _fingerprintOf, StringComparison.OrdinalIgnoreCase))
+        {
+            _fingerprintOf = now;
+            _fingerprint = null;
+        }
+
+        _testResult.Text = string.Empty;
+        ShowKey();
+    }
+
+    /// <summary>The key of an SFTP server is always shown; a certificate only once one was confirmed here (the
+    /// certificates Windows trusts need no confirmation).</summary>
+    private void ShowKey()
+    {
+        string kind = Kind;
+        bool shown = _supported && (kind == DestinationKinds.Sftp || (_fingerprint is not null && !DestinationKinds.IsFileSystem(kind)));
+        _keyLabel.Visible = _key.Visible = shown;
+        _forgetKey.Visible = shown && _fingerprint is not null;
+        _key.Text = _fingerprint ?? Strings.DestinationServerKeyNone;
+        _key.ForeColor = _fingerprint is null ? Glyphs.WarningText : SystemColors.ControlText;
     }
 
     private void Browse()
@@ -474,8 +686,7 @@ internal sealed class DestinationDialog : DialogForm
 
     private void TestAccess()
     {
-        var destination = Build();
-        if (Check(destination) is { } problem)
+        if (Check(Build()) is { } problem)
         {
             _testResult.ForeColor = Glyphs.ErrorText;
             _testResult.Text = problem;
@@ -489,18 +700,19 @@ internal sealed class DestinationDialog : DialogForm
         {
             try
             {
-                var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest
+                var result = await Ask();
+                if (result.TrustNeeded && result.Fingerprint is { } seen && ConfirmKey(result, seen))
                 {
-                    Destination = destination,
-                    TaskName = _context.TaskName,
-                    BackupType = _context.BackupType,
-                    ProfileSid = _context.ProfileSid,
-                },
-                    IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(2));
-                _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
-                _testResult.Text = result.Ok
-                    ? Strings.Format(Strings.TestOk, result.Folder, result.FreeBytes is { } free ? Custos.Core.Text.Sizes.Format(free) : "?")
-                    : Strings.Format(Strings.TestFailed, result.Error);
+                    // The administrator trusts what the server showed: once more, now with it.
+                    _fingerprint = seen;
+                    _fingerprintOf = ServerOf();
+                    ShowKey();
+                    _testResult.ForeColor = SystemColors.GrayText;
+                    _testResult.Text = Strings.TestRunning;
+                    result = await Ask();
+                }
+
+                ShowTest(result);
             }
             catch (ServiceUnavailableException ex)
             {
@@ -512,6 +724,36 @@ internal sealed class DestinationDialog : DialogForm
                 _test.Enabled = true;
             }
         });
+
+        Task<DestinationTestResult> Ask() => _context.Monitor.RequestAsync(PipeProtocol.Methods.DestinationTest, new DestinationTestRequest
+        {
+            Destination = Build(),
+            TaskName = _context.TaskName,
+            BackupType = _context.BackupType,
+            ProfileSid = _context.ProfileSid,
+        },
+            IpcJsonContext.Default.DestinationTestRequest, IpcJsonContext.Default.DestinationTestResult, TimeSpan.FromMinutes(3));
+    }
+
+    private void ShowTest(DestinationTestResult result)
+    {
+        _testResult.ForeColor = result.Ok ? Glyphs.Green : Glyphs.ErrorText;
+        string text = !result.Ok ? Strings.Format(Strings.TestFailed, result.Error)
+            : result.FreeBytes is { } free ? Strings.Format(Strings.TestOk, result.Folder, Custos.Core.Text.Sizes.Format(free))
+            : DestinationKinds.IsFileSystem(Kind) ? Strings.Format(Strings.TestOk, result.Folder, "?")
+            : Strings.Format(Strings.TestOkRemote, result.Folder);
+        _testResult.Text = result.Details.Count == 0 ? text : text + Environment.NewLine + string.Join(Environment.NewLine, result.Details);
+    }
+
+    /// <summary>Shows what the server showed and asks whether to trust it; a changed key is a warning.</summary>
+    private bool ConfirmKey(DestinationTestResult result, string seen)
+    {
+        string server = Kind == DestinationKinds.S3 ? _endpoint.Text.Trim() : _host.Text.Trim();
+        string text = result.FingerprintChanged
+            ? Strings.Format(Strings.DestinationKeyChanged, result.Error)
+            : Strings.Format(Strings.DestinationKeyConfirm, server, seen);
+        return MessageBox.Show(this, text, Strings.AppTitle, MessageBoxButtons.YesNo,
+            result.FingerprintChanged ? MessageBoxIcon.Warning : MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
     }
 }
 
@@ -597,8 +839,6 @@ internal sealed class EventDialog : DialogForm
         DialogResult = DialogResult.OK;
     }
 
-    private static Label Caption(string text) => new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 12, 6) };
-
     private void AddGridRow(Control caption, Control control, Control extra)
     {
         control.Margin = new Padding(0, 3, 0, 3);
@@ -662,47 +902,133 @@ internal sealed class EventDialog : DialogForm
 }
 
 /// <summary>
-/// Adds a Windows account for network folders, or changes its password. The password goes straight to the service,
-/// which keeps it encrypted with DPAPI; it is never shown or sent back.
+/// Adds or changes an account: a Windows account for network folders, or the account of a server (SFTP, FTP and
+/// FTPS, WebDAV, S3). The secret (a password, the secret key of S3, or the private key of SFTP) goes straight to the
+/// service, which keeps it encrypted with DPAPI; it is never shown or sent back.
 /// </summary>
 internal sealed class CredentialDialog : DialogForm
 {
+    /// <summary>The kinds of accounts that are added by hand, in the order of the list.</summary>
+    internal static readonly string[] Kinds =
+    [
+        CredentialKinds.Windows, CredentialKinds.Sftp, CredentialKinds.Ftp, CredentialKinds.WebDav, CredentialKinds.S3,
+    ];
+
+    /// <summary>A private key file is a few kilobytes; anything much larger is some other file.</summary>
+    private const int LargestKeyFile = 64 * 1024;
+
     private readonly ServiceMonitor _monitor;
     private readonly Credential? _existing;
+    private readonly string? _fixedKind;
+    private readonly ComboBox _kind = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly Label _userLabel = Caption(Strings.AccountUser);
     private readonly TextBox _user = new() { Dock = DockStyle.Fill };
     private readonly TextBox _domain = new() { Dock = DockStyle.Fill };
+    private readonly RadioButton _bySecret = new() { Text = Strings.AccountBySecret, AutoSize = true, Checked = true };
+    private readonly RadioButton _byKey = new() { Text = Strings.AccountByKey, AutoSize = true };
+    private readonly FlowLayoutPanel _way = new() { AutoSize = true, WrapContents = false, Margin = new Padding(0, 4, 0, 2) };
+    private readonly Label _passwordLabel = Caption(Strings.AccountPassword);
     private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
     private readonly CheckBox _show = new() { Text = Strings.ShowPassword, AutoSize = true };
+    private readonly TextBox _key = new()
+    {
+        Dock = DockStyle.Fill,
+        Multiline = true,
+        AcceptsReturn = true,
+        WordWrap = false,
+        ScrollBars = ScrollBars.Both,
+        Height = 130,
+    };
 
-    public CredentialDialog(ServiceMonitor monitor, Credential? existing)
-        : base(existing is null ? Strings.AccountAddTitle : Strings.Format(Strings.AccountEditTitle, existing.DisplayName), new Size(520, 300))
+    private readonly Button _keyFile = new() { Text = Strings.ButtonKeyFile, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+    private readonly Control[] _domainRow;
+    private readonly Control[] _passwordRow;
+    private readonly Control[] _keyRow;
+    private readonly Label _domainNote;
+    private readonly Label _note;
+
+    /// <param name="monitor">The connection to the service.</param>
+    /// <param name="existing">The account to change, or null to add one.</param>
+    /// <param name="kind">The kind of a new account when the place it is added from needs one kind; null lets the user choose.</param>
+    public CredentialDialog(ServiceMonitor monitor, Credential? existing, string? kind = null)
+        : base(existing is null ? Strings.AccountAddTitle : Strings.Format(Strings.AccountEditTitle, existing.DisplayName), new Size(580, 470))
     {
         _monitor = monitor;
         _existing = existing;
-        AddRow(Strings.AccountUser, _user);
-        AddRow(Strings.AccountDomain, _domain);
-        AddNote(Strings.AccountDomainNote);
-        AddRow(Strings.AccountPassword, _password);
+        _fixedKind = existing?.Kind ?? kind;
+        foreach (string item in Kinds)
+        {
+            _kind.Items.Add(KindText(item));
+        }
+
+        if (_fixedKind is not null && Array.IndexOf(Kinds, _fixedKind) < 0)
+        {
+            _kind.Items.Add(KindText(_fixedKind));
+        }
+
+        _way.Controls.Add(_bySecret);
+        _way.Controls.Add(_byKey);
+        AddGridRow(Caption(Strings.AccountKind), _kind);
+        AddGridRow(_userLabel, _user);
+        _domainRow = AddGridRow(Caption(Strings.AccountDomain), _domain);
+        _domainNote = AddNote(Strings.AccountDomainNote);
+        AddWide(_way);
+        _passwordRow = AddGridRow(_passwordLabel, _password);
         AddWide(_show);
-        AddNote(existing is null ? Strings.AccountPasswordNote : Strings.AccountKeepPasswordNote);
+        var keyLabel = Caption(Strings.AccountPrivateKey);
+        keyLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+        _keyRow = AddGridRow(keyLabel, _key, _keyFile);
+        _note = AddNote(string.Empty);
         EndBuild();
+
+        int index = Array.IndexOf(Kinds, _fixedKind ?? CredentialKinds.Windows);
+        _kind.SelectedIndex = index >= 0 ? index : Kinds.Length;
+        _kind.Enabled = _fixedKind is null;
         if (existing is not null)
         {
             _user.Text = existing.User;
             _domain.Text = existing.Domain ?? string.Empty;
         }
 
+        UpdateFields();
+        _kind.SelectedIndexChanged += (_, _) => UpdateFields();
+        _bySecret.CheckedChanged += (_, _) => UpdateFields();
         _show.CheckedChanged += (_, _) => _password.UseSystemPasswordChar = !_show.Checked;
+        _keyFile.Click += (_, _) => TakeKeyFile();
     }
 
     /// <summary>The account as the service stored it, after "OK".</summary>
     public Credential? Saved { get; private set; }
 
+    /// <summary>The name of a kind of accounts, as the lists show it.</summary>
+    public static string KindText(string kind) => kind switch
+    {
+        CredentialKinds.Windows => Strings.AccountKindWindows,
+        CredentialKinds.Sftp => Strings.AccountKindSftp,
+        CredentialKinds.Ftp => Strings.AccountKindFtp,
+        CredentialKinds.WebDav => Strings.AccountKindWebDav,
+        CredentialKinds.S3 => Strings.AccountKindS3,
+        _ => kind,
+    };
+
+    /// <summary>
+    /// A private key as the service keeps it: lines ended by a line feed alone, nothing around it. Null when the text
+    /// is not a private key in the OpenSSH or PEM format (a key of PuTTY, a public key, some other file).
+    /// </summary>
+    public static string? CleanKey(string? text)
+    {
+        string key = (text ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Trim();
+        return key.StartsWith("-----BEGIN", StringComparison.Ordinal) && key.Contains("PRIVATE KEY", StringComparison.Ordinal) ? key + "\n" : null;
+    }
+
     protected override void OnOk()
     {
+        string kind = Kind;
+        bool windows = kind == CredentialKinds.Windows;
+        bool s3 = kind == CredentialKinds.S3;
         string user = _user.Text.Trim();
-        string domain = _domain.Text.Trim();
-        if (domain.Length == 0 && user.IndexOf('\\', StringComparison.Ordinal) is int slash and > 0)
+        string domain = windows ? _domain.Text.Trim() : string.Empty;
+        if (windows && domain.Length == 0 && user.IndexOf('\\', StringComparison.Ordinal) is int slash and > 0)
         {
             domain = user[..slash];
             user = user[(slash + 1)..];
@@ -710,21 +1036,47 @@ internal sealed class CredentialDialog : DialogForm
 
         if (user.Length == 0)
         {
-            Ui.ShowWarning(this, Strings.ErrorUserRequired);
+            Ui.ShowWarning(this, s3 ? Strings.ErrorAccessKeyRequired : Strings.ErrorUserRequired);
             return;
         }
 
-        string? password = _password.Text.Length > 0 ? _password.Text : null;
-        if (_existing is null && password is null)
+        string? secret;
+        if (ByKey)
         {
-            Ui.ShowWarning(this, Strings.ErrorPasswordRequired);
-            return;
+            if (string.IsNullOrWhiteSpace(_key.Text))
+            {
+                if (_existing is null)
+                {
+                    Ui.ShowWarning(this, Strings.ErrorKeyRequired);
+                    return;
+                }
+
+                secret = null;
+            }
+            else if (CleanKey(_key.Text) is { } key)
+            {
+                secret = key;
+            }
+            else
+            {
+                Ui.ShowWarning(this, Strings.ErrorKeyBad);
+                return;
+            }
+        }
+        else
+        {
+            secret = _password.Text.Length > 0 ? _password.Text : null;
+            if (_existing is null && secret is null)
+            {
+                Ui.ShowWarning(this, s3 ? Strings.ErrorSecretKeyRequired : Strings.ErrorPasswordRequired);
+                return;
+            }
         }
 
         var credential = new Credential
         {
             Id = _existing?.Id ?? TaskDefinition.NewId(),
-            Kind = CredentialKinds.Windows,
+            Kind = kind,
             User = user,
             Domain = domain.Length == 0 ? null : domain,
             ExtensionData = _existing?.ExtensionData,
@@ -734,10 +1086,11 @@ internal sealed class CredentialDialog : DialogForm
         {
             try
             {
-                var result = await _monitor.RequestAsync(PipeProtocol.Methods.CredentialSave, new CredentialInput { Credential = credential, Password = password },
+                var result = await _monitor.RequestAsync(PipeProtocol.Methods.CredentialSave, new CredentialInput { Credential = credential, Password = secret },
                     IpcJsonContext.Default.CredentialInput, IpcJsonContext.Default.CredentialSaveResult);
                 Saved = result.Credential;
                 _password.Clear();
+                _key.Clear();
                 DialogResult = DialogResult.OK;
             }
             finally
@@ -745,6 +1098,96 @@ internal sealed class CredentialDialog : DialogForm
                 SetBusy(false);
             }
         });
+    }
+
+    private string Kind => _kind.SelectedIndex >= 0 && _kind.SelectedIndex < Kinds.Length ? Kinds[_kind.SelectedIndex] : _fixedKind ?? CredentialKinds.Windows;
+
+    /// <summary>SFTP with a private key in place of a password.</summary>
+    private bool ByKey => Kind == CredentialKinds.Sftp && _byKey.Checked;
+
+    private static void SetVisible(Control[] row, bool visible)
+    {
+        foreach (var control in row)
+        {
+            control.Visible = visible;
+        }
+    }
+
+    private Control[] AddGridRow(Control caption, Control control, Control? extra = null)
+    {
+        extra ??= new Label { AutoSize = true };
+        control.Margin = new Padding(0, 3, 0, 3);
+        extra.Margin = new Padding(6, 3, 0, 3);
+        Body.Controls.Add(caption);
+        Body.Controls.Add(control);
+        Body.Controls.Add(extra);
+        return [caption, control, extra];
+    }
+
+    /// <summary>Shows the fields of the chosen kind, and what its secret is called.</summary>
+    private void UpdateFields()
+    {
+        string kind = Kind;
+        bool windows = kind == CredentialKinds.Windows;
+        bool s3 = kind == CredentialKinds.S3;
+        bool key = ByKey;
+        Body.SuspendLayout();
+        _userLabel.Text = s3 ? Strings.AccountAccessKey : Strings.AccountUser;
+        _passwordLabel.Text = s3 ? Strings.AccountSecretKey : Strings.AccountPassword;
+        SetVisible(_domainRow, windows);
+        _domainNote.Visible = windows;
+        _way.Visible = kind == CredentialKinds.Sftp;
+        SetVisible(_passwordRow, !key);
+        _show.Visible = !key;
+        SetVisible(_keyRow, key);
+        string kept = key ? Strings.AccountKeyNote : s3 ? Strings.AccountSecretNote : Strings.AccountPasswordNote;
+        _note.Text = _existing is null ? kept
+            : key ? Strings.AccountKeyNote + "\n" + Strings.AccountKeepSecretNote
+            : s3 ? Strings.AccountKeepSecretNote
+            : Strings.AccountKeepPasswordNote;
+        Body.ResumeLayout(performLayout: true);
+    }
+
+    /// <summary>Reads a private key from its file into the field. The window runs as the user, so it reads what the user may read.</summary>
+    private void TakeKeyFile()
+    {
+        using var dialog = new OpenFileDialog { Filter = Strings.KeyFileFilter, CheckFileExists = true };
+        string home = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ssh");
+        if (Directory.Exists(home))
+        {
+            dialog.InitialDirectory = home;
+        }
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        string text;
+        try
+        {
+            if (new FileInfo(dialog.FileName).Length > LargestKeyFile)
+            {
+                Ui.ShowWarning(this, Strings.ErrorKeyBad);
+                return;
+            }
+
+            text = File.ReadAllText(dialog.FileName);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Ui.ShowWarning(this, Strings.Format(Strings.ErrorKeyFile, dialog.FileName, ex.Message));
+            return;
+        }
+
+        if (CleanKey(text) is not { } key)
+        {
+            Ui.ShowWarning(this, Strings.ErrorKeyBad);
+            return;
+        }
+
+        // The edit control of Windows breaks lines only at CR LF.
+        _key.Text = key.Replace("\n", "\r\n", StringComparison.Ordinal);
     }
 }
 
@@ -873,8 +1316,9 @@ internal sealed class SettingsForm : DialogForm
         _logLevel.Items.AddRange([Strings.LogLevelSummary, Strings.LogLevelFiles]);
         _priority.Items.AddRange([Strings.PriorityLow, Strings.PriorityNormal]);
         _language.Items.AddRange([Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish]);
-        _accounts.Columns.Add(Strings.ColumnAccount, 220);
-        _accounts.Columns.Add(Strings.ColumnUsedBy, 330);
+        _accounts.Columns.Add(Strings.ColumnAccount, 200);
+        _accounts.Columns.Add(Strings.ColumnAccountKind, 150);
+        _accounts.Columns.Add(Strings.ColumnUsedBy, 220);
 
         _isAdmin = monitor.Status.Hello?.IsAdmin == true;
         var serverHeading = new Label { Text = Strings.SettingsServer, AutoSize = true, Margin = new Padding(0, 0, 0, 4) };
@@ -1213,10 +1657,14 @@ internal sealed class SettingsForm : DialogForm
         string? selected = _accounts.SelectedItems.Count > 0 ? (string)_accounts.SelectedItems[0].Tag! : null;
         _accounts.BeginUpdate();
         _accounts.Items.Clear();
-        foreach (var credential in (snapshot?.Credentials ?? []).Where(c => c.Kind == CredentialKinds.Windows).OrderBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase))
+        var shown = (snapshot?.Credentials ?? [])
+            .Where(c => Array.IndexOf(CredentialDialog.Kinds, c.Kind) >= 0)
+            .OrderBy(c => Array.IndexOf(CredentialDialog.Kinds, c.Kind))
+            .ThenBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase);
+        foreach (var credential in shown)
         {
             var users = snapshot!.Tasks.Where(t => UsesCredential(t, credential.Id)).Select(t => t.Name).ToList();
-            var item = new ListViewItem([credential.DisplayName, users.Count == 0 ? Strings.AccountNotUsed : string.Join(", ", users)]) { Tag = credential.Id };
+            var item = new ListViewItem([credential.DisplayName, CredentialDialog.KindText(credential.Kind), users.Count == 0 ? Strings.AccountNotUsed : string.Join(", ", users)]) { Tag = credential.Id };
             _accounts.Items.Add(item);
             item.Selected = string.Equals(credential.Id, selected, StringComparison.OrdinalIgnoreCase);
         }

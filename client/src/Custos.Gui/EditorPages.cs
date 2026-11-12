@@ -735,6 +735,15 @@ internal sealed class DestinationsPage : EditorPage
             return Strings.ErrorTemplateRequired;
         }
 
+        // A locked file cannot be replaced, and a mirror and a shared folder replace files (section 6.3).
+        bool replaces = Context.IsMirror || (!_separate.Checked && Context.ArchiveFormat == ArchiveFormats.None);
+        int locked = _destinations.FindIndex(d => d.Kind == DestinationKinds.S3 && d.ObjectLockDays > 0);
+        if (replaces && locked >= 0)
+        {
+            _list.Items[locked].Selected = true;
+            return Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, TaskDescriber.Destination(_destinations[locked]));
+        }
+
         task.Destinations = [.. _destinations];
         task.Layout.SeparateFolders = _separate.Checked;
         if (named)
@@ -755,19 +764,23 @@ internal sealed class DestinationsPage : EditorPage
         DestinationKinds.Local => Strings.KindLocal,
         DestinationKinds.Unc => Strings.KindUnc,
         DestinationKinds.Usb => Strings.KindUsb,
+        DestinationKinds.Sftp => Strings.KindSftp,
+        DestinationKinds.Ftp => Strings.KindFtp,
+        DestinationKinds.Ftps => Strings.KindFtps,
+        DestinationKinds.WebDav => Strings.KindWebDav,
+        DestinationKinds.S3 => Strings.KindS3,
         _ => Strings.Format(Strings.KindLater, kind.ToUpperInvariant()),
     };
 
     private void Fill()
     {
         int selected = _list.SelectedIndices.Count > 0 ? _list.SelectedIndices[0] : -1;
-        var accounts = Context.Credentials;
         _list.BeginUpdate();
         _list.Items.Clear();
         foreach (var destination in _destinations)
         {
             string account = destination.CredentialId is { } id
-                ? accounts.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? Strings.AccountUnknown
+                ? Context.FindCredential(id)?.DisplayName ?? Strings.AccountUnknown
                 : destination.Kind == DestinationKinds.Unc ? Strings.AccountService : string.Empty;
             _list.Items.Add(new ListViewItem([TaskDescriber.Destination(destination), KindText(destination.Kind), account]));
         }
@@ -1660,6 +1673,8 @@ internal sealed class CredentialPicker : UserControl
     private readonly EditorContext _context;
     private readonly ComboBox _combo = new() { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
     private readonly Button _add = new() { Text = Strings.ButtonAddAccount, AutoSize = true, Margin = new Padding(6, 0, 0, 0) };
+    private string _kind = CredentialKinds.Windows;
+    private string? _noneText = Strings.AccountService;
     private string? _selectedId;
     private bool _filling;
 
@@ -1684,7 +1699,7 @@ internal sealed class CredentialPicker : UserControl
         };
         _add.Click += (_, _) =>
         {
-            if (_context.AddCredential(FindForm()!) is { } added)
+            if (_context.AddCredential(FindForm()!, _kind) is { } added)
             {
                 SelectedId = added.Id;
                 SelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -1696,7 +1711,7 @@ internal sealed class CredentialPicker : UserControl
 
     public event EventHandler? SelectionChanged;
 
-    /// <summary>The account id; null = the account of the service (SYSTEM).</summary>
+    /// <summary>The account id; null = the account of the service (SYSTEM), or no account at all.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string? SelectedId
@@ -1709,19 +1724,41 @@ internal sealed class CredentialPicker : UserControl
         }
     }
 
+    /// <summary>
+    /// Shows the accounts of another kind (<see cref="CredentialKinds"/>). An account of the kind shown before is no
+    /// longer chosen.
+    /// </summary>
+    /// <param name="noneText">What working without an account is called; null if this kind cannot do without one.</param>
+    public void SetKind(string kind, string? noneText)
+    {
+        if (_kind != kind && _context.FindCredential(_selectedId) is { } chosen && chosen.Kind != kind)
+        {
+            _selectedId = null;
+        }
+
+        _kind = kind;
+        _noneText = noneText;
+        Fill();
+    }
+
     private void Fill()
     {
         _filling = true;
         try
         {
             _combo.Items.Clear();
-            _combo.Items.Add(new Item(null, Strings.AccountService));
-            foreach (var credential in _context.Credentials)
+            if (_noneText is not null)
+            {
+                _combo.Items.Add(new Item(null, _noneText));
+            }
+
+            var accounts = _context.CredentialsOf(_kind);
+            foreach (var credential in accounts)
             {
                 _combo.Items.Add(new Item(credential.Id, credential.DisplayName));
             }
 
-            if (_selectedId is not null && !_context.Credentials.Any(c => string.Equals(c.Id, _selectedId, StringComparison.OrdinalIgnoreCase)))
+            if (_selectedId is not null && !accounts.Any(c => string.Equals(c.Id, _selectedId, StringComparison.OrdinalIgnoreCase)))
             {
                 _combo.Items.Add(new Item(_selectedId, Strings.AccountUnknown));
             }

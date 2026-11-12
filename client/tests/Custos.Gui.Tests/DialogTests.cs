@@ -68,6 +68,95 @@ public sealed class DialogTests
     });
 
     [Theory]
+    [InlineData(DestinationKinds.Sftp)]
+    [InlineData(DestinationKinds.Ftp)]
+    [InlineData(DestinationKinds.Ftps)]
+    [InlineData(DestinationKinds.WebDav)]
+    [InlineData(DestinationKinds.S3)]
+    public void The_destination_dialog_gives_back_a_server_with_everything_of_its_kind(string kind) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Remote(kind);
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        // The account of this kind is offered, the fields of other kinds are not shown.
+        Assert.True(Sta.Find<CredentialPicker>(dialog).Single().Visible);
+        Assert.Equal(kind == DestinationKinds.S3, Sta.Shows(dialog, Strings.DestinationBucket));
+        Assert.Equal(kind is DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps, Sta.Shows(dialog, Strings.DestinationPort));
+        Assert.Equal(kind == DestinationKinds.WebDav, Sta.Shows(dialog, Strings.DestinationAddress));
+        Assert.Equal(destination.ServerFingerprint is not null, Sta.Shows(dialog, Strings.DestinationServerKey));
+        Assert.False(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonBrowse).Visible);
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal(Samples.Json(destination), Samples.Json(dialog.Destination));
+    });
+
+    [Fact]
+    public void A_key_of_a_server_is_trusted_for_that_server_only() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), Samples.Remote(DestinationKinds.Sftp), isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Samples.ServerKey));
+        Sta.Find<TextBox>(dialog).Single(b => b.Text == "backup.example.org").Text = "other.example.org";
+        Sta.Pump();
+
+        // Another address: the key that was confirmed says nothing about it.
+        Assert.False(Sta.Shows(dialog, Samples.ServerKey));
+        Assert.True(Sta.Shows(dialog, Strings.DestinationServerKeyNone));
+        Assert.False(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonForgetKey).Visible);
+    });
+
+    [Fact]
+    public void The_protection_from_deletion_is_offered_for_s3_only_and_its_mode_with_it() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Remote(DestinationKinds.S3);
+        destination.ObjectLockDays = 0;
+        destination.ObjectLockMode = null;
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Strings.DestinationLock));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationLockMode));
+        Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum == 36500).Value = 14;
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Strings.DestinationLockMode));
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        // GOVERNANCE unless the administrator chose the mode nobody can lift.
+        Assert.Equal((14, ObjectLockModes.Governance), (dialog.Destination.ObjectLockDays, dialog.Destination.ObjectLockMode));
+    });
+
+    [Fact]
+    public void A_server_needs_its_address_and_where_it_must_its_account() => Sta.Run("en-US", () =>
+    {
+        Assert.Equal(Strings.ErrorHostRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Ftp, Path = "backup" }));
+        Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Ftp, Host = "ftp.example.org" }));
+        Assert.Equal(Strings.ErrorPortBad, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Ftps, Host = "ftp.example.org", Port = 70000 }));
+        Assert.Equal(Strings.ErrorAccountRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.Sftp, Host = "backup.example.org" }));
+        Assert.Equal(Strings.ErrorAddressRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.WebDav, Host = "dav" }));
+        Assert.Equal(Strings.ErrorBucketRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.S3, CredentialId = Samples.S3AccountId }));
+        Assert.Equal(Strings.ErrorAccountRequired, DestinationDialog.Check(new TaskDestination { Kind = DestinationKinds.S3, Bucket = "office-backup" }));
+        foreach (string kind in new[] { DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3 })
+        {
+            Assert.Null(DestinationDialog.Check(Samples.Remote(kind)));
+        }
+    });
+
+    [Theory]
     [InlineData(TaskEventKinds.Run)]
     [InlineData(TaskEventKinds.ServiceStop)]
     public void The_event_dialog_gives_back_the_event(string kind) => Sta.Run("ru-RU", () =>
@@ -115,6 +204,77 @@ public sealed class DialogTests
     });
 
     [Theory]
+    [InlineData(CredentialKinds.Windows)]
+    [InlineData(CredentialKinds.Sftp)]
+    [InlineData(CredentialKinds.Ftp)]
+    [InlineData(CredentialKinds.WebDav)]
+    [InlineData(CredentialKinds.S3)]
+    public void The_account_dialog_asks_what_an_account_of_its_kind_has(string kind) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var dialog = new CredentialDialog(monitor, null, kind);
+        dialog.Show();
+        Sta.Pump();
+
+        // Added from a destination: the kind is the one the destination needs.
+        var kinds = Sta.Find<ComboBox>(dialog).Single();
+        Assert.False(kinds.Enabled);
+        Assert.Equal(CredentialDialog.KindText(kind), kinds.Text);
+        Assert.Equal(kind == CredentialKinds.Windows, Sta.Shows(dialog, Strings.AccountDomain));
+        Assert.Equal(kind == CredentialKinds.S3, Sta.Shows(dialog, Strings.AccountAccessKey));
+        Assert.Equal(kind == CredentialKinds.S3, Sta.Shows(dialog, Strings.AccountSecretKey));
+        Assert.Equal(kind != CredentialKinds.S3, Sta.Shows(dialog, Strings.AccountPassword));
+        var byKey = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.AccountByKey);
+        var key = Sta.Find<TextBox>(dialog).Single(b => b.Multiline);
+        Assert.Equal(kind == CredentialKinds.Sftp, byKey.Visible);
+        Assert.False(key.Visible);
+        if (kind == CredentialKinds.Sftp)
+        {
+            byKey.Checked = true;
+            Sta.Pump();
+
+            Assert.True(key.Visible);
+            Assert.True(Sta.Shows(dialog, Strings.AccountPrivateKey));
+            Assert.False(Sta.Shows(dialog, Strings.AccountPassword));
+            Assert.True(Sta.Shows(dialog, Strings.AccountKeyNote));
+        }
+    });
+
+    [Fact]
+    public void A_new_account_from_the_settings_lets_its_kind_be_chosen() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var dialog = new CredentialDialog(monitor, null);
+        dialog.Show();
+        Sta.Pump();
+
+        var kinds = Sta.Find<ComboBox>(dialog).Single();
+        Assert.True(kinds.Enabled);
+        Assert.Equal(Strings.AccountKindWindows, kinds.Text);
+        Assert.True(Sta.Shows(dialog, Strings.AccountDomain));
+        kinds.SelectedIndex = Array.IndexOf(CredentialDialog.Kinds, CredentialKinds.S3);
+        Sta.Pump();
+
+        Assert.False(Sta.Shows(dialog, Strings.AccountDomain));
+        Assert.True(Sta.Shows(dialog, Strings.AccountAccessKey));
+        Assert.True(Sta.Shows(dialog, Strings.AccountSecretNote));
+    });
+
+    [Fact]
+    public void A_private_key_is_taken_in_the_openssh_or_pem_format_only()
+    {
+        const string body = "b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW";
+        string key = "-----BEGIN OPENSSH PRIVATE KEY-----\r\n" + body + "\r\n-----END OPENSSH PRIVATE KEY-----";
+
+        Assert.Equal("-----BEGIN OPENSSH PRIVATE KEY-----\n" + body + "\n-----END OPENSSH PRIVATE KEY-----\n", CredentialDialog.CleanKey("  " + key + "\r\n\r\n"));
+        Assert.NotNull(CredentialDialog.CleanKey("-----BEGIN RSA PRIVATE KEY-----\n" + body + "\n-----END RSA PRIVATE KEY-----\n"));
+        Assert.Null(CredentialDialog.CleanKey("PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none"));
+        Assert.Null(CredentialDialog.CleanKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmc2Nqy7ZFj7EM3zdVr8Cnk6ZbFEtZGNwHE3+8hkOLz custos@PC01"));
+        Assert.Null(CredentialDialog.CleanKey("-----BEGIN CERTIFICATE-----\n" + body + "\n-----END CERTIFICATE-----"));
+        Assert.Null(CredentialDialog.CleanKey(null));
+    }
+
+    [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]
     public void The_settings_are_read_only_without_administrator_rights(string culture) => Sta.Run(culture, () =>
@@ -128,9 +288,15 @@ public sealed class DialogTests
         Assert.False(((Button)settings.AcceptButton!).Visible);
         Assert.Equal(Strings.ButtonClose, ((Button)settings.CancelButton!).Text);
         var accounts = Assert.Single(Sta.Find<ListView>(settings));
-        var row = Assert.Single(accounts.Items.Cast<ListViewItem>());
-        Assert.Equal(Samples.Account().DisplayName, row.Text);
-        Assert.Equal("Office documents", row.SubItems[1].Text);
+        // The accounts of network folders first, then those of the servers; passwords of archives and keys the service made are not accounts.
+        var rows = accounts.Items.Cast<ListViewItem>().ToList();
+        Assert.Equal(
+            [Strings.AccountKindWindows, Strings.AccountKindSftp, Strings.AccountKindFtp, Strings.AccountKindWebDav, Strings.AccountKindS3],
+            rows.Select(r => r.SubItems[1].Text));
+        Assert.Equal(Samples.Account().DisplayName, rows[0].Text);
+        Assert.Equal("Office documents", rows[0].SubItems[2].Text);
+        Assert.Equal("EXAMPLEACCESSKEY", rows[4].Text);
+        Assert.Equal(Strings.AccountNotUsed, rows[4].SubItems[2].Text);
         var sevenZip = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.SevenZipCheckButton);
         Assert.False(sevenZip.Enabled);
     });

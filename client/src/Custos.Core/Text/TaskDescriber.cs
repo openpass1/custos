@@ -137,10 +137,16 @@ public static class TaskDescriber
         return JoinWords(shown);
     }
 
-    /// <summary>A destination in words: its path, or "USB disk «LABEL»" with the folder on it.</summary>
+    /// <summary>A destination in words: its path, "USB disk «LABEL»" with the folder on it, or the address of a
+    /// server ("sftp://backup.example.org/office", "s3://bucket/office").</summary>
     public static string Destination(TaskDestination destination)
     {
         ArgumentNullException.ThrowIfNull(destination);
+        if (DestinationKinds.IsSupported(destination.Kind) && !DestinationKinds.IsFileSystem(destination.Kind))
+        {
+            return Custos.Core.Destinations.DestinationStores.Label(destination);
+        }
+
         if (destination.Kind == DestinationKinds.Usb)
         {
             string label = Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel ?? "?");
