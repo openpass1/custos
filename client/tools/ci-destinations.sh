@@ -152,10 +152,14 @@ s3_key=custosminio
 s3_secret='Minio-Test-Secret-2026'
 s3_kind=
 if docker info > /dev/null 2>&1; then
+  # A fixed release, so that a change of MinIO does not break the tests; the latest one if that release is gone.
+  image=${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}
+  docker pull --quiet "$image" > /dev/null 2>&1 || image=minio/minio:latest
+  echo "S3: $image"
   docker rm -f custos-minio > /dev/null 2>&1 || true
   docker run --detach --name custos-minio --publish 127.0.0.1:9000:9000 \
     --env MINIO_ROOT_USER="$s3_key" --env MINIO_ROOT_PASSWORD="$s3_secret" \
-    "${MINIO_IMAGE:-minio/minio:RELEASE.2025-04-22T22-12-26Z}" server /data > /dev/null
+    "$image" server /data > /dev/null
   s3_kind=minio
 else
   moto=$(command -v moto_server || true)
