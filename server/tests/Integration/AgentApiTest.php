@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Custos\Tests\Integration;
 
 use Custos\App;
+use Custos\Domain\Monitor;
 use Custos\Domain\RegistrationKey;
 use Custos\Http\Request;
 use Custos\Http\Response;
@@ -44,6 +45,13 @@ final class AgentApiTest extends TestCase
         $again = $this->client(1)->register(RegistrationKey::format($this->key()), $this->info());
         $this->assertTrue($again['ok'], $again['reason']);
         $this->assertSame(1, (int) $this->app->db()->value('SELECT COUNT(*) FROM agents'));
+
+        // It keeps its status too: an approved machine connected again after "Reset the binding" needs no new approval.
+        $this->app->agents()->approve($client->agentId);
+        $reconnected = $this->client(1);
+        $result = $reconnected->register(RegistrationKey::format($this->key()), $this->info());
+        $this->assertTrue($result['ok'], $result['reason']);
+        $this->assertSame(['approved', $client->agentId], [$result['status'], $reconnected->agentId]);
     }
 
     public function testAgentRejectsServerWithAnotherFingerprint(): void
@@ -72,6 +80,7 @@ final class AgentApiTest extends TestCase
         $heartbeat = $client->call('POST', 'agent/heartbeat', $this->heartbeat());
         $this->assertTrue($heartbeat->ok(), $heartbeat->describe());
         $this->assertSame('pending', $heartbeat->data()['status']);
+        $this->assertSame(20, $heartbeat->data()['heartbeat_interval_s'], 'the default interval');
         $this->assertFalse($heartbeat->data()['want_config']);
         $this->assertSame([], $heartbeat->data()['commands']);
 
@@ -277,6 +286,8 @@ final class AgentApiTest extends TestCase
         $this->app->agents()->setDisabled($client->agentId, true);
         $heartbeat = $client->call('POST', 'agent/heartbeat', $this->heartbeat());
         $this->assertSame('disabled', $heartbeat->data()['status']);
+        // A disabled agent checks in every 5 minutes, so it comes back soon after it is enabled (A.4).
+        $this->assertSame(Monitor::DISABLED_HEARTBEAT_S, $heartbeat->data()['heartbeat_interval_s']);
         $this->assertSame([403, 'disabled'], [
             ($r = $client->call('POST', 'agent/runs/start', $this->runStart(Crypto::uuid4(), Crypto::uuid4())))->status, $r->error(),
         ]);

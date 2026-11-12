@@ -3,6 +3,8 @@
  * @var array $values @var array $errors @var ?string $registrationCode @var string $serverFingerprint
  * @var string $serverUrl @var string $myIp
  */
+use Custos\Domain\RegistrationKey;
+
 $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">' . e($errors[$name]) . '</div>' : '';
 ?>
 <h1><?= e(t('settings.title')) ?></h1>
@@ -17,6 +19,16 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     <h2><?= e(t('settings.agents')) ?></h2>
     <p class="hint"><?= e(t('settings.agents.hint')) ?></p>
     <dl class="props">
+        <?php if ($registrationCode !== null && $serverUrl !== ''): ?>
+            <dt><?= e(t('settings.connection')) ?></dt>
+            <dd>
+                <span class="copy-row">
+                    <input type="text" id="connection-string" class="mono" value="<?= e(RegistrationKey::connection($serverUrl, $registrationCode)) ?>" readonly size="72">
+                    <button type="button" data-copy="connection-string"><?= e(t('common.copy')) ?></button>
+                </span>
+                <div class="note"><?= e(t('settings.connection.hint')) ?></div>
+            </dd>
+        <?php endif ?>
         <dt><?= e(t('settings.server_url')) ?></dt>
         <dd><code><?= e($serverUrl !== '' ? $serverUrl : '—') ?></code></dd>
         <dt><?= e(t('settings.registration_code')) ?></dt>
@@ -62,6 +74,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     <?= $error('heartbeat_interval_s') ?>
     <label><?= e(t('settings.offline_after_min')) ?>
         <input type="number" name="offline_after_min" value="<?= e($values['offline_after_min']) ?>" min="1" max="10080" required>
+        <span class="note"><?= e(t('settings.offline_after_min.hint')) ?></span>
     </label>
     <?= $error('offline_after_min') ?>
 

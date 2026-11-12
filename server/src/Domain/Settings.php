@@ -16,7 +16,7 @@ final class Settings
         // Interface language for users who have not chosen one, and the language of Telegram and e-mail messages.
         'default_language' => 'ru',
         'heartbeat_interval_s' => '20',
-        'offline_after_min' => '60',
+        'offline_after_min' => '15',
         'ip_allow_site' => '',
         'ip_allow_agents' => '',
         // Zabbix and the wall screen (section 4): their own allow-list and tokens, created by install.php and migrate.php.

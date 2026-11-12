@@ -135,8 +135,13 @@ final class WebTest extends TestCase
         $this->assertMatchesRegularExpression('/id="registration-code"[^>]*value="([^"]+)"/', $settings);
         preg_match('/id="registration-code"[^>]*value="([^"]+)"/', $settings, $m);
         $code = html_entity_decode($m[1]);
+        // The connection string is the site address from the config, "#" and the same code (A.3). The fake agent
+        // takes it in --code; the test server listens elsewhere, so --url still gives the address.
+        preg_match('/id="connection-string"[^>]*value="([^"]+)"/', $settings, $m);
+        $connection = html_entity_decode($m[1] ?? '');
+        $this->assertSame(TestEnv::config()['url'] . '#' . $code, $connection);
 
-        [$exit, $output] = $this->fakeAgent(['--code=' . $code, '--result=success', '--skip-schedule']);
+        [$exit, $output] = $this->fakeAgent(['--code=' . $connection, '--result=success', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
         $this->assertStringContainsString('status pending', $output);
         preg_match('/agent key ([0-9A-F-]{19})/', $output, $fingerprint);

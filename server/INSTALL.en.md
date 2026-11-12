@@ -418,7 +418,12 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.1.** No migrations. A new storage warning limit applies as soon as the settings are saved, not an hour later. Long pages get a "Back to top" button at the bottom right.
 
-**Version 0.4.2.** Migration `006` (applied by `migrate.php`): the default heartbeat interval is now 20 seconds instead of 60. A site that had the old value of 60 gets 20; any other value chosen by hand stays. Fixed: in the task and template editors, "Create task" and "Save" silently did not send the form when the schedule was not "by timer". The heartbeat interval has a hint: the smaller it is, the sooner a machine gets its approval and task edits.
+**Version 0.4.2.** `migrate.php` applies migrations `006` and `007`: the default heartbeat interval is now 20 seconds instead of 60, and a machine counts as "offline" after 15 minutes instead of 60. A site that had the old values of 60 gets the new ones; values chosen by hand stay. Also in this version:
+- in the task and template editors, "Create task" and "Save" send the form again (they silently did nothing when the schedule was not "by timer");
+- Settings → General: a connection string, the server address and the registration code in one line for the program on the machine; hints for the heartbeat interval and "offline";
+- a disabled machine contacts the site every 5 minutes, so it comes back sooner after it is enabled (needs a client with this change);
+- the example path of sources and destinations follows the chosen kind;
+- "Replace password" looks like a link. SSH keys and cloud drives cannot get a password from the site: they are made on the machine.
 
 ## What to keep in backups
 

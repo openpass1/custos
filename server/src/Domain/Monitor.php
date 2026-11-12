@@ -17,8 +17,8 @@ final class Monitor
     /** A heartbeat older than this many heartbeat intervals means the agent's running/queue data is stale. */
     public const FRESH_INTERVALS = 3;
     public const MIN_FRESH_S = 180;
-    /** A disabled agent checks in every 10 minutes (A.4). */
-    public const DISABLED_HEARTBEAT_S = 600;
+    /** A disabled agent checks in every 5 minutes: the heartbeat answer gives it this interval (A.4). */
+    public const DISABLED_HEARTBEAT_S = 300;
     /** Anomalies (6.5) need at least this many earlier successful runs to compare with. */
     public const ANOMALY_MIN_RUNS = 3;
     public const ANOMALY_RUNS = 10;

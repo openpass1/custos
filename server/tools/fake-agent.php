@@ -14,9 +14,11 @@ use Custos\Tools\FakeAgent;
 
 const HELP = <<<'TEXT'
 Usage: php tools/fake-agent.php --url=http://custos.lan --code=KEY#FINGERPRINT [options]
+       php tools/fake-agent.php --code='http://custos.lan#KEY#FINGERPRINT' [options]
 
   --url=URL          server address, as typed into the agent (no trailing slash)
-  --code=CODE        registration code from the site (Settings); needed for the first registration
+  --code=CODE        registration code from the site (Settings); needed for the first registration. The connection
+                     string from the site (address#code) also works and then gives the address too
   --count=N          number of agents, default 1 (FAKE-PC-01 ... FAKE-PC-NN)
   --name=PREFIX      host name prefix, default FAKE-PC
   --tz=ZONE          agent time zone (IANA), default UTC
@@ -63,6 +65,12 @@ if (isset($options['reset'])) {
     exit(0);
 }
 
+// The connection string from the site is the address, "#" and the code (A.3).
+$code = is_string($options['code'] ?? null) ? trim($options['code']) : null;
+if ($code !== null && preg_match('~^(https?://[^#]+)#(.+)$~i', $code, $m)) {
+    $options['url'] ??= $m[1];
+    $code = $m[2];
+}
 $url = rtrim((string) ($options['url'] ?? ''), '/');
 if (!preg_match('#^https?://#', $url)) {
     fwrite(STDERR, "--url is required, for example --url=http://custos.lan\n");
@@ -79,7 +87,7 @@ $count = max(1, (int) ($options['count'] ?? 1));
 $prefix = (string) ($options['name'] ?? 'FAKE-PC');
 $agentOptions = [
     'url' => $url,
-    'code' => is_string($options['code'] ?? null) ? $options['code'] : null,
+    'code' => $code,
     'time_zone' => $timeZone,
     'run_seconds' => max(2, (int) ($options['run-seconds'] ?? 30)),
     'skip_schedule' => isset($options['skip-schedule']),

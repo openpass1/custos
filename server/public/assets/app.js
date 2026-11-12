@@ -179,6 +179,16 @@ document.addEventListener('change', (event) => {
                 el.hidden = !holds(scope, el.getAttribute('data-show-if'));
             }
         }
+        // [data-placeholders='{"folder": "D:\\Data", ...}']: the example in an empty field follows the kind of its row.
+        for (const field of document.querySelectorAll('[data-placeholders]')) {
+            const scope = field.closest('[data-scope]');
+            try {
+                const examples = JSON.parse(field.getAttribute('data-placeholders') || '{}');
+                field.placeholder = (scope && examples[valueOf(scope, 'kind')]) || '';
+            } catch {
+                // A broken list leaves the example the page came with.
+            }
+        }
         for (const editor of document.querySelectorAll('[data-editor]')) {
             editorChecks(editor);
             for (const row of editor.querySelectorAll('[data-row]')) {

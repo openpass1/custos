@@ -387,6 +387,12 @@ a.heat:hover { outline: 2px solid var(--text); outline-offset: 1px; }
 .storage-space meter { width: 180px; height: 12px; }
 .storage details { margin-top: .35rem; }
 .storage summary { cursor: pointer; color: var(--accent); }
+summary { cursor: pointer; }
+/* A summary that reads as a link and unfolds a field under it ("Replace password"). */
+details.reveal summary { display: inline; color: var(--accent); list-style: none; }
+details.reveal summary::-webkit-details-marker { display: none; }
+details.reveal summary:hover { text-decoration: underline; }
+details.reveal[open] summary { display: block; margin-bottom: .35rem; }
 
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
 .charts figure { margin: 0; min-width: 0; }
