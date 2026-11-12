@@ -5,8 +5,8 @@ using Custos.Core.Text;
 namespace Custos.Gui;
 
 /// <summary>
-/// The card of the selected task (docs/client-ui.md, 2.3): state, name, the task in plain words, the progress while it
-/// runs, and the main settings as "caption — value" rows.
+/// The card of the selected task (docs/client-ui.md, 2.3): state, name and type, the progress while it runs, and the
+/// settings as "caption — value" rows.
 /// </summary>
 internal sealed class TaskCard : UserControl
 {
@@ -15,7 +15,6 @@ internal sealed class TaskCard : UserControl
     private readonly PictureBox _icon = new() { SizeMode = PictureBoxSizeMode.CenterImage, Size = new Size(28, 28), Margin = new Padding(0, 0, 8, 0) };
     private readonly Label _name = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 0), UseMnemonic = false };
     private readonly Label _subtitle = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 2, 0, 8) };
-    private readonly Label _description = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 4, 0, 10), UseMnemonic = false };
     private readonly GroupBox _progressBox = new() { Dock = DockStyle.Fill, AutoSize = true, Padding = new Padding(10, 6, 10, 8), Margin = new Padding(0, 0, 0, 10) };
     private readonly ProgressSummary _progress = new() { Dock = DockStyle.Fill };
     private readonly TableLayoutPanel _details = new() { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
@@ -48,7 +47,6 @@ internal sealed class TaskCard : UserControl
 
         _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _layout.Controls.Add(header);
-        _layout.Controls.Add(_description);
         _layout.Controls.Add(_progressBox);
         _layout.Controls.Add(_details);
         _scroll.Controls.Add(_layout);
@@ -80,7 +78,6 @@ internal sealed class TaskCard : UserControl
             : TaskStates.Icon(state?.LastRun?.Status));
         _name.Text = task.Name;
         _subtitle.Text = Strings.Format(Strings.CardSubtitle, Words.BackupType(task.BackupType), task.Enabled ? Strings.CardEnabled : Strings.CardDisabled);
-        _description.Text = TaskDescriber.Describe(task);
         ShowProgress(current, progress);
 
         _details.SuspendLayout();
@@ -100,7 +97,30 @@ internal sealed class TaskCard : UserControl
 
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Destinations.Select(d => DescribeDestination(d, snapshot))));
+        AddDetail(Strings.CardArchive, DescribeArchive(task));
+        AddDetail(Strings.CardRetention, TaskDescriber.Retention(task).TrimEnd('.'));
         AddDetail(Strings.CardSchedule, TaskDescriber.ScheduleWithCatchUp(task.Schedule));
+        if (TaskDescriber.FullBackups(task) is { } fullBackups)
+        {
+            AddDetail(Strings.CardFullBackup, fullBackups);
+        }
+
+        if (task.Events.Pre.Count > 0)
+        {
+            AddDetail(Strings.CardEventsBefore, string.Join(Environment.NewLine, task.Events.Pre.Select(EventsPage.DescribeEvent)));
+        }
+
+        var after = task.Events.Post.Select(EventsPage.DescribeEvent).ToList();
+        if (EventsPage.DescribeAfter(task.Events.After) is { } power)
+        {
+            after.Add(power);
+        }
+
+        if (after.Count > 0)
+        {
+            AddDetail(Strings.CardEventsAfter, string.Join(Environment.NewLine, after));
+        }
+
         AddDetail(Strings.CardLastSuccess, state?.LastSuccess is { } success
             ? Strings.Format(Strings.CardRunSummary, Ui.Time(success.FinishedAt ?? success.StartedAt), Ui.Number(success.FilesProcessed), Sizes.Format(success.BytesWritten))
             : Strings.CardNever);
@@ -157,6 +177,35 @@ internal sealed class TaskCard : UserControl
         _ when updatedBy.StartsWith("server:", StringComparison.Ordinal) => Strings.Format(Strings.CardChangedOnServer, updatedBy["server:".Length..]),
         _ => updatedBy,
     };
+
+    /// <summary>"7z (LZMA2), level 5, volumes of 700 MB, AES-256 encryption", or "No compression: plain files".</summary>
+    public static string DescribeArchive(TaskDefinition task)
+    {
+        var archive = task.Archive;
+        string? format = task.BackupType == BackupTypes.Mirror ? null : archive.Format switch
+        {
+            ArchiveFormats.SevenZip => Strings.ArchiveSevenZip,
+            ArchiveFormats.Zip => Strings.ArchiveZip,
+            _ => null,
+        };
+        if (format is null)
+        {
+            return Strings.ArchiveNone;
+        }
+
+        var parts = new List<string> { Strings.Format(Strings.CardArchiveLevel, format, Math.Clamp(archive.Level, 0, 9)) };
+        if (archive.Format == ArchiveFormats.SevenZip && archive.SplitMb > 0)
+        {
+            parts.Add(Strings.Format(Strings.CardArchiveVolumes, Sizes.Format(archive.SplitMb * 1024L * 1024L)));
+        }
+
+        if (archive.Encrypt)
+        {
+            parts.Add(archive.EncryptNames && archive.Format == ArchiveFormats.SevenZip ? Strings.CardArchiveEncryptedNames : Strings.CardArchiveEncrypted);
+        }
+
+        return string.Join(", ", parts);
+    }
 
     public static string DescribeDestination(TaskDestination destination, AgentSnapshot snapshot)
     {

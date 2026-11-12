@@ -23,6 +23,7 @@ FullBecauseFirst	There is no full backup yet, so this one is full.	Полной 
 FullBecauseEveryRuns	Every {0}th run is a full backup.	Каждый {0}-й запуск — полная копия.
 FullBecauseWeekday	Today is the weekday for a full backup.	Сегодня день недели для полной копии.
 FullBecauseMonthDay	Today is the day of the month for a full backup.	Сегодня число месяца для полной копии.
+FullBecauseGfsWeek	The first backup of the week is full: grandfather-father-son keeps full backups for weeks and months.	Первая копия недели — полная: «дед-отец-сын» хранит за недели и месяцы полные копии.
 FullBecauseParentMissing	The full backup «{0}» is missing in {1}, so this one is full.	Полной копии «{0}» нет в {1}, поэтому эта копия полная.
 VssCreated	Shadow copy (VSS) created.	Теневая копия (VSS) создана.
 VssFailedContinue	Shadow copy (VSS) failed: {0}. Copying without it: files open in other programs may be skipped.	Не удалось создать теневую копию (VSS): {0}. Копирую без неё, открытые в программах файлы могут быть пропущены.
@@ -168,6 +169,12 @@ DescFullEveryRuns	Every {0}{1} run is a full backup.	Каждый {0}-й зап�
 DescFullWeekday	{0} the backup is full.	{0} — полная копия.
 DescFullMonthDay	On the {0}{1} of every month the backup is full.	{0}-го числа каждого месяца — полная копия.
 DescFullLastDay	On the last day of the month the backup is full.	В последний день месяца — полная копия.
+DescFullListEveryRuns	every {0}{1} run	каждый {0}-й запуск
+DescFullListWeekdays	on Mondays;on Tuesdays;on Wednesdays;on Thursdays;on Fridays;on Saturdays;on Sundays	по понедельникам;по вторникам;по средам;по четвергам;по пятницам;по субботам;по воскресеньям
+DescFullListMonthDay	on the {0}{1} of the month	{0}-го числа месяца
+DescFullListLastDay	on the last day of the month	в последний день месяца
+DescFullOnlyFirst	only the first one, and when a destination has none	только первая, и когда в назначении нет полной
+DescFullListGfsWeek	the first run of every week (grandfather-father-son)	первым запуском каждой недели (дед-отец-сын)
 DescOneFolder	The backup is kept up to date in one folder.	Копия обновляется в одной и той же папке.
 DescKeepAll	Old backups are never deleted.	Старые копии не удаляются.
 DescKeepSetsOne	Only the last backup is kept.	Хранится {0} последняя копия.
@@ -181,7 +188,7 @@ DescKindDifferential	differential	дифференциальными
 DescKeepAgeOne	Backups older than {0} day are deleted; a full backup stays while newer backups need it.	Копии старше {0} дня удаляются; полная копия остаётся, пока она нужна более новым.
 DescKeepAgeFew	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
 DescKeepAgeMany	Backups older than {0} days are deleted; a full backup stays while newer backups need it.	Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.
-DescKeepGfs	The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.	Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.
+DescKeepGfs	Kept: the last backup of each of the last days ({0}) and the last full backup of each of the last weeks ({1}) and months ({2}).	Хранится последняя копия каждого из последних дней ({0}) и последняя полная копия каждой из последних недель ({1}) и месяцев ({2}).
 DescMirrorExact	Files deleted in the sources are deleted from the mirror too.	Файлы, удалённые в источниках, удаляются и из зеркала.
 DescMirrorSafeOne	Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} day.	Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} день.
 DescMirrorSafeFew	Replaced and deleted files are moved to the folder _custos_deleted and kept for {0} days.	Заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся {0} дня.

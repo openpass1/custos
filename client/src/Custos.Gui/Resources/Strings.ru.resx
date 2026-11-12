@@ -22,9 +22,6 @@
   <data name="MenuClose" xml:space="preserve">
     <value>Закрыть интерфейс</value>
   </data>
-  <data name="MenuCloseHint" xml:space="preserve">
-    <value>копирование продолжится</value>
-  </data>
   <data name="TrayTooltip" xml:space="preserve">
     <value>CUSTOS: {0}</value>
   </data>
@@ -217,6 +214,33 @@
   <data name="CardSchedule" xml:space="preserve">
     <value>Расписание</value>
   </data>
+  <data name="CardArchive" xml:space="preserve">
+    <value>Сжатие</value>
+  </data>
+  <data name="CardArchiveLevel" xml:space="preserve">
+    <value>{0}, уровень {1}</value>
+  </data>
+  <data name="CardArchiveVolumes" xml:space="preserve">
+    <value>тома по {0}</value>
+  </data>
+  <data name="CardArchiveEncrypted" xml:space="preserve">
+    <value>шифрование AES-256</value>
+  </data>
+  <data name="CardArchiveEncryptedNames" xml:space="preserve">
+    <value>шифрование AES-256 вместе с именами файлов</value>
+  </data>
+  <data name="CardRetention" xml:space="preserve">
+    <value>Хранение</value>
+  </data>
+  <data name="CardFullBackup" xml:space="preserve">
+    <value>Полная копия</value>
+  </data>
+  <data name="CardEventsBefore" xml:space="preserve">
+    <value>Перед копированием</value>
+  </data>
+  <data name="CardEventsAfter" xml:space="preserve">
+    <value>После копирования</value>
+  </data>
   <data name="CardLastSuccess" xml:space="preserve">
     <value>Последний успешный</value>
   </data>
@@ -379,11 +403,30 @@
   <data name="MenuRunAll" xml:space="preserve">
     <value>Запустить все задания</value>
   </data>
-  <data name="MenuStopCurrent" xml:space="preserve">
-    <value>Остановить текущее</value>
+  <data name="MenuStopAll" xml:space="preserve">
+    <value>Остановить все задания</value>
   </data>
-  <data name="MenuStopTask" xml:space="preserve">
-    <value>Остановить текущее: {0}</value>
+  <data name="MenuServiceStart" xml:space="preserve">
+    <value>Запустить службу</value>
+  </data>
+  <data name="MenuServiceStop" xml:space="preserve">
+    <value>Остановить службу</value>
+  </data>
+  <data name="ServiceStopConfirm" xml:space="preserve">
+    <value>Остановить службу CUSTOS?
+
+Пока служба остановлена, задания не выполняются, даже по расписанию.</value>
+  </data>
+  <data name="ServiceStopRunning" xml:space="preserve">
+    <value>Выполняемое сейчас задание «{0}» тоже будет остановлено.</value>
+  </data>
+  <data name="ServiceStartFailed" xml:space="preserve">
+    <value>Служба CUSTOS не запустилась: {0}
+
+Подробности в журнале Windows «Приложение», источник CUSTOS.</value>
+  </data>
+  <data name="ServiceStopFailed" xml:space="preserve">
+    <value>Служба CUSTOS не остановилась: {0}</value>
   </data>
   <data name="NothingQueued" xml:space="preserve">
     <value>Нечего запускать: нет включённых заданий.</value>
@@ -756,10 +799,10 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Укажите хотя бы одно число месяца или отметьте «последний день месяца».</value>
   </data>
   <data name="ArchiveZip" xml:space="preserve">
-    <value>ZIP</value>
+    <value>ZIP (Deflate)</value>
   </data>
   <data name="ArchiveSevenZip" xml:space="preserve">
-    <value>7z</value>
+    <value>7z (LZMA2)</value>
   </data>
   <data name="PageRetention" xml:space="preserve">
     <value>Хранение</value>
@@ -789,7 +832,7 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца</value>
+    <value>Дед-отец-сын: копия за каждый день, полная копия за каждую неделю и месяц</value>
   </data>
   <data name="GfsDaily" xml:space="preserve">
     <value>Дней:</value>
@@ -801,10 +844,13 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Месяцев:</value>
   </data>
   <data name="RetentionGfsHint" xml:space="preserve">
-    <value>Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».</value>
+    <value>Например, 7, 4 и 12 оставляют последнюю копию каждого из последних 7 дней и последнюю полную копию каждой из последних 4 недель и 12 месяцев. Для этого инкрементальное или дифференциальное задание само делает полной первую копию каждой недели, а инкрементальные копии между полными удаляются, когда выходят из дней. Копии, на которых построена оставленная, тоже остаются. Одно такое задание заменяет пару заданий «каждый день» и «каждую неделю».</value>
   </data>
   <data name="RetentionGfsEmpty" xml:space="preserve">
     <value>Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.</value>
+  </data>
+  <data name="RetentionNoFullWarning" xml:space="preserve">
+    <value>Это задание делает полную копию только в первый раз, все копии опираются на неё, и это правило не сможет удалить ничего: копии будут только копиться. Включите полную копию на странице «Основное» (например, каждый 7-й запуск) или выберите «Дед-отец-сын»: он сам делает полную копию каждую неделю.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Правила, которые действуют всегда</value>
@@ -1347,7 +1393,8 @@ USB-диск — ищется по метке тома, поэтому смен�
     <value>Уровень сжатия:</value>
   </data>
   <data name="ArchiveLevelHelp" xml:space="preserve">
-    <value>Чем выше уровень, тем меньше архив, но тем дольше упаковка. Уровень 5 — обычный баланс.</value>
+    <value>Чем выше уровень, тем меньше архив, но тем дольше упаковка. Уровень 5 — обычный баланс.
+7z сжимает методом LZMA2, ZIP — методом Deflate. На уровне 0 7z только складывает файлы в архив, без сжатия.</value>
   </data>
   <data name="ArchiveLevel0" xml:space="preserve">
     <value>0 — только упаковка, без сжатия</value>

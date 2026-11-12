@@ -328,6 +328,10 @@ public sealed partial class BackupEngine
         {
             reason = Messages.FullBecauseMonthDay;
         }
+        else if (GfsWantsFull(run, local))
+        {
+            reason = Messages.FullBecauseGfsWeek;
+        }
         else
         {
             foreach (var target in run.ActiveTargets)
@@ -353,6 +357,19 @@ public sealed partial class BackupEngine
             run.BackupType = BackupTypes.Full;
             _log.Write(RunLogLevel.Info, reason);
         }
+    }
+
+    /// <summary>
+    /// Grandfather-father-son keeps only full sets for weeks and months (section 6.6), so in this mode the first run of
+    /// every week (ISO, local time) is full: the last full backup was made in an earlier week.
+    /// </summary>
+    private static bool GfsWantsFull(RunContext run, DateTime local)
+    {
+        var task = run.Task;
+        return task.Retention.Mode == RetentionModes.Gfs
+            && (SeparateSets(task) || IsArchive(task))
+            && run.State.FullAt is { } fullAt
+            && SetCatalog.IsoWeek(TimeZoneInfo.ConvertTime(fullAt, run.Request.TimeZone).DateTime) != SetCatalog.IsoWeek(local);
     }
 
     private void CreateSnapshots(RunContext run)

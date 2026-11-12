@@ -113,6 +113,61 @@ public sealed class SetCatalogTests
     }
 
     [Fact]
+    public void Gfs_keeps_full_sets_for_weeks_and_months_and_drops_the_incremental_ones_between()
+    {
+        // Thursday 1 January to Wednesday 21 January: incremental sets, full on the first day and on every Monday (5, 12, 19).
+        var sets = new List<StoredSet>();
+        string parent = "F1";
+        for (int day = 0; day < 21; day++)
+        {
+            var date = Day0.AddDays(day);
+            if (day == 0 || date.DayOfWeek == DayOfWeek.Monday)
+            {
+                parent = "F" + (day + 1);
+                sets.Add(Full(parent, day));
+            }
+            else
+            {
+                sets.Add(Incremental("I" + (day + 1), day, parent));
+            }
+        }
+
+        var removed = SetCatalog.PlanGfsRetention(sets, new GfsOptions { Daily = 3, Weekly = 3, Monthly = 1 }, TimeZoneInfo.Utc, protectedRunId: "I21");
+
+        // Days 19 (Monday, full), 20 and 21; weeks: the full sets of the 19th, 12th and 5th; the month: its last full, the 19th.
+        // The Sunday incremental sets (18th, 11th) are no longer kept as weeks, so their chains go.
+        var kept = sets.Except(removed).Select(s => s.Header.RunId).Order(StringComparer.Ordinal);
+        Assert.Equal(["F12", "F19", "F5", "I20", "I21"], kept);
+    }
+
+    [Fact]
+    public void A_year_of_daily_incremental_backups_with_gfs_keeps_about_twenty_sets()
+    {
+        // What the engine does in this mode: full on the first run of every week, retention after every run.
+        var sets = new List<StoredSet>();
+        string parent = string.Empty;
+        var gfs = new GfsOptions { Daily = 7, Weekly = 4, Monthly = 12 };
+        for (int day = 0; day < 365; day++)
+        {
+            var date = Day0.AddDays(day);
+            bool newWeek = day == 0 || SetCatalog.IsoWeek(date.DateTime) != SetCatalog.IsoWeek(date.AddDays(-1).DateTime);
+            string id = "R" + day;
+            if (newWeek)
+            {
+                parent = id;
+            }
+
+            sets.Add(newWeek ? Set(id, day, BackupTypes.Full, null) : Set(id, day, BackupTypes.Incremental, parent));
+            var removed = SetCatalog.PlanGfsRetention(sets, gfs, TimeZoneInfo.Utc, protectedRunId: id);
+            sets.RemoveAll(s => removed.Contains(s));
+        }
+
+        int fulls = sets.Count(s => s.Header.BackupType == BackupTypes.Full);
+        Assert.InRange(sets.Count, 19, 24);
+        Assert.InRange(fulls, 13, 17);
+    }
+
+    [Fact]
     public void Gfs_counts_days_in_local_time()
     {
         var utcPlus3 = TimeZoneInfo.CreateCustomTimeZone("UTC+3", TimeSpan.FromHours(3), "UTC+3", "UTC+3");

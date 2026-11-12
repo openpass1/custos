@@ -47,6 +47,9 @@ public static class PipeProtocol
         /// <summary>Stop a run or take it out of the queue: <see cref="RunControlRequest"/> → <see cref="OkResult"/>.</summary>
         public const string RunStop = "runs.stop";
 
+        /// <summary>Empty the queue and stop the run in progress: <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string RunStopAll = "runs.stop_all";
+
         /// <summary><see cref="RunControlRequest"/> → <see cref="OkResult"/>.</summary>
         public const string RunPause = "runs.pause";
 

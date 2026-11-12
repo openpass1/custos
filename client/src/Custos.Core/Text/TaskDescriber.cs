@@ -5,9 +5,10 @@ using Custos.Core.Scheduling;
 namespace Custos.Core.Text;
 
 /// <summary>
-/// Describes a task in plain words for the task card (docs/client-ui.md, 2.3): "Every day at 00:00, copies changed
-/// files from D:\Data to \\nas01\backup. Every 7th run is a full backup. The last 12 full backups are kept, with
-/// their incremental backups." In the language of <see cref="Messages"/>.
+/// Describes a task in plain words: "Every day at 00:00, copies changed files from D:\Data to \\nas01\backup. Every
+/// 7th run is a full backup. The last 12 full backups are kept, with their incremental backups." (the Cobian import
+/// window), and pieces of that for the rows of the task card (docs/client-ui.md, 2.3). In the language of
+/// <see cref="Messages"/>.
 /// </summary>
 public static class TaskDescriber
 {
@@ -199,6 +200,48 @@ public static class TaskDescriber
         return parts.Count == 0 ? Messages.DescNoDestinations : JoinWords(parts);
     }
 
+    /// <summary>
+    /// When an incremental or differential task makes a full backup, for the card: "Every 7th run, on Sundays", "The
+    /// first run of every week (grandfather-father-son)", or "Only the first one, and when a destination has none".
+    /// Null for full backups and mirrors.
+    /// </summary>
+    public static string? FullBackups(TaskDefinition task)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        if (task.BackupType is not (BackupTypes.Incremental or BackupTypes.Differential))
+        {
+            return null;
+        }
+
+        var force = task.ForceFull;
+        var parts = new List<string>();
+        if (force.EveryRuns > 0)
+        {
+            parts.Add(Messages.Format(Messages.DescFullListEveryRuns, force.EveryRuns, Ordinal(force.EveryRuns)));
+        }
+
+        if (force.Weekday is >= 1 and <= 7)
+        {
+            parts.Add(Messages.DescFullListWeekdays.Split(';')[force.Weekday.Value - 1].Trim());
+        }
+
+        if (force.MonthDay == -1)
+        {
+            parts.Add(Messages.DescFullListLastDay);
+        }
+        else if (force.MonthDay is >= 1 and <= 31)
+        {
+            parts.Add(Messages.Format(Messages.DescFullListMonthDay, force.MonthDay.Value, Ordinal(force.MonthDay.Value)));
+        }
+
+        if (task.Retention.Mode == RetentionModes.Gfs && KeepsSets(task))
+        {
+            parts.Add(Messages.DescFullListGfsWeek);
+        }
+
+        return Capitalize(parts.Count == 0 ? Messages.DescFullOnlyFirst : string.Join(", ", parts));
+    }
+
     private static string? ForceFull(ForceFullOptions force)
     {
         var parts = new List<string>();
@@ -224,8 +267,10 @@ public static class TaskDescriber
         return parts.Count == 0 ? null : string.Join(" ", parts);
     }
 
-    private static string Retention(TaskDefinition task)
+    /// <summary>What happens to old backups, as one sentence: "The last 12 backups are kept."</summary>
+    public static string Retention(TaskDefinition task)
     {
+        ArgumentNullException.ThrowIfNull(task);
         if (task.BackupType == BackupTypes.Mirror)
         {
             int keep = Math.Max(1, task.Retention.SafeMirrorDays);
@@ -234,7 +279,7 @@ public static class TaskDescriber
                 : Messages.DescMirrorExact;
         }
 
-        if (!task.Layout.SeparateFolders && task.Archive.Format == ArchiveFormats.None)
+        if (!KeepsSets(task))
         {
             return Messages.DescOneFolder;
         }
@@ -262,6 +307,11 @@ public static class TaskDescriber
                 return Messages.DescKeepAll;
         }
     }
+
+    /// <summary>Whether backups are kept as separate sets (archives, a folder per backup, a Linux server), so that
+    /// retention has something to delete.</summary>
+    private static bool KeepsSets(TaskDefinition task) =>
+        task.Layout.SeparateFolders || task.Archive.Format != ArchiveFormats.None || task.Sources.Any(s => s.Kind == SourceKinds.Ssh);
 
     private static string Days(List<int> days)
     {

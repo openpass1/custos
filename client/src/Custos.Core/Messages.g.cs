@@ -74,6 +74,9 @@ static partial class Messages
     /// <summary>Today is the day of the month for a full backup.</summary>
     public static string FullBecauseMonthDay => Get(nameof(FullBecauseMonthDay));
 
+    /// <summary>The first backup of the week is full: grandfather-father-son keeps full backups for weeks and months.</summary>
+    public static string FullBecauseGfsWeek => Get(nameof(FullBecauseGfsWeek));
+
     /// <summary>The full backup «{0}» is missing in {1}, so this one is full.</summary>
     public static string FullBecauseParentMissing => Get(nameof(FullBecauseParentMissing));
 
@@ -509,6 +512,24 @@ static partial class Messages
     /// <summary>On the last day of the month the backup is full.</summary>
     public static string DescFullLastDay => Get(nameof(DescFullLastDay));
 
+    /// <summary>every {0}{1} run</summary>
+    public static string DescFullListEveryRuns => Get(nameof(DescFullListEveryRuns));
+
+    /// <summary>on Mondays;on Tuesdays;on Wednesdays;on Thursdays;on Fridays;on Saturdays;on Sundays</summary>
+    public static string DescFullListWeekdays => Get(nameof(DescFullListWeekdays));
+
+    /// <summary>on the {0}{1} of the month</summary>
+    public static string DescFullListMonthDay => Get(nameof(DescFullListMonthDay));
+
+    /// <summary>on the last day of the month</summary>
+    public static string DescFullListLastDay => Get(nameof(DescFullListLastDay));
+
+    /// <summary>only the first one, and when a destination has none</summary>
+    public static string DescFullOnlyFirst => Get(nameof(DescFullOnlyFirst));
+
+    /// <summary>the first run of every week (grandfather-father-son)</summary>
+    public static string DescFullListGfsWeek => Get(nameof(DescFullListGfsWeek));
+
     /// <summary>The backup is kept up to date in one folder.</summary>
     public static string DescOneFolder => Get(nameof(DescOneFolder));
 
@@ -548,7 +569,7 @@ static partial class Messages
     /// <summary>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</summary>
     public static string DescKeepAgeMany => Get(nameof(DescKeepAgeMany));
 
-    /// <summary>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</summary>
+    /// <summary>Kept: the last backup of each of the last days ({0}) and the last full backup of each of the last weeks ({1...</summary>
     public static string DescKeepGfs => Get(nameof(DescKeepGfs));
 
     /// <summary>Files deleted in the sources are deleted from the mirror too.</summary>

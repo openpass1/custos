@@ -23,6 +23,8 @@
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <!-- SSH to Linux servers through custos-helper (stage 2a): MIT; brings BouncyCastle.Cryptography (MIT) -->
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <!-- Starting and stopping the service from the tray menu (the service itself gets it through Hosting.WindowsServices): MIT -->
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
     <!-- WMI, for the shadow copies (VSS): MIT -->
     <PackageVersion Include="System.Management" Version="10.0.14" />
     <!-- Tests only, not shipped -->

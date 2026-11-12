@@ -22,9 +22,6 @@
   <data name="MenuClose" xml:space="preserve">
     <value>Close interface</value>
   </data>
-  <data name="MenuCloseHint" xml:space="preserve">
-    <value>backups continue</value>
-  </data>
   <data name="TrayTooltip" xml:space="preserve">
     <value>CUSTOS: {0}</value>
   </data>
@@ -217,6 +214,33 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="CardSchedule" xml:space="preserve">
     <value>Schedule</value>
   </data>
+  <data name="CardArchive" xml:space="preserve">
+    <value>Compression</value>
+  </data>
+  <data name="CardArchiveLevel" xml:space="preserve">
+    <value>{0}, level {1}</value>
+  </data>
+  <data name="CardArchiveVolumes" xml:space="preserve">
+    <value>volumes of {0}</value>
+  </data>
+  <data name="CardArchiveEncrypted" xml:space="preserve">
+    <value>AES-256 encryption</value>
+  </data>
+  <data name="CardArchiveEncryptedNames" xml:space="preserve">
+    <value>AES-256 encryption, file names too</value>
+  </data>
+  <data name="CardRetention" xml:space="preserve">
+    <value>Retention</value>
+  </data>
+  <data name="CardFullBackup" xml:space="preserve">
+    <value>Full backup</value>
+  </data>
+  <data name="CardEventsBefore" xml:space="preserve">
+    <value>Before the backup</value>
+  </data>
+  <data name="CardEventsAfter" xml:space="preserve">
+    <value>After the backup</value>
+  </data>
   <data name="CardLastSuccess" xml:space="preserve">
     <value>Last success</value>
   </data>
@@ -379,11 +403,30 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="MenuRunAll" xml:space="preserve">
     <value>Run all tasks</value>
   </data>
-  <data name="MenuStopCurrent" xml:space="preserve">
-    <value>Stop the running task</value>
+  <data name="MenuStopAll" xml:space="preserve">
+    <value>Stop all tasks</value>
   </data>
-  <data name="MenuStopTask" xml:space="preserve">
-    <value>Stop the running task: {0}</value>
+  <data name="MenuServiceStart" xml:space="preserve">
+    <value>Start the service</value>
+  </data>
+  <data name="MenuServiceStop" xml:space="preserve">
+    <value>Stop the service</value>
+  </data>
+  <data name="ServiceStopConfirm" xml:space="preserve">
+    <value>Stop the CUSTOS service?
+
+While it is stopped, no task runs, not even by its schedule.</value>
+  </data>
+  <data name="ServiceStopRunning" xml:space="preserve">
+    <value>The running task «{0}» will be stopped too.</value>
+  </data>
+  <data name="ServiceStartFailed" xml:space="preserve">
+    <value>The CUSTOS service did not start: {0}
+
+See the Windows «Application» event log, source CUSTOS.</value>
+  </data>
+  <data name="ServiceStopFailed" xml:space="preserve">
+    <value>The CUSTOS service did not stop: {0}</value>
   </data>
   <data name="NothingQueued" xml:space="preserve">
     <value>Nothing to run: no task is switched on.</value>
@@ -756,10 +799,10 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Enter at least one day of the month, or tick «last day of the month».</value>
   </data>
   <data name="ArchiveZip" xml:space="preserve">
-    <value>ZIP</value>
+    <value>ZIP (Deflate)</value>
   </data>
   <data name="ArchiveSevenZip" xml:space="preserve">
-    <value>7z</value>
+    <value>7z (LZMA2)</value>
   </data>
   <data name="PageRetention" xml:space="preserve">
     <value>Retention</value>
@@ -789,7 +832,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Grandfather-father-son: keep the last backup of each day, week and month</value>
+    <value>Grandfather-father-son: a backup for each day, a full backup for each week and month</value>
   </data>
   <data name="GfsDaily" xml:space="preserve">
     <value>Days:</value>
@@ -801,10 +844,13 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Months:</value>
   </data>
   <data name="RetentionGfsHint" xml:space="preserve">
-    <value>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.</value>
+    <value>For example 7, 4 and 12 keep the last backup of each of the last 7 days and the last full backup of each of the last 4 weeks and 12 months. For that an incremental or differential task makes its first backup of every week full by itself; the incremental backups in between go once they leave the days. A backup that a kept one builds on stays too. One such task replaces the pair of tasks "daily" and "weekly".</value>
   </data>
   <data name="RetentionGfsEmpty" xml:space="preserve">
     <value>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</value>
+  </data>
+  <data name="RetentionNoFullWarning" xml:space="preserve">
+    <value>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete anything: the backups will only pile up. Turn on a full backup on the «Basic» page (for example every 7th run) or choose grandfather-father-son, which makes a full backup every week by itself.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Rules that always apply</value>
@@ -1347,7 +1393,8 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Compression level:</value>
   </data>
   <data name="ArchiveLevelHelp" xml:space="preserve">
-    <value>Higher levels make smaller archives but take longer. Level 5 is the usual balance.</value>
+    <value>Higher levels make smaller archives but take longer. Level 5 is the usual balance.
+7z compresses with LZMA2, ZIP with Deflate. At level 0 7z only stores the files, without compression.</value>
   </data>
   <data name="ArchiveLevel0" xml:space="preserve">
     <value>0 — store only, no compression</value>

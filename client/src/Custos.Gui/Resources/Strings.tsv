@@ -4,7 +4,6 @@
 AppTitle	CUSTOS	CUSTOS
 MenuOpen	Open CUSTOS	Открыть CUSTOS
 MenuClose	Close interface	Закрыть интерфейс
-MenuCloseHint	backups continue	копирование продолжится
 TrayTooltip	CUSTOS: {0}	CUSTOS: {0}
 StateConnecting	connecting to the service…	подключение к службе…
 StateRunning	service is running	служба работает
@@ -70,6 +69,15 @@ CardProgressLeft	{0} left	осталось {0}
 CardSources	Sources	Источники
 CardDestinations	Destinations	Назначения
 CardSchedule	Schedule	Расписание
+CardArchive	Compression	Сжатие
+CardArchiveLevel	{0}, level {1}	{0}, уровень {1}
+CardArchiveVolumes	volumes of {0}	тома по {0}
+CardArchiveEncrypted	AES-256 encryption	шифрование AES-256
+CardArchiveEncryptedNames	AES-256 encryption, file names too	шифрование AES-256 вместе с именами файлов
+CardRetention	Retention	Хранение
+CardFullBackup	Full backup	Полная копия
+CardEventsBefore	Before the backup	Перед копированием
+CardEventsAfter	After the backup	После копирования
 CardLastSuccess	Last success	Последний успешный
 CardLastRun	Last run	Последний запуск
 CardNextRun	Next run	Следующий запуск
@@ -126,8 +134,13 @@ PhaseRetention	Deleting old backups	Удаление старых копий
 PhaseEvents	Events	События
 # ---- Tray
 MenuRunAll	Run all tasks	Запустить все задания
-MenuStopCurrent	Stop the running task	Остановить текущее
-MenuStopTask	Stop the running task: {0}	Остановить текущее: {0}
+MenuStopAll	Stop all tasks	Остановить все задания
+MenuServiceStart	Start the service	Запустить службу
+MenuServiceStop	Stop the service	Остановить службу
+ServiceStopConfirm	Stop the CUSTOS service?\n\nWhile it is stopped, no task runs, not even by its schedule.	Остановить службу CUSTOS?\n\nПока служба остановлена, задания не выполняются, даже по расписанию.
+ServiceStopRunning	The running task «{0}» will be stopped too.	Выполняемое сейчас задание «{0}» тоже будет остановлено.
+ServiceStartFailed	The CUSTOS service did not start: {0}\n\nSee the Windows «Application» event log, source CUSTOS.	Служба CUSTOS не запустилась: {0}\n\nПодробности в журнале Windows «Приложение», источник CUSTOS.
+ServiceStopFailed	The CUSTOS service did not stop: {0}	Служба CUSTOS не остановилась: {0}
 NothingQueued	Nothing to run: no task is switched on.	Нечего запускать: нет включённых заданий.
 TrayOk	all is well	всё в порядке
 TrayRunning	{0} — {1} %	{0} — {1} %
@@ -256,8 +269,8 @@ ErrorNoTimes	Enter at least one time.	Укажите хотя бы одно вр
 ErrorNoWeekdays	Tick at least one day of the week.	Отметьте хотя бы один день недели.
 ErrorNoMonthDays	Enter at least one day of the month, or tick «last day of the month».	Укажите хотя бы одно число месяца или отметьте «последний день месяца».
 # ---- Task editor: Archive, Retention, Filters, Events, Advanced
-ArchiveZip	ZIP	ZIP
-ArchiveSevenZip	7z	7z
+ArchiveZip	ZIP (Deflate)	ZIP (Deflate)
+ArchiveSevenZip	7z (LZMA2)	7z (LZMA2)
 PageRetention	Retention	Хранение
 RetentionMirrorNote	A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror keeps replaced and deleted files is set on the «Basic» page.	Зеркало — одна копия, которая обновляется, поэтому удалять здесь нечего. Сколько безопасное зеркало хранит заменённые и удалённые файлы, задаётся на странице «Основное».
 RetentionNone	Keep all backups	Хранить все копии
@@ -267,12 +280,13 @@ RetentionCountHint	A full backup is deleted together with the incremental and di
 RetentionAge	Delete backups older than	Удалять копии старше
 RetentionAgeSuffix	days	дней
 RetentionAgeHint	A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.	Полная копия удаляется, только когда все сделанные на её основе копии тоже старше срока, поэтому оставшиеся копии всегда можно восстановить.
-RetentionGfs	Grandfather-father-son: keep the last backup of each day, week and month	Дед-отец-сын: хранить последнюю копию каждого дня, недели и месяца
+RetentionGfs	Grandfather-father-son: a backup for each day, a full backup for each week and month	Дед-отец-сын: копия за каждый день, полная копия за каждую неделю и месяц
 GfsDaily	Days:	Дней:
 GfsWeekly	Weeks:	Недель:
 GfsMonthly	Months:	Месяцев:
-RetentionGfsHint	For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.	Например, 7, 4 и 12 оставляют по копии за каждый из последних 7 дней, 4 недель и 12 месяцев. Копии, на которых построена оставленная (её полная и предыдущие инкрементальные), тоже остаются. Одно задание с принудительной полной копией и этим режимом заменяет пару заданий «каждый день» и «каждую неделю».
+RetentionGfsHint	For example 7, 4 and 12 keep the last backup of each of the last 7 days and the last full backup of each of the last 4 weeks and 12 months. For that an incremental or differential task makes its first backup of every week full by itself; the incremental backups in between go once they leave the days. A backup that a kept one builds on stays too. One such task replaces the pair of tasks "daily" and "weekly".	Например, 7, 4 и 12 оставляют последнюю копию каждого из последних 7 дней и последнюю полную копию каждой из последних 4 недель и 12 месяцев. Для этого инкрементальное или дифференциальное задание само делает полной первую копию каждой недели, а инкрементальные копии между полными удаляются, когда выходят из дней. Копии, на которых построена оставленная, тоже остаются. Одно такое задание заменяет пару заданий «каждый день» и «каждую неделю».
 RetentionGfsEmpty	Grandfather-father-son: keep at least one daily, weekly or monthly backup.	Дед-отец-сын: укажите хотя бы одну дневную, недельную или месячную копию.
+RetentionNoFullWarning	This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete anything: the backups will only pile up. Turn on a full backup on the «Basic» page (for example every 7th run) or choose grandfather-father-son, which makes a full backup every week by itself.	Это задание делает полную копию только в первый раз, все копии опираются на неё, и это правило не сможет удалить ничего: копии будут только копиться. Включите полную копию на странице «Основное» (например, каждый 7-й запуск) или выберите «Дед-отец-сын»: он сам делает полную копию каждую неделю.
 RetentionRules	Rules that always apply	Правила, которые действуют всегда
 RetentionRulesText	• The last successful full backup is never deleted.\n• If a run ends with an error, nothing is deleted.\n• The backups are found by looking into the destination itself, so the ones made before a reinstall count too.\n• Retention works with archives and with «A separate folder for each backup». One shared folder and a mirror are updated in place and have nothing to delete.	• Последняя успешная полная копия не удаляется никогда.\n• Если запуск завершился ошибкой, ничего не удаляется.\n• Копии находятся по содержимому назначения, поэтому учитываются и сделанные до переустановки.\n• Хранение работает для архивов и для «Отдельной папки для каждой копии». Общая папка и зеркало обновляются на месте, удалять в них нечего.
 FiltersHeading	Filters	Фильтры
@@ -459,7 +473,7 @@ ArchiveSevenZipHelp	7z compresses better and can encrypt the file names. Needs a
 ArchiveSevenZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
 ArchiveOpenAnywhere	Archives stay ordinary 7z and ZIP files: 7-Zip opens them without CUSTOS.	Архивы остаются обычными файлами 7z и ZIP: их можно открыть 7-Zip и без CUSTOS.
 ArchiveLevel	Compression level:	Уровень сжатия:
-ArchiveLevelHelp	Higher levels make smaller archives but take longer. Level 5 is the usual balance.	Чем выше уровень, тем меньше архив, но тем дольше упаковка. Уровень 5 — обычный баланс.
+ArchiveLevelHelp	Higher levels make smaller archives but take longer. Level 5 is the usual balance.\n7z compresses with LZMA2, ZIP with Deflate. At level 0 7z only stores the files, without compression.	Чем выше уровень, тем меньше архив, но тем дольше упаковка. Уровень 5 — обычный баланс.\n7z сжимает методом LZMA2, ZIP — методом Deflate. На уровне 0 7z только складывает файлы в архив, без сжатия.
 ArchiveLevel0	0 — store only, no compression	0 — только упаковка, без сжатия
 ArchiveLevel1	1 — fastest	1 — самое быстрое
 ArchiveLevel5	5 — normal (recommended)	5 — обычное (рекомендуется)

@@ -235,6 +235,7 @@ internal static class SevenZipConst
     public const uint KpidEncrypted = 15;
     public const uint KpidCrc = 19;
     public const uint KpidIsAnti = 21;
+    public const uint KpidMethod = 22;
 
     // NExtract::NAskMode
     public const int AskExtract = 0;

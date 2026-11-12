@@ -280,7 +280,7 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     /// <summary>Raised when an account was added while the editor is open.</summary>
     public event EventHandler? CredentialsChanged;
 
-    /// <summary>Raised when the name, the backup type or the archive format changed on their pages.</summary>
+    /// <summary>Raised when the name, the backup type, the forced full backup or the archive format changed on their pages.</summary>
     public event EventHandler? ShapeChanged;
 
     /// <summary>The name as typed on the first page.</summary>
@@ -293,6 +293,9 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     public string ArchiveFormat { get; private set; } = ArchiveFormats.None;
 
     public bool IsMirror => BackupType == BackupTypes.Mirror;
+
+    /// <summary>Whether a full backup is forced on the first page (every N-th run, a weekday or a day of the month).</summary>
+    public bool HasForcedFull { get; private set; }
 
     /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
     public int DbServerCount { get; set; }
@@ -318,14 +321,16 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     public string? ProfileSid { get; init; }
 
     /// <summary>Tells the other pages what changed; null leaves a value as it is.</summary>
-    public void SetShape(string? taskName = null, string? backupType = null, string? archiveFormat = null)
+    public void SetShape(string? taskName = null, string? backupType = null, string? archiveFormat = null, bool? forcedFull = null)
     {
         bool changed = (taskName is not null && taskName != TaskName)
             || (backupType is not null && backupType != BackupType)
-            || (archiveFormat is not null && archiveFormat != ArchiveFormat);
+            || (archiveFormat is not null && archiveFormat != ArchiveFormat)
+            || (forcedFull is not null && forcedFull != HasForcedFull);
         TaskName = taskName ?? TaskName;
         BackupType = backupType ?? BackupType;
         ArchiveFormat = archiveFormat ?? ArchiveFormat;
+        HasForcedFull = forcedFull ?? HasForcedFull;
         if (changed)
         {
             ShapeChanged?.Invoke(this, EventArgs.Empty);

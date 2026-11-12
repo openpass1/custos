@@ -135,6 +135,7 @@ public sealed unsafe class SevenZipReader : IArchiveReader
                 Size = Get(archive, i, SevenZipConst.KpidSize) is ulong size ? (long)size : 0,
                 ModifiedUtc = Get(archive, i, SevenZipConst.KpidMTime) as DateTime?,
                 Encrypted = Get(archive, i, SevenZipConst.KpidEncrypted) is true,
+                Method = Get(archive, i, SevenZipConst.KpidMethod) as string,
             });
         }
 

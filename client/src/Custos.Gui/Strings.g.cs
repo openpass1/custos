@@ -14,9 +14,6 @@ static partial class Strings
     /// <summary>Close interface</summary>
     public static string MenuClose => Get(nameof(MenuClose));
 
-    /// <summary>backups continue</summary>
-    public static string MenuCloseHint => Get(nameof(MenuCloseHint));
-
     /// <summary>CUSTOS: {0}</summary>
     public static string TrayTooltip => Get(nameof(TrayTooltip));
 
@@ -203,6 +200,33 @@ static partial class Strings
     /// <summary>Schedule</summary>
     public static string CardSchedule => Get(nameof(CardSchedule));
 
+    /// <summary>Compression</summary>
+    public static string CardArchive => Get(nameof(CardArchive));
+
+    /// <summary>{0}, level {1}</summary>
+    public static string CardArchiveLevel => Get(nameof(CardArchiveLevel));
+
+    /// <summary>volumes of {0}</summary>
+    public static string CardArchiveVolumes => Get(nameof(CardArchiveVolumes));
+
+    /// <summary>AES-256 encryption</summary>
+    public static string CardArchiveEncrypted => Get(nameof(CardArchiveEncrypted));
+
+    /// <summary>AES-256 encryption, file names too</summary>
+    public static string CardArchiveEncryptedNames => Get(nameof(CardArchiveEncryptedNames));
+
+    /// <summary>Retention</summary>
+    public static string CardRetention => Get(nameof(CardRetention));
+
+    /// <summary>Full backup</summary>
+    public static string CardFullBackup => Get(nameof(CardFullBackup));
+
+    /// <summary>Before the backup</summary>
+    public static string CardEventsBefore => Get(nameof(CardEventsBefore));
+
+    /// <summary>After the backup</summary>
+    public static string CardEventsAfter => Get(nameof(CardEventsAfter));
+
     /// <summary>Last success</summary>
     public static string CardLastSuccess => Get(nameof(CardLastSuccess));
 
@@ -365,11 +389,26 @@ static partial class Strings
     /// <summary>Run all tasks</summary>
     public static string MenuRunAll => Get(nameof(MenuRunAll));
 
-    /// <summary>Stop the running task</summary>
-    public static string MenuStopCurrent => Get(nameof(MenuStopCurrent));
+    /// <summary>Stop all tasks</summary>
+    public static string MenuStopAll => Get(nameof(MenuStopAll));
 
-    /// <summary>Stop the running task: {0}</summary>
-    public static string MenuStopTask => Get(nameof(MenuStopTask));
+    /// <summary>Start the service</summary>
+    public static string MenuServiceStart => Get(nameof(MenuServiceStart));
+
+    /// <summary>Stop the service</summary>
+    public static string MenuServiceStop => Get(nameof(MenuServiceStop));
+
+    /// <summary>Stop the CUSTOS service?</summary>
+    public static string ServiceStopConfirm => Get(nameof(ServiceStopConfirm));
+
+    /// <summary>The running task «{0}» will be stopped too.</summary>
+    public static string ServiceStopRunning => Get(nameof(ServiceStopRunning));
+
+    /// <summary>The CUSTOS service did not start: {0}</summary>
+    public static string ServiceStartFailed => Get(nameof(ServiceStartFailed));
+
+    /// <summary>The CUSTOS service did not stop: {0}</summary>
+    public static string ServiceStopFailed => Get(nameof(ServiceStopFailed));
 
     /// <summary>Nothing to run: no task is switched on.</summary>
     public static string NothingQueued => Get(nameof(NothingQueued));
@@ -737,10 +776,10 @@ static partial class Strings
     /// <summary>Enter at least one day of the month, or tick «last day of the month».</summary>
     public static string ErrorNoMonthDays => Get(nameof(ErrorNoMonthDays));
 
-    /// <summary>ZIP</summary>
+    /// <summary>ZIP (Deflate)</summary>
     public static string ArchiveZip => Get(nameof(ArchiveZip));
 
-    /// <summary>7z</summary>
+    /// <summary>7z (LZMA2)</summary>
     public static string ArchiveSevenZip => Get(nameof(ArchiveSevenZip));
 
     /// <summary>Retention</summary>
@@ -770,7 +809,7 @@ static partial class Strings
     /// <summary>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that ...</summary>
     public static string RetentionAgeHint => Get(nameof(RetentionAgeHint));
 
-    /// <summary>Grandfather-father-son: keep the last backup of each day, week and month</summary>
+    /// <summary>Grandfather-father-son: a backup for each day, a full backup for each week and month</summary>
     public static string RetentionGfs => Get(nameof(RetentionGfs));
 
     /// <summary>Days:</summary>
@@ -782,11 +821,14 @@ static partial class Strings
     /// <summary>Months:</summary>
     public static string GfsMonthly => Get(nameof(GfsMonthly));
 
-    /// <summary>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a k...</summary>
+    /// <summary>For example 7, 4 and 12 keep the last backup of each of the last 7 days and the last full backup of each of...</summary>
     public static string RetentionGfsHint => Get(nameof(RetentionGfsHint));
 
     /// <summary>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</summary>
     public static string RetentionGfsEmpty => Get(nameof(RetentionGfsEmpty));
+
+    /// <summary>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete...</summary>
+    public static string RetentionNoFullWarning => Get(nameof(RetentionNoFullWarning));
 
     /// <summary>Rules that always apply</summary>
     public static string RetentionRules => Get(nameof(RetentionRules));

@@ -62,6 +62,9 @@ public sealed class ArchiveEntry
     public DateTime? ModifiedUtc { get; init; }
 
     public bool Encrypted { get; init; }
+
+    /// <summary>How the item is packed as the archive says it ("LZMA2:24 7zAES:19", "Copy"); null when unknown.</summary>
+    public string? Method { get; init; }
 }
 
 /// <summary>Outcome of unpacking one item.</summary>
