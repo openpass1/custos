@@ -425,7 +425,7 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - the example path of sources and destinations follows the chosen kind;
 - "Replace password" looks like a link. SSH keys and cloud drives cannot get a password from the site: they are made on the machine.
 
-**Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`.
+**Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`. When there is nothing to update (the machines already run this version or newer), the site says so in a plain message, not in red.
 
 ## What to keep in backups
 

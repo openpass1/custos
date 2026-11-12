@@ -351,7 +351,8 @@ final class AgentsController extends Controller
         }
         $result = $packages->install($kind, $package['version'], [$agent], $this->user());
         if ($result['queued'] === []) {
-            $this->session->flash('error', $this->t('updates.flash.not_needed', ['version' => $package['version']]));
+            // Not an error: the machine already runs this version or a newer one.
+            $this->session->flash('info', $this->t('updates.flash.not_needed', ['version' => $package['version']]));
             return;
         }
         $this->audit($kind === 'agent' ? 'update.install' : 'sevenzip.install', 'agent', $agent['id'],

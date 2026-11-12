@@ -420,12 +420,17 @@ final class WebTest extends TestCase
             $this->assertSame(303, $status);
         }
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('Обновление до 24.10 отправлено машинам: 1, пропущено: 0.', $updates);
+        $this->assertStringContainsString('Обновление до 24.10 отправлено машинам: 1.', $updates);
 
         [$exit, $output] = $this->fakeAgent(['--result=success', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
         $this->assertStringContainsString('CUSTOS 1.0.1 installed', $output);
         $this->assertStringContainsString('7-Zip 24.10 installed', $output);
+        // Again on a machine that already runs 1.0.1: nothing is sent, and it is said why, not as an error.
+        $fields = self::withValues(self::formFields($this->http('GET', '/updates')[1], '/updates/install'), ['agent_ids[]' => basename($agentUrl), 'kind' => 'agent']);
+        $this->http('POST', '/updates/install', self::encode($fields));
+        $this->assertStringContainsString('<div class="flash flash-info">Обновлять нечего: на выбранных машинах (1) уже 1.0.1 или новее.</div>',
+            $this->http('GET', '/updates')[1]);
         [, $page] = $this->http('GET', $agentUrl);
         $this->assertStringContainsString('Office documents', $page, 'the task made from the template');
         $this->assertStringContainsString('24.10', $page);

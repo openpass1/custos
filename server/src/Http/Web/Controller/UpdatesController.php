@@ -115,9 +115,14 @@ final class UpdatesController extends Controller
                 'machines' => implode(', ', array_map(fn($a) => Agents::name($a), $result['queued'])),
             ]);
         }
-        $this->session->flash($result['queued'] === [] ? 'error' : 'info', $this->t('updates.flash.queued', [
-            'version' => $package['version'], 'n' => count($result['queued']), 'skipped' => count($result['skipped']),
-        ]));
+        // Only approved machines get here, so a skipped one already runs this version or a newer one: say so, and
+        // not as an error when nothing needed updating.
+        $params = ['version' => $package['version'], 'n' => count($result['queued']), 'skipped' => count($result['skipped'])];
+        $this->session->flash('info', $this->t(match (true) {
+            $result['queued'] === [] => 'updates.flash.up_to_date',
+            $result['skipped'] === [] => 'updates.flash.queued',
+            default => 'updates.flash.queued_skipped',
+        }, $params));
         return $this->redirect('/updates');
     }
 
