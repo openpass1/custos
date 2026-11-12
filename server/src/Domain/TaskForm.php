@@ -42,6 +42,8 @@ final class TaskForm
 
     /** Kind of the account a source or destination needs; kinds missing here take no account. */
     public const CREDENTIAL_KINDS = ['unc' => 'windows', 'ftp' => 'ftp', 'ftps' => 'ftp', 'sftp' => 'sftp', 's3' => 's3', 'webdav' => 'webdav'];
+    /** Accounts whose secret is made on the machine (an SSH key, a cloud drive sign-in): the site cannot replace it. */
+    public const MACHINE_ONLY_SECRETS = ['ssh_key', 'gdrive', 'yadisk', 'dropbox'];
 
     /** @var list<string> */
     public array $errors = [];
@@ -225,7 +227,8 @@ final class TaskForm
 
         if (!$this->template) {
             foreach ((array) ($post['replace_secret'] ?? []) as $id => $password) {
-                if (is_string($id) && is_string($password) && $password !== '' && isset($this->credentials[$id])) {
+                if (is_string($id) && is_string($password) && $password !== '' && isset($this->credentials[$id])
+                    && !in_array($this->credentials[$id]['kind'] ?? '', self::MACHINE_ONLY_SECRETS, true)) {
                     $this->replacedSecrets[$id] = $password;
                 }
             }

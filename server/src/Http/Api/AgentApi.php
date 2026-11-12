@@ -8,6 +8,7 @@ use Custos\App;
 use Custos\Domain\Agents;
 use Custos\Domain\Input;
 use Custos\Domain\InvalidInput;
+use Custos\Domain\Monitor;
 use Custos\Http\Request;
 use Custos\Http\Response;
 use Custos\Infra\Cidr;
@@ -269,7 +270,10 @@ final class AgentApi
         return Response::json(200, [
             'status' => $agent['status'],
             'server_time' => Time::isoNow(),
-            'heartbeat_interval_s' => $this->app->settings()->int('heartbeat_interval_s'),
+            // A disabled agent checks in more rarely, but often enough to come back soon after it is enabled again.
+            'heartbeat_interval_s' => $agent['status'] === 'disabled'
+                ? Monitor::DISABLED_HEARTBEAT_S
+                : $this->app->settings()->int('heartbeat_interval_s'),
             'want_config' => $wantConfig,
             'commands' => $approved ? $this->app->commands()->deliver($agent['id']) : [],
         ]);

@@ -39,4 +39,13 @@ final class RegistrationKey
     {
         return self::format($key) . '#' . $serverFingerprint;
     }
+
+    /**
+     * The site address and the registration code in one line, pasted into the program on a machine at once:
+     * http://custos.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#1A2B-3C4D-5E6F-7A8B. The address ends at the first "#" (A.3).
+     */
+    public static function connection(string $siteUrl, string $code): string
+    {
+        return rtrim($siteUrl, '/') . '#' . $code;
+    }
 }

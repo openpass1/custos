@@ -66,7 +66,19 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
     <?php return (string) ob_get_clean();
 };
 
-$sourceRow = function (string $i, array $item) use ($credentialField): string {
+/**
+ * Path field whose example follows the kind chosen in its row: the same drive letters and server name everywhere
+ * (D:\Data is copied to E:\Backup or \\fileserver\backup). app.js swaps the example when the kind changes.
+ */
+$pathExamples = [
+    'source' => ['folder' => 'D:\\Data', 'file' => 'D:\\Data\\report.xlsx', 'unc' => '\\\\fileserver\\share\\Data'],
+    'destination' => ['local' => 'E:\\Backup', 'unc' => '\\\\fileserver\\backup', 'usb' => 'Backup', 'ftp' => '/backup',
+                      'ftps' => '/backup', 'sftp' => '/backup', 's3' => 'backup', 'webdav' => '/backup'],
+];
+$pathExample = fn(string $side, string $kind): string =>
+    ' placeholder="' . e($pathExamples[$side][$kind] ?? '') . '" data-placeholders="' . e(json_encode($pathExamples[$side], JSON_UNESCAPED_SLASHES)) . '"';
+
+$sourceRow = function (string $i, array $item) use ($credentialField, $pathExample): string {
     $prefix = "sources[$i]";
     $kind = (string) ($item['kind'] ?? 'folder');
     ob_start(); ?>
@@ -86,7 +98,7 @@ $sourceRow = function (string $i, array $item) use ($credentialField): string {
                 </label>
                 <label class="grow"><?= e(t('task_form.path')) ?>
                     <input type="text" name="<?= e($prefix) ?>[path]" value="<?= e((string) ($item['path'] ?? '')) ?>" class="mono"
-                           placeholder="D:\Data" maxlength="1000">
+                           <?= $pathExample('source', $kind) ?> maxlength="1000">
                 </label>
                 <label class="check" data-show-if="kind=folder|unc">
                     <input type="checkbox" name="<?= e($prefix) ?>[recursive]" value="1"<?= checked((bool) ($item['recursive'] ?? true)) ?>>
@@ -99,7 +111,7 @@ $sourceRow = function (string $i, array $item) use ($credentialField): string {
     <?php return (string) ob_get_clean();
 };
 
-$destinationRow = function (string $i, array $item) use ($credentialField): string {
+$destinationRow = function (string $i, array $item) use ($credentialField, $pathExample): string {
     $prefix = "destinations[$i]";
     $kind = (string) ($item['kind'] ?? 'local');
     $field = fn(string $name) => e((string) ($item[$name] ?? ''));
@@ -136,7 +148,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField): stri
         <div class="row-fields">
             <label class="grow"><span data-show-if="kind=local|unc"><?= e(t('task_form.path')) ?></span><span data-show-if="kind!=local|unc"><?= e(t('task_form.path.remote')) ?></span>
                 <input type="text" name="<?= e($prefix) ?>[path]" value="<?= $field('path') ?>" class="mono" maxlength="1000"
-                       placeholder="\\fileserver\backup">
+                       <?= $pathExample('destination', $kind) ?>>
             </label>
             <label><?= e(t('task_form.speed')) ?>
                 <input type="number" name="<?= e($prefix) ?>[speed_limit_kbps]" value="<?= (int) ($item['speed_limit_kbps'] ?? 0) ?>" min="0" class="short">
@@ -406,7 +418,7 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                 <input type="text" name="schedule[times]" value="<?= e(implode(', ', array_map('strval', (array) ($schedule['times'] ?? [])))) ?>"
                        class="mono" placeholder="00:00, 12:30" maxlength="500"></label>
             <label data-show-if="schedule[type]=interval"><?= e(t('task_form.schedule.interval')) ?>
-                <input type="number" name="schedule[interval_minutes]" value="<?= (int) ($schedule['interval_minutes'] ?? 0) ?>" min="1" max="1440" class="short"></label>
+                <input type="number" name="schedule[interval_minutes]" value="<?= (int) ($schedule['interval_minutes'] ?? 0) ?: 60 ?>" min="1" max="1440" class="short"></label>
         </div>
         <div data-show-if="schedule[type]=daily|weekly">
             <span class="label-text"><?= e(t('task_form.schedule.days_of_week')) ?></span>
@@ -492,10 +504,14 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                             <tr>
                                 <td><?= e(account_label($c)) ?><?php if (($c['kind'] ?? '') === 'archive_password'): ?> <span class="note"><?= e(substr($c['id'], 0, 8)) ?></span><?php endif ?></td>
                                 <td><?= e(t(!empty($c['has_secret']) ? 'credentials.secret.set' : 'credentials.secret.none')) ?></td>
-                                <td><details><summary><?= e(t('task_form.accounts.replace')) ?></summary>
-                                        <input type="password" name="replace_secret[<?= e($c['id']) ?>]" value="" autocomplete="new-password"
-                                               aria-label="<?= e(t('task_form.accounts.new_password')) ?>" placeholder="<?= e(t('task_form.accounts.new_password')) ?>">
-                                    </details></td>
+                                <?php if (in_array($c['kind'] ?? '', TaskForm::MACHINE_ONLY_SECRETS, true)): ?>
+                                    <td class="note"><?= e(t('task_form.accounts.machine_only')) ?></td>
+                                <?php else: ?>
+                                    <td><details class="reveal"><summary><?= e(t('task_form.accounts.replace')) ?></summary>
+                                            <input type="password" name="replace_secret[<?= e($c['id']) ?>]" value="" autocomplete="new-password"
+                                                   aria-label="<?= e(t('task_form.accounts.new_password')) ?>" placeholder="<?= e(t('task_form.accounts.new_password')) ?>">
+                                        </details></td>
+                                <?php endif ?>
                             </tr>
                         <?php endforeach ?>
                         </tbody>
