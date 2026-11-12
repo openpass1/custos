@@ -1890,7 +1890,7 @@ Trust the new key only if you know why it changed.</value>
     <value>Registration code:</value>
   </data>
   <data name="ServerCodeHelp" xml:space="preserve">
-    <value>The code is on the site: Settings → Agents. It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
+    <value>The code is on the site: Settings → Connecting agents. It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
   </data>
   <data name="ServerConnectButton" xml:space="preserve">
     <value>Connect</value>
