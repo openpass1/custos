@@ -300,7 +300,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 }
 ```
 
-Для FTP, WebDAV и S3 поля `total_bytes` и `free_bytes` могут быть `null`. Если набор ещё не проверялся, `verified_at` и `verify_ok` равны `null`.
+Для FTP, WebDAV и S3 поля `total_bytes` и `free_bytes` могут быть `null`, у облачного диска — если у тарифа нет предела объёма. Если набор ещё не проверялся, `verified_at` и `verify_ok` равны `null`.
 
 ### A.9. Объекты: задание, учётные данные, настройки
 
@@ -343,11 +343,13 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "profile_sid": null,                 // чей профиль для %USERPROFILE% и т.п.; null = кто создал задание
   "destinations": [
     {
-      "id": "uuid", "kind": "unc",     // local | unc | usb | ftp | ftps | sftp | s3 | webdav
-      "path": "\\\\fileserver\\docs",
+      "id": "uuid", "kind": "unc",     // local | unc | usb | ftp | ftps | sftp | s3 | webdav | gdrive | yadisk | dropbox
+      "path": "\\\\fileserver\\docs",  // gdrive/yadisk/dropbox: папка внутри папки приложения CUSTOS
+      "part_mb": 0,                    // gdrive/yadisk/dropbox: архив частями .001, .002…; 0 = одним файлом
       "usb_label": null,               // для usb: метка тома; path тогда относительный
       "host": null, "port": null,      // ftp/ftps/sftp/webdav
       "endpoint": null, "bucket": null, "region": null,   // s3
+      "object_lock_days": 0,           // s3: запрет удаления на N дней после записи (Object Lock); 0 = выключено
       "credential_id": "uuid",
       "disconnect_after": true,
       "speed_limit_kbps": 0            // 0 = без ограничения
@@ -436,13 +438,15 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 { "id": "uuid", "kind": "windows", "user": "backup1", "domain": ".", "has_secret": true }
 ```
 
-`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `db` (сервер баз данных; пароль может быть пустым), `ssh_key` (ключ ed25519 для Linux-сервера). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `db` (сервер баз данных; пароль может быть пустым), `ssh_key` (ключ ed25519 для Linux-сервера), `gdrive`, `yadisk`, `dropbox` (облачные диски, см. ниже). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
 
 Ключ `ssh_key` создаёт сам агент (в мастере Linux-сервера), задать его снаружи нельзя. У него есть открытая часть в строке формата OpenSSH, её можно показывать:
 
 ```json
 { "id": "uuid", "kind": "ssh_key", "user": "custos@vps.example.org", "has_secret": true, "public_key": "ssh-ed25519 AAAA… custos@PC01" }
 ```
+
+Учётные данные облачных дисков (`gdrive`, `yadisk`, `dropbox`) создаёт только агент: аккаунт подключается через браузер на самом компьютере (6.3 ТЗ клиента). `user` — адрес почты или логин аккаунта, только для показа; секрет — токен обновления OAuth. В `secrets` команды `task.upsert` (A.4) такие виды не принимаются: агент отвечает `failed`. Задание с сайта ссылается на уже подключённый аккаунт по `credential_id`.
 
 **Настройки агента** (`settings`):
 
@@ -545,3 +549,11 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - A.9. Новый вид источника `ssh` с полями `host`, `port`, `user`, `host_key_sha256`, `preset`, `office_ip`, `speed_limit_kbps`, `helper`, `databases`. `host_key_sha256` меняется только на агенте.
 - A.9. Новый вид учётных данных `ssh_key` с открытой частью `public_key`; создаёт его только агент.
 - A.5. В `runs/finish` новый необязательный блок `remote`.
+
+**11.11.2026 — протокол 1, до первого выпуска.** Защита от удаления для S3 (этап 4 клиента) и облачные диски Google Drive, Яндекс Диск и Dropbox (этап 4б клиента). Правки только добавляющие.
+
+- A.9. У назначения `s3` необязательное поле `object_lock_days`: запрет удаления каждого файла набора на N дней после записи (Object Lock).
+
+- A.9. Новые виды назначения `gdrive`, `yadisk`, `dropbox`. У них `path` — папка внутри папки приложения CUSTOS, а необязательное поле `part_mb` задаёт запись архива частями.
+- A.9. Новые виды учётных данных `gdrive`, `yadisk`, `dropbox`. Создаёт их только агент, через `secrets` команды `task.upsert` они не передаются.
+- A.8. У облачного диска без предела объёма `total_bytes` и `free_bytes` равны `null`.
