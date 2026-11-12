@@ -125,8 +125,12 @@ public sealed class EditorTests
     [Fact]
     public void Retention_warns_when_nothing_forces_a_full_backup() => Sta.Run("en-US", () =>
     {
+        // The office task is differential with forced full backups; here nothing forces one.
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Incremental;
+        task.ForceFull = new ForceFullOptions();
         using var monitor = Samples.Monitor();
-        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
         editor.Show();
         Sta.Pump();
         var retention = editor.Pages.OfType<RetentionPage>().Single();
