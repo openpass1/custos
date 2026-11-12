@@ -2,7 +2,7 @@
 /**
  * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
  * @var array $runs @var int $refresh @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
- * @var array $settings
+ * @var array $settings @var list<array> $storages
  */
 use Custos\Domain\Agents;
 
@@ -134,6 +134,9 @@ $sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
 <div data-live="<?= e(url('/agents/' . $agent['id'] . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
     <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
     <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
+    <?php if ($storages !== []): ?>
+        <?php /* Not a live part: the inventory changes after runs, not every few seconds. */ include __DIR__ . '/_storage.php' ?>
+    <?php endif ?>
     <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 </div>
 

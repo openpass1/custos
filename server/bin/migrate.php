@@ -20,3 +20,6 @@ try {
     Cli::fail($e->getMessage());
 }
 Cli::ok($applied === 0 ? 'Database schema is up to date' : "Applied $applied migration(s)");
+foreach ($app->integrations()->ensureTokens() as $name) {
+    Cli::ok("Generated $name (shown on the site under Settings)");
+}

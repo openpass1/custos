@@ -39,7 +39,13 @@ function fmt_time(?string $utc, bool $seconds = false): string
     }
     $time = new DateTimeImmutable($utc, new DateTimeZone('UTC'));
     $zone = new DateTimeZone(View::$current->app->config->timezone());
-    return $time->setTimezone($zone)->format($seconds ? 'd.m.Y H:i:s' : 'd.m.Y H:i');
+    return $time->setTimezone($zone)->format(t($seconds ? 'format.datetime_seconds' : 'format.datetime'));
+}
+
+/** A day "Y-m-d" as the language writes a short date: "12.11", "11-12". */
+function fmt_day(string $day): string
+{
+    return (new DateTimeImmutable($day))->format(t('format.day'));
 }
 
 function fmt_ago(?string $utc): string
@@ -68,13 +74,13 @@ function fmt_bytes(int|string|null $bytes): string
         $value /= 1024;
         $i++;
     }
-    $number = $i === 0 ? (string) (int) $value : number_format($value, $value < 10 ? 1 : 0, ',', '');
+    $number = $i === 0 ? (string) (int) $value : number_format($value, $value < 10 ? 1 : 0, t('format.decimal'), '');
     return $number . ' ' . t($units[$i]);
 }
 
 function fmt_number(int|string|null $value): string
 {
-    return $value === null || $value === '' ? '—' : number_format((float) $value, 0, ',', ' ');
+    return $value === null || $value === '' ? '—' : number_format((float) $value, 0, t('format.decimal'), t('format.thousands'));
 }
 
 function fmt_duration(int|string|null $seconds): string
@@ -97,7 +103,7 @@ function status_class(string $status): string
 {
     return match ($status) {
         'success', 'online', 'ok', 'done', 'sent' => 'ok',
-        'warning', 'anomaly' => 'warn',
+        'warning', 'anomaly', 'space' => 'warn',
         'error', 'failed', 'missed' => 'bad',
         'running', 'paused', 'pending', 'queued', 'delivered' => 'info',
         default => 'muted',
@@ -174,6 +180,10 @@ function fmt_unix(?int $time): string
 /** What a problem is about, in one line for the site. */
 function problem_text(array $p): string
 {
+    if ($p['kind'] === 'space') {
+        $days = (int) ($p['days_left'] ?? 0);
+        return t($days === 0 ? 'problem.space.full' : 'problem.space', ['path' => (string) $p['message'], 'n' => $days]);
+    }
     if ($p['kind'] === 'error') {
         $text = $p['message'] === null ? t('problem.error') : t('problem.error.message', ['message' => $p['message']]);
     } else {
@@ -230,6 +240,10 @@ function task_summary(array $task): string
     if ($type === 'mirror' && ($task['mirror_mode'] ?? null) !== null) {
         $head .= ' (' . t('summary.mirror.' . $task['mirror_mode']) . ')';
     }
+    $databases = db_servers_label($task);
+    if ($databases !== '') {
+        $sources[] = t('summary.databases', ['servers' => $databases]);
+    }
     $parts[] = trim($head . ' ' . implode(', ', $sources) . ($destinations === [] ? '' : ' → ' . implode(', ', $destinations)));
     $parts[] = schedule_label($task['schedule'] ?? null);
 
@@ -274,6 +288,36 @@ function task_summary(array $task): string
         $parts[] = t('summary.disabled');
     }
     return implode(' · ', array_filter($parts, fn($p) => $p !== ''));
+}
+
+/** The space forecast of a destination (section 11): "≈ 40 дн. до заполнения", "место не убывает". */
+function forecast_text(?array $f): string
+{
+    return match ($f['state'] ?? 'unknown') {
+        'filling' => (int) $f['days_left'] === 0 ? t('forecast.full') : t('forecast.days', ['n' => (int) $f['days_left']]),
+        'steady' => t('forecast.steady'),
+        default => t('forecast.unknown'),
+    };
+}
+
+/** Database servers of a task (A.9 db_servers, client stage 2b) in a few words: "MySQL 127.0.0.1 (все базы)". */
+function db_servers_label(array $task): string
+{
+    $parts = [];
+    foreach ((array) ($task['db_servers'] ?? []) as $server) {
+        if (!is_array($server)) {
+            continue;
+        }
+        $engine = (string) ($server['engine'] ?? '');
+        $name = t('db.engine.' . $engine) === 'db.engine.' . $engine ? $engine : t('db.engine.' . $engine);
+        $host = (string) ($server['host'] ?? '');
+        $port = $server['port'] ?? null;
+        $which = !empty($server['all_databases'])
+            ? t('db.all')
+            : implode(', ', array_map('strval', array_filter((array) ($server['include'] ?? []), 'is_scalar')));
+        $parts[] = trim($name . ' ' . $host . ($port !== null ? ':' . (int) $port : '')) . ($which === '' ? '' : ' (' . $which . ')');
+    }
+    return implode(', ', $parts);
 }
 
 /** A notice of the bell (7.7) as text. */

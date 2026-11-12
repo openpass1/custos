@@ -5,6 +5,7 @@
 //
 //   php bin/install.php                       asks for the first administrator's login and password
 //   php bin/install.php --admin-login=admin   takes the password from the CUSTOS_ADMIN_PASSWORD environment variable
+//   php bin/install.php --language=en         sets the default language of the site (ru or en; Settings change it later)
 
 declare(strict_types=1);
 
@@ -23,6 +24,10 @@ use Custos\Domain\Users;
 use Custos\Infra\Migrator;
 
 $options = Cli::options($argv);
+$language = $options['language'] ?? null;
+if ($language !== null && !in_array($language, Custos\App::LANGUAGES, true)) {
+    Cli::fail('--language must be one of: ' . implode(', ', Custos\App::LANGUAGES));
+}
 
 // 1. PHP version and extensions (section 2).
 if (PHP_VERSION_ID < 80300) {
@@ -104,6 +109,17 @@ $settings = $app->settings();
 if ($settings->get('registration_key') === '') {
     $settings->set('registration_key', RegistrationKey::generate());
     Cli::ok('Generated the agent registration key');
+}
+
+// 8. Tokens of Zabbix and the wall screen (sections 7.9, 10).
+foreach ($app->integrations()->ensureTokens() as $name) {
+    Cli::ok("Generated $name");
+}
+
+// 9. Default language of the site and of the messages (--language).
+if (is_string($language)) {
+    $settings->set('default_language', $language);
+    Cli::ok("Default language: $language");
 }
 
 Cli::info('');

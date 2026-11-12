@@ -1,5 +1,5 @@
 <?php
-/** @var array $summary @var int $written @var ?array $storage */
+/** @var array $summary @var int $written @var array{least: ?array, soonest: ?array} $storage */
 ?>
 <div class="tiles">
     <a class="tile" href="<?= e(url('/agents')) ?>">
@@ -21,18 +21,26 @@
             'missed' => $summary['missed'], 'running' => $summary['running'],
         ])) ?></span>
     </a>
-    <div class="tile">
+    <?php $least = $storage['least']; $soonest = $storage['soonest']; ?>
+    <a class="tile" href="<?= e(url($least === null ? '/agents' : '/agents/' . $least['agent_id'])) ?>">
         <span class="tile-label"><?= e(t('dashboard.storage')) ?></span>
-        <?php if ($storage === null): ?>
+        <?php if ($least === null): ?>
             <span class="tile-value">—</span>
             <span class="tile-note"><?= e(t('dashboard.storage.none')) ?></span>
         <?php else: ?>
-            <span class="tile-value"><?= e(fmt_bytes($storage['free_bytes'])) ?></span>
-            <span class="tile-note mono" title="<?= e(\Custos\Domain\Agents::name($storage)) ?>"><?= e(t('dashboard.storage.where', [
-                'path' => $storage['path'] ?? $storage['kind'], 'machine' => \Custos\Domain\Agents::name($storage),
+            <span class="tile-value"><?= e(fmt_bytes($least['free_bytes'])) ?></span>
+            <span class="tile-note mono" title="<?= e(\Custos\Domain\Agents::name($least)) ?>"><?= e(t('dashboard.storage.where', [
+                'path' => $least['path'] ?? $least['kind'], 'machine' => \Custos\Domain\Agents::name($least),
             ])) ?></span>
+            <span class="tile-note<?= $least['soon'] ? ' bad-text' : '' ?>"><?= e(forecast_text($least)) ?></span>
+            <?php if ($soonest !== null && ($soonest['agent_id'] . $soonest['task_id'] . $soonest['destination_id']) !== ($least['agent_id'] . $least['task_id'] . $least['destination_id'])): ?>
+                <span class="tile-note mono" title="<?= e(\Custos\Domain\Agents::name($soonest)) ?>"><?= e(t('dashboard.storage.soonest', [
+                    'path' => $soonest['path'] ?? $soonest['kind'], 'machine' => \Custos\Domain\Agents::name($soonest),
+                    'forecast' => forecast_text($soonest),
+                ])) ?></span>
+            <?php endif ?>
         <?php endif ?>
-    </div>
+    </a>
     <a class="tile" href="<?= e(url('/runs')) ?>">
         <span class="tile-label"><?= e(t('dashboard.written')) ?></span>
         <span class="tile-value"><?= e(fmt_bytes($written)) ?></span>

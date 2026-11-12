@@ -30,6 +30,8 @@ final class Cron
             'nonces' => fn() => $this->app->db()->exec('DELETE FROM nonces WHERE created_at < ?', [Time::db($now - 600)]),
             'commands' => fn() => $this->app->commands()->expire($now),
             'monitor' => fn() => $this->app->monitor()->pass($now),
+            // Before notify: a storage warning opened by this pass goes out in the same minute.
+            'forecast' => fn() => $this->app->storage()->pass($now),
             'notify' => fn() => $this->app->notifier()->queueProblems($now),
             'send' => fn() => $this->app->notifier()->sendQueued($now),
             'updates' => fn() => $this->app->updateWatch()->pass($now),
@@ -43,7 +45,7 @@ final class Cron
                 $errors[] = "$name: " . $e->getMessage();
             }
         }
-        // /api/health (stage 4) and the dashboard warn when this time gets old.
+        // /api/health and the dashboard warn when this time gets old.
         $this->app->settings()->set('cron_last_run', Time::db($now));
         return ['stats' => $stats, 'errors' => $errors];
     }

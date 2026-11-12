@@ -90,6 +90,7 @@ final class AgentsController extends Controller
             'currentVersion' => $this->app->packages()->current(),
             'latestSevenZip' => $this->app->packages()->latestSevenZip(),
             'settings' => json_decode((string) $agent['settings'], true) ?: [],
+            'storages' => $this->app->storage()->forAgent($agent['id']),
         ], Agents::name($agent));
     }
 

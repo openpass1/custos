@@ -8,7 +8,7 @@ use Custos\Infra\Db;
 use Custos\Infra\Time;
 
 /**
- * Reports from agents: runs (A.5), logs on request (A.7) and storage inventory (A.8).
+ * Reports from agents: runs (A.5) with their database dumps, logs on request (A.7) and storage inventory (A.8).
  */
 final class Reports
 {
@@ -96,6 +96,7 @@ final class Reports
             'error_message' => $in->string('error_message', 65535, true),
             'verify' => self::json($in->object('verify', true)),
             'retention' => self::json($in->object('retention', true)),
+            'db_dumps' => self::dumps($in),
             'log_tail' => $in->string('log_tail', self::MAX_LOG_TAIL, true),
         ];
         $destinations = [];
@@ -127,7 +128,8 @@ final class Reports
             $duration = max(0, Time::unix($finishedAt) - Time::unix($startedAt));
             $this->db->exec(
                 'UPDATE runs SET finished_at = ?, duration_s = ?, status = ?, source_files = ?, source_bytes = ?, files_processed = ?,
-                                 bytes_written = ?, errors = ?, warnings = ?, error_message = ?, verify = ?, retention = ?, log_tail = ?
+                                 bytes_written = ?, errors = ?, warnings = ?, error_message = ?, verify = ?, retention = ?, db_dumps = ?,
+                                 log_tail = ?
                  WHERE id = ?',
                 [$finishedAt, $existing === null ? null : $duration, ...array_values($fields), $runId]
             );
@@ -241,6 +243,28 @@ final class Reports
             throw new InvalidInput("$key must be gzip data in base64");
         }
         return $gz;
+    }
+
+    /**
+     * "databases" of runs/finish (A.5, client stage 2b): one entry per dumped database. Optional: missing for tasks
+     * without database servers. Unknown fields of an entry are kept.
+     */
+    private static function dumps(Input $in): ?string
+    {
+        if (!$in->has('databases') || $in->raw('databases') === null) {
+            return null;
+        }
+        $dumps = [];
+        foreach ($in->objects('databases') as $d) {
+            $dumps[] = [
+                'engine' => $d->code('engine', true),
+                'name' => $d->string('name', 255),
+                'bytes' => $d->int('bytes', true),
+                'ok' => $d->bool('ok', true),
+                'error' => $d->string('error', 65535, true),
+            ] + $d->toArray();
+        }
+        return json_encode($dumps, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     private static function json(?Input $value): ?string

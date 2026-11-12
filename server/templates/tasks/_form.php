@@ -269,6 +269,9 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         <template data-row-template="sources"><?= $sourceRow('__i__', ['kind' => 'folder', 'recursive' => true]) ?></template>
         <button type="button" class="secondary" data-add-row="sources"><?= e(t('task_form.add.source')) ?></button>
         <p class="note"><?= e(t('task_form.sources.hint')) ?></p>
+        <?php if (db_servers_label($task) !== ''): ?>
+            <div class="alert alert-info gap-top"><?= e(t('task_form.databases', ['servers' => db_servers_label($task)])) ?></div>
+        <?php endif ?>
 
         <h3><?= e(t('task_form.filters')) ?></h3>
         <div class="row-fields">

@@ -161,7 +161,7 @@ final class Templates
         $task = $template['task'];
         $task['id'] = $map((string) $template['uuid']);
         $task['name'] = $template['name'];
-        foreach (['sources', 'destinations'] as $list) {
+        foreach (TaskForm::ITEM_LISTS as $list) {
             foreach ((array) ($task[$list] ?? []) as $i => $item) {
                 if (is_array($item) && is_string($item['id'] ?? null)) {
                     $task[$list][$i]['id'] = $map($item['id']);
@@ -201,9 +201,10 @@ final class Templates
                     }
                     $machineId = self::machineId($template, $agent['id'], $ref);
                     $password = (string) ($passwords[$ref] ?? '');
-                    if ($password !== '') {
+                    if ($password !== '' || ($c['kind'] === 'db' && !isset($existing[$machineId]))) {
+                        // A database account may have no password: it is created with an empty one.
                         $secrets[$machineId] = ['kind' => $c['kind'], 'user' => $c['user'], 'domain' => $c['domain'], 'password' => $password];
-                    } elseif (empty($existing[$machineId]['has_secret'])) {
+                    } elseif (empty($existing[$machineId]['has_secret']) && $c['kind'] !== 'db') {
                         $error = ['key' => 'templates.apply.no_password', 'params' => ['account' => self::accountName($c)]];
                         break;
                     }
@@ -236,7 +237,7 @@ final class Templates
     /** Replaces the account ids a task refers to; $map returns the new id or null to drop the reference. */
     private static function mapCredentials(array $task, callable $map): array
     {
-        foreach (['sources', 'destinations'] as $list) {
+        foreach (TaskForm::ITEM_LISTS as $list) {
             foreach ((array) ($task[$list] ?? []) as $i => $item) {
                 if (is_array($item) && is_string($item['credential_id'] ?? null)) {
                     $task[$list][$i]['credential_id'] = $map($item['credential_id']);

@@ -178,7 +178,7 @@ final class TemplatesController extends Controller
         $result = [];
         foreach ((array) json_decode($json === false ? '' : $json, true) as $c) {
             if (is_array($c) && is_string($c['id'] ?? null) && preg_match('/^[0-9a-f-]{36}$/', $c['id'])
-                && in_array($c['kind'] ?? null, ['windows', 'ftp', 'sftp', 's3', 'webdav', 'archive_password'], true)) {
+                && in_array($c['kind'] ?? null, TaskForm::ACCOUNT_KINDS, true)) {
                 $result[$c['id']] = ['id' => $c['id'], 'kind' => $c['kind'], 'user' => mb_substr((string) ($c['user'] ?? ''), 0, 255),
                                      'domain' => is_string($c['domain'] ?? null) ? mb_substr($c['domain'], 0, 255) : null, 'has_secret' => false];
             }

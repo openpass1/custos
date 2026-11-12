@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Custos\Tests\Integration;
 
+use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
@@ -77,9 +78,12 @@ final class WebTest extends TestCase
         $this->assertSame(0, $code, $output);
         $this->assertMatchesRegularExpression('/Registration code:\s+([A-Z2-7]{5}-){4}[A-Z2-7]{5}#[0-9A-F-]{19}/', $output);
 
-        [$code, $output] = self::php(['bin/install.php']);
+        [$code, $output] = self::php(['bin/install.php', '--language=ru']);
         $this->assertSame(0, $code, 'install.php can run again: ' . $output);
         $this->assertStringContainsString('Users already exist', $output);
+        $this->assertStringContainsString('Default language: ru', $output);
+        [$code, $output] = self::php(['bin/install.php', '--language=de']);
+        $this->assertNotSame(0, $code, 'an unknown language is refused');
 
         [$code, $output] = self::php(['bin/migrate.php']);
         $this->assertSame(0, $code, $output);
@@ -420,6 +424,126 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('24.10', $page);
         $versions = json_decode($this->http('GET', '/dashboard/live')[1], true)['parts']['versions'];
         $this->assertStringContainsString('1.0.1', $versions);
+    }
+
+    /** Stage 4 through the pages: icons, heat map, charts, storages, CSV, profile (English, dark), Zabbix and the wall. */
+    #[Depends('testManagementFromTheSite')]
+    public function testAnalyticsProfileAndIntegrations(): void
+    {
+        foreach (['/favicon.svg' => '<svg', '/favicon.ico' => "\x00\x00\x01\x00", '/apple-touch-icon.png' => "\x89PNG"] as $path => $start) {
+            [$status, $body] = $this->http('GET', $path);
+            $this->assertSame(200, $status, $path);
+            $this->assertStringStartsWith($start, $body, $path);
+        }
+
+        [$exit, $output] = $this->fakeAgent(['--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        $db = Db::connect(TestEnv::db());
+        // The fake agent runs its first task on every pass: that task has the most runs.
+        $task = $db->one('SELECT t.agent_id, t.id, t.name FROM tasks t JOIN runs r ON r.agent_id = t.agent_id AND r.task_id = t.id
+                          WHERE t.deleted = 0 GROUP BY t.agent_id, t.id, t.name ORDER BY COUNT(*) DESC LIMIT 1');
+        $taskUrl = "/agents/{$task['agent_id']}/tasks/{$task['id']}";
+
+        [$status, $home] = $this->http('GET', '/');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('<link rel="icon" href="/favicon.svg"', $home);
+        $this->assertStringContainsString('class="heatmap"', $home);
+        $this->assertStringContainsString('Результаты за 30 дней', $home);
+        $this->assertStringContainsString('href="/runs?agent=' . $task['agent_id'] . '&amp;from=' . gmdate('Y-m-d') . '&amp;to=' . gmdate('Y-m-d') . '"', $home,
+            'a cell of today leads to the runs of that day');
+
+        [, $page] = $this->http('GET', $taskUrl);
+        $this->assertStringContainsString('src="/assets/vendor/chart.umd.min.js', $page);
+        $this->assertSame(1, preg_match('#<script type="application/json" id="task-chart-data">(.*?)</script>#s', $page, $m));
+        $chart = json_decode($m[1], true);
+        $this->assertGreaterThanOrEqual(2, count($chart['runs']));
+        $this->assertSame(count($chart['runs']), count($chart['source']));
+        $this->assertStringStartsWith('/runs/', $chart['runs'][0]);
+
+        [, $agent] = $this->http('GET', '/agents/' . $task['agent_id']);
+        $this->assertStringContainsString('Хранилища', $agent, 'the fake agent sends an inventory after each run');
+        $this->assertStringContainsString('class="storage', $agent);
+
+        [$status, $csv, $headers] = $this->http('GET', '/runs/export?agent=' . $task['agent_id']);
+        $this->assertSame(200, $status);
+        $this->assertStringStartsWith('text/csv', $headers['content-type']);
+        $this->assertStringContainsString('attachment', $headers['content-disposition']);
+        $this->assertStringStartsWith("\u{FEFF}Машина;Задание;", $csv);
+        $lines = explode("\r\n", trim($csv));
+        $this->assertGreaterThanOrEqual(3, count($lines));
+        $this->assertStringContainsString(';' . $task['name'] . ';', implode("\n", $lines));
+
+        // A run with database dumps (client stage 2b) shows them.
+        $runId = $db->value("SELECT id FROM runs WHERE agent_id = ? AND task_id = ? ORDER BY started_at DESC LIMIT 1", [$task['agent_id'], $task['id']]);
+        $db->exec('UPDATE runs SET db_dumps = ? WHERE id = ?', [json_encode([
+            ['engine' => 'mariadb', 'name' => 'shop', 'bytes' => 2048, 'ok' => true, 'error' => null],
+            ['engine' => 'postgresql', 'name' => 'crm', 'bytes' => null, 'ok' => false, 'error' => 'connection refused'],
+        ]), $runId]);
+        [, $run] = $this->http('GET', "/runs/$runId");
+        $this->assertStringContainsString('Дампы баз данных', $run);
+        $this->assertStringContainsString('connection refused', $run);
+
+        // Profile: English and the dark theme for this user only.
+        [$status, $profile] = $this->http('GET', '/profile');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('Язык интерфейса', $profile);
+        [$status] = $this->post('/profile', ['language' => 'en', 'theme' => 'dark']);
+        $this->assertSame(303, $status);
+        [, $home, $headers] = $this->http('GET', '/');
+        $this->assertStringContainsString('<html lang="en" data-theme="dark"', $home);
+        $this->assertSame('en', $headers['content-language']);
+        $this->assertStringContainsString('Results for 30 days', $home);
+        $this->post('/profile/password', ['current' => 'wrong', 'password' => 'another-password-1', 'repeat' => 'another-password-1']);
+        $this->assertStringContainsString('The current password is wrong.', $this->http('GET', '/profile')[1]);
+        $this->post('/profile/password', ['current' => self::PASSWORD, 'password' => 'another-password-1', 'repeat' => 'other']);
+        $this->assertStringContainsString('The new password and its repeat do not match.', $this->http('GET', '/profile')[1]);
+        $this->post('/profile', ['language' => '', 'theme' => 'auto']);
+        [, $home] = $this->http('GET', '/');
+        $this->assertStringContainsString('<html lang="ru">', $home);
+
+        // Zabbix and the wall screen.
+        [$status, $integrations] = $this->http('GET', '/settings/integrations');
+        $this->assertSame(200, $status);
+        $this->assertSame(1, preg_match('/id="zabbix-token"[^>]*value="([0-9a-f]{48})"/', $integrations, $zabbix));
+        $this->assertSame(1, preg_match('#id="wall-url"[^>]*value="http://custos\.test/wall\?token=([0-9a-f]{48})"#', $integrations, $wall));
+        [$status, $yaml, $headers] = $this->http('GET', '/settings/integrations/zabbix-template');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString("template: 'CUSTOS by HTTP'", $yaml);
+        $this->assertStringContainsString('custos_template.yaml', $headers['content-disposition']);
+
+        $jar = self::$cookies;
+        self::$cookies = TestEnv::dir() . '/cookies-wall.txt';
+        try {
+            [$status, $json] = $this->http('GET', '/api/zabbix/status?token=' . $zabbix[1]);
+            $this->assertSame(200, $status, $json);
+            $this->assertSame(1, json_decode($json, true)['summary']['agents']);
+            [$status, $json] = $this->http('GET', '/api/zabbix/discovery/tasks?token=' . $zabbix[1]);
+            $this->assertStringContainsString('"{#TASK}":"' . $task['name'] . '"', $json);
+            [$status, $json] = $this->http('GET', '/api/health');
+            $this->assertSame('ok', json_decode($json, true)['db']);
+            [$status, $wallPage] = $this->http('GET', '/wall?token=' . $wall[1]);
+            $this->assertSame(200, $status);
+            $this->assertStringContainsString('<small> / 1</small>', $wallPage, 'one machine on the wall');
+            $this->assertStringContainsString('src="/assets/app.js', $wallPage);
+        } finally {
+            self::$cookies = $jar;
+        }
+
+        [$status] = $this->post('/settings/integrations/wall-token', []);
+        $this->assertSame(303, $status);
+        [, $integrations] = $this->http('GET', '/settings/integrations');
+        preg_match('#/wall\?token=([0-9a-f]{48})#', $integrations, $newWall);
+        $this->assertNotSame($wall[1], $newWall[1]);
+        self::$cookies = TestEnv::dir() . '/cookies-wall.txt';
+        try {
+            $this->assertSame(403, $this->http('GET', '/wall?token=' . $wall[1])[0], 'the old link stops working');
+            $this->assertSame(200, $this->http('GET', '/wall?token=' . $newWall[1])[0]);
+        } finally {
+            self::$cookies = $jar;
+        }
+        [, $audit] = $this->http('GET', '/audit');
+        $this->assertStringContainsString('сгенерирован новый токен', $audit);
+        $this->assertStringNotContainsString($newWall[1], $audit, 'tokens never go into the audit log');
     }
 
     #[Depends('testInstallAndStart')]

@@ -12,15 +12,18 @@ use Custos\Http\Web\Controller\AuditController;
 use Custos\Http\Web\Controller\AuthController;
 use Custos\Http\Web\Controller\DashboardController;
 use Custos\Http\Web\Controller\GroupsController;
+use Custos\Http\Web\Controller\IntegrationsController;
 use Custos\Http\Web\Controller\NoticesController;
 use Custos\Http\Web\Controller\NotificationsController;
 use Custos\Http\Web\Controller\ProblemsController;
+use Custos\Http\Web\Controller\ProfileController;
 use Custos\Http\Web\Controller\RunsController;
 use Custos\Http\Web\Controller\SettingsController;
 use Custos\Http\Web\Controller\TasksController;
 use Custos\Http\Web\Controller\TemplatesController;
 use Custos\Http\Web\Controller\UpdatesController;
 use Custos\Http\Web\Controller\UsersController;
+use Custos\Http\Web\Controller\WallController;
 use Custos\Infra\Cidr;
 use Custos\Infra\Log;
 
@@ -32,9 +35,11 @@ final class Web
     private const ID = '([0-9a-fA-F-]{36})';
 
     /**
-     * [method, path pattern, controller, action, access]: access is "public" (no login), "user" or "live".
+     * [method, path pattern, controller, action, access]: access is "public" (no login), "user", "live" or "token".
      * "live" pages are polled by the browser for fresh data: they need a login but do not count as activity, so the
      * inactivity timeout still works with a dashboard left open, and they answer 401 instead of redirecting.
+     * "token" pages (the wall screen, 7.9) need no login and no session: the wall token and the integrations allow-list
+     * take the place of both, and the site allow-list does not apply.
      */
     private const ROUTES = [
         ['GET', '#^/$#', DashboardController::class, 'index', 'user'],
@@ -81,6 +86,7 @@ final class Web
         ['GET', '#^/notices$#', NoticesController::class, 'index', 'user'],
         ['POST', '#^/notices/read$#', NoticesController::class, 'read', 'user'],
         ['GET', '#^/runs$#', RunsController::class, 'index', 'user'],
+        ['GET', '#^/runs/export$#', RunsController::class, 'export', 'user'],
         ['GET', '#^/runs/' . self::ID . '$#', RunsController::class, 'show', 'user'],
         ['GET', '#^/runs/' . self::ID . '/log$#', RunsController::class, 'log', 'user'],
         ['GET', '#^/runs/' . self::ID . '/log/download$#', RunsController::class, 'download', 'user'],
@@ -94,6 +100,15 @@ final class Web
         ['POST', '#^/settings/registration-key$#', SettingsController::class, 'regenerateKey', 'user'],
         ['GET', '#^/settings/notifications$#', NotificationsController::class, 'index', 'user'],
         ['POST', '#^/settings/notifications$#', NotificationsController::class, 'save', 'user'],
+        ['GET', '#^/settings/integrations$#', IntegrationsController::class, 'index', 'user'],
+        ['POST', '#^/settings/integrations$#', IntegrationsController::class, 'save', 'user'],
+        ['POST', '#^/settings/integrations/(zabbix|wall)-token$#', IntegrationsController::class, 'regenerate', 'user'],
+        ['GET', '#^/settings/integrations/zabbix-template$#', IntegrationsController::class, 'template', 'user'],
+        ['GET', '#^/profile$#', ProfileController::class, 'index', 'user'],
+        ['POST', '#^/profile$#', ProfileController::class, 'save', 'user'],
+        ['POST', '#^/profile/password$#', ProfileController::class, 'password', 'user'],
+        ['GET', '#^/wall$#', WallController::class, 'index', 'token'],
+        ['GET', '#^/wall/live$#', WallController::class, 'live', 'token'],
     ];
 
     public function __construct(private readonly App $app)
@@ -108,7 +123,9 @@ final class Web
             Log::error("Web {$request->method} {$request->uri}: $e");
             $response = Response::text($this->app->lang()->get('error.internal'), 500);
         }
+        // Pages in the language of the request (the user's choice), the headers set before anything else.
         $response->headers += [
+            'Content-Language' => $this->app->lang()->code,
             'X-Frame-Options' => 'DENY',
             'X-Content-Type-Options' => 'nosniff',
             'Referrer-Policy' => 'same-origin',
@@ -120,11 +137,6 @@ final class Web
 
     private function dispatch(Request $request): Response
     {
-        $lang = $this->app->lang();
-        if (!Cidr::allows($request->ip, Cidr::fromStored($this->app->settings()->get('ip_allow_site')))) {
-            return Response::text($lang->get('error.ip_not_allowed', ['ip' => $request->ip]), 403);
-        }
-
         $path = $request->path();
         $route = null;
         $methodMismatch = false;
@@ -137,12 +149,21 @@ final class Web
                 $methodMismatch = true;
             }
         }
+        $lang = $this->app->lang();
+        if ($route !== null && $route[2] === 'token') {
+            return $this->tokenRoute($request, ...$route);
+        }
+        if (!Cidr::allows($request->ip, Cidr::fromStored($this->app->settings()->get('ip_allow_site')))) {
+            return Response::text($lang->get('error.ip_not_allowed', ['ip' => $request->ip]), 403);
+        }
         if ($route === null) {
             return Response::text($lang->get($methodMismatch ? 'error.method' : 'error.not_found'), $methodMismatch ? 405 : 404);
         }
         [$class, $action, $access, $params] = $route;
 
         $session = Session::start($this->app, $request, $access !== 'live');
+        $this->app->useLanguage($session->user()['language'] ?? null);
+        $lang = $this->app->lang();
         if ($request->method === 'POST' && !$session->checkCsrf((string) ($request->post['_csrf'] ?? ''))) {
             return Response::text($lang->get('error.csrf'), 400);
         }
@@ -155,6 +176,23 @@ final class Web
         $view = new View($this->app, $request, $session);
         /** @var Controller $controller */
         $controller = new $class($this->app, $request, $session, $view);
+        return $controller->$action(...$params);
+    }
+
+    /** The wall screen: the wall token and the integrations allow-list instead of a login, no session cookie. */
+    private function tokenRoute(Request $request, string $class, string $action, string $access, array $params): Response
+    {
+        $lang = $this->app->lang();
+        if (!Cidr::allows($request->ip, Cidr::fromStored($this->app->settings()->get('ip_allow_integrations')))) {
+            return Response::text($lang->get('error.ip_not_allowed', ['ip' => $request->ip]), 403);
+        }
+        $token = is_string($request->query['token'] ?? null) ? $request->query['token'] : '';
+        if (!$this->app->integrations()->tokenMatches('wall_token', $token)) {
+            return Response::text($lang->get('wall.error.token'), 403);
+        }
+        $view = new View($this->app, $request, null);
+        /** @var Controller $controller */
+        $controller = new $class($this->app, $request, null, $view);
         return $controller->$action(...$params);
     }
 }
