@@ -135,7 +135,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 
 ### A.4. Heartbeat и команды
 
-`POST /api/v1/agent/heartbeat` отправляется каждые `heartbeat_interval_s` секунд (по умолчанию 60). Это быстрый «пульс», через него же приходят команды.
+`POST /api/v1/agent/heartbeat` отправляется каждые `heartbeat_interval_s` секунд (по умолчанию 20). Это быстрый «пульс», через него же приходят команды.
 
 Запрос:
 
@@ -164,7 +164,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 {
   "status": "approved",
   "server_time": "2026-10-12T13:00:00Z",
-  "heartbeat_interval_s": 60,
+  "heartbeat_interval_s": 20,
   "want_config": false,
   "commands": [
     { "id": "cmd-uuid", "kind": "task.run", "payload": { "task_id": "..." }, "expires_at": "2026-10-12T14:00:00Z" }
@@ -462,7 +462,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "process_priority": "low",           // low | normal
   "allow_remote_edit": true,           // ЛОКАЛЬНАЯ: сервер изменить не может
   "server_url": "http://custos.lan",   // ЛОКАЛЬНАЯ
-  "heartbeat_interval_s": 60           // задаёт сервер в ответе heartbeat
+  "heartbeat_interval_s": 20           // задаёт сервер в ответе heartbeat
 }
 ```
 

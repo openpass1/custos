@@ -52,7 +52,7 @@ final class MonitorTest extends TestCase
         $monitor->presence($this->agentId, 'approved', $t);
         $monitor->presence($this->agentId, 'approved', $t + 60);
         $monitor->presence($this->agentId, 'approved', $t + 240);
-        $this->assertSame(1, (int) $this->db()->value('SELECT COUNT(*) FROM agent_presence'), 'gaps up to three intervals are one period');
+        $this->assertSame(1, (int) $this->db()->value('SELECT COUNT(*) FROM agent_presence'), 'gaps up to three minutes are one period, even with a 20-second interval');
         $monitor->presence($this->agentId, 'approved', $t + 1000);
         $this->assertSame(2, (int) $this->db()->value('SELECT COUNT(*) FROM agent_presence'));
         $this->assertTrue($monitor->wasOnline($this->agentId, $t + 100, $t + 200));

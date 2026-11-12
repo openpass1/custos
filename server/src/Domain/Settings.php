@@ -15,7 +15,7 @@ final class Settings
         'server_name' => 'CUSTOS',
         // Interface language for users who have not chosen one, and the language of Telegram and e-mail messages.
         'default_language' => 'ru',
-        'heartbeat_interval_s' => '60',
+        'heartbeat_interval_s' => '20',
         'offline_after_min' => '60',
         'ip_allow_site' => '',
         'ip_allow_agents' => '',

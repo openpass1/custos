@@ -43,12 +43,16 @@ final class Monitor
 
     // ---- presence (6.1) ---------------------------------------------------------------------------------------
 
-    /** Extends the agent's current on-line period, or starts a new one after a gap of more than three intervals. */
+    /**
+     * Extends the agent's current on-line period, or starts a new one after a gap of more than three intervals
+     * (at least MIN_FRESH_S, so that a short interval and a few lost heartbeats do not cut the period into pieces).
+     */
     public function presence(string $agentId, string $agentStatus, int $now): void
     {
         $interval = $agentStatus === 'disabled' ? self::DISABLED_HEARTBEAT_S : max(10, $this->settings->int('heartbeat_interval_s'));
+        $gap = max(self::MIN_FRESH_S, self::FRESH_INTERVALS * $interval);
         $last = $this->db->one('SELECT id, to_at FROM agent_presence WHERE agent_id = ? ORDER BY to_at DESC LIMIT 1', [$agentId]);
-        if ($last !== null && Time::unix($last['to_at']) >= $now - self::FRESH_INTERVALS * $interval) {
+        if ($last !== null && Time::unix($last['to_at']) >= $now - $gap) {
             if (Time::unix($last['to_at']) < $now) {
                 $this->db->exec('UPDATE agent_presence SET to_at = ? WHERE id = ?', [Time::db($now), $last['id']]);
             }
