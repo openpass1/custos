@@ -57,6 +57,19 @@ internal static class Ui
         return icon;
     }
 
+    /// <summary>The text of the clipboard; null when it holds no text or another program keeps it open.</summary>
+    public static string? ClipboardText()
+    {
+        try
+        {
+            return Clipboard.ContainsText() ? Clipboard.GetText() : null;
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>A label that wraps within its parent's width.</summary>
     public static Label Wrapping(string text, int width) => new()
     {

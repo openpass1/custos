@@ -1880,19 +1880,11 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="ServerNamed" xml:space="preserve">
     <value>(«{0}»)</value>
   </data>
-  <data name="ServerUrlLabel" xml:space="preserve">
-    <value>Адрес сервера:</value>
+  <data name="ServerLineLabel" xml:space="preserve">
+    <value>Строка подключения:</value>
   </data>
-  <data name="ServerUrlHelp" xml:space="preserve">
-    <value>Адрес сайта CUSTOS, например http://custos.example.lan. Если сервер доступен через интернет, указывайте https://.
-
-Строку подключения, скопированную на сайте («Настройки» → «Подключение агентов»), можно вставить сюда или в поле ниже целиком: адрес и код сами разойдутся по своим полям.</value>
-  </data>
-  <data name="ServerCodeLabel" xml:space="preserve">
-    <value>Код регистрации:</value>
-  </data>
-  <data name="ServerCodeHelp" xml:space="preserve">
-    <value>Код есть на сайте: «Настройки» → «Подключение агентов» (строка подключения там содержит и адрес). Он нужен один раз, для регистрации; после неё компьютер узнаёт сервер по его ключу. Часть после «#» — отпечаток ключа сервера: по нему программа проверяет, что говорит именно с вашим сервером. Повторно код здесь не показывается.</value>
+  <data name="ServerLineHelp" xml:space="preserve">
+    <value>Строка копируется на сайте: «Настройки» → «Подключение агентов». В ней адрес сайта и код регистрации. Она нужна один раз, для регистрации; после неё компьютер узнаёт сервер по его ключу. Последняя часть, после второго «#», — отпечаток ключа сервера: по нему программа проверяет, что говорит именно с вашим сервером. Повторно строка здесь не показывается.</value>
   </data>
   <data name="ServerConnectButton" xml:space="preserve">
     <value>Подключить</value>
@@ -1901,10 +1893,10 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
     <value>Сбросить привязку к серверу…</value>
   </data>
   <data name="ServerResetConfirm" xml:space="preserve">
-    <value>Забыть сервер {0}? Программа продолжит работать автономно, ещё не отправленные отчёты будут удалены. Чтобы подключиться снова, понадобится код регистрации с сайта.</value>
+    <value>Забыть сервер {0}? Программа продолжит работать автономно, ещё не отправленные отчёты будут удалены. Чтобы подключиться снова, понадобится строка подключения с сайта.</value>
   </data>
   <data name="ServerConnectDone" xml:space="preserve">
-    <value>Адрес и код сохранены, компьютер регистрируется на сервере. Если сервер требует подтверждения, подтвердите компьютер на сайте (раздел «Машины»).</value>
+    <value>Строка подключения принята, компьютер регистрируется на сервере. Если сервер требует подтверждения, подтвердите компьютер на сайте (раздел «Машины»).</value>
   </data>
   <data name="ServerAdminOnly" xml:space="preserve">
     <value>Подключить компьютер к серверу или сбросить привязку может только администратор этого компьютера.</value>
@@ -1918,11 +1910,22 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="ServerWaiting" xml:space="preserve">
     <value>Отчётов ждут отправки: {0}</value>
   </data>
-  <data name="ServerUrlRequired" xml:space="preserve">
-    <value>Введите адрес сервера.</value>
+  <data name="ServerLineRequired" xml:space="preserve">
+    <value>Вставьте строку подключения с сайта («Настройки» → «Подключение агентов»).</value>
   </data>
-  <data name="ServerCodeRequired" xml:space="preserve">
-    <value>Введите код регистрации с сайта.</value>
+  <data name="ServerLineBad" xml:space="preserve">
+    <value>Это не похоже на строку подключения. Скопируйте её на сайте целиком («Настройки» → «Подключение агентов»): адрес сайта, «#» и код регистрации, например
+
+{0}</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>Сервер: {0}</value>
+  </data>
+  <data name="ServerPasteTip" xml:space="preserve">
+    <value>Вставить из буфера обмена</value>
+  </data>
+  <data name="ServerPasteEmpty" xml:space="preserve">
+    <value>В буфере обмена нет текста. Скопируйте строку подключения на сайте («Настройки» → «Подключение агентов») и нажмите кнопку ещё раз.</value>
   </data>
   <data name="AllowRemoteEdit" xml:space="preserve">
     <value>Разрешить серверу менять задания</value>

@@ -3,7 +3,7 @@
 #
 # The database is the MariaDB service of the job on 127.0.0.1:3306 (root / custos-test, database "custos"), the web
 # server is PHP's own on 127.0.0.1:8080. Installs the server the way its README says, takes the registration code
-# that install.php prints and writes CUSTOS_TEST_MONITOR (url|code|sql command) to GITHUB_ENV.
+# from what install.php prints and writes CUSTOS_TEST_MONITOR (url|code|sql command) to GITHUB_ENV.
 set -euo pipefail
 
 server=$(cd "$(dirname "$0")/../../server" && pwd)
@@ -24,7 +24,14 @@ PHP
 
 out=$(CUSTOS_ADMIN_PASSWORD='Ci-admin-password-1' php bin/install.php --admin-login=admin < /dev/null)
 echo "$out"
-code=$(printf '%s\n' "$out" | sed -n 's/.*Registration code:[[:space:]]*//p' | tr -d '[:space:]')
+# Server 0.4.3 and later print "Connection string: <url>#KEY#FINGERPRINT" (the code is what follows the first "#"),
+# older ones "Registration code: KEY#FINGERPRINT".
+line=$(printf '%s\n' "$out" | sed -n 's/.*Connection string:[[:space:]]*//p' | head -n 1 | tr -d '[:space:]')
+if [ -n "$line" ]; then
+    code=${line#*#}
+else
+    code=$(printf '%s\n' "$out" | sed -n 's/.*Registration code:[[:space:]]*//p' | head -n 1 | tr -d '[:space:]')
+fi
 if [ -z "$code" ]; then
     echo "install.php printed no registration code" >&2
     exit 1

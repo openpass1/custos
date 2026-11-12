@@ -1880,19 +1880,11 @@ Trust the new key only if you know why it changed.</value>
   <data name="ServerNamed" xml:space="preserve">
     <value>(«{0}»)</value>
   </data>
-  <data name="ServerUrlLabel" xml:space="preserve">
-    <value>Server address:</value>
+  <data name="ServerLineLabel" xml:space="preserve">
+    <value>Connection line:</value>
   </data>
-  <data name="ServerUrlHelp" xml:space="preserve">
-    <value>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the internet, use https://.
-
-The connection line copied on the site (Settings → Connecting agents) can be pasted here or below as a whole: the address and the code go to their fields by themselves.</value>
-  </data>
-  <data name="ServerCodeLabel" xml:space="preserve">
-    <value>Registration code:</value>
-  </data>
-  <data name="ServerCodeHelp" xml:space="preserve">
-    <value>The code is on the site: Settings → Connecting agents (the connection line there holds the address too). It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
+  <data name="ServerLineHelp" xml:space="preserve">
+    <value>The line is copied on the site: Settings → Connecting agents. It holds the address of the site and the registration code. It is needed once, to register; after that this computer knows the server by its key. The last part, after the second «#», is the fingerprint of the server key: with it the program makes sure that it talks to your server. The line is not shown here again.</value>
   </data>
   <data name="ServerConnectButton" xml:space="preserve">
     <value>Connect</value>
@@ -1901,10 +1893,10 @@ The connection line copied on the site (Settings → Connecting agents) can be p
     <value>Reset the binding to the server…</value>
   </data>
   <data name="ServerResetConfirm" xml:space="preserve">
-    <value>Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect again you need the registration code from the site.</value>
+    <value>Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect again you need the connection line from the site.</value>
   </data>
   <data name="ServerConnectDone" xml:space="preserve">
-    <value>The address and the code are saved; the computer registers on the server now. If the server asks for approval, approve the computer on the site (Machines).</value>
+    <value>The connection line is accepted; the computer registers on the server now. If the server asks for approval, approve the computer on the site (Machines).</value>
   </data>
   <data name="ServerAdminOnly" xml:space="preserve">
     <value>Only an administrator of this computer can connect it to a server or reset the binding.</value>
@@ -1918,11 +1910,22 @@ The connection line copied on the site (Settings → Connecting agents) can be p
   <data name="ServerWaiting" xml:space="preserve">
     <value>Reports waiting to be sent: {0}</value>
   </data>
-  <data name="ServerUrlRequired" xml:space="preserve">
-    <value>Enter the address of the server.</value>
+  <data name="ServerLineRequired" xml:space="preserve">
+    <value>Paste the connection line from the site (Settings → Connecting agents).</value>
   </data>
-  <data name="ServerCodeRequired" xml:space="preserve">
-    <value>Enter the registration code from the site.</value>
+  <data name="ServerLineBad" xml:space="preserve">
+    <value>This does not look like a connection line. Copy it on the site whole (Settings → Connecting agents): the address of the site, «#» and the registration code, like
+
+{0}</value>
+  </data>
+  <data name="ServerAddress" xml:space="preserve">
+    <value>Server: {0}</value>
+  </data>
+  <data name="ServerPasteTip" xml:space="preserve">
+    <value>Paste from the clipboard</value>
+  </data>
+  <data name="ServerPasteEmpty" xml:space="preserve">
+    <value>The clipboard holds no text. Copy the connection line on the site (Settings → Connecting agents) and press the button again.</value>
   </data>
   <data name="AllowRemoteEdit" xml:space="preserve">
     <value>Allow the server to change tasks</value>

@@ -19,9 +19,11 @@
         artifacts\update\custos-<version>.zip
                                            the update package for the monitoring server (A.10 of docs/protocol.md):
                                            the program files and manifest.json with the SHA-256 of each
-        artifacts\update-test\custos-<test version>.zip
+        artifacts\update-test\custos-<test version>-test.zip
                                            with -TestUpdateVersion: the same programs built once more with a higher
-                                           version, to try an update from the server on a test machine
+                                           version, to try an update from the server on a machine that was just
+                                           installed from this very build (its own update package has the version
+                                           the machine already runs, so the server has nothing to update)
 
     Code signing (optional): set CUSTOS_SIGN_PFX (path to a .pfx) and CUSTOS_SIGN_PASSWORD. Without them the
     files are left unsigned. CUSTOS_SIGNTOOL may point to signtool.exe if it is not found automatically.
@@ -252,8 +254,9 @@ function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $
 }
 
 # Makes the update package (A.10): every file of $Folder and manifest.json {version, min_protocol, files[{path,
-# sha256}]}. Paths use "/", as zip wants. Returns the path of the zip.
-function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] $OutDir) {
+# sha256}]}. Paths use "/", as zip wants. $NameSuffix only marks the file (custos-<version><suffix>.zip): the server
+# reads the version from manifest.json. Returns the path of the zip.
+function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] $OutDir, [string] $NameSuffix = '') {
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
@@ -269,7 +272,7 @@ function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] 
     $manifest = [ordered]@{ version = $PackageVersion; min_protocol = $MinProtocol; files = $list }
     $json = ConvertTo-Json -InputObject $manifest -Depth 5
 
-    $zipPath = Join-Path $OutDir "custos-$PackageVersion.zip"
+    $zipPath = Join-Path $OutDir "custos-$PackageVersion$NameSuffix.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
     $stream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew)
     $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
@@ -348,7 +351,7 @@ if ($TestUpdateVersion) {
     Write-Step "Building the test update $TestUpdateVersion"
     $testPublish = Join-Path $Artifacts 'publish-test'
     Publish-Programs $TestUpdateVersion $testPublish $sevenZip
-    $testPackage = New-UpdatePackage $TestUpdateVersion $testPublish $TestUpdateOutDir
+    $testPackage = New-UpdatePackage $TestUpdateVersion $testPublish $TestUpdateOutDir '-test'
 }
 
 if (-not $SkipInstaller) {

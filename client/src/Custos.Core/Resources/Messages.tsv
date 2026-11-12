@@ -422,7 +422,7 @@ RemoteTestTooLong	The server did not finish answering in {0} minutes.	Серве
 # Monitoring server (section 8, appendix A)
 MonitorCodeBad	The registration code must start with a key of {0} letters and digits (as on the site: K7QHM-2XARV-…).	Код регистрации должен начинаться с ключа из {0} букв и цифр (как на сайте: K7QHM-2XARV-…).
 MonitorCodeBadFingerprint	After «#» the code must have the fingerprint of the server key: 16 characters 0–9 and A–F (3F2A-91C0-77DE-0B14).	После «#» в коде должен быть отпечаток ключа сервера: 16 знаков 0–9 и A–F (3F2A-91C0-77DE-0B14).
-MonitorCodeUnreadable	The stored registration code cannot be read on this computer: enter it again.	Сохранённый код регистрации не читается на этом компьютере: введите его заново.
+MonitorCodeUnreadable	The stored registration code cannot be read on this computer: paste the connection line again.	Сохранённый код регистрации не читается на этом компьютере: вставьте строку подключения заново.
 MonitorNoConnection	no connection: {0}	нет связи: {0}
 MonitorTimeout	the server did not answer in time	сервер не ответил вовремя
 MonitorUnsigned	{0} without a valid signature of the server	{0} без верной подписи сервера
@@ -456,7 +456,7 @@ MonitorConnectionRestored	The connection to the monitoring server {0} is back af
 MonitorReportDropped	The server refused the report {0}: {1}. It is not sent again.	Сервер отклонил отчёт {0}: {1}. Повторно он не отправляется.
 MonitorStateDetail	{0}: {1}	{0}: {1}
 MonitorStateOff	Not connected to a monitoring server.	Сервер мониторинга не подключён.
-MonitorStateNoCode	The server address is set, but there is no registration code.	Адрес сервера задан, но нет кода регистрации.
+MonitorStateNoCode	The server address is set, but there is no registration code: paste the connection line in the settings.	Адрес сервера задан, но нет кода регистрации: вставьте строку подключения в настройках.
 MonitorStateConnecting	Connecting to the monitoring server…	Подключение к серверу мониторинга…
 MonitorStateKeyRejected	The registration key was not accepted	Ключ регистрации не подошёл
 MonitorStateRefused	The answer of the server failed a check	Ответ сервера не прошёл проверку

@@ -1844,17 +1844,11 @@ static partial class Strings
     /// <summary>(«{0}»)</summary>
     public static string ServerNamed => Get(nameof(ServerNamed));
 
-    /// <summary>Server address:</summary>
-    public static string ServerUrlLabel => Get(nameof(ServerUrlLabel));
+    /// <summary>Connection line:</summary>
+    public static string ServerLineLabel => Get(nameof(ServerLineLabel));
 
-    /// <summary>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the interne...</summary>
-    public static string ServerUrlHelp => Get(nameof(ServerUrlHelp));
-
-    /// <summary>Registration code:</summary>
-    public static string ServerCodeLabel => Get(nameof(ServerCodeLabel));
-
-    /// <summary>The code is on the site: Settings → Connecting agents (the connection line there holds the address too). It...</summary>
-    public static string ServerCodeHelp => Get(nameof(ServerCodeHelp));
+    /// <summary>The line is copied on the site: Settings → Connecting agents. It holds the address of the site and the regi...</summary>
+    public static string ServerLineHelp => Get(nameof(ServerLineHelp));
 
     /// <summary>Connect</summary>
     public static string ServerConnectButton => Get(nameof(ServerConnectButton));
@@ -1865,7 +1859,7 @@ static partial class Strings
     /// <summary>Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect...</summary>
     public static string ServerResetConfirm => Get(nameof(ServerResetConfirm));
 
-    /// <summary>The address and the code are saved; the computer registers on the server now. If the server asks for approv...</summary>
+    /// <summary>The connection line is accepted; the computer registers on the server now. If the server asks for approval,...</summary>
     public static string ServerConnectDone => Get(nameof(ServerConnectDone));
 
     /// <summary>Only an administrator of this computer can connect it to a server or reset the binding.</summary>
@@ -1880,11 +1874,20 @@ static partial class Strings
     /// <summary>Reports waiting to be sent: {0}</summary>
     public static string ServerWaiting => Get(nameof(ServerWaiting));
 
-    /// <summary>Enter the address of the server.</summary>
-    public static string ServerUrlRequired => Get(nameof(ServerUrlRequired));
+    /// <summary>Paste the connection line from the site (Settings → Connecting agents).</summary>
+    public static string ServerLineRequired => Get(nameof(ServerLineRequired));
 
-    /// <summary>Enter the registration code from the site.</summary>
-    public static string ServerCodeRequired => Get(nameof(ServerCodeRequired));
+    /// <summary>This does not look like a connection line. Copy it on the site whole (Settings → Connecting agents): the ad...</summary>
+    public static string ServerLineBad => Get(nameof(ServerLineBad));
+
+    /// <summary>Server: {0}</summary>
+    public static string ServerAddress => Get(nameof(ServerAddress));
+
+    /// <summary>Paste from the clipboard</summary>
+    public static string ServerPasteTip => Get(nameof(ServerPasteTip));
+
+    /// <summary>The clipboard holds no text. Copy the connection line on the site (Settings → Connecting agents) and press ...</summary>
+    public static string ServerPasteEmpty => Get(nameof(ServerPasteEmpty));
 
     /// <summary>Allow the server to change tasks</summary>
     public static string AllowRemoteEdit => Get(nameof(AllowRemoteEdit));

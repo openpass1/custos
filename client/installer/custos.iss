@@ -63,18 +63,14 @@ en.ServerTitle=Monitoring server
 ru.ServerTitle=Сервер мониторинга
 en.ServerSubtitle=Optional: connect this computer to a CUSTOS monitoring site.
 ru.ServerSubtitle=Необязательно: подключить этот компьютер к сайту мониторинга CUSTOS.
-en.ServerPrompt=Leave both fields empty to work without a server or to keep the current connection. Both can be set later in the CUSTOS settings.%n%nThe connection line copied on the site (Settings, Connecting agents) can be pasted into either field as a whole: the address and the code go to their fields by themselves.
-ru.ServerPrompt=Оставьте оба поля пустыми, чтобы работать без сервера или сохранить текущее подключение. Их можно указать и позже, в настройках CUSTOS.%n%nСтроку подключения, скопированную на сайте («Настройки» → «Подключение агентов»), можно вставить в любое поле целиком: адрес и код сами разойдутся по своим полям.
-en.ServerUrl=Server address, for example https://custos.example.lan:
-ru.ServerUrl=Адрес сервера, например https://custos.example.lan:
-en.ServerCode=Registration code:
-ru.ServerCode=Код регистрации:
-en.ServerBoth=Fill in both the address and the registration code, or leave both empty.
-ru.ServerBoth=Укажите и адрес, и код регистрации или оставьте оба поля пустыми.
-en.ServerUrlBad=The address must start with http:// or https://, for example https://custos.example.lan
-ru.ServerUrlBad=Адрес должен начинаться с http:// или https://, например https://custos.example.lan
-en.ServerCodeBad=This does not look like a registration code. Copy it from the site whole: 25 letters and digits in groups of five, then "#" and the fingerprint of the server key.
-ru.ServerCodeBad=Это не похоже на код регистрации. Скопируйте его с сайта целиком: 25 букв и цифр группами по пять, затем «#» и отпечаток ключа сервера.
+en.ServerPrompt=Leave the field empty to work without a server or to keep the current connection. The line can be entered later in the CUSTOS settings.%n%nThe connection line is copied on the site: Settings, Connecting agents. It holds the address of the site and the registration code.
+ru.ServerPrompt=Оставьте поле пустым, чтобы работать без сервера или сохранить текущее подключение. Строку можно ввести и позже, в настройках CUSTOS.%n%nСтрока подключения копируется на сайте: «Настройки» → «Подключение агентов». В ней адрес сайта и код регистрации.
+en.ServerLine=Connection line:
+ru.ServerLine=Строка подключения:
+en.ServerPaste=Paste from the clipboard
+ru.ServerPaste=Вставить из буфера обмена
+en.ServerLineBad=This does not look like a connection line. Copy it on the site whole (Settings, Connecting agents): the address of the site, "#", the registration code, "#" and the fingerprint of the server key, for example%n%nhttps://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14
+ru.ServerLineBad=Это не похоже на строку подключения. Скопируйте её на сайте целиком («Настройки» → «Подключение агентов»): адрес сайта, «#», код регистрации, «#» и отпечаток ключа сервера, например%n%nhttps://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14
 en.RemoveData=Also delete the CUSTOS settings, logs and database in %1?%n%nThe backups themselves are never deleted.
 ru.RemoveData=Удалить также настройки, журналы и базу CUSTOS в папке %1?%n%nСами резервные копии не удаляются никогда.
 
@@ -118,7 +114,6 @@ const
 
 var
   ServerPage: TInputQueryWizardPage;
-  Splitting: Boolean;
 
 function RunHidden(const FileName, Params: String): Integer;
 var
@@ -197,42 +192,52 @@ begin
   Result := CompareText(Copy(S, 1, Length(Prefix)), Prefix) = 0;
 end;
 
-{ The connection line of the site (A.3), "http://custos.example.lan#KEY#FINGERPRINT", pasted into either field:
-  everything before the first "#" is the address, the rest the code. The service splits it the same way. }
-procedure SplitConnection(Sender: TObject);
+{ The connection line of the site (A.3), "http://custos.example.lan#KEY#FINGERPRINT": everything before the first
+  "#" is the address, the rest the code. False when the text is not such a line. The service checks both again. }
+function SplitConnection(const Line: String; var Url, Code: String): Boolean;
 var
-  Text: String;
-  Hash, I: Integer;
+  Hash: Integer;
 begin
-  { Setting the fields below calls this again. }
-  if Splitting then
+  Result := False;
+  Url := '';
+  Code := '';
+  if not (StartsText('http://', Line) or StartsText('https://', Line)) then
     Exit;
-  for I := 0 to 1 do
-  begin
-    Text := Trim(ServerPage.Values[I]);
-    Hash := Pos('#', Text);
-    if (StartsText('http://', Text) or StartsText('https://', Text)) and (Hash > 0) then
-    begin
-      Splitting := True;
-      try
-        ServerPage.Values[0] := Trim(Copy(Text, 1, Hash - 1));
-        ServerPage.Values[1] := Trim(Copy(Text, Hash + 1, Length(Text)));
-      finally
-        Splitting := False;
-      end;
-      Exit;
-    end;
-  end;
+  Hash := Pos('#', Line);
+  if Hash = 0 then
+    Exit;
+  Url := Trim(Copy(Line, 1, Hash - 1));
+  Code := Trim(Copy(Line, Hash + 1, Length(Line)));
+  Result := True;
 end;
 
-{ The "Monitoring server" page (section 10.1, A.3): an address and a registration code, both optional. }
+{ "Paste from the clipboard": the line copied on the site replaces what the field holds. Pascal Script has no
+  clipboard functions, so the field itself is told to select everything (EM_SETSEL) and to paste (WM_PASTE);
+  a clipboard without text changes nothing. }
+procedure PasteServerLine(Sender: TObject);
+begin
+  WizardForm.ActiveControl := ServerPage.Edits[0];
+  SendMessage(ServerPage.Edits[0].Handle, $00B1, 0, -1);
+  SendMessage(ServerPage.Edits[0].Handle, $0302, 0, 0);
+end;
+
+{ The "Monitoring server" page (section 10.1, A.3): the connection line of the site, optional, and a button
+  under the field that pastes it. }
 procedure InitializeWizard;
+var
+  PasteButton: TNewButton;
 begin
   ServerPage := CreateInputQueryPage(wpWelcome, CustomMessage('ServerTitle'), CustomMessage('ServerSubtitle'), CustomMessage('ServerPrompt'));
-  ServerPage.Add(CustomMessage('ServerUrl'), False);
-  ServerPage.Add(CustomMessage('ServerCode'), False);
-  ServerPage.Edits[0].OnChange := @SplitConnection;
-  ServerPage.Edits[1].OnChange := @SplitConnection;
+  ServerPage.Add(CustomMessage('ServerLine'), False);
+
+  PasteButton := TNewButton.Create(ServerPage);
+  PasteButton.Parent := ServerPage.Surface;
+  PasteButton.Caption := CustomMessage('ServerPaste');
+  PasteButton.Left := ServerPage.Edits[0].Left;
+  PasteButton.Top := ServerPage.Edits[0].Top + ServerPage.Edits[0].Height + ScaleY(8);
+  PasteButton.Width := ScaleX(190);
+  PasteButton.Height := ScaleY(23);
+  PasteButton.OnClick := @PasteServerLine;
 end;
 
 function WithoutSeparators(const S: String): String;
@@ -285,31 +290,19 @@ end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
-  Url, Code: String;
+  Line, Url, Code: String;
 begin
   Result := True;
   if CurPageID <> ServerPage.ID then
     Exit;
 
-  SplitConnection(nil);
-  Url := Trim(ServerPage.Values[0]);
-  Code := Trim(ServerPage.Values[1]);
-  if (Url = '') and (Code = '') then
+  Line := Trim(ServerPage.Values[0]);
+  if Line = '' then
     Exit;
 
-  if (Url = '') or (Code = '') then
+  if (not SplitConnection(Line, Url, Code)) or (Length(Url) < 10) or (not IsRegistrationCode(Code)) then
   begin
-    MsgBox(CustomMessage('ServerBoth'), mbError, MB_OK);
-    Result := False;
-  end
-  else if not (StartsText('http://', Url) or StartsText('https://', Url)) or (Length(Url) < 10) then
-  begin
-    MsgBox(CustomMessage('ServerUrlBad'), mbError, MB_OK);
-    Result := False;
-  end
-  else if not IsRegistrationCode(Code) then
-  begin
-    MsgBox(CustomMessage('ServerCodeBad'), mbError, MB_OK);
+    MsgBox(CustomMessage('ServerLineBad'), mbError, MB_OK);
     Result := False;
   end;
 end;
@@ -332,9 +325,7 @@ var
 begin
   if ServerPage = nil then
     Exit;
-  Url := Trim(ServerPage.Values[0]);
-  Code := Trim(ServerPage.Values[1]);
-  if (Url = '') or (Code = '') then
+  if not SplitConnection(Trim(ServerPage.Values[0]), Url, Code) then
     Exit;
 
   ConfigDir := ExpandConstant('{commonappdata}\CUSTOS\config');

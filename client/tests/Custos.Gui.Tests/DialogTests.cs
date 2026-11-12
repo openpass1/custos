@@ -1,6 +1,7 @@
 using System.Text;
 using Custos.Core.Cobian;
 using Custos.Core.Model;
+using Custos.Core.Monitor;
 
 namespace Custos.Gui.Tests;
 
@@ -149,15 +150,22 @@ public sealed class DialogTests
         Assert.False(connect.Enabled);
         Assert.Contains(Sta.Find<CheckBox>(settings), c => c.Text == Strings.AllowRemoteEdit);
 
-        // The connection line copied on the site goes into both fields, whichever it was pasted into.
-        var url = Assert.Single(Sta.Find<TextBox>(settings), b => b.PlaceholderText == "http://custos.example.lan");
-        var code = Assert.Single(Sta.Find<TextBox>(settings), b => b.PlaceholderText.StartsWith("K7QHM", StringComparison.Ordinal));
-        code.Text = "http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14";
-        Assert.Equal("http://custos.example.lan", url.Text);
-        Assert.Equal("K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14", code.Text);
-        url.Text = "https://other.example.lan#AAAAA-BBBBB-CCCCC-DDDDD-EEEEE";
-        Assert.Equal("https://other.example.lan", url.Text);
-        Assert.Equal("AAAAA-BBBBB-CCCCC-DDDDD-EEEEE", code.Text);
+        // One field takes the whole connection line of the site; there are no separate address and code fields.
+        var line = Assert.Single(Sta.Find<TextBox>(settings), b => b.PlaceholderText.Length > 0);
+        Assert.Equal(SettingsForm.ConnectionExample, line.PlaceholderText);
+        Assert.False(line.Enabled);
+        Assert.True(RegistrationCode.TrySplitConnection(SettingsForm.ConnectionExample, out string url, out string code));
+        Assert.Equal("http://custos.example.lan", url);
+        Assert.NotNull(RegistrationCode.TryParse(code, out _));
+
+        // The button next to it puts in what was copied on the site, without the line break copied along.
+        var paste = Assert.Single(Sta.Find<Button>(settings), b => b.AccessibleName == Strings.ServerPasteTip);
+        Assert.False(paste.Enabled);
+        Assert.NotNull(paste.Image);
+        settings.ClipboardText = () => "\r\n  https://other.example.lan#AAAAA-BBBBB-CCCCC-DDDDD-EEEEE#0123-4567-89AB-CDEF \r\nsecond line";
+        line.Text = "old text";
+        settings.PasteServerLine();
+        Assert.Equal("https://other.example.lan#AAAAA-BBBBB-CCCCC-DDDDD-EEEEE#0123-4567-89AB-CDEF", line.Text);
     });
 
     [Theory]

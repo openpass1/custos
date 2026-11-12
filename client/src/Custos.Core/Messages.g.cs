@@ -1226,7 +1226,7 @@ static partial class Messages
     /// <summary>After «#» the code must have the fingerprint of the server key: 16 characters 0–9 and A–F (3F2A-91C0-77DE-0...</summary>
     public static string MonitorCodeBadFingerprint => Get(nameof(MonitorCodeBadFingerprint));
 
-    /// <summary>The stored registration code cannot be read on this computer: enter it again.</summary>
+    /// <summary>The stored registration code cannot be read on this computer: paste the connection line again.</summary>
     public static string MonitorCodeUnreadable => Get(nameof(MonitorCodeUnreadable));
 
     /// <summary>no connection: {0}</summary>
@@ -1328,7 +1328,7 @@ static partial class Messages
     /// <summary>Not connected to a monitoring server.</summary>
     public static string MonitorStateOff => Get(nameof(MonitorStateOff));
 
-    /// <summary>The server address is set, but there is no registration code.</summary>
+    /// <summary>The server address is set, but there is no registration code: paste the connection line in the settings.</summary>
     public static string MonitorStateNoCode => Get(nameof(MonitorStateNoCode));
 
     /// <summary>Connecting to the monitoring server…</summary>

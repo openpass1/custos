@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using Custos.Core.Backup;
 using Custos.Core.Ipc;
@@ -852,9 +853,12 @@ internal sealed class SettingsForm : DialogForm
     private readonly bool _canEdit;
     private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
     private readonly Button _sevenZipCheck = new() { Text = Strings.SevenZipCheckButton, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
+    /// <summary>What a connection line looks like, with made-up values.</summary>
+    internal const string ConnectionExample = "http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14";
+
     private readonly Label _serverState = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 6) };
-    private readonly TextBox _serverUrl = new() { Width = 340, PlaceholderText = "http://custos.example.lan" };
-    private readonly TextBox _serverCode = new() { Width = 340, PlaceholderText = "K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14" };
+    private readonly TextBox _serverLine = new() { Dock = DockStyle.Fill, PlaceholderText = ConnectionExample };
+    private readonly Button _serverPaste = new() { Size = new Size(30, 25), Margin = new Padding(0), AccessibleName = Strings.ServerPasteTip };
     private readonly Button _serverConnect = new() { Text = Strings.ServerConnectButton, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly Button _serverReset = new() { Text = Strings.ServerResetButton, AutoSize = true, Margin = new Padding(8, 3, 0, 3) };
     private readonly Label _serverKeys = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 4, 0, 2) };
@@ -879,8 +883,15 @@ internal sealed class SettingsForm : DialogForm
         serverHeading.Font = heading.Font;
         AddWide(serverHeading);
         AddWide(_serverState);
-        AddRow(Strings.ServerUrlLabel, _serverUrl, Ui.HelpIcon(_toolTip, Strings.ServerUrlHelp));
-        AddRow(Strings.ServerCodeLabel, _serverCode, Ui.HelpIcon(_toolTip, Strings.ServerCodeHelp));
+        // The line is long and comes from the site: one press of the button puts it in.
+        _serverPaste.Image = Glyphs.Draw(Glyph.Paste, 16);
+        _toolTip.SetToolTip(_serverPaste, Strings.ServerPasteTip);
+        var lineHelp = Ui.HelpIcon(_toolTip, Strings.ServerLineHelp);
+        lineHelp.Margin = new Padding(4, 3, 0, 0);
+        var lineTools = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
+        lineTools.Controls.AddRange([_serverPaste, lineHelp]);
+        AddRow(Strings.ServerLineLabel, _serverLine, lineTools);
+        lineTools.Margin = new Padding(6, 2, 0, 2);
         var serverButtons = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 0) };
         serverButtons.Controls.AddRange([_serverConnect, _serverReset]);
         AddWide(serverButtons);
@@ -948,19 +959,17 @@ internal sealed class SettingsForm : DialogForm
         _language.SelectedIndex = language < 0 ? 0 : language;
 
         _allowRemoteEdit.Checked = settings.AllowRemoteEdit;
-        _serverUrl.Text = settings.ServerUrl ?? string.Empty;
         foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _addAccount, _allowRemoteEdit })
         {
             control.Enabled = _canEdit;
         }
 
-        foreach (var control in new Control[] { _serverUrl, _serverCode, _serverConnect })
+        foreach (var control in new Control[] { _serverLine, _serverPaste, _serverConnect })
         {
             control.Enabled = _isAdmin && monitor.IsConnected;
         }
 
-        _serverUrl.TextChanged += (_, _) => SplitConnection(_serverUrl.Text);
-        _serverCode.TextChanged += (_, _) => SplitConnection(_serverCode.Text);
+        _serverPaste.Click += (_, _) => PasteServerLine();
         _serverConnect.Click += (_, _) => Ui.Run(this, ConnectServerAsync);
         _serverReset.Click += (_, _) => Ui.Run(this, ResetServerAsync);
         ShowServer();
@@ -1103,10 +1112,14 @@ internal sealed class SettingsForm : DialogForm
         _serverState.Text = server.Detail is { } detail ? state.TrimEnd('.') + ": " + detail : state;
         _serverState.ForeColor = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting
             ? SystemColors.ControlText : Glyphs.WarningText;
-        var lines = new List<string>
+        // The line itself is not shown again (it holds the code): the address it gave is.
+        var lines = new List<string>();
+        if (server.ServerUrl is { } address)
         {
-            Strings.Format(Strings.ServerFingerprints, server.ServerFingerprint ?? "—", server.AgentFingerprint ?? "—"),
-        };
+            lines.Add(Strings.Format(Strings.ServerAddress, address));
+        }
+
+        lines.Add(Strings.Format(Strings.ServerFingerprints, server.ServerFingerprint ?? "—", server.AgentFingerprint ?? "—"));
         if (server.LastContact is { } contact)
         {
             lines.Add(Strings.Format(Strings.ServerLastContact, contact.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)));
@@ -1121,32 +1134,46 @@ internal sealed class SettingsForm : DialogForm
         _serverReset.Enabled = _isAdmin && _monitor.IsConnected && server.ServerUrl is not null;
     }
 
-    /// <summary>The connection line of the site (address#code) pasted into either field: each part goes to its own.</summary>
-    private void SplitConnection(string text)
-    {
-        if (RegistrationCode.TrySplitConnection(text, out string url, out string code))
-        {
-            _serverUrl.Text = url;
-            _serverCode.Text = code;
-        }
-    }
+    /// <summary>Reads the text of the clipboard; the tests put their own text here.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    internal Func<string?> ClipboardText { get; set; } = Ui.ClipboardText;
 
-    /// <summary>«Подключить»: the address and the registration code go to the service, which registers (A.3).</summary>
-    private async Task ConnectServerAsync()
+    /// <summary>
+    /// The button next to the field: the line copied on the site replaces what the field holds. Of several lines the
+    /// first one with text is taken, so a line copied together with its line break fits too.
+    /// </summary>
+    internal void PasteServerLine()
     {
-        string url = _serverUrl.Text.Trim();
-        string code = _serverCode.Text.Trim();
-        if (url.Length == 0)
+        string? line = ClipboardText()?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+        if (string.IsNullOrEmpty(line))
         {
-            Ui.ShowWarning(this, Strings.ServerUrlRequired);
-            _serverUrl.Focus();
+            Ui.ShowWarning(this, Strings.ServerPasteEmpty);
             return;
         }
 
-        if (code.Length == 0)
+        _serverLine.Text = line;
+        _serverLine.SelectionStart = line.Length;
+        _serverLine.Focus();
+    }
+
+    /// <summary>
+    /// «Подключить»: the connection line of the site (A.3), the address and the registration code in one, goes to the
+    /// service, which registers.
+    /// </summary>
+    private async Task ConnectServerAsync()
+    {
+        string line = _serverLine.Text.Trim();
+        if (line.Length == 0)
         {
-            Ui.ShowWarning(this, Strings.ServerCodeRequired);
-            _serverCode.Focus();
+            Ui.ShowWarning(this, Strings.ServerLineRequired);
+            _serverLine.Focus();
+            return;
+        }
+
+        if (!RegistrationCode.TrySplitConnection(line, out string url, out string code) || RegistrationCode.TryParse(code, out _) is null)
+        {
+            Ui.ShowWarning(this, Strings.Format(Strings.ServerLineBad, ConnectionExample));
+            _serverLine.Focus();
             return;
         }
 
@@ -1155,7 +1182,7 @@ internal sealed class SettingsForm : DialogForm
         {
             await _monitor.RequestAsync(PipeProtocol.Methods.ServerConnect, new ServerConnectRequest { ServerUrl = url, Code = code },
                 IpcJsonContext.Default.ServerConnectRequest, IpcJsonContext.Default.OkResult);
-            _serverCode.Text = string.Empty;
+            _serverLine.Text = string.Empty;
             Ui.ShowInfo(this, Strings.ServerConnectDone);
         }
         finally
@@ -1170,7 +1197,7 @@ internal sealed class SettingsForm : DialogForm
     /// <summary>«Сбросить привязку к серверу» (A.3): local, administrators only.</summary>
     private async Task ResetServerAsync()
     {
-        string server = _monitor.Snapshot?.Server.ServerHost ?? _serverUrl.Text;
+        string server = _monitor.Snapshot?.Server.ServerHost ?? "?";
         if (!Ui.Confirm(this, Strings.Format(Strings.ServerResetConfirm, server)))
         {
             return;
@@ -1178,7 +1205,6 @@ internal sealed class SettingsForm : DialogForm
 
         await _monitor.RequestAsync(PipeProtocol.Methods.ServerReset, EmptyRequest.Instance,
             IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult);
-        _serverUrl.Text = string.Empty;
     }
 
     private void FillAccounts()

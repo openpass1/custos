@@ -47,7 +47,8 @@ jobs:
       # Windows PowerShell 5.1, the same shell the build is run with on a test machine. CUSTOS_REQUIRE_7Z makes the 7z
       # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.3.<run number>,
       # so a later build can be installed over an earlier one by an update from the server; the test update
-      # 0.3.<run number>.1 is the same code with a higher version, to try that with a single build.
+      # 0.3.<run number>.1 is the same code with a higher version, to try that with a single build (the update
+      # package of a build has the version of its installer, so it cannot update a machine installed from it).
       - name: Build, test and make the installer
         shell: powershell
         working-directory: client
@@ -63,22 +64,39 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # GitHub hands every artifact out as a zip: the custos-<version>.zip inside it is what goes to the site.
+      # The update packages go up as they are (archive: false, the artifact is named after the file), so what is
+      # downloaded from the run page is the very zip the site takes. Wrapped into GitHub's own zip, it was refused
+      # by the site ("no manifest.json") when uploaded as downloaded.
       - name: Upload the update package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: CUSTOS-Update
-          path: client/artifacts/update/*.zip
+          path: client/artifacts/update/custos-0.3.${{ github.run_number }}.zip
+          archive: false
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload the test update package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: CUSTOS-Update-test
-          path: client/artifacts/update-test/*.zip
+          path: client/artifacts/update-test/custos-0.3.${{ github.run_number }}.1-test.zip
+          archive: false
           if-no-files-found: error
           retention-days: 14
+
+      # Shown on the page of the run, above the files.
+      - name: Say what the files are for
+        shell: pwsh
+        run: |
+          $v = '0.3.${{ github.run_number }}'
+          @"
+          ### CUSTOS ${v}: что скачивать
+
+          | Файл | Что это |
+          |---|---|
+          | ``CUSTOS-Setup`` | Установщик версии ${v} (zip, внутри ``CUSTOS-Setup-${v}.exe``). |
+          | ``custos-${v}.zip`` | Пакет обновления ${v} для сайта, раздел «Обновления». Обновляет машины, где стоит более старая версия. Загружается на сайт как есть, без распаковки. |
+          | ``custos-${v}.1-test.zip`` | Пробное обновление: те же программы с версией ${v}.1. Нужно только для проверки обновления с сайта на машине, где уже стоит ${v}. Загружается на сайт как есть, без распаковки. |
+          "@ >> $env:GITHUB_STEP_SUMMARY
 
   # Dumps from real MySQL, MariaDB and PostgreSQL servers (section 6.2 of CUSTOS-client.md). Linux is enough: the
   # dumps are made by the servers' own programs, which run inside the containers (client/tools/ci-databases.sh).

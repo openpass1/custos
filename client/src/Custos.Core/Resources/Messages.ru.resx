@@ -1243,7 +1243,7 @@
     <value>После «#» в коде должен быть отпечаток ключа сервера: 16 знаков 0–9 и A–F (3F2A-91C0-77DE-0B14).</value>
   </data>
   <data name="MonitorCodeUnreadable" xml:space="preserve">
-    <value>Сохранённый код регистрации не читается на этом компьютере: введите его заново.</value>
+    <value>Сохранённый код регистрации не читается на этом компьютере: вставьте строку подключения заново.</value>
   </data>
   <data name="MonitorNoConnection" xml:space="preserve">
     <value>нет связи: {0}</value>
@@ -1345,7 +1345,7 @@
     <value>Сервер мониторинга не подключён.</value>
   </data>
   <data name="MonitorStateNoCode" xml:space="preserve">
-    <value>Адрес сервера задан, но нет кода регистрации.</value>
+    <value>Адрес сервера задан, но нет кода регистрации: вставьте строку подключения в настройках.</value>
   </data>
   <data name="MonitorStateConnecting" xml:space="preserve">
     <value>Подключение к серверу мониторинга…</value>

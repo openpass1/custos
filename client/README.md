@@ -25,8 +25,9 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 The installer appears in `artifacts\installer\CUSTOS-Setup-<version>.exe`, the update package for the monitoring
 server in `artifacts\update\custos-<version>.zip` (the program files and `manifest.json` with the SHA-256 of each).
 Options: `-SkipTests`, `-SkipInstaller`, `-Version 0.3.1`, `-TestUpdateVersion 0.3.1.1` (also builds the same code
-with a higher version into `artifacts\update-test`, to try an update from the server), `-RefreshRuntime`. The first build downloads the .NET Desktop Runtime installer (about 60 MB) into
-`installer\redist`; it is bundled into setup.exe so that target machines need no internet.
+with a higher version into `artifacts\update-test\custos-0.3.1.1-test.zip`, to try an update from the server on a
+machine installed from this very build), `-RefreshRuntime`. The first build downloads the .NET Desktop Runtime
+installer (about 60 MB) into `installer\redist`; it is bundled into setup.exe so that target machines need no internet.
 
 `7z.dll` always comes from the 7-Zip build pinned in [`installer/7-zip.json`](installer/7-zip.json) (version, links and
 SHA-256 of the official x64 installer and `7zr.exe` from [github.com/ip7z/7zip](https://github.com/ip7z/7zip/releases)).
@@ -35,11 +36,15 @@ The build downloads both once into `installer\redist\7-zip\<version>`, refuses a
 7-Zip, change the five values in `7-zip.json`. Once a month the workflow `7-Zip release check` opens an issue when a
 newer 7-Zip is out, with the values to paste.
 
-GitHub Actions runs the same script on every change under `client/` (workflow `Client build`) and keeps the installer
-(`CUSTOS-Setup`), the update package (`CUSTOS-Update`) and a test update with a higher version (`CUSTOS-Update-test`)
-as downloadable artifacts for 14 days. Each run has its own version `0.3.<run number>`, so a newer build can be
-installed over an older one from the server. The job `monitor` checks the whole protocol against a real CUSTOS Monitor
-(`server/`, PHP's own web server and MariaDB).
+GitHub Actions runs the same script on every change under `client/` (workflow `Client build`) and keeps three files
+for 14 days: the installer (`CUSTOS-Setup`, a zip around the .exe) and two files that go to the site as they are,
+without unpacking: the update package `custos-0.3.<run number>.zip` and a test update
+`custos-0.3.<run number>.1-test.zip`. Each run has its own version `0.3.<run number>`, so a newer build can be
+installed over an older one from the server. The update package has the version of the installer of the same run: it
+updates machines that run an older build. The test update is the same code with a higher version, to try an update
+from the site on a machine that was just installed from this run. The page of a run says the same above the files.
+The job `monitor` checks the whole protocol against a real CUSTOS Monitor (`server/`, PHP's own web server and
+MariaDB).
 
 For development: `dotnet build Custos.sln` and `dotnet test Custos.sln`. The solution also builds on Linux and macOS
 (tests that need Windows are skipped there, and the window tests are not run).
@@ -103,12 +108,13 @@ open the first part.
 
 ## Сервер мониторинга
 
-Подключение необязательно: без сервера CUSTOS работает полностью. Адрес сервера и код регистрации вводятся в
-установщике (страница «Сервер мониторинга») или потом: CUSTOS → «Настройки» → «Сервер мониторинга» → «Подключить»
-(нужны права администратора). Проще всего скопировать на сайте строку подключения («Настройки» → «Подключение
-агентов») и вставить её в любое из двух полей: `http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14`
-— адрес и код разойдутся сами. Код можно ввести и отдельно, вместе с отпечатком ключа сервера после `#`. Отпечаток
-защищает от подмены сервера при первом подключении.
+Подключение необязательно: без сервера CUSTOS работает полностью. Для подключения нужна строка подключения. Её
+копируют на сайте («Настройки» → «Подключение агентов»), в ней адрес сайта, код регистрации и отпечаток ключа
+сервера: `http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14`. Строку вставляют в
+установщике (страница «Сервер мониторинга») или потом: CUSTOS → «Настройки» → «Сервер мониторинга» → поле «Строка
+подключения» → «Подключить» (нужны права администратора). Рядом с полем есть кнопка «Вставить из буфера обмена».
+Отдельных полей для адреса и кода нет. Отпечаток защищает от подмены сервера при первом подключении. После
+подключения в настройках виден адрес сервера, сама строка повторно не показывается.
 
 После подключения компьютер появляется на сайте в разделе «Машины» со статусом «ожидает подтверждения». Пока его не
 подтвердят, служба шлёт только heartbeat; после подтверждения — отчёты о запусках, прогресс, снимок настроек и
