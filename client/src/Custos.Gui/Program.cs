@@ -17,15 +17,22 @@ internal static class Program
     private static bool _showingError;
 
     [STAThread]
-    private static void Main(string[] args)
+    private static int Main(string[] args)
     {
+        // A copy started from the tray menu with administrator rights to start or stop the service: nothing else.
+        if (args is [ServiceControl.StartArgument or ServiceControl.StopArgument])
+        {
+            ApplicationConfiguration.Initialize();
+            return ServiceControl.Run(start: args[0] == ServiceControl.StartArgument);
+        }
+
         using var instance = new Mutex(initiallyOwned: false, InstanceMutexName, out bool firstInSession);
         using var activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
         if (!firstInSession)
         {
             // Already running in this session: ask that copy to show its window and quit.
             activate.Set();
-            return;
+            return 0;
         }
 
         ApplicationConfiguration.Initialize();
@@ -41,6 +48,7 @@ internal static class Program
         bool showWindow = !args.Contains(TrayArgument, StringComparer.OrdinalIgnoreCase);
         using var tray = new TrayContext(activate, showWindow);
         Application.Run(tray);
+        return 0;
     }
 
     /// <summary><c>%APPDATA%\CUSTOS\gui-errors.log</c>, next to ui.json.</summary>

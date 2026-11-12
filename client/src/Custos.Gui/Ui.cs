@@ -1,4 +1,5 @@
 using System.Globalization;
+using Custos.Core.Text;
 
 namespace Custos.Gui;
 
@@ -40,7 +41,7 @@ internal static class Ui
 
     public static string Number(long value) => value.ToString("N0", CultureInfo.CurrentCulture);
 
-    /// <summary>A grey "?" that explains a setting when the mouse rests on it.</summary>
+    /// <summary>A grey "?" that explains a setting when the mouse rests on it; a long text is shown in several lines.</summary>
     public static PictureBox HelpIcon(ToolTip toolTip, string text)
     {
         var icon = new PictureBox
@@ -52,7 +53,7 @@ internal static class Ui
             Cursor = Cursors.Help,
             TabStop = false,
         };
-        toolTip.SetToolTip(icon, text);
+        toolTip.SetToolTip(icon, LineWrap.Wrap(text));
         return icon;
     }
 

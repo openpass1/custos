@@ -517,6 +517,21 @@
   <data name="DescFullLastDay" xml:space="preserve">
     <value>В последний день месяца — полная копия.</value>
   </data>
+  <data name="DescFullListEveryRuns" xml:space="preserve">
+    <value>каждый {0}-й запуск</value>
+  </data>
+  <data name="DescFullListWeekdays" xml:space="preserve">
+    <value>по понедельникам;по вторникам;по средам;по четвергам;по пятницам;по субботам;по воскресеньям</value>
+  </data>
+  <data name="DescFullListMonthDay" xml:space="preserve">
+    <value>{0}-го числа месяца</value>
+  </data>
+  <data name="DescFullListLastDay" xml:space="preserve">
+    <value>в последний день месяца</value>
+  </data>
+  <data name="DescFullOnlyFirst" xml:space="preserve">
+    <value>только первая, и когда в назначении нет полной</value>
+  </data>
   <data name="DescOneFolder" xml:space="preserve">
     <value>Копия обновляется в одной и той же папке.</value>
   </data>

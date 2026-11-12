@@ -226,6 +226,27 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return new OkResult { Ok = false };
     }
 
+    /// <summary>
+    /// «Stop all tasks» of the tray: empties the queue first (or the next run would start the moment the current one
+    /// stops), then stops the run in progress. Ok when there was something to stop.
+    /// </summary>
+    public OkResult StopAll(string user)
+    {
+        var removed = _queue.Clear();
+        foreach (var run in removed)
+        {
+            Log(LogLineLevels.Info, Messages.Format(Messages.RemovedFromQueue, _config.GetTask(run.TaskId)?.Name ?? run.TaskId, user), run.TaskId);
+        }
+
+        bool stopped = Stop(null, user).Ok;
+        if (removed.Count > 0 && !stopped)
+        {
+            PublishSnapshot();
+        }
+
+        return new OkResult { Ok = stopped || removed.Count > 0 };
+    }
+
     public OkResult SetPaused(string? taskId, bool paused, string user)
     {
         ActiveRun? current;

@@ -168,6 +168,11 @@ DescFullEveryRuns	Every {0}{1} run is a full backup.	Каждый {0}-й зап�
 DescFullWeekday	{0} the backup is full.	{0} — полная копия.
 DescFullMonthDay	On the {0}{1} of every month the backup is full.	{0}-го числа каждого месяца — полная копия.
 DescFullLastDay	On the last day of the month the backup is full.	В последний день месяца — полная копия.
+DescFullListEveryRuns	every {0}{1} run	каждый {0}-й запуск
+DescFullListWeekdays	on Mondays;on Tuesdays;on Wednesdays;on Thursdays;on Fridays;on Saturdays;on Sundays	по понедельникам;по вторникам;по средам;по четвергам;по пятницам;по субботам;по воскресеньям
+DescFullListMonthDay	on the {0}{1} of the month	{0}-го числа месяца
+DescFullListLastDay	on the last day of the month	в последний день месяца
+DescFullOnlyFirst	only the first one, and when a destination has none	только первая, и когда в назначении нет полной
 DescOneFolder	The backup is kept up to date in one folder.	Копия обновляется в одной и той же папке.
 DescKeepAll	Old backups are never deleted.	Старые копии не удаляются.
 DescKeepSetsOne	Only the last backup is kept.	Хранится {0} последняя копия.

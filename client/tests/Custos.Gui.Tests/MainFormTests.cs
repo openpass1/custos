@@ -1,5 +1,6 @@
 using Custos.Core.Backup;
 using Custos.Core.Ipc;
+using Custos.Core.Model;
 using Custos.Core.Text;
 
 namespace Custos.Gui.Tests;
@@ -31,6 +32,13 @@ public sealed class MainFormTests
         Assert.True(Sta.ShowsPart(card, Samples.UsbProblem));
         Assert.Equal(nameof(StateIcon.Error), Row(list, Samples.PhotosId).ImageKey);
 
+        // No paragraph in plain words above the rows: what it said is in the rows.
+        Assert.False(Sta.ShowsPart(card, TaskDescriber.Describe(Samples.Photos())));
+        Assert.True(Sta.Shows(card, Strings.CardRetention));
+        Assert.True(Sta.Shows(card, TaskDescriber.Retention(Samples.Photos()).TrimEnd('.')));
+        Assert.True(Sta.Shows(card, Strings.ArchiveNone));
+        Assert.False(Sta.Shows(card, Strings.CardFullBackup));
+
         // The office task starts: its row shows the progress, from the snapshot and then from the progress events.
         monitor.SimulateSnapshot(Samples.Snapshot(2, running: true));
         Sta.Pump();
@@ -60,6 +68,38 @@ public sealed class MainFormTests
         Assert.Equal(2, list.Items.Count);
         Assert.Null(list.SelectedTaskId);
         Assert.True(Sta.Shows(card, Strings.CardNoSelection));
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_card_shows_compression_full_backups_and_events_as_rows(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new MainForm(monitor);
+        form.Show();
+        Sta.Pump();
+        var snapshot = Samples.Snapshot(2);
+        var office = snapshot.Tasks.Single(t => t.Id == Samples.OfficeId);
+        office.Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 7, SplitMb = 700, Encrypt = true, EncryptNames = true, PasswordCredentialId = "pw" };
+        office.ForceFull = new ForceFullOptions { EveryRuns = 7, Weekday = 7 };
+        office.Events.Pre = [new TaskEvent { Kind = TaskEventKinds.ServiceStop, Service = "MySQL80" }];
+        office.Events.Post = [new TaskEvent { Kind = TaskEventKinds.ServiceStart, Service = "MySQL80" }];
+        office.Events.After = AfterActions.Shutdown;
+        monitor.SimulateSnapshot(snapshot);
+        Sta.Pump();
+
+        var list = Assert.Single(Sta.Find<TaskListView>(form));
+        var card = Assert.Single(Sta.Find<TaskCard>(form));
+        list.SelectTask(Samples.OfficeId);
+        Sta.Pump();
+
+        Assert.True(Sta.ShowsPart(card, Strings.ArchiveSevenZip + ", "));
+        Assert.True(Sta.Shows(card, TaskCard.DescribeArchive(office)));
+        Assert.True(Sta.ShowsPart(card, Strings.CardArchiveEncryptedNames));
+        Assert.True(Sta.Shows(card, TaskDescriber.FullBackups(office)!));
+        Assert.True(Sta.Shows(card, Strings.Format(Strings.EventShowStop, "MySQL80")));
+        Assert.True(Sta.Shows(card, Strings.Format(Strings.EventShowStart, "MySQL80") + Environment.NewLine + Strings.AfterShutdown));
     });
 
     [Theory]

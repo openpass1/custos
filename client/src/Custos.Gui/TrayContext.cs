@@ -1,3 +1,4 @@
+using System.ServiceProcess;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 
@@ -6,7 +7,7 @@ namespace Custos.Gui;
 /// <summary>
 /// The interface process: the tray icon with its menu, the connection to the service and the main window
 /// (docs/client-ui.md, section 4). Closing the window keeps the tray icon; "Close interface" ends the process. The
-/// service keeps running either way.
+/// service keeps running either way; the menu can also start and stop it (with administrator rights).
 /// </summary>
 internal sealed class TrayContext : ApplicationContext
 {
@@ -18,8 +19,11 @@ internal sealed class TrayContext : ApplicationContext
     private readonly NotifyIcon _trayIcon;
     private readonly ContextMenuStrip _menu;
     private readonly ToolStripMenuItem _runAll;
-    private readonly ToolStripMenuItem _stopCurrent;
+    private readonly ToolStripMenuItem _stopAll;
+    private readonly ToolStripMenuItem _serviceStart;
+    private readonly ToolStripMenuItem _serviceStop;
     private readonly Font _boldFont;
+    private readonly Bitmap _shield;
     private readonly Dictionary<TrayState, Icon> _icons = new()
     {
         [TrayState.Ok] = AppIcons.TrayOk(),
@@ -44,12 +48,19 @@ internal sealed class TrayContext : ApplicationContext
         _boldFont = new Font(_menu.Font, FontStyle.Bold);
         var open = new ToolStripMenuItem(Strings.MenuOpen, null, (_, _) => ShowMainForm()) { Font = _boldFont };
         _runAll = new ToolStripMenuItem(Strings.MenuRunAll, null, (_, _) => RunAll());
-        _stopCurrent = new ToolStripMenuItem(Strings.MenuStopCurrent, null, (_, _) => StopCurrent());
-        var close = new ToolStripMenuItem(Strings.MenuClose, null, (_, _) => ExitThread())
+        _stopAll = new ToolStripMenuItem(Strings.MenuStopAll, null, (_, _) => StopAll());
+
+        // The shield of Windows says that the command asks for administrator rights.
+        using (var shield = SystemIcons.GetStockIcon(StockIconId.Shield, StockIconOptions.SmallIcon))
         {
-            ShortcutKeyDisplayString = Strings.MenuCloseHint,
-        };
-        _menu.Items.AddRange([open, _runAll, _stopCurrent, new ToolStripSeparator(), close]);
+            _shield = shield.ToBitmap();
+        }
+
+        _serviceStart = new ToolStripMenuItem(Strings.MenuServiceStart, _shield, (_, _) => ControlService(start: true));
+        _serviceStop = new ToolStripMenuItem(Strings.MenuServiceStop, _shield, (_, _) => ControlService(start: false));
+        var close = new ToolStripMenuItem(Strings.MenuClose, null, (_, _) => ExitThread());
+        _menu.Items.AddRange([open, _runAll, _stopAll, new ToolStripSeparator(), _serviceStart, _serviceStop, new ToolStripSeparator(), close]);
+        _menu.Opening += (_, _) => UpdateServiceItems();
 
         _trayIcon = new NotifyIcon { ContextMenuStrip = _menu };
         _trayIcon.MouseDoubleClick += (_, e) =>
@@ -115,6 +126,7 @@ internal sealed class TrayContext : ApplicationContext
             _trayIcon.Dispose();
             _menu.Dispose();
             _boldFont.Dispose();
+            _shield.Dispose();
             foreach (var icon in _icons.Values)
             {
                 icon.Dispose();
@@ -175,13 +187,35 @@ internal sealed class TrayContext : ApplicationContext
         }
     });
 
-    private void StopCurrent()
+    /// <summary>Empties the queue and stops the run in progress.</summary>
+    private void StopAll() => Ui.Run(null, () => _monitor.CommandAsync(PipeProtocol.Methods.RunStopAll));
+
+    /// <summary>What Windows says about the service decides which of the two commands is available.</summary>
+    private void UpdateServiceItems()
     {
-        string? taskId = _monitor.Snapshot?.Current?.TaskId;
-        if (taskId is not null)
+        var status = ServiceControl.Query();
+        _serviceStart.Enabled = status == ServiceControllerStatus.Stopped;
+        _serviceStop.Enabled = status == ServiceControllerStatus.Running;
+    }
+
+    private void ControlService(bool start)
+    {
+        if (!start)
         {
-            Ui.Run(null, () => _monitor.RunControlAsync(PipeProtocol.Methods.RunStop, taskId));
+            string text = Strings.ServiceStopConfirm;
+            if (_monitor.IsConnected && _monitor.Snapshot?.Current is { } current)
+            {
+                text += Environment.NewLine + Environment.NewLine + Strings.Format(Strings.ServiceStopRunning, current.TaskName);
+            }
+
+            if (!Ui.Confirm(null, text))
+            {
+                return;
+            }
         }
+
+        // The copy with administrator rights reports its own errors; the tray icon shows the new state by itself.
+        ServiceControl.RequestElevated(start);
     }
 
     private void UpdateTray()
@@ -190,8 +224,7 @@ internal sealed class TrayContext : ApplicationContext
         var snapshot = _monitor.Snapshot;
         var current = snapshot?.Current;
         _runAll.Enabled = _monitor.IsConnected && snapshot?.Tasks.Any(t => t.Enabled) == true;
-        _stopCurrent.Enabled = current is not null && !current.Stopping;
-        _stopCurrent.Text = current is null ? Strings.MenuStopCurrent : Strings.Format(Strings.MenuStopTask, current.TaskName);
+        _stopAll.Enabled = _monitor.IsConnected && ((current is not null && !current.Stopping) || snapshot?.Queue.Count > 0);
 
         TrayState state;
         string text;

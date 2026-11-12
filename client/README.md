@@ -152,6 +152,8 @@ GitHub, сверит его SHA-256 с опубликованным, прове�
 
 The interface starts with Windows only in the tray (`Custos.exe --tray`, set by the installer); started from the
 Start menu or by the installer it also opens its window. A second start only brings the running copy to the front.
+The tray menu also starts and stops the service: it runs `Custos.exe --service-start` (or `--service-stop`) with
+administrator rights, after the Windows UAC prompt.
 
 ## Diagnostics
 

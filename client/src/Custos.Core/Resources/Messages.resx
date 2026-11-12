@@ -517,6 +517,21 @@
   <data name="DescFullLastDay" xml:space="preserve">
     <value>On the last day of the month the backup is full.</value>
   </data>
+  <data name="DescFullListEveryRuns" xml:space="preserve">
+    <value>every {0}{1} run</value>
+  </data>
+  <data name="DescFullListWeekdays" xml:space="preserve">
+    <value>on Mondays;on Tuesdays;on Wednesdays;on Thursdays;on Fridays;on Saturdays;on Sundays</value>
+  </data>
+  <data name="DescFullListMonthDay" xml:space="preserve">
+    <value>on the {0}{1} of the month</value>
+  </data>
+  <data name="DescFullListLastDay" xml:space="preserve">
+    <value>on the last day of the month</value>
+  </data>
+  <data name="DescFullOnlyFirst" xml:space="preserve">
+    <value>only the first one, and when a destination has none</value>
+  </data>
   <data name="DescOneFolder" xml:space="preserve">
     <value>The backup is kept up to date in one folder.</value>
   </data>

@@ -215,6 +215,26 @@ public sealed class ArchiveBackupTests : IDisposable
         Assert.Equal(checkedAt, _store.GetBackupState(task.Id).StoredCheckedAt);
     }
 
+    [Theory]
+    [InlineData(5, "LZMA2")]
+    [InlineData(9, "LZMA2")]
+    [InlineData(0, "Copy")]
+    public void SevenZip_compresses_with_LZMA2_and_level_0_only_stores(int level, string method)
+    {
+        SevenZipCheck.SkipUnlessAvailable(ArchiveFormats.SevenZip);
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(ArchiveFormats.SevenZip, BackupTypes.Full, destination);
+        task.Archive.Level = level;
+
+        Assert.Equal(RunStatuses.Success, Run(task, Start).Status);
+
+        var set = Assert.Single(SetCatalog.Scan(destination, task.Id, Access()));
+        using var reader = Access().Open(set);
+        var entry = reader.Entries.Single(e => e.Path == @"Data\a.txt");
+        Assert.NotNull(entry.Method);
+        Assert.StartsWith(method, entry.Method, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Volumes_are_numbered_and_read_back_as_one_archive()
     {

@@ -509,6 +509,21 @@ static partial class Messages
     /// <summary>On the last day of the month the backup is full.</summary>
     public static string DescFullLastDay => Get(nameof(DescFullLastDay));
 
+    /// <summary>every {0}{1} run</summary>
+    public static string DescFullListEveryRuns => Get(nameof(DescFullListEveryRuns));
+
+    /// <summary>on Mondays;on Tuesdays;on Wednesdays;on Thursdays;on Fridays;on Saturdays;on Sundays</summary>
+    public static string DescFullListWeekdays => Get(nameof(DescFullListWeekdays));
+
+    /// <summary>on the {0}{1} of the month</summary>
+    public static string DescFullListMonthDay => Get(nameof(DescFullListMonthDay));
+
+    /// <summary>on the last day of the month</summary>
+    public static string DescFullListLastDay => Get(nameof(DescFullListLastDay));
+
+    /// <summary>only the first one, and when a destination has none</summary>
+    public static string DescFullOnlyFirst => Get(nameof(DescFullOnlyFirst));
+
     /// <summary>The backup is kept up to date in one folder.</summary>
     public static string DescOneFolder => Get(nameof(DescOneFolder));
 

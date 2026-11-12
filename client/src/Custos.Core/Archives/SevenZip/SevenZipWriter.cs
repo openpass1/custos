@@ -4,12 +4,14 @@ using System.Runtime.Versioning;
 namespace Custos.Core.Archives.SevenZip;
 
 /// <summary>
-/// Writes a 7z archive through 7z.dll (section 6.5): LZMA2 at the chosen level, AES-256 with an optional encrypted
-/// list of names. 7-Zip reads the items one after another through callbacks, so files never need to be copied
-/// anywhere first and items of unknown length (program output) work too.
+/// Writes a 7z archive through 7z.dll (section 6.5): LZMA2 at levels 1–9 (level 0 only stores), AES-256 with an
+/// optional encrypted list of names. 7-Zip reads the items one after another through callbacks, so files never need
+/// to be copied anywhere first and items of unknown length (program output) work too.
 /// </summary>
 /// <remarks>
-/// Settings passed to 7-Zip: <c>x</c> = level; <c>f=off</c> = no executable filters, which would also read the start of
+/// Settings passed to 7-Zip: <c>x</c> = level; <c>0=LZMA2</c> = the method, named although it is the default of 7-Zip,
+/// so that another 7z.dll put in its place packs the same way (at level 0 no method is named: 7-Zip then stores
+/// the files without compression); <c>f=off</c> = no executable filters, which would also read the start of
 /// every .exe and .dll ahead of time; <c>tc=on</c> = keep the creation times; <c>he=on</c> = encrypt the names. 7-Zip
 /// reads the files sorted by path (case-insensitive), not in the given order. A <see cref="ArchiveItem.Separate"/>
 /// item is reported as huge, which puts it into a solid block of its own; the real size is counted while it is read.
@@ -22,6 +24,9 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
 
     /// <summary>Larger than any solid block, smaller than any sum of sizes could overflow to.</summary>
     internal const ulong SeparateSize = 1UL << 62;
+
+    /// <summary>The compression method of the archives, as the editor names it («7z (LZMA2)»).</summary>
+    internal const string Lzma2 = "LZMA2";
 
     public void Write(IReadOnlyList<ArchiveItem> items, Stream output, ArchiveWriteOptions options, CancellationToken cancellationToken)
     {
@@ -62,6 +67,11 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
             ("f", p => Props.SetBool(p, false)),
             ("tc", p => Props.SetBool(p, true)),
         };
+        if (options.Level > 0)
+        {
+            settings.Add(("0", p => Props.SetString(p, Lzma2)));
+        }
+
         if (options.Password is not null && options.EncryptNames)
         {
             settings.Add(("he", p => Props.SetBool(p, true)));
@@ -93,6 +103,15 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
             foreach (var name in names)
             {
                 Marshal.FreeHGlobal(name);
+            }
+
+            // 7-Zip copies what it is given; the strings are ours to free.
+            foreach (var value in values)
+            {
+                if (value.VarType == PropVariant.VtBstr)
+                {
+                    Marshal.FreeBSTR(value.Pointer);
+                }
             }
         }
     }

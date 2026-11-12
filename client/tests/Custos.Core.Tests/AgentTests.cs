@@ -236,6 +236,18 @@ public sealed class PendingRunsTests
         Assert.Equal(0, queue.Count);
     }
 
+    [Fact]
+    public void Clearing_empties_the_queue_and_returns_what_was_in_it()
+    {
+        var queue = new PendingRuns();
+        queue.TryEnqueue(Run("a"));
+        queue.TryEnqueue(Run("b"));
+
+        Assert.Equal(["a", "b"], queue.Clear().Select(r => r.TaskId));
+        Assert.Equal(0, queue.Count);
+        Assert.Empty(queue.Clear());
+    }
+
     private static QueuedRun Run(string taskId) => new() { TaskId = taskId, Trigger = RunTriggers.Manual };
 
     private static Func<string, int?> Priority(Dictionary<string, int> priorities) =>
@@ -356,6 +368,29 @@ public sealed class TaskDescriberTests : IDisposable
         task.Events.After = AfterActions.Shutdown;
 
         Assert.EndsWith(" События: до копирования — 1, после — 1. После выполнения: выключение компьютера.", TaskDescriber.Describe(task), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_card_says_when_a_full_backup_is_made()
+    {
+        Messages.Culture = CultureInfo.GetCultureInfo("ru-RU");
+        var task = Example();
+        task.ForceFull = new ForceFullOptions { EveryRuns = 7, Weekday = 7, MonthDay = -1 };
+        Assert.Equal("Каждый 7-й запуск, по воскресеньям, в последний день месяца", TaskDescriber.FullBackups(task));
+
+        task.ForceFull = new ForceFullOptions { MonthDay = 15 };
+        Assert.Equal("15-го числа месяца", TaskDescriber.FullBackups(task));
+
+        // Without a forced full backup the chain never ends: the card says so.
+        task.ForceFull = new ForceFullOptions();
+        Assert.Equal("Только первая, и когда в назначении нет полной", TaskDescriber.FullBackups(task));
+
+        Messages.Culture = CultureInfo.GetCultureInfo("en-US");
+        task.ForceFull = new ForceFullOptions { EveryRuns = 2, Weekday = 1 };
+        Assert.Equal("Every 2nd run, on Mondays", TaskDescriber.FullBackups(task));
+
+        task.BackupType = BackupTypes.Full;
+        Assert.Null(TaskDescriber.FullBackups(task));
     }
 
     [Theory]

@@ -73,6 +73,17 @@ public sealed class PendingRuns
         }
     }
 
+    /// <summary>Empties the queue; returns the runs that were in it.</summary>
+    public List<QueuedRun> Clear()
+    {
+        lock (_lock)
+        {
+            var removed = _entries.ToList();
+            _entries.Clear();
+            return removed;
+        }
+    }
+
     /// <summary>The runs in the order they will start.</summary>
     public List<QueuedRun> Snapshot(Func<string, int?> priorityOf)
     {

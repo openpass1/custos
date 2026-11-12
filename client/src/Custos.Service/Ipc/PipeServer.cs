@@ -391,6 +391,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.RunAll(user)),
             PipeProtocol.Methods.RunStop =>
                 Ok(id, agent.Stop(request.GetData(json.RunControlRequest).TaskId, user)),
+            PipeProtocol.Methods.RunStopAll =>
+                Ok(id, agent.StopAll(user)),
             PipeProtocol.Methods.RunPause =>
                 Ok(id, agent.SetPaused(request.GetData(json.RunControlRequest).TaskId, paused: true, user)),
             PipeProtocol.Methods.RunResume =>

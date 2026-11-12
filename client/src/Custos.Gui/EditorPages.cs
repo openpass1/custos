@@ -1408,6 +1408,24 @@ internal sealed class EventsPage : EditorPage
         _after.SelectedIndex = Math.Max(0, index);
     }
 
+    /// <summary>The event in words, for the list and the task card.</summary>
+    internal static string DescribeEvent(TaskEvent item) => item.Kind switch
+    {
+        TaskEventKinds.ServiceStop => Strings.Format(Strings.EventShowStop, item.Service),
+        TaskEventKinds.ServiceStart => Strings.Format(Strings.EventShowStart, item.Service),
+        _ => string.IsNullOrWhiteSpace(item.Args) ? item.Command ?? string.Empty : $"{item.Command} {item.Args}",
+    };
+
+    /// <summary>What the computer does when the run is over, as the choice reads here; null for nothing.</summary>
+    internal static string? DescribeAfter(string? after) => after switch
+    {
+        AfterActions.Shutdown => Strings.AfterShutdown,
+        AfterActions.Restart => Strings.AfterRestart,
+        AfterActions.Sleep => Strings.AfterSleep,
+        AfterActions.Hibernate => Strings.AfterHibernate,
+        _ => null,
+    };
+
     public override string? SaveTo(TaskDefinition task)
     {
         var events = task.Events;
@@ -1475,14 +1493,6 @@ internal sealed class EventsPage : EditorPage
             Fill();
         }
 
-        /// <summary>The event in words, for the list.</summary>
-        internal static string Describe(TaskEvent item) => item.Kind switch
-        {
-            TaskEventKinds.ServiceStop => Strings.Format(Strings.EventShowStop, item.Service),
-            TaskEventKinds.ServiceStart => Strings.Format(Strings.EventShowStart, item.Service),
-            _ => string.IsNullOrWhiteSpace(item.Args) ? item.Command ?? string.Empty : $"{item.Command} {item.Args}",
-        };
-
         private int Selected => _list.SelectedIndices.Count > 0 ? _list.SelectedIndices[0] : -1;
 
         private void Fill(int select = -1)
@@ -1492,7 +1502,7 @@ internal sealed class EventsPage : EditorPage
             foreach (var item in _events)
             {
                 int minutes = Math.Max(1, (item.TimeoutS + 59) / 60);
-                _list.Items.Add(new ListViewItem([Describe(item), Strings.Format(Strings.EventTimeoutShown, minutes)]));
+                _list.Items.Add(new ListViewItem([DescribeEvent(item), Strings.Format(Strings.EventTimeoutShown, minutes)]));
             }
 
             _list.EndUpdate();
