@@ -416,6 +416,8 @@ The settings (`config/config.php`), the server keys (`config/keys/`) and the `va
 
 Nothing has to be set up. If the site runs without CloudPanel, check the nginx block: `favicon.ico`, `favicon.svg` and `assets/vendor/chart.umd.min.js` must be served from `server/public` like the other files (the example in [Without CloudPanel](#without-cloudpanel) does this).
 
+**Version 0.4.1.** No migrations. A new storage warning limit applies as soon as the settings are saved, not an hour later. Long pages get a "Back to top" button at the bottom right.
+
 ## What to keep in backups
 
 - the `custos` database;

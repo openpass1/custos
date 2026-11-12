@@ -28,6 +28,7 @@ return [
     'nav.settings' => 'Settings',
     'nav.logout' => 'Log out',
     'nav.profile' => 'Profile: language, theme, password',
+    'nav.to_top' => 'Back to top',
 
     'login.title' => 'Log in',
     'login.login' => 'Login',
@@ -143,6 +144,7 @@ return [
     'closed_by.agent_disabled' => 'machine disabled',
     'closed_by.unscheduled' => 'task is manual only now',
     'closed_by.space_ok' => 'space forecast improved',
+    'closed_by.space_limit' => 'warning limit changed',
 
     'slot.pending' => 'waiting',
     'slot.ok' => 'done',
@@ -982,7 +984,7 @@ return [
     'settings.anomaly_growth_factor' => 'Anomaly: source grew by more than, times',
     'settings.anomaly.hint' => 'The file count and source size are compared with the median of the last 10 successful runs.',
     'settings.space_warn_days' => 'Warn before a storage is full, days',
-    'settings.space_warn_days.hint' => 'By the space forecast from the inventory: a problem on the dashboard and one message. It clears when the storage stops filling up or the forecast grows to twice as many days. 0 = no warning.',
+    'settings.space_warn_days.hint' => 'By the space forecast from the inventory: a problem on the dashboard and one message. It clears when the storage stops filling up or the forecast grows to twice as many days. A new limit applies as soon as it is saved. 0 = no warning.',
     'settings.retention' => 'Retention',
     'settings.history_months' => 'Run history, problems and audit log, months',
     'settings.log_days' => 'Full run logs, days',

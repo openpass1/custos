@@ -316,6 +316,14 @@ final class InsightsTest extends TestCase
             ['tasks'][$this->agentId . '/' . $this->taskId]['space_days']);
         $this->assertFalse($storage->forAgent($this->agentId)[0]['soon'], 'the red forecast follows the same limit');
 
+        // A limit changed on the settings page applies at once and exactly: back to 14 opens the problem again right
+        // away, and 3 closes it although 5 days are within twice 3.
+        $this->app->settings()->set('space_warn_days', '14');
+        $this->assertSame(['opened' => 1, 'closed' => 0], $storage->checkSpace($later, limitChanged: true));
+        $this->app->settings()->set('space_warn_days', '3');
+        $this->assertSame(['opened' => 0, 'closed' => 1], $storage->checkSpace($later, limitChanged: true));
+        $this->assertSame('space_limit', $this->db()->value("SELECT closed_by FROM problems WHERE kind = 'space' ORDER BY id DESC LIMIT 1"));
+
         // 0 turns the warning off; a disabled task gets no problem either.
         $this->app->settings()->set('space_warn_days', '0');
         $this->assertSame(['opened' => 0, 'closed' => 0], $storage->checkSpace($later));
