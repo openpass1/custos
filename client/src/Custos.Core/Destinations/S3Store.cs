@@ -383,7 +383,7 @@ public sealed class S3Store : RemoteStore
                 // Some of many could not be deleted: the first one tells why.
                 var first = failed.Response?.DeleteErrors?.FirstOrDefault();
                 string reason = Messages.Format(Messages.StoreFailed, _server, first is null ? failed.Message : first.Key + ": " + first.Code + ": " + first.Message);
-                return first?.Code == "AccessDenied" ? new UnauthorizedAccessException(reason, failed) : new StoreException(reason, failed);
+                return first is not null && SaysRefused(first.Code, first.Message) ? new UnauthorizedAccessException(reason, failed) : new StoreException(reason, failed);
             case AmazonS3Exception s3:
                 string text = Messages.Format(Messages.StoreFailed, _server, (s3.ErrorCode is { Length: > 0 } code ? code + ": " : string.Empty) + s3.Message);
                 return s3.ErrorCode switch
@@ -391,6 +391,7 @@ public sealed class S3Store : RemoteStore
                     "NoSuchBucket" => new StoreException(Messages.Format(Messages.StoreBucketNotFound, _server, _bucket), s3),
                     "InvalidAccessKeyId" or "SignatureDoesNotMatch" or "InvalidToken" =>
                         new StoreException(Messages.Format(Messages.StoreLoginRefused, _server, _account.User), s3),
+                    _ when SaysRefused(s3.ErrorCode, s3.Message) => new UnauthorizedAccessException(text, s3),
                     _ => s3.StatusCode switch
                     {
                         HttpStatusCode.NotFound => new FileNotFoundException(text, path, s3),
@@ -420,6 +421,14 @@ public sealed class S3Store : RemoteStore
 
         base.Dispose(disposing);
     }
+
+    /// <summary>
+    /// Whether the server refuses because the account may not do this or the object is locked. Amazon S3 answers
+    /// AccessDenied to both; MinIO answers a locked object with InvalidRequest, "Object is WORM protected".
+    /// </summary>
+    private static bool SaysRefused(string? code, string? message) =>
+        code == "AccessDenied"
+        || (code is "InvalidRequest" or "ObjectLocked" && message?.Contains("WORM", StringComparison.OrdinalIgnoreCase) == true);
 
     private static Exception Deepest(Exception exception)
     {

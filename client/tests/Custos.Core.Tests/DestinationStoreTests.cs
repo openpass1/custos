@@ -380,6 +380,24 @@ public sealed class DestinationStoreTests : IDisposable
     }
 
     [Fact]
+    public void A_locked_object_is_a_refusal_whichever_way_the_server_says_it()
+    {
+        // No server is asked: only what the store makes of the answers.
+        var destination = new TaskDestination { Kind = DestinationKinds.S3, Endpoint = "http://127.0.0.1:9", Bucket = "office-backup", Path = "pc01" };
+        using var store = new S3Store(destination, new StoreAccount("key", "secret"));
+        var amazon = new Amazon.S3.AmazonS3Exception("Access Denied because object protected by object lock.",
+            Amazon.Runtime.ErrorType.Sender, "AccessDenied", "request", System.Net.HttpStatusCode.Forbidden);
+        var minio = new Amazon.S3.AmazonS3Exception("Object is WORM protected and cannot be overwritten",
+            Amazon.Runtime.ErrorType.Sender, "InvalidRequest", "request", System.Net.HttpStatusCode.BadRequest);
+        var other = new Amazon.S3.AmazonS3Exception("The request is not valid",
+            Amazon.Runtime.ErrorType.Sender, "InvalidRequest", "request", System.Net.HttpStatusCode.BadRequest);
+
+        Assert.IsType<UnauthorizedAccessException>(store.Translate(amazon, "pc01/set/file"));
+        Assert.IsType<UnauthorizedAccessException>(store.Translate(minio, "pc01/set/file"));
+        Assert.IsType<StoreException>(store.Translate(other, "pc01/set/file"));
+    }
+
+    [Fact]
     public void A_speed_limit_holds_the_writer_back()
     {
         var limiter = SpeedLimiter.ForKbps(256)!;
