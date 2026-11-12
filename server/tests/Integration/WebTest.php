@@ -76,7 +76,8 @@ final class WebTest extends TestCase
             + ['telegram_api_url' => "http://127.0.0.1:$port", 'github_api_url' => "http://127.0.0.1:$port"], true) . ';');
         [$code, $output] = self::php(['bin/install.php', '--admin-login=admin'], ['CUSTOS_ADMIN_PASSWORD' => self::PASSWORD]);
         $this->assertSame(0, $code, $output);
-        $this->assertMatchesRegularExpression('/Registration code:\s+([A-Z2-7]{5}-){4}[A-Z2-7]{5}#[0-9A-F-]{19}/', $output);
+        // The site address from the config, "#" and the registration code (A.3).
+        $this->assertMatchesRegularExpression('~Connection string:\s+http://custos\.test#([A-Z2-7]{5}-){4}[A-Z2-7]{5}#[0-9A-F-]{19}\n~', $output);
 
         [$code, $output] = self::php(['bin/install.php', '--language=ru']);
         $this->assertSame(0, $code, 'install.php can run again: ' . $output);
@@ -132,16 +133,15 @@ final class WebTest extends TestCase
     {
         [$status, $settings] = $this->http('GET', '/settings');
         $this->assertSame(200, $status);
-        $this->assertMatchesRegularExpression('/id="registration-code"[^>]*value="([^"]+)"/', $settings);
-        preg_match('/id="registration-code"[^>]*value="([^"]+)"/', $settings, $m);
-        $code = html_entity_decode($m[1]);
-        // The connection string is the site address from the config, "#" and the same code (A.3). The fake agent
-        // takes it in --code; the test server listens elsewhere, so --url still gives the address.
-        preg_match('/id="connection-string"[^>]*value="([^"]+)"/', $settings, $m);
-        $connection = html_entity_decode($m[1] ?? '');
-        $this->assertSame(TestEnv::config()['url'] . '#' . $code, $connection);
+        // One line holds what a machine needs: the site address from the config, "#" and the registration code (A.3).
+        // The page shows nothing else to copy. The fake agent takes the line in --connect; the test server listens
+        // elsewhere than the configured address, so --url still gives the real one.
+        $connection = $this->connectionString();
+        $this->assertMatchesRegularExpression('~^http://custos\.test#([A-Z2-7]{5}-){4}[A-Z2-7]{5}#[0-9A-F-]{19}$~', $connection);
+        $this->assertStringNotContainsString('registration-code', $settings);
+        $this->assertSame(1, substr_count($settings, 'data-copy='), 'one copy button in the connection block');
 
-        [$exit, $output] = $this->fakeAgent(['--code=' . $connection, '--result=success', '--skip-schedule']);
+        [$exit, $output] = $this->fakeAgent(['--connect=' . $connection, '--result=success', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
         $this->assertStringContainsString('status pending', $output);
         preg_match('/agent key ([0-9A-F-]{19})/', $output, $fingerprint);
@@ -199,9 +199,9 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         $this->assertStringContainsString('<title>Настройки · Backup monitor</title>', $this->http('GET', '/settings')[1]);
 
-        $before = $this->registrationCode();
+        $before = $this->connectionString();
         $this->post('/settings/registration-key', []);
-        $this->assertNotSame($before, $this->registrationCode());
+        $this->assertNotSame($before, $this->connectionString());
 
         [, $audit] = $this->http('GET', '/audit');
         foreach (['неудачный вход', 'подтверждена машина', 'создан пользователь', 'изменены настройки', 'сгенерирован новый ключ регистрации'] as $entry) {
@@ -559,7 +559,7 @@ final class WebTest extends TestCase
         [$code, $output] = self::php(['bin/cron.php']);
         $this->assertSame(0, $code, $output);
         [, $settings] = $this->http('GET', '/settings');
-        $this->assertStringContainsString('registration-code', $settings);
+        $this->assertStringContainsString('connection-string', $settings);
     }
 
     // ---- helpers ----
@@ -569,10 +569,11 @@ final class WebTest extends TestCase
         return $overrides + ['server_name' => 'CUSTOS', 'heartbeat_interval_s' => '60', 'offline_after_min' => '60', 'ip_allow_site' => '', 'ip_allow_agents' => ''];
     }
 
-    private function registrationCode(): string
+    /** The connection string of the settings page: the site address, "#" and the registration code. */
+    private function connectionString(): string
     {
-        preg_match('/id="registration-code"[^>]*value="([^"]+)"/', $this->http('GET', '/settings')[1], $m);
-        return $m[1];
+        preg_match('/id="connection-string"[^>]*value="([^"]+)"/', $this->http('GET', '/settings')[1], $m);
+        return html_entity_decode($m[1] ?? '');
     }
 
     private function fakeAgent(array $args): array

@@ -169,7 +169,8 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 td.actions { display: flex; flex-wrap: wrap; gap: .35rem; }
 tr.warn-row td { background: var(--warn-bg); }
 
-dl.props { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: 0 0 .75rem; }
+/* minmax(0, ...): a wide field in a value (the connection string) shrinks to the page and does not widen it. */
+dl.props { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem 1rem; margin: 0 0 .75rem; }
 dl.props dt { color: var(--muted); }
 dl.props dd { margin: 0; overflow-wrap: anywhere; }
 
@@ -204,7 +205,7 @@ button:hover { filter: brightness(1.08); }
 button.danger { background: var(--panel); color: var(--bad); border-color: var(--bad); }
 button.link { background: none; border: none; padding: 0; color: var(--accent); }
 .copy-row { display: inline-flex; gap: .35rem; flex-wrap: wrap; max-width: 100%; }
-.copy-row input { max-width: 100%; }
+.copy-row input { max-width: 100%; min-width: 0; }
 code.fingerprint { letter-spacing: .05em; }
 
 progress { width: 100%; max-width: 520px; height: 12px; accent-color: var(--info); }
@@ -444,7 +445,7 @@ body.wall { font-size: 1.15rem; padding: 1rem 1.5rem; min-height: 100vh; }
 @media (max-width: 640px) {
     main { padding: .75rem; }
     table.grid { table-layout: auto; min-width: 600px; }
-    dl.props { grid-template-columns: 1fr; }
+    dl.props { grid-template-columns: minmax(0, 1fr); }
     dl.props dt { margin-top: .4rem; }
 }
 

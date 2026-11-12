@@ -117,13 +117,16 @@ final class SettingsController extends Controller
     {
         $keys = $this->app->keys();
         $key = $this->app->settings()->get('registration_key');
+        $url = $this->app->config->url();
         return $this->render('settings/index', [
             'section' => 'settings',
             'values' => $values,
             'errors' => $errors,
-            'registrationCode' => $key === '' ? null : RegistrationKey::code($key, $keys->fingerprint()),
+            // What a machine needs to connect, in one line: the site address and the registration code (A.3).
+            'connection' => $key === '' || $url === '' ? null
+                : RegistrationKey::connection($url, RegistrationKey::code($key, $keys->fingerprint())),
+            'connectionProblem' => $key === '' ? 'settings.connection.no_key' : 'settings.connection.no_url',
             'serverFingerprint' => $keys->fingerprint(),
-            'serverUrl' => $this->app->config->url(),
             'myIp' => $this->request->ip,
             'languages' => $this->app->languages(),
         ], $this->t('settings.title'), $status);

@@ -166,14 +166,14 @@ Repeat the password:
 [ok] Default language: en
 
 Server key fingerprint:  XXXX-XXXX-XXXX-XXXX
-Registration code:       XXXXX-XXXXX-XXXXX-XXXXX-XXXXX#XXXX-XXXX-XXXX-XXXX
-The code is also shown on the site under Settings.
+Connection string:       http://custos.lan#XXXXX-XXXXX-XXXXX-XXXXX-XXXXX#XXXX-XXXX-XXXX-XXXX
+It is also shown on the site under Settings.
 
 Add a cron job that runs every minute:
   * * * * * /usr/bin/php8.4 /home/custos/htdocs/custos.lan/server/bin/cron.php
 ```
 
-Every line starts with `[ok]`. The **Registration code** is what you type into the agent. You do not have to write it down: it is always on the site under Settings.
+Every line starts with `[ok]`. The **Connection string** is the server address and the registration code together. You paste it into the CUSTOS program on a machine. You do not have to write it down: it is always on the site under Settings.
 
 If a line starts with `[error]`, fix what it says and run `php8.4 bin/install.php --language=en` again. Running it again breaks nothing.
 
@@ -210,10 +210,10 @@ If "Needs attention" shows a red message about cron, wait a minute and reload th
 
 The fake agent behaves like a real agent: it registers and sends tasks and runs. The commands run over SSH as in part 4, in the folder `~/htdocs/custos.lan/server`.
 
-**Step 14.** Take the code on the site: Settings, field "Registration code", button "Copy". Paste it into the command between the single quotes:
+**Step 14.** Take the connection string on the site: Settings, field "Connection string", button "Copy". Paste it into the command between the single quotes:
 
 ```bash
-php8.4 tools/fake-agent.php --url=http://custos.lan --code='PASTE-CODE-HERE' --once
+php8.4 tools/fake-agent.php --connect='PASTE-STRING-HERE' --once
 ```
 
 ✅ The last lines of the output:
@@ -225,7 +225,7 @@ done: every answer was signed and accepted
 
 **Step 15.** On the site, reload the Machines page. `FAKE-PC-01` is in the block "Awaiting approval", and its key fingerprint matches the output. Press **Approve**.
 
-**Step 16.** Run the fake agent again; the code is not needed any more:
+**Step 16.** Run the fake agent again. The code is not needed any more, only the site address:
 
 ```bash
 php8.4 tools/fake-agent.php --url=http://custos.lan --once
@@ -424,6 +424,8 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - a disabled machine contacts the site every 5 minutes, so it comes back sooner after it is enabled (needs a client with this change);
 - the example path of sources and destinations follows the chosen kind;
 - "Replace password" looks like a link. SSH keys and cloud drives cannot get a password from the site: they are made on the machine.
+
+**Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`.
 
 ## What to keep in backups
 

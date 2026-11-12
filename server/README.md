@@ -79,10 +79,14 @@ heartbeats, the configuration snapshot, runs with logs and inventory, and answer
 and state in `var/fake-agents` between runs.
 
 ```bash
-php tools/fake-agent.php --url=http://127.0.0.1:8080 --code='KEY#FINGERPRINT' --once   # one pass, exit code 0 if all went well
-php tools/fake-agent.php --url=http://127.0.0.1:8080 --code='KEY#FINGERPRINT' --count=5 --run-now  # five machines until Ctrl+C
+php tools/fake-agent.php --connect='http://127.0.0.1:8080#KEY#FINGERPRINT' --once   # one pass, exit code 0 if all went well
+php tools/fake-agent.php --connect='http://127.0.0.1:8080#KEY#FINGERPRINT' --count=5 --run-now  # five machines until Ctrl+C
 php tools/fake-agent.php --help
 ```
+
+`--connect` takes the connection string from the site (Settings): the address and the registration code in one line.
+If the site is reached at another address than its `url` in the config, add `--url=...`: it wins over the address in
+the string. Once the agents are registered, `--url` alone is enough.
 
 Stage 2 scenarios: `--skip-schedule` (scheduled runs are skipped: "missed"), `--offline=MIN` (the machine is off
 and catches up: "missed_offline"), `--pause=SEC` (paused runs), `--result=error` (error problems).
