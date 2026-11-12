@@ -63,11 +63,14 @@ final class Storage
      * that fills up first). Only enabled tasks of approved machines; a disabled task or machine has its problem closed
      * by Monitor::sweep. A limit of 0 closes every open one.
      *
+     * @param bool $limitChanged the limit was just changed on the settings page: it applies at once and exactly, without
+     *                           the gap of CLOSE_FACTOR, and what it closes is closed by "space_limit"
      * @return array{opened: int, closed: int}
      */
-    public function checkSpace(int $now): array
+    public function checkSpace(int $now, bool $limitChanged = false): array
     {
         $limit = $this->settings->int('space_warn_days');
+        $keepUpTo = $limitChanged ? $limit : $limit * self::CLOSE_FACTOR;
         $worst = [];
         if ($limit > 0) {
             foreach ($this->db->all(
@@ -79,7 +82,7 @@ final class Storage
                  JOIN agents a ON a.id = f.agent_id AND a.status = 'approved'
                  JOIN tasks t ON t.agent_id = f.agent_id AND t.id = f.task_id AND t.deleted = 0 AND t.enabled = 1
                  WHERE f.state = 'filling' AND f.days_left <= ?",
-                [$limit * self::CLOSE_FACTOR]
+                [$keepUpTo]
             ) as $row) {
                 if (!self::taskHas($row['task_data'], $row['destination_id'])) {
                     continue;
@@ -101,8 +104,8 @@ final class Storage
                 continue;
             }
             $stats['closed'] += $this->db->exec(
-                "UPDATE problems SET closed_at = ?, closed_by = 'space_ok' WHERE id = ? AND closed_at IS NULL",
-                [$nowDb, $open['id']]
+                'UPDATE problems SET closed_at = ?, closed_by = ? WHERE id = ? AND closed_at IS NULL',
+                [$nowDb, $limitChanged || $limit === 0 ? 'space_limit' : 'space_ok', $open['id']]
             );
         }
         foreach ($worst as $row) {

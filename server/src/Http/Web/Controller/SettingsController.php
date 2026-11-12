@@ -86,6 +86,10 @@ final class SettingsController extends Controller
         if ($changed !== []) {
             $this->audit('settings.update', 'settings', null, $changed);
         }
+        // A new storage warning limit shows on the dashboard right away, not at the next hourly forecast pass.
+        if (isset($changed['space_warn_days'])) {
+            $this->app->storage()->checkSpace(time(), limitChanged: true);
+        }
         $this->session->flash('info', $this->t('settings.flash.saved'));
         return $this->redirect('/settings');
     }

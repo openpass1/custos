@@ -41,7 +41,7 @@ use Custos\Infra\ServerKeys;
  */
 final class App
 {
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.4.1';
     /** Interface languages: lang/<code>.php. */
     public const LANGUAGES = ['ru', 'en'];
     public const DEFAULT_LANGUAGE = 'ru';
