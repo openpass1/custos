@@ -358,3 +358,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// "Back to top" (layout.php): the button shows once the menu and the top lines of the page have scrolled away.
+(() => {
+    const SHOW_AFTER_PX = 300;
+    const button = document.querySelector('[data-to-top]');
+    if (!button) {
+        return;
+    }
+    let pending = false;
+    const update = () => {
+        pending = false;
+        button.classList.toggle('shown', window.scrollY > SHOW_AFTER_PX);
+    };
+    const schedule = () => {
+        if (!pending) {
+            pending = true;
+            window.requestAnimationFrame(update);
+        }
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    update();
+    button.addEventListener('click', () => {
+        const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+        // The button hides at the top; keyboard focus goes to the first link of the page instead of getting lost.
+        const first = document.querySelector('header.top a');
+        if (first) {
+            first.focus({ preventScroll: true });
+        }
+    });
+})();

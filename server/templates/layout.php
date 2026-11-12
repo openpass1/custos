@@ -58,5 +58,9 @@ $theme = $view->theme();
     <?= $content ?>
 </main>
 <footer>CUSTOS Monitor <?= e(\Custos\App::VERSION) ?></footer>
+<?php /* Shown by app.js once the top of the page has scrolled away. */ ?>
+<button type="button" class="to-top" data-to-top title="<?= e(t('nav.to_top')) ?>" aria-label="<?= e(t('nav.to_top')) ?>">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
 </body>
 </html>
