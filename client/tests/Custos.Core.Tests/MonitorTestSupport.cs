@@ -181,7 +181,7 @@ internal sealed class FakeMonitorServer : HttpMessageHandler
             {
                 ["status"] = Status,
                 ["server_time"] = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
-                ["heartbeat_interval_s"] = 60,
+                ["heartbeat_interval_s"] = Status == "disabled" ? 300 : 60,
                 ["want_config"] = WantConfig && Status == "approved",
                 ["commands"] = commands,
             };

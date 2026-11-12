@@ -80,9 +80,6 @@ public sealed class ServerLink : IDisposable
 
     public static readonly TimeSpan InventoryInterval = TimeSpan.FromHours(6);
 
-    /// <summary>A disabled agent sends only a heartbeat every 10 minutes (A.4).</summary>
-    public static readonly TimeSpan DisabledInterval = TimeSpan.FromMinutes(10);
-
     /// <summary>After a rejected registration key (A.3, A.11).</summary>
     public static readonly TimeSpan RegistrationRetry = TimeSpan.FromMinutes(10);
 
@@ -535,8 +532,10 @@ public sealed class ServerLink : IDisposable
 
         lock (_lock)
         {
+            // A disabled agent sends only heartbeats, as often as the server says: rarely, but so that enabling it on
+            // the site takes effect within minutes (A.4).
             _interval = TimeSpan.FromSeconds(Math.Clamp(beat.HeartbeatIntervalS, 10, 3600));
-            _nextHeartbeat = now + (status == ServerLinkStates.Disabled ? DisabledInterval : _interval);
+            _nextHeartbeat = now + _interval;
             if (beat.WantConfig && status == ServerLinkStates.Approved)
             {
                 _configDueAt = now;

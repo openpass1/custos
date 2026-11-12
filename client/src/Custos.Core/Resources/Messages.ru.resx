@@ -1363,7 +1363,7 @@
     <value>Связь с сервером мониторинга есть.</value>
   </data>
   <data name="MonitorStateDisabled" xml:space="preserve">
-    <value>Компьютер отключён на сайте: работает автономно и только раз в 10 минут сообщает о себе.</value>
+    <value>Компьютер отключён на сайте: работает автономно и лишь изредка сообщает о себе.</value>
   </data>
   <data name="MonitorStateForbidden" xml:space="preserve">
     <value>Сервер не принимает агентов с адреса этого компьютера (Настройки → Безопасность на сайте)</value>

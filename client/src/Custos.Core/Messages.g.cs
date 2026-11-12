@@ -1346,7 +1346,7 @@ static partial class Messages
     /// <summary>Connected to the monitoring server.</summary>
     public static string MonitorStateApproved => Get(nameof(MonitorStateApproved));
 
-    /// <summary>The computer is disabled on the site: it works on its own and only checks in every 10 minutes.</summary>
+    /// <summary>The computer is disabled on the site: it works on its own and only checks in now and then.</summary>
     public static string MonitorStateDisabled => Get(nameof(MonitorStateDisabled));
 
     /// <summary>The server does not take agents from the address of this computer (Settings → Security on the site)</summary>

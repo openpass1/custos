@@ -164,6 +164,14 @@ public sealed class RealMonitorTests : IDisposable
         await link.StepAsync(Token);
         Assert.Equal(_config.ConfigRevision.ToString(CultureInfo.InvariantCulture), Sql(server, $"SELECT config_revision FROM agents WHERE id = '{agentId}'"));
         Assert.DoesNotContain(_host.Events, e => e.Kind == LinkEvent.Error);
+
+        // «Сбросить привязку» keeps the agent key: connected again, the server knows the machine and its approval (A.3).
+        link.Reset();
+        link.Connect(server.Code, newServer: true);
+        await link.StepAsync(Token);
+        Assert.Equal(agentId, _store.Get().AgentId);
+        await link.StepAsync(Token);
+        Assert.True(link.Online, Describe(link));
     }
 
     [Fact]

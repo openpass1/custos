@@ -1884,13 +1884,15 @@ Trust the new key only if you know why it changed.</value>
     <value>Server address:</value>
   </data>
   <data name="ServerUrlHelp" xml:space="preserve">
-    <value>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the internet, use https://.</value>
+    <value>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the internet, use https://.
+
+The connection line copied on the site (Settings → Connecting agents) can be pasted here or below as a whole: the address and the code go to their fields by themselves.</value>
   </data>
   <data name="ServerCodeLabel" xml:space="preserve">
     <value>Registration code:</value>
   </data>
   <data name="ServerCodeHelp" xml:space="preserve">
-    <value>The code is on the site: Settings → Connecting agents. It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
+    <value>The code is on the site: Settings → Connecting agents (the connection line there holds the address too). It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
   </data>
   <data name="ServerConnectButton" xml:space="preserve">
     <value>Connect</value>

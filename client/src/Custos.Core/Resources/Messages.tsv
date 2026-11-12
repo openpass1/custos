@@ -462,7 +462,7 @@ MonitorStateKeyRejected	The registration key was not accepted	Ключ реги�
 MonitorStateRefused	The answer of the server failed a check	Ответ сервера не прошёл проверку
 MonitorStatePending	The computer is registered and waits for approval on the site.	Компьютер зарегистрирован и ждёт подтверждения на сайте.
 MonitorStateApproved	Connected to the monitoring server.	Связь с сервером мониторинга есть.
-MonitorStateDisabled	The computer is disabled on the site: it works on its own and only checks in every 10 minutes.	Компьютер отключён на сайте: работает автономно и только раз в 10 минут сообщает о себе.
+MonitorStateDisabled	The computer is disabled on the site: it works on its own and only checks in now and then.	Компьютер отключён на сайте: работает автономно и лишь изредка сообщает о себе.
 MonitorStateForbidden	The server does not take agents from the address of this computer (Settings → Security on the site)	Сервер не принимает агентов с адреса этого компьютера (Настройки → Безопасность на сайте)
 MonitorStateClockSkew	The clocks differ	Расходится время
 MonitorStateOffline	No connection to the monitoring server	Нет связи с сервером мониторинга

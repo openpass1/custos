@@ -853,7 +853,7 @@ internal sealed class SettingsForm : DialogForm
     private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
     private readonly Button _sevenZipCheck = new() { Text = Strings.SevenZipCheckButton, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
     private readonly Label _serverState = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 6) };
-    private readonly TextBox _serverUrl = new() { Width = 340 };
+    private readonly TextBox _serverUrl = new() { Width = 340, PlaceholderText = "http://custos.example.lan" };
     private readonly TextBox _serverCode = new() { Width = 340, PlaceholderText = "K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14" };
     private readonly Button _serverConnect = new() { Text = Strings.ServerConnectButton, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly Button _serverReset = new() { Text = Strings.ServerResetButton, AutoSize = true, Margin = new Padding(8, 3, 0, 3) };
@@ -959,6 +959,8 @@ internal sealed class SettingsForm : DialogForm
             control.Enabled = _isAdmin && monitor.IsConnected;
         }
 
+        _serverUrl.TextChanged += (_, _) => SplitConnection(_serverUrl.Text);
+        _serverCode.TextChanged += (_, _) => SplitConnection(_serverCode.Text);
         _serverConnect.Click += (_, _) => Ui.Run(this, ConnectServerAsync);
         _serverReset.Click += (_, _) => Ui.Run(this, ResetServerAsync);
         ShowServer();
@@ -1117,6 +1119,16 @@ internal sealed class SettingsForm : DialogForm
 
         _serverKeys.Text = string.Join(Environment.NewLine, lines);
         _serverReset.Enabled = _isAdmin && _monitor.IsConnected && server.ServerUrl is not null;
+    }
+
+    /// <summary>The connection line of the site (address#code) pasted into either field: each part goes to its own.</summary>
+    private void SplitConnection(string text)
+    {
+        if (RegistrationCode.TrySplitConnection(text, out string url, out string code))
+        {
+            _serverUrl.Text = url;
+            _serverCode.Text = code;
+        }
     }
 
     /// <summary>«Подключить»: the address and the registration code go to the service, which registers (A.3).</summary>

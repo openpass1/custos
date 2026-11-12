@@ -1853,7 +1853,7 @@ static partial class Strings
     /// <summary>Registration code:</summary>
     public static string ServerCodeLabel => Get(nameof(ServerCodeLabel));
 
-    /// <summary>The code is on the site: Settings → Connecting agents. It is needed once, to register; after that this comp...</summary>
+    /// <summary>The code is on the site: Settings → Connecting agents (the connection line there holds the address too). It...</summary>
     public static string ServerCodeHelp => Get(nameof(ServerCodeHelp));
 
     /// <summary>Connect</summary>

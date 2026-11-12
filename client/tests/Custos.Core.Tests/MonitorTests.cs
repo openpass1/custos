@@ -28,6 +28,24 @@ public sealed class RegistrationCodeTests
         Assert.Null(RegistrationCode.TryParse("K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ", out _)!.Fingerprint);
     }
 
+    [Fact]
+    public void The_connection_line_of_the_site_splits_into_the_address_and_the_code()
+    {
+        Assert.True(RegistrationCode.TrySplitConnection(" http://custos.example.lan/#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14 ", out string url, out string code));
+        Assert.Equal("http://custos.example.lan", url);
+        Assert.Equal("K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14", code);
+        Assert.NotNull(RegistrationCode.TryParse(code, out _));
+
+        Assert.True(RegistrationCode.TrySplitConnection("HTTPS://custos.example.lan:8443#K7QHM2XARV4NTB6EWZ3PLC5DQ", out url, out code));
+        Assert.Equal("HTTPS://custos.example.lan:8443", url);
+        Assert.Equal("K7QHM2XARV4NTB6EWZ3PLC5DQ", code);
+
+        // A bare code and a bare address are left as they are.
+        Assert.False(RegistrationCode.TrySplitConnection("K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14", out _, out _));
+        Assert.False(RegistrationCode.TrySplitConnection("https://custos.example.lan", out _, out _));
+        Assert.False(RegistrationCode.TrySplitConnection(null, out _, out _));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("K7QHM-2XARV-4NTB6-EWZ3P")]
@@ -691,7 +709,8 @@ public sealed class ServerLinkTests : IDisposable
         var wait = await _link.StepAsync(Token);
 
         Assert.Equal(ServerLinkStates.Disabled, State);
-        Assert.Equal(ServerLink.DisabledInterval, wait);
+        // As often as the server says for a disabled agent (A.4).
+        Assert.Equal(TimeSpan.FromMinutes(5), wait);
         Assert.Equal(1, _database.CountReports());
     }
 

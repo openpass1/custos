@@ -211,6 +211,33 @@ public sealed record RegistrationCode(string Key, string? Fingerprint)
     /// <summary>Length of the registration key without dashes (25 Base32 characters, about 125 bits).</summary>
     public const int KeyLength = 25;
 
+    /// <summary>
+    /// The connection string the site copies with one button (A.3): the address of the site, <c>#</c>, then the code,
+    /// <c>http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14</c>. When the text starts with
+    /// http:// or https://, everything before the first <c>#</c> is the address and the rest is the code.
+    /// </summary>
+    /// <returns>False when the text is not a connection string (a bare code or a bare address).</returns>
+    public static bool TrySplitConnection(string? text, out string url, out string code)
+    {
+        url = string.Empty;
+        code = string.Empty;
+        string value = (text ?? string.Empty).Trim();
+        if (!value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        int hash = value.IndexOf('#', StringComparison.Ordinal);
+        if (hash < 0)
+        {
+            return false;
+        }
+
+        url = value[..hash].Trim().TrimEnd('/');
+        code = value[(hash + 1)..].Trim();
+        return true;
+    }
+
     /// <summary>Reads a code as typed or pasted; null when it cannot be one (the reason in <paramref name="problem"/>).</summary>
     public static RegistrationCode? TryParse(string? text, out string? problem)
     {

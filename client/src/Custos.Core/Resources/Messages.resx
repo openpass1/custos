@@ -1363,7 +1363,7 @@ is missing on the new server gets the number of the old one. To see what a tar h
     <value>Connected to the monitoring server.</value>
   </data>
   <data name="MonitorStateDisabled" xml:space="preserve">
-    <value>The computer is disabled on the site: it works on its own and only checks in every 10 minutes.</value>
+    <value>The computer is disabled on the site: it works on its own and only checks in now and then.</value>
   </data>
   <data name="MonitorStateForbidden" xml:space="preserve">
     <value>The server does not take agents from the address of this computer (Settings → Security on the site)</value>

@@ -63,8 +63,8 @@ en.ServerTitle=Monitoring server
 ru.ServerTitle=Сервер мониторинга
 en.ServerSubtitle=Optional: connect this computer to a CUSTOS monitoring site.
 ru.ServerSubtitle=Необязательно: подключить этот компьютер к сайту мониторинга CUSTOS.
-en.ServerPrompt=Leave both fields empty to work without a server or to keep the current connection. Both can be set later in the CUSTOS settings.%n%nThe registration code is pasted as the site shows it, with the server key fingerprint after "#".
-ru.ServerPrompt=Оставьте оба поля пустыми, чтобы работать без сервера или сохранить текущее подключение. Их можно указать и позже, в настройках CUSTOS.%n%nКод регистрации вставляется так, как его показывает сайт, вместе с отпечатком ключа сервера после «#».
+en.ServerPrompt=Leave both fields empty to work without a server or to keep the current connection. Both can be set later in the CUSTOS settings.%n%nThe connection line copied on the site (Settings, Connecting agents) can be pasted into either field as a whole: the address and the code go to their fields by themselves.
+ru.ServerPrompt=Оставьте оба поля пустыми, чтобы работать без сервера или сохранить текущее подключение. Их можно указать и позже, в настройках CUSTOS.%n%nСтроку подключения, скопированную на сайте («Настройки» → «Подключение агентов»), можно вставить в любое поле целиком: адрес и код сами разойдутся по своим полям.
 en.ServerUrl=Server address, for example https://custos.example.lan:
 ru.ServerUrl=Адрес сервера, например https://custos.example.lan:
 en.ServerCode=Registration code:
@@ -118,6 +118,7 @@ const
 
 var
   ServerPage: TInputQueryWizardPage;
+  Splitting: Boolean;
 
 function RunHidden(const FileName, Params: String): Integer;
 var
@@ -191,17 +192,47 @@ begin
 #endif
 end;
 
+function StartsText(const Prefix, S: String): Boolean;
+begin
+  Result := CompareText(Copy(S, 1, Length(Prefix)), Prefix) = 0;
+end;
+
+{ The connection line of the site (A.3), "http://custos.example.lan#KEY#FINGERPRINT", pasted into either field:
+  everything before the first "#" is the address, the rest the code. The service splits it the same way. }
+procedure SplitConnection(Sender: TObject);
+var
+  Text: String;
+  Hash, I: Integer;
+begin
+  { Setting the fields below calls this again. }
+  if Splitting then
+    Exit;
+  for I := 0 to 1 do
+  begin
+    Text := Trim(ServerPage.Values[I]);
+    Hash := Pos('#', Text);
+    if (StartsText('http://', Text) or StartsText('https://', Text)) and (Hash > 0) then
+    begin
+      Splitting := True;
+      try
+        ServerPage.Values[0] := Trim(Copy(Text, 1, Hash - 1));
+        ServerPage.Values[1] := Trim(Copy(Text, Hash + 1, Length(Text)));
+      finally
+        Splitting := False;
+      end;
+      Exit;
+    end;
+  end;
+end;
+
 { The "Monitoring server" page (section 10.1, A.3): an address and a registration code, both optional. }
 procedure InitializeWizard;
 begin
   ServerPage := CreateInputQueryPage(wpWelcome, CustomMessage('ServerTitle'), CustomMessage('ServerSubtitle'), CustomMessage('ServerPrompt'));
   ServerPage.Add(CustomMessage('ServerUrl'), False);
   ServerPage.Add(CustomMessage('ServerCode'), False);
-end;
-
-function StartsText(const Prefix, S: String): Boolean;
-begin
-  Result := CompareText(Copy(S, 1, Length(Prefix)), Prefix) = 0;
+  ServerPage.Edits[0].OnChange := @SplitConnection;
+  ServerPage.Edits[1].OnChange := @SplitConnection;
 end;
 
 function WithoutSeparators(const S: String): String;
@@ -260,6 +291,7 @@ begin
   if CurPageID <> ServerPage.ID then
     Exit;
 
+  SplitConnection(nil);
   Url := Trim(ServerPage.Values[0]);
   Code := Trim(ServerPage.Values[1]);
   if (Url = '') and (Code = '') then

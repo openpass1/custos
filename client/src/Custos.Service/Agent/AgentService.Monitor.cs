@@ -111,6 +111,17 @@ internal sealed partial class AgentService : IMonitorHost
     public OkResult ConnectServer(string url, string code, string user)
     {
         var link = _link ?? throw new AgentRequestException(PipeProtocol.Errors.Internal, "The service is starting.");
+
+        // The connection string of the site (address#code) may come in either field.
+        if (RegistrationCode.TrySplitConnection(code, out string urlFromCode, out string codeOnly))
+        {
+            (url, code) = (urlFromCode, codeOnly);
+        }
+        else if (RegistrationCode.TrySplitConnection(url, out string urlOnly, out string codeFromUrl))
+        {
+            (url, code) = (urlOnly, codeFromUrl.Length > 0 ? codeFromUrl : code);
+        }
+
         if (!MonitorClient.IsValidServerUrl(url, out string normalized))
         {
             throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.MonitorUrlBad, url));
