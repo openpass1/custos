@@ -105,12 +105,13 @@ public sealed partial class PathVariables
         return result;
     }
 
-    /// <summary>A copy of the task with the paths of its sources and destinations filled in.</summary>
+    /// <summary>A copy of the task with the paths of its sources, destinations and database programs filled in.</summary>
     /// <exception cref="BackupException">A variable is unknown.</exception>
     public TaskDefinition ExpandPaths(TaskDefinition task)
     {
         ArgumentNullException.ThrowIfNull(task);
-        if (!task.Sources.Any(s => HasVariables(s.Path)) && !task.Destinations.Any(d => HasVariables(d.Path)))
+        if (!task.Sources.Any(s => HasVariables(s.Path)) && !task.Destinations.Any(d => HasVariables(d.Path))
+            && !task.DbServers.Any(d => HasVariables(d.BinDir)))
         {
             return task;
         }
@@ -124,6 +125,11 @@ public sealed partial class PathVariables
         foreach (var destination in copy.Destinations)
         {
             destination.Path = Checked(destination.Path);
+        }
+
+        foreach (var server in copy.DbServers)
+        {
+            server.BinDir = Checked(server.BinDir);
         }
 
         return copy;

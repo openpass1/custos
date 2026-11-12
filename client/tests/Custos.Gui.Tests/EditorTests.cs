@@ -119,7 +119,7 @@ public sealed class EditorTests
         Assert.Equal(BackupTypes.Mirror, collected!.BackupType);
         Assert.Equal(MirrorModes.Exact, collected.MirrorMode);
         Assert.Equal(ArchiveFormats.None, collected.Archive.Format);
-        Assert.False(Sta.Find<RadioButton>(editor.Pages[4]).Single(r => r.Text == Strings.ArchiveZip).Enabled);
+        Assert.False(Sta.Find<RadioButton>(editor.Pages[5]).Single(r => r.Text == Strings.ArchiveZip).Enabled);
     });
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class EditorTests
         using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
         editor.Show();
         Sta.Pump();
-        var page = Assert.IsType<DestinationsPage>(editor.Pages[2]);
+        var page = Assert.IsType<DestinationsPage>(editor.Pages[3]);
         editor.SelectPage(page);
         Sta.Pump();
 
@@ -196,7 +196,7 @@ public sealed class EditorTests
 
         Assert.Null(editor.Collect(out string? problem));
         Assert.Equal(Strings.Format(Strings.ErrorNotUnc, @"D:\Backup\office"), problem);
-        Assert.True(editor.Pages[2].Visible);
+        Assert.True(editor.Pages[3].Visible);
     });
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class EditorTests
         Sta.Pump();
 
         // No page of its own any more.
-        Assert.Equal(8, editor.Pages.Count);
+        Assert.Equal(9, editor.Pages.Count);
         Assert.DoesNotContain(editor.Pages, p => p.Title == Strings.FiltersHeading);
 
         var sources = Assert.IsType<SourcesPage>(editor.Pages[1]);
@@ -237,6 +237,78 @@ public sealed class EditorTests
         Assert.Null(problem);
         Assert.Equal(["Cache", @"C:\Data\Office\Old", @"C:\Data\Office\Archive"], task!.Filters.ExcludeDirs);
         Assert.Equal(["*.docx", "*.xlsx"], task.Filters.Include);
+    });
+
+    [Fact]
+    public void A_task_of_databases_only_needs_no_sources_and_keeps_its_servers() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.Sources.Clear();
+        task.DbServers =
+        [
+            new TaskDatabaseServer { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin", Host = "127.127.126.26", Port = 3306, CredentialId = "db-account", Exclude = ["test"] },
+            new TaskDatabaseServer { Engine = DbEngines.PostgreSql, BinDir = @"C:\Program Files\PostgreSQL\17\bin", AllDatabases = false, Include = ["crm"] },
+        ];
+
+        var collected = OpenAndCollect(task);
+
+        Assert.Equal(Samples.Json(task), Samples.Json(collected));
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task.Clone(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var page = Assert.IsType<DatabasesPage>(editor.Pages[2]);
+        editor.SelectPage(page);
+        Sta.Pump();
+        var list = Sta.Find<ListView>(page).Single();
+        Assert.Equal("MySQL 127.127.126.26:3306", list.Items[0].Text);
+        Assert.Equal(Strings.Format(Strings.DbAllExcept, "test"), list.Items[0].SubItems[1].Text);
+        Assert.Equal(Strings.Format(Strings.DbOnly, "crm"), list.Items[1].SubItems[1].Text);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void A_linux_server_comes_back_unchanged_and_stays_the_only_source(string culture) => Sta.Run(culture, () =>
+    {
+        var task = Samples.Server();
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task.Clone(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var sources = Assert.IsType<SourcesPage>(editor.Pages[1]);
+        editor.SelectPage(sources);
+        Sta.Pump();
+        var row = Sta.Find<ListView>(sources).Single().Items[0];
+        Assert.Equal(("custos@vps.example.org:22", "custos@vps.example.org"), (row.Text, row.SubItems[2].Text));
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.SourceAddLinux).Enabled);
+        Assert.True(Sta.Find<Label>(sources).Single(l => l.Text == Strings.SourcesRemoteNote).Visible);
+        Assert.False(Sta.Find<CheckBox>(sources).Single(c => c.Text == Strings.SkipHidden).Enabled);
+
+        var databases = Assert.IsType<DatabasesPage>(editor.Pages[2]);
+        editor.SelectPage(databases);
+        Sta.Pump();
+        Assert.False(Sta.Find<Button>(databases).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.True(Sta.Find<Label>(databases).Single(l => l.Text == Strings.DatabasesRemoteNote).Visible);
+    });
+
+    [Fact]
+    public void A_task_with_folders_cannot_take_a_linux_server_as_well() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var sources = editor.Pages[1];
+        editor.SelectPage(sources);
+        Sta.Pump();
+
+        Assert.True(Sta.Find<Button>(sources).Single(b => b.Text == Strings.ButtonAdd).Enabled);
+        Assert.False(Sta.Find<Button>(sources).Single(b => b.Text == Strings.SourceAddLinux).Enabled);
+        Assert.False(Sta.Find<Label>(sources).Single(l => l.Text == Strings.SourcesRemoteNote).Visible);
     });
 
     /// <summary>Opens the editor, shows every page as a user clicking through them would, and collects the task.</summary>

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text;
 using Custos.Core.Archives;
+using Custos.Core.Databases;
 using Custos.Core.Text;
 
 namespace Custos.Core.Backup;
@@ -33,6 +35,10 @@ public sealed class RestoreRequest
 
     public RestoreExisting Existing { get; init; } = RestoreExisting.Skip;
 
+    /// <summary>Where the folder «db» with the database dumps and their README.txt goes (section 6.2); null =
+    /// <see cref="TargetFolder"/>. With both null the dumps are not restored.</summary>
+    public string? DumpsFolder { get; init; }
+
     /// <summary>Reads the sets (password and network logon of the destination).</summary>
     public required ArchiveAccess Access { get; init; }
 
@@ -51,6 +57,9 @@ public sealed class RestoreResult
     public long FilesSkipped { get; set; }
 
     public long FilesFailed { get; set; }
+
+    /// <summary>Database dumps restored incomplete or missing from the set.</summary>
+    public long Warnings { get; set; }
 
     public long Bytes { get; set; }
 
@@ -83,7 +92,7 @@ public sealed class RestoreProgress
 /// restored. Every file is checked against the SHA-256 of its manifest while it is written, and appears under its
 /// name only when complete.
 /// </summary>
-public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgress = null)
+public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgress = null)
 {
     private const int BufferSize = 1024 * 1024;
     private static readonly TimeSpan ProgressInterval = TimeSpan.FromMilliseconds(250);
@@ -91,6 +100,7 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
     private readonly IRunLog _log = log ?? throw new ArgumentNullException(nameof(log));
     private readonly RestoreProgress _progress = new();
     private readonly Stopwatch _clock = Stopwatch.StartNew();
+    private readonly HashSet<string> _restored = new(StringComparer.OrdinalIgnoreCase);
     private TimeSpan _lastProgress = TimeSpan.MinValue;
 
     /// <summary>Runs the restore. Problems with single files end up in the result; a set that cannot be read at all
@@ -104,6 +114,10 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
         var chain = SetCatalog.RestoreChain(request.Sets, request.Set);
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreStarted, request.Set.Header.SetName,
             request.TargetFolder ?? Messages.RestoreToOriginal, string.Join(", ", chain.Select(s => s.Header.SetName))));
+        if (IsRemote(request.Set.Header))
+        {
+            return RunRemote(request, chain, result, cancellationToken);
+        }
 
         var manifests = new List<(StoredSet Set, Dictionary<string, ManifestFile> Files)>();
         foreach (var set in chain)
@@ -165,6 +179,12 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
             list.Add(new Planned(holder.Files[Key(file.Path)], destination));
         }
 
+        var dumps = PlanDumps(request, result);
+        if (dumps.Count > 0)
+        {
+            work[request.Set] = [.. work.GetValueOrDefault(request.Set) ?? [], .. dumps];
+        }
+
         _progress.FilesTotal = work.Values.Sum(l => l.Count);
         _progress.BytesTotal = work.Values.Sum(l => l.Sum(p => p.File.Size));
         Report(force: true);
@@ -187,7 +207,12 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
 
         _progress.CurrentFile = null;
         Report(force: true);
-        result.Status = result.FilesFailed > 0 ? Model.RunStatuses.Error : Model.RunStatuses.Success;
+        if (dumps.Count > 0)
+        {
+            FinishDumps(request, dumps, result);
+        }
+
+        result.Status = result.FilesFailed > 0 ? Model.RunStatuses.Error : result.Warnings > 0 ? Model.RunStatuses.Warning : Model.RunStatuses.Success;
         _log.Write(result.FilesFailed > 0 ? RunLogLevel.Error : RunLogLevel.Info, Messages.Format(Messages.RestoreFinished,
             result.FilesRestored, Sizes.Format(result.Bytes), result.FilesSkipped, result.FilesFailed));
         return result;
@@ -318,6 +343,13 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
             {
                 wanted[entry.Index] = planned;
             }
+            else if (planned.Database is { } database)
+            {
+                // A 7z archive lists its dumps before packing them: one that failed at its start is not there.
+                _progress.FilesDone++;
+                result.Warnings++;
+                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreDumpMissing, DumpName(database), Messages.VerifyFileMissing));
+            }
             else
             {
                 _progress.FilesDone++;
@@ -411,6 +443,7 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
             File.Move(output.Temp, planned.Destination, overwrite: true);
             File.SetLastWriteTimeUtc(planned.Destination, DateTime.SpecifyKind(planned.File.ModifiedUtc, DateTimeKind.Utc));
         });
+        _restored.Add(planned.Destination);
         result.FilesRestored++;
         result.Bytes += output.Length;
         _log.Write(RunLogLevel.Detail, Messages.Format(Messages.RestoreFileDone, planned.Destination, Sizes.Format(output.Length)));
@@ -446,7 +479,123 @@ public sealed class RestoreEngine(IRunLog log, Action<RestoreProgress>? onProgre
     /// <summary>A "\"-separated path for this system.</summary>
     private static string Local(string windowsPath) => windowsPath.Replace('\\', Path.DirectorySeparatorChar);
 
-    private sealed record Planned(ManifestFile File, string Destination);
+    /// <summary>The dumps of the chosen set (each set has whole dumps, so only that set matters), into
+    /// <c>&lt;folder&gt;\db\…</c>.</summary>
+    private List<Planned> PlanDumps(RestoreRequest request, RestoreResult result)
+    {
+        var databases = request.Set.Header.Databases;
+        if (databases.Count == 0)
+        {
+            return [];
+        }
+
+        string? folder = request.DumpsFolder ?? request.TargetFolder;
+        if (folder is null)
+        {
+            _log.Write(RunLogLevel.Warning, Messages.RestoreDumpsNoFolder);
+            result.Warnings++;
+            return [];
+        }
+
+        var planned = new List<Planned>();
+        foreach (var database in databases)
+        {
+            if (database.File is null || !ArchivePaths.IsSafeRelative(database.File))
+            {
+                continue;
+            }
+
+            var file = new ManifestFile(database.File, database.Bytes ?? 0, request.Set.Header.StartedAt.UtcDateTime, InSet: true, database.Sha256);
+            planned.Add(new Planned(file, Path.Combine(folder, Local(Key(database.File)))) { Database = database });
+        }
+
+        return planned;
+    }
+
+    /// <summary>
+    /// Checks the end line of every restored dump: an incomplete one is renamed «….incomplete.sql», so that nobody
+    /// loads it by mistake. Then writes db\README.txt with the commands to load them.
+    /// </summary>
+    private void FinishDumps(RestoreRequest request, List<Planned> dumps, RestoreResult result)
+    {
+        var lines = CheckDumps(request, dumps, result);
+        string folder = request.DumpsFolder ?? request.TargetFolder!;
+        string readme = Path.Combine(folder, DbTools.SetFolder, "README.txt");
+        try
+        {
+            string text = DumpReadme.Build(request.Set.Header, folder, lines);
+            request.WriteSession.Run(() =>
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(readme)!);
+                File.WriteAllText(readme, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            });
+            _log.Write(RunLogLevel.Info, Messages.Format(Messages.RestoreDumpsReadme, readme));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreFileFailed, readme, ex.Message));
+        }
+    }
+
+    /// <summary>Renames incomplete dumps and warns about missing ones; gives every dump that is there.</summary>
+    private List<(ManifestDatabase Database, string Path, bool Complete)> CheckDumps(RestoreRequest request, List<Planned> dumps, RestoreResult result)
+    {
+        var lines = new List<(ManifestDatabase Database, string Path, bool Complete)>();
+        foreach (var planned in dumps)
+        {
+            var database = planned.Database!;
+            string path = planned.Destination;
+            if (!_restored.Contains(path))
+            {
+                if (database.Ok == false || !request.WriteSession.Run(() => File.Exists(path)))
+                {
+                    continue;
+                }
+
+                // Skipped as already there: listed as it is.
+                lines.Add((database, path, true));
+                continue;
+            }
+
+            bool complete = database.Ok != false && request.WriteSession.Run(() => DumpCheck.HasEndLine(database.Engine, ReadTail(path)));
+            if (!complete)
+            {
+                string renamed = Path.ChangeExtension(path, ".incomplete.sql");
+                request.WriteSession.Run(() => File.Move(path, renamed, overwrite: true));
+                path = renamed;
+                result.Warnings++;
+                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreDumpIncomplete, renamed));
+            }
+
+            lines.Add((database, path, complete));
+        }
+
+        foreach (var database in request.Set.Header.Databases.Where(d => d.Ok == false && d.File is null))
+        {
+            result.Warnings++;
+            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.RestoreDumpMissing, DumpName(database), database.Error ?? "?"));
+        }
+
+        return lines;
+    }
+
+    private static string DumpName(ManifestDatabase database) => database.Name ?? DbTools.UsersFileStem;
+
+    private static byte[] ReadTail(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        long start = Math.Max(0, stream.Length - DumpCheck.TailBytes);
+        stream.Seek(start, SeekOrigin.Begin);
+        var tail = new byte[stream.Length - start];
+        stream.ReadExactly(tail);
+        return tail;
+    }
+
+    private sealed record Planned(ManifestFile File, string Destination)
+    {
+        /// <summary>Set for the dump of a database.</summary>
+        public ManifestDatabase? Database { get; init; }
+    }
 
     /// <summary>A restored file being written under a temporary name, hashed on the way.</summary>
     private sealed class Output : Stream

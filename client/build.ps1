@@ -271,6 +271,7 @@ foreach ($program in $Programs) {
 }
 Copy-Item (Join-Path $sevenZip '7z.dll') $PublishDir
 Copy-Item (Join-Path $sevenZip 'License.txt') (Join-Path $PublishDir '7-Zip-License.txt')
+Copy-Item (Join-Path $Root 'THIRD-PARTY-NOTICES.txt') $PublishDir
 Invoke-Sign ($OwnFiles | ForEach-Object { Join-Path $PublishDir $_ })
 
 if (-not $SkipInstaller) {

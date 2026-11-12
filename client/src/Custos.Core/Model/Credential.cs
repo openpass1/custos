@@ -22,6 +22,10 @@ public sealed class Credential
 
     public bool HasSecret { get; set; }
 
+    /// <summary>For <see cref="CredentialKinds.SshKey"/>: the public key, an authorized_keys line ("ssh-ed25519 AAAA… custos").</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PublicKey { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 

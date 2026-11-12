@@ -93,6 +93,56 @@ public sealed class ConfigStoreTests : IDisposable
     }
 
     [Fact]
+    public void Database_servers_are_checked_and_their_accounts_count_as_used()
+    {
+        var account = _store.SaveCredential(new Credential { Kind = CredentialKinds.Db, User = "root" }, string.Empty);
+        Assert.False(account.HasSecret);
+        TaskDefinition Task(TaskDatabaseServer server) => new() { Name = "Sites", DbServers = [server] };
+
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { Engine = "oracle", BinDir = @"C:\bin" }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = " " }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", Port = 70000 }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", AllDatabases = false }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new TaskDatabaseServer { BinDir = @"C:\bin", CredentialId = "nope" }), null, "local:a", Now));
+
+        var saved = _store.SaveTask(Task(new TaskDatabaseServer { Engine = " MariaDB ", BinDir = @"C:\OSPanel\modules\MariaDB-11.4\bin", Host = "", CredentialId = account.Id }), null, "local:a", Now);
+        var server = Assert.Single(saved.Saved.DbServers);
+        Assert.Equal(DbEngines.MariaDb, server.Engine);
+        Assert.Equal("127.0.0.1", server.Host);
+        Assert.Throws<ConfigException>(() => _store.DeleteCredential(account.Id));
+    }
+
+    [Fact]
+    public void The_database_choice_of_a_linux_server_is_checked()
+    {
+        var key = _store.CreateSshKey("custos", "custos@test");
+        TaskDefinition Task(RemoteDatabaseChoice choice) => new()
+        {
+            Name = "Server",
+            Sources =
+            [
+                new TaskSource
+                {
+                    Kind = SourceKinds.Ssh,
+                    Host = "vps.example.org",
+                    User = "custos",
+                    CredentialId = key.Id,
+                    Helper = Custos.Core.Remote.HelperSetup.Preset(null),
+                    Databases = choice,
+                },
+            ],
+        };
+
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new RemoteDatabaseChoice { AllDatabases = false }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new RemoteDatabaseChoice { Exclude = ["oracle/shop"] }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new RemoteDatabaseChoice { Exclude = ["mariadb/a b"] }), null, "local:a", Now));
+        Assert.Throws<ConfigException>(() => _store.SaveTask(Task(new RemoteDatabaseChoice { Exclude = ["shop"] }), null, "local:a", Now));
+
+        var saved = _store.SaveTask(Task(new RemoteDatabaseChoice { AllDatabases = false, Include = ["mariadb/shop", "", "mariadb/shop"] }), null, "local:a", Now);
+        Assert.Equal(["mariadb/shop"], saved.Saved.Sources[0].Databases!.Include);
+    }
+
+    [Fact]
     public void An_account_in_use_cannot_be_deleted()
     {
         var credential = _store.SaveCredential(new Credential { User = "backup-user" }, "x");
@@ -275,6 +325,25 @@ public sealed class TaskDescriberTests : IDisposable
             "Every day at 00:00, copies the files changed since the last backup from D:\\Data to \\\\nas01\\backup and to the USB disk «BACKUP-USB». " +
             "Every 7th run is a full backup. Only the last full backup is kept, with its incremental backups.",
             TaskDescriber.Describe(task));
+    }
+
+    [Fact]
+    public void A_linux_server_is_named_with_its_databases()
+    {
+        Messages.Culture = CultureInfo.GetCultureInfo("ru-RU");
+        var task = Example();
+        task.Sources = [new TaskSource { Kind = SourceKinds.Ssh, Host = "vps.example.org", Path = "custos@vps.example.org:22", Helper = new RemoteHelperSettings { Roots = ["/var/www"], DbEngines = [DbEngines.MariaDb] } }];
+
+        Assert.StartsWith(
+            "Каждый день в 00:00 копирует изменившиеся файлы с Linux-сервера vps.example.org в \\\\nas01\\backup и на USB-диск «BACKUP-USB». " +
+            "Каждый запуск также выгружает целиком базы MariaDB на сервере в папку «db».",
+            TaskDescriber.Describe(task),
+            StringComparison.Ordinal);
+
+        task.Sources[0].Databases = new RemoteDatabaseChoice { Exclude = ["mariadb/old_db"] };
+        Assert.Contains("Каждый запуск также выгружает целиком базы MariaDB на сервере в папку «db», кроме: old_db.", TaskDescriber.Describe(task), StringComparison.Ordinal);
+        task.Sources[0].Databases = new RemoteDatabaseChoice { AllDatabases = false, Include = ["mariadb/shop", "postgresql/blog"] };
+        Assert.Contains("Каждый запуск также выгружает целиком в папку «db» эти базы MariaDB на сервере: MariaDB: shop, PostgreSQL: blog.", TaskDescriber.Describe(task), StringComparison.Ordinal);
     }
 
     [Fact]

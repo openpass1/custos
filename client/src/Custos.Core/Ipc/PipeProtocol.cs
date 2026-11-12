@@ -71,6 +71,22 @@ public static class PipeProtocol
         /// <summary>Administrators. Try writing to a destination: <see cref="DestinationTestRequest"/> → <see cref="DestinationTestResult"/>.</summary>
         public const string DestinationTest = "destinations.test";
 
+        /// <summary>Administrators. Database servers and their programs on this computer: <see cref="EmptyRequest"/> →
+        /// <see cref="DbFindResult"/>.</summary>
+        public const string DatabasesFind = "databases.find";
+
+        /// <summary>Administrators. Connect to a database server and list its databases: <see cref="DbTestRequest"/> →
+        /// <see cref="DbTestResult"/>.</summary>
+        public const string DatabasesTest = "databases.test";
+
+        /// <summary>Administrators. A new SSH key for a Linux server, kept by the service: <see cref="RemoteKeyRequest"/> →
+        /// <see cref="CredentialSaveResult"/> (with the public key).</summary>
+        public const string RemoteCreateKey = "remote.create_key";
+
+        /// <summary>Administrators. Connect to a Linux server with the key of a task and ask custos-helper what it has:
+        /// <see cref="RemoteTestRequest"/> → <see cref="RemoteTestResult"/>.</summary>
+        public const string RemoteTest = "remote.test";
+
         /// <summary>Administrators. <see cref="SettingsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SettingsSave = "settings.save";
 

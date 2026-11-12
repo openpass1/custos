@@ -6,4 +6,6 @@ namespace Custos.Core.Storage;
 /// <summary>JSON of the values kept in database columns.</summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(List<DestinationResult>))]
+[JsonSerializable(typeof(List<DatabaseResult>))]
+[JsonSerializable(typeof(RemoteResult))]
 internal sealed partial class StorageJsonContext : JsonSerializerContext;

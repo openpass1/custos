@@ -63,6 +63,7 @@ internal sealed class TaskEditorForm : Form
         [
             new BasicPage(context),
             new SourcesPage(context),
+            new DatabasesPage(context),
             new DestinationsPage(context),
             new SchedulePage(context),
             new ArchivePage(context),
@@ -78,6 +79,7 @@ internal sealed class TaskEditorForm : Form
             page.Visible = false;
             _host.Controls.Add(page);
             page.LoadFrom(task);
+            page.EndBuild();
             _pageList.Items.Add(new ListViewItem(page.Title)
             {
                 ImageKey = page.Glyph.ToString(),
@@ -292,6 +294,26 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
 
     public bool IsMirror => BackupType == BackupTypes.Mirror;
 
+    /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
+    public int DbServerCount { get; set; }
+
+    /// <summary>Raised when a Linux server was added to the sources or removed from them.</summary>
+    public event EventHandler? RemoteChanged;
+
+    /// <summary>Whether the source is a Linux server: then it is the only one, and its databases are its own.</summary>
+    public bool HasRemoteSource
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                RemoteChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
     /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
     public string? ProfileSid { get; init; }
 
@@ -322,6 +344,22 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
                     .Where(c => c.Kind == CredentialKinds.Windows)
                     .OrderBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase),
             ];
+        }
+    }
+
+    /// <summary>A stored account of any kind, including the ones saved in this editor; null if there is none.</summary>
+    public Credential? FindCredential(string? id) =>
+        id is null ? null
+        : _added.LastOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase))
+            ?? Monitor.Snapshot?.Credentials.FirstOrDefault(c => string.Equals(c.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Keeps an account saved by a dialog of this editor (a database account) until the service sends it.</summary>
+    public void RememberCredential(Credential credential)
+    {
+        _added.Add(credential);
+        if (credential.Kind == CredentialKinds.Windows)
+        {
+            CredentialsChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -357,6 +395,11 @@ internal abstract class EditorPage : UserControl
         Context = context;
         Title = title;
         Glyph = glyph;
+
+        // Without this every added row lays out the whole table again, wrapped notes measured anew each time: the
+        // editor took seconds to open. The editor ends it with EndBuild after LoadFrom.
+        SuspendLayout();
+        _table.SuspendLayout();
         AutoScroll = true;
         _table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -384,6 +427,13 @@ internal abstract class EditorPage : UserControl
     protected ToolTip ToolTip => Context.ToolTip;
 
     public abstract void LoadFrom(TaskDefinition task);
+
+    /// <summary>Lets the page lay out again, once, after it was built and loaded.</summary>
+    internal void EndBuild()
+    {
+        _table.ResumeLayout(performLayout: false);
+        ResumeLayout(performLayout: false);
+    }
 
     /// <summary>Writes the page into the task.</summary>
     /// <returns>What is wrong, in words, or null.</returns>

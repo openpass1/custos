@@ -1,5 +1,6 @@
 using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Databases;
 using Custos.Core.Model;
 
 namespace Custos.Core.Tests;
@@ -110,6 +111,17 @@ internal sealed class TestPlatform : LocalBackupPlatform
         PathVariables.ProfileNames.Contains(name) && profileSid != ProfileSid ? null
         : EnvironmentValues.TryGetValue(name, out string? value) ? value : Environment.GetEnvironmentVariable(name);
 
+    /// <summary>Database clients of a test (<see cref="FakeDbClient"/>); null = the real programs.</summary>
+    public Func<TaskDatabaseServer, DbAccount?, IDbClient>? DbClients { get; set; }
+
+    /// <summary>The Linux server of a test (<see cref="FakeLinuxServer"/>); null = SSH.NET.</summary>
+    public Remote.ISshConnector? SshOverride { get; set; }
+
+    public override Remote.ISshConnector Ssh => SshOverride ?? base.Ssh;
+
+    public override IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account) =>
+        DbClients?.Invoke(server, account) ?? base.CreateDbClient(server, account);
+
     /// <summary>Services started (true) or stopped (false) by events, in order.</summary>
     public List<(string Name, bool Start)> Services { get; } = [];
 
@@ -189,5 +201,67 @@ internal sealed class NameSortingArchives(IArchiveProvider inner) : IArchiveProv
                 .ToList();
             inner.Write(sorted, output, options, cancellationToken);
         }
+    }
+}
+
+/// <summary>A database server without a server: databases and their dumps are given by the test.</summary>
+internal sealed class FakeDbClient(string engine) : IDbClient
+{
+    public string Version { get; set; } = "8.0.36";
+
+    public List<string> Databases { get; } = [];
+
+    public string? DataDir { get; set; }
+
+    /// <summary>Thrown by <see cref="Inspect"/>, as when the server is not running.</summary>
+    public DbException? Unavailable { get; set; }
+
+    /// <summary>Dumps that break off after some SQL: the program ends with code 2 and no end line.</summary>
+    public HashSet<string> Broken { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Dumps whose program fails at once, writing nothing.</summary>
+    public HashSet<string> Refused { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>What was dumped, in order (null = the users).</summary>
+    public List<string?> Dumped { get; } = [];
+
+    public DbServerInfo Inspect(CancellationToken cancellationToken) =>
+        Unavailable is not null ? throw Unavailable : new DbServerInfo(Version, [.. Databases], DataDir);
+
+    public IDbDump StartDump(string? database, string version, CancellationToken cancellationToken)
+    {
+        Dumped.Add(database);
+        string name = database ?? "_users";
+        if (Refused.Contains(name))
+        {
+            return new Dump(string.Empty, new DbDumpExit(2, "Access denied for user"));
+        }
+
+        return Broken.Contains(name)
+            ? new Dump(Sql(name, complete: false), new DbDumpExit(2, "Lost connection to server during query"))
+            : new Dump(Sql(name, complete: true), new DbDumpExit(0, string.Empty));
+    }
+
+    /// <summary>The SQL a complete dump of <paramref name="name"/> has.</summary>
+    public string Sql(string name, bool complete = true)
+    {
+        var text = new System.Text.StringBuilder();
+        text.Append("-- dump of ").Append(name).Append('\n');
+        text.Append("CREATE TABLE t (id int);\nINSERT INTO t VALUES (1);\n");
+        if (complete)
+        {
+            text.Append(engine == DbEngines.PostgreSql ? "--\n-- PostgreSQL database dump complete\n--\n\n\\unrestrict abc\n\n" : "-- Dump completed on 2026-11-01 10:00:00\n");
+        }
+
+        return text.ToString();
+    }
+
+    private sealed class Dump(string sql, DbDumpExit exit) : IDbDump
+    {
+        public Stream Output { get; } = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(sql));
+
+        public DbDumpExit WaitForExit() => exit;
+
+        public void Dispose() => Output.Dispose();
     }
 }

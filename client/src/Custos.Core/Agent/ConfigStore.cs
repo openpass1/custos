@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Custos.Core.Json;
 using Custos.Core.Model;
+using Custos.Core.Remote;
 using Custos.Core.Scheduling;
 
 namespace Custos.Core.Agent;
@@ -311,7 +312,19 @@ public sealed class ConfigStore
             ValidateCredential(copy);
             var list = new List<StoredCredential>(_credentials.Credentials);
             var existing = FindCredential(copy.Id);
+            if (copy.Kind == CredentialKinds.SshKey && (existing?.Credential.Kind != CredentialKinds.SshKey || password is not null))
+            {
+                // The private key is made by the agent and never comes in from outside (CUSTOS-remote-pull.md 4.1).
+                throw new ConfigException(Messages.ConfigSshKeyOnlyMade);
+            }
+
             StoredCredential updated;
+            if (existing is not null && copy.PublicKey is null)
+            {
+                // The editor of an account does not send the public key of an SSH key back.
+                copy.PublicKey = existing.Credential.PublicKey;
+            }
+
             if (existing is not null && password is null)
             {
                 copy.HasSecret = existing.SecretDpapi is not null;
@@ -385,12 +398,60 @@ public sealed class ConfigStore
         }
     }
 
+    /// <summary>
+    /// Makes a new Ed25519 key for a Linux server (CUSTOS-remote-pull.md 4.1). The private part is stored like a
+    /// password, under DPAPI, and never leaves the agent; the public one is in <see cref="Credential.PublicKey"/>.
+    /// </summary>
+    /// <param name="user">The account on the server, as people see it ("custos@vps.example.org").</param>
+    /// <param name="comment">The comment of the key in authorized_keys (which agent it belongs to).</param>
+    public Credential CreateSshKey(string user, string comment)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(user);
+        byte[] seed = SshKeys.NewSeed();
+        try
+        {
+            var credential = new Credential
+            {
+                Kind = CredentialKinds.SshKey,
+                User = user.Trim(),
+                PublicKey = SshKeys.PublicKeyLine(seed, comment),
+            };
+            lock (_lock)
+            {
+                var stored = Protect(credential, Convert.ToBase64String(seed));
+                WriteCredentials([.. _credentials.Credentials, stored]);
+                return CopyCredential(stored.Credential);
+            }
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(seed);
+        }
+    }
+
+    /// <summary>The private key of an SSH key account (its 32-byte seed).</summary>
+    /// <exception cref="ConfigException">No such key, or it cannot be decrypted on this machine.</exception>
+    public byte[] GetSshKey(string credentialId)
+    {
+        string? secret = GetPassword(credentialId);
+        try
+        {
+            byte[] seed = secret is null ? [] : Convert.FromBase64String(secret);
+            return seed.Length == SshKeys.SeedLength ? seed : throw new ConfigException(Messages.RemoteKeyMissing);
+        }
+        catch (FormatException ex)
+        {
+            throw new ConfigException(Messages.RemoteKeyMissing, ex);
+        }
+    }
+
     public static bool UsesCredential(TaskDefinition task, string credentialId)
     {
         ArgumentNullException.ThrowIfNull(task);
         return task.Sources.Any(s => string.Equals(s.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase))
             || task.Destinations.Any(d => string.Equals(d.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(task.Archive.PasswordCredentialId, credentialId, StringComparison.OrdinalIgnoreCase);
+            || string.Equals(task.Archive.PasswordCredentialId, credentialId, StringComparison.OrdinalIgnoreCase)
+            || task.DbServers.Any(d => string.Equals(d.CredentialId, credentialId, StringComparison.OrdinalIgnoreCase));
     }
 
     // ---- Plumbing ----------------------------------------------------------------------------------------------
@@ -414,13 +475,24 @@ public sealed class ConfigStore
         }
 
         knownCredentials ??= _credentials.Credentials.Select(c => c.Credential.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var referenced = task.Sources.Select(s => s.CredentialId).Concat(task.Destinations.Select(d => d.CredentialId)).OfType<string>();
+        var referenced = task.Sources.Select(s => s.CredentialId).Concat(task.Destinations.Select(d => d.CredentialId))
+            .Concat(task.DbServers.Select(d => d.CredentialId)).OfType<string>();
         foreach (string id in referenced)
         {
             if (!knownCredentials.Contains(id))
             {
                 throw new ConfigException(Messages.Format(Messages.ConfigCredentialMissing, id));
             }
+        }
+
+        foreach (var server in task.DbServers)
+        {
+            ValidateDbServer(server);
+        }
+
+        if (task.Sources.Any(s => s.Kind == SourceKinds.Ssh))
+        {
+            ValidateRemote(task, id => _credentials.Credentials.FirstOrDefault(c => string.Equals(c.Credential.Id, id, StringComparison.OrdinalIgnoreCase))?.Credential.Kind);
         }
 
         var schedule = task.Schedule;
@@ -459,6 +531,111 @@ public sealed class ConfigStore
         }
     }
 
+    private static void ValidateDbServer(TaskDatabaseServer server)
+    {
+        if (!DbEngines.IsKnown(server.Engine))
+        {
+            throw new ConfigException(Messages.Format(Messages.DbEngineUnknown, server.Engine));
+        }
+
+        if (string.IsNullOrWhiteSpace(server.BinDir))
+        {
+            throw new ConfigException(Messages.ConfigDbBinDirRequired);
+        }
+
+        if (string.IsNullOrWhiteSpace(server.Host) || server.Host.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
+        {
+            throw new ConfigException(Messages.ConfigDbHostRequired);
+        }
+
+        if (server.Port is < 1 or > 65535)
+        {
+            throw new ConfigException(Messages.Format(Messages.ConfigDbBadPort, 1, 65535));
+        }
+
+        if (!server.AllDatabases && server.Include.Count == 0)
+        {
+            throw new ConfigException(Messages.ConfigDbNothingChosen);
+        }
+    }
+
+    /// <summary>A task with a Linux server as its source (CUSTOS-remote-pull.md 4.1).</summary>
+    /// <param name="kindOf">The kind of a stored account by id; null when it is not stored (an import brings it).</param>
+    private static void ValidateRemote(TaskDefinition task, Func<string, string?> kindOf)
+    {
+        if (task.Sources.Count != 1)
+        {
+            throw new ConfigException(Messages.RemoteOnlySource);
+        }
+
+        if (task.BackupType == BackupTypes.Mirror)
+        {
+            throw new ConfigException(Messages.RemoteNoMirror);
+        }
+
+        if (task.DbServers.Count > 0)
+        {
+            throw new ConfigException(Messages.RemoteNoDbServers);
+        }
+
+        var source = task.Sources[0];
+        if (string.IsNullOrWhiteSpace(source.Host) || source.Host.Length > 253 || source.Host.Any(c => char.IsWhiteSpace(c) || char.IsControl(c) || c is '@' or '/' or '\\'))
+        {
+            throw new ConfigException(Messages.ConfigSshHostRequired);
+        }
+
+        if (source.Port is < 1 or > 65535)
+        {
+            throw new ConfigException(Messages.Format(Messages.ConfigDbBadPort, 1, 65535));
+        }
+
+        if (string.IsNullOrWhiteSpace(source.User) || source.User.Length > 32 || source.User.Any(c => char.IsWhiteSpace(c) || char.IsControl(c) || c is '@' or ':'))
+        {
+            throw new ConfigException(Messages.ConfigUserRequired);
+        }
+
+        if (string.IsNullOrEmpty(source.CredentialId) || kindOf(source.CredentialId) is { } kind && kind != CredentialKinds.SshKey)
+        {
+            throw new ConfigException(Messages.ConfigSshKeyRequired);
+        }
+
+        if (source.HostKeySha256 is not null && !SshKeys.IsFingerprint(source.HostKeySha256))
+        {
+            throw new ConfigException(Messages.Format(Messages.ConfigSshBadHostKey, source.HostKeySha256));
+        }
+
+        if (source.SpeedLimitKbps is < 0)
+        {
+            throw new ConfigException(Messages.ConfigSshBadSpeed);
+        }
+
+        if (!HelperSetup.IsValidFrom(source.OfficeIp))
+        {
+            throw new ConfigException(Messages.Format(Messages.ConfigSshBadOfficeIp, source.OfficeIp));
+        }
+
+        if (source.Helper is { } helper && HelperSetup.Problem(helper) is { } problem)
+        {
+            throw new ConfigException(problem);
+        }
+
+        if (source.Databases is { } databases)
+        {
+            foreach (string key in databases.Exclude.Concat(databases.Include))
+            {
+                if (!RemoteDatabaseChoice.TrySplit(key, out _, out string name) || !HelperClient.DatabaseName().IsMatch(name))
+                {
+                    throw new ConfigException(Messages.Format(Messages.ConfigSshBadDatabase, key));
+                }
+            }
+
+            if (!databases.AllDatabases && databases.Include.Count == 0)
+            {
+                throw new ConfigException(Messages.ConfigDbNothingChosen);
+            }
+        }
+    }
+
     private static void ValidateCredential(Credential credential)
     {
         if (string.IsNullOrWhiteSpace(credential.User))
@@ -492,6 +669,24 @@ public sealed class ConfigStore
         task.Copy.ReadRetries = Math.Clamp(task.Copy.ReadRetries, 0, 5);
         UniqueIds(task.Sources, s => s.Id, (s, id) => s.Id = id);
         UniqueIds(task.Destinations, d => d.Id, (d, id) => d.Id = id);
+        task.DbServers ??= [];
+        foreach (var server in task.DbServers)
+        {
+            server.Engine = (server.Engine ?? string.Empty).Trim().ToLowerInvariant();
+            server.BinDir = (server.BinDir ?? string.Empty).Trim();
+            server.Host = string.IsNullOrWhiteSpace(server.Host) ? "127.0.0.1" : server.Host.Trim();
+            server.Exclude = [.. (server.Exclude ?? []).Where(n => !string.IsNullOrEmpty(n))];
+            server.Include = [.. (server.Include ?? []).Where(n => !string.IsNullOrEmpty(n))];
+            server.DataDir = string.IsNullOrWhiteSpace(server.DataDir) ? null : server.DataDir;
+        }
+
+        UniqueIds(task.DbServers, d => d.Id, (d, id) => d.Id = id);
+        foreach (var source in task.Sources.Where(s => s?.Databases is not null))
+        {
+            var databases = source.Databases!;
+            databases.Exclude = [.. (databases.Exclude ?? []).Where(k => !string.IsNullOrEmpty(k)).Distinct(StringComparer.Ordinal)];
+            databases.Include = [.. (databases.Include ?? []).Where(k => !string.IsNullOrEmpty(k)).Distinct(StringComparer.Ordinal)];
+        }
     }
 
     private static void UniqueIds<T>(List<T> items, Func<T, string> get, Action<T, string> set)
@@ -623,6 +818,7 @@ public sealed class ConfigStore
         User = credential.User?.Trim() ?? string.Empty,
         Domain = string.IsNullOrWhiteSpace(credential.Domain) ? null : credential.Domain.Trim(),
         HasSecret = credential.HasSecret,
+        PublicKey = string.IsNullOrWhiteSpace(credential.PublicKey) ? null : credential.PublicKey.Trim(),
         ExtensionData = credential.ExtensionData is null ? null : new Dictionary<string, JsonElement>(credential.ExtensionData),
     };
 

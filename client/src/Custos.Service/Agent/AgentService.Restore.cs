@@ -79,9 +79,12 @@ internal sealed partial class AgentService
             }
         }
 
-        if (request.TargetFolder is { } folder && !Path.IsPathFullyQualified(folder))
+        foreach (string? folder in (string?[])[request.TargetFolder, request.DumpsFolder])
         {
-            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.PathNotAbsolute, folder));
+            if (folder is not null && !Path.IsPathFullyQualified(folder))
+            {
+                throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.PathNotAbsolute, folder));
+            }
         }
 
         var problems = new List<string>();
@@ -130,6 +133,7 @@ internal sealed partial class AgentService
             Sets = found.Sets,
             Set = set,
             TargetFolder = request.TargetFolder,
+            DumpsFolder = request.DumpsFolder,
             Existing = request.Existing,
             Access = found.Access,
         };

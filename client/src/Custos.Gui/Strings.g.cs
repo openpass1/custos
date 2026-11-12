@@ -524,7 +524,7 @@ static partial class Strings
     /// <summary>On: D:\Data is copied into &lt;backup&gt;\Data\…</summary>
     public static string KeepTopDirHelp => Get(nameof(KeepTopDirHelp));
 
-    /// <summary>Add at least one source, or switch the task off.</summary>
+    /// <summary>Add at least one source or database server, or switch the task off.</summary>
     public static string ErrorNoSources => Get(nameof(ErrorNoSources));
 
     /// <summary>Add source</summary>
@@ -565,6 +565,12 @@ static partial class Strings
 
     /// <summary>«{0}» is a network path: choose «Network folder».</summary>
     public static string ErrorUncNeedsNetwork => Get(nameof(ErrorUncNeedsNetwork));
+
+    /// <summary>Linux server…</summary>
+    public static string SourceAddLinux => Get(nameof(SourceAddLinux));
+
+    /// <summary>The task takes a Linux server through custos-helper. Such a task has no other sources; what to take and wha...</summary>
+    public static string SourcesRemoteNote => Get(nameof(SourcesRemoteNote));
 
     /// <summary>Destinations</summary>
     public static string PageDestinations => Get(nameof(PageDestinations));
@@ -1462,4 +1468,292 @@ static partial class Strings
 
     /// <summary>Updating 7-Zip to {0}…</summary>
     public static string SevenZipUpdatingTo => Get(nameof(SevenZipUpdatingTo));
+
+    /// <summary>Databases</summary>
+    public static string PageDatabases => Get(nameof(PageDatabases));
+
+    /// <summary>Databases of MySQL, MariaDB and PostgreSQL on this computer (for example of OSPanel) are dumped whole in ev...</summary>
+    public static string DatabasesNote => Get(nameof(DatabasesNote));
+
+    /// <summary>Server</summary>
+    public static string ColumnServer => Get(nameof(ColumnServer));
+
+    /// <summary>Databases</summary>
+    public static string ColumnDatabases => Get(nameof(ColumnDatabases));
+
+    /// <summary>Folder of the programs</summary>
+    public static string ColumnPrograms => Get(nameof(ColumnPrograms));
+
+    /// <summary>all</summary>
+    public static string DbAll => Get(nameof(DbAll));
+
+    /// <summary>all but: {0}</summary>
+    public static string DbAllExcept => Get(nameof(DbAllExcept));
+
+    /// <summary>only: {0}</summary>
+    public static string DbOnly => Get(nameof(DbOnly));
+
+    /// <summary>Add a database server</summary>
+    public static string DbServerAddTitle => Get(nameof(DbServerAddTitle));
+
+    /// <summary>Database server</summary>
+    public static string DbServerEditTitle => Get(nameof(DbServerEditTitle));
+
+    /// <summary>Server:</summary>
+    public static string DbEngine => Get(nameof(DbEngine));
+
+    /// <summary>Folder of the programs:</summary>
+    public static string DbBinDir => Get(nameof(DbBinDir));
+
+    /// <summary>The bin folder of the server, with mysqldump and mysql (MariaDB: mariadb-dump and mariadb; PostgreSQL: pg_d...</summary>
+    public static string DbBinDirHelp => Get(nameof(DbBinDirHelp));
+
+    /// <summary>Find…</summary>
+    public static string DbFind => Get(nameof(DbFind));
+
+    /// <summary>Address:</summary>
+    public static string DbHost => Get(nameof(DbHost));
+
+    /// <summary>Where the server listens. OSPanel 6 gives each module an address of its own, like 127.127.126.26; «Find» ta...</summary>
+    public static string DbHostHelp => Get(nameof(DbHostHelp));
+
+    /// <summary>Port:</summary>
+    public static string DbPort => Get(nameof(DbPort));
+
+    /// <summary>User:</summary>
+    public static string DbUser => Get(nameof(DbUser));
+
+    /// <summary>Password:</summary>
+    public static string DbPassword => Get(nameof(DbPassword));
+
+    /// <summary>No password</summary>
+    public static string DbNoPassword => Get(nameof(DbNoPassword));
+
+    /// <summary>An account that may read every database: root for MySQL and MariaDB, postgres for PostgreSQL. The password ...</summary>
+    public static string DbAccountNote => Get(nameof(DbAccountNote));
+
+    /// <summary>Leave the password empty to keep the stored one.</summary>
+    public static string DbKeepPasswordNote => Get(nameof(DbKeepPasswordNote));
+
+    /// <summary>All databases</summary>
+    public static string DbChoiceAll => Get(nameof(DbChoiceAll));
+
+    /// <summary>Selected databases</summary>
+    public static string DbChoiceOnly => Get(nameof(DbChoiceOnly));
+
+    /// <summary>The list fills in on «Test connection». A ticked database goes into the copy. «All databases» takes every d...</summary>
+    public static string DbListNote => Get(nameof(DbListNote));
+
+    /// <summary>Test connection</summary>
+    public static string ButtonTestConnection => Get(nameof(ButtonTestConnection));
+
+    /// <summary>Connected: version {0}, databases: {1}.</summary>
+    public static string DbTestOk => Get(nameof(DbTestOk));
+
+    /// <summary>Data folder of the server: {0}</summary>
+    public static string DbTestDataDir => Get(nameof(DbTestDataDir));
+
+    /// <summary>No connection: {0}</summary>
+    public static string DbTestFailed => Get(nameof(DbTestFailed));
+
+    /// <summary>Choose the folder of the server's programs.</summary>
+    public static string ErrorDbBinDirRequired => Get(nameof(ErrorDbBinDirRequired));
+
+    /// <summary>Enter the address of the server.</summary>
+    public static string ErrorDbHostRequired => Get(nameof(ErrorDbHostRequired));
+
+    /// <summary>Tick at least one database, or choose «All databases».</summary>
+    public static string ErrorDbNothingChosen => Get(nameof(ErrorDbNothingChosen));
+
+    /// <summary>Database servers on this computer</summary>
+    public static string DbFindTitle => Get(nameof(DbFindTitle));
+
+    /// <summary>Looking for servers…</summary>
+    public static string DbFindRunning => Get(nameof(DbFindRunning));
+
+    /// <summary>No MySQL, MariaDB or PostgreSQL was found. Choose the folder of the programs yourself.</summary>
+    public static string DbFindNothing => Get(nameof(DbFindNothing));
+
+    /// <summary>Running servers come first, with the address they listen on. Pick one and press OK.</summary>
+    public static string DbFindNote => Get(nameof(DbFindNote));
+
+    /// <summary>running</summary>
+    public static string DbRunning => Get(nameof(DbRunning));
+
+    /// <summary>not running</summary>
+    public static string DbNotRunning => Get(nameof(DbNotRunning));
+
+    /// <summary>Database dumps to:</summary>
+    public static string RestoreDumpsFolder => Get(nameof(RestoreDumpsFolder));
+
+    /// <summary>The set has database dumps. They are restored as .sql files into the folder «db» with README.txt on how to ...</summary>
+    public static string RestoreDumpsNote => Get(nameof(RestoreDumpsNote));
+
+    /// <summary>Databases</summary>
+    public static string CardDatabases => Get(nameof(CardDatabases));
+
+    /// <summary>A copy of a Linux server is restored into a folder only: a tar for each folder of the server and the databa...</summary>
+    public static string RestoreRemoteNote => Get(nameof(RestoreRemoteNote));
+
+    /// <summary>The task takes a Linux server: its databases are set in the window of the server on the page «Sources».</summary>
+    public static string DatabasesRemoteNote => Get(nameof(DatabasesRemoteNote));
+
+    /// <summary>Add a Linux server</summary>
+    public static string RemoteAddTitle => Get(nameof(RemoteAddTitle));
+
+    /// <summary>Linux server</summary>
+    public static string RemoteEditTitle => Get(nameof(RemoteEditTitle));
+
+    /// <summary>Address:</summary>
+    public static string RemoteHost => Get(nameof(RemoteHost));
+
+    /// <summary>The name or IP address of the server, as for SSH. The server needs custos-helper: the block below installs ...</summary>
+    public static string RemoteHostHelp => Get(nameof(RemoteHostHelp));
+
+    /// <summary>Port:</summary>
+    public static string RemotePort => Get(nameof(RemotePort));
+
+    /// <summary>User:</summary>
+    public static string RemoteUser => Get(nameof(RemoteUser));
+
+    /// <summary>Office IP:</summary>
+    public static string RemoteOfficeIp => Get(nameof(RemoteOfficeIp));
+
+    /// <summary>The address this computer goes out to the Internet from: the key then works only from it. Several addresses...</summary>
+    public static string RemoteOfficeIpHelp => Get(nameof(RemoteOfficeIpHelp));
+
+    /// <summary>Without an office IP the key works from any address.</summary>
+    public static string RemoteOfficeEmpty => Get(nameof(RemoteOfficeEmpty));
+
+    /// <summary>What to take</summary>
+    public static string RemoteWhatHeading => Get(nameof(RemoteWhatHeading));
+
+    /// <summary>Preset:</summary>
+    public static string RemotePreset => Get(nameof(RemotePreset));
+
+    /// <summary>ispmanager: sites only</summary>
+    public static string RemotePresetIspSites => Get(nameof(RemotePresetIspSites));
+
+    /// <summary>ispmanager: sites and panel</summary>
+    public static string RemotePresetIspFull => Get(nameof(RemotePresetIspFull));
+
+    /// <summary>Plain Linux</summary>
+    public static string RemotePresetLinux => Get(nameof(RemotePresetLinux));
+
+    /// <summary>Own lists</summary>
+    public static string RemotePresetCustom => Get(nameof(RemotePresetCustom));
+
+    /// <summary>Folders:</summary>
+    public static string RemoteRoots => Get(nameof(RemoteRoots));
+
+    /// <summary>Folders of the server to take, one per line, as full paths. A folder that is missing on the server is skipp...</summary>
+    public static string RemoteRootsHelp => Get(nameof(RemoteRootsHelp));
+
+    /// <summary>Skip:</summary>
+    public static string RemoteExcludes => Get(nameof(RemoteExcludes));
+
+    /// <summary>Folders to skip with all they hold, one per line, as full paths; * stands for any name, for example /var/ww...</summary>
+    public static string RemoteExcludesHelp => Get(nameof(RemoteExcludesHelp));
+
+    /// <summary>The whole /etc goes into the copies: the password hashes of the users and the SSH keys of the server. Keep ...</summary>
+    public static string RemoteEtcWarning => Get(nameof(RemoteEtcWarning));
+
+    /// <summary>Databases:</summary>
+    public static string RemoteEngines => Get(nameof(RemoteEngines));
+
+    /// <summary>Databases to copy:</summary>
+    public static string RemoteDbChoice => Get(nameof(RemoteDbChoice));
+
+    /// <summary>A ticked database goes into the copy. «All databases» takes every database of the server, new ones too; unt...</summary>
+    public static string RemoteDbChoiceHelp => Get(nameof(RemoteDbChoiceHelp));
+
+    /// <summary>The list fills in on «Test connection» at the bottom of the window.</summary>
+    public static string RemoteDbListEmpty => Get(nameof(RemoteDbListEmpty));
+
+    /// <summary>Speed limit:</summary>
+    public static string RemoteSpeed => Get(nameof(RemoteSpeed));
+
+    /// <summary>KB/s (0 — no limit)</summary>
+    public static string RemoteSpeedUnit => Get(nameof(RemoteSpeedUnit));
+
+    /// <summary>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not ...</summary>
+    public static string RemoteSpeedHelp => Get(nameof(RemoteSpeedHelp));
+
+    /// <summary>Key and installation</summary>
+    public static string RemoteKeyHeading => Get(nameof(RemoteKeyHeading));
+
+    /// <summary>Key:</summary>
+    public static string RemoteKey => Get(nameof(RemoteKey));
+
+    /// <summary>Create key</summary>
+    public static string RemoteCreateKey => Get(nameof(RemoteCreateKey));
+
+    /// <summary>{0} (ed25519, the private part stays in the service)</summary>
+    public static string RemoteKeyIs => Get(nameof(RemoteKeyIs));
+
+    /// <summary>not yet: press «Create key»</summary>
+    public static string RemoteKeyNone => Get(nameof(RemoteKeyNone));
+
+    /// <summary>Paste this block whole into a root session on the server (after sudo -i). It makes the user custos and inst...</summary>
+    public static string RemoteBlockNote => Get(nameof(RemoteBlockNote));
+
+    /// <summary>The block for the server appears here when the key is made.</summary>
+    public static string RemoteBlockNeedsKey => Get(nameof(RemoteBlockNeedsKey));
+
+    /// <summary>Copy</summary>
+    public static string ButtonCopy => Get(nameof(ButtonCopy));
+
+    /// <summary>Save as file…</summary>
+    public static string ButtonSaveAs => Get(nameof(ButtonSaveAs));
+
+    /// <summary>The block is copied.</summary>
+    public static string RemoteCopied => Get(nameof(RemoteCopied));
+
+    /// <summary>Shell scripts (*.sh)|*.sh|All files (*.*)|*.*</summary>
+    public static string RemoteBlockFilter => Get(nameof(RemoteBlockFilter));
+
+    /// <summary>Check</summary>
+    public static string RemoteCheckHeading => Get(nameof(RemoteCheckHeading));
+
+    /// <summary>More</summary>
+    public static string RemoteMoreHeading => Get(nameof(RemoteMoreHeading));
+
+    /// <summary>The key of the server is not confirmed yet: press «Test connection».</summary>
+    public static string RemoteHostKeyNone => Get(nameof(RemoteHostKeyNone));
+
+    /// <summary>Key of the server: {0}</summary>
+    public static string RemoteHostKeyPinned => Get(nameof(RemoteHostKeyPinned));
+
+    /// <summary>Confirm the key of the server.</summary>
+    public static string RemoteKeyToConfirm => Get(nameof(RemoteKeyToConfirm));
+
+    /// <summary>The key of the server has changed!</summary>
+    public static string RemoteKeyChangedShort => Get(nameof(RemoteKeyChangedShort));
+
+    /// <summary>The server {0} shows the key</summary>
+    public static string RemoteKeyConfirm => Get(nameof(RemoteKeyConfirm));
+
+    /// <summary>{0}</summary>
+    public static string RemoteKeyChanged => Get(nameof(RemoteKeyChanged));
+
+    /// <summary>The key of the server is not confirmed: runs fail until «Test connection» is passed. Save anyway?</summary>
+    public static string RemoteSaveUnconfirmed => Get(nameof(RemoteSaveUnconfirmed));
+
+    /// <summary>No connection: {0}</summary>
+    public static string RemoteTestFailed => Get(nameof(RemoteTestFailed));
+
+    /// <summary>custos-helper {0}, {1}. Files: {2} ({3}); free on the server: {4}.</summary>
+    public static string RemoteTestOk => Get(nameof(RemoteTestOk));
+
+    /// <summary>no databases</summary>
+    public static string RemoteTestNoDatabases => Get(nameof(RemoteTestNoDatabases));
+
+    /// <summary>custos-helper {0} is older than {1}: run the block on the server again.</summary>
+    public static string RemoteTestOutdated => Get(nameof(RemoteTestOutdated));
+
+    /// <summary>Warnings: {0}</summary>
+    public static string RemoteTestWarnings => Get(nameof(RemoteTestWarnings));
+
+    /// <summary>Schedule, archive, destinations and retention are set on the other pages, as for any task.</summary>
+    public static string RemoteNextPages => Get(nameof(RemoteNextPages));
 }

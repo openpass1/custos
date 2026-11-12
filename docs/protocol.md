@@ -240,6 +240,10 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   ],
   "verify": { "performed": true, "ok": true, "scope": "new", "sets_checked": 1, "failed_sets": [] },
   "retention": { "deleted_sets": 1 },
+  "databases": [
+    { "engine": "mysql", "name": "shop", "bytes": 52428800, "ok": true, "error": null }
+  ],
+  "remote": null,
   "log_tail": "последние 100 строк журнала",
   "log_gz_b64": "есть только при status warning или error"
 }
@@ -248,6 +252,14 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - `status`: `success`, `warning` (выполнено, но часть файлов пропущена), `error` или `aborted` (остановлено пользователем или командой).
 - `source_files` и `source_bytes` описывают весь источник на момент запуска, даже при инкрементальной копии: по ним сервер ищет аномалии.
 - `verify.scope`: `new` (проверена только что созданная копия) или `stored` (плановая проверка всех хранящихся наборов). Если какой-то набор не прошёл проверку, его имя попадает в `failed_sets`, а статус запуска становится `error` с `error_message` вида «Повреждён набор …».
+- `databases` — дампы баз данных этого запуска (раздел 6.2 ТЗ клиента), по одному на базу; пользователи и права серверов сюда не входят. Поле необязательное: у задания без серверов баз его нет. Неудачный дамп делает запуск `error`; `error` дампа — причина словами.
+- `remote` — только у задания с Linux-сервером (источник `ssh`, A.9), иначе `null` или нет поля:
+
+  ```json
+  "remote": { "helper_version": "1.0.0", "server_free_bytes": 52000000000, "files_changed": 120, "files_deleted": 3 }
+  ```
+
+  `helper_version` — версия custos-helper на сервере; `server_free_bytes` — свободное место на диске корней сервера (наименьшее), `null`, если сервер его не сообщил; `files_changed` — файлы, изменённые после прошлой копии; `files_deleted` — удалённые после неё, `null`, если прошлую копию прочитать не удалось. `source_files` и `source_bytes` у такого задания — файлы в корнях сервера плюс дампы, `databases` — базы сервера.
 - `start` и `finish` идемпотентны по `run_id`. При недоступности сервера они сохраняются в локальной очереди агента и отправляются позже строго по порядку.
 
 ### A.6. Снимок конфигурации
@@ -309,11 +321,25 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "force_full": { "every_runs": 0, "weekday": null, "month_day": null },  // weekday 1–7 (ISO, 1 = пн), month_day 1–31 или -1 = последний день
   "sources": [
     { "id": "uuid", "kind": "folder", "path": "D:\\Data", "credential_id": null, "recursive": true }
-  ],                                   // kind: folder | file | unc
+  ],                                   // kind: folder | file | unc | ssh (Linux-сервер, см. ниже)
   "filters": {
     "include": [], "exclude": ["~$*", "*.tmp", "*.log"], "exclude_dirs": ["Temp"],
     "skip_hidden": false, "skip_system": true, "skip_temp": true
   },
+  "db_servers": [                      // серверы баз данных на этом компьютере, их базы выгружаются в «db» каждой копии (6.2)
+    {
+      "id": "uuid",
+      "engine": "mysql",               // mysql | mariadb | postgresql
+      "bin_dir": "C:\\OSPanel\\modules\\MySQL-8.0\\bin",   // папка программ сервера (mysqldump, pg_dump …); переменные как в path
+      "host": "127.0.0.1",
+      "port": null,                    // null = 3306 или 5432
+      "credential_id": "uuid",         // учётка kind = db; null = без учётки
+      "all_databases": true,           // true: все, кроме системных и exclude; false: только include
+      "exclude": [],
+      "include": [],
+      "data_dir": null                 // папка данных сервера, как её назвал сервер при проверке; только для подсказок
+    }
+  ],
   "profile_sid": null,                 // чей профиль для %USERPROFILE% и т.п.; null = кто создал задание
   "destinations": [
     {
@@ -374,13 +400,51 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 }
 ```
 
+**Источник `ssh`** — Linux-сервер, с которого копию забирает custos-helper по SSH (CUSTOS-remote-pull.md). В задании с ним других источников и `db_servers` нет, `backup_type` не `mirror`; фильтры задания к нему не применяются, что забирать, задаёт `helper.conf` на сервере.
+
+```jsonc
+{
+  "id": "uuid",
+  "kind": "ssh",
+  "path": "custos@vps.example.org:22", // подпись для людей, агент собирает её сам
+  "host": "vps.example.org",
+  "port": 22,
+  "user": "custos",
+  "credential_id": "uuid",             // учётные данные вида ssh_key
+  "host_key_sha256": "SHA256:…",       // закреплённый ключ сервера; null = ещё не подтверждён, запуск даёт error
+  "preset": "ispmanager_sites",        // ispmanager_sites | ispmanager_full | linux | custom; нужен только мастеру
+  "office_ip": "203.0.113.10",         // для from= в authorized_keys; null = ключ работает с любого адреса
+  "speed_limit_kbps": null,            // КБ/с для файлов; null или 0 = без ограничения; дампы не ограничиваются
+  "helper": {                          // что мастер записал в helper.conf; нужно только мастеру
+    "roots": ["/var/www", "/etc/nginx", "/var/spool/cron/crontabs"],
+    "excludes": ["/var/www/*/data/logs"],
+    "db_engines": ["mariadb"],         // mariadb | mysql | postgresql
+    "db_exclude": [],
+    "db_defaults_file": null
+  },
+  "databases": {                       // какие базы из db-list выгружать; null = все
+    "all_databases": true,             // true: все, кроме exclude, и новые тоже; false: только include
+    "exclude": ["mariadb/old_db"],     // "<СУБД>/<имя>"
+    "include": []
+  }
+}
+```
+
+`host_key_sha256` меняется только на агенте (мастер, редактор задания), как адрес сервера мониторинга. Правки задания с сайта это поле сохраняют, но не меняют.
+
 **Учётные данные** хранятся отдельно, задания ссылаются на них по `credential_id`. Одну учётку можно использовать в нескольких заданиях.
 
 ```json
 { "id": "uuid", "kind": "windows", "user": "backup1", "domain": ".", "has_secret": true }
 ```
 
-`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `gdrive`, `yadisk`, `dropbox` (облачные диски, см. ниже). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+`kind`: `windows` (шары), `ftp`, `sftp` (пароль или закрытый ключ), `s3` (`user` = access key, секрет = secret key), `webdav`, `archive_password`, `db` (сервер баз данных; пароль может быть пустым), `ssh_key` (ключ ed25519 для Linux-сервера), `gdrive`, `yadisk`, `dropbox` (облачные диски, см. ниже). Секрет хранится только на агенте под DPAPI и никогда не уходит на сервер.
+
+Ключ `ssh_key` создаёт сам агент (в мастере Linux-сервера), задать его снаружи нельзя. У него есть открытая часть в строке формата OpenSSH, её можно показывать:
+
+```json
+{ "id": "uuid", "kind": "ssh_key", "user": "custos@vps.example.org", "has_secret": true, "public_key": "ssh-ed25519 AAAA… custos@PC01" }
+```
 
 Учётные данные облачных дисков (`gdrive`, `yadisk`, `dropbox`) создаёт только агент: аккаунт подключается через браузер на самом компьютере (6.3 ТЗ клиента). `user` — адрес почты или логин аккаунта, только для показа; секрет — токен обновления OAuth. В `secrets` команды `task.upsert` (A.4) такие виды не принимаются: агент отвечает `failed`. Задание с сайта ссылается на уже подключённый аккаунт по `credential_id`.
 
@@ -473,6 +537,18 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - A.4, A.10. Команда `sevenzip.update {version, sha256, signature}` и загрузка установщика `GET agent/sevenzip/{version}`. Подпись — от строки `"7zip\n{version}\n{sha256}"`.
 - A.4. Уточнено: `secrets` в `task.upsert` создают учётные записи с указанными `id` или заменяют существующие.
 - A.2. Если запрошенного пакета нет на сервере, ответ — подписанный `400 bad_request`: `404` агент понимает только как `unknown_agent` (A.11).
+
+**11.11.2026 — протокол 1, до первого выпуска.** Дампы баз данных на Windows (этап 2б клиента). Правки совместимые: старая сторона новые поля пропускает и сохраняет.
+
+- A.9. В задании новое поле `db_servers`: серверы MySQL, MariaDB и PostgreSQL этого компьютера. Задание с серверами баз может не иметь `sources`.
+- A.9. Новый вид учётных данных `db`.
+- A.5. В `runs/finish` новое необязательное поле `databases` с итогом дампа каждой базы.
+
+**11.11.2026 — протокол 1, до первого выпуска.** Linux-серверы как источник (этап 2а клиента, CUSTOS-remote-pull.md). Правки совместимые: старая сторона новые поля пропускает и сохраняет.
+
+- A.9. Новый вид источника `ssh` с полями `host`, `port`, `user`, `host_key_sha256`, `preset`, `office_ip`, `speed_limit_kbps`, `helper`, `databases`. `host_key_sha256` меняется только на агенте.
+- A.9. Новый вид учётных данных `ssh_key` с открытой частью `public_key`; создаёт его только агент.
+- A.5. В `runs/finish` новый необязательный блок `remote`.
 
 **11.11.2026 — протокол 1, до первого выпуска.** Защита от удаления для S3 (этап 4 клиента) и облачные диски Google Drive, Яндекс Диск и Dropbox (этап 4б клиента). Правки только добавляющие.
 

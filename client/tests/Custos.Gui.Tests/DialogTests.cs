@@ -236,6 +236,253 @@ public sealed class DialogTests
         Assert.Equal(full.SetName, form.SetList.Items[1].SubItems[2].Text);
     });
 
+    [Fact]
+    public void The_restore_window_asks_for_a_folder_for_the_dumps_of_a_set_with_databases() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new RestoreForm(monitor, Samples.OfficeId);
+        form.Show();
+        Sta.Pump();
+        var plain = new Custos.Core.Backup.SetManifestHeader { SetName = "Office 1", BackupType = BackupTypes.Full, StartedAt = new DateTimeOffset(2026, 11, 1, 18, 0, 0, TimeSpan.Zero) };
+        var dumps = new Custos.Core.Backup.SetManifestHeader
+        {
+            SetName = "Office 2",
+            BackupType = BackupTypes.Full,
+            StartedAt = new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero),
+            Databases = [new Custos.Core.Backup.ManifestDatabase { Engine = DbEngines.MySql, Name = "shop", File = "db/mysql/shop.sql", Server = "127.0.0.1:3306" }],
+        };
+
+        form.ShowSets(new Custos.Core.Ipc.RestoreListResult
+        {
+            Sets =
+            [
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\b", Where = @"D:\Backup", Header = dumps },
+                new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\a", Where = @"D:\Backup", Header = plain },
+            ],
+        });
+        Sta.Pump();
+        var note = Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsNote);
+        Assert.True(note.Visible);
+        Assert.True(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsFolder).Visible);
+
+        form.SetList.Items[1].Selected = true;
+        Sta.Pump();
+        Assert.False(note.Visible);
+    });
+
+    [Fact]
+    public void The_restore_window_puts_a_copy_of_a_linux_server_into_a_folder() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new RestoreForm(monitor, Samples.OfficeId);
+        form.Show();
+        Sta.Pump();
+        var server = new Custos.Core.Backup.SetManifestHeader
+        {
+            SetName = "Web 1",
+            BackupType = BackupTypes.Full,
+            StartedAt = new DateTimeOffset(2026, 11, 2, 18, 0, 0, TimeSpan.Zero),
+            SourceKind = SourceKinds.Ssh,
+        };
+
+        form.ShowSets(new Custos.Core.Ipc.RestoreListResult
+        {
+            Sets = [new Custos.Core.Ipc.RestoreSetInfo { Location = @"D:\Backup\w", Where = @"D:\Backup", Header = server }],
+        });
+        Sta.Pump();
+
+        var original = Sta.Find<RadioButton>(form).Single(r => r.Text == Strings.RestoreToOriginal);
+        Assert.False(original.Enabled);
+        Assert.False(original.Checked);
+        Assert.True(Sta.Find<RadioButton>(form).Single(r => r.Text == Strings.RestoreToFolder).Checked);
+        Assert.True(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreRemoteNote).Visible);
+        Assert.False(Sta.Find<Label>(form).Single(l => l.Text == Strings.RestoreDumpsFolder).Visible);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_linux_server_dialog_makes_the_block_and_gives_back_the_source(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var context = new EditorContext(monitor, toolTip);
+        using (var empty = new RemoteSourceDialog(context, new TaskSource()))
+        {
+            empty.Show();
+            Sta.Pump();
+            Assert.Equal(Strings.RemoteAddTitle, empty.Text);
+            Assert.Equal(Strings.RemoteBlockNeedsKey, empty.BlockText);
+            Assert.True(Sta.Find<Label>(empty).Single(l => l.Text == Strings.RemoteOfficeEmpty).Visible);
+            Assert.True(Sta.Find<Label>(empty).Single(l => l.Text == Strings.RemoteDbListEmpty).Visible);
+        }
+
+        var original = Samples.Server().Sources[0];
+        original.HostKeySha256 = null;
+        using var dialog = new RemoteSourceDialog(context, original);
+        dialog.Show();
+        Sta.Pump();
+
+        // The key of the task is there: the block installs custos-helper as it is built in, with the key from the office only.
+        Assert.Equal(Strings.RemoteEditTitle, dialog.Text);
+        string block = dialog.BlockText.ReplaceLineEndings("\n");
+        Assert.StartsWith("bash -e <<'CUSTOS_INSTALL_EOF'\n", block, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Remote.HelperScript.Sha256, block, StringComparison.Ordinal);
+        Assert.Contains(Custos.Core.Remote.HelperSetup.KeyLine(Samples.SshKey().PublicKey!, "203.0.113.10"), block, StringComparison.Ordinal);
+        Assert.Contains("root       = /var/www\n", block, StringComparison.Ordinal);
+        Assert.False(Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteOfficeEmpty).Visible);
+        var etc = Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteEtcWarning);
+        Assert.False(etc.Visible);
+
+        // A preset with the whole /etc warns; a changed list is a list of one's own.
+        var preset = Sta.Find<ComboBox>(dialog).Single();
+        preset.SelectedIndex = 2;
+        Sta.Pump();
+        Assert.True(etc.Visible);
+        Assert.Contains("root       = /home\n", dialog.BlockText.ReplaceLineEndings("\n"), StringComparison.Ordinal);
+        var roots = Sta.Find<TextBox>(dialog).Single(b => b.Multiline && !b.ReadOnly && b.Text.Contains("/home", StringComparison.Ordinal));
+        roots.Text += Environment.NewLine + "/srv";
+        Sta.Pump();
+        Assert.Equal(RemoteSourceDialog.PresetTitle(RemotePresets.Custom), preset.Text);
+
+        // «Copy» and «Save as» stand side by side, at one height; the databases come before the key, the speed after the check.
+        var copy = Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonCopy);
+        var saveAs = Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonSaveAs);
+        Assert.Equal(copy.Top, saveAs.Top);
+        var databaseChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
+        Assert.True(dialog.PointToClient(databaseChoice.PointToScreen(Point.Empty)).Y < dialog.PointToClient(copy.PointToScreen(Point.Empty)).Y);
+        var speedBox = Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum > 65535);
+        Assert.True(dialog.PointToClient(speedBox.PointToScreen(Point.Empty)).Y > dialog.PointToClient(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonTestConnection).PointToScreen(Point.Empty)).Y);
+
+        // Scrolled down and then made larger, the rows keep their height: no empty space under the last line.
+        var lastNote = Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteNextPages);
+        var rows = (TableLayoutPanel)lastNote.Parent!;
+        var scroller = (ScrollableControl)rows.Parent!;
+        dialog.ClientSize = new Size(760, 500);
+        Sta.Pump();
+        scroller.AutoScrollPosition = new Point(0, 10_000);
+        Sta.Pump();
+        dialog.ClientSize = new Size(1000, 900);
+        Sta.Pump();
+        Assert.InRange(rows.Height - lastNote.Bottom, 0, lastNote.Margin.Bottom + rows.Padding.Bottom + 2);
+        Assert.Equal(rows.Width, scroller.ClientSize.Width);
+
+        // The test: an unknown key of the server is to be confirmed first, then the answer of custos-helper is shown.
+        Assert.True(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult { HostKeySha256 = Samples.ServerKey, HostKeyUnconfirmed = true }));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.RemoteKeyToConfirm);
+        dialog.Pin(Samples.ServerKey);
+        Assert.False(dialog.ShowTest(new Custos.Core.Ipc.RemoteTestResult
+        {
+            Ok = true,
+            HostKeySha256 = Samples.ServerKey,
+            HelperVersion = "1.0.0",
+            Os = "Debian GNU/Linux 12",
+            Files = 1234,
+            Bytes = 5_000_000,
+            ServerFreeBytes = 50_000_000_000,
+            Databases = [new Custos.Core.Ipc.RemoteDatabases { Engine = DbEngines.MariaDb, Names = ["site_db", "shop_db"] }],
+        }));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.Contains("MariaDB: site_db, shop_db", StringComparison.Ordinal));
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text == Strings.Format(Strings.RemoteHostKeyPinned, Samples.ServerKey));
+
+        // The databases the test found join the list: under «All databases» ticked, the one left out by the task not.
+        var databases = Sta.Find<CheckedListBox>(dialog).Single();
+        var allChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
+        var onlyChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceOnly);
+        Assert.True(allChoice.Checked);
+        Assert.Equal(allChoice.Top, onlyChoice.Top);
+        Assert.True(allChoice.Right < onlyChoice.Left);
+        Assert.False(Sta.Find<Label>(dialog).Single(l => l.Text == Strings.RemoteDbListEmpty).Visible);
+        Assert.Equal(["old_db", "site_db", "shop_db"], databases.Items.Cast<object>().Select(i => i.ToString()));
+        Assert.Equal(["site_db", "shop_db"], databases.CheckedItems.Cast<object>().Select(i => i.ToString()));
+
+        // Unticking one switches to «Selected databases»: only the ticked ones are dumped.
+        databases.SetItemChecked(2, false);
+        Assert.True(onlyChoice.Checked);
+
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        var source = dialog.Source;
+        Assert.Equal(
+            (original.Id, SourceKinds.Ssh, "custos@vps.example.org:22", Samples.SshKeyId, Samples.ServerKey, RemotePresets.Custom, "203.0.113.10"),
+            (source.Id, source.Kind, source.Path, source.CredentialId, source.HostKeySha256, source.Preset, source.OfficeIp));
+        Assert.Equal(["/etc", "/home", "/root", "/var/www", "/var/spool/cron", "/srv"], source.Helper!.Roots);
+        Assert.False(source.Databases!.AllDatabases);
+        Assert.Equal(["mariadb/site_db"], source.Databases.Include);
+        Assert.Equal(Strings.Format(Strings.DbOnly, "site_db"), RemoteSourceDialog.DescribeDatabases(source.Databases));
+
+        // Without the engine there is nothing to choose.
+        using var noEngines = new RemoteSourceDialog(context, original);
+        noEngines.Show();
+        Sta.Pump();
+        Sta.Find<CheckBox>(noEngines).Single(c => c.Text == DbEngines.Title(DbEngines.MariaDb)).Checked = false;
+        Sta.Pump();
+        Assert.Empty(Sta.Find<CheckedListBox>(noEngines).Single().Items);
+        Assert.False(Sta.Find<RadioButton>(noEngines).Single(r => r.Text == Strings.DbChoiceAll).Enabled);
+    });
+
+    [Fact]
+    public void The_database_server_dialog_lists_what_the_test_and_the_search_found() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var server = new TaskDatabaseServer { Engine = DbEngines.MariaDb, BinDir = @"C:\OSPanel\modules\MariaDB-11.4\bin", AllDatabases = false, Include = ["shop"] };
+        using var dialog = new DbServerDialog(new EditorContext(monitor, toolTip), server, isNew: true);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.Equal("root", Sta.Find<TextBox>(dialog).Single(b => b.Text == "root").Text);
+        dialog.ShowTest(new Custos.Core.Ipc.DbTestResult { Ok = true, Version = "11.4.4-MariaDB", Databases = ["blog", "shop"], DataDir = @"C:\OSPanel\data\MariaDB-11.4\" });
+        Sta.Pump();
+        var list = Sta.Find<CheckedListBox>(dialog).Single();
+        Assert.Equal(["shop", "blog"], list.Items.Cast<string>());
+        Assert.Equal(["shop"], list.CheckedItems.Cast<string>());
+        Assert.Contains(Sta.Find<Label>(dialog), l => l.Text.StartsWith(Strings.Format(Strings.DbTestOk, "11.4.4-MariaDB", 2), StringComparison.Ordinal));
+
+        // «All databases»: everything is ticked, new databases too; unticking one switches to «Selected databases».
+        var all = new TaskDatabaseServer { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin" };
+        using (var allDialog = new DbServerDialog(new EditorContext(monitor, toolTip), all, isNew: false))
+        {
+            allDialog.Show();
+            Sta.Pump();
+            var allList = Sta.Find<CheckedListBox>(allDialog).Single();
+            var allChoice = Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceAll);
+            var onlyChoice = Sta.Find<RadioButton>(allDialog).Single(r => r.Text == Strings.DbChoiceOnly);
+            Assert.Equal(allChoice.Left, onlyChoice.Left);
+            allDialog.ShowTest(new Custos.Core.Ipc.DbTestResult { Ok = true, Version = "8.4.8", Databases = ["shop", "blog"] });
+            Assert.Equal(["shop", "blog"], allList.CheckedItems.Cast<string>());
+            var built = allDialog.Build();
+            Assert.True(built.AllDatabases);
+            Assert.Empty(built.Exclude);
+
+            allList.SetItemChecked(allList.Items.IndexOf("blog"), false);
+            Assert.True(onlyChoice.Checked);
+            built = allDialog.Build();
+            Assert.False(built.AllDatabases);
+            Assert.Equal(["shop"], built.Include);
+
+            // Back to «All databases»: everything is ticked again.
+            allChoice.Checked = true;
+            Assert.Equal(["shop", "blog"], allList.CheckedItems.Cast<string>());
+            Assert.True(allDialog.Build().AllDatabases);
+        }
+
+        using var find = new DbFindDialog(monitor);
+        find.ShowFound(new Custos.Core.Ipc.DbFindResult
+        {
+            Servers =
+            [
+                new Custos.Core.Ipc.DbCandidate { Engine = DbEngines.MySql, BinDir = @"C:\OSPanel\modules\MySQL-8.0\bin", Version = "8.0", Host = "127.127.126.26", Port = 3306, Running = true },
+                new Custos.Core.Ipc.DbCandidate { Engine = DbEngines.PostgreSql, BinDir = @"C:\Program Files\PostgreSQL\17\bin", Version = "17", Port = 5432 },
+            ],
+        });
+        var found = Sta.Find<ListView>(find).Single();
+        Assert.Equal(2, found.Items.Count);
+        Assert.Equal("MySQL 8.0 — 127.127.126.26:3306", found.Items[0].Text);
+        Assert.Equal(Strings.DbNotRunning, found.Items[1].SubItems[1].Text);
+    });
+
     [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]

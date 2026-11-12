@@ -27,6 +27,7 @@ internal enum Glyph
     Bolt,
     Sliders,
     Help,
+    Database,
 }
 
 /// <summary>State of a task or a run, always shown with a picture and a color (docs/client-ui.md, section 1).</summary>
@@ -203,6 +204,15 @@ internal static class Glyphs
                 g.DrawLine(pen, 4, 17, 20, 17);
                 g.FillEllipse(brush, 13, 4.5f, 5, 5);
                 g.FillEllipse(brush, 6, 14.5f, 5, 5);
+                break;
+
+            case Glyph.Database:
+                // A cylinder with a seam: the usual sign of a database.
+                g.DrawEllipse(pen, 5, 3, 14, 5);
+                g.DrawLine(pen, 5, 5.5f, 5, 18.5f);
+                g.DrawLine(pen, 19, 5.5f, 19, 18.5f);
+                g.DrawArc(pen, 5, 9.5f, 14, 5, 0, 180);
+                g.DrawArc(pen, 5, 16, 14, 5, 0, 180);
                 break;
 
             case Glyph.Help:

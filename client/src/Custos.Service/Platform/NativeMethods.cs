@@ -45,6 +45,17 @@ internal static partial class NativeMethods
     [LibraryImport("kernel32.dll")]
     public static partial uint GetOEMCP();
 
+    public const int AF_INET = 2;
+    public const int AF_INET6 = 23;
+
+    /// <summary>TCP_TABLE_CLASS.TCP_TABLE_OWNER_PID_LISTENER: listening sockets with the process that owns each.</summary>
+    public const int TCP_TABLE_OWNER_PID_LISTENER = 3;
+
+    public const uint ERROR_INSUFFICIENT_BUFFER = 122;
+
+    [LibraryImport("iphlpapi.dll")]
+    public static partial uint GetExtendedTcpTable(IntPtr table, ref int size, [MarshalAs(UnmanagedType.Bool)] bool order, int addressFamily, int tableClass, uint reserved);
+
     public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
     public const uint TOKEN_QUERY = 0x0008;
     public const uint SE_PRIVILEGE_ENABLED = 0x00000002;

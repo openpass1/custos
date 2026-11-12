@@ -37,6 +37,47 @@ internal static class Samples
         HasSecret = true,
     };
 
+    public const string SshKeyId = "55555555-0000-4000-8000-000000000005";
+
+    public const string ServerKey = "SHA256:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU";
+
+    /// <summary>The key the service made for the Linux server (example.org is reserved for examples).</summary>
+    public static Credential SshKey() => new()
+    {
+        Id = SshKeyId,
+        Kind = CredentialKinds.SshKey,
+        User = "custos@vps.example.org",
+        HasSecret = true,
+        PublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOmc2Nqy7ZFj7EM3zdVr8Cnk6ZbFEtZGNwHE3+8hkOLz custos@PC01",
+    };
+
+    /// <summary>A task that takes a Linux server through custos-helper, as the wizard writes it.</summary>
+    public static TaskDefinition Server()
+    {
+        var task = Office();
+        task.Name = "Web server";
+        task.Sources =
+        [
+            new TaskSource
+            {
+                Id = "r1",
+                Kind = SourceKinds.Ssh,
+                Path = "custos@vps.example.org:22",
+                Host = "vps.example.org",
+                Port = 22,
+                User = "custos",
+                CredentialId = SshKeyId,
+                HostKeySha256 = ServerKey,
+                Preset = RemotePresets.IspmanagerSites,
+                OfficeIp = "203.0.113.10",
+                Helper = Custos.Core.Remote.HelperSetup.Preset(RemotePresets.IspmanagerSites),
+                Databases = new RemoteDatabaseChoice { Exclude = ["mariadb/old_db"] },
+            },
+        ];
+        task.DbServers = [];
+        return task;
+    }
+
     /// <summary>A task that uses every page of the editor, with values as the editor writes them.</summary>
     public static TaskDefinition Office() => new()
     {
@@ -116,7 +157,7 @@ internal static class Samples
             ConfigRevision = version,
             ComputerName = "PC01",
             Tasks = [Office(), Photos(), Archive()],
-            Credentials = [Account(), ArchivePassword()],
+            Credentials = [Account(), ArchivePassword(), SshKey()],
             States =
             [
                 new TaskState

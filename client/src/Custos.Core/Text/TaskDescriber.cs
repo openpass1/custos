@@ -21,6 +21,24 @@ public static class TaskDescriber
             Messages.Format(Messages.DescSentence, Capitalize(Schedule(task.Schedule)), Action(task.BackupType), Sources(task), Destinations(task)),
         };
 
+        if (task.DbServers.Count > 0)
+        {
+            var servers = task.DbServers.Select(d => string.Concat(DbEngines.Title(d.Engine), " ", d.Host, ":",
+                (d.Port ?? DbEngines.DefaultPort(d.Engine)).ToString(CultureInfo.InvariantCulture)));
+            sentences.Add(Messages.Format(Messages.DescDatabases, JoinWords([.. servers])));
+        }
+
+        if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh) is { Helper.DbEngines: { Count: > 0 } engines } remote)
+        {
+            string titles = JoinWords([.. engines.Distinct(StringComparer.Ordinal).Select(DbEngines.Title)]);
+            sentences.Add(remote.Databases switch
+            {
+                { AllDatabases: false } only => Messages.Format(Messages.DescRemoteDatabasesOnly, titles, RemoteDatabaseChoice.Describe(only.Include)),
+                { Exclude.Count: > 0 } except => Messages.Format(Messages.DescRemoteDatabasesExcept, titles, RemoteDatabaseChoice.Describe(except.Exclude)),
+                _ => Messages.Format(Messages.DescRemoteDatabases, titles),
+            });
+        }
+
         if (task.BackupType is BackupTypes.Incremental or BackupTypes.Differential && ForceFull(task.ForceFull) is { } force)
         {
             sentences.Add(force);
@@ -154,6 +172,11 @@ public static class TaskDescriber
 
     private static string Sources(TaskDefinition task)
     {
+        if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh) is { } remote)
+        {
+            return Messages.Format(Messages.DescFromServer, remote.Host);
+        }
+
         var paths = task.Sources.Select(s => s.Path).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
         return paths.Count == 0 ? Messages.DescNoSources : Messages.Format(Messages.DescFrom, Paths(paths));
     }

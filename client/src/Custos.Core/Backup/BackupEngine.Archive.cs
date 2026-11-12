@@ -185,7 +185,7 @@ public sealed partial class BackupEngine
                     }
                 });
                 target.Completed = true;
-                target.Files = run.Copied.Count;
+                target.Files = run.Copied.Count + run.Dumps.Count(d => d.InSet) + (int)(run.Remote?.StoredFiles ?? 0);
                 target.Bytes = run.ArchiveBytes;
                 target.NewSet = new StoredSet(target.Parts[0], run.Header!)
                 {
@@ -299,13 +299,13 @@ public sealed partial class BackupEngine
     }
 
     /// <summary>
-    /// Folders (full copies), files, and the manifest last. ZIP packs them in this order. 7-Zip packs the files sorted
-    /// by path, so the manifest («custos-set.json») comes before every path that sorts after it; see
-    /// <see cref="ManifestStream"/>.
+    /// Database dumps, folders (full copies), files, and the manifest last. ZIP packs them in this order. 7-Zip packs
+    /// the files sorted by path, so the manifest («custos-set.json») comes before every path that sorts after it, the
+    /// dumps («db/…») included; see <see cref="ManifestStream"/>.
     /// </summary>
     private List<ArchiveItem> ArchiveItems(RunContext run)
     {
-        var items = new List<ArchiveItem>();
+        var items = DumpItems(run);
         if (run.BackupType == BackupTypes.Full && !run.Task.Layout.DeleteEmptyDirs)
         {
             foreach (var context in run.Sources.Where(s => s.Scan is { Found: true, IsFile: false }))
@@ -315,6 +315,11 @@ public sealed partial class BackupEngine
                     items.Add(new ArchiveItem { Path = Path.Combine(context.Target, folder), IsFolder = true });
                 }
             }
+        }
+
+        if (run.Remote is not null)
+        {
+            items.Add(RemoteTarItem(run));
         }
 
         foreach (var (context, file) in run.ToCopy)
@@ -361,8 +366,19 @@ public sealed partial class BackupEngine
                 }
             }
 
-            string status = run.Result.Warnings > 0 ? RunStatuses.Warning : RunStatuses.Success;
-            run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, status, pending.Count, pendingBytes);
+            if (run.Remote is not null)
+            {
+                var files = RemoteManifestFiles(run, out int setFiles, out long setBytes);
+                run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, SetStatus(run));
+                run.Header.SetFileCount = setFiles;
+                run.Header.SetBytes = setBytes;
+                var remoteStream = new MemoryStream();
+                SetManifest.Write(remoteStream, run.Header, files);
+                remoteStream.Position = 0;
+                return remoteStream;
+            }
+
+            run.Header = BuildHeader(run, run.SetName!, DateTimeOffset.UtcNow, SetStatus(run), pending.Count, pendingBytes);
             var stream = new MemoryStream();
             SetManifest.Write(stream, run.Header, ManifestFiles(run, pending));
             stream.Position = 0;

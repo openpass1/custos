@@ -382,6 +382,18 @@
   <data name="ConfigUserRequired" xml:space="preserve">
     <value>Enter the user name.</value>
   </data>
+  <data name="ConfigDbBinDirRequired" xml:space="preserve">
+    <value>Choose the folder of the database server's programs (bin).</value>
+  </data>
+  <data name="ConfigDbHostRequired" xml:space="preserve">
+    <value>Enter the address of the database server.</value>
+  </data>
+  <data name="ConfigDbBadPort" xml:space="preserve">
+    <value>The port must be from {0} to {1}.</value>
+  </data>
+  <data name="ConfigDbNothingChosen" xml:space="preserve">
+    <value>Choose at least one database or switch to «all databases».</value>
+  </data>
   <data name="ConfigRestoredFromBackup" xml:space="preserve">
     <value>{0} was missing; its backup copy was used.</value>
   </data>
@@ -841,10 +853,366 @@
   <data name="SevenZipNoAnswer" xml:space="preserve">
     <value>no answer in {0} s</value>
   </data>
+  <data name="DescDatabases" xml:space="preserve">
+    <value>Every run also dumps the databases of {0} whole into «db».</value>
+  </data>
+  <data name="DescFromServer" xml:space="preserve">
+    <value>from the Linux server {0}</value>
+  </data>
+  <data name="DescRemoteDatabases" xml:space="preserve">
+    <value>Every run also dumps the databases of {0} on the server whole into «db».</value>
+  </data>
+  <data name="DescRemoteDatabasesExcept" xml:space="preserve">
+    <value>Every run also dumps the databases of {0} on the server whole into «db», all but: {1}.</value>
+  </data>
+  <data name="DescRemoteDatabasesOnly" xml:space="preserve">
+    <value>Every run also dumps these databases of {0} on the server whole into «db»: {1}.</value>
+  </data>
   <data name="DescEvents" xml:space="preserve">
     <value>Events: {0} before the backup, {1} after.</value>
   </data>
   <data name="DescAfter" xml:space="preserve">
     <value>Afterwards: {0}.</value>
+  </data>
+  <data name="DbAccountMissing" xml:space="preserve">
+    <value>The account of the database server is missing. Open the task and enter the user and the password again.</value>
+  </data>
+  <data name="DbNoAnswer" xml:space="preserve">
+    <value>{0} gave no answer.</value>
+  </data>
+  <data name="DbNameUnsupported" xml:space="preserve">
+    <value>The database name «{0}» starts with «-» and cannot be passed to the dump program.</value>
+  </data>
+  <data name="DbToolMissing" xml:space="preserve">
+    <value>{0} is not in the folder {1}. The folder of the server's programs (bin) must hold {2}.</value>
+  </data>
+  <data name="DbTimedOut" xml:space="preserve">
+    <value>{0} did not answer in {1} seconds.</value>
+  </data>
+  <data name="DbProgramFailed" xml:space="preserve">
+    <value>{0} ended with code {1}: {2}</value>
+  </data>
+  <data name="DbNoDetails" xml:space="preserve">
+    <value>no details</value>
+  </data>
+  <data name="DbProgramNotStarted" xml:space="preserve">
+    <value>Could not start {0}: {1}</value>
+  </data>
+  <data name="DumpExitCode" xml:space="preserve">
+    <value>the dump program ended with code {0}: {1}</value>
+  </data>
+  <data name="DumpNoEndLine" xml:space="preserve">
+    <value>the dump has no end line, it is cut off</value>
+  </data>
+  <data name="DumpNoEndLineWithErrors" xml:space="preserve">
+    <value>the dump has no end line, it is cut off: {0}</value>
+  </data>
+  <data name="DumpStopped" xml:space="preserve">
+    <value>the dump was stopped</value>
+  </data>
+  <data name="DbEngineUnknown" xml:space="preserve">
+    <value>Unknown database engine «{0}».</value>
+  </data>
+  <data name="DbServerReady" xml:space="preserve">
+    <value>{0}: version {1}, databases to dump: {2} ({3}).</value>
+  </data>
+  <data name="DbNoDatabases" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="DbDataDirInSources" xml:space="preserve">
+    <value>The data folder of the server {0} is among the sources. Its files copied while the server runs are of little use: the dumps are the copy of the databases.</value>
+  </data>
+  <data name="DbServerUnavailable" xml:space="preserve">
+    <value>{0}: no dumps taken: {1}</value>
+  </data>
+  <data name="DbNotFound" xml:space="preserve">
+    <value>The database «{0}» is not on {1}.</value>
+  </data>
+  <data name="DumpWritten" xml:space="preserve">
+    <value>Dump taken: {0} ({1})</value>
+  </data>
+  <data name="DumpFailed" xml:space="preserve">
+    <value>Dump failed: {0}: {1}</value>
+  </data>
+  <data name="DumpNotTaken" xml:space="preserve">
+    <value>the dump was not taken</value>
+  </data>
+  <data name="DumpUsersTitle" xml:space="preserve">
+    <value>users and rights of {0}</value>
+  </data>
+  <data name="DumpDatabaseTitle" xml:space="preserve">
+    <value>«{0}» of {1}</value>
+  </data>
+  <data name="DbSetKeptNotCommitted" xml:space="preserve">
+    <value>Some database dumps failed. The set is kept but marked as failed; old sets were not deleted.</value>
+  </data>
+  <data name="DbFolderTaken" xml:space="preserve">
+    <value>{0}: the copy holds the contents of the source, and the source has its own «db» at the top; that name is kept for the database dumps. Turn on «Keep the top folder» for this source or rename the folder.</value>
+  </data>
+  <data name="RestoreDumpsNoFolder" xml:space="preserve">
+    <value>The set has database dumps, but no folder was given for them; they were not restored.</value>
+  </data>
+  <data name="RestoreDumpIncomplete" xml:space="preserve">
+    <value>The dump is incomplete and was saved as {0}. Do not load it as a full copy of the database.</value>
+  </data>
+  <data name="RestoreDumpMissing" xml:space="preserve">
+    <value>Dump {0} not restored: {1}</value>
+  </data>
+  <data name="RestoreDumpsReadme" xml:space="preserve">
+    <value>How to load the dumps into a server: {0}</value>
+  </data>
+  <data name="ReadmeTitle" xml:space="preserve">
+    <value>Database dumps of the set «{0}» ({1}, computer {2})</value>
+  </data>
+  <data name="ReadmeIntro" xml:space="preserve">
+    <value>CUSTOS does not load dumps into a server by itself. When a database is needed back, run the commands below.
+Run them in cmd, not in PowerShell (PowerShell spoils the input given with «&lt;»), from the folder that holds the folder «db».
+The programs mysql (mariadb), psql and createdb are in the folder of the server's programs (bin): go there first or write the full path to them.
+The commands ask for the password of the server's administrator (root, postgres); write another user if yours is different.
+Load a database into an empty one: tables already there get in the way.</value>
+  </data>
+  <data name="ReadmeUsersMySql" xml:space="preserve">
+    <value>Users and their rights, with their old passwords (root's too); load them only if the server needs them:</value>
+  </data>
+  <data name="ReadmeUsersPostgres" xml:space="preserve">
+    <value>Roles and their rights; load them first, the databases refer to them:</value>
+  </data>
+  <data name="ReadmeDatabase" xml:space="preserve">
+    <value>Database «{0}»:</value>
+  </data>
+  <data name="ReadmePostgresNote" xml:space="preserve">
+    <value>Dumps made by PostgreSQL 17.6, 16.10, 15.14, 14.19, 13.22 and newer have a \restrict line that older psql does not know: load them with psql of the same or a newer version.</value>
+  </data>
+  <data name="ReadmeMariaDbNote" xml:space="preserve">
+    <value>MariaDB older than 10.5 has no program «mariadb»: write «mysql» instead.</value>
+  </data>
+  <data name="ReadmeProblems" xml:space="preserve">
+    <value>Problems:</value>
+  </data>
+  <data name="ReadmeIncomplete" xml:space="preserve">
+    <value>{0} is incomplete: {1}. Do not load it as a full copy of the database.</value>
+  </data>
+  <data name="ReadmeMissing" xml:space="preserve">
+    <value>{0} «{1}» was not dumped: {2}</value>
+  </data>
+  <data name="RemoteHostKeyNew" xml:space="preserve">
+    <value>{0}: the server shows the key {1}. Check it and confirm it in the task.</value>
+  </data>
+  <data name="RemoteHostKeyChanged" xml:space="preserve">
+    <value>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server was reinstalled, check the new key and confirm it in the task; otherwise someone may be in the way.</value>
+  </data>
+  <data name="RemoteKeyRefused" xml:space="preserve">
+    <value>{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task on the server again.</value>
+  </data>
+  <data name="RemoteUnreachable" xml:space="preserve">
+    <value>{0}: no connection: {1}</value>
+  </data>
+  <data name="RemoteConnectionLost" xml:space="preserve">
+    <value>The connection to the server broke: {0}</value>
+  </data>
+  <data name="RemoteNoRoots" xml:space="preserve">
+    <value>Add at least one folder to take.</value>
+  </data>
+  <data name="RemotePathNotAbsolute" xml:space="preserve">
+    <value>«{0}» is not an absolute Linux path (it must start with «/»).</value>
+  </data>
+  <data name="RemoteRootIsSlash" xml:space="preserve">
+    <value>The whole disk «/» cannot be a folder to take: choose the folders you need.</value>
+  </data>
+  <data name="RemoteRootsNested" xml:space="preserve">
+    <value>«{1}» lies inside «{0}»: its files would be taken twice. Keep one of them.</value>
+  </data>
+  <data name="RemoteMariaDbAndMySql" xml:space="preserve">
+    <value>MariaDB and MySQL cannot both be chosen: a server runs one of them.</value>
+  </data>
+  <data name="RemoteBadDbName" xml:space="preserve">
+    <value>«{0}» cannot be a database name in helper.conf.</value>
+  </data>
+  <data name="RemoteListingTooLong" xml:space="preserve">
+    <value>The server lists more than {0} entries.</value>
+  </data>
+  <data name="RemoteListingBroken" xml:space="preserve">
+    <value>the list of files is damaged ({0})</value>
+  </data>
+  <data name="RemoteTarCut" xml:space="preserve">
+    <value>the tar breaks off after {0} bytes</value>
+  </data>
+  <data name="RemoteTarDamaged" xml:space="preserve">
+    <value>the tar is damaged at byte {0}</value>
+  </data>
+  <data name="RemoteBadAnswer" xml:space="preserve">
+    <value>custos-helper gave a strange answer to «{0}»: {1}</value>
+  </data>
+  <data name="RemoteHelperRefused" xml:space="preserve">
+    <value>custos-helper refused «{0}»: {1}</value>
+  </data>
+  <data name="RemoteHelperConfig" xml:space="preserve">
+    <value>custos-helper cannot use its config /etc/custos/helper.conf: {0}</value>
+  </data>
+  <data name="RemoteHelperMissing" xml:space="preserve">
+    <value>custos-helper is not installed on the server or cannot be started: {0}. Run the install block from the task.</value>
+  </data>
+  <data name="RemoteHelperFailed" xml:space="preserve">
+    <value>custos-helper «{0}» ended with code {1}: {2}</value>
+  </data>
+  <data name="RemoteAnswerTooLong" xml:space="preserve">
+    <value>The answer to «{0}» is longer than {1} bytes.</value>
+  </data>
+  <data name="RemoteMemoryGuard" xml:space="preserve">
+    <value>the server sends faster than the archive takes it, {0} wait in memory. Set a speed limit in the task (Sources → Linux server) or a lower compression level.</value>
+  </data>
+  <data name="RemoteOnlySource" xml:space="preserve">
+    <value>A task with a Linux server has no other sources.</value>
+  </data>
+  <data name="RemoteNoMirror" xml:space="preserve">
+    <value>A Linux server cannot be copied as a mirror: choose a full, incremental or differential copy.</value>
+  </data>
+  <data name="RemoteNoDbServers" xml:space="preserve">
+    <value>A task with a Linux server dumps the databases of that server; database servers of this computer belong in another task.</value>
+  </data>
+  <data name="RemoteFullBecauseNoBase" xml:space="preserve">
+    <value>Full copy: «{0}» has no set of this server to build on.</value>
+  </data>
+  <data name="RemoteHostKeyNotPinned" xml:space="preserve">
+    <value>{0}: the key of the server is not confirmed yet. Open the task and press «Test connection».</value>
+  </data>
+  <data name="RemoteKeyMissing" xml:space="preserve">
+    <value>The SSH key of the task is missing. Open the task and create the key again (then run the install block on the server again).</value>
+  </data>
+  <data name="RemoteInfoFailed" xml:space="preserve">
+    <value>{0}: custos-helper does not answer: {1}</value>
+  </data>
+  <data name="RemoteHelperIncompatible" xml:space="preserve">
+    <value>{0}: custos-helper {1} speaks protocol {2}, this CUSTOS needs custos-helper {3}. Update it with the install block from the task.</value>
+  </data>
+  <data name="RemoteConnected" xml:space="preserve">
+    <value>{0}: custos-helper {1}, {2}; folders: {3}; free on the server: {4}</value>
+  </data>
+  <data name="RemoteHelperOutdated" xml:space="preserve">
+    <value>custos-helper {0} on the server is older than {1} of this CUSTOS: update it with the install block from the task.</value>
+  </data>
+  <data name="RemoteConfigChanged" xml:space="preserve">
+    <value>The config of custos-helper (/etc/custos/helper.conf) has changed since the last copy.</value>
+  </data>
+  <data name="RemoteListingFailed" xml:space="preserve">
+    <value>{0}: the list of files could not be read: {1}</value>
+  </data>
+  <data name="RemoteSinceAll" xml:space="preserve">
+    <value>all files</value>
+  </data>
+  <data name="RemoteSinceTime" xml:space="preserve">
+    <value>changed after {0} (server time)</value>
+  </data>
+  <data name="RemotePlanned" xml:space="preserve">
+    <value>On the server: {0} entries, {1} files ({2}). To take: {3} files and links ({4}), {5}{6}.</value>
+  </data>
+  <data name="RemoteDeletedPart" xml:space="preserve">
+    <value>; deleted since the last copy: {0}</value>
+  </data>
+  <data name="RemoteRetry" xml:space="preserve">
+    <value>{0}. Next try in {1} s.</value>
+  </data>
+  <data name="RemoteGaveUp" xml:space="preserve">
+    <value>{0}: no connection after {1} tries: {2}</value>
+  </data>
+  <data name="RemoteLastListUnreadable" xml:space="preserve">
+    <value>The list of files of the set «{0}» could not be read: {1}</value>
+  </data>
+  <data name="RemoteDbReady" xml:space="preserve">
+    <value>{0}: databases to dump: {1} ({2})</value>
+  </data>
+  <data name="RemoteDbNotChosen" xml:space="preserve">
+    <value>{0}: not chosen in the task, not dumped: {1}</value>
+  </data>
+  <data name="RemoteTarFailed" xml:space="preserve">
+    <value>Files of the server: {0}</value>
+  </data>
+  <data name="RemoteHelperSays" xml:space="preserve">
+    <value>custos-helper: {0}</value>
+  </data>
+  <data name="RemoteMoreLines" xml:space="preserve">
+    <value>… and {0} more lines</value>
+  </data>
+  <data name="RemoteTarWarning" xml:space="preserve">
+    <value>Some files changed or disappeared while they were read.</value>
+  </data>
+  <data name="RemoteTarWritten" xml:space="preserve">
+    <value>Files of the server taken: {0} files and {1} folders and links ({2})</value>
+  </data>
+  <data name="RemoteSetKeptNotCommitted" xml:space="preserve">
+    <value>custos-helper reported an error. The set is kept but marked as failed; old sets were not deleted, the next run takes the changes again.</value>
+  </data>
+  <data name="RestoreRemoteNeedsFolder" xml:space="preserve">
+    <value>A copy of a Linux server is restored only into a folder of this computer: choose one.</value>
+  </data>
+  <data name="RestoreRemoteTarProblem" xml:space="preserve">
+    <value>files.tar of the set «{0}»: {1}</value>
+  </data>
+  <data name="RestoreRemoteMoreMissing" xml:space="preserve">
+    <value>… and {0} more files that no set of the chain holds.</value>
+  </data>
+  <data name="RestoreRemoteTarWritten" xml:space="preserve">
+    <value>Written {0}: {1} entries ({2})</value>
+  </data>
+  <data name="RestoreRemoteReadme" xml:space="preserve">
+    <value>How to put the files and the databases back on a server: {0}</value>
+  </data>
+  <data name="RemoteRestoreCut" xml:space="preserve">
+    <value>the tar of the set breaks off in this file</value>
+  </data>
+  <data name="RemoteReadmeTitle" xml:space="preserve">
+    <value>Copy of the Linux server {0}, set «{1}» ({2})</value>
+  </data>
+  <data name="RemoteReadmeIntro" xml:space="preserve">
+    <value>CUSTOS does not put anything back on a server by itself. Copy this folder to the server (for example with WinSCP),
+log on as root (sudo -i), go into the folder (cd) and run the commands you need from below.</value>
+  </data>
+  <data name="RemoteReadmeFiles" xml:space="preserve">
+    <value>Files: a tar for each folder taken from the server, with the newest version of every file on the date of the set.</value>
+  </data>
+  <data name="RemoteReadmeOther" xml:space="preserve">
+    <value>Other files</value>
+  </data>
+  <data name="RemoteReadmeEtc" xml:space="preserve">
+    <value>Settings from /etc: do not unpack them over a working server, that replaces its own settings.
+Unpack them into a separate folder and take what you need from there:</value>
+  </data>
+  <data name="RemoteReadmeWholeEtc" xml:space="preserve">
+    <value>This is the whole /etc: over a server it would also replace the network settings, fstab, the users with their
+passwords and the SSH keys of the server. Unpack it only into a separate folder and take what you need from there:</value>
+  </data>
+  <data name="RemoteReadmeTarNotes" xml:space="preserve">
+    <value>Run tar as root: then it gives the files their owners and rights back. Owners are matched by name; a user that
+is missing on the new server gets the number of the old one. To see what a tar holds: tar -tvf &lt;file&gt;</value>
+  </data>
+  <data name="RemoteReadmeDatabases" xml:space="preserve">
+    <value>Databases (on the server as root; the database server must be running):</value>
+  </data>
+  <data name="ConfigSshKeyOnlyMade" xml:space="preserve">
+    <value>An SSH key is made by the agent itself and cannot be entered or replaced.</value>
+  </data>
+  <data name="ConfigSshHostRequired" xml:space="preserve">
+    <value>Enter the address of the Linux server (a name or an IP address, without «user@»).</value>
+  </data>
+  <data name="ConfigSshKeyRequired" xml:space="preserve">
+    <value>The task needs an SSH key made by CUSTOS: create it in the wizard of the source.</value>
+  </data>
+  <data name="ConfigSshBadHostKey" xml:space="preserve">
+    <value>«{0}» is not a key fingerprint of the form SHA256:… Check the connection again to take the key of the server.</value>
+  </data>
+  <data name="ConfigSshBadSpeed" xml:space="preserve">
+    <value>The speed limit cannot be negative.</value>
+  </data>
+  <data name="ConfigSshBadDatabase" xml:space="preserve">
+    <value>Not a database of the server in the choice of the task: «{0}».</value>
+  </data>
+  <data name="ConfigSshBadOfficeIp" xml:space="preserve">
+    <value>«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).</value>
+  </data>
+  <data name="RemoteKeyCreated" xml:space="preserve">
+    <value>New SSH key {0} made by {1}.</value>
+  </data>
+  <data name="RemoteTestTooLong" xml:space="preserve">
+    <value>The server did not finish answering in {0} minutes.</value>
   </data>
 </root>

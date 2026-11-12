@@ -86,7 +86,18 @@ internal sealed class TaskCard : UserControl
         _details.SuspendLayout();
         _detailCount = 0;
         AddDetail(Strings.CardSources, task.Sources.Count == 0 ? Strings.CardNone
-            : string.Join(Environment.NewLine, task.Sources.Select(s => s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
+            : string.Join(Environment.NewLine, task.Sources.Select(s => s.Kind == SourceKinds.Ssh ? s.Path + " (" + RemoteSourceDialog.PresetTitle(s.Preset) + ")"
+                : s.Recursive ? s.Path : Strings.Format(Strings.CardNotRecursive, s.Path))));
+        if (task.DbServers.Count > 0)
+        {
+            AddDetail(Strings.CardDatabases, string.Join(Environment.NewLine,
+                task.DbServers.Select(d => DatabasesPage.DescribeServer(d) + " — " + DatabasesPage.DescribeDatabases(d))));
+        }
+        else if (task.Sources.FirstOrDefault(s => s.Kind == SourceKinds.Ssh) is { Helper.DbEngines: { Count: > 0 } engines } remote)
+        {
+            AddDetail(Strings.CardDatabases, string.Join(", ", engines.Select(DbEngines.Title)) + " — " + RemoteSourceDialog.DescribeDatabases(remote.Databases));
+        }
+
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Destinations.Select(d => DescribeDestination(d, snapshot))));
         AddDetail(Strings.CardSchedule, TaskDescriber.ScheduleWithCatchUp(task.Schedule));

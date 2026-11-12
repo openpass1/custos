@@ -119,6 +119,54 @@ public sealed class AgentDatabaseTests : IDisposable
         Assert.Equal(Start, again.GetLastSlot("task"));
     }
 
+    [Fact]
+    public void A_run_keeps_its_database_dumps()
+    {
+        var record = Record("run-1", "task", Start, RunStatuses.Error);
+        record.Databases = [new DatabaseResult { Engine = DbEngines.MySql, Name = "shop", Bytes = 2048, Ok = true }, new DatabaseResult { Engine = DbEngines.MySql, Name = "blog", Ok = false, Error = "cut off" }];
+        _database.SaveRun(record);
+
+        var run = Assert.Single(_database.GetHistory("task", 10));
+
+        Assert.Equal(["shop", "blog"], run.Databases.Select(d => d.Name));
+        Assert.Equal(2048, run.Databases[0].Bytes);
+        Assert.False(run.Databases[1].Ok);
+        Assert.Equal("cut off", run.Databases[1].Error);
+    }
+
+    [Fact]
+    public void A_database_of_stage_2_gets_the_column_of_the_dumps()
+    {
+        string path = _temp.Combine("old", "custos.db");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            connection.Open();
+            using var create = connection.CreateCommand();
+            create.CommandText = """
+                CREATE TABLE runs (run_id TEXT PRIMARY KEY, task_id TEXT NOT NULL, task_name TEXT NOT NULL, backup_type TEXT NOT NULL,
+                    trigger TEXT NOT NULL, scheduled_for TEXT, requested_by TEXT, started_at TEXT NOT NULL, finished_at TEXT, status TEXT,
+                    source_files INTEGER NOT NULL DEFAULT 0, source_bytes INTEGER NOT NULL DEFAULT 0, files_processed INTEGER NOT NULL DEFAULT 0,
+                    bytes_written INTEGER NOT NULL DEFAULT 0, errors INTEGER NOT NULL DEFAULT 0, warnings INTEGER NOT NULL DEFAULT 0,
+                    error_message TEXT, set_name TEXT, destinations TEXT);
+                INSERT INTO runs (run_id, task_id, task_name, backup_type, trigger, started_at, status)
+                    VALUES ('old-run', 'task', 'Docs', 'full', 'manual', '2026-10-01T10:00:00.0000000+00:00', 'success');
+                PRAGMA user_version = 2;
+                """;
+            create.ExecuteNonQuery();
+        }
+
+        var database = new AgentDatabase(path);
+        var record = Record("new-run", "task", Start, RunStatuses.Success);
+        record.Databases = [new DatabaseResult { Engine = DbEngines.PostgreSql, Name = "crm", Bytes = 10, Ok = true }];
+        database.SaveRun(record);
+
+        var history = database.GetHistory("task", 10);
+        Assert.Equal(["new-run", "old-run"], history.Select(r => r.RunId));
+        Assert.Equal("crm", Assert.Single(history[0].Databases).Name);
+        Assert.Empty(history[1].Databases);
+    }
+
     private static RunRecord Record(string runId, string taskId, DateTimeOffset startedAt, string? status) => new()
     {
         RunId = runId,

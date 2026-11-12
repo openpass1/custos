@@ -3,6 +3,7 @@ using System.Runtime.Versioning;
 using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Backup;
+using Custos.Core.Databases;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Storage;
@@ -379,6 +380,70 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         Log(LogLineLevels.Info, Messages.Format(Messages.SettingsChangedBy, user));
         PublishSnapshot();
         return OkResult.Instance;
+    }
+
+    /// <summary>"Find" in the database server dialog: running servers and folders of their programs.</summary>
+    public DbFindResult FindDatabases() => DbFinder.Find(_stopping);
+
+    /// <summary>Connects to a database server as the task would and lists its databases ("Test connection").</summary>
+    public DbTestResult TestDatabase(DbTestRequest request, string? sid)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var server = request.Server;
+        string? profile = request.ProfileSid ?? sid;
+        var variables = new PathVariables(Platform.Variables(profile), profile is not null, request.TaskName ?? string.Empty,
+            Platform.ComputerName, BackupTypes.Full, DateTime.Now);
+        server.BinDir = variables.Expand(server.BinDir ?? string.Empty, out string? problem);
+        if (problem is not null)
+        {
+            return new DbTestResult { Error = problem };
+        }
+
+        if (!DbEngines.IsKnown(server.Engine))
+        {
+            return new DbTestResult { Error = Messages.Format(Messages.DbEngineUnknown, server.Engine) };
+        }
+
+        if (!Path.IsPathFullyQualified(server.BinDir))
+        {
+            return new DbTestResult { Error = Messages.Format(Messages.PathNotAbsolute, server.BinDir) };
+        }
+
+        try
+        {
+            DbAccount? account;
+            if (request.Credential is { } typed)
+            {
+                string? password = typed.Password;
+                if (password is null && _config.GetCredential(typed.Credential.Id) is not null)
+                {
+                    password = _config.GetPassword(typed.Credential.Id);
+                }
+
+                account = new DbAccount(typed.Credential.User, password ?? string.Empty);
+            }
+            else
+            {
+                account = server.CredentialId is { } id ? Platform.GetDbAccount(id) : null;
+            }
+
+            var client = Platform.CreateDbClient(server, account);
+            (client as ProcessDbClient)?.CheckTools();
+            var info = client.Inspect(_stopping);
+            var system = DbTools.SystemDatabases(server.Engine);
+            var comparer = DbTools.NameComparer(server.Engine);
+            return new DbTestResult
+            {
+                Ok = true,
+                Version = info.Version,
+                Databases = [.. info.Databases.Where(n => !system.Contains(n, comparer))],
+                DataDir = info.DataDir,
+            };
+        }
+        catch (Exception ex) when (ex is DbException or BackupException or ConfigException)
+        {
+            return new DbTestResult { Error = ex.Message };
+        }
     }
 
     /// <summary>Tries to write to a destination as the task would ("Check access" in the editor).</summary>
@@ -779,6 +844,10 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             RequestedBy = queued.RequestedBy,
             StartedAt = startedAt,
         };
+
+        // The dumps of the last run tell how many bytes the dumps will add now: their size is unknown until taken.
+        long dumpBytesHint = task.DbServers.Count == 0 ? 0
+            : TryDatabase(db => db.GetHistory(task.Id, 10).FirstOrDefault(r => r.Databases.Count > 0)?.Databases.Sum(d => d.Bytes) ?? 0);
         TryDatabase(db =>
         {
             db.SaveRun(record);
@@ -809,6 +878,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
                 LogEveryFile = level == LogLevels.Files,
                 TimeZone = TimeZoneInfo.Local,
                 LowPriority = low,
+                DumpBytesHint = dumpBytesHint,
             }, pause, cancel.Token);
         }
 #pragma warning disable CA1031 // Whatever broke, the run ends with an error and the queue goes on.
@@ -843,6 +913,8 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         record.ErrorMessage = result.ErrorMessage;
         record.SetName = result.SetName;
         record.Destinations = result.Destinations;
+        record.Databases = result.Databases;
+        record.Remote = result.Remote;
         TryDatabase(db =>
         {
             db.SaveRun(record);

@@ -40,6 +40,9 @@ public sealed class TaskDefinition
 
     public TaskFilters Filters { get; set; } = new();
 
+    /// <summary>Database servers on this computer whose databases are dumped into every set (section 6.2).</summary>
+    public List<TaskDatabaseServer> DbServers { get; set; } = [];
+
     /// <summary>Whose profile %USERPROFILE% and the like refer to; null = whoever created the task.</summary>
     public string? ProfileSid { get; set; }
 
@@ -104,6 +107,146 @@ public sealed class TaskSource
     public string? CredentialId { get; set; }
 
     public bool Recursive { get; set; } = true;
+
+    // ---- A Linux server over SSH (kind "ssh", CUSTOS-remote-pull.md 4.1); null for the other kinds ----
+
+    /// <summary>Address of the Linux server.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Host { get; set; }
+
+    /// <summary>Null = 22.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Port { get; set; }
+
+    /// <summary>The account custos-helper runs for ("custos").</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? User { get; set; }
+
+    /// <summary>The pinned key of the server, "SHA256:…". Changed only on this computer (wizard, editor).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? HostKeySha256 { get; set; }
+
+    /// <summary>One of <see cref="RemotePresets"/>; only the wizard needs it.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Preset { get; set; }
+
+    /// <summary>External address of the office for <c>from=</c> of the key; null = the key works from anywhere.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OfficeIp { get; set; }
+
+    /// <summary>Limit for the files in KB/s; 0 = none. Dumps are never limited.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? SpeedLimitKbps { get; set; }
+
+    /// <summary>The settings of helper.conf the wizard wrote into the install block; only the wizard needs them.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RemoteHelperSettings? Helper { get; set; }
+
+    /// <summary>Which of the databases custos-helper gives out are dumped; null = all of them.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public RemoteDatabaseChoice? Databases { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+}
+
+/// <summary>What custos-helper may give out, as the wizard writes it into <c>/etc/custos/helper.conf</c>.</summary>
+public sealed class RemoteHelperSettings
+{
+    /// <summary>Folders taken with everything inside (<c>root</c>).</summary>
+    public List<string> Roots { get; set; } = [];
+
+    /// <summary><c>find -path</c> patterns left out with everything inside (<c>exclude</c>).</summary>
+    public List<string> Excludes { get; set; } = [];
+
+    /// <summary>Values of <see cref="DbEngines"/> (<c>db_engine</c>).</summary>
+    public List<string> DbEngines { get; set; } = [];
+
+    /// <summary>Databases left out besides the system ones (<c>db_exclude</c>).</summary>
+    public List<string> DbExclude { get; set; } = [];
+
+    /// <summary>A my.cnf with an account for MariaDB or MySQL; null = root over the socket (<c>db_defaults_file</c>).</summary>
+    public string? DbDefaultsFile { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+}
+
+/// <summary>
+/// The databases of a Linux server a task dumps, ticked in the wizard from what custos-helper lists. Entries are
+/// "&lt;engine&gt;/&lt;name&gt;", for example "mariadb/shop". What custos-helper gives out at all is decided on the
+/// server (<c>db_exclude</c> of helper.conf); this choice only leaves out more.
+/// </summary>
+public sealed class RemoteDatabaseChoice
+{
+    /// <summary>True: every database custos-helper lists but <see cref="Exclude"/>, new ones too. False: only
+    /// <see cref="Include"/>.</summary>
+    public bool AllDatabases { get; set; } = true;
+
+    public List<string> Exclude { get; set; } = [];
+
+    public List<string> Include { get; set; } = [];
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
+    /// <summary>"mariadb/shop".</summary>
+    public static string Key(string engine, string name) => engine + "/" + name;
+
+    /// <summary>Splits "mariadb/shop"; false when it is not a known engine and a name.</summary>
+    public static bool TrySplit(string? key, out string engine, out string name)
+    {
+        int slash = key?.IndexOf('/', StringComparison.Ordinal) ?? -1;
+        engine = slash > 0 ? key![..slash] : string.Empty;
+        name = slash > 0 ? key![(slash + 1)..] : string.Empty;
+        return DbEngines.IsKnown(engine) && name.Length > 0 && !name.Contains('/', StringComparison.Ordinal);
+    }
+
+    /// <summary>The names of one engine among the entries.</summary>
+    public static List<string> Names(IEnumerable<string> keys, string engine) =>
+        [.. keys.Select(k => TrySplit(k, out string e, out string n) && e == engine ? n : null).OfType<string>().Distinct(StringComparer.Ordinal)];
+
+    /// <summary>"shop, blog" when all entries are of one engine, else "MariaDB: shop, PostgreSQL: blog".</summary>
+    public static string Describe(IReadOnlyCollection<string> keys)
+    {
+        var split = keys.Select(k => TrySplit(k, out string e, out string n) ? (Engine: e, Name: n) : (Engine: string.Empty, Name: k)).ToList();
+        bool several = split.Select(s => s.Engine).Distinct(StringComparer.Ordinal).Count() > 1;
+        return string.Join(", ", split.Select(s => several && s.Engine.Length > 0 ? DbEngines.Title(s.Engine) + ": " + s.Name : s.Name));
+    }
+}
+
+/// <summary>
+/// A local MySQL, MariaDB or PostgreSQL server (for example the one of OSPanel): its databases are dumped with the
+/// programs of its client into <c>db/&lt;engine&gt;/&lt;name&gt;.sql</c> of every set (section 6.2).
+/// </summary>
+public sealed class TaskDatabaseServer
+{
+    public string Id { get; set; } = TaskDefinition.NewId();
+
+    /// <summary>One of <see cref="DbEngines"/>.</summary>
+    public string Engine { get; set; } = DbEngines.MySql;
+
+    /// <summary>The folder with mysqldump.exe, mariadb-dump.exe or pg_dump.exe and the other client programs.</summary>
+    public string BinDir { get; set; } = string.Empty;
+
+    public string Host { get; set; } = "127.0.0.1";
+
+    /// <summary>Null = the usual port of the engine (3306 or 5432).</summary>
+    public int? Port { get; set; }
+
+    /// <summary>An account of kind <see cref="CredentialKinds.Db"/>: login and password of the database server.</summary>
+    public string? CredentialId { get; set; }
+
+    /// <summary>True: every database but the system ones and <see cref="Exclude"/>. False: only <see cref="Include"/>.</summary>
+    public bool AllDatabases { get; set; } = true;
+
+    public List<string> Exclude { get; set; } = [];
+
+    public List<string> Include { get; set; } = [];
+
+    /// <summary>The data folder the server reported at the last connection check; only for the warning of the editor
+    /// when it is among the sources.</summary>
+    public string? DataDir { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }

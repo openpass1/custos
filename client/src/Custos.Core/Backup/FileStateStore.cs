@@ -4,6 +4,7 @@ namespace Custos.Core.Backup;
 /// <param name="RunsSinceVerify">Successful runs since the last one whose new copy was verified.</param>
 /// <param name="StoredCheckedAt">When the stored copies were last verified (section 6.5), or null if never.</param>
 /// <param name="CompressionRatio">Archive bytes per source byte at the last archive run, for the free-space check.</param>
+/// <param name="LastRunId">The last committed run: a copy of a Linux server takes what changed after its set.</param>
 public sealed record TaskBackupState(
     string? FullRunId,
     string? FullSetName,
@@ -11,7 +12,8 @@ public sealed record TaskBackupState(
     int RunsSinceFull,
     int RunsSinceVerify = 0,
     DateTimeOffset? StoredCheckedAt = null,
-    double? CompressionRatio = null)
+    double? CompressionRatio = null,
+    string? LastRunId = null)
 {
     public static readonly TaskBackupState Empty = new(null, null, null, 0);
 }
@@ -77,6 +79,7 @@ public sealed class MemoryFileStateStore : IFileStateStore
             {
                 RunsSinceVerify = run.Verified ? 0 : state.RunsSinceVerify + 1,
                 CompressionRatio = run.CompressionRatio ?? state.CompressionRatio,
+                LastRunId = run.RunId,
             };
             if (run.BackupType == Model.BackupTypes.Full)
             {

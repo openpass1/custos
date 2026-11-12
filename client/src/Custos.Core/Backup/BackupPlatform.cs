@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text;
 using Custos.Core.Archives;
+using Custos.Core.Databases;
+using Custos.Core.Model;
 
 namespace Custos.Core.Backup;
 
@@ -38,6 +40,20 @@ public interface IBackupPlatform
     /// <summary>The password of an <c>archive_password</c> credential (section 6.5).</summary>
     /// <exception cref="BackupException">There is no such credential or it has no password.</exception>
     string GetArchivePassword(string credentialId);
+
+    /// <summary>Login and password of a <c>db</c> credential (section 6.2).</summary>
+    /// <exception cref="BackupException">There is no such credential or its password cannot be read.</exception>
+    DbAccount GetDbAccount(string credentialId);
+
+    /// <summary>The client of a database server: its programs in <see cref="TaskDatabaseServer.BinDir"/>.</summary>
+    IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account);
+
+    /// <summary>SSH to Linux servers (stage 2a).</summary>
+    Remote.ISshConnector Ssh { get; }
+
+    /// <summary>The private key of an <c>ssh_key</c> credential: its 32-byte Ed25519 seed.</summary>
+    /// <exception cref="BackupException">There is no such credential or its key cannot be read.</exception>
+    byte[] GetSshKey(string credentialId);
 
     /// <summary>
     /// Runs the program or script of an event and waits for it (section 6.9): <c>.bat</c> and <c>.cmd</c> through
@@ -159,6 +175,22 @@ public class LocalBackupPlatform : IBackupPlatform
 
     public virtual string GetArchivePassword(string credentialId) =>
         ArchivePasswords.TryGetValue(credentialId, out string? password) ? password : throw new BackupException(Messages.ArchivePasswordMissing);
+
+    /// <summary>Database accounts by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, DbAccount> DbAccounts { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual DbAccount GetDbAccount(string credentialId) =>
+        DbAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.DbAccountMissing);
+
+    public virtual IDbClient CreateDbClient(TaskDatabaseServer server, DbAccount? account) => new ProcessDbClient(server, account, ConsoleEncoding);
+
+    public virtual Remote.ISshConnector Ssh => Remote.SshNetConnector.Instance;
+
+    /// <summary>Private SSH keys (seeds) by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, byte[]> SshKeySeeds { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual byte[] GetSshKey(string credentialId) =>
+        SshKeySeeds.TryGetValue(credentialId, out byte[]? seed) ? seed : throw new BackupException(Messages.RemoteKeyMissing);
 
     public virtual string ComputerName => Environment.MachineName;
 
