@@ -809,7 +809,7 @@ static partial class Strings
     /// <summary>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that ...</summary>
     public static string RetentionAgeHint => Get(nameof(RetentionAgeHint));
 
-    /// <summary>Grandfather-father-son: keep the last backup of each day, week and month</summary>
+    /// <summary>Grandfather-father-son: a backup for each day, a full backup for each week and month</summary>
     public static string RetentionGfs => Get(nameof(RetentionGfs));
 
     /// <summary>Days:</summary>
@@ -821,11 +821,14 @@ static partial class Strings
     /// <summary>Months:</summary>
     public static string GfsMonthly => Get(nameof(GfsMonthly));
 
-    /// <summary>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a k...</summary>
+    /// <summary>For example 7, 4 and 12 keep the last backup of each of the last 7 days and the last full backup of each of...</summary>
     public static string RetentionGfsHint => Get(nameof(RetentionGfsHint));
 
     /// <summary>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</summary>
     public static string RetentionGfsEmpty => Get(nameof(RetentionGfsEmpty));
+
+    /// <summary>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete...</summary>
+    public static string RetentionNoFullWarning => Get(nameof(RetentionNoFullWarning));
 
     /// <summary>Rules that always apply</summary>
     public static string RetentionRules => Get(nameof(RetentionRules));

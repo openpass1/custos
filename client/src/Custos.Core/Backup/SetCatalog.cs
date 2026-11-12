@@ -374,9 +374,11 @@ public static partial class SetCatalog
     }
 
     /// <summary>
-    /// Which sets grandfather-father-son retention removes (section 6.6): of the newest days, weeks (ISO) and months
-    /// that have sets, the last set of each stays, as many as <paramref name="gfs"/> says, with what those sets need.
-    /// The newest full set and the protected set stay.
+    /// Which sets grandfather-father-son retention removes (section 6.6): of the newest days that have sets, the last
+    /// set of each stays; of the newest weeks (ISO) and months that have full sets, the last full set of each stays;
+    /// as many as <paramref name="gfs"/> says, with what those sets need. Weeks and months keep only full sets, so each
+    /// of them is one set that restores alone, however the task makes its incremental or differential ones (the engine
+    /// makes the first run of every week full in this mode). The newest full set and the protected set stay.
     /// </summary>
     public static List<StoredSet> PlanGfsRetention(IReadOnlyList<StoredSet> sets, GfsOptions gfs, TimeZoneInfo timeZone, string? protectedRunId)
     {
@@ -384,20 +386,24 @@ public static partial class SetCatalog
         ArgumentNullException.ThrowIfNull(gfs);
         ArgumentNullException.ThrowIfNull(timeZone);
         var newestFirst = sets.OrderByDescending(s => s.Header.StartedAt).ToList();
+        var fullsNewestFirst = newestFirst.Where(s => s.Header.BackupType == BackupTypes.Full).ToList();
         var points = new List<StoredSet>();
-        void Pick(int count, Func<DateTime, (int, int, int)> period)
+        void Pick(List<StoredSet> from, int count, Func<DateTime, (int, int, int)> period)
         {
             // GroupBy keeps the order in which periods first appear: newest first.
-            points.AddRange(newestFirst.GroupBy(s => period(TimeZoneInfo.ConvertTime(s.Header.StartedAt, timeZone).DateTime))
+            points.AddRange(from.GroupBy(s => period(TimeZoneInfo.ConvertTime(s.Header.StartedAt, timeZone).DateTime))
                 .Take(Math.Max(0, count))
                 .Select(g => g.First()));
         }
 
-        Pick(gfs.Daily, d => (d.Year, d.Month, d.Day));
-        Pick(gfs.Weekly, d => (ISOWeek.GetYear(d), ISOWeek.GetWeekOfYear(d), 0));
-        Pick(gfs.Monthly, d => (d.Year, d.Month, 0));
+        Pick(newestFirst, gfs.Daily, d => (d.Year, d.Month, d.Day));
+        Pick(fullsNewestFirst, gfs.Weekly, IsoWeek);
+        Pick(fullsNewestFirst, gfs.Monthly, d => (d.Year, d.Month, 0));
         return Unneeded(sets, points, protectedRunId);
     }
+
+    /// <summary>The ISO week of a local time (weeks start on Monday) as a key: year, week, 0.</summary>
+    internal static (int, int, int) IsoWeek(DateTime local) => (ISOWeek.GetYear(local), ISOWeek.GetWeekOfYear(local), 0);
 
     /// <summary>Every set that neither <paramref name="wanted"/> nor what it needs, the newest full set and the
     /// protected set include.</summary>

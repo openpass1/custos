@@ -82,6 +82,9 @@
   <data name="FullBecauseMonthDay" xml:space="preserve">
     <value>Today is the day of the month for a full backup.</value>
   </data>
+  <data name="FullBecauseGfsWeek" xml:space="preserve">
+    <value>The first backup of the week is full: grandfather-father-son keeps full backups for weeks and months.</value>
+  </data>
   <data name="FullBecauseParentMissing" xml:space="preserve">
     <value>The full backup «{0}» is missing in {1}, so this one is full.</value>
   </data>
@@ -532,6 +535,9 @@
   <data name="DescFullOnlyFirst" xml:space="preserve">
     <value>only the first one, and when a destination has none</value>
   </data>
+  <data name="DescFullListGfsWeek" xml:space="preserve">
+    <value>the first run of every week (grandfather-father-son)</value>
+  </data>
   <data name="DescOneFolder" xml:space="preserve">
     <value>The backup is kept up to date in one folder.</value>
   </data>
@@ -572,7 +578,7 @@
     <value>Backups older than {0} days are deleted; a full backup stays while newer backups need it.</value>
   </data>
   <data name="DescKeepGfs" xml:space="preserve">
-    <value>The last backup of each of the last {0} days, {1} weeks and {2} months is kept, with the backups it builds on.</value>
+    <value>Kept: the last backup of each of the last days ({0}) and the last full backup of each of the last weeks ({1}) and months ({2}).</value>
   </data>
   <data name="DescMirrorExact" xml:space="preserve">
     <value>Files deleted in the sources are deleted from the mirror too.</value>

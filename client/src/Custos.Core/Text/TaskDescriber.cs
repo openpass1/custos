@@ -201,8 +201,9 @@ public static class TaskDescriber
     }
 
     /// <summary>
-    /// When an incremental or differential task makes a full backup, for the card: "Every 7th run, on Sundays", or
-    /// "Only the first one, and when a destination has none". Null for full backups and mirrors.
+    /// When an incremental or differential task makes a full backup, for the card: "Every 7th run, on Sundays", "The
+    /// first run of every week (grandfather-father-son)", or "Only the first one, and when a destination has none".
+    /// Null for full backups and mirrors.
     /// </summary>
     public static string? FullBackups(TaskDefinition task)
     {
@@ -231,6 +232,11 @@ public static class TaskDescriber
         else if (force.MonthDay is >= 1 and <= 31)
         {
             parts.Add(Messages.Format(Messages.DescFullListMonthDay, force.MonthDay.Value, Ordinal(force.MonthDay.Value)));
+        }
+
+        if (task.Retention.Mode == RetentionModes.Gfs && KeepsSets(task))
+        {
+            parts.Add(Messages.DescFullListGfsWeek);
         }
 
         return Capitalize(parts.Count == 0 ? Messages.DescFullOnlyFirst : string.Join(", ", parts));
@@ -273,7 +279,7 @@ public static class TaskDescriber
                 : Messages.DescMirrorExact;
         }
 
-        if (!task.Layout.SeparateFolders && task.Archive.Format == ArchiveFormats.None)
+        if (!KeepsSets(task))
         {
             return Messages.DescOneFolder;
         }
@@ -301,6 +307,11 @@ public static class TaskDescriber
                 return Messages.DescKeepAll;
         }
     }
+
+    /// <summary>Whether backups are kept as separate sets (archives, a folder per backup, a Linux server), so that
+    /// retention has something to delete.</summary>
+    private static bool KeepsSets(TaskDefinition task) =>
+        task.Layout.SeparateFolders || task.Archive.Format != ArchiveFormats.None || task.Sources.Any(s => s.Kind == SourceKinds.Ssh);
 
     private static string Days(List<int> days)
     {

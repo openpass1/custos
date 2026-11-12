@@ -389,6 +389,10 @@ public sealed class TaskDescriberTests : IDisposable
         task.ForceFull = new ForceFullOptions { EveryRuns = 2, Weekday = 1 };
         Assert.Equal("Every 2nd run, on Mondays", TaskDescriber.FullBackups(task));
 
+        task.ForceFull = new ForceFullOptions();
+        task.Retention.Mode = RetentionModes.Gfs;
+        Assert.Equal("The first run of every week (grandfather-father-son)", TaskDescriber.FullBackups(task));
+
         task.BackupType = BackupTypes.Full;
         Assert.Null(TaskDescriber.FullBackups(task));
     }

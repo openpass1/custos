@@ -832,7 +832,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>A full backup is deleted only when every backup made after it on top of it is old too, so the backups that stay can always be restored.</value>
   </data>
   <data name="RetentionGfs" xml:space="preserve">
-    <value>Grandfather-father-son: keep the last backup of each day, week and month</value>
+    <value>Grandfather-father-son: a backup for each day, a full backup for each week and month</value>
   </data>
   <data name="GfsDaily" xml:space="preserve">
     <value>Days:</value>
@@ -844,10 +844,13 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Months:</value>
   </data>
   <data name="RetentionGfsHint" xml:space="preserve">
-    <value>For example 7, 4 and 12 keep a backup for each of the last 7 days, 4 weeks and 12 months. A backup that a kept one builds on (its full backup, the incremental ones before it) stays too. One task with a forced full backup and this mode replaces the pair "daily" and "weekly" tasks.</value>
+    <value>For example 7, 4 and 12 keep the last backup of each of the last 7 days and the last full backup of each of the last 4 weeks and 12 months. For that an incremental or differential task makes its first backup of every week full by itself; the incremental backups in between go once they leave the days. A backup that a kept one builds on stays too. One such task replaces the pair of tasks "daily" and "weekly".</value>
   </data>
   <data name="RetentionGfsEmpty" xml:space="preserve">
     <value>Grandfather-father-son: keep at least one daily, weekly or monthly backup.</value>
+  </data>
+  <data name="RetentionNoFullWarning" xml:space="preserve">
+    <value>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete anything: the backups will only pile up. Turn on a full backup on the «Basic» page (for example every 7th run) or choose grandfather-father-son, which makes a full backup every week by itself.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Rules that always apply</value>

@@ -191,6 +191,30 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
+    public void Gfs_makes_the_first_backup_of_every_week_full()
+    {
+        // Start is Sunday 1 November 2026: the next day begins a new ISO week.
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Incremental, destination);
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Gfs, Gfs = new GfsOptions { Daily = 7, Weekly = 4, Monthly = 12 } };
+
+        Assert.Equal(BackupTypes.Full, Run(task, Start).BackupType);
+        Assert.Equal(BackupTypes.Incremental, Run(task, Start.AddHours(5)).BackupType);
+        _log.Lines.Clear();
+        Assert.Equal(BackupTypes.Full, Run(task, Start.AddDays(1)).BackupType);
+        Assert.Contains(_log.Lines, l => l.Message == Messages.FullBecauseGfsWeek);
+        Assert.Equal(BackupTypes.Incremental, Run(task, Start.AddDays(2)).BackupType);
+        Assert.Equal(BackupTypes.Incremental, Run(task, Start.AddDays(7)).BackupType);
+        Assert.Equal(BackupTypes.Full, Run(task, Start.AddDays(8)).BackupType);
+
+        // Other retention modes leave the type alone.
+        string other = _temp.Combine("Other");
+        var counted = NewTask(BackupTypes.Incremental, other);
+        Run(counted, Start);
+        Assert.Equal(BackupTypes.Incremental, Run(counted, Start.AddDays(1)).BackupType);
+    }
+
+    [Fact]
     public void A_missing_parent_set_makes_the_next_copy_full()
     {
         string destination = _temp.Combine("Backup");

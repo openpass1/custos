@@ -88,9 +88,21 @@ internal sealed class BasicPage : EditorPage
             _safeDays.Enabled = _mirrorSafe.Checked && _mirror.Checked;
         };
         _name.TextChanged += (_, _) => Context.SetShape(taskName: _name.Text.Trim());
-        _forceEvery.CheckedChanged += (_, _) => _forceEveryRuns.Enabled = _forceEvery.Checked;
-        _forceWeekday.CheckedChanged += (_, _) => _weekday.Enabled = _forceWeekday.Checked;
-        _forceMonthDay.CheckedChanged += (_, _) => _monthDay.Enabled = _forceMonthDay.Checked;
+        _forceEvery.CheckedChanged += (_, _) =>
+        {
+            _forceEveryRuns.Enabled = _forceEvery.Checked;
+            ShowForcedFull();
+        };
+        _forceWeekday.CheckedChanged += (_, _) =>
+        {
+            _weekday.Enabled = _forceWeekday.Checked;
+            ShowForcedFull();
+        };
+        _forceMonthDay.CheckedChanged += (_, _) =>
+        {
+            _monthDay.Enabled = _forceMonthDay.Checked;
+            ShowForcedFull();
+        };
     }
 
     public override void LoadFrom(TaskDefinition task)
@@ -163,6 +175,9 @@ internal sealed class BasicPage : EditorPage
     }
 
     private static RadioButton Radio(string text) => new() { Text = text, AutoSize = true, Margin = new Padding(0, 4, 0, 0) };
+
+    /// <summary>The retention page warns when nothing forces a full backup.</summary>
+    private void ShowForcedFull() => Context.SetShape(forcedFull: _forceEvery.Checked || _forceWeekday.Checked || _forceMonthDay.Checked);
 
     private static FlowLayoutPanel Inline(params Control[] controls)
     {
@@ -1269,6 +1284,7 @@ internal sealed class RetentionPage : EditorPage
     private readonly NumericUpDown _monthly = new() { Minimum = 0, Maximum = 1000, Value = 12, Width = 60 };
     private readonly FlowLayoutPanel _gfsCounts = new() { AutoSize = true, WrapContents = true, Margin = new Padding(18, 0, 0, 0) };
     private readonly Label _mirrorNote = new() { Text = Strings.RetentionMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
+    private readonly Label _noFullWarning;
 
     public RetentionPage(EditorContext context)
         : base(context, Strings.PageRetention, Glyph.Layers)
@@ -1283,6 +1299,8 @@ internal sealed class RetentionPage : EditorPage
         _gfsCounts.Controls.AddRange([Caption(Strings.GfsDaily), _daily, Caption(Strings.GfsWeekly), _weekly, Caption(Strings.GfsMonthly), _monthly]);
         AddWide(_gfsCounts);
         AddNote(Strings.RetentionGfsHint, 18);
+        _noFullWarning = AddNote(Strings.RetentionNoFullWarning);
+        _noFullWarning.ForeColor = Glyphs.WarningText;
         AddHeading(Strings.RetentionRules);
         AddNote(Strings.RetentionRulesText);
 
@@ -1361,6 +1379,11 @@ internal sealed class RetentionPage : EditorPage
         _keepFull.Enabled = _byCount.Checked && !mirror;
         _maxAge.Enabled = _byAge.Checked && !mirror;
         _gfsCounts.Enabled = _gfs.Checked && !mirror;
+
+        // Without a forced full backup one chain grows from the first full backup, and "by count" (with incremental or
+        // differential backups) or "by age" (incremental: each needs the ones before it) can delete none of it.
+        bool chain = Context.BackupType is BackupTypes.Incremental or BackupTypes.Differential && !Context.HasForcedFull;
+        _noFullWarning.Visible = chain && (_byCount.Checked || (_byAge.Checked && Context.BackupType == BackupTypes.Incremental));
     }
 }
 

@@ -82,6 +82,9 @@
   <data name="FullBecauseMonthDay" xml:space="preserve">
     <value>Сегодня число месяца для полной копии.</value>
   </data>
+  <data name="FullBecauseGfsWeek" xml:space="preserve">
+    <value>Первая копия недели — полная: «дед-отец-сын» хранит за недели и месяцы полные копии.</value>
+  </data>
   <data name="FullBecauseParentMissing" xml:space="preserve">
     <value>Полной копии «{0}» нет в {1}, поэтому эта копия полная.</value>
   </data>
@@ -532,6 +535,9 @@
   <data name="DescFullOnlyFirst" xml:space="preserve">
     <value>только первая, и когда в назначении нет полной</value>
   </data>
+  <data name="DescFullListGfsWeek" xml:space="preserve">
+    <value>первым запуском каждой недели (дед-отец-сын)</value>
+  </data>
   <data name="DescOneFolder" xml:space="preserve">
     <value>Копия обновляется в одной и той же папке.</value>
   </data>
@@ -572,7 +578,7 @@
     <value>Копии старше {0} дней удаляются; полная копия остаётся, пока она нужна более новым.</value>
   </data>
   <data name="DescKeepGfs" xml:space="preserve">
-    <value>Хранится последняя копия каждого из последних дней ({0}), недель ({1}) и месяцев ({2}) вместе с копиями, на которых она построена.</value>
+    <value>Хранится последняя копия каждого из последних дней ({0}) и последняя полная копия каждой из последних недель ({1}) и месяцев ({2}).</value>
   </data>
   <data name="DescMirrorExact" xml:space="preserve">
     <value>Файлы, удалённые в источниках, удаляются и из зеркала.</value>

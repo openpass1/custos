@@ -123,6 +123,34 @@ public sealed class EditorTests
     });
 
     [Fact]
+    public void Retention_warns_when_nothing_forces_a_full_backup() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, Samples.Office(), isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        editor.SelectPage(retention);
+        Sta.Pump();
+
+        // Incremental, «by count», no forced full backup: nothing could ever be deleted.
+        Assert.True(Sta.Shows(retention, Strings.RetentionNoFullWarning));
+
+        // Grandfather-father-son makes its own full backups.
+        Sta.Find<RadioButton>(retention).Single(r => r.Text == Strings.RetentionGfs).Checked = true;
+        Sta.Pump();
+        Assert.False(Sta.Shows(retention, Strings.RetentionNoFullWarning));
+
+        // «By count» again, now with a full backup every 7th run.
+        Sta.Find<RadioButton>(retention).Single(r => r.Text == Strings.RetentionCount).Checked = true;
+        Sta.Pump();
+        Assert.True(Sta.Shows(retention, Strings.RetentionNoFullWarning));
+        Sta.Find<CheckBox>(editor.Pages[0]).Single(c => c.Text == Strings.ForceEvery).Checked = true;
+        Sta.Pump();
+        Assert.False(Sta.Shows(retention, Strings.RetentionNoFullWarning));
+    });
+
+    [Fact]
     public void The_folder_name_is_picked_from_a_list_and_shows_an_example() => Sta.Run("en-US", () =>
     {
         using var monitor = Samples.Monitor();
