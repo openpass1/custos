@@ -1,5 +1,5 @@
-﻿; CUSTOS installer (draft, stage 0). Built by build.ps1, which passes the defines below.
-; Section 10.1 of docs/CUSTOS-client.md. Still missing: the "monitoring server" wizard page (stage 3).
+﻿; CUSTOS installer. Built by build.ps1, which passes the defines below.
+; Section 10.1 of docs/CUSTOS-client.md.
 
 #if VER < EncodeVer(6, 3, 0)
   #error Inno Setup 6.3 or newer is required
@@ -59,6 +59,22 @@ en.RuntimeFailed=Installing the .NET 10 Desktop Runtime failed (code %1). CUSTOS
 ru.RuntimeFailed=Не удалось установить .NET 10 Desktop Runtime (код %1). Без него CUSTOS не работает.
 en.ServiceFailed=The CUSTOS service did not start (code %1).%n%nSee the log files in %2 and the Windows "Application" event log, source CUSTOS.
 ru.ServiceFailed=Служба CUSTOS не запустилась (код %1).%n%nПодробности в журналах в папке %2 и в журнале Windows «Приложение», источник CUSTOS.
+en.ServerTitle=Monitoring server
+ru.ServerTitle=Сервер мониторинга
+en.ServerSubtitle=Optional: connect this computer to a CUSTOS monitoring site.
+ru.ServerSubtitle=Необязательно: подключить этот компьютер к сайту мониторинга CUSTOS.
+en.ServerPrompt=Leave both fields empty to work without a server or to keep the current connection. Both can be set later in the CUSTOS settings.%n%nThe registration code is pasted as the site shows it, with the server key fingerprint after "#".
+ru.ServerPrompt=Оставьте оба поля пустыми, чтобы работать без сервера или сохранить текущее подключение. Их можно указать и позже, в настройках CUSTOS.%n%nКод регистрации вставляется так, как его показывает сайт, вместе с отпечатком ключа сервера после «#».
+en.ServerUrl=Server address, for example https://custos.example.lan:
+ru.ServerUrl=Адрес сервера, например https://custos.example.lan:
+en.ServerCode=Registration code:
+ru.ServerCode=Код регистрации:
+en.ServerBoth=Fill in both the address and the registration code, or leave both empty.
+ru.ServerBoth=Укажите и адрес, и код регистрации или оставьте оба поля пустыми.
+en.ServerUrlBad=The address must start with http:// or https://, for example https://custos.example.lan
+ru.ServerUrlBad=Адрес должен начинаться с http:// или https://, например https://custos.example.lan
+en.ServerCodeBad=This does not look like a registration code. Copy it from the site whole: 25 letters and digits in groups of five, then "#" and the fingerprint of the server key.
+ru.ServerCodeBad=Это не похоже на код регистрации. Скопируйте его с сайта целиком: 25 букв и цифр группами по пять, затем «#» и отпечаток ключа сервера.
 en.RemoveData=Also delete the CUSTOS settings, logs and database in %1?%n%nThe backups themselves are never deleted.
 ru.RemoveData=Удалить также настройки, журналы и базу CUSTOS в папке %1?%n%nСами резервные копии не удаляются никогда.
 
@@ -99,6 +115,9 @@ Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Custos.exe"; Flags: runhidde
 [Code]
 const
   ServiceName = '{#ServiceName}';
+
+var
+  ServerPage: TInputQueryWizardPage;
 
 function RunHidden(const FileName, Params: String): Integer;
 var
@@ -172,6 +191,135 @@ begin
 #endif
 end;
 
+{ The "Monitoring server" page (section 10.1, A.3): an address and a registration code, both optional. }
+procedure InitializeWizard;
+begin
+  ServerPage := CreateInputQueryPage(wpWelcome, CustomMessage('ServerTitle'), CustomMessage('ServerSubtitle'), CustomMessage('ServerPrompt'));
+  ServerPage.Add(CustomMessage('ServerUrl'), False);
+  ServerPage.Add(CustomMessage('ServerCode'), False);
+end;
+
+function StartsText(const Prefix, S: String): Boolean;
+begin
+  Result := CompareText(Copy(S, 1, Length(Prefix)), Prefix) = 0;
+end;
+
+function WithoutSeparators(const S: String): String;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+    if (S[I] <> '-') and (S[I] <> ' ') then
+      Result := Result + S[I];
+end;
+
+{ The same rules as the service (RegistrationCode.TryParse): 25 characters of base32, then optionally "#" and
+  16 hex digits of the server key fingerprint. The service checks it again. }
+function IsRegistrationCode(const Code: String): Boolean;
+var
+  Hash, I: Integer;
+  Key, Fingerprint: String;
+  C: Char;
+begin
+  Hash := Pos('#', Code);
+  if Hash = 0 then
+  begin
+    Key := UpperCase(WithoutSeparators(Code));
+    Fingerprint := '';
+  end
+  else
+  begin
+    Key := UpperCase(WithoutSeparators(Copy(Code, 1, Hash - 1)));
+    Fingerprint := UpperCase(WithoutSeparators(Copy(Code, Hash + 1, Length(Code))));
+  end;
+
+  Result := Length(Key) = 25;
+  for I := 1 to Length(Key) do
+  begin
+    C := Key[I];
+    if not (((C >= 'A') and (C <= 'Z')) or ((C >= '2') and (C <= '7'))) then
+      Result := False;
+  end;
+
+  if (Hash > 0) and (Length(Fingerprint) <> 16) then
+    Result := False;
+  for I := 1 to Length(Fingerprint) do
+  begin
+    C := Fingerprint[I];
+    if not (((C >= '0') and (C <= '9')) or ((C >= 'A') and (C <= 'F'))) then
+      Result := False;
+  end;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  Url, Code: String;
+begin
+  Result := True;
+  if CurPageID <> ServerPage.ID then
+    Exit;
+
+  Url := Trim(ServerPage.Values[0]);
+  Code := Trim(ServerPage.Values[1]);
+  if (Url = '') and (Code = '') then
+    Exit;
+
+  if (Url = '') or (Code = '') then
+  begin
+    MsgBox(CustomMessage('ServerBoth'), mbError, MB_OK);
+    Result := False;
+  end
+  else if not (StartsText('http://', Url) or StartsText('https://', Url)) or (Length(Url) < 10) then
+  begin
+    MsgBox(CustomMessage('ServerUrlBad'), mbError, MB_OK);
+    Result := False;
+  end
+  else if not IsRegistrationCode(Code) then
+  begin
+    MsgBox(CustomMessage('ServerCodeBad'), mbError, MB_OK);
+    Result := False;
+  end;
+end;
+
+function JsonString(const S: String): String;
+begin
+  Result := S;
+  StringChangeEx(Result, '\', '\\', True);
+  StringChangeEx(Result, '"', '\"', True);
+  Result := '"' + Result + '"';
+end;
+
+{ Hands the address and the code to the service in config\server-setup.json: the service connects with them at its
+  start and deletes the file. On a first install the config folder is created here, so it is closed to everyone but
+  SYSTEM and Administrators first, as the service would do (section 3.3): the code must not be readable by users. }
+procedure WriteServerSetup;
+var
+  Url, Code, ConfigDir: String;
+  Lines: TArrayOfString;
+begin
+  if ServerPage = nil then
+    Exit;
+  Url := Trim(ServerPage.Values[0]);
+  Code := Trim(ServerPage.Values[1]);
+  if (Url = '') or (Code = '') then
+    Exit;
+
+  ConfigDir := ExpandConstant('{commonappdata}\CUSTOS\config');
+  if not DirExists(ConfigDir) then
+  begin
+    ForceDirectories(ConfigDir);
+    RunHidden(ExpandConstant('{sys}\icacls.exe'), '"' + ConfigDir + '" /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F');
+  end;
+
+  SetArrayLength(Lines, 1);
+  Lines[0] := '{"server_url": ' + JsonString(Url) + ', "registration_code": ' + JsonString(Code) + '}';
+  if SaveStringsToUTF8File(ConfigDir + '\server-setup.json', Lines, False) then
+    Log('Monitoring server address and code handed to the service: ' + Url)
+  else
+    Log('Could not write server-setup.json');
+end;
+
 { Registers the service: automatic start as LocalSystem, restart after a crash (section 10.1). }
 procedure RegisterAndStartService;
 var
@@ -200,7 +348,10 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
+  begin
+    WriteServerSetup;
     RegisterAndStartService;
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

@@ -114,6 +114,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         {
             _ready.TrySetResult();
             StopRuns(runner);
+            await _linkLoop.WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
     }
 
@@ -171,6 +172,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             SevenZipVersion = _platform?.Archives.SevenZipVersion,
             SevenZipProblem = _sevenZipProblem,
             Power = power,
+            Server = _link?.Describe() ?? new ServerLinkInfo(),
         };
     }
 
@@ -294,6 +296,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         Log(LogLineLevels.Info, Messages.Format(change.Previous is null ? Messages.TaskCreatedBy : Messages.TaskChangedBy, change.Saved.Name, user), change.Saved.Id);
+        NoteConfigChange(change.Saved);
         PublishSnapshot();
         _scheduleWake.Release();
         return change.Saved;
@@ -322,6 +325,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         Log(LogLineLevels.Info, Messages.Format(Messages.TaskDeletedBy, removed.Name, user), taskId);
+        NoteConfigChange(deletedTaskId: removed.Id);
         PublishSnapshot();
         return OkResult.Instance;
     }
@@ -347,6 +351,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         foreach (var change in changes)
         {
             SetLastSlot(change.Saved.Id, now);
+            NoteConfigChange(change.Saved);
         }
 
         Log(LogLineLevels.Info, Messages.Format(Messages.TasksImportedBy, changes.Count, user));
@@ -359,6 +364,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         try
         {
             var saved = _config.SaveCredential(input.Credential, input.Password);
+            NoteConfigChange();
             PublishSnapshot();
             return saved;
         }
@@ -382,6 +388,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             throw Refused(ex);
         }
 
+        NoteConfigChange();
         PublishSnapshot();
         return OkResult.Instance;
     }
@@ -399,6 +406,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
         ApplyLanguage();
         Log(LogLineLevels.Info, Messages.Format(Messages.SettingsChangedBy, user));
+        NoteConfigChange();
         PublishSnapshot();
         return OkResult.Instance;
     }
@@ -602,6 +610,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             Log(LogLineLevels.Error, problem);
         }
 
+        StartMonitor(_stopping);
         _ready.TrySetResult();
     }
 
@@ -803,7 +812,12 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
                 try
                 {
-                    // An update of 7z.dll finishes first.
+                    // An update of 7z.dll or of the program finishes first; one sent by the server goes before this run.
+                    while (Volatile.Read(ref _sevenZipWanted) > 0 && !_stopping.IsCancellationRequested)
+                    {
+                        Thread.Sleep(200);
+                    }
+
                     _sevenZipGate.Wait(_stopping);
                 }
                 catch (OperationCanceledException)
@@ -874,6 +888,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             db.SaveRun(record);
             return true;
         });
+        ReportRunStart(record, task.Revision);
         lock (_lock)
         {
             _current = active;
@@ -936,6 +951,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         record.Destinations = result.Destinations;
         record.Databases = result.Databases;
         record.Remote = result.Remote;
+        record.Verify = result.Verify.ToRecord();
         TryDatabase(db =>
         {
             db.SaveRun(record);
@@ -949,6 +965,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             _ => RunLogLevel.Error,
         }, Messages.Format(Messages.RunFinished, task.Name, Words.Status(result.Status), result.FilesProcessed,
             Sizes.Format(result.BytesWritten), Sizes.FormatDuration(finishedAt - startedAt)));
+        ReportRunFinish(record, result, file.Path);
         ReportToEventLog(task, result);
         NotePowerAction(task, result);
 

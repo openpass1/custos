@@ -42,6 +42,7 @@ ColumnType	Type	Тип
 ColumnSchedule	Schedule	Расписание
 ColumnLastRun	Last run	Последний запуск
 ColumnResult	Result	Результат
+ColumnVerify	Verification	Проверка
 ColumnNextRun	Next run	Следующий запуск
 ResultRunning	Running {0} %	Выполняется {0} %
 ResultPaused	Paused {0} %	Пауза {0} %
@@ -107,6 +108,9 @@ ColumnDetails	Details	Подробности
 HistoryEmpty	This task has not run yet.	Это задание ещё не запускалось.
 HistorySelectTask	Select a task to see its runs.	Выберите задание, чтобы увидеть его запуски.
 HistoryWarnings	Warnings: {0}	Предупреждений: {0}
+HistoryVerifyOkNew	passed (new copy)	пройдена (новая копия)
+HistoryVerifyOkStored	passed (sets: {0})	пройдена (наборов: {0})
+HistoryVerifyFailed	failed: {0}	не пройдена: {0}
 ProgressIdle	No task is running now.	Сейчас ничего не выполняется.
 ProgressTask	Task	Задание
 ProgressTrigger	Started	Запуск
@@ -624,3 +628,31 @@ RemoteTestNoDatabases	no databases	баз нет
 RemoteTestOutdated	custos-helper {0} is older than {1}: run the block on the server again.	custos-helper {0} старше {1}: выполните блок на сервере ещё раз.
 RemoteTestWarnings	Warnings: {0}	Предупреждения: {0}
 RemoteNextPages	Schedule, archive, destinations and retention are set on the other pages, as for any task.	Расписание, архив, назначения и хранение задаются на остальных страницах, как в любом задании.
+# ---- Monitoring server (section 8, docs/client-ui.md)
+ServerOnline	Server: connected — {0}	Сервер: на связи — {0}
+ServerPending	Server: waiting for approval on the site — {0}	Сервер: ждёт подтверждения на сайте — {0}
+ServerDisabled	Server: this computer is disabled on the site — {0}	Сервер: компьютер отключён на сайте — {0}
+ServerConnecting	Server: connecting to {0}…	Сервер: подключение к {0}…
+ServerOffline	No connection to the server for {0} min	Нет связи с сервером {0} мин
+ServerReportsOne	{0} report waiting to be sent	{0} отчёт ждёт отправки
+ServerReportsFew	{0} reports waiting to be sent	{0} отчёта ждут отправки
+ServerReportsMany	{0} reports waiting to be sent	{0} отчётов ждут отправки
+ServerProblem	Server {0}: {1}	Сервер {0}: {1}
+SettingsServer	Monitoring server	Сервер мониторинга
+ServerNamed	(«{0}»)	(«{0}»)
+ServerUrlLabel	Server address:	Адрес сервера:
+ServerUrlHelp	The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the internet, use https://.	Адрес сайта CUSTOS, например http://custos.example.lan. Если сервер доступен через интернет, указывайте https://.
+ServerCodeLabel	Registration code:	Код регистрации:
+ServerCodeHelp	The code is on the site: Settings → Agents. It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.	Код есть на сайте: Настройки → Агенты. Он нужен один раз, для регистрации; после неё компьютер узнаёт сервер по его ключу. Часть после «#» — отпечаток ключа сервера: по нему программа проверяет, что говорит именно с вашим сервером. Повторно код здесь не показывается.
+ServerConnectButton	Connect	Подключить
+ServerResetButton	Reset the binding to the server…	Сбросить привязку к серверу…
+ServerResetConfirm	Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect again you need the registration code from the site.	Забыть сервер {0}? Программа продолжит работать автономно, ещё не отправленные отчёты будут удалены. Чтобы подключиться снова, понадобится код регистрации с сайта.
+ServerConnectDone	The address and the code are saved; the computer registers on the server now. If the server asks for approval, approve the computer on the site (Machines).	Адрес и код сохранены, компьютер регистрируется на сервере. Если сервер требует подтверждения, подтвердите компьютер на сайте (раздел «Машины»).
+ServerAdminOnly	Only an administrator of this computer can connect it to a server or reset the binding.	Подключить компьютер к серверу или сбросить привязку может только администратор этого компьютера.
+ServerFingerprints	Key fingerprints: server {0}, this computer {1}	Отпечатки ключей: сервера {0}, этого компьютера {1}
+ServerLastContact	Last answer of the server: {0}	Последний ответ сервера: {0}
+ServerWaiting	Reports waiting to be sent: {0}	Отчётов ждут отправки: {0}
+ServerUrlRequired	Enter the address of the server.	Введите адрес сервера.
+ServerCodeRequired	Enter the registration code from the site.	Введите код регистрации с сайта.
+AllowRemoteEdit	Allow the server to change tasks	Разрешить серверу менять задания
+AllowRemoteEditHelp	When it is on, tasks, accounts and settings can be changed from the site. When it is off, the site only shows them; starting, stopping and updates from the site still work.	Если включено, задания, учётные записи и настройки можно менять с сайта. Если выключено, сайт их только показывает; запуск, остановка и обновления с сайта работают и так.

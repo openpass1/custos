@@ -18,7 +18,30 @@ public sealed partial class BackupEngine
 
     /// <summary>Reads back every file of this run in a plain set and compares it with what was copied.</summary>
     /// <exception cref="BackupException">A file differs or cannot be read.</exception>
-    private void VerifyNewFolder(RunContext run, Target target)
+    private void VerifyNewFolder(RunContext run, Target target) => NoteNewCheck(run, target, target.SetName, () => VerifyNewFolderCore(run, target));
+
+    /// <summary>Unpacks the new archive (still under its partial name) and compares it with what was packed.</summary>
+    /// <exception cref="BackupException">The archive is damaged or differs.</exception>
+    private void VerifyNewArchive(RunContext run, Target target) =>
+        NoteNewCheck(run, target, run.Header?.SetName ?? run.SetName ?? target.SetName, () => VerifyNewArchiveCore(run, target));
+
+    /// <summary>Runs the check of the new copy and notes its result for the report (A.5) and the inventory (A.8).</summary>
+    private static void NoteNewCheck(RunContext run, Target target, string setName, Action check)
+    {
+        run.Result.Verify.Scope ??= VerifyScopes.New;
+        try
+        {
+            check();
+            run.Result.Verify.Checks.Add(new SetCheck(target.Destination.Id, setName, Ok: true));
+        }
+        catch (BackupException)
+        {
+            run.Result.Verify.Checks.Add(new SetCheck(target.Destination.Id, setName, Ok: false));
+            throw;
+        }
+    }
+
+    private void VerifyNewFolderCore(RunContext run, Target target)
     {
         foreach (var (context, file) in run.ToCopy)
         {
@@ -60,9 +83,7 @@ public sealed partial class BackupEngine
         _log.Write(RunLogLevel.Info, Messages.Format(Messages.VerifyNewOk, target.Label));
     }
 
-    /// <summary>Unpacks the new archive (still under its partial name) and compares it with what was packed.</summary>
-    /// <exception cref="BackupException">The archive is damaged or differs.</exception>
-    private void VerifyNewArchive(RunContext run, Target target)
+    private void VerifyNewArchiveCore(RunContext run, Target target)
     {
         var expected = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (context, file) in run.ToCopy)
@@ -126,6 +147,8 @@ public sealed partial class BackupEngine
                 Report(force: true);
                 string? problem = CheckSet(run, target, set);
                 checkedSets++;
+                run.Result.Verify.Scope = VerifyScopes.Stored;
+                run.Result.Verify.Checks.Add(new SetCheck(target.Destination.Id, set.Header.SetName, problem is null));
                 if (problem is null)
                 {
                     _log.Write(RunLogLevel.Detail, Messages.Format(Messages.StoredSetOk, set.Header.SetName, target.Label));

@@ -68,6 +68,9 @@ public sealed class BackupResult
 
     public int DeletedSets { get; set; }
 
+    /// <summary>What the verification of this run checked (<c>verify</c> of <c>runs/finish</c>, A.5).</summary>
+    public VerifyReport Verify { get; } = new();
+
     /// <summary>The shadow copy failed (event 3000).</summary>
     public bool VssFailed { get; set; }
 
@@ -77,6 +80,34 @@ public sealed class BackupResult
     /// <summary>The run changed nothing in the destinations because no file had changed.</summary>
     public bool NothingToDo { get; set; }
 }
+
+/// <summary>The verification done by a run (section 6.5, A.5).</summary>
+public sealed class VerifyReport
+{
+    /// <summary>The new copy or the stored ones were checked.</summary>
+    public bool Performed => Checks.Count > 0;
+
+    /// <summary><c>stored</c> when the stored sets were checked, <c>new</c> when only the new copy was, null when nothing was.</summary>
+    public string? Scope { get; set; }
+
+    /// <summary>Every set checked: by destination, with the result.</summary>
+    public List<SetCheck> Checks { get; } = [];
+
+    /// <summary>Names of the sets that failed, each once.</summary>
+    public List<string> FailedSets => [.. Checks.Where(c => !c.Ok).Select(c => c.SetName).Distinct(StringComparer.Ordinal)];
+
+    /// <summary>For the history (and <c>runs/finish</c>); null when nothing was checked.</summary>
+    public RunVerify? ToRecord() => !Performed ? null : new RunVerify
+    {
+        Ok = FailedSets.Count == 0,
+        Scope = Scope ?? VerifyScopes.New,
+        SetsChecked = Checks.Select(c => c.SetName).Distinct(StringComparer.Ordinal).Count(),
+        FailedSets = FailedSets,
+    };
+}
+
+/// <summary>One set checked in one destination.</summary>
+public sealed record SetCheck(string DestinationId, string SetName, bool Ok);
 
 /// <summary>A run in progress, for the interface (and later for <c>runs/progress</c>, A.5).</summary>
 public sealed class BackupProgress
@@ -118,6 +149,13 @@ public sealed class BackupProgress
         CurrentFile = CurrentFile,
         Destinations = [.. Destinations.Select(d => new DestinationProgress { DestinationId = d.DestinationId, Label = d.Label, State = d.State, Error = d.Error })],
     };
+}
+
+/// <summary>Values of <see cref="VerifyReport.Scope"/> (A.5).</summary>
+public static class VerifyScopes
+{
+    public const string New = "new";
+    public const string Stored = "stored";
 }
 
 /// <summary>Phases of a run (A.5).</summary>

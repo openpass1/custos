@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Custos.Core.Backup;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Text;
@@ -188,6 +189,9 @@ internal sealed class HistoryView : UserControl
         ForeColor = SystemColors.GrayText,
     };
 
+    /// <summary>The index of the verification column.</summary>
+    private const int VerifyColumn = 7;
+
     public HistoryView()
     {
         _list.Columns.Add(Strings.ColumnStarted, 130);
@@ -197,6 +201,7 @@ internal sealed class HistoryView : UserControl
         _list.Columns.Add(Strings.ColumnFiles, 80, HorizontalAlignment.Right);
         _list.Columns.Add(Strings.ColumnSize, 90, HorizontalAlignment.Right);
         _list.Columns.Add(Strings.ColumnResult, 150);
+        _list.Columns.Add(Strings.ColumnVerify, 170);
         _list.Columns.Add(Strings.ColumnDetails, 400);
         Controls.Add(_list);
         Controls.Add(_message);
@@ -237,6 +242,7 @@ internal sealed class HistoryView : UserControl
                     Ui.Number(run.FilesProcessed),
                     Sizes.Format(run.BytesWritten),
                     Words.Status(run.Status),
+                    VerifyText(run.Verify),
                     details,
                 ])
                 {
@@ -246,6 +252,20 @@ internal sealed class HistoryView : UserControl
                 if (run.Status is RunStatuses.Error)
                 {
                     item.ForeColor = Glyphs.ErrorText;
+                }
+
+                if (run.Verify is { } verify)
+                {
+                    // The verification cell in its own colour: green when the copy was read back fine, red when not.
+                    item.UseItemStyleForSubItems = false;
+                    item.SubItems[VerifyColumn].ForeColor = verify.Ok ? Glyphs.Green : Glyphs.ErrorText;
+                    for (int i = 0; i < item.SubItems.Count; i++)
+                    {
+                        if (i != VerifyColumn)
+                        {
+                            item.SubItems[i].ForeColor = item.ForeColor;
+                        }
+                    }
                 }
 
                 _list.Items.Add(item);
@@ -259,4 +279,13 @@ internal sealed class HistoryView : UserControl
         _message.Visible = false;
         _list.Visible = true;
     }
+
+    /// <summary>What the verification of a run found: passed for the new copy or for the stored sets, or which sets failed.</summary>
+    internal static string VerifyText(RunVerify? verify) => verify switch
+    {
+        null => "—",
+        { Ok: false } => Strings.Format(Strings.HistoryVerifyFailed, string.Join(", ", verify.FailedSets)),
+        { Scope: VerifyScopes.Stored } => Strings.Format(Strings.HistoryVerifyOkStored, verify.SetsChecked),
+        _ => Strings.HistoryVerifyOkNew,
+    };
 }

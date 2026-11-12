@@ -23,6 +23,9 @@ internal sealed partial class AgentService
     /// <summary>Guarded by <see cref="_restoreLock"/>: no restore starts while 7z.dll is replaced.</summary>
     private bool _sevenZipUpdating;
 
+    /// <summary>An update from the server waits for <see cref="_sevenZipGate"/>: the queue lets it in before the next run.</summary>
+    private int _sevenZipWanted;
+
     public async Task<SevenZipCheckResult> CheckSevenZipAsync(CancellationToken cancellationToken)
     {
         string? installed = InstalledSevenZip();
@@ -76,17 +79,37 @@ internal sealed partial class AgentService
     }
 
     /// <summary>
-    /// Installs the 7z.dll of a 7-Zip installer that is already downloaded and checked: for the button, and later for
-    /// updates sent by the server. Refused while a task or a restore runs.
+    /// Installs the 7z.dll of a 7-Zip installer that is already downloaded and checked: for the button and for updates
+    /// sent by the server. While a task runs the button is refused, and an update of the server waits for its end.
+    /// A running restore refuses both.
     /// </summary>
-    public OkResult InstallSevenZip(string installer, string user, CancellationToken cancellationToken)
+    public OkResult InstallSevenZip(string installer, string user, CancellationToken cancellationToken, bool waitForRuns = false)
     {
         if (Platform.Archives is not ArchiveProvider provider)
         {
             return SevenZipFailed(Messages.SevenZipWindowsOnly);
         }
 
-        if (!_sevenZipGate.Wait(0, cancellationToken))
+        bool entered;
+        if (waitForRuns)
+        {
+            Interlocked.Increment(ref _sevenZipWanted);
+            try
+            {
+                _sevenZipGate.Wait(cancellationToken);
+                entered = true;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _sevenZipWanted);
+            }
+        }
+        else
+        {
+            entered = _sevenZipGate.Wait(0, cancellationToken);
+        }
+
+        if (!entered)
         {
             string task;
             lock (_lock)

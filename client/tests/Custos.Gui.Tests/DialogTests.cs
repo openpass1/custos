@@ -137,6 +137,53 @@ public sealed class DialogTests
     [Theory]
     [InlineData("en-US")]
     [InlineData("ru-RU")]
+    public void The_settings_show_the_monitoring_server_but_only_administrators_connect(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var settings = new SettingsForm(monitor);
+        settings.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(settings, Strings.SettingsServer));
+        var connect = Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.ServerConnectButton);
+        Assert.False(connect.Enabled);
+        Assert.Contains(Sta.Find<CheckBox>(settings), c => c.Text == Strings.AllowRemoteEdit);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_history_shows_whether_the_backup_was_verified(string culture) => Sta.Run(culture, () =>
+    {
+        using var view = new HistoryView();
+        var start = new DateTimeOffset(2026, 11, 12, 9, 0, 0, TimeSpan.Zero);
+        RunRecord Run(string id, string status, RunVerify? verify) => new()
+        {
+            RunId = id, TaskId = Samples.OfficeId, TaskName = "Office documents", BackupType = BackupTypes.Full,
+            Trigger = RunTriggers.Manual, StartedAt = start, FinishedAt = start.AddMinutes(1), Status = status, Verify = verify,
+        };
+
+        view.ShowRuns(
+        [
+            Run("a", RunStatuses.Success, new RunVerify { Ok = true, Scope = "new", SetsChecked = 1 }),
+            Run("b", RunStatuses.Success, new RunVerify { Ok = true, Scope = "stored", SetsChecked = 3 }),
+            Run("c", RunStatuses.Error, new RunVerify { Ok = false, Scope = "stored", SetsChecked = 3, FailedSets = ["Set 2"] }),
+            Run("d", RunStatuses.Success, null),
+        ]);
+
+        var cells = view.List.Items.Cast<ListViewItem>().Select(i => i.SubItems[7]).ToList();
+        Assert.Equal(Strings.ColumnVerify, view.List.Columns[7].Text);
+        Assert.Equal(Strings.HistoryVerifyOkNew, cells[0].Text);
+        Assert.Equal(Glyphs.Green, cells[0].ForeColor);
+        Assert.Equal(Strings.Format(Strings.HistoryVerifyOkStored, 3), cells[1].Text);
+        Assert.Contains("Set 2", cells[2].Text, StringComparison.Ordinal);
+        Assert.Equal(Glyphs.ErrorText, cells[2].ForeColor);
+        Assert.Equal("—", cells[3].Text);
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
     public void The_import_lists_the_cobian_tasks_and_asks_for_the_password_of_their_account(string culture) => Sta.Run(culture, () =>
     {
         string list = Path.Combine(Path.GetTempPath(), "custos-gui-tests", Guid.NewGuid().ToString("N") + ".lst");

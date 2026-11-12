@@ -27,6 +27,7 @@ internal sealed partial class AgentService
 
         var credential = _config.CreateSshKey($"{request.User.Trim()}@{request.Host.Trim()}", "custos@" + Platform.ComputerName);
         Log(LogLineLevels.Info, Messages.Format(Messages.RemoteKeyCreated, credential.DisplayName, user));
+        NoteConfigChange();
         PublishSnapshot();
         return credential;
     }

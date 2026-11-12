@@ -1236,4 +1236,289 @@
   <data name="RemoteTestTooLong" xml:space="preserve">
     <value>Сервер не закончил отвечать за {0} мин.</value>
   </data>
+  <data name="MonitorCodeBad" xml:space="preserve">
+    <value>Код регистрации должен начинаться с ключа из {0} букв и цифр (как на сайте: K7QHM-2XARV-…).</value>
+  </data>
+  <data name="MonitorCodeBadFingerprint" xml:space="preserve">
+    <value>После «#» в коде должен быть отпечаток ключа сервера: 16 знаков 0–9 и A–F (3F2A-91C0-77DE-0B14).</value>
+  </data>
+  <data name="MonitorCodeUnreadable" xml:space="preserve">
+    <value>Сохранённый код регистрации не читается на этом компьютере: введите его заново.</value>
+  </data>
+  <data name="MonitorNoConnection" xml:space="preserve">
+    <value>нет связи: {0}</value>
+  </data>
+  <data name="MonitorTimeout" xml:space="preserve">
+    <value>сервер не ответил вовремя</value>
+  </data>
+  <data name="MonitorUnsigned" xml:space="preserve">
+    <value>{0} без верной подписи сервера</value>
+  </data>
+  <data name="MonitorAnswerTooBig" xml:space="preserve">
+    <value>ответ больше {0} МБ</value>
+  </data>
+  <data name="MonitorDownloadTooBig" xml:space="preserve">
+    <value>файл больше {0} МБ</value>
+  </data>
+  <data name="MonitorKeyRejected" xml:space="preserve">
+    <value>Ключ регистрации не подошёл. Проверьте код на сайте (Настройки → Агенты) и введите его заново.</value>
+  </data>
+  <data name="MonitorCheckMac" xml:space="preserve">
+    <value>ответ не подтверждён ключом регистрации</value>
+  </data>
+  <data name="MonitorCheckBody" xml:space="preserve">
+    <value>в ответе нет номера агента или ключа сервера</value>
+  </data>
+  <data name="MonitorCheckSignature" xml:space="preserve">
+    <value>ответ не подписан ключом, который в нём пришёл</value>
+  </data>
+  <data name="MonitorCheckFingerprint" xml:space="preserve">
+    <value>у ключа сервера отпечаток {0}, а не тот, что в коде</value>
+  </data>
+  <data name="MonitorCheckPinned" xml:space="preserve">
+    <value>у сервера другой ключ, чем при первой регистрации. Если сервер установлен заново, сбросьте привязку к серверу в настройках</value>
+  </data>
+  <data name="MonitorRegistrationRefused" xml:space="preserve">
+    <value>Регистрация отклонена: {0}.</value>
+  </data>
+  <data name="MonitorKeyUnreadable" xml:space="preserve">
+    <value>Ключ агента не читается ({0}); создан новый, старый файл сохранён как {1}. Компьютер заново зарегистрируется на сервере по сохранённому коду.</value>
+  </data>
+  <data name="MonitorStepFailed" xml:space="preserve">
+    <value>Связь с сервером: внутренняя ошибка ({0}); новая попытка через минуту.</value>
+  </data>
+  <data name="MonitorRegistered" xml:space="preserve">
+    <value>Компьютер зарегистрирован на сервере {0}: агент {1}, ключ сервера {2}.</value>
+  </data>
+  <data name="MonitorApproved" xml:space="preserve">
+    <value>Сервер подтвердил этот компьютер: отчёты и команды теперь идут.</value>
+  </data>
+  <data name="MonitorLogTooLarge" xml:space="preserve">
+    <value>Сервер не принял полный журнал запуска (слишком большой): отчёт уходит без него, журнал можно запросить с сайта позже.</value>
+  </data>
+  <data name="MonitorLogTooLargeProxy" xml:space="preserve">
+    <value>Веб-сервер не принял полный журнал запуска (413 без подписи): отчёт уходит без него. Проверьте client_max_body_size в nginx (не меньше 10m).</value>
+  </data>
+  <data name="MonitorConfigRefused" xml:space="preserve">
+    <value>Сервер не принял настройки этого компьютера: {0}.</value>
+  </data>
+  <data name="MonitorCommandBadId" xml:space="preserve">
+    <value>Команда сервера без правильного номера ({0}, {1}) пропущена.</value>
+  </data>
+  <data name="MonitorCommandExpired" xml:space="preserve">
+    <value>срок команды истёк, пока она шла до компьютера</value>
+  </data>
+  <data name="MonitorCommandUnknown" xml:space="preserve">
+    <value>неизвестная команда «{0}»: эта версия программы её не умеет</value>
+  </data>
+  <data name="MonitorRemoteEditOff" xml:space="preserve">
+    <value>на этом компьютере выключено «Разрешить серверу менять задания»</value>
+  </data>
+  <data name="MonitorCommandNotDone" xml:space="preserve">
+    <value>Команда сервера {0}: {1} ({2}).</value>
+  </data>
+  <data name="MonitorNotConnected" xml:space="preserve">
+    <value>Компьютер не подключён к серверу мониторинга.</value>
+  </data>
+  <data name="MonitorUnknownAgent" xml:space="preserve">
+    <value>Сервер не знает этот компьютер (его удалили на сайте?): регистрация заново по сохранённому коду.</value>
+  </data>
+  <data name="MonitorRateLimited" xml:space="preserve">
+    <value>Сервер попросил подождать {0} с перед следующим запросом.</value>
+  </data>
+  <data name="MonitorClockSkew" xml:space="preserve">
+    <value>часы этого компьютера расходятся с сервером больше чем на 5 минут (время сервера {0}). Поправьте время (синхронизация времени Windows).</value>
+  </data>
+  <data name="MonitorConnectionLost" xml:space="preserve">
+    <value>Нет связи с сервером мониторинга {0} уже {1} мин: {2}. Отчёты ждут на этом компьютере и будут отправлены позже.</value>
+  </data>
+  <data name="MonitorConnectionRestored" xml:space="preserve">
+    <value>Связь с сервером мониторинга {0} восстановлена через {1} мин.</value>
+  </data>
+  <data name="MonitorReportDropped" xml:space="preserve">
+    <value>Сервер отклонил отчёт {0}: {1}. Повторно он не отправляется.</value>
+  </data>
+  <data name="MonitorStateDetail" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="MonitorStateOff" xml:space="preserve">
+    <value>Сервер мониторинга не подключён.</value>
+  </data>
+  <data name="MonitorStateNoCode" xml:space="preserve">
+    <value>Адрес сервера задан, но нет кода регистрации.</value>
+  </data>
+  <data name="MonitorStateConnecting" xml:space="preserve">
+    <value>Подключение к серверу мониторинга…</value>
+  </data>
+  <data name="MonitorStateKeyRejected" xml:space="preserve">
+    <value>Ключ регистрации не подошёл</value>
+  </data>
+  <data name="MonitorStateRefused" xml:space="preserve">
+    <value>Ответ сервера не прошёл проверку</value>
+  </data>
+  <data name="MonitorStatePending" xml:space="preserve">
+    <value>Компьютер зарегистрирован и ждёт подтверждения на сайте.</value>
+  </data>
+  <data name="MonitorStateApproved" xml:space="preserve">
+    <value>Связь с сервером мониторинга есть.</value>
+  </data>
+  <data name="MonitorStateDisabled" xml:space="preserve">
+    <value>Компьютер отключён на сайте: работает автономно и только раз в 10 минут сообщает о себе.</value>
+  </data>
+  <data name="MonitorStateForbidden" xml:space="preserve">
+    <value>Сервер не принимает агентов с адреса этого компьютера (Настройки → Безопасность на сайте)</value>
+  </data>
+  <data name="MonitorStateClockSkew" xml:space="preserve">
+    <value>Расходится время</value>
+  </data>
+  <data name="MonitorStateOffline" xml:space="preserve">
+    <value>Нет связи с сервером мониторинга</value>
+  </data>
+  <data name="MonitorTaskNotObject" xml:space="preserve">
+    <value>Задание в команде — не объект.</value>
+  </data>
+  <data name="MonitorTaskUnreadable" xml:space="preserve">
+    <value>Задание в команде не читается: {0}</value>
+  </data>
+  <data name="MonitorTaskBadId" xml:space="preserve">
+    <value>«{0}» — неправильный номер (UUID).</value>
+  </data>
+  <data name="MonitorCredentialKindRefused" xml:space="preserve">
+    <value>Учётные записи вида «{0}» с сервера не принимаются.</value>
+  </data>
+  <data name="MonitorSettingsNotObject" xml:space="preserve">
+    <value>Настройки в команде — не объект.</value>
+  </data>
+  <data name="MonitorSettingsUnreadable" xml:space="preserve">
+    <value>Настройки в команде не читаются: {0}</value>
+  </data>
+  <data name="MonitorPasswordHashBad" xml:space="preserve">
+    <value>Пароль программы с сервера — не хеш вида pbkdf2-sha256$…</value>
+  </data>
+  <data name="MonitorSettingBad" xml:space="preserve">
+    <value>Настройка {0} не может быть «{1}».</value>
+  </data>
+  <data name="MonitorSetupUnreadable" xml:space="preserve">
+    <value>Настройки сервера из установщика не приняты: {0}</value>
+  </data>
+  <data name="MonitorByInstaller" xml:space="preserve">
+    <value>установщик</value>
+  </data>
+  <data name="MonitorUrlBad" xml:space="preserve">
+    <value>«{0}» — не адрес сервера: он должен начинаться с http:// или https:// (http://custos.example.lan).</value>
+  </data>
+  <data name="MonitorConnectedBy" xml:space="preserve">
+    <value>Сервер мониторинга {0} задан ({1}): идёт регистрация.</value>
+  </data>
+  <data name="MonitorResetBy" xml:space="preserve">
+    <value>Привязка к серверу мониторинга сброшена ({0}): программа работает автономно.</value>
+  </data>
+  <data name="MonitorNotAllowed" xml:space="preserve">
+    <value>Подключить компьютер к серверу или отключить от него может только администратор этого компьютера.</value>
+  </data>
+  <data name="MonitorPayloadMissing" xml:space="preserve">
+    <value>В команде нет «{0}».</value>
+  </data>
+  <data name="MonitorNothingToStop" xml:space="preserve">
+    <value>задание не выполнялось и не стояло в очереди</value>
+  </data>
+  <data name="MonitorTaskNotRunning" xml:space="preserve">
+    <value>задание сейчас не выполняется</value>
+  </data>
+  <data name="MonitorTaskEnabled" xml:space="preserve">
+    <value>Задание «{0}» включено командой с сервера.</value>
+  </data>
+  <data name="MonitorTaskDisabled" xml:space="preserve">
+    <value>Задание «{0}» отключено командой с сервера.</value>
+  </data>
+  <data name="MonitorSecretUnreadable" xml:space="preserve">
+    <value>Пароль учётной записи {0} не расшифровывается ключом этого агента: {1}</value>
+  </data>
+  <data name="MonitorTaskOverwritten" xml:space="preserve">
+    <value>Задание «{0}»: правка с сайта заменила версию {1}, сделанную здесь ({2}); эта версия сохранена на сайте.</value>
+  </data>
+  <data name="MonitorTaskCreated" xml:space="preserve">
+    <value>Задание «{0}» создано с сайта, автор {1}.</value>
+  </data>
+  <data name="MonitorTaskChanged" xml:space="preserve">
+    <value>Задание «{0}» изменено с сайта, автор {1}.</value>
+  </data>
+  <data name="MonitorSettingsChanged" xml:space="preserve">
+    <value>Настройки изменены с сайта: {0}.</value>
+  </data>
+  <data name="MonitorLogGone" xml:space="preserve">
+    <value>журнал этого запуска на компьютере уже не хранится</value>
+  </data>
+  <data name="MonitorInventoryFailed" xml:space="preserve">
+    <value>Список копий в хранилищах не составлен: {0}</value>
+  </data>
+  <data name="MonitorPackageBadCommand" xml:space="preserve">
+    <value>в команде нет правильной версии, SHA-256 или подписи</value>
+  </data>
+  <data name="MonitorPackageBadSignature" xml:space="preserve">
+    <value>подпись сервера не сходится: файл не принят</value>
+  </data>
+  <data name="MonitorPackageBadHash" xml:space="preserve">
+    <value>SHA-256 скачанного файла не совпадает с указанным в команде</value>
+  </data>
+  <data name="MonitorDownloadFailed" xml:space="preserve">
+    <value>не удалось скачать: {0}</value>
+  </data>
+  <data name="MonitorSevenZipDownloading" xml:space="preserve">
+    <value>Скачивание 7-Zip {0} с сервера мониторинга…</value>
+  </data>
+  <data name="MonitorUpdateSame" xml:space="preserve">
+    <value>версия {0} уже установлена</value>
+  </data>
+  <data name="MonitorUpdateConsole" xml:space="preserve">
+    <value>служба запущена в окне консоли: обновления ставятся только в установленную службу</value>
+  </data>
+  <data name="MonitorUpdateBusy" xml:space="preserve">
+    <value>уже устанавливается другое обновление</value>
+  </data>
+  <data name="MonitorUpdateDownloading" xml:space="preserve">
+    <value>Скачивание обновления CUSTOS до {0} с сервера мониторинга…</value>
+  </data>
+  <data name="MonitorUpdateWaiting" xml:space="preserve">
+    <value>Обновление до {0} проверено; оно установится, когда закончится текущее задание.</value>
+  </data>
+  <data name="MonitorUpdateRestoreRunning" xml:space="preserve">
+    <value>идёт восстановление; обновление можно отправить ещё раз, когда оно закончится</value>
+  </data>
+  <data name="MonitorUpdateInstalling" xml:space="preserve">
+    <value>Установка обновления с {0} до {1}: служба остановится на минуту и запустится снова.</value>
+  </data>
+  <data name="MonitorUpdateNoStop" xml:space="preserve">
+    <value>Custos.Updater не остановил службу за 10 минут</value>
+  </data>
+  <data name="MonitorUpdateNoResult" xml:space="preserve">
+    <value>Custos.Updater не сообщил результат (см. C:\ProgramData\CUSTOS\logs\updater.log)</value>
+  </data>
+  <data name="MonitorUpdateDone" xml:space="preserve">
+    <value>CUSTOS обновлён с {0} до {1}.</value>
+  </data>
+  <data name="MonitorUpdateFailed" xml:space="preserve">
+    <value>Обновление CUSTOS до {0} не установлено: {1}</value>
+  </data>
+  <data name="MonitorPackageBad" xml:space="preserve">
+    <value>пакет неправильный: {0}</value>
+  </data>
+  <data name="MonitorPackageNoManifest" xml:space="preserve">
+    <value>в нём нет manifest.json</value>
+  </data>
+  <data name="MonitorPackageOtherVersion" xml:space="preserve">
+    <value>в manifest.json версия {0}, а в команде {1}</value>
+  </data>
+  <data name="MonitorPackageProtocol" xml:space="preserve">
+    <value>ему нужен протокол {0}, новее, чем знает этот агент</value>
+  </data>
+  <data name="MonitorPackageBadPath" xml:space="preserve">
+    <value>путь «{0}» ведёт за пределы папки программы</value>
+  </data>
+  <data name="MonitorPackageMissingFile" xml:space="preserve">
+    <value>нет файла {0}</value>
+  </data>
+  <data name="MonitorPackageFileHash" xml:space="preserve">
+    <value>SHA-256 файла {0} не совпадает с manifest.json</value>
+  </data>
 </root>

@@ -7,7 +7,7 @@ C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-clien
 | `src/Custos.Core` | `Custos.Core.dll` | Shared code: task model, schedule, copy engine, set manifests, Cobian import, the interface/service pipe protocol |
 | `src/Custos.Service` | `CustosService.exe` | Windows service (LocalSystem): does all the work — queue, runs, VSS, share logons, database |
 | `src/Custos.Gui` | `Custos.exe` | Tray interface, one per user session; only shows state and sends commands |
-| `src/Custos.Updater` | `Custos.Updater.exe` | Update helper (placeholder until stage 3) |
+| `src/Custos.Updater` | `Custos.Updater.exe` | Installs an update from the monitoring server: stops the service, replaces the files, starts it again, rolls back on failure |
 | `tests/Custos.Core.Tests` | | xUnit tests of the core; `tests/fixtures` holds sample files for them |
 | `tests/Custos.Gui.Tests` | | Window tests: open the real windows with made-up data (run on Windows only) |
 | `installer/custos.iss` | | Inno Setup script |
@@ -22,8 +22,10 @@ cd client
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-The installer appears in `artifacts\installer\CUSTOS-Setup-<version>.exe`. Options: `-SkipTests`, `-SkipInstaller`,
-`-Version 0.1.1`, `-RefreshRuntime`. The first build downloads the .NET Desktop Runtime installer (about 60 MB) into
+The installer appears in `artifacts\installer\CUSTOS-Setup-<version>.exe`, the update package for the monitoring
+server in `artifacts\update\custos-<version>.zip` (the program files and `manifest.json` with the SHA-256 of each).
+Options: `-SkipTests`, `-SkipInstaller`, `-Version 0.3.1`, `-TestUpdateVersion 0.3.1.1` (also builds the same code
+with a higher version into `artifacts\update-test`, to try an update from the server), `-RefreshRuntime`. The first build downloads the .NET Desktop Runtime installer (about 60 MB) into
 `installer\redist`; it is bundled into setup.exe so that target machines need no internet.
 
 `7z.dll` always comes from the 7-Zip build pinned in [`installer/7-zip.json`](installer/7-zip.json) (version, links and
@@ -34,7 +36,10 @@ The build downloads both once into `installer\redist\7-zip\<version>`, refuses a
 newer 7-Zip is out, with the values to paste.
 
 GitHub Actions runs the same script on every change under `client/` (workflow `Client build`) and keeps the installer
-as a downloadable artifact for 14 days.
+(`CUSTOS-Setup`), the update package (`CUSTOS-Update`) and a test update with a higher version (`CUSTOS-Update-test`)
+as downloadable artifacts for 14 days. Each run has its own version `0.3.<run number>`, so a newer build can be
+installed over an older one from the server. The job `monitor` checks the whole protocol against a real CUSTOS Monitor
+(`server/`, PHP's own web server and MariaDB).
 
 For development: `dotnet build Custos.sln` and `dotnet test Custos.sln`. The solution also builds on Linux and macOS
 (tests that need Windows are skipped there, and the window tests are not run).
@@ -96,6 +101,28 @@ open the first part.
 - Если сервер отдаёт данные быстрее, чем архив успевает сжимать (больше 256 МБ ждут в памяти), запуск прерывается:
   задайте ограничение скорости в окне сервера или уменьшите степень сжатия.
 
+## Сервер мониторинга
+
+Подключение необязательно: без сервера CUSTOS работает полностью. Адрес сервера и код регистрации вводятся в
+установщике (страница «Сервер мониторинга») или потом: CUSTOS → «Настройки» → «Сервер мониторинга» → «Подключить»
+(нужны права администратора). Код копируется с сайта целиком, вместе с отпечатком ключа сервера после `#`:
+`K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14`. Отпечаток защищает от подмены сервера при первом подключении.
+
+После подключения компьютер появляется на сайте в разделе «Машины» со статусом «ожидает подтверждения». Пока его не
+подтвердят, служба шлёт только heartbeat; после подтверждения — отчёты о запусках, прогресс, снимок настроек и
+инвентаризацию копий (раз в 6 часов). Если сервер недоступен, отчёты ждут в очереди (`custos.db`, до 10 000) и уходят по порядку, когда связь вернётся. Состояние связи
+видно в строке состояния главного окна и в настройках.
+
+- **«Разрешить серверу изменять задания»** (в настройках, включено по умолчанию): без неё сервер может запускать,
+  останавливать задания, запрашивать журналы и ставить обновления, но не менять задания и настройки.
+- **Обновление с сервера:** пакет `custos-<версия>.zip` из сборки загружается на сайт («Обновления») и ставится на
+  выбранные компьютеры. Служба проверяет подпись сервера и SHA-256, дожидается конца текущего задания и запускает
+  `Custos.Updater.exe`: он останавливает службу, заменяет файлы (прежние сохраняются в
+  `C:\ProgramData\CUSTOS\updates\backup-<версия>`), запускает службу и при неудаче возвращает прежнюю версию.
+  Журнал — `C:\ProgramData\CUSTOS\logs\updater.log`, итог — в журнале Windows (4000 / 4001).
+- **«Сбросить привязку к серверу…»** в настройках забывает сервер, его ключ, код и очередь отчётов. Ключ самого агента
+  (`config\agent.key`) остаётся.
+
 ## Переход с Cobian Backup
 
 Главное окно → «Импорт из Cobian Backup…» → файл `MainList.lst` (обычно
@@ -144,7 +171,8 @@ GitHub, сверит его SHA-256 с опубликованным, прове�
 | `C:\ProgramData\CUSTOS\config\tasks.json`, `settings.json`, `credentials.json` | Tasks, settings, accounts (passwords encrypted with DPAPI). Only SYSTEM and Administrators may read the folder |
 | `C:\ProgramData\CUSTOS\db\custos.db` | Run history and file states for incremental and differential backups |
 | `C:\ProgramData\CUSTOS\logs\` | Service log; `runs\` holds one log file per run |
-| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts. Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\config\server.json`, `agent.key` | The monitoring server, its pinned key and the registration code (DPAPI); the agent's own RSA key (DPAPI) |
+| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
 | `C:\Program Files\CUSTOS\7z.dll`, `7-Zip-License.txt` | 7-Zip library for 7z archives (x64, GNU LGPL) and its license |
@@ -160,7 +188,8 @@ administrator rights, after the Windows UAC prompt.
 - Service log: `C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log`, kept 180 days.
 - Windows event log "Application", source `CUSTOS`: 1000 service started, 1001 service stopped,
   2000-2005 runs, 2006-2008 shutdown or sleep after a run (done, cancelled, failed), 3002 7z.dll missing or unusable,
-  3003/3004 7-Zip updated / update failed, 9000 unexpected error (details in the log file). Full list in section 6.10
+  3003/3004 7-Zip updated / update failed, 1100/1101 monitoring server lost for 5 minutes / back, 4000/4001 update
+  from the server installed / failed, 9000 unexpected error (details in the log file). Full list in section 6.10
   of the specification.
 - To watch the service live, stop it and start it in an administrator console:
   `sc.exe stop CustosService`, then `& "C:\Program Files\CUSTOS\CustosService.exe"` (Ctrl+C to stop), then

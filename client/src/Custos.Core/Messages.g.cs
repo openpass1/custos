@@ -1219,4 +1219,289 @@ static partial class Messages
 
     /// <summary>The server did not finish answering in {0} minutes.</summary>
     public static string RemoteTestTooLong => Get(nameof(RemoteTestTooLong));
+
+    /// <summary>The registration code must start with a key of {0} letters and digits (as on the site: K7QHM-2XARV-…).</summary>
+    public static string MonitorCodeBad => Get(nameof(MonitorCodeBad));
+
+    /// <summary>After «#» the code must have the fingerprint of the server key: 16 characters 0–9 and A–F (3F2A-91C0-77DE-0...</summary>
+    public static string MonitorCodeBadFingerprint => Get(nameof(MonitorCodeBadFingerprint));
+
+    /// <summary>The stored registration code cannot be read on this computer: enter it again.</summary>
+    public static string MonitorCodeUnreadable => Get(nameof(MonitorCodeUnreadable));
+
+    /// <summary>no connection: {0}</summary>
+    public static string MonitorNoConnection => Get(nameof(MonitorNoConnection));
+
+    /// <summary>the server did not answer in time</summary>
+    public static string MonitorTimeout => Get(nameof(MonitorTimeout));
+
+    /// <summary>{0} without a valid signature of the server</summary>
+    public static string MonitorUnsigned => Get(nameof(MonitorUnsigned));
+
+    /// <summary>the answer is larger than {0} MB</summary>
+    public static string MonitorAnswerTooBig => Get(nameof(MonitorAnswerTooBig));
+
+    /// <summary>the file is larger than {0} MB</summary>
+    public static string MonitorDownloadTooBig => Get(nameof(MonitorDownloadTooBig));
+
+    /// <summary>The server did not accept the registration key. Check the code on the site (Settings → Agents) and enter it...</summary>
+    public static string MonitorKeyRejected => Get(nameof(MonitorKeyRejected));
+
+    /// <summary>the answer is not confirmed by the registration key</summary>
+    public static string MonitorCheckMac => Get(nameof(MonitorCheckMac));
+
+    /// <summary>the answer has no agent id or no server key</summary>
+    public static string MonitorCheckBody => Get(nameof(MonitorCheckBody));
+
+    /// <summary>the answer is not signed by the key it carries</summary>
+    public static string MonitorCheckSignature => Get(nameof(MonitorCheckSignature));
+
+    /// <summary>the key of the server has the fingerprint {0}, not the one in the code</summary>
+    public static string MonitorCheckFingerprint => Get(nameof(MonitorCheckFingerprint));
+
+    /// <summary>the server has another key than at the first registration. If the server was set up anew, reset the binding...</summary>
+    public static string MonitorCheckPinned => Get(nameof(MonitorCheckPinned));
+
+    /// <summary>Registration refused: {0}.</summary>
+    public static string MonitorRegistrationRefused => Get(nameof(MonitorRegistrationRefused));
+
+    /// <summary>The key of the agent cannot be read ({0}); a new one was made, the old file is kept as {1}. The computer re...</summary>
+    public static string MonitorKeyUnreadable => Get(nameof(MonitorKeyUnreadable));
+
+    /// <summary>Connection to the server: internal error ({0}); trying again in a minute.</summary>
+    public static string MonitorStepFailed => Get(nameof(MonitorStepFailed));
+
+    /// <summary>Registered on the server {0}: agent {1}, server key {2}.</summary>
+    public static string MonitorRegistered => Get(nameof(MonitorRegistered));
+
+    /// <summary>The server approved this computer: reports and commands go now.</summary>
+    public static string MonitorApproved => Get(nameof(MonitorApproved));
+
+    /// <summary>The server did not take the whole log of a run (too large): the report goes without it; the log can be requ...</summary>
+    public static string MonitorLogTooLarge => Get(nameof(MonitorLogTooLarge));
+
+    /// <summary>The web server did not take the whole log of a run (413 without a signature): the report goes without it. C...</summary>
+    public static string MonitorLogTooLargeProxy => Get(nameof(MonitorLogTooLargeProxy));
+
+    /// <summary>The server did not take the configuration of this computer: {0}.</summary>
+    public static string MonitorConfigRefused => Get(nameof(MonitorConfigRefused));
+
+    /// <summary>A command of the server without a valid id ({0}, {1}) was ignored.</summary>
+    public static string MonitorCommandBadId => Get(nameof(MonitorCommandBadId));
+
+    /// <summary>the command expired before it reached this computer</summary>
+    public static string MonitorCommandExpired => Get(nameof(MonitorCommandExpired));
+
+    /// <summary>unknown command «{0}»: this version of the program cannot do it</summary>
+    public static string MonitorCommandUnknown => Get(nameof(MonitorCommandUnknown));
+
+    /// <summary>«Allow the server to change tasks» is off on this computer</summary>
+    public static string MonitorRemoteEditOff => Get(nameof(MonitorRemoteEditOff));
+
+    /// <summary>Command of the server {0}: {1} ({2}).</summary>
+    public static string MonitorCommandNotDone => Get(nameof(MonitorCommandNotDone));
+
+    /// <summary>The computer is not connected to a monitoring server.</summary>
+    public static string MonitorNotConnected => Get(nameof(MonitorNotConnected));
+
+    /// <summary>The server does not know this computer (it was deleted on the site?): registering again with the stored code.</summary>
+    public static string MonitorUnknownAgent => Get(nameof(MonitorUnknownAgent));
+
+    /// <summary>The server asked to wait {0} s before the next request.</summary>
+    public static string MonitorRateLimited => Get(nameof(MonitorRateLimited));
+
+    /// <summary>the clock of this computer differs from the server by more than 5 minutes (server time {0}). Set the time r...</summary>
+    public static string MonitorClockSkew => Get(nameof(MonitorClockSkew));
+
+    /// <summary>No connection to the monitoring server {0} for {1} min: {2}. The reports wait on this computer and will be ...</summary>
+    public static string MonitorConnectionLost => Get(nameof(MonitorConnectionLost));
+
+    /// <summary>The connection to the monitoring server {0} is back after {1} min.</summary>
+    public static string MonitorConnectionRestored => Get(nameof(MonitorConnectionRestored));
+
+    /// <summary>The server refused the report {0}: {1}. It is not sent again.</summary>
+    public static string MonitorReportDropped => Get(nameof(MonitorReportDropped));
+
+    /// <summary>{0}: {1}</summary>
+    public static string MonitorStateDetail => Get(nameof(MonitorStateDetail));
+
+    /// <summary>Not connected to a monitoring server.</summary>
+    public static string MonitorStateOff => Get(nameof(MonitorStateOff));
+
+    /// <summary>The server address is set, but there is no registration code.</summary>
+    public static string MonitorStateNoCode => Get(nameof(MonitorStateNoCode));
+
+    /// <summary>Connecting to the monitoring server…</summary>
+    public static string MonitorStateConnecting => Get(nameof(MonitorStateConnecting));
+
+    /// <summary>The registration key was not accepted</summary>
+    public static string MonitorStateKeyRejected => Get(nameof(MonitorStateKeyRejected));
+
+    /// <summary>The answer of the server failed a check</summary>
+    public static string MonitorStateRefused => Get(nameof(MonitorStateRefused));
+
+    /// <summary>The computer is registered and waits for approval on the site.</summary>
+    public static string MonitorStatePending => Get(nameof(MonitorStatePending));
+
+    /// <summary>Connected to the monitoring server.</summary>
+    public static string MonitorStateApproved => Get(nameof(MonitorStateApproved));
+
+    /// <summary>The computer is disabled on the site: it works on its own and only checks in every 10 minutes.</summary>
+    public static string MonitorStateDisabled => Get(nameof(MonitorStateDisabled));
+
+    /// <summary>The server does not take agents from the address of this computer (Settings → Security on the site)</summary>
+    public static string MonitorStateForbidden => Get(nameof(MonitorStateForbidden));
+
+    /// <summary>The clocks differ</summary>
+    public static string MonitorStateClockSkew => Get(nameof(MonitorStateClockSkew));
+
+    /// <summary>No connection to the monitoring server</summary>
+    public static string MonitorStateOffline => Get(nameof(MonitorStateOffline));
+
+    /// <summary>The task of the command is not an object.</summary>
+    public static string MonitorTaskNotObject => Get(nameof(MonitorTaskNotObject));
+
+    /// <summary>The task of the command cannot be read: {0}</summary>
+    public static string MonitorTaskUnreadable => Get(nameof(MonitorTaskUnreadable));
+
+    /// <summary>«{0}» is not a valid id (UUID).</summary>
+    public static string MonitorTaskBadId => Get(nameof(MonitorTaskBadId));
+
+    /// <summary>Accounts of the kind «{0}» are not taken from the server.</summary>
+    public static string MonitorCredentialKindRefused => Get(nameof(MonitorCredentialKindRefused));
+
+    /// <summary>The settings of the command are not an object.</summary>
+    public static string MonitorSettingsNotObject => Get(nameof(MonitorSettingsNotObject));
+
+    /// <summary>The settings of the command cannot be read: {0}</summary>
+    public static string MonitorSettingsUnreadable => Get(nameof(MonitorSettingsUnreadable));
+
+    /// <summary>The program password from the server is not a hash of the form pbkdf2-sha256$…</summary>
+    public static string MonitorPasswordHashBad => Get(nameof(MonitorPasswordHashBad));
+
+    /// <summary>The setting {0} cannot be «{1}».</summary>
+    public static string MonitorSettingBad => Get(nameof(MonitorSettingBad));
+
+    /// <summary>The server settings from the installer were not taken: {0}</summary>
+    public static string MonitorSetupUnreadable => Get(nameof(MonitorSetupUnreadable));
+
+    /// <summary>the installer</summary>
+    public static string MonitorByInstaller => Get(nameof(MonitorByInstaller));
+
+    /// <summary>«{0}» is not an address of a server: it must start with http:// or https:// (http://custos.example.lan).</summary>
+    public static string MonitorUrlBad => Get(nameof(MonitorUrlBad));
+
+    /// <summary>Monitoring server {0} set by {1}: registering.</summary>
+    public static string MonitorConnectedBy => Get(nameof(MonitorConnectedBy));
+
+    /// <summary>The binding to the monitoring server was reset by {0}: the program works on its own.</summary>
+    public static string MonitorResetBy => Get(nameof(MonitorResetBy));
+
+    /// <summary>Only an administrator of this computer can connect it to a server or disconnect it.</summary>
+    public static string MonitorNotAllowed => Get(nameof(MonitorNotAllowed));
+
+    /// <summary>The command has no «{0}».</summary>
+    public static string MonitorPayloadMissing => Get(nameof(MonitorPayloadMissing));
+
+    /// <summary>the task was not running or queued</summary>
+    public static string MonitorNothingToStop => Get(nameof(MonitorNothingToStop));
+
+    /// <summary>the task is not running</summary>
+    public static string MonitorTaskNotRunning => Get(nameof(MonitorTaskNotRunning));
+
+    /// <summary>Task «{0}» enabled by the server.</summary>
+    public static string MonitorTaskEnabled => Get(nameof(MonitorTaskEnabled));
+
+    /// <summary>Task «{0}» disabled by the server.</summary>
+    public static string MonitorTaskDisabled => Get(nameof(MonitorTaskDisabled));
+
+    /// <summary>The password of the account {0} cannot be decrypted with the key of this agent: {1}</summary>
+    public static string MonitorSecretUnreadable => Get(nameof(MonitorSecretUnreadable));
+
+    /// <summary>Task «{0}»: the change from the site replaced revision {1} made here ({2}); the site keeps that version.</summary>
+    public static string MonitorTaskOverwritten => Get(nameof(MonitorTaskOverwritten));
+
+    /// <summary>Task «{0}» created from the site by {1}.</summary>
+    public static string MonitorTaskCreated => Get(nameof(MonitorTaskCreated));
+
+    /// <summary>Task «{0}» changed from the site by {1}.</summary>
+    public static string MonitorTaskChanged => Get(nameof(MonitorTaskChanged));
+
+    /// <summary>Settings changed from the site: {0}.</summary>
+    public static string MonitorSettingsChanged => Get(nameof(MonitorSettingsChanged));
+
+    /// <summary>the log of this run is no longer kept on the computer</summary>
+    public static string MonitorLogGone => Get(nameof(MonitorLogGone));
+
+    /// <summary>The list of copies in the destinations was not made: {0}</summary>
+    public static string MonitorInventoryFailed => Get(nameof(MonitorInventoryFailed));
+
+    /// <summary>the command has no proper version, SHA-256 or signature</summary>
+    public static string MonitorPackageBadCommand => Get(nameof(MonitorPackageBadCommand));
+
+    /// <summary>the signature of the server does not match: the file is not taken</summary>
+    public static string MonitorPackageBadSignature => Get(nameof(MonitorPackageBadSignature));
+
+    /// <summary>the SHA-256 of the downloaded file differs from the one in the command</summary>
+    public static string MonitorPackageBadHash => Get(nameof(MonitorPackageBadHash));
+
+    /// <summary>the download failed: {0}</summary>
+    public static string MonitorDownloadFailed => Get(nameof(MonitorDownloadFailed));
+
+    /// <summary>Downloading 7-Zip {0} from the monitoring server…</summary>
+    public static string MonitorSevenZipDownloading => Get(nameof(MonitorSevenZipDownloading));
+
+    /// <summary>version {0} is already installed</summary>
+    public static string MonitorUpdateSame => Get(nameof(MonitorUpdateSame));
+
+    /// <summary>the service runs in a console window: updates are installed only to the installed service</summary>
+    public static string MonitorUpdateConsole => Get(nameof(MonitorUpdateConsole));
+
+    /// <summary>another update is being installed</summary>
+    public static string MonitorUpdateBusy => Get(nameof(MonitorUpdateBusy));
+
+    /// <summary>Downloading the update of CUSTOS to {0} from the monitoring server…</summary>
+    public static string MonitorUpdateDownloading => Get(nameof(MonitorUpdateDownloading));
+
+    /// <summary>The update to {0} is checked; it is installed when the task in progress ends.</summary>
+    public static string MonitorUpdateWaiting => Get(nameof(MonitorUpdateWaiting));
+
+    /// <summary>a restore is running; the update can be sent again when it is over</summary>
+    public static string MonitorUpdateRestoreRunning => Get(nameof(MonitorUpdateRestoreRunning));
+
+    /// <summary>Installing the update from {0} to {1}: the service stops for a minute and starts again.</summary>
+    public static string MonitorUpdateInstalling => Get(nameof(MonitorUpdateInstalling));
+
+    /// <summary>Custos.Updater did not stop the service in 10 minutes</summary>
+    public static string MonitorUpdateNoStop => Get(nameof(MonitorUpdateNoStop));
+
+    /// <summary>Custos.Updater did not report what it did (see C:\ProgramData\CUSTOS\logs\updater.log)</summary>
+    public static string MonitorUpdateNoResult => Get(nameof(MonitorUpdateNoResult));
+
+    /// <summary>CUSTOS updated from {0} to {1}.</summary>
+    public static string MonitorUpdateDone => Get(nameof(MonitorUpdateDone));
+
+    /// <summary>The update of CUSTOS to {0} was not installed: {1}</summary>
+    public static string MonitorUpdateFailed => Get(nameof(MonitorUpdateFailed));
+
+    /// <summary>the package is not right: {0}</summary>
+    public static string MonitorPackageBad => Get(nameof(MonitorPackageBad));
+
+    /// <summary>there is no manifest.json</summary>
+    public static string MonitorPackageNoManifest => Get(nameof(MonitorPackageNoManifest));
+
+    /// <summary>manifest.json says version {0}, the command {1}</summary>
+    public static string MonitorPackageOtherVersion => Get(nameof(MonitorPackageOtherVersion));
+
+    /// <summary>it needs protocol {0}, newer than this agent speaks</summary>
+    public static string MonitorPackageProtocol => Get(nameof(MonitorPackageProtocol));
+
+    /// <summary>the path «{0}» leads outside the program folder</summary>
+    public static string MonitorPackageBadPath => Get(nameof(MonitorPackageBadPath));
+
+    /// <summary>the file {0} is missing</summary>
+    public static string MonitorPackageMissingFile => Get(nameof(MonitorPackageMissingFile));
+
+    /// <summary>the SHA-256 of {0} differs from manifest.json</summary>
+    public static string MonitorPackageFileHash => Get(nameof(MonitorPackageFileHash));
 }

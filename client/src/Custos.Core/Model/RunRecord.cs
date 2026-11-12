@@ -50,6 +50,24 @@ public sealed class RunRecord
 
     /// <summary>For a task with a Linux server: what custos-helper reported (<c>remote</c> of <c>runs/finish</c>, A.5).</summary>
     public RemoteResult? Remote { get; set; }
+
+    /// <summary>What the verification of this run found (section 6.5); null when the run verified nothing.</summary>
+    public RunVerify? Verify { get; set; }
+}
+
+/// <summary>The verification of a run, as the history shows it (and <c>verify</c> of <c>runs/finish</c>, A.5).</summary>
+public sealed class RunVerify
+{
+    /// <summary>Every set checked is whole.</summary>
+    public bool Ok { get; set; }
+
+    /// <summary><c>new</c> (the new copy) or <c>stored</c> (all the stored sets).</summary>
+    public string Scope { get; set; } = "new";
+
+    public int SetsChecked { get; set; }
+
+    /// <summary>Names of the sets that failed.</summary>
+    public List<string> FailedSets { get; set; } = [];
 }
 
 /// <summary>The <c>remote</c> block of <c>runs/finish</c> (A.5, CUSTOS-remote-pull.md 5).</summary>

@@ -122,6 +122,9 @@ static partial class Strings
     /// <summary>Result</summary>
     public static string ColumnResult => Get(nameof(ColumnResult));
 
+    /// <summary>Verification</summary>
+    public static string ColumnVerify => Get(nameof(ColumnVerify));
+
     /// <summary>Next run</summary>
     public static string ColumnNextRun => Get(nameof(ColumnNextRun));
 
@@ -310,6 +313,15 @@ static partial class Strings
 
     /// <summary>Warnings: {0}</summary>
     public static string HistoryWarnings => Get(nameof(HistoryWarnings));
+
+    /// <summary>passed (new copy)</summary>
+    public static string HistoryVerifyOkNew => Get(nameof(HistoryVerifyOkNew));
+
+    /// <summary>passed (sets: {0})</summary>
+    public static string HistoryVerifyOkStored => Get(nameof(HistoryVerifyOkStored));
+
+    /// <summary>failed: {0}</summary>
+    public static string HistoryVerifyFailed => Get(nameof(HistoryVerifyFailed));
 
     /// <summary>No task is running now.</summary>
     public static string ProgressIdle => Get(nameof(ProgressIdle));
@@ -1798,4 +1810,85 @@ static partial class Strings
 
     /// <summary>Schedule, archive, destinations and retention are set on the other pages, as for any task.</summary>
     public static string RemoteNextPages => Get(nameof(RemoteNextPages));
+
+    /// <summary>Server: connected — {0}</summary>
+    public static string ServerOnline => Get(nameof(ServerOnline));
+
+    /// <summary>Server: waiting for approval on the site — {0}</summary>
+    public static string ServerPending => Get(nameof(ServerPending));
+
+    /// <summary>Server: this computer is disabled on the site — {0}</summary>
+    public static string ServerDisabled => Get(nameof(ServerDisabled));
+
+    /// <summary>Server: connecting to {0}…</summary>
+    public static string ServerConnecting => Get(nameof(ServerConnecting));
+
+    /// <summary>No connection to the server for {0} min</summary>
+    public static string ServerOffline => Get(nameof(ServerOffline));
+
+    /// <summary>{0} report waiting to be sent</summary>
+    public static string ServerReportsOne => Get(nameof(ServerReportsOne));
+
+    /// <summary>{0} reports waiting to be sent</summary>
+    public static string ServerReportsFew => Get(nameof(ServerReportsFew));
+
+    /// <summary>{0} reports waiting to be sent</summary>
+    public static string ServerReportsMany => Get(nameof(ServerReportsMany));
+
+    /// <summary>Server {0}: {1}</summary>
+    public static string ServerProblem => Get(nameof(ServerProblem));
+
+    /// <summary>Monitoring server</summary>
+    public static string SettingsServer => Get(nameof(SettingsServer));
+
+    /// <summary>(«{0}»)</summary>
+    public static string ServerNamed => Get(nameof(ServerNamed));
+
+    /// <summary>Server address:</summary>
+    public static string ServerUrlLabel => Get(nameof(ServerUrlLabel));
+
+    /// <summary>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the interne...</summary>
+    public static string ServerUrlHelp => Get(nameof(ServerUrlHelp));
+
+    /// <summary>Registration code:</summary>
+    public static string ServerCodeLabel => Get(nameof(ServerCodeLabel));
+
+    /// <summary>The code is on the site: Settings → Agents. It is needed once, to register; after that this computer knows ...</summary>
+    public static string ServerCodeHelp => Get(nameof(ServerCodeHelp));
+
+    /// <summary>Connect</summary>
+    public static string ServerConnectButton => Get(nameof(ServerConnectButton));
+
+    /// <summary>Reset the binding to the server…</summary>
+    public static string ServerResetButton => Get(nameof(ServerResetButton));
+
+    /// <summary>Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect...</summary>
+    public static string ServerResetConfirm => Get(nameof(ServerResetConfirm));
+
+    /// <summary>The address and the code are saved; the computer registers on the server now. If the server asks for approv...</summary>
+    public static string ServerConnectDone => Get(nameof(ServerConnectDone));
+
+    /// <summary>Only an administrator of this computer can connect it to a server or reset the binding.</summary>
+    public static string ServerAdminOnly => Get(nameof(ServerAdminOnly));
+
+    /// <summary>Key fingerprints: server {0}, this computer {1}</summary>
+    public static string ServerFingerprints => Get(nameof(ServerFingerprints));
+
+    /// <summary>Last answer of the server: {0}</summary>
+    public static string ServerLastContact => Get(nameof(ServerLastContact));
+
+    /// <summary>Reports waiting to be sent: {0}</summary>
+    public static string ServerWaiting => Get(nameof(ServerWaiting));
+
+    /// <summary>Enter the address of the server.</summary>
+    public static string ServerUrlRequired => Get(nameof(ServerUrlRequired));
+
+    /// <summary>Enter the registration code from the site.</summary>
+    public static string ServerCodeRequired => Get(nameof(ServerCodeRequired));
+
+    /// <summary>Allow the server to change tasks</summary>
+    public static string AllowRemoteEdit => Get(nameof(AllowRemoteEdit));
+
+    /// <summary>When it is on, tasks, accounts and settings can be changed from the site. When it is off, the site only sho...</summary>
+    public static string AllowRemoteEditHelp => Get(nameof(AllowRemoteEditHelp));
 }

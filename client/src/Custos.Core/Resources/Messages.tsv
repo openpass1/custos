@@ -418,3 +418,100 @@ ConfigSshBadDatabase	Not a database of the server in the choice of the task: «{
 ConfigSshBadOfficeIp	«{0}» is not an IP address or a network (203.0.113.10, 203.0.113.0/24; several with commas).	«{0}» — не IP-адрес и не сеть (203.0.113.10, 203.0.113.0/24; несколько — через запятую).
 RemoteKeyCreated	New SSH key {0} made by {1}.	Создан ключ SSH {0}, создал {1}.
 RemoteTestTooLong	The server did not finish answering in {0} minutes.	Сервер не закончил отвечать за {0} мин.
+
+# Monitoring server (section 8, appendix A)
+MonitorCodeBad	The registration code must start with a key of {0} letters and digits (as on the site: K7QHM-2XARV-…).	Код регистрации должен начинаться с ключа из {0} букв и цифр (как на сайте: K7QHM-2XARV-…).
+MonitorCodeBadFingerprint	After «#» the code must have the fingerprint of the server key: 16 characters 0–9 and A–F (3F2A-91C0-77DE-0B14).	После «#» в коде должен быть отпечаток ключа сервера: 16 знаков 0–9 и A–F (3F2A-91C0-77DE-0B14).
+MonitorCodeUnreadable	The stored registration code cannot be read on this computer: enter it again.	Сохранённый код регистрации не читается на этом компьютере: введите его заново.
+MonitorNoConnection	no connection: {0}	нет связи: {0}
+MonitorTimeout	the server did not answer in time	сервер не ответил вовремя
+MonitorUnsigned	{0} without a valid signature of the server	{0} без верной подписи сервера
+MonitorAnswerTooBig	the answer is larger than {0} MB	ответ больше {0} МБ
+MonitorDownloadTooBig	the file is larger than {0} MB	файл больше {0} МБ
+MonitorKeyRejected	The server did not accept the registration key. Check the code on the site (Settings → Agents) and enter it again.	Ключ регистрации не подошёл. Проверьте код на сайте (Настройки → Агенты) и введите его заново.
+MonitorCheckMac	the answer is not confirmed by the registration key	ответ не подтверждён ключом регистрации
+MonitorCheckBody	the answer has no agent id or no server key	в ответе нет номера агента или ключа сервера
+MonitorCheckSignature	the answer is not signed by the key it carries	ответ не подписан ключом, который в нём пришёл
+MonitorCheckFingerprint	the key of the server has the fingerprint {0}, not the one in the code	у ключа сервера отпечаток {0}, а не тот, что в коде
+MonitorCheckPinned	the server has another key than at the first registration. If the server was set up anew, reset the binding to the server in the settings	у сервера другой ключ, чем при первой регистрации. Если сервер установлен заново, сбросьте привязку к серверу в настройках
+MonitorRegistrationRefused	Registration refused: {0}.	Регистрация отклонена: {0}.
+MonitorKeyUnreadable	The key of the agent cannot be read ({0}); a new one was made, the old file is kept as {1}. The computer registers on the server again with the stored code.	Ключ агента не читается ({0}); создан новый, старый файл сохранён как {1}. Компьютер заново зарегистрируется на сервере по сохранённому коду.
+MonitorStepFailed	Connection to the server: internal error ({0}); trying again in a minute.	Связь с сервером: внутренняя ошибка ({0}); новая попытка через минуту.
+MonitorRegistered	Registered on the server {0}: agent {1}, server key {2}.	Компьютер зарегистрирован на сервере {0}: агент {1}, ключ сервера {2}.
+MonitorApproved	The server approved this computer: reports and commands go now.	Сервер подтвердил этот компьютер: отчёты и команды теперь идут.
+MonitorLogTooLarge	The server did not take the whole log of a run (too large): the report goes without it; the log can be requested from the site later.	Сервер не принял полный журнал запуска (слишком большой): отчёт уходит без него, журнал можно запросить с сайта позже.
+MonitorLogTooLargeProxy	The web server did not take the whole log of a run (413 without a signature): the report goes without it. Check client_max_body_size in nginx (at least 10m).	Веб-сервер не принял полный журнал запуска (413 без подписи): отчёт уходит без него. Проверьте client_max_body_size в nginx (не меньше 10m).
+MonitorConfigRefused	The server did not take the configuration of this computer: {0}.	Сервер не принял настройки этого компьютера: {0}.
+MonitorCommandBadId	A command of the server without a valid id ({0}, {1}) was ignored.	Команда сервера без правильного номера ({0}, {1}) пропущена.
+MonitorCommandExpired	the command expired before it reached this computer	срок команды истёк, пока она шла до компьютера
+MonitorCommandUnknown	unknown command «{0}»: this version of the program cannot do it	неизвестная команда «{0}»: эта версия программы её не умеет
+MonitorRemoteEditOff	«Allow the server to change tasks» is off on this computer	на этом компьютере выключено «Разрешить серверу менять задания»
+MonitorCommandNotDone	Command of the server {0}: {1} ({2}).	Команда сервера {0}: {1} ({2}).
+MonitorNotConnected	The computer is not connected to a monitoring server.	Компьютер не подключён к серверу мониторинга.
+MonitorUnknownAgent	The server does not know this computer (it was deleted on the site?): registering again with the stored code.	Сервер не знает этот компьютер (его удалили на сайте?): регистрация заново по сохранённому коду.
+MonitorRateLimited	The server asked to wait {0} s before the next request.	Сервер попросил подождать {0} с перед следующим запросом.
+MonitorClockSkew	the clock of this computer differs from the server by more than 5 minutes (server time {0}). Set the time right (Windows time synchronization).	часы этого компьютера расходятся с сервером больше чем на 5 минут (время сервера {0}). Поправьте время (синхронизация времени Windows).
+MonitorConnectionLost	No connection to the monitoring server {0} for {1} min: {2}. The reports wait on this computer and will be sent later.	Нет связи с сервером мониторинга {0} уже {1} мин: {2}. Отчёты ждут на этом компьютере и будут отправлены позже.
+MonitorConnectionRestored	The connection to the monitoring server {0} is back after {1} min.	Связь с сервером мониторинга {0} восстановлена через {1} мин.
+MonitorReportDropped	The server refused the report {0}: {1}. It is not sent again.	Сервер отклонил отчёт {0}: {1}. Повторно он не отправляется.
+MonitorStateDetail	{0}: {1}	{0}: {1}
+MonitorStateOff	Not connected to a monitoring server.	Сервер мониторинга не подключён.
+MonitorStateNoCode	The server address is set, but there is no registration code.	Адрес сервера задан, но нет кода регистрации.
+MonitorStateConnecting	Connecting to the monitoring server…	Подключение к серверу мониторинга…
+MonitorStateKeyRejected	The registration key was not accepted	Ключ регистрации не подошёл
+MonitorStateRefused	The answer of the server failed a check	Ответ сервера не прошёл проверку
+MonitorStatePending	The computer is registered and waits for approval on the site.	Компьютер зарегистрирован и ждёт подтверждения на сайте.
+MonitorStateApproved	Connected to the monitoring server.	Связь с сервером мониторинга есть.
+MonitorStateDisabled	The computer is disabled on the site: it works on its own and only checks in every 10 minutes.	Компьютер отключён на сайте: работает автономно и только раз в 10 минут сообщает о себе.
+MonitorStateForbidden	The server does not take agents from the address of this computer (Settings → Security on the site)	Сервер не принимает агентов с адреса этого компьютера (Настройки → Безопасность на сайте)
+MonitorStateClockSkew	The clocks differ	Расходится время
+MonitorStateOffline	No connection to the monitoring server	Нет связи с сервером мониторинга
+MonitorTaskNotObject	The task of the command is not an object.	Задание в команде — не объект.
+MonitorTaskUnreadable	The task of the command cannot be read: {0}	Задание в команде не читается: {0}
+MonitorTaskBadId	«{0}» is not a valid id (UUID).	«{0}» — неправильный номер (UUID).
+MonitorCredentialKindRefused	Accounts of the kind «{0}» are not taken from the server.	Учётные записи вида «{0}» с сервера не принимаются.
+MonitorSettingsNotObject	The settings of the command are not an object.	Настройки в команде — не объект.
+MonitorSettingsUnreadable	The settings of the command cannot be read: {0}	Настройки в команде не читаются: {0}
+MonitorPasswordHashBad	The program password from the server is not a hash of the form pbkdf2-sha256$…	Пароль программы с сервера — не хеш вида pbkdf2-sha256$…
+MonitorSettingBad	The setting {0} cannot be «{1}».	Настройка {0} не может быть «{1}».
+MonitorSetupUnreadable	The server settings from the installer were not taken: {0}	Настройки сервера из установщика не приняты: {0}
+MonitorByInstaller	the installer	установщик
+MonitorUrlBad	«{0}» is not an address of a server: it must start with http:// or https:// (http://custos.example.lan).	«{0}» — не адрес сервера: он должен начинаться с http:// или https:// (http://custos.example.lan).
+MonitorConnectedBy	Monitoring server {0} set by {1}: registering.	Сервер мониторинга {0} задан ({1}): идёт регистрация.
+MonitorResetBy	The binding to the monitoring server was reset by {0}: the program works on its own.	Привязка к серверу мониторинга сброшена ({0}): программа работает автономно.
+MonitorNotAllowed	Only an administrator of this computer can connect it to a server or disconnect it.	Подключить компьютер к серверу или отключить от него может только администратор этого компьютера.
+MonitorPayloadMissing	The command has no «{0}».	В команде нет «{0}».
+MonitorNothingToStop	the task was not running or queued	задание не выполнялось и не стояло в очереди
+MonitorTaskNotRunning	the task is not running	задание сейчас не выполняется
+MonitorTaskEnabled	Task «{0}» enabled by the server.	Задание «{0}» включено командой с сервера.
+MonitorTaskDisabled	Task «{0}» disabled by the server.	Задание «{0}» отключено командой с сервера.
+MonitorSecretUnreadable	The password of the account {0} cannot be decrypted with the key of this agent: {1}	Пароль учётной записи {0} не расшифровывается ключом этого агента: {1}
+MonitorTaskOverwritten	Task «{0}»: the change from the site replaced revision {1} made here ({2}); the site keeps that version.	Задание «{0}»: правка с сайта заменила версию {1}, сделанную здесь ({2}); эта версия сохранена на сайте.
+MonitorTaskCreated	Task «{0}» created from the site by {1}.	Задание «{0}» создано с сайта, автор {1}.
+MonitorTaskChanged	Task «{0}» changed from the site by {1}.	Задание «{0}» изменено с сайта, автор {1}.
+MonitorSettingsChanged	Settings changed from the site: {0}.	Настройки изменены с сайта: {0}.
+MonitorLogGone	the log of this run is no longer kept on the computer	журнал этого запуска на компьютере уже не хранится
+MonitorInventoryFailed	The list of copies in the destinations was not made: {0}	Список копий в хранилищах не составлен: {0}
+MonitorPackageBadCommand	the command has no proper version, SHA-256 or signature	в команде нет правильной версии, SHA-256 или подписи
+MonitorPackageBadSignature	the signature of the server does not match: the file is not taken	подпись сервера не сходится: файл не принят
+MonitorPackageBadHash	the SHA-256 of the downloaded file differs from the one in the command	SHA-256 скачанного файла не совпадает с указанным в команде
+MonitorDownloadFailed	the download failed: {0}	не удалось скачать: {0}
+MonitorSevenZipDownloading	Downloading 7-Zip {0} from the monitoring server…	Скачивание 7-Zip {0} с сервера мониторинга…
+MonitorUpdateSame	version {0} is already installed	версия {0} уже установлена
+MonitorUpdateConsole	the service runs in a console window: updates are installed only to the installed service	служба запущена в окне консоли: обновления ставятся только в установленную службу
+MonitorUpdateBusy	another update is being installed	уже устанавливается другое обновление
+MonitorUpdateDownloading	Downloading the update of CUSTOS to {0} from the monitoring server…	Скачивание обновления CUSTOS до {0} с сервера мониторинга…
+MonitorUpdateWaiting	The update to {0} is checked; it is installed when the task in progress ends.	Обновление до {0} проверено; оно установится, когда закончится текущее задание.
+MonitorUpdateRestoreRunning	a restore is running; the update can be sent again when it is over	идёт восстановление; обновление можно отправить ещё раз, когда оно закончится
+MonitorUpdateInstalling	Installing the update from {0} to {1}: the service stops for a minute and starts again.	Установка обновления с {0} до {1}: служба остановится на минуту и запустится снова.
+MonitorUpdateNoStop	Custos.Updater did not stop the service in 10 minutes	Custos.Updater не остановил службу за 10 минут
+MonitorUpdateNoResult	Custos.Updater did not report what it did (see C:\ProgramData\CUSTOS\logs\updater.log)	Custos.Updater не сообщил результат (см. C:\ProgramData\CUSTOS\logs\updater.log)
+MonitorUpdateDone	CUSTOS updated from {0} to {1}.	CUSTOS обновлён с {0} до {1}.
+MonitorUpdateFailed	The update of CUSTOS to {0} was not installed: {1}	Обновление CUSTOS до {0} не установлено: {1}
+MonitorPackageBad	the package is not right: {0}	пакет неправильный: {0}
+MonitorPackageNoManifest	there is no manifest.json	в нём нет manifest.json
+MonitorPackageOtherVersion	manifest.json says version {0}, the command {1}	в manifest.json версия {0}, а в команде {1}
+MonitorPackageProtocol	it needs protocol {0}, newer than this agent speaks	ему нужен протокол {0}, новее, чем знает этот агент
+MonitorPackageBadPath	the path «{0}» leads outside the program folder	путь «{0}» ведёт за пределы папки программы
+MonitorPackageMissingFile	the file {0} is missing	нет файла {0}
+MonitorPackageFileHash	the SHA-256 of {0} differs from manifest.json	SHA-256 файла {0} не совпадает с manifest.json

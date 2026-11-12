@@ -58,7 +58,7 @@ public sealed record TaskChange(TaskDefinition Saved, TaskDefinition? Previous)
 /// <c>config\credentials.json</c> (sections 3.3 and A.9). Every change is written at once, through a temporary file,
 /// keeping the previous version as <c>.bak</c>. Thread-safe; the objects it returns are copies.
 /// </summary>
-public sealed class ConfigStore
+public sealed partial class ConfigStore
 {
     public const string TasksFileName = "tasks.json";
     public const string SettingsFileName = "settings.json";
@@ -91,6 +91,7 @@ public sealed class ConfigStore
         }
     }
 
+    /// <summary>Grows with every change of tasks, accounts or settings (A.4, A.6).</summary>
     public long ConfigRevision
     {
         get
@@ -242,7 +243,7 @@ public sealed class ConfigStore
             }
 
             // Accounts first: a task must never point to an account that is not stored.
-            WriteCredentials(stored);
+            WriteCredentials(stored, bump: false);
             WriteTasks(list);
             return changes;
         }
@@ -267,6 +268,10 @@ public sealed class ConfigStore
             var copy = CopySettings(settings);
             // The program password is set through its own dialog (stage 5), never by a plain settings save.
             copy.ProgramPasswordHash = _settings.ProgramPasswordHash;
+
+            // The server address changes only with the registration code (server.connect, server.reset).
+            copy.ServerUrl = _settings.ServerUrl;
+            copy.HeartbeatIntervalS = _settings.HeartbeatIntervalS;
             if (copy.LogRetentionDays is < 1 or > 3650)
             {
                 throw new ConfigException(Messages.Format(Messages.ConfigBadRetentionDays, 1, 3650));
@@ -279,6 +284,7 @@ public sealed class ConfigStore
 
             WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
             _settings = copy;
+            BumpRevision();
         }
     }
 
@@ -724,11 +730,16 @@ public sealed class ConfigStore
         _tasks = file;
     }
 
-    private void WriteCredentials(List<StoredCredential> credentials)
+    /// <param name="bump">Count it as a change of the configuration (A.4): false when the tasks are written next anyway.</param>
+    private void WriteCredentials(List<StoredCredential> credentials, bool bump = true)
     {
         var file = new CredentialsFile { Credentials = credentials, ExtensionData = _credentials.ExtensionData };
         WriteJson(CredentialsFileName, file, ConfigJsonContext.Default.CredentialsFile);
         _credentials = file;
+        if (bump)
+        {
+            BumpRevision();
+        }
     }
 
     private void WriteJson<T>(string name, T value, JsonTypeInfo<T> type)

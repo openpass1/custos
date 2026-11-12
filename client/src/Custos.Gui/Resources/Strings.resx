@@ -130,6 +130,9 @@
   <data name="ColumnResult" xml:space="preserve">
     <value>Result</value>
   </data>
+  <data name="ColumnVerify" xml:space="preserve">
+    <value>Verification</value>
+  </data>
   <data name="ColumnNextRun" xml:space="preserve">
     <value>Next run</value>
   </data>
@@ -324,6 +327,15 @@ Backups go on: the service does not depend on the window. The details are writte
   </data>
   <data name="HistoryWarnings" xml:space="preserve">
     <value>Warnings: {0}</value>
+  </data>
+  <data name="HistoryVerifyOkNew" xml:space="preserve">
+    <value>passed (new copy)</value>
+  </data>
+  <data name="HistoryVerifyOkStored" xml:space="preserve">
+    <value>passed (sets: {0})</value>
+  </data>
+  <data name="HistoryVerifyFailed" xml:space="preserve">
+    <value>failed: {0}</value>
   </data>
   <data name="ProgressIdle" xml:space="preserve">
     <value>No task is running now.</value>
@@ -1834,5 +1846,86 @@ Trust the new key only if you know why it changed.</value>
   </data>
   <data name="RemoteNextPages" xml:space="preserve">
     <value>Schedule, archive, destinations and retention are set on the other pages, as for any task.</value>
+  </data>
+  <data name="ServerOnline" xml:space="preserve">
+    <value>Server: connected — {0}</value>
+  </data>
+  <data name="ServerPending" xml:space="preserve">
+    <value>Server: waiting for approval on the site — {0}</value>
+  </data>
+  <data name="ServerDisabled" xml:space="preserve">
+    <value>Server: this computer is disabled on the site — {0}</value>
+  </data>
+  <data name="ServerConnecting" xml:space="preserve">
+    <value>Server: connecting to {0}…</value>
+  </data>
+  <data name="ServerOffline" xml:space="preserve">
+    <value>No connection to the server for {0} min</value>
+  </data>
+  <data name="ServerReportsOne" xml:space="preserve">
+    <value>{0} report waiting to be sent</value>
+  </data>
+  <data name="ServerReportsFew" xml:space="preserve">
+    <value>{0} reports waiting to be sent</value>
+  </data>
+  <data name="ServerReportsMany" xml:space="preserve">
+    <value>{0} reports waiting to be sent</value>
+  </data>
+  <data name="ServerProblem" xml:space="preserve">
+    <value>Server {0}: {1}</value>
+  </data>
+  <data name="SettingsServer" xml:space="preserve">
+    <value>Monitoring server</value>
+  </data>
+  <data name="ServerNamed" xml:space="preserve">
+    <value>(«{0}»)</value>
+  </data>
+  <data name="ServerUrlLabel" xml:space="preserve">
+    <value>Server address:</value>
+  </data>
+  <data name="ServerUrlHelp" xml:space="preserve">
+    <value>The address of the CUSTOS site, like http://custos.example.lan. When the server is reached over the internet, use https://.</value>
+  </data>
+  <data name="ServerCodeLabel" xml:space="preserve">
+    <value>Registration code:</value>
+  </data>
+  <data name="ServerCodeHelp" xml:space="preserve">
+    <value>The code is on the site: Settings → Agents. It is needed once, to register; after that this computer knows the server by its key. The part after «#» is the fingerprint of the server key: with it the program makes sure that it talks to your server. The code is not shown here again.</value>
+  </data>
+  <data name="ServerConnectButton" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="ServerResetButton" xml:space="preserve">
+    <value>Reset the binding to the server…</value>
+  </data>
+  <data name="ServerResetConfirm" xml:space="preserve">
+    <value>Forget the server {0}? The program goes on working on its own; reports not yet sent are dropped. To connect again you need the registration code from the site.</value>
+  </data>
+  <data name="ServerConnectDone" xml:space="preserve">
+    <value>The address and the code are saved; the computer registers on the server now. If the server asks for approval, approve the computer on the site (Machines).</value>
+  </data>
+  <data name="ServerAdminOnly" xml:space="preserve">
+    <value>Only an administrator of this computer can connect it to a server or reset the binding.</value>
+  </data>
+  <data name="ServerFingerprints" xml:space="preserve">
+    <value>Key fingerprints: server {0}, this computer {1}</value>
+  </data>
+  <data name="ServerLastContact" xml:space="preserve">
+    <value>Last answer of the server: {0}</value>
+  </data>
+  <data name="ServerWaiting" xml:space="preserve">
+    <value>Reports waiting to be sent: {0}</value>
+  </data>
+  <data name="ServerUrlRequired" xml:space="preserve">
+    <value>Enter the address of the server.</value>
+  </data>
+  <data name="ServerCodeRequired" xml:space="preserve">
+    <value>Enter the registration code from the site.</value>
+  </data>
+  <data name="AllowRemoteEdit" xml:space="preserve">
+    <value>Allow the server to change tasks</value>
+  </data>
+  <data name="AllowRemoteEditHelp" xml:space="preserve">
+    <value>When it is on, tasks, accounts and settings can be changed from the site. When it is off, the site only shows them; starting, stopping and updates from the site still work.</value>
   </data>
 </root>

@@ -41,6 +41,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         // A new 7z.dll is loaded by SYSTEM.
         PipeProtocol.Methods.SevenZipCheck,
         PipeProtocol.Methods.SevenZipUpdate,
+
+        // The server may change tasks and install updates: who it is, only an administrator decides (A.3).
+        PipeProtocol.Methods.ServerConnect,
+        PipeProtocol.Methods.ServerReset,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -334,6 +338,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             {
                 ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
                 string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
+                    : method is PipeProtocol.Methods.ServerConnect or PipeProtocol.Methods.ServerReset ? Messages.MonitorNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
@@ -429,12 +434,18 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.StopRestore(user)),
             PipeProtocol.Methods.PowerCancel =>
                 Ok(id, agent.CancelPower(user)),
+            PipeProtocol.Methods.ServerConnect => ServerConnect(id, request.GetData(json.ServerConnectRequest), user),
+            PipeProtocol.Methods.ServerReset =>
+                Ok(id, agent.ResetServer(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
         };
     }
 
     private PipeMessage History(long id, HistoryRequest request) =>
         PipeMessage.Success(id, new HistoryResult { Runs = agent.GetHistory(request.TaskId, request.Limit) }, IpcJsonContext.Default.HistoryResult);
+
+    private PipeMessage ServerConnect(long id, ServerConnectRequest request, string user) =>
+        Ok(id, agent.ConnectServer(request.ServerUrl, request.Code, user));
 
     private static PipeMessage Ok(long id, OkResult result) => PipeMessage.Success(id, result, IpcJsonContext.Default.OkResult);
 

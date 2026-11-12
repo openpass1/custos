@@ -9,12 +9,16 @@ namespace Custos.Core.Storage;
 
 /// <summary>
 /// The local database <c>C:\ProgramData\CUSTOS\db\custos.db</c> (SQLite, section 3.3): the state of the files of each
-/// task (section 7), the run history (section 6.10) and the last schedule slot each task has dealt with.
+/// task (section 7), the run history (section 6.10), the last schedule slot each task has dealt with, the reports
+/// waiting for the monitoring server (A.5) and when each stored set was last verified (A.8).
 /// Every call opens its own connection, so the database may be used from several threads.
 /// </summary>
 public sealed class AgentDatabase : IFileStateStore
 {
-    private const int SchemaVersion = 4;
+    private const int SchemaVersion = 5;
+
+    /// <summary>Most reports kept for the monitoring server; the oldest go first (A.11).</summary>
+    public const int MaxReports = 10_000;
 
     private readonly string _connectionString;
 
@@ -143,7 +147,7 @@ public sealed class AgentDatabase : IFileStateStore
     {
         using var connection = Open();
         using var transaction = connection.BeginTransaction();
-        foreach (string sql in new[] { "DELETE FROM file_state WHERE task_id = $task", "DELETE FROM task_state WHERE task_id = $task" })
+        foreach (string sql in new[] { "DELETE FROM file_state WHERE task_id = $task", "DELETE FROM task_state WHERE task_id = $task", "DELETE FROM set_checks WHERE task_id = $task" })
         {
             using var command = Command(connection, sql, transaction);
             command.Parameters.AddWithValue("$task", taskId);
@@ -197,9 +201,9 @@ public sealed class AgentDatabase : IFileStateStore
         using var command = Command(connection, """
             INSERT OR REPLACE INTO runs (run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by,
                 started_at, finished_at, status, source_files, source_bytes, files_processed, bytes_written, errors,
-                warnings, error_message, set_name, destinations, databases, remote)
+                warnings, error_message, set_name, destinations, databases, remote, verify)
             VALUES ($run, $task, $name, $type, $trigger, $scheduled, $by, $started, $finished, $status, $sfiles, $sbytes,
-                $files, $bytes, $errors, $warnings, $message, $set, $destinations, $databases, $remote)
+                $files, $bytes, $errors, $warnings, $message, $set, $destinations, $databases, $remote, $verify)
             """);
         var p = command.Parameters;
         p.AddWithValue("$run", run.RunId);
@@ -223,6 +227,7 @@ public sealed class AgentDatabase : IFileStateStore
         p.AddWithValue("$destinations", JsonSerializer.Serialize(run.Destinations, StorageJsonContext.Default.ListDestinationResult));
         p.AddWithValue("$databases", run.Databases.Count == 0 ? DBNull.Value : JsonSerializer.Serialize(run.Databases, StorageJsonContext.Default.ListDatabaseResult));
         p.AddWithValue("$remote", run.Remote is null ? DBNull.Value : JsonSerializer.Serialize(run.Remote, StorageJsonContext.Default.RemoteResult));
+        p.AddWithValue("$verify", run.Verify is null ? DBNull.Value : JsonSerializer.Serialize(run.Verify, StorageJsonContext.Default.RunVerify));
         command.ExecuteNonQuery();
     }
 
@@ -261,12 +266,141 @@ public sealed class AgentDatabase : IFileStateStore
         return command.ExecuteNonQuery();
     }
 
+    // ---- Reports for the monitoring server (A.5, A.11) ------------------------------------------------------------
+
+    /// <summary>
+    /// Queues a report. With <paramref name="key"/>, an older report with the same key that has not been sent is
+    /// replaced (the inventory: only the newest one matters).
+    /// </summary>
+    public void AddReport(string path, byte[] body, string? key = null)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(body);
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        if (key is not null)
+        {
+            using var delete = Command(connection, "DELETE FROM outbox WHERE coalesce_key = $key", transaction);
+            delete.Parameters.AddWithValue("$key", key);
+            delete.ExecuteNonQuery();
+        }
+
+        using (var insert = Command(connection, "INSERT INTO outbox (path, body, coalesce_key, created_at) VALUES ($path, $body, $key, $at)", transaction))
+        {
+            insert.Parameters.AddWithValue("$path", path);
+            insert.Parameters.AddWithValue("$body", body);
+            insert.Parameters.AddWithValue("$key", (object?)key ?? DBNull.Value);
+            insert.Parameters.AddWithValue("$at", UtcTimeConverter.ToText(DateTimeOffset.UtcNow));
+            insert.ExecuteNonQuery();
+        }
+
+        using (var trim = Command(connection, "DELETE FROM outbox WHERE seq <= (SELECT MAX(seq) FROM outbox) - $max", transaction))
+        {
+            trim.Parameters.AddWithValue("$max", MaxReports);
+            trim.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
+    /// <summary>The oldest reports, in the order they were queued.</summary>
+    public List<QueuedReport> GetReports(int limit)
+    {
+        using var connection = Open();
+        using var command = Command(connection, "SELECT seq, path, body, created_at FROM outbox ORDER BY seq LIMIT $limit");
+        command.Parameters.AddWithValue("$limit", limit);
+        using var reader = command.ExecuteReader();
+        var reports = new List<QueuedReport>();
+        while (reader.Read())
+        {
+            reports.Add(new QueuedReport(reader.GetInt64(0), reader.GetString(1), (byte[])reader.GetValue(2), ParseTime(reader.GetString(3))));
+        }
+
+        return reports;
+    }
+
+    public void DeleteReport(long seq)
+    {
+        using var connection = Open();
+        using var command = Command(connection, "DELETE FROM outbox WHERE seq = $seq");
+        command.Parameters.AddWithValue("$seq", seq);
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Puts another body in place of a report (the same report without its log, A.11).</summary>
+    public void ReplaceReport(long seq, byte[] body)
+    {
+        using var connection = Open();
+        using var command = Command(connection, "UPDATE outbox SET body = $body WHERE seq = $seq");
+        command.Parameters.AddWithValue("$seq", seq);
+        command.Parameters.AddWithValue("$body", body);
+        command.ExecuteNonQuery();
+    }
+
+    public int CountReports()
+    {
+        using var connection = Open();
+        using var command = Command(connection, "SELECT COUNT(*) FROM outbox");
+        return (int)(long)command.ExecuteScalar()!;
+    }
+
+    /// <summary>Drops every queued report: the binding to the server was reset.</summary>
+    public void ClearReports()
+    {
+        using var connection = Open();
+        using var command = Command(connection, "DELETE FROM outbox");
+        command.ExecuteNonQuery();
+    }
+
+    // ---- Verification of stored sets (A.8) ---------------------------------------------------------------------
+
+    public void SaveSetChecks(string taskId, IEnumerable<SetCheck> checks, DateTimeOffset checkedAt)
+    {
+        ArgumentNullException.ThrowIfNull(checks);
+        using var connection = Open();
+        using var transaction = connection.BeginTransaction();
+        using var command = Command(connection, """
+            INSERT INTO set_checks (task_id, destination_id, set_name, checked_at, ok) VALUES ($task, $destination, $set, $at, $ok)
+            ON CONFLICT(task_id, destination_id, set_name) DO UPDATE SET checked_at = $at, ok = $ok
+            """, transaction);
+        command.Parameters.AddWithValue("$task", taskId);
+        var destination = command.Parameters.Add("$destination", SqliteType.Text);
+        var set = command.Parameters.Add("$set", SqliteType.Text);
+        command.Parameters.AddWithValue("$at", UtcTimeConverter.ToText(checkedAt));
+        var ok = command.Parameters.Add("$ok", SqliteType.Integer);
+        foreach (var check in checks)
+        {
+            destination.Value = check.DestinationId;
+            set.Value = check.SetName;
+            ok.Value = check.Ok ? 1 : 0;
+            command.ExecuteNonQuery();
+        }
+
+        transaction.Commit();
+    }
+
+    /// <summary>The last check of each set of a task, by destination and set name.</summary>
+    public Dictionary<(string DestinationId, string SetName), (DateTimeOffset CheckedAt, bool Ok)> GetSetChecks(string taskId)
+    {
+        using var connection = Open();
+        using var command = Command(connection, "SELECT destination_id, set_name, checked_at, ok FROM set_checks WHERE task_id = $task");
+        command.Parameters.AddWithValue("$task", taskId);
+        using var reader = command.ExecuteReader();
+        var checks = new Dictionary<(string, string), (DateTimeOffset, bool)>();
+        while (reader.Read())
+        {
+            checks[(reader.GetString(0).ToUpperInvariant(), reader.GetString(1))] = (ParseTime(reader.GetString(2)), reader.GetInt64(3) != 0);
+        }
+
+        return checks;
+    }
+
     // ---- Plumbing ----------------------------------------------------------------------------------------------
 
     private const string RunColumns = """
         SELECT run_id, task_id, task_name, backup_type, trigger, scheduled_for, requested_by, started_at, finished_at,
             status, source_files, source_bytes, files_processed, bytes_written, errors, warnings, error_message, set_name,
-            destinations, databases, remote
+            destinations, databases, remote, verify
         FROM runs
         """;
 
@@ -310,6 +444,7 @@ public sealed class AgentDatabase : IFileStateStore
                 Destinations = reader.IsDBNull(18) ? [] : JsonSerializer.Deserialize(reader.GetString(18), StorageJsonContext.Default.ListDestinationResult) ?? [],
                 Databases = reader.IsDBNull(19) ? [] : JsonSerializer.Deserialize(reader.GetString(19), StorageJsonContext.Default.ListDatabaseResult) ?? [],
                 Remote = reader.IsDBNull(20) ? null : JsonSerializer.Deserialize(reader.GetString(20), StorageJsonContext.Default.RemoteResult),
+                Verify = reader.IsDBNull(21) ? null : JsonSerializer.Deserialize(reader.GetString(21), StorageJsonContext.Default.RunVerify),
             });
         }
 
@@ -369,6 +504,13 @@ public sealed class AgentDatabase : IFileStateStore
             }
         }
 
+        if (version is 1 or 2 or 3 or 4)
+        {
+            // Stage 3: what the verification of a run found, for the history and the monitoring server.
+            using var alter = Command(connection, "ALTER TABLE runs ADD COLUMN verify TEXT;", transaction);
+            alter.ExecuteNonQuery();
+        }
+
         using (var create = Command(connection, """
             CREATE TABLE IF NOT EXISTS file_state (
                 task_id TEXT NOT NULL,
@@ -413,10 +555,28 @@ public sealed class AgentDatabase : IFileStateStore
                 set_name TEXT,
                 destinations TEXT,
                 databases TEXT,
-                remote TEXT
+                remote TEXT,
+                verify TEXT
             );
 
             CREATE INDEX IF NOT EXISTS runs_by_task ON runs (task_id, started_at);
+
+            CREATE TABLE IF NOT EXISTS outbox (
+                seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                path TEXT NOT NULL,
+                body BLOB NOT NULL,
+                coalesce_key TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS set_checks (
+                task_id TEXT NOT NULL,
+                destination_id TEXT NOT NULL COLLATE NOCASE,
+                set_name TEXT NOT NULL,
+                checked_at TEXT NOT NULL,
+                ok INTEGER NOT NULL,
+                PRIMARY KEY (task_id, destination_id, set_name)
+            ) WITHOUT ROWID;
             """, transaction))
         {
             create.ExecuteNonQuery();
@@ -452,3 +612,6 @@ public sealed class AgentDatabase : IFileStateStore
     private static DateTimeOffset ParseTime(string text) =>
         DateTimeOffset.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal).ToUniversalTime();
 }
+
+/// <summary>A report waiting for the monitoring server: <c>POST {Path}</c> with <see cref="Body"/>.</summary>
+public sealed record QueuedReport(long Seq, string Path, byte[] Body, DateTimeOffset CreatedAt);

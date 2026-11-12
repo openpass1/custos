@@ -168,4 +168,28 @@ internal static partial class ServiceLog
     [LoggerMessage(EventId = CustosEventIds.DestinationFull, Level = LogLevel.Error,
         Message = "Task {Task}: not enough free space at a destination")]
     public static partial void DestinationFull(ILogger logger, string task);
+
+    [LoggerMessage(EventId = CustosEventIds.ServerConnectionLost, Level = LogLevel.Warning, Message = "{Text}")]
+    public static partial void ServerConnectionLost(ILogger logger, string text);
+
+    [LoggerMessage(EventId = CustosEventIds.ServerConnectionRestored, Level = LogLevel.Information, Message = "{Text}")]
+    public static partial void ServerConnectionRestored(ILogger logger, string text);
+
+    [LoggerMessage(EventId = 1102, Message = "Monitoring server: {Text}")]
+    public static partial void MonitorMessage(ILogger logger, LogLevel level, string text);
+
+    [LoggerMessage(EventId = 1103, Level = LogLevel.Error, Message = "The connection to the monitoring server stopped")]
+    public static partial void MonitorCrashed(ILogger logger, Exception exception);
+
+    [LoggerMessage(EventId = CustosEventIds.UpdateInstalled, Level = LogLevel.Information,
+        Message = "CUSTOS updated from {Old} to {New} by the monitoring server")]
+    public static partial void UpdateInstalled(ILogger logger, string old, string @new);
+
+    [LoggerMessage(EventId = CustosEventIds.UpdateRejected, Level = LogLevel.Error,
+        Message = "The update of CUSTOS to {Version} was not installed: {Reason}")]
+    public static partial void UpdateRejected(ILogger logger, string version, string reason);
+
+    [LoggerMessage(EventId = 4002, Level = LogLevel.Information,
+        Message = "Installing the update of CUSTOS to {Version}: the service stops and Custos.Updater replaces the program files")]
+    public static partial void UpdateStarting(ILogger logger, string version);
 }
