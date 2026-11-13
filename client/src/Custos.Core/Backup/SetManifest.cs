@@ -188,7 +188,8 @@ public static class SetManifest
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(files);
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = TextEncoder });
+        // "\n" on every system: the same file from Windows and Linux, and the lines of the list (EntryIndent) match.
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = TextEncoder });
         var line = new ArrayBufferWriter<byte>(1024);
         using var lineWriter = new Utf8JsonWriter(line, new JsonWriterOptions { Encoder = TextEncoder });
         writer.WriteStartObject();

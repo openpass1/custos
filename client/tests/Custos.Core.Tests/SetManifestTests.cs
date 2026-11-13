@@ -82,6 +82,7 @@ public sealed class SetManifestTests
 
         // Cyrillic is UTF-8, not \uXXXX: 2 bytes a letter instead of 6, and the file can be read in Notepad.
         Assert.Contains("файл 0.txt", text, StringComparison.Ordinal);
+        Assert.DoesNotContain('\r', text);
         Assert.DoesNotContain("\\u0", text, StringComparison.Ordinal);
         Assert.Equal(files.Count, lines.Count(l => l.StartsWith("    {\"path\":", StringComparison.Ordinal)));
         Assert.Contains("  \"files\": [", lines);
