@@ -427,7 +427,7 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`. When there is nothing to update (the machines already run this version or newer), the site says so in a plain message, not in red.
 
-**Version 0.4.4.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
+**Version 0.4.6.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
 
 ## What to keep in backups
 
