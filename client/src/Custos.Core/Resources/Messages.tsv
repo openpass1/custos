@@ -545,20 +545,20 @@ SevenZipNeedsSeek	A 7z archive cannot be written to {0}: such a destination take
 ObjectLockNeedsSets	{0}: protection from deletion (Object Lock) works only with copies that are never overwritten: archives or a separate folder for each copy. A mirror and a shared folder replace files, and a locked file cannot be replaced.	{0}: защита от удаления (Object Lock) работает только с копиями, которые не перезаписываются: архивы или отдельная папка для каждой копии. Зеркало и общая папка заменяют файлы, а запертый файл заменить нельзя.
 SetLocked	Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.	Набор «{0}» в {1} защищён от удаления до {2} (Object Lock); хранение удалит его после этого срока.
 # Cloud drives (stage 4b)
-CloudGDrive	Google Drive	Google Drive
+CloudGDrive	Google Drive	Google Диск
 CloudYaDisk	Yandex Disk	Яндекс Диск
 CloudDropbox	Dropbox	Dropbox
 CloudAppFolder	Apps/CUSTOS	Приложения/CUSTOS
 CloudNoMirror	{0}: a mirror cannot be kept in a cloud drive. Choose a full, incremental or differential backup.	{0}: зеркало в облачном диске недоступно. Выберите полную, инкрементную или дифференциальную копию.
 CloudWrongAccount	{0}: the account belongs to another service.	{0}: учётная запись относится к другому сервису.
-CloudAccountOnlyConnected	An account of a cloud drive is connected only through the browser on this computer («Connect account»).	Аккаунт облачного диска подключается только через браузер на этом компьютере («Подключить аккаунт»).
-CloudAccountMissing	{0}: no account is connected for this destination. Connect one in the destination («Connect account»).	{0}: у назначения нет подключённого аккаунта. Подключите его в назначении («Подключить аккаунт»).
-CloudAccessRevoked	Access to the account {0} ({1}) has been revoked. Connect the account again.	Доступ к аккаунту {0} ({1}) отозван, подключите аккаунт заново.
+CloudAccountOnlyConnected	An account of a cloud drive is connected only through the browser on this computer (settings, «Cloud drives», or «Connect…» in the destination).	Аккаунт облачного диска подключается только через браузер на этом компьютере (настройки, «Облачные диски», или «Подключить…» в назначении).
+CloudAccountMissing	{0}: no account is connected for this destination. Connect one in the destination («Connect…»).	{0}: у назначения нет подключённого аккаунта. Подключите его в назначении («Подключить…»).
+CloudAccessRevoked	Access to the account {0} ({1}) has been revoked. Connect it again in the settings («Connect again…»).	Доступ к аккаунту {0} ({1}) отозван. Подключите его заново в настройках («Подключить заново…»).
 CloudAppMissing	{0}: this version has no CUSTOS application for the service. Enter the ids of your own application in the settings, «Cloud drives».	{0}: в этой версии нет приложения CUSTOS для сервиса. Укажите идентификаторы своего приложения в настройках, раздел «Облачные диски».
 CloudAppRefused	{0} does not know the CUSTOS application ({1}). Check the application ids in the settings, «Cloud drives».	{0} не знает приложение CUSTOS ({1}). Проверьте идентификаторы приложения в настройках, раздел «Облачные диски».
 CloudSignInFailed	{0}: the sign-in failed: {1}	{0}: вход не удался: {1}
 CloudSignInRefused	{0}: access was not allowed on the page of the service.	{0}: на странице сервиса доступ не разрешили.
-CloudSignInExpired	The sign-in took too long or was started again. Press «Connect account» once more.	Вход занял слишком много времени или был начат заново. Нажмите «Подключить аккаунт» ещё раз.
+CloudSignInExpired	The sign-in took too long or was started again. Close this window and connect the account once more.	Вход занял слишком много времени или был начат заново. Закройте это окно и подключите аккаунт ещё раз.
 CloudNoRefreshToken	{0} gave no refresh token, and CUSTOS cannot work without one. Try again; if it repeats, first remove CUSTOS from the connected applications of the account.	{0} не выдал токен обновления, без него CUSTOS работать не сможет. Попробуйте ещё раз; если повторится, сначала уберите CUSTOS из подключённых приложений аккаунта.
 CloudFileTooLarge	{0} does not take a file this large ({1}). Set «Part size» in the destination (Yandex Disk without a subscription takes files of up to 1 GB).	{0} не принимает такой большой файл ({1}). Задайте «Размер части» в назначении (Яндекс Диск без подписки принимает файлы до 1 ГБ).
 CloudUploadExpired	{0}: the upload of {1} expired at the service; the file was not written.	{0}: загрузка {1} у сервиса истекла, файл не записан.

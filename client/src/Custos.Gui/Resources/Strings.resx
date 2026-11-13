@@ -1156,7 +1156,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>English</value>
   </data>
   <data name="SettingsAccounts" xml:space="preserve">
-    <value>Accounts for network folders and servers</value>
+    <value>Accounts for network folders, servers and cloud drives</value>
   </data>
   <data name="SettingsAccountsNote" xml:space="preserve">
     <value>The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.</value>

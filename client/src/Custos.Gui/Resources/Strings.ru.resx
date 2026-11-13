@@ -1156,7 +1156,7 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
     <value>English</value>
   </data>
   <data name="SettingsAccounts" xml:space="preserve">
-    <value>Учётные записи для сетевых папок и серверов</value>
+    <value>Учётные записи сетевых папок, серверов и облачных дисков</value>
   </data>
   <data name="SettingsAccountsNote" xml:space="preserve">
     <value>Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.</value>

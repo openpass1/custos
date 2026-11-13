@@ -388,7 +388,7 @@ ServiceLanguageHelp	The language of the run logs and of the messages of the serv
 LanguageAuto	Automatic	Автоматически
 LanguageRussian	Русский	Русский
 LanguageEnglish	English	English
-SettingsAccounts	Accounts for network folders and servers	Учётные записи для сетевых папок и серверов
+SettingsAccounts	Accounts for network folders, servers and cloud drives	Учётные записи сетевых папок, серверов и облачных дисков
 SettingsAccountsNote	The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.
 SettingsReadOnly	Only administrators can change the settings.	Изменять настройки могут только администраторы.
 ColumnUsedBy	Used by tasks	Используется в заданиях

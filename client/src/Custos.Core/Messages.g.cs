@@ -1610,13 +1610,13 @@ static partial class Messages
     /// <summary>{0}: the account belongs to another service.</summary>
     public static string CloudWrongAccount => Get(nameof(CloudWrongAccount));
 
-    /// <summary>An account of a cloud drive is connected only through the browser on this computer («Connect account»).</summary>
+    /// <summary>An account of a cloud drive is connected only through the browser on this computer (settings, «Cloud drives...</summary>
     public static string CloudAccountOnlyConnected => Get(nameof(CloudAccountOnlyConnected));
 
-    /// <summary>{0}: no account is connected for this destination. Connect one in the destination («Connect account»).</summary>
+    /// <summary>{0}: no account is connected for this destination. Connect one in the destination («Connect…»).</summary>
     public static string CloudAccountMissing => Get(nameof(CloudAccountMissing));
 
-    /// <summary>Access to the account {0} ({1}) has been revoked. Connect the account again.</summary>
+    /// <summary>Access to the account {0} ({1}) has been revoked. Connect it again in the settings («Connect again…»).</summary>
     public static string CloudAccessRevoked => Get(nameof(CloudAccessRevoked));
 
     /// <summary>{0}: this version has no CUSTOS application for the service. Enter the ids of your own application in the s...</summary>
@@ -1631,7 +1631,7 @@ static partial class Messages
     /// <summary>{0}: access was not allowed on the page of the service.</summary>
     public static string CloudSignInRefused => Get(nameof(CloudSignInRefused));
 
-    /// <summary>The sign-in took too long or was started again. Press «Connect account» once more.</summary>
+    /// <summary>The sign-in took too long or was started again. Close this window and connect the account once more.</summary>
     public static string CloudSignInExpired => Get(nameof(CloudSignInExpired));
 
     /// <summary>{0} gave no refresh token, and CUSTOS cannot work without one. Try again; if it repeats, first remove CUSTO...</summary>

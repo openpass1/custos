@@ -1127,7 +1127,7 @@ static partial class Strings
     /// <summary>English</summary>
     public static string LanguageEnglish => Get(nameof(LanguageEnglish));
 
-    /// <summary>Accounts for network folders and servers</summary>
+    /// <summary>Accounts for network folders, servers and cloud drives</summary>
     public static string SettingsAccounts => Get(nameof(SettingsAccounts));
 
     /// <summary>The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by...</summary>
