@@ -110,6 +110,13 @@ jobs:
         env:
           CUSTOS_REQUIRE_7Z: '1'
           VERSION: ${{ needs.check.outputs.version }}
+          # Built-in cloud drive applications, as in the "Client build" workflow: without them the released program
+          # cannot connect Google Drive, Yandex Disk or Dropbox.
+          CUSTOS_GDRIVE_CLIENT_ID: ${{ vars.CUSTOS_GDRIVE_CLIENT_ID }}
+          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ secrets.CUSTOS_GDRIVE_CLIENT_SECRET }}
+          CUSTOS_YADISK_CLIENT_ID: ${{ vars.CUSTOS_YADISK_CLIENT_ID }}
+          CUSTOS_YADISK_CLIENT_SECRET: ${{ secrets.CUSTOS_YADISK_CLIENT_SECRET }}
+          CUSTOS_DROPBOX_CLIENT_ID: ${{ vars.CUSTOS_DROPBOX_CLIENT_ID }}
         run: .\build.ps1 -Configuration Release -Version $env:VERSION
 
       - name: Collect the files
