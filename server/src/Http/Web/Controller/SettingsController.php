@@ -35,13 +35,12 @@ final class SettingsController extends Controller
     {
         $settings = $this->app->settings();
         $values = [];
+        // The page sends one group of fields at a time: a field that the form did not send keeps its stored value.
         foreach (self::FIELDS as $name) {
-            $values[$name] = str_starts_with($name, 'ip_allow_') ? $this->post($name) : trim($this->post($name));
-        }
-        // A form from before these fields existed keeps the stored values.
-        foreach ([...array_keys(self::NUMBERS), 'anomaly_growth_factor', 'default_language'] as $name) {
             if (!isset($this->request->post[$name])) {
-                $values[$name] = $settings->get($name);
+                $values[$name] = (string) $settings->get($name);
+            } else {
+                $values[$name] = str_starts_with($name, 'ip_allow_') ? $this->post($name) : trim($this->post($name));
             }
         }
         $errors = [];

@@ -7,7 +7,7 @@ $old = fn(?string $have, ?string $want) => $want !== null && (string) $have !== 
 ?>
 <?php if ($versions !== []): ?>
 <section class="panel">
-    <h2><a href="<?= e(url('/updates')) ?>"><?= e(t('dashboard.versions')) ?></a></h2>
+    <h2 class="with-link"><?= e(t('dashboard.versions')) ?> <a class="h2-link" href="<?= e(url('/updates')) ?>"><?= e(t('nav.updates')) ?></a></h2>
     <table class="compact">
         <tbody>
         <?php foreach ($versions as $v): ?>

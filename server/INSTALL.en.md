@@ -450,6 +450,13 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - there is no "Profile" page any more: everything moved to the menu under your login at the top right: theme (same as the system, light, dark), language, "Change password" (opens a dialog) and "Log out"; after a choice you stay on the same page. An old bookmark to `/profile` opens the home page;
 - on a phone the lists of machines, tasks, runs, problems and notices are shown as cards, with no sideways scrolling; menu items and row buttons are bigger for a finger.
 
+**Version 0.4.8.** No migrations. Big forms (the last part of the new look):
+- task editor: a table of contents on the left marks the current section and jumps to any section; rarely changed sections ("Compression, encryption, verification", "Reliability and log", "Events before and after", account passwords) are folded into one line with a summary of what is set; the backup type is chosen on cards. When saving finds errors, all sections are open and the table of contents puts a red dot on the section with the error;
+- Settings → General: each group (General, Thresholds, Retention, Allowed networks) has its own Save button, short fields stand in several columns, and units (min, days, %) are written inside the field;
+- Machines: one table with groups as heading rows; above it "All", "With problems", "Running", "Offline" with counts and a search by name (they work at once, without reloading);
+- Home: the 30-day heat map moved up under "Needs attention"; the Tasks tile has a bar of states with words;
+- the notice "New machine … waits for approval" becomes read by itself once the machine is approved. Close older ones with "Mark all as read".
+
 ## What to keep in backups
 
 - the `custos` database;

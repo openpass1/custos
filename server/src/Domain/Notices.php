@@ -57,6 +57,16 @@ final class Notices
         return (int) $this->db->value('SELECT COUNT(*) FROM notices');
     }
 
+    /** Marks the unread notices of these kinds about a machine as read: what they asked for is done (an approval). */
+    public function settle(string $agentId, array $kinds): void
+    {
+        $marks = implode(', ', array_fill(0, count($kinds), '?'));
+        $this->db->exec(
+            "UPDATE notices SET read_at = ? WHERE agent_id = ? AND kind IN ($marks) AND read_at IS NULL",
+            [Time::now(), $agentId, ...$kinds]
+        );
+    }
+
     public function markRead(?int $id, int $userId): void
     {
         if ($id === null) {
