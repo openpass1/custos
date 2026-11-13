@@ -3,163 +3,143 @@
  * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
  * @var array $runs @var int $refresh @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
  * @var array $settings @var list<array> $storages
+ *
+ * The machine page: a head with the name, the status and the buttons (one main button, rare steps under "More"),
+ * a line of facts, notes that ask for something (approve, update, switched off), then problems, what runs now and
+ * the tasks on the first screen. Details that are seldom needed are folded.
  */
 use Custos\Domain\Agents;
 
+$machine = $agent; // the live parts below replace $agent with the board's copy of the machine
 $online = $live['online'];
-$approved = $agent['status'] === 'approved';
+$status = $agent['status'];
+$approved = $status === 'approved';
+$pending = $status === 'pending';
+$base = '/agents/' . $agent['id'];
+$name = Agents::name($agent);
 $older = fn(?string $have, ?array $package) => $package !== null && ((string) $have === '' || version_compare((string) $have, $package['version'], '<'));
-$agentOld = $older($agent['agent_version'], $currentVersion);
-$sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
+$agentOld = $approved && $older($agent['agent_version'], $currentVersion);
+$sevenZipOld = $approved && $older($agent['sevenzip_version'], $latestSevenZip);
+$groupName = null;
+foreach ($groups as $g) {
+    if ($agent['group_id'] !== null && (int) $agent['group_id'] === (int) $g['id']) {
+        $groupName = $g['name'];
+    }
+}
+// A button that posts to the machine (an action of AgentsController::action), with a question first when given.
+$post = function (string $action, string $label, string $class, ?string $iconName = null, ?string $confirm = null) use ($base): string {
+    return '<form method="post" action="' . e(url($base . '/' . $action)) . '"' . ($confirm === null ? '' : ' data-confirm="' . e($confirm) . '"') . '>'
+        . csrf_field() . '<button type="submit"' . ($class === '' ? '' : ' class="' . e($class) . '"') . '>'
+        . ($iconName === null ? '' : icon($iconName)) . e($label) . '</button></form>';
+};
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a></p>
-<h1><?= e(Agents::name($agent)) ?>
-    <?php if ($agent['status'] === 'pending'): ?><?= badge('pending') ?>
-    <?php elseif ($agent['status'] === 'disabled'): ?><?= badge('disabled') ?>
-    <?php else: ?><?= $online ? badge('online') : badge('offline') ?><?php endif ?>
-</h1>
-
-<div class="columns">
-    <section class="panel">
-        <h2><?= e(t('agent.card')) ?></h2>
-        <dl class="props">
-            <dt><?= e(t('agent.hostname')) ?></dt><dd><?= e($agent['hostname']) ?></dd>
-            <dt><?= e(t('agent.group')) ?></dt>
-            <dd>
-                <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/group')) ?>" class="inline">
-                    <?= csrf_field() ?>
-                    <select name="group_id" aria-label="<?= e(t('agent.group')) ?>" data-autosubmit>
-                        <option value=""><?= e(t('groups.none')) ?></option>
-                        <?php foreach ($groups as $g): ?>
-                            <option value="<?= (int) $g['id'] ?>"<?= (int) $agent['group_id'] === (int) $g['id'] && $agent['group_id'] !== null ? ' selected' : '' ?>><?= e($g['name']) ?></option>
-                        <?php endforeach ?>
-                    </select>
-                    <noscript><button type="submit"><?= e(t('common.save')) ?></button></noscript>
-                    <?php if ($groups === []): ?><a href="<?= e(url('/groups')) ?>" class="note"><?= e(t('groups.create_first')) ?></a><?php endif ?>
-                </form>
-            </dd>
-            <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
-            <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
-            <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?>
-                <?php if ($agentOld && (string) $agent['agent_version'] !== ''): ?><?= badge('warning', t('agent.version.old', ['version' => $currentVersion['version']])) ?><?php endif ?></dd>
-            <dt><?= e(t('agent.sevenzip')) ?></dt><dd><?= e($agent['sevenzip_version'] ?? t('agent.sevenzip.unknown')) ?>
-                <?php if ($sevenZipOld && $agent['sevenzip_version'] !== null): ?><?= badge('warning', t('agent.version.old', ['version' => $latestSevenZip['version']])) ?><?php endif ?></dd>
-            <dt><?= e(t('agent.time_zone')) ?></dt><dd><?= e($agent['time_zone']) ?></dd>
-            <dt><?= e(t('agent.first_seen')) ?></dt><dd><?= e(fmt_time($agent['first_seen_at'])) ?></dd>
-            <dt><?= e(t('agent.last_seen')) ?></dt>
-            <dd><?= e(fmt_time($agent['last_heartbeat_at'], true)) ?> (<?= e(fmt_ago($agent['last_heartbeat_at'])) ?>)</dd>
-            <dt><?= e(t('agent.service_started')) ?></dt><dd><?= e(fmt_time($agent['service_started_at'])) ?></dd>
-            <dt><?= e(t('agent.fingerprint')) ?></dt><dd><code class="fingerprint"><?= e($agent['key_fingerprint']) ?></code></dd>
-            <dt><?= e(t('agent.remote_edit')) ?></dt>
-            <dd><?= e($agent['allow_remote_edit'] === null ? '—' : t($agent['allow_remote_edit'] ? 'common.yes' : 'common.no')) ?></dd>
-            <dt><?= e(t('agent.config')) ?></dt>
-            <dd><?= $agent['config_revision'] === null ? e(t('agent.config.none'))
-                    : e(t('agent.config.revision', ['n' => $agent['config_revision'], 'time' => fmt_time($agent['config_received_at'])])) ?></dd>
-        </dl>
-        <?php if ($replaces !== null): ?>
-            <p class="note"><?= e(t('agents.rereg', ['name' => Agents::name($replaces)])) ?>
-                <a href="<?= e(url('/agents/' . $replaces['id'])) ?>"><?= e(t('agent.open_old')) ?></a></p>
-        <?php endif ?>
-    </section>
-
-    <section class="panel">
-        <h2><?= e(t('agent.actions')) ?></h2>
-        <div class="stack">
-            <?php if ($agent['status'] === 'pending'): ?>
-                <p class="hint"><?= e(t('agents.pending.hint')) ?></p>
-                <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/approve')) ?>">
-                    <?= csrf_field() ?>
-                    <button type="submit"><?= e(t($replaces === null ? 'agents.action.approve' : 'agents.action.approve_new')) ?></button>
-                </form>
-                <?php if ($replaces !== null): ?>
-                    <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/replace')) ?>"
-                          data-confirm="<?= e(t('agents.confirm.replace', ['name' => Agents::name($replaces)])) ?>">
-                        <?= csrf_field() ?>
-                        <button type="submit"><?= e(t('agents.action.replace', ['name' => Agents::name($replaces)])) ?></button>
-                    </form>
-                <?php endif ?>
-            <?php elseif ($agent['status'] === 'approved'): ?>
-                <div class="buttons">
-                    <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new')) ?>"><?= e(t('agent.action.add_task')) ?></a>
-                    <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/settings')) ?>"><?= e(t('agent.action.settings')) ?></a>
-                    <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/inventory')) ?>">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="secondary"><?= e(t('agent.action.inventory')) ?></button>
-                    </form>
-                </div>
-                <?php if ($agentOld || $sevenZipOld): ?>
-                    <div class="buttons">
-                        <?php if ($agentOld): ?>
-                            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/update')) ?>"
-                                  data-confirm="<?= e(t('agent.confirm.update', ['version' => $currentVersion['version']])) ?>">
-                                <?= csrf_field() ?>
-                                <button type="submit"><?= e(t('agent.action.update', ['version' => $currentVersion['version']])) ?></button>
-                            </form>
-                        <?php endif ?>
-                        <?php if ($sevenZipOld): ?>
-                            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/sevenzip')) ?>"
-                                  data-confirm="<?= e(t('agent.confirm.sevenzip', ['version' => $latestSevenZip['version']])) ?>">
-                                <?= csrf_field() ?>
-                                <button type="submit"><?= e(t('agent.action.sevenzip', ['version' => $latestSevenZip['version']])) ?></button>
-                            </form>
-                        <?php endif ?>
-                    </div>
-                <?php endif ?>
-                <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/disable')) ?>"
-                      data-confirm="<?= e(t('agents.confirm.disable')) ?>">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="secondary"><?= e(t('agents.action.disable')) ?></button>
-                </form>
-            <?php else: ?>
-                <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/enable')) ?>">
-                    <?= csrf_field() ?>
-                    <button type="submit"><?= e(t('agents.action.enable')) ?></button>
-                </form>
+<div class="page-head">
+    <h1><?= e($name) ?>
+        <button type="button" class="icon-button" data-dialog="agent-rename" title="<?= e(t('agents.action.rename')) ?>" aria-label="<?= e(t('agents.action.rename')) ?>"><?= icon('pencil') ?></button>
+        <?php if ($pending): ?><?= badge('pending') ?>
+        <?php elseif ($status === 'disabled'): ?><?= badge('disabled') ?>
+        <?php else: ?><?= $online ? badge('online') : badge('offline') ?><?php endif ?>
+    </h1>
+    <div class="page-tools">
+        <?php if ($pending): ?>
+            <?= $post('approve', t($replaces === null ? 'agents.action.approve' : 'agents.action.approve_new'), '', 'check') ?>
+            <?php if ($replaces !== null): ?>
+                <?= $post('replace', t('agents.action.replace', ['name' => Agents::name($replaces)]), 'secondary', null,
+                    t('agents.confirm.replace', ['name' => Agents::name($replaces)])) ?>
             <?php endif ?>
-            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/rename')) ?>" class="inline">
-                <?= csrf_field() ?>
-                <input type="text" name="display_name" value="<?= e($agent['display_name'] ?? '') ?>"
-                       placeholder="<?= e($agent['hostname']) ?>" maxlength="255" aria-label="<?= e(t('agent.display_name')) ?>">
-                <button type="submit"><?= e(t('agents.action.rename')) ?></button>
-            </form>
-            <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/delete')) ?>"
-                  data-confirm="<?= e(t('agents.confirm.delete', ['name' => Agents::name($agent)])) ?>">
-                <?= csrf_field() ?>
-                <button type="submit" class="danger"><?= e(t($agent['status'] === 'pending' ? 'agents.action.reject' : 'agents.action.delete')) ?></button>
-            </form>
-        </div>
-    </section>
+            <?= $post('delete', t('agents.action.reject'), 'danger', null, t('agents.confirm.reject', ['name' => $name])) ?>
+        <?php else: ?>
+            <?php if ($approved): ?>
+                <a class="button-link primary" href="<?= e(url($base . '/tasks/new')) ?>"><?= icon('plus') ?><?= e(t('agent.action.add_task')) ?></a>
+                <a class="button-link" href="<?= e(url($base . '/settings')) ?>"><?= icon('sliders') ?><?= e(t('agent.action.settings')) ?></a>
+            <?php else: ?>
+                <?= $post('enable', t('agents.action.enable'), '', 'power') ?>
+            <?php endif ?>
+            <details class="dropdown">
+                <summary><?= e(t('common.more')) ?><?= icon('chevron') ?></summary>
+                <div class="dropdown-menu">
+                    <?php if ($approved): ?>
+                        <?= $post('inventory', t('agent.action.inventory'), 'menu-item', 'box') ?>
+                    <?php endif ?>
+                    <button type="button" class="menu-item" data-dialog="agent-rename"><?= icon('pencil') ?><?= e(t('agents.action.rename')) ?></button>
+                    <button type="button" class="menu-item" data-dialog="agent-group"><?= icon('folder') ?><?= e(t('agent.action.group')) ?></button>
+                    <?php if ($approved): ?>
+                        <?= $post('disable', t('agents.action.disable'), 'menu-item', 'power', t('agents.confirm.disable')) ?>
+                    <?php endif ?>
+                    <div class="menu-sep"></div>
+                    <?= $post('delete', t('agent.action.delete'), 'menu-item danger', 'trash', t('agents.confirm.delete', ['name' => $name])) ?>
+                </div>
+            </details>
+        <?php endif ?>
+    </div>
+    <p class="page-meta">
+        <?php if ($groupName !== null): ?><span><?= e($groupName) ?></span><?php endif ?>
+        <?php if ((string) $agent['os'] !== ''): ?><span><?= e($agent['os']) ?></span><?php endif ?>
+        <?php if ((string) ($agent['last_ip'] ?? '') !== ''): ?><span><?= e($agent['last_ip']) ?></span><?php endif ?>
+        <?php if ((string) $agent['agent_version'] !== ''): ?><span>CUSTOS <?= e($agent['agent_version']) ?></span><?php endif ?>
+        <?php if ($agent['sevenzip_version'] !== null): ?><span>7-Zip <?= e($agent['sevenzip_version']) ?></span><?php endif ?>
+        <?php if ($pending): ?>
+            <span><?= e(t('agent.meta.first_seen', ['time' => fmt_time($agent['first_seen_at'])])) ?></span>
+        <?php else: ?>
+            <span><?= e(t('agent.meta.last_seen', ['ago' => fmt_ago($agent['last_heartbeat_at'])])) ?></span>
+        <?php endif ?>
+    </p>
 </div>
 
-<div data-live="<?= e(url('/agents/' . $agent['id'] . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
-    <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
-    <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
-    <?php if ($storages !== []): ?>
-        <?php /* Not a live part: the inventory changes after runs, not every few seconds. */ include __DIR__ . '/_storage.php' ?>
-    <?php endif ?>
-    <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
-</div>
-
-<?php if ($commands !== []): ?>
-    <section class="panel">
-        <h2><?= e(t('commands.title')) ?></h2>
-        <?php $showTask = true; $back = '/agents/' . $agent['id']; include __DIR__ . '/_commands.php'; ?>
-    </section>
+<?php if ($pending): ?>
+    <div class="alert alert-warn">
+        <?= e(t('agents.pending.hint')) ?> <code class="fingerprint"><?= e($agent['key_fingerprint']) ?></code>
+        <?php if ($replaces !== null): ?>
+            <br><?= e(t('agents.rereg', ['name' => Agents::name($replaces)])) ?>.
+            <a href="<?= e(url('/agents/' . $replaces['id'])) ?>"><?= e(t('agent.open_old')) ?></a>
+        <?php endif ?>
+    </div>
+<?php elseif ($status === 'disabled'): ?>
+    <div class="alert alert-muted"><?= e(t('agent.disabled.hint')) ?></div>
+<?php endif ?>
+<?php if ($agentOld): ?>
+    <div class="alert alert-info with-action">
+        <span><?= e(t('agent.update.available', ['version' => $currentVersion['version'], 'have' => (string) $agent['agent_version'] !== '' ? $agent['agent_version'] : '—'])) ?></span>
+        <?= $post('update', t('agent.action.update', ['version' => $currentVersion['version']]), 'secondary', 'refresh',
+            t('agent.confirm.update', ['version' => $currentVersion['version']])) ?>
+    </div>
+<?php endif ?>
+<?php if ($sevenZipOld): ?>
+    <div class="alert alert-info with-action">
+        <span><?= e(t('agent.sevenzip.available', ['version' => $latestSevenZip['version'], 'have' => $agent['sevenzip_version'] ?? '—'])) ?></span>
+        <?= $post('sevenzip', t('agent.action.sevenzip', ['version' => $latestSevenZip['version']]), 'secondary', 'refresh',
+            t('agent.confirm.sevenzip', ['version' => $latestSevenZip['version']])) ?>
+    </div>
 <?php endif ?>
 
-<section class="panel">
-    <h2><?= e(t('agent.runs')) ?></h2>
-    <?php if ($runs === []): ?>
-        <p class="empty"><?= e(t('runs.empty')) ?></p>
-    <?php else: ?>
-        <?php $showAgent = false; include __DIR__ . '/../runs/_table.php'; ?>
-        <p><a href="<?= e(url('/runs', ['agent' => $agent['id']])) ?>"><?= e(t('agent.runs.all')) ?></a></p>
+<details class="panel facts"<?= $pending ? ' open' : '' ?>>
+    <summary><?= icon('chevron') ?><?= e(t('agent.facts')) ?> <small><?= e(t('agent.facts.hint')) ?></small></summary>
+    <dl class="props">
+        <dt><?= e(t('agent.hostname')) ?></dt><dd><?= e($agent['hostname']) ?></dd>
+        <dt><?= e(t('agent.group')) ?></dt><dd><?= e($groupName ?? t('groups.none')) ?></dd>
+        <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
+        <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
+        <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?></dd>
+        <dt><?= e(t('agent.sevenzip')) ?></dt><dd><?= e($agent['sevenzip_version'] ?? t('agent.sevenzip.unknown')) ?></dd>
+        <dt><?= e(t('agent.time_zone')) ?></dt><dd><?= e($agent['time_zone']) ?></dd>
+        <dt><?= e(t('agent.first_seen')) ?></dt><dd><?= e(fmt_time($agent['first_seen_at'])) ?></dd>
+        <dt><?= e(t('agent.last_seen')) ?></dt>
+        <dd><?= e(fmt_time($agent['last_heartbeat_at'], true)) ?> (<?= e(fmt_ago($agent['last_heartbeat_at'])) ?>)</dd>
+        <dt><?= e(t('agent.service_started')) ?></dt><dd><?= e(fmt_time($agent['service_started_at'])) ?></dd>
+        <dt><?= e(t('agent.fingerprint')) ?></dt><dd><code class="fingerprint"><?= e($agent['key_fingerprint']) ?></code></dd>
+        <dt><?= e(t('agent.remote_edit')) ?></dt>
+        <dd><?= e($agent['allow_remote_edit'] === null ? '—' : t($agent['allow_remote_edit'] ? 'common.yes' : 'common.no')) ?></dd>
+        <dt><?= e(t('agent.config')) ?></dt>
+        <dd><?= $agent['config_revision'] === null ? e(t('agent.config.none'))
+                : e(t('agent.config.revision', ['n' => $agent['config_revision'], 'time' => fmt_time($agent['config_received_at'])])) ?></dd>
+    </dl>
+    <?php if ($replaces !== null && !$pending): ?>
+        <p class="note"><?= e(t('agents.rereg', ['name' => Agents::name($replaces)])) ?>
+            <a href="<?= e(url('/agents/' . $replaces['id'])) ?>"><?= e(t('agent.open_old')) ?></a></p>
     <?php endif ?>
-</section>
-
-<?php if ($credentials !== []): ?>
-    <section class="panel">
-        <h2><?= e(t('agent.credentials')) ?></h2>
+    <?php if ($credentials !== []): ?>
+        <h3><?= e(t('agent.credentials')) ?></h3>
         <div class="table-wrap">
             <table>
                 <thead><tr><th><?= e(t('credentials.kind')) ?></th><th><?= e(t('credentials.user')) ?></th><th><?= e(t('credentials.secret')) ?></th></tr></thead>
@@ -174,5 +154,70 @@ $sevenZipOld = $older($agent['sevenzip_version'], $latestSevenZip);
                 </tbody>
             </table>
         </div>
+    <?php endif ?>
+</details>
+
+<div data-live="<?= e(url($base . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
+    <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
+    <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
+    <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
+</div>
+
+<?php if ($storages !== []): ?>
+    <?php /* Not a live part: the inventory changes after runs, not every few seconds. */ include __DIR__ . '/_storage.php' ?>
+<?php endif ?>
+
+<?php if ($runs === []): ?>
+    <section class="panel panel-empty">
+        <h2><?= e(t('agent.runs')) ?></h2>
+        <p class="empty"><?= e(t('runs.empty')) ?></p>
+    </section>
+<?php else: ?>
+    <section class="panel">
+        <h2><?= e(t('agent.runs')) ?></h2>
+        <?php $showAgent = false; include __DIR__ . '/../runs/_table.php'; ?>
+        <p><a href="<?= e(url('/runs', ['agent' => $agent['id']])) ?>"><?= e(t('agent.runs.all')) ?></a></p>
     </section>
 <?php endif ?>
+
+<?php if ($commands !== []): ?>
+    <section class="panel">
+        <h2><?= e(t('commands.title')) ?></h2>
+        <?php $showTask = true; $back = $base; include __DIR__ . '/_commands.php'; ?>
+    </section>
+<?php endif ?>
+
+<dialog id="agent-rename" class="modal" aria-labelledby="agent-rename-title">
+    <form method="post" action="<?= e(url($base . '/rename')) ?>" class="stack">
+        <?= csrf_field() ?>
+        <h2 id="agent-rename-title"><?= e(t('agent.rename.title')) ?></h2>
+        <label><?= e(t('agent.display_name')) ?>
+            <input type="text" name="display_name" value="<?= e($machine['display_name'] ?? '') ?>" placeholder="<?= e($machine['hostname']) ?>" maxlength="255">
+        </label>
+        <p class="note"><?= e(t('agent.rename.hint', ['hostname' => $machine['hostname']])) ?></p>
+        <div class="dialog-buttons">
+            <button type="button" class="secondary" data-dialog-close><?= e(t('common.cancel')) ?></button>
+            <button type="submit"><?= e(t('common.save')) ?></button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="agent-group" class="modal" aria-labelledby="agent-group-title">
+    <form method="post" action="<?= e(url($base . '/group')) ?>" class="stack">
+        <?= csrf_field() ?>
+        <h2 id="agent-group-title"><?= e(t('agent.group.title')) ?></h2>
+        <label><?= e(t('agent.group')) ?>
+            <select name="group_id">
+                <option value=""><?= e(t('groups.none')) ?></option>
+                <?php foreach ($groups as $g): ?>
+                    <option value="<?= (int) $g['id'] ?>"<?= $machine['group_id'] !== null && (int) $machine['group_id'] === (int) $g['id'] ? ' selected' : '' ?>><?= e($g['name']) ?></option>
+                <?php endforeach ?>
+            </select>
+        </label>
+        <p class="note"><a href="<?= e(url('/groups')) ?>"><?= e(t($groups === [] ? 'agent.group.create' : 'agent.group.manage')) ?></a></p>
+        <div class="dialog-buttons">
+            <button type="button" class="secondary" data-dialog-close><?= e(t('common.cancel')) ?></button>
+            <button type="submit"><?= e(t('common.save')) ?></button>
+        </div>
+    </form>
+</dialog>

@@ -22,7 +22,7 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
 <h1><?= e(t('problems.title')) ?></h1>
 <p class="hint"><?= e(t('problems.hint')) ?></p>
 
-<section class="panel">
+<section class="panel<?= $open === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('problems.open.title')) ?></h2>
     <?php if ($open === []): ?>
         <p class="all-good"><?= e(t('dashboard.no_problems')) ?></p>
@@ -33,7 +33,7 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
     <?php endif ?>
 </section>
 
-<section class="panel">
+<section class="panel<?= $closed === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('problems.closed.title')) ?></h2>
     <?php if ($closed === []): ?>
         <p class="empty"><?= e(t('problems.closed.none')) ?></p>

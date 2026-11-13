@@ -14,7 +14,7 @@ $hasSoft = $soft['offline'] !== [] || $soft['stale'] !== [] || $soft['anomaly'] 
     <?php else: ?>
         <ul class="problems">
             <?php foreach ($board->problems as $p): ?>
-                <li class="problem problem-<?= e($p['kind']) ?>">
+                <li class="problem problem-<?= e($p['kind']) ?>" data-key="p<?= (int) $p['id'] ?>">
                     <?= badge($p['kind']) ?>
                     <a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>">
                         <strong><?= e($p['agent']['name']) ?></strong> · <?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a>

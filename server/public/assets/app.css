@@ -7,8 +7,12 @@
     --text: #1d2330;
     --muted: #687083;
     --border: #dde1e8;
+    --border-strong: #c5cbd6;
+    --hover: #f1f4f9;
     --accent: #2457c5;
     --accent-soft: #8fb1ff;
+    --accent-bg: #e8eefb;
+    --on-accent: #ffffff;
     --ok: #1d7a3e;
     --ok-bg: #e2f3e8;
     --ok-border: #b9e0c6;
@@ -54,8 +58,12 @@
         --text: #e3e6ed;
         --muted: #9aa2b1;
         --border: #313744;
+        --border-strong: #454c5b;
+        --hover: #232833;
         --accent: #7ea6ff;
         --accent-soft: #7ea6ff;
+        --accent-bg: #1e2a44;
+        --on-accent: #0d0f13;
         --ok: #6fcf8e;
         --ok-bg: #173323;
         --ok-border: #24553a;
@@ -94,8 +102,12 @@
     --text: #e3e6ed;
     --muted: #9aa2b1;
     --border: #313744;
+    --border-strong: #454c5b;
+    --hover: #232833;
     --accent: #7ea6ff;
     --accent-soft: #7ea6ff;
+    --accent-bg: #1e2a44;
+    --on-accent: #0d0f13;
     --ok: #6fcf8e;
     --ok-bg: #173323;
     --ok-border: #24553a;
@@ -161,12 +173,12 @@ footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.5
 .empty { color: var(--muted); }
 .bad-text { color: var(--bad); }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; position: relative; }
 table { width: 100%; border-collapse: collapse; background: var(--panel); }
 th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { font-weight: 600; color: var(--muted); font-size: .85rem; white-space: nowrap; }
 td.num, th.num { text-align: right; white-space: nowrap; }
-td.actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+td.actions > form, td.actions > span { display: inline-block; vertical-align: middle; margin: .1rem .35rem .1rem 0; }
 tr.warn-row td { background: var(--warn-bg); }
 
 /* minmax(0, ...): a wide field in a value (the connection string) shrinks to the page and does not widen it. */
@@ -196,14 +208,25 @@ input, select, textarea, button {
     font: inherit; color: inherit; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--input-bg);
 }
 textarea { width: 100%; }
-button { background: var(--accent); color: #fff; border-color: var(--accent); cursor: pointer; }
-:root[data-theme="dark"] button:not(.link):not(.secondary):not(.danger):not(.to-top), :root[data-theme="dark"] .pager .current { color: #0d0f13; }
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) button:not(.link):not(.secondary):not(.danger):not(.to-top), :root:not([data-theme="light"]) .pager .current { color: #0d0f13; }
-}
+/* Buttons, one rule for the whole site. A plain button is the filled one: the main action of a page or a panel, one per
+   place. "secondary" (and a.button-link) is an ordinary button with a neutral frame, "quiet" a rare or side step without
+   a frame, "danger" removes or switches something off and always asks first; "link" looks like a link. */
+button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-weight: 500;
+    background: var(--accent); color: var(--on-accent); border-color: var(--accent); cursor: pointer; white-space: nowrap; }
 button:hover { filter: brightness(1.08); }
-button.danger { background: var(--panel); color: var(--bad); border-color: var(--bad); }
-button.link { background: none; border: none; padding: 0; color: var(--accent); }
+button.secondary { background: var(--panel); color: var(--text); border-color: var(--border-strong); }
+button.secondary:hover { background: var(--hover); filter: none; }
+button.quiet { background: none; color: var(--accent); border-color: transparent; }
+button.quiet:hover { background: var(--accent-bg); filter: none; }
+button.danger { background: var(--panel); color: var(--bad); border-color: var(--bad-border); }
+button.danger:hover { background: var(--bad-bg); border-color: var(--bad); filter: none; }
+button.link { display: inline; background: none; border: none; padding: 0; color: var(--accent); font-weight: inherit; white-space: normal; }
+button.link:hover { text-decoration: underline; filter: none; }
+button.small, a.button-link.small { padding: .2rem .55rem; font-size: .88rem; }
+button:focus-visible, a.button-link:focus-visible, summary:focus-visible, .icon-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .55; cursor: default; filter: none; }
+svg.icon { width: 1.05em; height: 1.05em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.15em; }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .copy-row { display: inline-flex; gap: .35rem; flex-wrap: wrap; max-width: 100%; }
 .copy-row input { max-width: 100%; min-width: 0; }
 code.fingerprint { letter-spacing: .05em; }
@@ -217,7 +240,7 @@ pre.log.full { max-height: none; }
 
 .pager { display: flex; gap: .35rem; margin: 1rem 0; flex-wrap: wrap; }
 .pager a, .pager span { padding: .2rem .55rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
-.pager .current { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager .current { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
 /* Stage 2: dashboard, statuses, problems, notices. */
 [hidden] { display: none !important; }
@@ -299,11 +322,9 @@ a.pill:hover { text-decoration: none; filter: brightness(.95); }
 .pill-info { color: var(--info); background: var(--info-bg); border-color: var(--info-border); }
 .pill-muted { color: var(--muted); background: var(--muted-bg); border-color: var(--border); }
 .legend { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
-.group-title { margin-top: 1.25rem; }
 
 .buttons, .actions-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .actions-row { margin-bottom: 1rem; }
-button.secondary { background: var(--panel); color: var(--accent); }
 .check { display: inline-flex; gap: .35rem; align-items: center; font-size: .85rem; color: var(--muted); }
 form.stack label .check { flex-direction: row; }
 .summary { color: var(--muted); }
@@ -335,19 +356,14 @@ label.choice input { margin-top: .3rem; }
 .alert-info { background: var(--info-bg); color: var(--info); border-color: var(--info-border); }
 .gap-top { margin-top: .75rem; }
 .sticky-buttons { position: sticky; bottom: 0; background: var(--bg); padding: .75rem 0; border-top: 1px solid var(--border); z-index: 2; }
-a.button-link { display: inline-block; padding: .4rem .7rem; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--panel); color: var(--accent); }
-a.button-link:hover { text-decoration: none; filter: brightness(.97); }
+a.button-link { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .7rem; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    background: var(--panel); color: var(--text); font-weight: 500; white-space: nowrap; }
+a.button-link:hover { text-decoration: none; background: var(--hover); }
+a.button-link.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+a.button-link.primary:hover { background: var(--accent); filter: brightness(1.08); }
 .actions-row form, .buttons form { display: inline-flex; }
 h2 .h2-link { font-size: .85rem; font-weight: 400; margin-left: .75rem; }
 button.danger-link, .danger-link { color: var(--bad); }
-td.task-actions { white-space: nowrap; }
-td.task-actions > form, td.task-actions > a, td.task-actions > details { display: inline-block; margin-right: .5rem; vertical-align: top; }
-details.menu { position: relative; }
-details.menu summary { cursor: pointer; color: var(--accent); list-style: none; }
-details.menu summary::-webkit-details-marker { display: none; }
-details.menu summary::after { content: " ▾"; }
-details.menu .menu-items { position: absolute; right: 0; z-index: 5; display: flex; flex-direction: column; gap: .35rem; align-items: flex-start;
-    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem .75rem; box-shadow: 0 4px 12px var(--shadow); min-width: 11rem; }
 .versions-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 0 1rem; align-items: start; }
 tr.selected-row td { background: var(--info-bg); }
 table.diff td.old { background: var(--bad-bg); overflow-wrap: anywhere; }
@@ -380,8 +396,11 @@ a.heat:hover { outline: 2px solid var(--text); outline-offset: 1px; }
 .heat-legend { margin-top: .6rem; font-size: .85rem; color: var(--muted); gap: .3rem 1rem; }
 .heat-legend .heat { width: 12px; height: 12px; }
 
-.storage { border-top: 1px solid var(--border); padding: .75rem 0; }
-.storage:first-of-type { border-top: 0; padding-top: 0; }
+/* Storages as cards; a card whose list of copies is open takes the whole row. */
+.storages { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: .75rem; }
+.storage { border: 1px solid var(--border); border-radius: var(--radius); padding: .7rem .9rem; min-width: 0; }
+.storage:has(details[open]) { grid-column: 1 / -1; }
+.storage-bad { border-color: var(--bad-border); }
 .storage-bad .storage-head strong { color: var(--bad); }
 .storage-head { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
 .storage-space { display: flex; flex-wrap: wrap; gap: .25rem .6rem; align-items: center; margin: .3rem 0 .1rem; }
@@ -434,6 +453,78 @@ body.wall { font-size: 1.15rem; padding: 1rem 1.5rem; min-height: 100vh; }
 .wall-soft { color: var(--muted); font-size: 1rem; display: flex; flex-direction: column; gap: .3rem; }
 .wall-soft-label { color: var(--text); }
 
+/* Interface, part 1: page heads with "More" menus, dialogs, folded facts, one-line empty blocks, tables in panels. */
+.page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; margin-bottom: 1rem; }
+.page-head h1 { margin: 0; }
+.page-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.page-tools > form { display: inline-flex; }
+.page-meta { flex: 1 0 100%; margin: 0; color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: .1rem .5rem; }
+.page-meta > span:not(:last-child)::after { content: "·"; margin-left: .5rem; }
+.icon-button { display: inline-flex; align-items: center; justify-content: center; padding: .3rem; border: 0; border-radius: var(--radius);
+    background: none; color: var(--muted); font-size: 1rem; font-weight: 400; }
+.icon-button:hover { background: var(--muted-bg); color: var(--text); filter: none; }
+
+/* "More" menus: a <details> whose summary looks like a button. app.js closes an open one on a click elsewhere or Esc,
+   and lifts a menu out of a scrolling table so that the table does not cut it off. */
+details.dropdown { position: relative; display: inline-block; }
+details.dropdown > summary { list-style: none; display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .7rem; border: 1px solid var(--border-strong);
+    border-radius: var(--radius); background: var(--panel); color: var(--text); font-weight: 500; white-space: nowrap; user-select: none; }
+details.dropdown > summary::-webkit-details-marker { display: none; }
+details.dropdown > summary:hover, details.dropdown[open] > summary { background: var(--hover); }
+details.dropdown > summary.dots { padding: .3rem .45rem; border-color: transparent; background: none; color: var(--muted); }
+details.dropdown > summary.dots:hover, details.dropdown[open] > summary.dots { background: var(--muted-bg); color: var(--text); }
+.dropdown-menu { position: absolute; right: 0; top: calc(100% + .35rem); z-index: 30; min-width: 15rem; padding: .35rem; display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 28px var(--shadow); text-align: left; white-space: nowrap; }
+.dropdown-menu > form { display: block; margin: 0; }
+.menu-item { display: flex; align-items: center; justify-content: flex-start; gap: .6rem; width: 100%; padding: .45rem .65rem; border: 0; border-radius: var(--radius);
+    background: none; color: var(--text); font: inherit; font-weight: 400; text-align: left; white-space: nowrap; cursor: pointer; }
+.menu-item:hover { background: var(--hover); text-decoration: none; filter: none; }
+.menu-item .icon { color: var(--muted); }
+.menu-item.danger, .menu-item.danger .icon { color: var(--bad); }
+.menu-item.danger:hover { background: var(--bad-bg); }
+.menu-sep { height: 1px; background: var(--border); margin: .3rem .25rem; }
+
+/* Notes across the page with a button at the end: an update is ready, check the key, the machine is off. */
+.alert.with-action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+.alert.with-action form { display: inline-flex; }
+.alert-muted { background: var(--muted-bg); color: var(--muted); border-color: var(--border); }
+
+/* Facts that are seldom needed (machine details): one line until opened. */
+details.facts > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; font-weight: 600; }
+details.facts > summary::-webkit-details-marker { display: none; }
+details.facts > summary .icon { align-self: center; color: var(--muted); transition: transform .15s; }
+details.facts:not([open]) > summary .icon { transform: rotate(-90deg); }
+details.facts > summary small { font-weight: 400; color: var(--muted); font-size: .85rem; }
+details.facts.panel { padding-top: .7rem; padding-bottom: .7rem; }
+details.facts[open] > summary { margin-bottom: .75rem; }
+details.facts h3 { font-size: .95rem; margin: 1rem 0 .4rem; }
+
+dialog.modal { width: min(28rem, calc(100vw - 2rem)); padding: 1.25rem 1.4rem; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--panel); color: var(--text); box-shadow: 0 24px 60px rgba(0, 0, 0, .3); }
+dialog.modal::backdrop { background: rgba(16, 24, 40, .45); }
+dialog.modal h2 { margin-bottom: .25rem; }
+dialog.modal form.stack label { max-width: none; }
+dialog.modal input[type="text"], dialog.modal select { width: 100%; }
+.dialog-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; align-self: stretch; margin-top: .25rem; }
+
+/* An empty block shrinks to one line. */
+.panel.panel-empty { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; padding-top: .7rem; padding-bottom: .7rem; }
+.panel.panel-empty h2 { margin: 0; font-size: 1rem; }
+.panel.panel-empty > p { margin: 0; }
+.now-line { display: flex; align-items: flex-start; gap: .5rem .75rem; margin: 0 0 1rem; color: var(--muted); }
+.now-line > .icon { flex: none; margin-top: .2em; }
+.now-line > span { min-width: 0; }
+
+/* Tables: figures line up, a row answers the pointer, row buttons stay on one line. */
+table { font-variant-numeric: tabular-nums; }
+table:not(.heatmap):not(.diff) tbody tr:not(.warn-row):not(.bad-row):not(.unread):not(.selected-row):hover > td { background: var(--hover); }
+td.row-actions { white-space: nowrap; text-align: right; width: 1%; }
+td.row-actions > form, td.row-actions > details { display: inline-block; vertical-align: middle; margin-left: .25rem; }
+.task-desc { max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel > .table-wrap:first-child { margin-top: -.25rem; }
+form.stack > .table-wrap { align-self: stretch; min-width: 0; }
+.copy-row + .note { margin-top: .35rem; }
+
 @media (max-width: 900px) {
     .versions-grid { grid-template-columns: 1fr; }
 }
@@ -464,3 +555,104 @@ body.wall { font-size: 1.15rem; padding: 1rem 1.5rem; min-height: 100vh; }
 .to-top:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 @media print { .to-top { display: none; } }
+
+/* Interface, part 2: the site answers. Every movement is short (120–220 ms) and nothing bounces or makes anyone wait.
+   With less motion asked for by the system (Windows: animation effects off) it all stays still: see the end of the file. */
+
+/* Hover, press and focus: each control shows that it is alive and where the click goes. */
+button, a.button-link, .menu-item, details.dropdown > summary, .icon-button, .tile, a.pill, input, select, textarea {
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease, filter .12s ease, transform .08s ease;
+}
+button:not(:disabled):active, a.button-link:active, details.dropdown > summary:active { transform: translateY(1px); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 0; border-color: var(--accent); }
+a.tile:hover { box-shadow: 0 4px 14px var(--shadow); transform: translateY(-1px); }
+table:not(.heatmap):not(.diff) tbody td { transition: background-color .12s ease; }
+table.row-links tbody tr { cursor: pointer; }
+.heat { transition: transform .12s ease; }
+a.heat:hover { transform: scale(1.3); position: relative; z-index: 1; }
+
+/* A "More" menu grows out of its button; a dialog comes up over a dimmed page. */
+details.dropdown[open] > .dropdown-menu { animation: pop-in .13s ease-out; transform-origin: top right; }
+dialog.modal[open] { animation: dialog-in .18s ease-out; }
+dialog.modal[open]::backdrop { animation: fade-in .18s ease-out; }
+.confirm-dialog h2 { font-size: 1.1rem; line-height: 1.35; }
+.confirm-dialog p { margin: .5rem 0 0; color: var(--muted); }
+.confirm-dialog .dialog-buttons { margin-top: 1.1rem; }
+button.danger-fill { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }
+
+/* Messages after an action float at the bottom right, away from the buttons of the page head, and push nothing down. */
+.toasts { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 60; display: flex; flex-direction: column; gap: .5rem;
+    width: min(26rem, calc(100vw - 2rem)); pointer-events: none; }
+.toasts .flash { pointer-events: auto; position: relative; margin: 0; padding: .7rem 2.5rem .7rem .95rem; background: var(--panel); color: var(--text);
+    border: 1px solid var(--info-border); border-left: 4px solid var(--info); border-radius: 8px; box-shadow: 0 10px 30px var(--shadow);
+    animation: toast-in .22s ease-out; }
+.toasts .flash-error { border-color: var(--bad-border); border-left-color: var(--bad); }
+.toasts .flash.leaving { opacity: 0; transform: translateX(12px); transition: opacity .2s ease, transform .2s ease; }
+.toast-close { position: absolute; top: .45rem; right: .45rem; padding: .2rem; border: 0; background: none; color: var(--muted); }
+.toast-close:hover { background: var(--muted-bg); color: var(--text); filter: none; }
+@media (max-width: 600px) { .toasts { bottom: 1rem; left: 1rem; right: 1rem; width: auto; } }
+
+/* A button whose form is on its way shows a small spinner and takes no second click. */
+button.busy { cursor: progress; }
+button.busy::after { content: ""; width: .85em; height: .85em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: spin .7s linear infinite; }
+
+/* Runs in progress: the dot of "running" pulses, the bar glides to each new value (app.js) and a light runs along it. */
+.badge-live::before { content: ""; display: inline-block; width: .45em; height: .45em; margin: 0 .35em .1em 0; border-radius: 50%;
+    background: currentColor; vertical-align: middle; animation: pulse 1.6s ease-in-out infinite; }
+progress { -webkit-appearance: none; appearance: none; border: 0; border-radius: 99px; background: var(--muted-bg); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--muted-bg); border-radius: 99px; }
+progress::-webkit-progress-value { background-color: var(--info); border-radius: 99px; }
+progress::-moz-progress-bar { background-color: var(--info); border-radius: 99px; }
+progress.live::-webkit-progress-value { background-image: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, .38) 50%, transparent 65%);
+    background-size: 220% 100%; background-repeat: no-repeat; animation: sheen 1.8s linear infinite; }
+progress.live::-moz-progress-bar { background-image: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, .38) 50%, transparent 65%);
+    background-size: 220% 100%; background-repeat: no-repeat; animation: sheen 1.8s linear infinite; }
+
+/* Live blocks: what changed lights up for a moment, a new problem or run slides in, the bell count jumps when it grows.
+   The wall screen hangs all day: there a new problem only lights up. */
+tr.changed > td, tr.arrived > td { animation: glow 1.4s ease-out; }
+li.problem.arrived, .progress-item.arrived { animation: slide-in .3s ease-out, glow 1.4s ease-out; }
+.wall-problem.arrived { animation: glow 1.6s ease-out; }
+.count.bump { display: inline-block; animation: bump .5s ease-out; }
+.appearing { animation: appear .22s ease-out; }
+
+/* Folded blocks (machine details, backup sets, editor sections) open and close smoothly where the browser can. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+    :root { interpolate-size: allow-keywords; }
+    details:not(.dropdown)::details-content { height: 0; overflow: clip; overflow-clip-margin: .25rem;
+        transition: height .22s ease, content-visibility .22s allow-discrete; }
+    details:not(.dropdown)[open]::details-content { height: auto; }
+}
+
+/* From page to page: a short cross-fade; the menu bar stays put. Browsers that cannot do it open pages as before. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+header.top { view-transition-name: top-bar; }
+
+.motion-note { cursor: help; }
+.motion-note::before { content: "·"; margin: 0 .5rem; }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: .25; } }
+@keyframes sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@keyframes glow { from { background-color: var(--accent-bg); } }
+@keyframes slide-in { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes bump { 30% { transform: scale(1.35); } }
+@keyframes appear { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Less motion (Windows: Settings → Accessibility → Visual effects → Animation effects off): nothing moves, nothing
+   fades. What a movement said is said without it: a changed row keeps its colour for a moment, a busy button gets "…". */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
+        transition-duration: 1ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+    @view-transition { navigation: none; }
+    tr.changed > td, tr.arrived > td, li.problem.arrived, .progress-item.arrived, .wall-problem.arrived { background-color: var(--accent-bg); }
+    button.busy::after { content: "…"; width: auto; height: auto; border: 0; }
+    button:not(:disabled):active, a.button-link:active, details.dropdown > summary:active, a.tile:hover, a.heat:hover { transform: none; }
+}

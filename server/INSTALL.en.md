@@ -427,6 +427,24 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`. When there is nothing to update (the machines already run this version or newer), the site says so in a plain message, not in red.
 
+**Version 0.4.4.** No migrations. Pages are put in order (the first part of the new look):
+- a machine page starts with the name, the state and the main buttons, "Add task" and "Agent settings"; rare actions (inventory, rename, group, disable, delete) are in the "More" menu, and rename and group open a small dialog;
+- one line under the name sums the machine up (group, OS, IP, versions, last contact); the full machine details fold into "Machine details";
+- a task row has one button ("Run" or "Stop") and the rest under "⋯"; the task page has the same: the main button, "Edit" and "More";
+- while nothing runs, one line with the nearest run replaces the empty "Now" block; empty blocks take one line;
+- buttons get icons and one set of rules: blue is the main action, white an ordinary one, a red outline deletes or does something risky and asks first;
+- the tables of "Machines", "Runs", "Audit log", "Users" and "Notices" sit in panels, and a row lights up under the pointer;
+- the "Copy" button answers "✓ Copied".
+
+**Version 0.4.5.** No migrations. The site answers what you do (the second part of the new look):
+- the question before deleting, disabling and other important actions is asked in the site's own dialog, not in the grey browser box; the button names the action ("Delete machine"), a risky action has a red button and the focus on "Cancel";
+- messages after an action float in the bottom right corner and push nothing down: a plain one goes away by itself after a few seconds, an error stays until it is closed; disabling, enabling, renaming a machine and changing its group now say so too;
+- a pressed button shows that the site is working, and a second click does not send the command again;
+- in live blocks a task row that changed lights up for a moment, a new problem or run fades in, a progress bar glides to its new value, and "running" has a pulsing dot;
+- a row of the machine, task, run and template tables opens with a click anywhere in the row;
+- "More" menus and dialogs fade in, "Machine details" and other folded blocks open smoothly, pages change with a short cross-fade (Chrome, Edge, Safari; Firefox may stay as before);
+- with Windows animation effects off (or "Reduce motion" on another system) the site shows everything without animation, and the bottom of the page says that effects are off and where to switch them on.
+
 **Version 0.4.6.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
 
 ## What to keep in backups

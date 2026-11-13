@@ -116,7 +116,9 @@ function badge(string $status, ?string $label = null): string
     $class = status_class($status);
     $lang = View::$current?->app->lang();
     $label ??= $lang !== null && $lang->has('status.' . $status) ? $lang->get('status.' . $status) : $status;
-    return '<span class="badge badge-' . $class . '">' . e($label) . '</span>';
+    // A run in progress gets a pulsing dot (app.css), so a page that shows one says it is alive.
+    $live = $status === 'running' ? ' badge-live' : '';
+    return '<span class="badge badge-' . $class . $live . '">' . e($label) . '</span>';
 }
 
 /** Short schedule text: "ежедневно 00:00", "еженедельно: вс 01:00", "каждые 15 мин". */
@@ -365,4 +367,10 @@ function checked(bool $on): string
 function selected(mixed $value, mixed $current): string
 {
     return (string) $value === (string) $current ? ' selected' : '';
+}
+
+/** One of the site's icons (templates/_sprite.php). It is decoration: the word next to it says what it means. */
+function icon(string $name): string
+{
+    return '<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"/></svg>';
 }

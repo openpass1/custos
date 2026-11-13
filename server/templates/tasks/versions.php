@@ -70,7 +70,7 @@ $taskUrl = '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
                 <form method="post" action="<?= e(url($taskUrl . '/versions/' . (int) $version['revision'] . '/restore')) ?>"
                       data-confirm="<?= e(t('versions.confirm.restore', ['n' => (int) $version['revision']])) ?>" class="inline gap-top">
                     <?= csrf_field() ?>
-                    <button type="submit"><?= e(t('versions.restore')) ?></button>
+                    <button type="submit" class="secondary"><?= icon('refresh') ?><?= e(t('versions.restore')) ?></button>
                     <span class="note"><?= e(t('versions.restore.hint')) ?></span>
                 </form>
             <?php else: ?>

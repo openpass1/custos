@@ -19,7 +19,7 @@
                             <form method="post" action="<?= e(url('/groups/' . $g['id'] . '/rename')) ?>" class="inline">
                                 <?= csrf_field() ?>
                                 <input type="text" name="name" value="<?= e($g['name']) ?>" maxlength="100" required aria-label="<?= e(t('groups.col.name')) ?>">
-                                <button type="submit"><?= e(t('groups.action.rename')) ?></button>
+                                <button type="submit" class="small secondary"><?= e(t('groups.action.rename')) ?></button>
                             </form>
                         </td>
                         <td class="num"><a href="<?= e(url('/agents', ['group' => $g['id']])) ?>"><?= (int) $g['agent_count'] ?></a></td>
@@ -27,7 +27,7 @@
                             <form method="post" action="<?= e(url('/groups/' . $g['id'] . '/delete')) ?>"
                                   data-confirm="<?= e(t('groups.confirm.delete', ['name' => $g['name']])) ?>">
                                 <?= csrf_field() ?>
-                                <button type="submit" class="danger"><?= e(t('groups.action.delete')) ?></button>
+                                <button type="submit" class="small danger"><?= icon('trash') ?><?= e(t('groups.action.delete')) ?></button>
                             </form>
                         </td>
                     </tr>
@@ -44,5 +44,5 @@
     <label><?= e(t('groups.col.name')) ?>
         <input type="text" name="name" maxlength="100" required placeholder="<?= e(t('groups.placeholder')) ?>">
     </label>
-    <button type="submit"><?= e(t('groups.action.create')) ?></button>
+    <button type="submit"><?= icon('plus') ?><?= e(t('groups.action.create')) ?></button>
 </form>
