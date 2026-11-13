@@ -33,6 +33,12 @@ public static class DestinationStores
                 return new WebDavStore(destination, account ?? Account(platform, destination), limiter);
             case DestinationKinds.S3:
                 return new S3Store(destination, account ?? Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
+            case DestinationKinds.GDrive:
+                return new GoogleDriveStore(destination, CloudAccount(platform, destination), limiter);
+            case DestinationKinds.YaDisk:
+                return new YandexDiskStore(destination, CloudAccount(platform, destination), limiter);
+            case DestinationKinds.Dropbox:
+                return new DropboxStore(destination, CloudAccount(platform, destination), limiter);
             default:
                 throw new BackupException(Messages.Format(Messages.DestinationKindNotSupported, destination.Kind));
         }
@@ -79,6 +85,7 @@ public static class DestinationStores
                 ? server.GetLeftPart(UriPartial.Authority) + WebDavStore.RootOf(prefix, destination.Path)
                 : host + "/" + folder.TrimStart('/'),
             DestinationKinds.S3 => "s3://" + (destination.Bucket ?? string.Empty).Trim() + (folder.Trim('/').Length > 0 ? "/" + folder.Trim('/') : string.Empty),
+            DestinationKinds.GDrive or DestinationKinds.YaDisk or DestinationKinds.Dropbox => CloudStore.LabelOf(destination.Kind, destination.Path),
             _ => destination.Path,
         };
     }
@@ -93,11 +100,19 @@ public static class DestinationStores
             DestinationKinds.WebDav when !WebDavStore.TryServer(destination.Host, destination.Port, out _, out _) => Messages.StoreHostMissing,
             DestinationKinds.S3 when string.IsNullOrWhiteSpace(destination.Bucket) => Messages.StoreBucketMissing,
             DestinationKinds.Sftp or DestinationKinds.S3 when string.IsNullOrWhiteSpace(destination.CredentialId) => Messages.StoreAccountMissing,
+            DestinationKinds.GDrive or DestinationKinds.YaDisk or DestinationKinds.Dropbox when string.IsNullOrWhiteSpace(destination.CredentialId) =>
+                Messages.Format(Messages.CloudAccountMissing, Cloud.CloudService.NameOf(destination.Kind)),
             _ => null,
         };
     }
 
     internal static int Port(TaskDestination destination, int usual) => destination.Port is > 0 and <= 65535 ? destination.Port.Value : usual;
+
+    /// <summary>The connected account of a cloud drive.</summary>
+    private static Cloud.CloudAccount CloudAccount(IBackupPlatform platform, TaskDestination destination) =>
+        string.IsNullOrWhiteSpace(destination.CredentialId)
+            ? throw new BackupException(Messages.Format(Messages.CloudAccountMissing, Cloud.CloudService.NameOf(destination.Kind)))
+            : platform.GetCloudAccount(destination.CredentialId);
 
     private static StoreAccount? Account(IBackupPlatform platform, TaskDestination destination) =>
         string.IsNullOrWhiteSpace(destination.CredentialId) ? null : platform.GetStoreAccount(destination.CredentialId);

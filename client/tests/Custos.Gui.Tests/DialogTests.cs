@@ -96,6 +96,108 @@ public sealed class DialogTests
         Assert.Equal(Samples.Json(destination), Samples.Json(dialog.Destination));
     });
 
+    [Theory]
+    [InlineData(DestinationKinds.GDrive)]
+    [InlineData(DestinationKinds.YaDisk)]
+    [InlineData(DestinationKinds.Dropbox)]
+    public void The_destination_dialog_gives_back_a_cloud_drive_with_its_account_and_parts(string kind) => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Cloud(kind);
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        // An account connected on this computer, the size of the parts and the warning; nothing of a server.
+        var picker = Sta.Find<CredentialPicker>(dialog).Single();
+        Assert.True(picker.Visible);
+        Assert.Contains(Sta.Find<Button>(picker), b => b.Text == Strings.ButtonConnectAccount);
+        Assert.True(Sta.Shows(dialog, Strings.DestinationPartSize));
+        Assert.True(Sta.Shows(dialog, Strings.DestinationCloudWarning));
+        Assert.True(Sta.Shows(dialog, Strings.Format(Strings.DestinationFolderInCloud, CloudNames.AppFolder(kind))));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationBucket));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationPort));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationAddress));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationServerKey));
+        Assert.False(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonBrowse).Visible);
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal(Samples.Json(destination), Samples.Json(dialog.Destination));
+    });
+
+    [Fact]
+    public void A_new_destination_on_yandex_disk_is_cut_into_parts_the_free_plan_takes() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), new TaskDestination(), isNew: true);
+        dialog.Show();
+        Sta.Pump();
+
+        var kinds = Sta.Find<ComboBox>(dialog).Single(c => c.Items.Contains(DestinationsPage.KindText(DestinationKinds.YaDisk)));
+        kinds.SelectedIndex = kinds.Items.IndexOf(DestinationsPage.KindText(DestinationKinds.YaDisk));
+        Sta.Pump();
+        Assert.Equal(DestinationDialog.YandexPartMb, dialog.Build().PartMb);
+        Assert.Contains(Sta.Find<Button>(Sta.Find<CredentialPicker>(dialog).Single()), b => b.Text == Strings.ButtonConnectAccount);
+
+        // Another drive keeps what was set; a disk on this computer has no parts.
+        kinds.SelectedIndex = kinds.Items.IndexOf(DestinationsPage.KindText(DestinationKinds.Dropbox));
+        Sta.Pump();
+        Assert.Equal(DestinationDialog.YandexPartMb, dialog.Build().PartMb);
+        kinds.SelectedIndex = kinds.Items.IndexOf(DestinationsPage.KindText(DestinationKinds.Local));
+        Sta.Pump();
+        Assert.Equal(0, dialog.Build().PartMb);
+        Assert.False(Sta.Shows(dialog, Strings.DestinationPartSize));
+    });
+
+    [Fact]
+    public void A_cloud_drive_needs_an_account_but_not_a_folder() => Sta.Run("en-US", () =>
+    {
+        foreach (string kind in new[] { DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox })
+        {
+            Assert.Equal(Strings.ErrorCloudAccountRequired, DestinationDialog.Check(new TaskDestination { Kind = kind, Path = "office" }));
+            Assert.Null(DestinationDialog.Check(new TaskDestination { Kind = kind, CredentialId = Samples.CloudAccount(kind).Id }));
+            Assert.Null(DestinationDialog.Check(Samples.Cloud(kind)));
+        }
+    });
+
+    [Fact]
+    public void Own_applications_of_the_drives_are_entered_with_a_secret_where_the_service_has_one() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        var current = new Custos.Core.Ipc.CloudAppsResult
+        {
+            BuiltIn = [DestinationKinds.GDrive],
+            Own = new Custos.Core.Cloud.CloudAppsFile { Yadisk = new Custos.Core.Cloud.CloudApp { ClientId = "own-yandex-id", ClientSecret = "own-yandex-secret" } },
+        };
+        using var dialog = new CloudAppsDialog(monitor, current);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Strings.CloudAppsBuiltIn));
+        Assert.True(Sta.Shows(dialog, Strings.CloudAppsNoBuiltIn));
+        var boxes = Sta.Find<TextBox>(dialog).Where(b => b.Visible).ToList();
+
+        // Google and Yandex: an id and a secret; Dropbox: an id only (its sign-in needs no secret).
+        Assert.Equal(5, boxes.Count);
+        var entered = dialog.Entered();
+        Assert.Null(entered.Gdrive);
+        Assert.Null(entered.Dropbox);
+        Assert.Equal(("own-yandex-id", "own-yandex-secret"), (entered.Yadisk!.ClientId, entered.Yadisk.ClientSecret));
+
+        foreach (var box in boxes.Where(b => b.Text.Length == 0))
+        {
+            box.Text = "  typed  ";
+        }
+
+        entered = dialog.Entered();
+        Assert.Equal(("typed", "typed"), (entered.Gdrive!.ClientId, entered.Gdrive.ClientSecret));
+        Assert.Equal(("typed", (string?)null), (entered.Dropbox!.ClientId, entered.Dropbox.ClientSecret));
+    });
+
     [Fact]
     public void A_key_of_a_server_is_trusted_for_that_server_only() => Sta.Run("en-US", () =>
     {
@@ -290,10 +392,14 @@ public sealed class DialogTests
         Assert.False(((Button)settings.AcceptButton!).Visible);
         Assert.Equal(Strings.ButtonClose, ((Button)settings.CancelButton!).Text);
         var accounts = Assert.Single(Sta.Find<ListView>(settings));
-        // The accounts of network folders first, then those of the servers; passwords of archives and keys the service made are not accounts.
+        // The accounts of network folders first, then those of the servers, then the cloud drives; passwords of archives
+        // and keys the service made are not accounts.
         var rows = accounts.Items.Cast<ListViewItem>().ToList();
         Assert.Equal(
-            [Strings.AccountKindWindows, Strings.AccountKindSftp, Strings.AccountKindFtp, Strings.AccountKindWebDav, Strings.AccountKindS3],
+            [
+                Strings.AccountKindWindows, Strings.AccountKindSftp, Strings.AccountKindFtp, Strings.AccountKindWebDav, Strings.AccountKindS3,
+                Strings.AccountKindGDrive, Strings.AccountKindYaDisk, Strings.AccountKindDropbox,
+            ],
             rows.Select(r => r.SubItems[1].Text));
         Assert.Equal(Samples.Account().DisplayName, rows[0].Text);
         Assert.Equal("Office documents", rows[0].SubItems[2].Text);

@@ -2098,4 +2098,175 @@ static partial class Strings
 
     /// <summary>Private keys|*.pem;*.key;id_*|All files|*.*</summary>
     public static string KeyFileFilter => Get(nameof(KeyFileFilter));
+
+    /// <summary>Google Drive</summary>
+    public static string KindGDrive => Get(nameof(KindGDrive));
+
+    /// <summary>Yandex Disk</summary>
+    public static string KindYaDisk => Get(nameof(KindYaDisk));
+
+    /// <summary>Dropbox</summary>
+    public static string KindDropbox => Get(nameof(KindDropbox));
+
+    /// <summary>Google Drive</summary>
+    public static string AccountKindGDrive => Get(nameof(AccountKindGDrive));
+
+    /// <summary>Yandex Disk</summary>
+    public static string AccountKindYaDisk => Get(nameof(AccountKindYaDisk));
+
+    /// <summary>Dropbox</summary>
+    public static string AccountKindDropbox => Get(nameof(AccountKindDropbox));
+
+    /// <summary>Apps/CUSTOS</summary>
+    public static string CloudAppFolder => Get(nameof(CloudAppFolder));
+
+    /// <summary>Folder in «{0}»:</summary>
+    public static string DestinationFolderInCloud => Get(nameof(DestinationFolderInCloud));
+
+    /// <summary>A folder inside the folder of CUSTOS in the account, for example office/pc01. Empty: the folder of CUSTOS i...</summary>
+    public static string DestinationFolderCloudHelp => Get(nameof(DestinationFolderCloudHelp));
+
+    /// <summary>The account of the service, connected in the browser: press «Connect…», sign in and allow access. CUSTOS ne...</summary>
+    public static string DestinationAccountHelpCloud => Get(nameof(DestinationAccountHelpCloud));
+
+    /// <summary>Connect…</summary>
+    public static string ButtonConnectAccount => Get(nameof(ButtonConnectAccount));
+
+    /// <summary>Part size:</summary>
+    public static string DestinationPartSize => Get(nameof(DestinationPartSize));
+
+    /// <summary>MB (0: one file)</summary>
+    public static string DestinationPartUnit => Get(nameof(DestinationPartUnit));
+
+    /// <summary>An archive larger than this is written in parts name.zip.001, name.zip.002 and so on. 7-Zip opens them as o...</summary>
+    public static string DestinationPartHelp => Get(nameof(DestinationPartHelp));
+
+    /// <summary>A cloud drive must not be the only copy: whoever gets administrator rights on this computer (a ransomware, ...</summary>
+    public static string DestinationCloudWarning => Get(nameof(DestinationCloudWarning));
+
+    /// <summary>Connect the account: press «Connect…».</summary>
+    public static string ErrorCloudAccountRequired => Get(nameof(ErrorCloudAccountRequired));
+
+    /// <summary>A copy without compression to {0}: every file takes requests of its own, and the service limits their numbe...</summary>
+    public static string DestinationCloudPlainNote => Get(nameof(DestinationCloudPlainNote));
+
+    /// <summary>Connect an account: {0}</summary>
+    public static string CloudConnectTitle => Get(nameof(CloudConnectTitle));
+
+    /// <summary>Connect again: {0}</summary>
+    public static string CloudReconnectTitle => Get(nameof(CloudReconnectTitle));
+
+    /// <summary>1. Press «Open the sign-in page». Sign in to {0} in the browser and allow access for CUSTOS. It gets the fo...</summary>
+    public static string CloudConnectSteps => Get(nameof(CloudConnectSteps));
+
+    /// <summary>The tasks keep the account; only its access is renewed. Sign in to the same account «{0}».</summary>
+    public static string CloudReconnectNote => Get(nameof(CloudReconnectNote));
+
+    /// <summary>Open the sign-in page</summary>
+    public static string CloudOpenPage => Get(nameof(CloudOpenPage));
+
+    /// <summary>Copy the link</summary>
+    public static string CloudCopyLink => Get(nameof(CloudCopyLink));
+
+    /// <summary>The link is copied: open it in a browser.</summary>
+    public static string CloudLinkCopied => Get(nameof(CloudLinkCopied));
+
+    /// <summary>Code or address:</summary>
+    public static string CloudAnswer => Get(nameof(CloudAnswer));
+
+    /// <summary>Paste from the clipboard</summary>
+    public static string CloudPasteTip => Get(nameof(CloudPasteTip));
+
+    /// <summary>Connect</summary>
+    public static string CloudConnectButton => Get(nameof(CloudConnectButton));
+
+    /// <summary>Preparing the sign-in…</summary>
+    public static string CloudPreparing => Get(nameof(CloudPreparing));
+
+    /// <summary>Waiting for the sign-in in the browser.</summary>
+    public static string CloudReady => Get(nameof(CloudReady));
+
+    /// <summary>After the sign-in the service shows a code: copy it and paste it below.</summary>
+    public static string CloudReadyCode => Get(nameof(CloudReadyCode));
+
+    /// <summary>After the sign-in the browser shows an error page: that is expected. Copy the whole address from its addres...</summary>
+    public static string CloudReadyAddress => Get(nameof(CloudReadyAddress));
+
+    /// <summary>Connecting the account…</summary>
+    public static string CloudConnecting => Get(nameof(CloudConnecting));
+
+    /// <summary>Paste the code or the address from the browser.</summary>
+    public static string CloudAnswerRequired => Get(nameof(CloudAnswerRequired));
+
+    /// <summary>CUSTOS got the answer. You can close this tab and go back to the program.</summary>
+    public static string CloudBrowserDone => Get(nameof(CloudBrowserDone));
+
+    /// <summary>Open the sign-in page once more.</summary>
+    public static string CloudTryAgain => Get(nameof(CloudTryAgain));
+
+    /// <summary>The browser could not be opened: {0}. Copy the link and open it yourself.</summary>
+    public static string CloudBrowserFailed => Get(nameof(CloudBrowserFailed));
+
+    /// <summary>Cloud drives</summary>
+    public static string SettingsCloud => Get(nameof(SettingsCloud));
+
+    /// <summary>Applications of CUSTOS built into this version: {0}.</summary>
+    public static string SettingsCloudBuiltIn => Get(nameof(SettingsCloudBuiltIn));
+
+    /// <summary>none</summary>
+    public static string SettingsCloudNone => Get(nameof(SettingsCloudNone));
+
+    /// <summary>The accounts of cloud drives are connected in the properties of a destination or with «Connect a cloud driv...</summary>
+    public static string SettingsCloudNote => Get(nameof(SettingsCloudNote));
+
+    /// <summary>Own applications…</summary>
+    public static string SettingsCloudOwn => Get(nameof(SettingsCloudOwn));
+
+    /// <summary>Only an administrator can connect cloud drives.</summary>
+    public static string CloudAdminOnly => Get(nameof(CloudAdminOnly));
+
+    /// <summary>Connect a cloud drive…</summary>
+    public static string ButtonConnectCloud => Get(nameof(ButtonConnectCloud));
+
+    /// <summary>Connect again…</summary>
+    public static string ButtonReconnect => Get(nameof(ButtonReconnect));
+
+    /// <summary>Own applications of the cloud drives</summary>
+    public static string CloudAppsTitle => Get(nameof(CloudAppsTitle));
+
+    /// <summary>Client ID:</summary>
+    public static string CloudAppsClientId => Get(nameof(CloudAppsClientId));
+
+    /// <summary>Client secret:</summary>
+    public static string CloudAppsSecret => Get(nameof(CloudAppsSecret));
+
+    /// <summary>Applications you registered at the services yourself (see «Cloud drives» in the README of the client). They...</summary>
+    public static string CloudAppsNote => Get(nameof(CloudAppsNote));
+
+    /// <summary>built-in application: yes</summary>
+    public static string CloudAppsBuiltIn => Get(nameof(CloudAppsBuiltIn));
+
+    /// <summary>built-in application: none</summary>
+    public static string CloudAppsNoBuiltIn => Get(nameof(CloudAppsNoBuiltIn));
+
+    /// <summary>Google needs the secret too; Yandex takes it if the application has one; Dropbox needs none.</summary>
+    public static string CloudAppsSecretNote => Get(nameof(CloudAppsSecretNote));
+
+    /// <summary>Google needs the client secret together with the client ID.</summary>
+    public static string ErrorCloudSecretRequired => Get(nameof(ErrorCloudSecretRequired));
+
+    /// <summary>Backups on a server or a cloud drive:</summary>
+    public static string RestoreByStore => Get(nameof(RestoreByStore));
+
+    /// <summary>Choose…</summary>
+    public static string RestoreChooseStore => Get(nameof(RestoreChooseStore));
+
+    /// <summary>Where to look for backups</summary>
+    public static string RestoreStoreTitle => Get(nameof(RestoreStoreTitle));
+
+    /// <summary>Choose the server or the cloud drive: press «Choose…».</summary>
+    public static string RestoreStoreRequired => Get(nameof(RestoreStoreRequired));
+
+    /// <summary>not chosen</summary>
+    public static string RestoreStoreNone => Get(nameof(RestoreStoreNone));
 }

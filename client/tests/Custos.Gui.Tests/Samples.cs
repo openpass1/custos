@@ -47,6 +47,35 @@ internal static class Samples
         HasSecret = true,
     };
 
+    public const string GDriveAccountId = "aaaaaaaa-0000-4000-8000-000000000006";
+    public const string YaDiskAccountId = "aaaaaaaa-0000-4000-8000-000000000007";
+    public const string DropboxAccountId = "aaaaaaaa-0000-4000-8000-000000000008";
+
+    /// <summary>An account of a cloud drive connected on this computer: the login the drive told, no password.</summary>
+    public static Credential CloudAccount(string kind) => new()
+    {
+        Id = kind switch
+        {
+            CredentialKinds.GDrive => GDriveAccountId,
+            CredentialKinds.YaDisk => YaDiskAccountId,
+            _ => DropboxAccountId,
+        },
+        Kind = kind,
+        User = "backup." + kind + "@example.org",
+        HasSecret = true,
+    };
+
+    /// <summary>A destination on a cloud drive, every field of its kind filled in.</summary>
+    public static TaskDestination Cloud(string kind) => new()
+    {
+        Id = "c-" + kind,
+        Kind = kind,
+        Path = "office/pc01",
+        CredentialId = CloudAccount(kind).Id,
+        SpeedLimitKbps = 1000,
+        PartMb = kind == DestinationKinds.YaDisk ? 900 : 4000,
+    };
+
     /// <summary>A destination on a server, every field of its kind filled in (example.org is reserved for examples).</summary>
     public static TaskDestination Remote(string kind) => kind switch
     {
@@ -230,6 +259,7 @@ internal static class Samples
             [
                 Account(), ArchivePassword(), SshKey(),
                 ServerAccount(CredentialKinds.S3), ServerAccount(CredentialKinds.WebDav), ServerAccount(CredentialKinds.Ftp), ServerAccount(CredentialKinds.Sftp),
+                CloudAccount(CredentialKinds.Dropbox), CloudAccount(CredentialKinds.YaDisk), CloudAccount(CredentialKinds.GDrive),
             ],
             States =
             [

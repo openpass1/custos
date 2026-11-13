@@ -383,6 +383,8 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             {
                 throw NotFound();
             }
+
+            Core.Cloud.OAuthTokens.Forget(credentialId);
         }
         catch (ConfigException ex)
         {

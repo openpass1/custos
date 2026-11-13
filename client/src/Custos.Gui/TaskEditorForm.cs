@@ -315,6 +315,12 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
         }
     }
 
+    /// <summary>Raised when a destination that wants an archive was added (a cloud drive): the archive page then
+    /// turns «no compression» into ZIP.</summary>
+    public event EventHandler? ZipWanted;
+
+    public void WantZip() => ZipWanted?.Invoke(this, EventArgs.Empty);
+
     /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
     public int DbServerCount { get; set; }
 
@@ -380,7 +386,8 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     public void RememberCredential(Credential credential)
     {
         _added.Add(credential);
-        if (credential.Kind is CredentialKinds.Windows or CredentialKinds.Ftp or CredentialKinds.Sftp or CredentialKinds.WebDav or CredentialKinds.S3)
+        if (credential.Kind is CredentialKinds.Windows or CredentialKinds.Ftp or CredentialKinds.Sftp or CredentialKinds.WebDav or CredentialKinds.S3
+            || CredentialKinds.IsCloud(credential.Kind))
         {
             CredentialsChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -390,8 +397,20 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     /// <returns>The stored account, or null if the user cancelled.</returns>
     public Credential? AddCredential(IWin32Window owner, string kind = CredentialKinds.Windows)
     {
-        using var dialog = new CredentialDialog(Monitor, null, kind);
-        if (dialog.ShowDialog(owner) != DialogResult.OK || dialog.Saved is not { } saved)
+        Credential? saved;
+        if (CredentialKinds.IsCloud(kind))
+        {
+            // An account of a cloud drive is connected in the browser, not typed in (section 6.3).
+            using var connect = new CloudConnectDialog(Monitor, kind);
+            saved = connect.ShowDialog(owner) == DialogResult.OK ? connect.Saved : null;
+        }
+        else
+        {
+            using var dialog = new CredentialDialog(Monitor, null, kind);
+            saved = dialog.ShowDialog(owner) == DialogResult.OK ? dialog.Saved : null;
+        }
+
+        if (saved is null)
         {
             return null;
         }

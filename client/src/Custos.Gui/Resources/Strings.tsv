@@ -221,7 +221,7 @@ DestinationsNote	Where the backups go. With several destinations the files are r
 DestinationAddTitle	Add destination	Добавить назначение
 DestinationEditTitle	Destination	Назначение
 DestinationKind	Type:	Тип:
-DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.\nSFTP, FTP, FTPS, WebDAV: a folder on a server.\nS3: a bucket of Amazon S3 or of a compatible storage; it can protect the copies from deletion (Object Lock).	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск ищется по метке тома, поэтому смена буквы диска не мешает.\nSFTP, FTP, FTPS, WebDAV — папка на сервере.\nS3 — бакет Amazon S3 или совместимого хранилища; умеет защищать копии от удаления (Object Lock).
+DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.\nSFTP, FTP, FTPS, WebDAV: a folder on a server.\nS3: a bucket of Amazon S3 or of a compatible storage; it can protect the copies from deletion (Object Lock).\nGoogle Drive, Yandex Disk, Dropbox: a folder in a cloud account, connected in the browser.	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск ищется по метке тома, поэтому смена буквы диска не мешает.\nSFTP, FTP, FTPS, WebDAV — папка на сервере.\nS3 — бакет Amazon S3 или совместимого хранилища; умеет защищать копии от удаления (Object Lock).\nGoogle Диск, Яндекс Диск, Dropbox — папка в облачном аккаунте, аккаунт подключается через браузер.
 KindLocal	Local folder	Локальная папка
 KindUnc	Network folder	Сетевая папка
 KindUsb	USB disk	USB-диск
@@ -726,3 +726,61 @@ ErrorAccessKeyRequired	Enter the access key.	Введите ключ досту�
 ErrorSecretKeyRequired	Enter the secret key.	Введите секретный ключ.
 ColumnAccountKind	Kind	Вид
 KeyFileFilter	Private keys|*.pem;*.key;id_*|All files|*.*	Закрытые ключи|*.pem;*.key;id_*|Все файлы|*.*
+# ---- Cloud drives (client stage 4b): destination kinds, connecting an account, own applications, restore
+KindGDrive	Google Drive	Google Диск
+KindYaDisk	Yandex Disk	Яндекс Диск
+KindDropbox	Dropbox	Dropbox
+AccountKindGDrive	Google Drive	Google Диск
+AccountKindYaDisk	Yandex Disk	Яндекс Диск
+AccountKindDropbox	Dropbox	Dropbox
+CloudAppFolder	Apps/CUSTOS	Приложения/CUSTOS
+DestinationFolderInCloud	Folder in «{0}»:	Папка в «{0}»:
+DestinationFolderCloudHelp	A folder inside the folder of CUSTOS in the account, for example office/pc01. Empty: the folder of CUSTOS itself. CUSTOS gets access to that folder only; the other files of the account stay out of its reach.	Папка внутри папки CUSTOS в аккаунте, например office/pc01. Пусто — сама папка CUSTOS. Доступ у CUSTOS только к этой папке, остальные файлы аккаунта ему недоступны.
+DestinationAccountHelpCloud	The account of the service, connected in the browser: press «Connect…», sign in and allow access. CUSTOS never sees the password: the service gives it a token that reaches only the folder of CUSTOS. Only an administrator can connect an account, and only on this computer: the monitoring server can choose an account connected here but cannot add one.	Аккаунт сервиса подключается через браузер: нажмите «Подключить…», войдите и разрешите доступ. Пароль CUSTOS не видит: сервис выдаёт ему токен, который открывает только папку CUSTOS. Подключить аккаунт может только администратор и только на этом компьютере: сервер мониторинга может выбрать подключённый здесь аккаунт, но не добавить новый.
+ButtonConnectAccount	Connect…	Подключить…
+DestinationPartSize	Part size:	Размер части:
+DestinationPartUnit	MB (0: one file)	МБ (0 — одним файлом)
+DestinationPartHelp	An archive larger than this is written in parts name.zip.001, name.zip.002 and so on. 7-Zip opens them as one archive, and CUSTOS restores from them by itself. It is needed where the service limits the size of a file: Yandex Disk without a subscription takes files of up to 1 GB, so a new Yandex Disk destination starts with 900 MB. 0: the archive is one file. A copy without compression is not cut.	Архив больше этого размера пишется частями имя.zip.001, имя.zip.002 и т. д. 7-Zip открывает их как один архив, CUSTOS восстанавливает из них сам. Нужно там, где у сервиса есть предел размера файла: Яндекс Диск без подписки принимает файлы до 1 ГБ, поэтому у нового назначения на Яндекс Диске сразу стоит 900 МБ. 0 — архив одним файлом. Копию без сжатия это не касается.
+DestinationCloudWarning	A cloud drive must not be the only copy: whoever gets administrator rights on this computer (a ransomware, for example) can delete the copies there too.	Облачный диск не должен быть единственной копией: тот, кто получит права администратора на этом компьютере (например, шифровальщик), сможет удалить копии и там.
+ErrorCloudAccountRequired	Connect the account: press «Connect…».	Подключите аккаунт: нажмите «Подключить…».
+DestinationCloudPlainNote	A copy without compression to {0}: every file takes requests of its own, and the service limits their number, so thousands of small files go slowly. ZIP on the «Archive» page is much faster.	Копия без сжатия в {0}: каждый файл — это отдельные запросы, а сервис ограничивает их число, поэтому тысячи мелких файлов идут медленно. ZIP на странице «Архив» намного быстрее.
+CloudConnectTitle	Connect an account: {0}	Подключение аккаунта: {0}
+CloudReconnectTitle	Connect again: {0}	Подключение заново: {0}
+CloudConnectSteps	1. Press «Open the sign-in page». Sign in to {0} in the browser and allow access for CUSTOS. It gets the folder «{1}» only; CUSTOS never sees the password.\n2. When the browser comes back, the account is connected by itself. If it does not (the browser is on another computer, or the page shows a code), copy the code from the page or the whole address from the address bar of the browser, paste it below and press «Connect».	1. Нажмите «Открыть страницу входа». В браузере войдите в {0} и разрешите доступ приложению CUSTOS. Оно получит доступ только к папке «{1}», пароль от аккаунта CUSTOS не видит.\n2. Когда браузер вернётся, аккаунт подключится сам. Если этого не случилось (браузер на другом компьютере или сервис показал код), скопируйте код со страницы или весь адрес из адресной строки браузера, вставьте его ниже и нажмите «Подключить».
+CloudReconnectNote	The tasks keep the account; only its access is renewed. Sign in to the same account «{0}».	Задания сохранят этот аккаунт, обновится только доступ. Войдите в тот же аккаунт «{0}».
+CloudOpenPage	Open the sign-in page	Открыть страницу входа
+CloudCopyLink	Copy the link	Скопировать ссылку
+CloudLinkCopied	The link is copied: open it in a browser.	Ссылка скопирована: откройте её в браузере.
+CloudAnswer	Code or address:	Код или адрес:
+CloudPasteTip	Paste from the clipboard	Вставить из буфера обмена
+CloudConnectButton	Connect	Подключить
+CloudPreparing	Preparing the sign-in…	Подготовка входа…
+CloudReady	Waiting for the sign-in in the browser.	Ожидание входа в браузере.
+CloudReadyCode	After the sign-in the service shows a code: copy it and paste it below.	После входа сервис покажет код: скопируйте его и вставьте ниже.
+CloudReadyAddress	After the sign-in the browser shows an error page: that is expected. Copy the whole address from its address bar and paste it below.	После входа браузер покажет страницу с ошибкой, так и должно быть. Скопируйте весь адрес из адресной строки и вставьте его ниже.
+CloudConnecting	Connecting the account…	Подключение аккаунта…
+CloudAnswerRequired	Paste the code or the address from the browser.	Вставьте код или адрес из браузера.
+CloudBrowserDone	CUSTOS got the answer. You can close this tab and go back to the program.	CUSTOS получил ответ. Эту вкладку можно закрыть и вернуться в программу.
+CloudTryAgain	Open the sign-in page once more.	Откройте страницу входа ещё раз.
+CloudBrowserFailed	The browser could not be opened: {0}. Copy the link and open it yourself.	Не удалось открыть браузер: {0}. Скопируйте ссылку и откройте её сами.
+SettingsCloud	Cloud drives	Облачные диски
+SettingsCloudBuiltIn	Applications of CUSTOS built into this version: {0}.	Встроенные приложения CUSTOS: {0}.
+SettingsCloudNone	none	нет
+SettingsCloudNote	The accounts of cloud drives are connected in the properties of a destination or with «Connect a cloud drive…» below. An own application is needed for a build without the built-in ones, or to not depend on the application of the project.	Аккаунты облачных дисков подключаются в свойствах назначения или кнопкой «Подключить облачный диск…» ниже. Своё приложение нужно для сборки без встроенных или чтобы не зависеть от приложения проекта.
+SettingsCloudOwn	Own applications…	Свои приложения…
+CloudAdminOnly	Only an administrator can connect cloud drives.	Подключать облачные диски может только администратор.
+ButtonConnectCloud	Connect a cloud drive…	Подключить облачный диск…
+ButtonReconnect	Connect again…	Подключить заново…
+CloudAppsTitle	Own applications of the cloud drives	Свои приложения облачных дисков
+CloudAppsClientId	Client ID:	Client ID:
+CloudAppsSecret	Client secret:	Секрет клиента:
+CloudAppsNote	Applications you registered at the services yourself (see «Cloud drives» in the README of the client). They stay on this computer and never go to the monitoring server. Empty: the built-in application is used. An account keeps working with the application it was connected with while that application is known here.	Приложения, которые вы сами зарегистрировали у сервисов (раздел «Облачные диски» в README клиента). Они хранятся только на этом компьютере и на сервер мониторинга не уходят. Пусто — используется встроенное приложение. Аккаунт работает с тем приложением, через которое он подключён, пока оно здесь известно.
+CloudAppsBuiltIn	built-in application: yes	встроенное приложение: есть
+CloudAppsNoBuiltIn	built-in application: none	встроенного приложения нет
+CloudAppsSecretNote	Google needs the secret too; Yandex takes it if the application has one; Dropbox needs none.	Google нужен и секрет; Яндексу — если он есть у приложения; Dropbox секрет не нужен.
+ErrorCloudSecretRequired	Google needs the client secret together with the client ID.	Для Google нужен секрет клиента вместе с Client ID.
+RestoreByStore	Backups on a server or a cloud drive:	Копии на сервере или в облаке:
+RestoreChooseStore	Choose…	Указать…
+RestoreStoreTitle	Where to look for backups	Где искать копии
+RestoreStoreRequired	Choose the server or the cloud drive: press «Choose…».	Укажите сервер или облачный диск: нажмите «Указать…».
+RestoreStoreNone	not chosen	не указано

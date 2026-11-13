@@ -1591,4 +1591,70 @@ static partial class Messages
 
     /// <summary>Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.</summary>
     public static string SetLocked => Get(nameof(SetLocked));
+
+    /// <summary>Google Drive</summary>
+    public static string CloudGDrive => Get(nameof(CloudGDrive));
+
+    /// <summary>Yandex Disk</summary>
+    public static string CloudYaDisk => Get(nameof(CloudYaDisk));
+
+    /// <summary>Dropbox</summary>
+    public static string CloudDropbox => Get(nameof(CloudDropbox));
+
+    /// <summary>Apps/CUSTOS</summary>
+    public static string CloudAppFolder => Get(nameof(CloudAppFolder));
+
+    /// <summary>{0}: a mirror cannot be kept in a cloud drive. Choose a full, incremental or differential backup.</summary>
+    public static string CloudNoMirror => Get(nameof(CloudNoMirror));
+
+    /// <summary>{0}: the account belongs to another service.</summary>
+    public static string CloudWrongAccount => Get(nameof(CloudWrongAccount));
+
+    /// <summary>An account of a cloud drive is connected only through the browser on this computer («Connect account»).</summary>
+    public static string CloudAccountOnlyConnected => Get(nameof(CloudAccountOnlyConnected));
+
+    /// <summary>{0}: no account is connected for this destination. Connect one in the destination («Connect account»).</summary>
+    public static string CloudAccountMissing => Get(nameof(CloudAccountMissing));
+
+    /// <summary>Access to the account {0} ({1}) has been revoked. Connect the account again.</summary>
+    public static string CloudAccessRevoked => Get(nameof(CloudAccessRevoked));
+
+    /// <summary>{0}: this version has no CUSTOS application for the service. Enter the ids of your own application in the s...</summary>
+    public static string CloudAppMissing => Get(nameof(CloudAppMissing));
+
+    /// <summary>{0} does not know the CUSTOS application ({1}). Check the application ids in the settings, «Cloud drives».</summary>
+    public static string CloudAppRefused => Get(nameof(CloudAppRefused));
+
+    /// <summary>{0}: the sign-in failed: {1}</summary>
+    public static string CloudSignInFailed => Get(nameof(CloudSignInFailed));
+
+    /// <summary>{0}: access was not allowed on the page of the service.</summary>
+    public static string CloudSignInRefused => Get(nameof(CloudSignInRefused));
+
+    /// <summary>The sign-in took too long or was started again. Press «Connect account» once more.</summary>
+    public static string CloudSignInExpired => Get(nameof(CloudSignInExpired));
+
+    /// <summary>{0} gave no refresh token, and CUSTOS cannot work without one. Try again; if it repeats, first remove CUSTO...</summary>
+    public static string CloudNoRefreshToken => Get(nameof(CloudNoRefreshToken));
+
+    /// <summary>{0} does not take a file this large ({1}). Set «Part size» in the destination (Yandex Disk without a subscr...</summary>
+    public static string CloudFileTooLarge => Get(nameof(CloudFileTooLarge));
+
+    /// <summary>{0}: the upload of {1} expired at the service; the file was not written.</summary>
+    public static string CloudUploadExpired => Get(nameof(CloudUploadExpired));
+
+    /// <summary>{0}: the service lost a part of {1} it had already confirmed; the file was not written.</summary>
+    public static string CloudUploadLost => Get(nameof(CloudUploadLost));
+
+    /// <summary>Only an administrator of this computer can connect accounts of cloud drives and change their applications.</summary>
+    public static string CloudNotAllowed => Get(nameof(CloudNotAllowed));
+
+    /// <summary>The address the sign-in returns to must be on this computer (http://127.0.0.1 or http://localhost).</summary>
+    public static string CloudBadRedirect => Get(nameof(CloudBadRedirect));
+
+    /// <summary>The account {0} of {1} was connected by {2}.</summary>
+    public static string CloudConnected => Get(nameof(CloudConnected));
+
+    /// <summary>The applications of CUSTOS at the cloud drives were changed by {0}.</summary>
+    public static string CloudAppsSaved => Get(nameof(CloudAppsSaved));
 }

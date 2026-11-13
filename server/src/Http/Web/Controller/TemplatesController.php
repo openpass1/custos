@@ -138,7 +138,9 @@ final class TemplatesController extends Controller
         }
         foreach ($failed as $r) {
             $this->session->flash('error', $this->t('templates.flash.not_applied', [
-                'machine' => Agents::name($r['agent']), 'reason' => $this->t($r['error']['key'], $r['error']['params']),
+                'machine' => Agents::name($r['agent']), 'reason' => $this->t($r['error']['key'], array_map(
+                    fn($v) => is_array($v) && isset($v['key']) ? $this->t((string) $v['key'], (array) ($v['params'] ?? [])) : $v,
+                    $r['error']['params'])),
             ]));
         }
         return $this->redirect($back);

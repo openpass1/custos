@@ -302,6 +302,56 @@ public sealed class CredentialSaveResult
     public required Credential Credential { get; set; }
 }
 
+/// <summary>Starts connecting an account of a cloud drive (section 6.3).</summary>
+public sealed class CloudBeginRequest
+{
+    /// <summary><c>gdrive</c>, <c>yadisk</c> or <c>dropbox</c>.</summary>
+    public required string Kind { get; set; }
+
+    /// <summary>The loopback address the interface listens on (<c>http://127.0.0.1:port/</c>); null = the service
+    /// shows the code on its page and the person pastes it.</summary>
+    public string? RedirectUri { get; set; }
+
+    /// <summary>The account to connect again (its token is replaced, the tasks keep it); null = a new account.</summary>
+    public string? CredentialId { get; set; }
+}
+
+public sealed class CloudBeginResult
+{
+    /// <summary>Names the sign-in in <see cref="CloudFinishRequest"/>; the loopback answer carries it too.</summary>
+    public required string State { get; set; }
+
+    /// <summary>The page of the service to open in the browser.</summary>
+    public required string Url { get; set; }
+
+    /// <summary>The redirect address actually used; null or empty when the code is shown on the page.</summary>
+    public string? RedirectUri { get; set; }
+}
+
+public sealed class CloudFinishRequest
+{
+    public required string State { get; set; }
+
+    /// <summary>What came back: the query of the loopback request, or what the person pasted (the code or the whole
+    /// address from the browser).</summary>
+    public required string Answer { get; set; }
+}
+
+/// <summary>The applications of CUSTOS at the cloud drives (settings, «Облачные диски»).</summary>
+public sealed class CloudAppsResult
+{
+    /// <summary>The administrator's own applications.</summary>
+    public Cloud.CloudAppsFile Own { get; set; } = new();
+
+    /// <summary>The services this version has an application for already.</summary>
+    public List<string> BuiltIn { get; set; } = [];
+}
+
+public sealed class CloudAppsSaveRequest
+{
+    public required Cloud.CloudAppsFile Apps { get; set; }
+}
+
 public sealed class CredentialRequest
 {
     public required string CredentialId { get; set; }
@@ -524,8 +574,12 @@ public sealed class OkResult
 /// task, or a folder (for example a backup disk on a new computer).</summary>
 public class RestoreSource
 {
-    /// <summary>The task whose destinations to search; null = search <see cref="Folder"/>.</summary>
+    /// <summary>The task whose destinations to search; null = search <see cref="Destination"/> or <see cref="Folder"/>.</summary>
     public string? TaskId { get; set; }
+
+    /// <summary>A destination on a server or in a cloud drive to search, as the destination dialog gives it (a copy on
+    /// another computer: the same account, the folder of the sets); null = <see cref="Folder"/>.</summary>
+    public TaskDestination? Destination { get; set; }
 
     public string? Folder { get; set; }
 

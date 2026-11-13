@@ -644,6 +644,7 @@ internal sealed class DestinationsPage : EditorPage
     private readonly Button _edit = new() { Text = Strings.ButtonEdit, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Button _remove = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(100, 0) };
     private readonly Label _mirrorNote = new() { Text = Strings.LayoutMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
+    private readonly Label _cloudNote = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly CheckBox _separate = new() { Text = Strings.SeparateFolders, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
     private readonly ComboBox _template = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
     private readonly Label _example = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6) };
@@ -667,6 +668,7 @@ internal sealed class DestinationsPage : EditorPage
 
         AddNote(Strings.DestinationsNote);
         AddWide(row);
+        AddWide(_cloudNote);
         AddHeading(Strings.EditorLayout);
         AddWide(_mirrorNote);
         AddWide(_separate, Strings.SeparateFoldersHelp);
@@ -744,6 +746,14 @@ internal sealed class DestinationsPage : EditorPage
             return Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, TaskDescriber.Destination(_destinations[locked]));
         }
 
+        // A mirror needs to look at and replace single files: not on a cloud drive (section 6.3).
+        int cloud = _destinations.FindIndex(d => DestinationKinds.IsCloudDrive(d.Kind));
+        if (Context.IsMirror && cloud >= 0)
+        {
+            _list.Items[cloud].Selected = true;
+            return Custos.Core.Messages.Format(Custos.Core.Messages.CloudNoMirror, TaskDescriber.Destination(_destinations[cloud]));
+        }
+
         task.Destinations = [.. _destinations];
         task.Layout.SeparateFolders = _separate.Checked;
         if (named)
@@ -769,6 +779,9 @@ internal sealed class DestinationsPage : EditorPage
         DestinationKinds.Ftps => Strings.KindFtps,
         DestinationKinds.WebDav => Strings.KindWebDav,
         DestinationKinds.S3 => Strings.KindS3,
+        DestinationKinds.GDrive => Strings.KindGDrive,
+        DestinationKinds.YaDisk => Strings.KindYaDisk,
+        DestinationKinds.Dropbox => Strings.KindDropbox,
         _ => Strings.Format(Strings.KindLater, kind.ToUpperInvariant()),
     };
 
@@ -795,6 +808,7 @@ internal sealed class DestinationsPage : EditorPage
         Context.StreamOnlyDestination = _destinations.FirstOrDefault(d => !DestinationKinds.CanSeek(d.Kind)) is { } stream
             ? TaskDescriber.Destination(stream)
             : null;
+        ShowCloudNote();
         UpdateButtons();
     }
 
@@ -809,6 +823,7 @@ internal sealed class DestinationsPage : EditorPage
     {
         bool mirror = Context.IsMirror;
         _mirrorNote.Visible = mirror;
+        ShowCloudNote();
         _separate.Enabled = !mirror;
         _template.Enabled = UsesTemplate;
         ShowExample();
@@ -835,12 +850,28 @@ internal sealed class DestinationsPage : EditorPage
         _example.Text = Strings.Format(Strings.NameTemplateExample, example);
     }
 
+    /// <summary>A copy without compression to a cloud drive is allowed, but slow with many small files (section 6.3).</summary>
+    private void ShowCloudNote()
+    {
+        var cloud = _destinations.FirstOrDefault(d => DestinationKinds.IsCloudDrive(d.Kind));
+        bool plain = cloud is not null && Context.ArchiveFormat == ArchiveFormats.None;
+        _cloudNote.Text = !plain ? string.Empty
+            : Context.IsMirror ? Custos.Core.Messages.Format(Custos.Core.Messages.CloudNoMirror, TaskDescriber.Destination(cloud!))
+            : Strings.Format(Strings.DestinationCloudPlainNote, KindText(cloud!.Kind));
+        _cloudNote.Visible = plain;
+    }
+
     private void AddDestination()
     {
         using var dialog = new DestinationDialog(Context, new TaskDestination { Kind = DestinationKinds.Local }, isNew: true);
         if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
         {
             _destinations.Add(dialog.Destination);
+            if (DestinationKinds.IsCloudDrive(dialog.Destination.Kind))
+            {
+                Context.WantZip();
+            }
+
             Fill();
             _list.Items[^1].Selected = true;
         }
@@ -1188,6 +1219,15 @@ internal sealed class ArchivePage : EditorPage
         _volume.SelectedIndexChanged += (_, _) => UpdateControls();
         _setPassword.Click += (_, _) => SetPassword();
         Context.ShapeChanged += (_, _) => UpdateControls();
+
+        // A cloud drive added to a task that keeps plain files: ZIP is the default there (section 6.3).
+        Context.ZipWanted += (_, _) =>
+        {
+            if (_none.Checked && !Context.IsMirror)
+            {
+                _zip.Checked = true;
+            }
+        };
     }
 
     public override void Shown()
@@ -1751,6 +1791,7 @@ internal sealed class CredentialPicker : UserControl
 
         _kind = kind;
         _noneText = noneText;
+        _add.Text = CredentialKinds.IsCloud(kind) ? Strings.ButtonConnectAccount : Strings.ButtonAddAccount;
         Fill();
     }
 

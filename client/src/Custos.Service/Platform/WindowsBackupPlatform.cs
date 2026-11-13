@@ -142,6 +142,34 @@ internal sealed class WindowsBackupPlatform(ConfigStore config, ShadowCopies sha
         }
     }
 
+    /// <summary>
+    /// The connected account of a cloud drive (section 6.3): its refresh token from the store, the access token in
+    /// the memory of the service only. A refresh token the service replaces is stored at once.
+    /// </summary>
+    public override Core.Cloud.CloudAccount GetCloudAccount(string credentialId)
+    {
+        var credential = config.GetCredential(credentialId);
+        if (credential is null || !CredentialKinds.IsCloud(credential.Kind))
+        {
+            throw new BackupException(Messages.Format(Messages.CloudAccountMissing, credential is null ? "?" : Core.Cloud.CloudService.NameOf(credential.Kind)));
+        }
+
+        string token;
+        try
+        {
+            token = config.GetPassword(credentialId) ?? string.Empty;
+        }
+        catch (ConfigException ex)
+        {
+            throw new BackupException(ex.Message, ex);
+        }
+
+        var service = Core.Cloud.CloudService.Of(credential.Kind);
+        var app = Core.Cloud.CloudApps.ForToken(credential.Kind, credential.ClientId, config.GetCloudApps());
+        var tokens = new Core.Cloud.OAuthTokens(credentialId, credential.User, service, app, token, replaced => config.UpdateCloudToken(credentialId, replaced));
+        return new Core.Cloud.CloudAccount(credential.User, tokens);
+    }
+
     public override IDisposable KeepAwake(string reason) => PowerRequest.Create(reason);
 
     /// <summary>Console programs write in the OEM code page (866 on Russian Windows), not in UTF-8.</summary>

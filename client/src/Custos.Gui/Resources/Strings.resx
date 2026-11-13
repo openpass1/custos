@@ -662,7 +662,8 @@ Off: the contents of D:\Data go straight into &lt;backup&gt;\…</value>
 Network folder: a path like \\server\share\folder, opened under the chosen account.
 USB disk: found by its volume label, so a new drive letter does not matter.
 SFTP, FTP, FTPS, WebDAV: a folder on a server.
-S3: a bucket of Amazon S3 or of a compatible storage; it can protect the copies from deletion (Object Lock).</value>
+S3: a bucket of Amazon S3 or of a compatible storage; it can protect the copies from deletion (Object Lock).
+Google Drive, Yandex Disk, Dropbox: a folder in a cloud account, connected in the browser.</value>
   </data>
   <data name="KindLocal" xml:space="preserve">
     <value>Local folder</value>
@@ -2154,5 +2155,177 @@ Save the destination as it is all the same?</value>
   </data>
   <data name="KeyFileFilter" xml:space="preserve">
     <value>Private keys|*.pem;*.key;id_*|All files|*.*</value>
+  </data>
+  <data name="KindGDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="KindYaDisk" xml:space="preserve">
+    <value>Yandex Disk</value>
+  </data>
+  <data name="KindDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="AccountKindGDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="AccountKindYaDisk" xml:space="preserve">
+    <value>Yandex Disk</value>
+  </data>
+  <data name="AccountKindDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="CloudAppFolder" xml:space="preserve">
+    <value>Apps/CUSTOS</value>
+  </data>
+  <data name="DestinationFolderInCloud" xml:space="preserve">
+    <value>Folder in «{0}»:</value>
+  </data>
+  <data name="DestinationFolderCloudHelp" xml:space="preserve">
+    <value>A folder inside the folder of CUSTOS in the account, for example office/pc01. Empty: the folder of CUSTOS itself. CUSTOS gets access to that folder only; the other files of the account stay out of its reach.</value>
+  </data>
+  <data name="DestinationAccountHelpCloud" xml:space="preserve">
+    <value>The account of the service, connected in the browser: press «Connect…», sign in and allow access. CUSTOS never sees the password: the service gives it a token that reaches only the folder of CUSTOS. Only an administrator can connect an account, and only on this computer: the monitoring server can choose an account connected here but cannot add one.</value>
+  </data>
+  <data name="ButtonConnectAccount" xml:space="preserve">
+    <value>Connect…</value>
+  </data>
+  <data name="DestinationPartSize" xml:space="preserve">
+    <value>Part size:</value>
+  </data>
+  <data name="DestinationPartUnit" xml:space="preserve">
+    <value>MB (0: one file)</value>
+  </data>
+  <data name="DestinationPartHelp" xml:space="preserve">
+    <value>An archive larger than this is written in parts name.zip.001, name.zip.002 and so on. 7-Zip opens them as one archive, and CUSTOS restores from them by itself. It is needed where the service limits the size of a file: Yandex Disk without a subscription takes files of up to 1 GB, so a new Yandex Disk destination starts with 900 MB. 0: the archive is one file. A copy without compression is not cut.</value>
+  </data>
+  <data name="DestinationCloudWarning" xml:space="preserve">
+    <value>A cloud drive must not be the only copy: whoever gets administrator rights on this computer (a ransomware, for example) can delete the copies there too.</value>
+  </data>
+  <data name="ErrorCloudAccountRequired" xml:space="preserve">
+    <value>Connect the account: press «Connect…».</value>
+  </data>
+  <data name="DestinationCloudPlainNote" xml:space="preserve">
+    <value>A copy without compression to {0}: every file takes requests of its own, and the service limits their number, so thousands of small files go slowly. ZIP on the «Archive» page is much faster.</value>
+  </data>
+  <data name="CloudConnectTitle" xml:space="preserve">
+    <value>Connect an account: {0}</value>
+  </data>
+  <data name="CloudReconnectTitle" xml:space="preserve">
+    <value>Connect again: {0}</value>
+  </data>
+  <data name="CloudConnectSteps" xml:space="preserve">
+    <value>1. Press «Open the sign-in page». Sign in to {0} in the browser and allow access for CUSTOS. It gets the folder «{1}» only; CUSTOS never sees the password.
+2. When the browser comes back, the account is connected by itself. If it does not (the browser is on another computer, or the page shows a code), copy the code from the page or the whole address from the address bar of the browser, paste it below and press «Connect».</value>
+  </data>
+  <data name="CloudReconnectNote" xml:space="preserve">
+    <value>The tasks keep the account; only its access is renewed. Sign in to the same account «{0}».</value>
+  </data>
+  <data name="CloudOpenPage" xml:space="preserve">
+    <value>Open the sign-in page</value>
+  </data>
+  <data name="CloudCopyLink" xml:space="preserve">
+    <value>Copy the link</value>
+  </data>
+  <data name="CloudLinkCopied" xml:space="preserve">
+    <value>The link is copied: open it in a browser.</value>
+  </data>
+  <data name="CloudAnswer" xml:space="preserve">
+    <value>Code or address:</value>
+  </data>
+  <data name="CloudPasteTip" xml:space="preserve">
+    <value>Paste from the clipboard</value>
+  </data>
+  <data name="CloudConnectButton" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="CloudPreparing" xml:space="preserve">
+    <value>Preparing the sign-in…</value>
+  </data>
+  <data name="CloudReady" xml:space="preserve">
+    <value>Waiting for the sign-in in the browser.</value>
+  </data>
+  <data name="CloudReadyCode" xml:space="preserve">
+    <value>After the sign-in the service shows a code: copy it and paste it below.</value>
+  </data>
+  <data name="CloudReadyAddress" xml:space="preserve">
+    <value>After the sign-in the browser shows an error page: that is expected. Copy the whole address from its address bar and paste it below.</value>
+  </data>
+  <data name="CloudConnecting" xml:space="preserve">
+    <value>Connecting the account…</value>
+  </data>
+  <data name="CloudAnswerRequired" xml:space="preserve">
+    <value>Paste the code or the address from the browser.</value>
+  </data>
+  <data name="CloudBrowserDone" xml:space="preserve">
+    <value>CUSTOS got the answer. You can close this tab and go back to the program.</value>
+  </data>
+  <data name="CloudTryAgain" xml:space="preserve">
+    <value>Open the sign-in page once more.</value>
+  </data>
+  <data name="CloudBrowserFailed" xml:space="preserve">
+    <value>The browser could not be opened: {0}. Copy the link and open it yourself.</value>
+  </data>
+  <data name="SettingsCloud" xml:space="preserve">
+    <value>Cloud drives</value>
+  </data>
+  <data name="SettingsCloudBuiltIn" xml:space="preserve">
+    <value>Applications of CUSTOS built into this version: {0}.</value>
+  </data>
+  <data name="SettingsCloudNone" xml:space="preserve">
+    <value>none</value>
+  </data>
+  <data name="SettingsCloudNote" xml:space="preserve">
+    <value>The accounts of cloud drives are connected in the properties of a destination or with «Connect a cloud drive…» below. An own application is needed for a build without the built-in ones, or to not depend on the application of the project.</value>
+  </data>
+  <data name="SettingsCloudOwn" xml:space="preserve">
+    <value>Own applications…</value>
+  </data>
+  <data name="CloudAdminOnly" xml:space="preserve">
+    <value>Only an administrator can connect cloud drives.</value>
+  </data>
+  <data name="ButtonConnectCloud" xml:space="preserve">
+    <value>Connect a cloud drive…</value>
+  </data>
+  <data name="ButtonReconnect" xml:space="preserve">
+    <value>Connect again…</value>
+  </data>
+  <data name="CloudAppsTitle" xml:space="preserve">
+    <value>Own applications of the cloud drives</value>
+  </data>
+  <data name="CloudAppsClientId" xml:space="preserve">
+    <value>Client ID:</value>
+  </data>
+  <data name="CloudAppsSecret" xml:space="preserve">
+    <value>Client secret:</value>
+  </data>
+  <data name="CloudAppsNote" xml:space="preserve">
+    <value>Applications you registered at the services yourself (see «Cloud drives» in the README of the client). They stay on this computer and never go to the monitoring server. Empty: the built-in application is used. An account keeps working with the application it was connected with while that application is known here.</value>
+  </data>
+  <data name="CloudAppsBuiltIn" xml:space="preserve">
+    <value>built-in application: yes</value>
+  </data>
+  <data name="CloudAppsNoBuiltIn" xml:space="preserve">
+    <value>built-in application: none</value>
+  </data>
+  <data name="CloudAppsSecretNote" xml:space="preserve">
+    <value>Google needs the secret too; Yandex takes it if the application has one; Dropbox needs none.</value>
+  </data>
+  <data name="ErrorCloudSecretRequired" xml:space="preserve">
+    <value>Google needs the client secret together with the client ID.</value>
+  </data>
+  <data name="RestoreByStore" xml:space="preserve">
+    <value>Backups on a server or a cloud drive:</value>
+  </data>
+  <data name="RestoreChooseStore" xml:space="preserve">
+    <value>Choose…</value>
+  </data>
+  <data name="RestoreStoreTitle" xml:space="preserve">
+    <value>Where to look for backups</value>
+  </data>
+  <data name="RestoreStoreRequired" xml:space="preserve">
+    <value>Choose the server or the cloud drive: press «Choose…».</value>
+  </data>
+  <data name="RestoreStoreNone" xml:space="preserve">
+    <value>not chosen</value>
   </data>
 </root>

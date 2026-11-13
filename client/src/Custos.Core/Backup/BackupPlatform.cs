@@ -46,6 +46,11 @@ public interface IBackupPlatform
     /// <exception cref="BackupException">There is no such credential or its secret cannot be read.</exception>
     Destinations.StoreAccount GetStoreAccount(string credentialId);
 
+    /// <summary>The connected account of a cloud drive: a <c>gdrive</c>, <c>yadisk</c> or <c>dropbox</c> credential
+    /// (section 6.3) with its tokens.</summary>
+    /// <exception cref="BackupException">There is no such account or its token cannot be read.</exception>
+    Cloud.CloudAccount GetCloudAccount(string credentialId);
+
     /// <summary>Keeps the computer from going to sleep until disposed (section 6.7).</summary>
     IDisposable KeepAwake(string reason);
 
@@ -270,6 +275,12 @@ public class LocalBackupPlatform : IBackupPlatform
 
     public virtual Destinations.StoreAccount GetStoreAccount(string credentialId) =>
         StoreAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.StoreAccountMissing);
+
+    /// <summary>Accounts of cloud drives by credential id; the service supplies its own lookup.</summary>
+    public Dictionary<string, Cloud.CloudAccount> CloudAccounts { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public virtual Cloud.CloudAccount GetCloudAccount(string credentialId) =>
+        CloudAccounts.TryGetValue(credentialId, out var account) ? account : throw new BackupException(Messages.Format(Messages.CloudAccountMissing, "?"));
 
     public virtual IDisposable KeepAwake(string reason) => ProcessSession.Instance;
 
