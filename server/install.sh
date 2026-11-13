@@ -72,7 +72,12 @@ EOF
 say() { printf '\n==> %s\n' "$*"; }
 ok() { printf '[ok] %s\n' "$*"; }
 warn() { printf '[warning] %s\n' "$*" >&2; }
-die() { printf '[error] %s\n' "$*" >&2; exit 1; }
+die() {
+    printf '[error] %s\n' "$*" >&2
+    # Tells on_error that the reason is already printed, also from inside $(...).
+    [ -z "${workdir:-}" ] || : > "$workdir/stopped"
+    exit 1
+}
 
 for arg in "$@"; do
     case "$arg" in
@@ -104,6 +109,15 @@ workdir=$(mktemp -d)
 chmod 755 "$workdir"
 trap 'rm -rf "$workdir"' EXIT
 
+# A command that fails without its own message stops the script; this names it, so the stop is never silent.
+set -o errtrace
+on_error() {
+    # Once: not again for the line that used a failed $(...), and not after die() has given the reason.
+    [ "$BASH_SUBSHELL" = 0 ] && [ ! -e "$workdir/stopped" ] || return 0
+    printf '[error] Stopped at line %s of install.sh: %s\n' "$1" "$2" >&2
+}
+trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
+
 # ---------------------------------------------------------------------------------------------------------------
 # Helpers
 
@@ -111,9 +125,9 @@ trap 'rm -rf "$workdir"' EXIT
 service_restart() {
     if [ -d /run/systemd/system ]; then
         systemctl enable --quiet "$1" 2>/dev/null || true
-        systemctl restart "$1"
+        systemctl restart "$1" || die "Could not start $1: see systemctl status $1 and journalctl -u $1."
     else
-        service "$1" restart > /dev/null
+        service "$1" restart > "$workdir/service.txt" 2>&1 || { cat "$workdir/service.txt" >&2; die "Could not start $1."; }
     fi
 }
 
@@ -121,7 +135,7 @@ service_reload() {
     if [ -d /run/systemd/system ]; then
         systemctl reload "$1"
     else
-        service "$1" reload > /dev/null
+        service "$1" reload > "$workdir/service.txt" 2>&1 || { cat "$workdir/service.txt" >&2; return 1; }
     fi
 }
 

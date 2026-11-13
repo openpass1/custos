@@ -23,7 +23,9 @@ fail() { printf '\n[FAIL] %s\n' "$*" >&2; exit 1; }
 in_box() { docker exec "$name" bash -c "$1"; }
 
 step "Container $base"
-docker run -d --name "$name" \
+# --init: a small init process reaps the processes that the init scripts stop. Without it a stopped php-fpm stays
+# a zombie, its init script waits for it to go and gives up, as no real server with systemd would.
+docker run -d --init --name "$name" \
     -v "$root/server/install.sh:/opt/install.sh:ro" \
     -v "$package:/opt/custos-server.zip:ro" \
     "$base" sleep infinity > /dev/null
