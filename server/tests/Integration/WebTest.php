@@ -156,6 +156,10 @@ final class WebTest extends TestCase
         $this->assertSame(400, $status);
         [$status] = $this->post("/agents/{$id[1]}/approve", ['back' => 'list']);
         $this->assertSame(303, $status);
+        // The notice that the machine waited for approval stays in the list but is no longer unread.
+        [, $notices] = $this->http('GET', '/notices');
+        $this->assertStringContainsString('ждёт подтверждения', $notices);
+        $this->assertStringNotContainsString('class="unread"', $notices);
 
         [$exit, $output] = $this->fakeAgent(['--result=error', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
@@ -245,7 +249,7 @@ final class WebTest extends TestCase
         $live = json_decode($json, true);
         $this->assertSame(['summary', 'attention', 'running', 'notices', 'versions'], array_keys($live['parts']));
         $this->assertStringContainsString('Documents', $live['parts']['attention']);
-        $this->assertGreaterThan(0, $live['bell'], 'registration and the first configuration are notices');
+        $this->assertSame(0, $live['bell'], 'the notice of the registration was settled by the approval');
 
         [, $live] = $this->http('GET', "/agents/$agentId/live");
         $this->assertSame(['now', 'problems', 'tasks'], array_keys(json_decode($live, true)['parts']));

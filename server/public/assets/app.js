@@ -809,3 +809,157 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 })();
+
+// Task editor (tasks/_form.php): the table of contents marks the section on screen and opens a folded one it jumps to;
+// a field that the browser finds invalid opens its folded section first, so that it can be shown; a folded section
+// whose fields were changed says so in its summary line instead of the summary of the saved values.
+(() => {
+    const toc = document.querySelector('[data-toc]');
+    if (!toc) {
+        return;
+    }
+    const links = [...toc.querySelectorAll('a[href^="#"]')];
+    const sections = links.map((link) => document.getElementById(link.getAttribute('href').slice(1))).filter(Boolean);
+    const mark = (id) => {
+        for (const link of links) {
+            link.setAttribute('aria-current', link.getAttribute('href') === '#' + id ? 'true' : 'false');
+        }
+    };
+    // The current section is the last one whose top has passed a line a little below the top bar. After a jump from
+    // the table of contents the chosen one stays marked until the reader scrolls by hand: a short section at the end
+    // of the page may never reach the line.
+    let pending = false;
+    let chosen = null;
+    const update = () => {
+        pending = false;
+        if (chosen) {
+            mark(chosen);
+            return;
+        }
+        const line = 120;
+        let current = sections[0];
+        for (const section of sections) {
+            if (section.getBoundingClientRect().top <= line) {
+                current = section;
+            }
+        }
+        if (current) {
+            mark(current.id);
+        }
+    };
+    for (const type of ['wheel', 'touchstart', 'keydown']) {
+        window.addEventListener(type, () => {
+            chosen = null;
+        }, { passive: true });
+    }
+    const schedule = () => {
+        if (!pending) {
+            pending = true;
+            window.requestAnimationFrame(update);
+        }
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    update();
+    toc.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        const target = link && document.getElementById(link.getAttribute('href').slice(1));
+        if (!target) {
+            return;
+        }
+        event.preventDefault();
+        chosen = target.id;
+        mark(chosen);
+        if (target instanceof HTMLDetailsElement && !target.open) {
+            target.classList.add('at-once');
+            target.open = true;
+            window.setTimeout(() => target.classList.remove('at-once'), 50);
+        }
+        target.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' });
+        history.replaceState(null, '', link.getAttribute('href'));
+        const focusable = target.querySelector('summary, h2');
+        if (focusable) {
+            focusable.setAttribute('tabindex', focusable.tagName === 'SUMMARY' ? '0' : '-1');
+            focusable.focus({ preventScroll: true });
+        }
+    });
+    const target = location.hash && document.getElementById(location.hash.slice(1));
+    if (target instanceof HTMLDetailsElement && target.classList.contains('fold')) {
+        target.open = true;
+    }
+    // "invalid" does not bubble: listen while it goes down.
+    document.addEventListener('invalid', (event) => {
+        const fold = event.target.closest && event.target.closest('details.fold');
+        if (fold) {
+            fold.open = true;
+        }
+    }, true);
+    const changed = (event) => {
+        const fold = event.target.closest && event.target.closest('details.fold');
+        const summary = fold && fold.querySelector('[data-fold-summary]');
+        if (summary && summary.textContent !== summary.getAttribute('data-fold-summary')) {
+            summary.textContent = summary.getAttribute('data-fold-summary');
+        }
+    };
+    document.addEventListener('input', changed);
+    document.addEventListener('change', changed);
+})();
+
+// Lists with quick choices and a search ([data-list-filter="id of the list"], the machine list): rows carry
+// data-flags and data-search; a group (tbody[data-group]) without a shown row hides with its heading.
+(() => {
+    for (const tools of document.querySelectorAll('[data-list-filter]')) {
+        const list = document.getElementById(tools.getAttribute('data-list-filter'));
+        if (!list) {
+            continue;
+        }
+        const chips = [...tools.querySelectorAll('[data-filter]')];
+        const search = tools.querySelector('[data-list-search]');
+        const empty = list.querySelector('[data-list-empty]');
+        const table = list.querySelector('table');
+        let filter = (chips.find((chip) => chip.getAttribute('aria-pressed') === 'true') || { getAttribute: () => '' }).getAttribute('data-filter');
+        const apply = () => {
+            const words = (search ? search.value : '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+            let shown = 0;
+            for (const body of list.querySelectorAll('tbody[data-group]')) {
+                let inBody = 0;
+                for (const row of body.querySelectorAll('tr[data-search]')) {
+                    const flags = (row.getAttribute('data-flags') || '').split(' ');
+                    const text = row.getAttribute('data-search') || '';
+                    const ok = (filter === '' || flags.includes(filter)) && words.every((word) => text.includes(word));
+                    row.hidden = !ok;
+                    inBody += ok ? 1 : 0;
+                }
+                body.hidden = inBody === 0;
+                shown += inBody;
+            }
+            if (empty) {
+                empty.hidden = shown > 0;
+            }
+            if (table) {
+                table.hidden = shown === 0;
+            }
+        };
+        for (const chip of chips) {
+            chip.addEventListener('click', () => {
+                filter = chip.getAttribute('data-filter') || '';
+                for (const other of chips) {
+                    other.setAttribute('aria-pressed', String(other === chip));
+                }
+                apply();
+            });
+        }
+        if (search) {
+            search.addEventListener('input', apply);
+            search.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && search.value !== '') {
+                    search.value = '';
+                    apply();
+                }
+            });
+        }
+        // The browser may bring back the search text when the page is opened again with "Back".
+        apply();
+        window.addEventListener('pageshow', apply);
+    }
+})();

@@ -10,16 +10,39 @@
     </a>
     <a class="tile" href="<?= e(url('/agents')) ?>">
         <span class="tile-label"><?= e(t('dashboard.tasks')) ?></span>
-        <span class="tile-counts">
-            <span class="dot dot-ok"></span><?= (int) $summary['ok'] ?>
-            <span class="dot dot-warn"></span><?= (int) $summary['warning'] ?>
-            <span class="dot dot-bad"></span><?= (int) $summary['error'] + (int) $summary['missed'] ?>
-            <span class="dot dot-info"></span><?= (int) $summary['running'] ?>
-        </span>
-        <span class="tile-note"><?= e(t('dashboard.tasks.note', [
+        <?php
+        // A bar of the task states with its legend (the colours say nothing without words). Widths are SVG
+        // attributes: the page allows no inline styles.
+        $segments = ['ok' => (int) $summary['ok'], 'warn' => (int) $summary['warning'], 'bad' => (int) $summary['error'] + (int) $summary['missed'],
+                  'info' => (int) $summary['running']];
+        $total = (int) $summary['tasks'];
+        $segments['muted'] = max(0, $total - array_sum($segments));
+        $legend = ['ok' => t('dashboard.tasks.ok'), 'warn' => t('dashboard.tasks.warning'), 'bad' => t('dashboard.tasks.bad'),
+                   'info' => t('dashboard.tasks.running'), 'muted' => t('dashboard.tasks.other')];
+        $x = 0.0;
+        ?>
+        <span class="tile-value"><?= $total ?></span>
+        <?php if ($total > 0): ?>
+            <svg class="seg-bar" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+                <?php foreach ($segments as $kind => $n): ?>
+                    <?php if ($n > 0): ?>
+                        <?php $width = 100 * $n / $total; ?>
+                        <rect class="seg-<?= $kind ?>" x="<?= round($x, 3) ?>" y="0" width="<?= round(max(0.0, $width - ($x + $width < 99.99 ? 0.8 : 0)), 3) ?>" height="6"/>
+                        <?php $x += $width; ?>
+                    <?php endif ?>
+                <?php endforeach ?>
+            </svg>
+        <?php endif ?>
+        <span class="tile-legend" title="<?= e(t('dashboard.tasks.note', [
             'ok' => $summary['ok'], 'warning' => $summary['warning'], 'error' => $summary['error'],
             'missed' => $summary['missed'], 'running' => $summary['running'],
-        ])) ?></span>
+        ])) ?>">
+            <?php foreach ($segments as $kind => $n): ?>
+                <?php if ($n > 0 || $kind === 'ok'): ?>
+                    <span><i class="dot dot-<?= $kind ?>"></i><b><?= $n ?></b> <?= e($legend[$kind]) ?></span>
+                <?php endif ?>
+            <?php endforeach ?>
+        </span>
     </a>
     <?php $least = $storage['least']; $soonest = $storage['soonest']; ?>
     <a class="tile" href="<?= e(url($least === null ? '/agents' : '/agents/' . $least['agent_id'])) ?>">

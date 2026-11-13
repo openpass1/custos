@@ -39,14 +39,26 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     </form>
 </section>
 
-<form method="post" action="<?= e(url('/settings')) ?>" class="panel stack">
-    <?= csrf_field() ?>
-    <h2><?= e(t('settings.general')) ?></h2>
-    <label><?= e(t('settings.server_name')) ?>
+<?php
+// Each group is its own small form with its own button; what a form does not send keeps its stored value.
+$open = fn(string $title): string => '<form method="post" action="' . e(url('/settings')) . '" class="panel settings-group">'
+    . csrf_field() . '<h2>' . e(t($title)) . '</h2><div class="field-grid">';
+$close = '</div><div class="form-buttons"><button type="submit">' . e(t('common.save')) . '</button></div></form>';
+$number = function (string $name, string $unit, int $min, int $max, ?string $hint = null, bool $decimal = false) use ($values, $error): string {
+    $input = $decimal
+        ? '<input type="text" name="' . e($name) . '" value="' . e($values[$name]) . '" inputmode="decimal" required>'
+        : '<input type="number" name="' . e($name) . '" value="' . e($values[$name]) . '" min="' . $min . '" max="' . $max . '" required>';
+    return '<label class="field">' . e(t('settings.' . $name))
+        . '<span class="unit-input">' . $input . '<span class="unit">' . e(t('settings.unit.' . $unit)) . '</span></span>'
+        . ($hint === null ? '' : '<span class="note">' . e(t($hint)) . '</span>') . $error($name) . '</label>';
+};
+?>
+<?= $open('settings.general') ?>
+    <label class="field"><?= e(t('settings.server_name')) ?>
         <input type="text" name="server_name" value="<?= e($values['server_name']) ?>" maxlength="100" required>
+        <?= $error('server_name') ?>
     </label>
-    <?= $error('server_name') ?>
-    <label><?= e(t('settings.default_language')) ?>
+    <label class="field"><?= e(t('settings.default_language')) ?>
         <select name="default_language">
             <?php foreach ($languages as $code => $name): ?>
                 <option value="<?= e($code) ?>"<?= selected($code, $values['default_language']) ?>><?= e($name) ?></option>
@@ -54,62 +66,31 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
         </select>
         <span class="note"><?= e(t('settings.default_language.hint')) ?></span>
     </label>
-    <label><?= e(t('settings.heartbeat_interval_s')) ?>
-        <input type="number" name="heartbeat_interval_s" value="<?= e($values['heartbeat_interval_s']) ?>" min="10" max="3600" required>
-        <span class="note"><?= e(t('settings.heartbeat_interval_s.hint')) ?></span>
-    </label>
-    <?= $error('heartbeat_interval_s') ?>
-    <label><?= e(t('settings.offline_after_min')) ?>
-        <input type="number" name="offline_after_min" value="<?= e($values['offline_after_min']) ?>" min="1" max="10080" required>
-        <span class="note"><?= e(t('settings.offline_after_min.hint')) ?></span>
-    </label>
-    <?= $error('offline_after_min') ?>
+    <?= $number('heartbeat_interval_s', 's', 10, 3600, 'settings.heartbeat_interval_s.hint') ?>
+    <?= $number('offline_after_min', 'min', 1, 10080, 'settings.offline_after_min.hint') ?>
+<?= $close ?>
 
-    <h2><?= e(t('settings.thresholds')) ?></h2>
-    <label><?= e(t('settings.missed_grace_min')) ?>
-        <input type="number" name="missed_grace_min" value="<?= e($values['missed_grace_min']) ?>" min="1" max="1440" required>
-        <span class="note"><?= e(t('settings.missed_grace_min.hint')) ?></span>
-    </label>
-    <?= $error('missed_grace_min') ?>
-    <label><?= e(t('settings.stale_days')) ?>
-        <input type="number" name="stale_days" value="<?= e($values['stale_days']) ?>" min="1" max="365" required>
-    </label>
-    <?= $error('stale_days') ?>
-    <label><?= e(t('settings.anomaly_drop_pct')) ?>
-        <input type="number" name="anomaly_drop_pct" value="<?= e($values['anomaly_drop_pct']) ?>" min="1" max="99" required>
-    </label>
-    <?= $error('anomaly_drop_pct') ?>
-    <label><?= e(t('settings.anomaly_growth_factor')) ?>
-        <input type="text" name="anomaly_growth_factor" value="<?= e($values['anomaly_growth_factor']) ?>" inputmode="decimal" required>
-        <span class="note"><?= e(t('settings.anomaly.hint')) ?></span>
-    </label>
-    <?= $error('anomaly_growth_factor') ?>
-    <label><?= e(t('settings.space_warn_days')) ?>
-        <input type="number" name="space_warn_days" value="<?= e($values['space_warn_days']) ?>" min="0" max="365" required>
-        <span class="note"><?= e(t('settings.space_warn_days.hint')) ?></span>
-    </label>
-    <?= $error('space_warn_days') ?>
+<?= $open('settings.thresholds') ?>
+    <?= $number('missed_grace_min', 'min', 1, 1440, 'settings.missed_grace_min.hint') ?>
+    <?= $number('stale_days', 'days', 1, 365) ?>
+    <?= $number('anomaly_drop_pct', 'pct', 1, 99) ?>
+    <?= $number('anomaly_growth_factor', 'times', 0, 0, 'settings.anomaly.hint', true) ?>
+    <?= $number('space_warn_days', 'days', 0, 365, 'settings.space_warn_days.hint') ?>
+<?= $close ?>
 
-    <h2><?= e(t('settings.retention')) ?></h2>
-    <label><?= e(t('settings.history_months')) ?>
-        <input type="number" name="history_months" value="<?= e($values['history_months']) ?>" min="1" max="120" required>
-    </label>
-    <?= $error('history_months') ?>
-    <label><?= e(t('settings.log_days')) ?>
-        <input type="number" name="log_days" value="<?= e($values['log_days']) ?>" min="1" max="3650" required>
-    </label>
-    <?= $error('log_days') ?>
+<?= $open('settings.retention') ?>
+    <?= $number('history_months', 'months', 1, 120) ?>
+    <?= $number('log_days', 'days', 1, 3650) ?>
+<?= $close ?>
 
-    <h2><?= e(t('settings.networks')) ?></h2>
-    <p class="hint"><?= e(t('settings.networks.hint', ['ip' => $myIp])) ?></p>
-    <label><?= e(t('settings.ip_allow_site')) ?>
+<?= $open('settings.networks') ?>
+    <p class="hint field-wide"><?= e(t('settings.networks.hint', ['ip' => $myIp])) ?></p>
+    <label class="field"><?= e(t('settings.ip_allow_site')) ?>
         <textarea name="ip_allow_site" rows="3" class="mono" placeholder="192.168.1.0/24"><?= e($values['ip_allow_site']) ?></textarea>
+        <?= $error('ip_allow_site') ?>
     </label>
-    <?= $error('ip_allow_site') ?>
-    <label><?= e(t('settings.ip_allow_agents')) ?>
+    <label class="field"><?= e(t('settings.ip_allow_agents')) ?>
         <textarea name="ip_allow_agents" rows="3" class="mono" placeholder="192.168.1.0/24"><?= e($values['ip_allow_agents']) ?></textarea>
+        <?= $error('ip_allow_agents') ?>
     </label>
-    <?= $error('ip_allow_agents') ?>
-
-    <button type="submit"><?= e(t('common.save')) ?></button>
-</form>
+<?= $close ?>

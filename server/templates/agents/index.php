@@ -66,28 +66,68 @@ use Custos\Domain\Agents;
 <?php if (!$hasAgents): ?>
     <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/settings')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
 <?php else: ?>
-    <form method="get" action="<?= e(url('/agents')) ?>" class="filters">
-        <label><?= e(t('agents.filter.group')) ?>
-            <select name="group" data-autosubmit>
-                <option value=""><?= e(t('common.all')) ?></option>
-                <?php foreach ($groups as $g): ?>
-                    <option value="<?= (int) $g['id'] ?>"<?= $filter === (string) $g['id'] ? ' selected' : '' ?>><?= e($g['name']) ?></option>
-                <?php endforeach ?>
-                <?php if ($groups !== []): ?>
-                    <option value="none"<?= $filter === 'none' ? ' selected' : '' ?>><?= e(t('groups.none')) ?></option>
-                <?php endif ?>
-            </select>
-        </label>
-        <noscript><button type="submit"><?= e(t('common.apply')) ?></button></noscript>
-        <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.manage')) ?></a>
-    </form>
+    <?php
+    // Quick choices over the listed machines: with open problems, running a task now, offline. The search and the
+    // choices work in the page (app.js); the group stays a server filter.
+    $problemAgents = array_flip(array_column($board->problems, 'agent_id'));
+    $flags = function (array $a) use ($board, $problemAgents): array {
+        $flags = [];
+        if (isset($problemAgents[$a['id']])) {
+            $flags[] = 'problem';
+        }
+        foreach ($board->tasksOf($a['id']) as $task) {
+            if (in_array($task['status'], ['running', 'paused'], true)) {
+                $flags[] = 'running';
+                break;
+            }
+        }
+        if ($a['status'] === 'approved' && !$a['online']) {
+            $flags[] = 'offline';
+        }
+        return $flags;
+    };
+    $chipCounts = ['' => 0, 'problem' => 0, 'running' => 0, 'offline' => 0];
+    foreach ($sections as $section) {
+        foreach ($section['agents'] as $a) {
+            $chipCounts['']++;
+            foreach ($flags($a) as $flag) {
+                $chipCounts[$flag]++;
+            }
+        }
+    }
+    $dots = ['' => '', 'problem' => 'bad', 'running' => 'info', 'offline' => 'muted'];
+    ?>
+    <div class="list-tools" data-list-filter="agent-list">
+        <div class="chips" role="group" aria-label="<?= e(t('agents.chips')) ?>">
+            <?php foreach ($chipCounts as $key => $n): ?>
+                <button type="button" class="chip" data-filter="<?= e($key) ?>" aria-pressed="<?= $key === '' ? 'true' : 'false' ?>"<?= $n === 0 && $key !== '' ? ' disabled' : '' ?>>
+                    <?php if ($dots[$key] !== ''): ?><i class="dot dot-<?= $dots[$key] ?>"></i><?php endif ?><?= e(t('agents.chip.' . ($key === '' ? 'all' : $key))) ?> <b><?= $n ?></b></button>
+            <?php endforeach ?>
+        </div>
+        <div class="list-tools-end">
+            <input type="search" class="list-search" data-list-search placeholder="<?= e(t('agents.search')) ?>" aria-label="<?= e(t('agents.search')) ?>">
+            <form method="get" action="<?= e(url('/agents')) ?>" class="inline-filter">
+                <label><span class="visually-hidden"><?= e(t('agents.filter.group')) ?></span>
+                    <select name="group" data-autosubmit aria-label="<?= e(t('agents.filter.group')) ?>">
+                        <option value=""><?= e(t('agents.filter.all_groups')) ?></option>
+                        <?php foreach ($groups as $g): ?>
+                            <option value="<?= (int) $g['id'] ?>"<?= $filter === (string) $g['id'] ? ' selected' : '' ?>><?= e($g['name']) ?></option>
+                        <?php endforeach ?>
+                        <?php if ($groups !== []): ?>
+                            <option value="none"<?= $filter === 'none' ? ' selected' : '' ?>><?= e(t('groups.none')) ?></option>
+                        <?php endif ?>
+                    </select>
+                </label>
+                <noscript><button type="submit" class="secondary"><?= e(t('common.apply')) ?></button></noscript>
+            </form>
+            <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.manage')) ?></a>
+        </div>
+    </div>
 
     <?php if ($sections === []): ?>
         <p class="empty"><?= e(t('agents.filter.empty')) ?></p>
-    <?php endif ?>
-    <?php foreach ($sections as $section): ?>
-        <section class="panel">
-            <?php if ($section['name'] !== null): ?><h2><?= e($section['name']) ?> <span class="count"><?= count($section['agents']) ?></span></h2><?php endif ?>
+    <?php else: ?>
+        <section class="panel" id="agent-list">
             <div class="table-wrap">
                 <table class="grid row-links cards">
                     <thead>
@@ -99,35 +139,41 @@ use Custos\Domain\Agents;
                         <th><?= e(t('agents.col.tasks')) ?></th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <?php foreach ($section['agents'] as $a): ?>
-                        <tr>
-                            <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['name']) ?></a>
-                                <?php if ($a['name'] !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
-                            </td>
-                            <td class="card-side">
-                                <?php if ($a['status'] === 'disabled'): ?>
-                                    <?= badge('disabled') ?>
-                                <?php else: ?>
-                                    <?= $a['online'] ? badge('online') : badge('offline') ?>
-                                <?php endif ?>
-                            </td>
-                            <td class="nowrap" data-label="<?= e(t('agents.col.last_seen')) ?>" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
-                            <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?></td>
-                            <td class="pills card-end">
-                                <?php $agentTasks = $board->tasksOf($a['id']); ?>
-                                <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
-                                <?php foreach ($agentTasks as $task): ?>
-                                    <?php $agent = $a; include __DIR__ . '/_pill.php'; ?>
-                                <?php endforeach ?>
-                            </td>
-                        </tr>
+                    <?php foreach ($sections as $section): ?>
+                        <tbody data-group>
+                        <?php if ($section['name'] !== null): ?>
+                            <tr class="group-row"><th colspan="5"><?= e($section['name']) ?> <span class="count"><?= count($section['agents']) ?></span></th></tr>
+                        <?php endif ?>
+                        <?php foreach ($section['agents'] as $a): ?>
+                            <tr data-flags="<?= e(implode(' ', $flags($a))) ?>" data-search="<?= e(mb_strtolower($a['name'] . ' ' . $a['hostname'])) ?>">
+                                <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['name']) ?></a>
+                                    <?php if ($a['name'] !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
+                                </td>
+                                <td class="card-side">
+                                    <?php if ($a['status'] === 'disabled'): ?>
+                                        <?= badge('disabled') ?>
+                                    <?php else: ?>
+                                        <?= $a['online'] ? badge('online') : badge('offline') ?>
+                                    <?php endif ?>
+                                </td>
+                                <td class="nowrap" data-label="<?= e(t('agents.col.last_seen')) ?>" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
+                                <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?></td>
+                                <td class="pills card-end">
+                                    <?php $agentTasks = $board->tasksOf($a['id']); ?>
+                                    <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
+                                    <?php foreach ($agentTasks as $task): ?>
+                                        <?php $agent = $a; include __DIR__ . '/_pill.php'; ?>
+                                    <?php endforeach ?>
+                                </td>
+                            </tr>
+                        <?php endforeach ?>
+                        </tbody>
                     <?php endforeach ?>
-                    </tbody>
                 </table>
             </div>
+            <p class="empty" data-list-empty hidden><?= e(t('agents.search.empty')) ?></p>
         </section>
-    <?php endforeach ?>
+    <?php endif ?>
     <p class="legend note">
         <?php foreach (['ok', 'warning', 'error', 'missed', 'running', 'missed_offline', 'stale', 'never', 'disabled'] as $s): ?>
             <span class="pill pill-<?= e(status_class($s)) ?>"><?= e(t('status.' . $s)) ?></span>
