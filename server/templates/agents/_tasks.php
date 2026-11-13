@@ -27,7 +27,7 @@ $button = function (array $task, string $action, string $class, string $iconName
         <p class="empty"><?= e(t('agent.tasks.empty')) ?></p>
     <?php else: ?>
         <div class="table-wrap">
-            <table>
+            <table class="row-links">
                 <thead>
                 <tr>
                     <th><?= e(t('tasks.col.name')) ?></th>
@@ -41,7 +41,7 @@ $button = function (array $task, string $action, string $class, string $iconName
                 <tbody>
                 <?php foreach ($tasks as $task): ?>
                     <?php $summary = task_summary($task['def']); $running = in_array($task['status'], ['running', 'paused'], true); ?>
-                    <tr>
+                    <tr data-key="t<?= e($task['id']) ?>" data-sig="<?= e(implode('|', [$task['status'], implode(',', $task['flags']), (string) $task['last_run_id'], $task['queued'] ? 'q' : '', $edits[$task['id']]['status'] ?? ''])) ?>">
                         <td><a href="<?= e(url($taskBase($task))) ?>"><strong><?= e($task['name']) ?></strong></a>
                             <div class="note task-desc" title="<?= e($summary) ?>"><?= e($summary) ?></div></td>
                         <td>

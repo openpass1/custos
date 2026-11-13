@@ -436,6 +436,15 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - the tables of "Machines", "Runs", "Audit log", "Users" and "Notices" sit in panels, and a row lights up under the pointer;
 - the "Copy" button answers "✓ Copied".
 
+**Version 0.4.5.** No migrations. The site answers what you do (the second part of the new look):
+- the question before deleting, disabling and other important actions is asked in the site's own dialog, not in the grey browser box; the button names the action ("Delete machine"), a risky action has a red button and the focus on "Cancel";
+- messages after an action float in the bottom right corner and push nothing down: a plain one goes away by itself after a few seconds, an error stays until it is closed; disabling, enabling, renaming a machine and changing its group now say so too;
+- a pressed button shows that the site is working, and a second click does not send the command again;
+- in live blocks a task row that changed lights up for a moment, a new problem or run fades in, a progress bar glides to its new value, and "running" has a pulsing dot;
+- a row of the machine, task, run and template tables opens with a click anywhere in the row;
+- "More" menus and dialogs fade in, "Machine details" and other folded blocks open smoothly, pages change with a short cross-fade (Chrome, Edge, Safari; Firefox may stay as before);
+- with Windows animation effects off (or "Reduce motion" on another system) the site shows everything without animation, and the bottom of the page says that effects are off and where to switch them on.
+
 ## What to keep in backups
 
 - the `custos` database;

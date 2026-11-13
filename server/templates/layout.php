@@ -53,12 +53,30 @@ $theme = $view->theme();
     <?php endif ?>
 </header>
 <main>
-    <?php foreach ($flash as [$type, $message]): ?>
-        <div class="flash flash-<?= e($type) ?>"><?= e($message) ?></div>
-    <?php endforeach ?>
+    <?php /* Messages float over the page (app.js closes a plain one after a few seconds; an error stays until closed). */ ?>
+    <?php if ($flash !== []): ?>
+        <div class="toasts" data-close-label="<?= e(t('common.close')) ?>">
+            <?php foreach ($flash as [$type, $message]): ?>
+                <div class="flash flash-<?= e($type) ?>"><?= e($message) ?></div>
+            <?php endforeach ?>
+        </div>
+    <?php endif ?>
     <?= $content ?>
 </main>
-<footer>CUSTOS Monitor <?= e(\Custos\App::VERSION) ?></footer>
+<footer>CUSTOS Monitor <?= e(\Custos\App::VERSION) ?>
+    <?php /* app.js shows it when the system asks for less motion (Windows: animation effects off). */ ?>
+    <span class="motion-note" data-motion-note hidden title="<?= e(t('motion.off.hint')) ?>"
+          data-windows="<?= e(t('motion.off.windows')) ?>" data-windows-hint="<?= e(t('motion.off.hint.windows')) ?>"><?= e(t('motion.off')) ?></span>
+</footer>
+<?php /* The question of a form with data-confirm (app.js): the button repeats the action, Cancel is the safe way out. */ ?>
+<dialog id="confirm-dialog" class="modal confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <div class="dialog-buttons">
+        <button type="button" class="secondary" data-confirm-cancel><?= e(t('common.cancel')) ?></button>
+        <button type="button" data-confirm-ok data-default="<?= e(t('common.confirm')) ?>"></button>
+    </div>
+</dialog>
 <?php /* Shown by app.js once the top of the page has scrolled away. */ ?>
 <button type="button" class="to-top" data-to-top title="<?= e(t('nav.to_top')) ?>" aria-label="<?= e(t('nav.to_top')) ?>">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>

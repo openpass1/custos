@@ -13,7 +13,7 @@
         <p class="empty"><?= e(t('templates.empty')) ?></p>
     <?php else: ?>
         <div class="table-wrap">
-            <table>
+            <table class="row-links">
                 <thead><tr><th><?= e(t('templates.col.name')) ?></th><th><?= e(t('templates.col.revision')) ?></th>
                     <th><?= e(t('templates.col.machines')) ?></th><th><?= e(t('templates.col.updated')) ?></th></tr></thead>
                 <tbody>

@@ -5,7 +5,7 @@ $task = $item['task'];
 $progress = $item['progress'];
 $paused = $agent['state'] === 'paused' || $agent['paused_at'] !== null;
 ?>
-<div class="progress-item">
+<div class="progress-item" data-key="r<?= e($agent['id']) ?>">
     <div>
         <?= badge($paused ? 'paused' : 'running') ?>
         <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><strong><?= e($agent['name']) ?></strong></a> ·
@@ -19,7 +19,7 @@ $paused = $agent['state'] === 'paused' || $agent['paused_at'] !== null;
         <?php endif ?>
     </div>
     <?php if ($progress !== null): ?>
-        <progress max="100" value="<?= e(min(100, (float) $progress['percent'])) ?>"></progress>
+        <progress<?= $paused ? '' : ' class="live"' ?> max="100" value="<?= e(min(100, (float) $progress['percent'])) ?>"></progress>
         <div class="note">
             <?= e(t('phase.' . $progress['phase'])) ?> · <?= e(round((float) $progress['percent'], 1)) ?>%
             · <?= e(fmt_number($progress['files_done'])) ?> / <?= e(fmt_number($progress['files_total'])) ?> <?= e(t('agent.files')) ?>

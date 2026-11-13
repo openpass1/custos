@@ -17,7 +17,7 @@ $softCount = count($soft['offline']) + count($soft['stale']) + count($soft['anom
 <?php else: ?>
     <div class="wall-problems">
         <?php foreach ($board->problems as $p): ?>
-            <div class="wall-problem wall-problem-<?= e($p['kind']) ?>">
+            <div class="wall-problem wall-problem-<?= e($p['kind']) ?>" data-key="p<?= (int) $p['id'] ?>">
                 <div class="wall-problem-head"><?= e($p['agent']['name']) ?> · <?= e($p['task_name'] ?? t('runs.unknown_task')) ?></div>
                 <div class="wall-problem-text"><?= e(problem_text($p)) ?></div>
                 <div class="wall-problem-since"><?= e(t('problem.since', ['time' => fmt_time($p['opened_at']), 'ago' => fmt_ago($p['opened_at'])])) ?></div>
@@ -53,7 +53,7 @@ $softCount = count($soft['offline']) + count($soft['stale']) + count($soft['anom
     <div class="wall-running">
         <?php foreach ($running as $item): ?>
             <?php $progress = $item['progress']; $paused = $item['agent']['state'] === 'paused' || $item['agent']['paused_at'] !== null; ?>
-            <div class="wall-run">
+            <div class="wall-run" data-key="r<?= e($item['agent']['id']) ?>">
                 <div class="wall-run-head">
                     <?= e($item['agent']['name']) ?> · <?= e($item['task']['name'] ?? t('runs.unknown_task')) ?>
                     <span class="wall-run-state"><?php if ($paused): ?><?= e(t('status.paused')) ?><?php elseif ($progress !== null): ?><?= e(round((float) $progress['percent'])) ?>&nbsp;%<?php if ($progress['eta_s'] !== null): ?> · <?= e(t('agent.eta', ['time' => fmt_duration($progress['eta_s'])])) ?><?php endif ?><?php endif ?></span>

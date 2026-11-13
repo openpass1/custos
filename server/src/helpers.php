@@ -116,7 +116,9 @@ function badge(string $status, ?string $label = null): string
     $class = status_class($status);
     $lang = View::$current?->app->lang();
     $label ??= $lang !== null && $lang->has('status.' . $status) ? $lang->get('status.' . $status) : $status;
-    return '<span class="badge badge-' . $class . '">' . e($label) . '</span>';
+    // A run in progress gets a pulsing dot (app.css), so a page that shows one says it is alive.
+    $live = $status === 'running' ? ' badge-live' : '';
+    return '<span class="badge badge-' . $class . $live . '">' . e($label) . '</span>';
 }
 
 /** Short schedule text: "ежедневно 00:00", "еженедельно: вс 01:00", "каждые 15 мин". */

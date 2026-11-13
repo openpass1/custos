@@ -555,3 +555,104 @@ form.stack > .table-wrap { align-self: stretch; min-width: 0; }
 .to-top:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 @media print { .to-top { display: none; } }
+
+/* Interface, part 2: the site answers. Every movement is short (120–220 ms) and nothing bounces or makes anyone wait.
+   With less motion asked for by the system (Windows: animation effects off) it all stays still: see the end of the file. */
+
+/* Hover, press and focus: each control shows that it is alive and where the click goes. */
+button, a.button-link, .menu-item, details.dropdown > summary, .icon-button, .tile, a.pill, input, select, textarea {
+    transition: background-color .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease, filter .12s ease, transform .08s ease;
+}
+button:not(:disabled):active, a.button-link:active, details.dropdown > summary:active { transform: translateY(1px); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 0; border-color: var(--accent); }
+a.tile:hover { box-shadow: 0 4px 14px var(--shadow); transform: translateY(-1px); }
+table:not(.heatmap):not(.diff) tbody td { transition: background-color .12s ease; }
+table.row-links tbody tr { cursor: pointer; }
+.heat { transition: transform .12s ease; }
+a.heat:hover { transform: scale(1.3); position: relative; z-index: 1; }
+
+/* A "More" menu grows out of its button; a dialog comes up over a dimmed page. */
+details.dropdown[open] > .dropdown-menu { animation: pop-in .13s ease-out; transform-origin: top right; }
+dialog.modal[open] { animation: dialog-in .18s ease-out; }
+dialog.modal[open]::backdrop { animation: fade-in .18s ease-out; }
+.confirm-dialog h2 { font-size: 1.1rem; line-height: 1.35; }
+.confirm-dialog p { margin: .5rem 0 0; color: var(--muted); }
+.confirm-dialog .dialog-buttons { margin-top: 1.1rem; }
+button.danger-fill { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }
+
+/* Messages after an action float at the bottom right, away from the buttons of the page head, and push nothing down. */
+.toasts { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 60; display: flex; flex-direction: column; gap: .5rem;
+    width: min(26rem, calc(100vw - 2rem)); pointer-events: none; }
+.toasts .flash { pointer-events: auto; position: relative; margin: 0; padding: .7rem 2.5rem .7rem .95rem; background: var(--panel); color: var(--text);
+    border: 1px solid var(--info-border); border-left: 4px solid var(--info); border-radius: 8px; box-shadow: 0 10px 30px var(--shadow);
+    animation: toast-in .22s ease-out; }
+.toasts .flash-error { border-color: var(--bad-border); border-left-color: var(--bad); }
+.toasts .flash.leaving { opacity: 0; transform: translateX(12px); transition: opacity .2s ease, transform .2s ease; }
+.toast-close { position: absolute; top: .45rem; right: .45rem; padding: .2rem; border: 0; background: none; color: var(--muted); }
+.toast-close:hover { background: var(--muted-bg); color: var(--text); filter: none; }
+@media (max-width: 600px) { .toasts { bottom: 1rem; left: 1rem; right: 1rem; width: auto; } }
+
+/* A button whose form is on its way shows a small spinner and takes no second click. */
+button.busy { cursor: progress; }
+button.busy::after { content: ""; width: .85em; height: .85em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: spin .7s linear infinite; }
+
+/* Runs in progress: the dot of "running" pulses, the bar glides to each new value (app.js) and a light runs along it. */
+.badge-live::before { content: ""; display: inline-block; width: .45em; height: .45em; margin: 0 .35em .1em 0; border-radius: 50%;
+    background: currentColor; vertical-align: middle; animation: pulse 1.6s ease-in-out infinite; }
+progress { -webkit-appearance: none; appearance: none; border: 0; border-radius: 99px; background: var(--muted-bg); overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--muted-bg); border-radius: 99px; }
+progress::-webkit-progress-value { background-color: var(--info); border-radius: 99px; }
+progress::-moz-progress-bar { background-color: var(--info); border-radius: 99px; }
+progress.live::-webkit-progress-value { background-image: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, .38) 50%, transparent 65%);
+    background-size: 220% 100%; background-repeat: no-repeat; animation: sheen 1.8s linear infinite; }
+progress.live::-moz-progress-bar { background-image: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, .38) 50%, transparent 65%);
+    background-size: 220% 100%; background-repeat: no-repeat; animation: sheen 1.8s linear infinite; }
+
+/* Live blocks: what changed lights up for a moment, a new problem or run slides in, the bell count jumps when it grows.
+   The wall screen hangs all day: there a new problem only lights up. */
+tr.changed > td, tr.arrived > td { animation: glow 1.4s ease-out; }
+li.problem.arrived, .progress-item.arrived { animation: slide-in .3s ease-out, glow 1.4s ease-out; }
+.wall-problem.arrived { animation: glow 1.6s ease-out; }
+.count.bump { display: inline-block; animation: bump .5s ease-out; }
+.appearing { animation: appear .22s ease-out; }
+
+/* Folded blocks (machine details, backup sets, editor sections) open and close smoothly where the browser can. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+    :root { interpolate-size: allow-keywords; }
+    details:not(.dropdown)::details-content { height: 0; overflow: clip; overflow-clip-margin: .25rem;
+        transition: height .22s ease, content-visibility .22s allow-discrete; }
+    details:not(.dropdown)[open]::details-content { height: auto; }
+}
+
+/* From page to page: a short cross-fade; the menu bar stays put. Browsers that cannot do it open pages as before. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+header.top { view-transition-name: top-bar; }
+
+.motion-note { cursor: help; }
+.motion-note::before { content: "·"; margin: 0 .5rem; }
+
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: .25; } }
+@keyframes sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@keyframes glow { from { background-color: var(--accent-bg); } }
+@keyframes slide-in { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes bump { 30% { transform: scale(1.35); } }
+@keyframes appear { from { opacity: 0; transform: translateY(-4px); } }
+
+/* Less motion (Windows: Settings → Accessibility → Visual effects → Animation effects off): nothing moves, nothing
+   fades. What a movement said is said without it: a changed row keeps its colour for a moment, a busy button gets "…". */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
+        transition-duration: 1ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+    @view-transition { navigation: none; }
+    tr.changed > td, tr.arrived > td, li.problem.arrived, .progress-item.arrived, .wall-problem.arrived { background-color: var(--accent-bg); }
+    button.busy::after { content: "…"; width: auto; height: auto; border: 0; }
+    button:not(:disabled):active, a.button-link:active, details.dropdown > summary:active, a.tile:hover, a.heat:hover { transform: none; }
+}

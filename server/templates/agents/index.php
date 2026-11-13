@@ -89,7 +89,7 @@ use Custos\Domain\Agents;
         <section class="panel">
             <?php if ($section['name'] !== null): ?><h2><?= e($section['name']) ?> <span class="count"><?= count($section['agents']) ?></span></h2><?php endif ?>
             <div class="table-wrap">
-                <table class="grid">
+                <table class="grid row-links">
                     <thead>
                     <tr>
                         <th><?= e(t('agents.col.name')) ?></th>
