@@ -1,0 +1,19 @@
+CUSTOS Monitor — third-party components
+=======================================
+
+CUSTOS Monitor is free software under the GNU General Public License version 3 (LICENSE in the root of the
+repository). It ships with the components below; each keeps its own license.
+
+PHPMailer 6.12
+  License:   GNU Lesser General Public License 2.1 (LGPL-2.1-only)
+  Copyright: Marcus Bointon, Jim Jagielski, Andy Prevost, Brent R. Matzelle and contributors
+  Text:      vendor/phpmailer/phpmailer/LICENSE
+  Source:    https://github.com/PHPMailer/PHPMailer (installed by Composer into vendor/, not changed)
+
+Chart.js 4.4.7
+  License:   MIT
+  Copyright: (c) 2014-2024 Chart.js Contributors
+  Text:      public/assets/vendor/chart.js-LICENSE.md
+  Source:    https://www.chartjs.org (the unchanged file dist/chart.umd.js of the npm package chart.js)
+
+The development tools (PHPUnit and its dependencies) are used only for the tests and are not part of the package.

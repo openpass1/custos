@@ -1,0 +1,245 @@
+name: Release
+
+# Makes a DRAFT release of one part from the commit it runs on: Actions → Release → Run workflow, choose the part and
+# type the version. The draft gets the files, SHA256SUMS.txt and the list of changes since the previous release of the
+# same part. Only people who can write to the repository see a draft; it becomes public when it is published by hand
+# on the Releases page, and the tag (client-v<version> or server-v<version>) is created at that moment.
+#
+# A pull request that changes this file builds both parts with a test version and publishes nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: 'What to release'
+        type: choice
+        options: [client, server]
+        required: true
+      version:
+        description: 'Version, for example 1.0.0. For the server it must equal VERSION in server/src/App.php'
+        type: string
+        required: true
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.part || 'test' }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      client: ${{ steps.check.outputs.client }}
+      server: ${{ steps.check.outputs.server }}
+      version: ${{ steps.check.outputs.version }}
+      tag: ${{ steps.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check the part and the version
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PART: ${{ inputs.part }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          site_version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" server/src/App.php)
+          if [ "$EVENT" != workflow_dispatch ]; then
+            # Test run: both parts, nothing is published. The client gets a version no real release uses.
+            {
+              echo "client=true"
+              echo "server=true"
+              echo "version=0.0.1"
+              echo "tag="
+            } >> "$GITHUB_OUTPUT"
+            echo "Test run: both parts are built, nothing is published." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          fail() { echo "::error::$1"; echo "**Not released:** $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            fail "The version must look like 1.0.0 (three numbers), not \"$VERSION\". / Версия должна выглядеть как 1.0.0."
+          fi
+          if [ "$PART" = server ] && [ "$VERSION" != "$site_version" ]; then
+            fail "server/src/App.php says VERSION = '$site_version', but the version typed is $VERSION. Release $site_version, or change App.php first. / В server/src/App.php версия $site_version, а введена $VERSION."
+          fi
+          tag="$PART-v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            fail "The tag $tag already exists: this version is already released. / Метка $tag уже есть: эта версия уже выпущена."
+          fi
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            fail "A release $tag already exists, probably a draft: delete it on the Releases page first. / Выпуск $tag уже есть, скорее всего черновик: сначала удалите его на странице Releases."
+          fi
+          {
+            echo "client=$([ "$PART" = client ] && echo true || echo false)"
+            echo "server=$([ "$PART" = server ] && echo true || echo false)"
+            echo "version=$VERSION"
+            echo "tag=$tag"
+          } >> "$GITHUB_OUTPUT"
+
+  client:
+    needs: check
+    if: needs.check.outputs.client == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (Test-Path $iscc) { Write-Host "Inno Setup is already installed: $iscc"; exit 0 }
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # The same script as the "Client build" workflow, with the release version; the tests run inside it.
+      - name: Build, test and make the installer
+        shell: powershell
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+          VERSION: ${{ needs.check.outputs.version }}
+        run: .\build.ps1 -Configuration Release -Version $env:VERSION
+
+      - name: Collect the files
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          New-Item -ItemType Directory -Path out | Out-Null
+          Copy-Item "client/artifacts/installer/CUSTOS-Setup-$env:VERSION.exe" out/
+          Copy-Item "client/artifacts/update/custos-$env:VERSION.zip" out/
+          Copy-Item helper/custos-helper out/
+          Get-ChildItem out | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-client
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
+  server:
+    needs: check
+    if: needs.check.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, openssl, curl, mbstring, zlib
+          tools: composer:v2
+          coverage: none
+
+      # The same package as the "Server" workflow makes: the server folder with vendor/, without the tests, settings
+      # and keys. The archive holds the folder server/, so it unpacks over an installed site as it is.
+      - name: Make the package
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd server
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          find src bin public templates lang tools -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+          mkdir -p ../dist/server ../out
+          rsync -a --exclude tests --exclude phpunit.xml.dist --exclude .phpunit.cache --exclude var \
+            --exclude config/config.php --exclude config/keys ./ ../dist/server/
+          cp ../LICENSE ../dist/server/LICENSE
+          cp install.sh ../out/
+          site_version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" src/App.php)
+          name="custos-server-$site_version.zip"
+          [ "$VERSION" = 0.0.1 ] || [ "$VERSION" = "$site_version" ]
+          cd ../dist
+          zip -q -r -X "../out/$name" server
+          ls -l ../out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-server
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [check, client, server]
+    if: >-
+      always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
+      (needs.client.result == 'success' || needs.server.result == 'success') &&
+      needs.client.result != 'failure' && needs.server.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: release-*
+          path: out
+          merge-multiple: true
+
+      - name: Make the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PART: ${{ inputs.part }}
+          VERSION: ${{ needs.check.outputs.version }}
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          set -euo pipefail
+          cd out
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          if [ "$PART" = client ]; then
+            title="CUSTOS for Windows $VERSION"
+            cat > ../notes.md <<EOF
+          **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place, tasks and settings stay.
+          **Update through the monitoring site:** upload \`custos-$VERSION.zip\` on the site under Updates, as it is, without unpacking.
+          **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/helper/README.md).
+
+          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** загрузите \`custos-$VERSION.zip\` на сайт в разделе «Обновления» как есть, не распаковывая.
+
+          Checksums / контрольные суммы: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet. / Файлы для Windows пока без цифровой подписи.
+          EOF
+          else
+            title="CUSTOS Monitor $VERSION"
+            cat > ../notes.md <<EOF
+          **New site on Debian or Ubuntu:** \`install.sh\` installs everything, see the [README](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/README.md#quick-start). **On CloudPanel:** [server/INSTALL.en.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.en.md).
+          **Update:** \`bash install.sh --update\`, or unpack \`custos-server-$VERSION.zip\` over the installed site (keep the old \`server\` folder, it holds the settings and keys) and run \`bin/migrate.php\`.
+
+          **Новый сайт на Debian или Ubuntu:** всё ставит \`install.sh\`. **На CloudPanel:** [server/INSTALL.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.md). **Обновление:** \`bash install.sh --update\` или распаковать \`custos-server-$VERSION.zip\` поверх установленного сайта (старую папку \`server\` не удалять) и выполнить \`bin/migrate.php\`.
+
+          Checksums / контрольные суммы: \`SHA256SUMS.txt\`.
+          EOF
+          fi
+          # The list of changes starts at the previous release of the same part (tags exist for published ones only).
+          previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
+          args=(--draft --target "$GITHUB_SHA" --title "$title" --notes-file ../notes.md --generate-notes)
+          if [ -n "$previous" ]; then
+            args+=(--notes-start-tag "$previous")
+          fi
+          gh release create "$TAG" "${args[@]}" -- *
+          url=$(gh release view "$TAG" --json url --jq .url)
+          {
+            echo "### Draft $title is ready"
+            echo
+            echo "Open [Releases]($url), check the text and the files, then press **Publish release**. Until then only you see it."
+            echo
+            echo "Черновик готов: откройте страницу Releases, проверьте текст и файлы и нажмите **Publish release**. До этого его видите только вы."
+          } >> "$GITHUB_STEP_SUMMARY"

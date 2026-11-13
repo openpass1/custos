@@ -239,7 +239,8 @@ function Get-SevenZip {
     return $out
 }
 
-# Publishes the three programs with $ProgramVersion into $Folder, with 7z.dll and the notices, and signs them.
+# Publishes the three programs with $ProgramVersion into $Folder, with 7z.dll, the notices and the GPL text (LICENSE.txt),
+# and signs them.
 function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $SevenZipFolder) {
     New-Item -ItemType Directory -Path $Folder -Force | Out-Null
     foreach ($program in $Programs) {
@@ -250,6 +251,7 @@ function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $
     Copy-Item (Join-Path $SevenZipFolder '7z.dll') $Folder
     Copy-Item (Join-Path $SevenZipFolder 'License.txt') (Join-Path $Folder '7-Zip-License.txt')
     Copy-Item (Join-Path $Root 'THIRD-PARTY-NOTICES.txt') $Folder
+    Copy-Item (Join-Path $Root '..\LICENSE') (Join-Path $Folder 'LICENSE.txt')
     Invoke-Sign ($OwnFiles | ForEach-Object { Join-Path $Folder $_ })
 }
 
