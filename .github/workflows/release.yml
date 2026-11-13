@@ -219,8 +219,9 @@ jobs:
           **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place, tasks and settings stay.
           **Update through the monitoring site:** upload \`custos-$VERSION.zip\` on the site under Updates, as it is, without unpacking.
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/helper/README.md).
+          **Cloud drives:** Google Drive works as it is. Yandex Disk and Dropbox need a free application of your own, registered with the service: [steps](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.md#приложения-custos-у-сервисов) (in Russian).
 
-          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** загрузите \`custos-$VERSION.zip\` на сайт в разделе «Обновления» как есть, не распаковывая.
+          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** загрузите \`custos-$VERSION.zip\` на сайт в разделе «Обновления» как есть, не распаковывая. **Облачные диски:** Google Диск работает сразу, для Яндекс Диска и Dropbox нужно своё бесплатное приложение, см. ссылку выше.
 
           Checksums / контрольные суммы: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet. / Файлы для Windows пока без цифровой подписи.
           EOF

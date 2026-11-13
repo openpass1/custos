@@ -30,6 +30,9 @@ shows every computer in one place, warns when something goes wrong and lets you 
   network share with its own account, a USB disk found by its volume label, SFTP, FTP and FTPS, WebDAV, S3 (with
   Object Lock against deletion), Google Drive, Yandex Disk and Dropbox. One task can write to several destinations at
   once.
+- Google Drive works in the released program as it is. For Yandex Disk and Dropbox, register a free application of
+  your own with the service and enter it under Settings → Cloud drives → Own applications…
+  ([steps, in Russian](client/README.md#приложения-custos-у-сервисов)).
 - 7z or ZIP archives with AES-256 encryption, 7z volumes, verification of new and stored copies.
 - Retention by count, by age or grandfather-father-son (GFS). A set is deleted only as a whole, never after a failed
   run, and the last good full copy is always kept.
