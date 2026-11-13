@@ -335,29 +335,130 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     {
         foreach (var task in request.Tasks)
         {
+            // %USERPROFILE% and the like refer to whoever made the task (section 6.2). A task from a file keeps that
+            // person while their profile is on this computer; on a reinstalled one it is gone, and whoever imports
+            // takes their place.
+            if (request.KeepIds && task.ProfileSid is { } profile && !ProfileVariables.HasProfile(profile))
+            {
+                task.ProfileSid = null;
+            }
+
             task.ProfileSid ??= sid;
+        }
+
+        if (request.KeepIds && request.CloudApps is { } apps)
+        {
+            TakeCloudApps(apps);
         }
 
         List<TaskChange> changes;
         try
         {
-            changes = _config.Import(request.Tasks, [.. request.Credentials.Select(c => (c.Credential, c.Password))], "local:" + user, DateTimeOffset.UtcNow);
+            changes = _config.Import(request.Tasks, [.. request.Credentials.Select(c => (c.Credential, c.Password))], "local:" + user, DateTimeOffset.UtcNow,
+                keepIds: request.KeepIds);
         }
         catch (ConfigException ex)
         {
             throw Refused(ex);
         }
 
+        foreach (var credential in request.Credentials)
+        {
+            Core.Cloud.OAuthTokens.Forget(credential.Credential.Id);
+        }
+
         var now = DateTimeOffset.UtcNow;
         foreach (var change in changes)
         {
-            SetLastSlot(change.Saved.Id, now);
+            if (change.ScheduleReset)
+            {
+                SetLastSlot(change.Saved.Id, now);
+            }
+
             NoteConfigChange(change.Saved);
         }
 
-        Log(LogLineLevels.Info, Messages.Format(Messages.TasksImportedBy, changes.Count, user));
+        Log(LogLineLevels.Info, Messages.Format(request.KeepIds ? Messages.TasksLoadedBy : Messages.TasksImportedBy, changes.Count, user));
         PublishSnapshot();
+        _scheduleWake.Release();
         return OkResult.Instance;
+    }
+
+    /// <summary>
+    /// The file of exported tasks (section 9a). With a password, the secrets of their accounts go in encrypted with it:
+    /// this is the only way a password stored here ever leaves the service, so only administrators may ask.
+    /// </summary>
+    public TasksExportResult ExportTasks(TasksExportRequest request, string user)
+    {
+        var all = _config.GetTasks();
+        var tasks = request.TaskIds.Count == 0 ? all : [.. all.Where(t => request.TaskIds.Any(id => SameId(id, t.Id)))];
+        if (tasks.Count == 0)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.ExportNoTasks);
+        }
+
+        var unreadable = new List<string>();
+        string? Secret(string credentialId)
+        {
+            try
+            {
+                return _config.GetPassword(credentialId);
+            }
+            catch (ConfigException)
+            {
+                unreadable.Add(_config.GetCredential(credentialId)?.DisplayName ?? credentialId);
+                return null;
+            }
+        }
+
+        Core.Transfer.ExportFile file;
+        try
+        {
+            bool secrets = request.Password is not null;
+            file = Core.Transfer.TaskExport.Create(tasks, _config.GetCredentials(), secrets ? Secret : null, secrets ? _config.GetCloudApps() : null,
+                request.Password, Environment.MachineName, DateTimeOffset.UtcNow);
+        }
+        catch (Core.Transfer.ExportException ex)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, ex.Message);
+        }
+
+        Log(LogLineLevels.Info, Messages.Format(request.Password is null ? Messages.TasksExportedBy : Messages.TasksExportedWithSecretsBy, tasks.Count, user));
+        return new TasksExportResult
+        {
+            Content = System.Text.Encoding.UTF8.GetString(Core.Transfer.TaskExport.Serialize(file)),
+            Tasks = tasks.Count,
+            Unreadable = unreadable,
+        };
+    }
+
+    /// <summary>Own applications of the cloud drives from a file: only for a service that has none set here.</summary>
+    private void TakeCloudApps(Core.Cloud.CloudAppsFile apps)
+    {
+        var own = _config.GetCloudApps();
+        bool changed = false;
+        if (own.Of(DestinationKinds.GDrive) is null && apps.Of(DestinationKinds.GDrive) is { } gdrive)
+        {
+            own.Gdrive = gdrive;
+            changed = true;
+        }
+
+        if (own.Of(DestinationKinds.YaDisk) is null && apps.Of(DestinationKinds.YaDisk) is { } yadisk)
+        {
+            own.Yadisk = yadisk;
+            changed = true;
+        }
+
+        if (own.Of(DestinationKinds.Dropbox) is null && apps.Of(DestinationKinds.Dropbox) is { } dropbox)
+        {
+            own.Dropbox = dropbox;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            _config.SaveCloudApps(own);
+        }
     }
 
     public Credential SaveCredential(CredentialInput input)

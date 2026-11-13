@@ -17,6 +17,8 @@ namespace Custos.Core.Json;
 [JsonSerializable(typeof(CredentialsFile))]
 [JsonSerializable(typeof(AgentSettings))]
 [JsonSerializable(typeof(Cloud.CloudAppsFile))]
+[JsonSerializable(typeof(Transfer.ExportFile))]
+[JsonSerializable(typeof(Transfer.ExportSecrets))]
 [JsonSerializable(typeof(JsonElement))]
 public sealed partial class ConfigJsonContext : JsonSerializerContext;
 

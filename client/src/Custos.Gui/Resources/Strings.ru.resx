@@ -2328,4 +2328,144 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="RestoreStoreNone" xml:space="preserve">
     <value>не указано</value>
   </data>
+  <data name="ToolImportFile" xml:space="preserve">
+    <value>Импорт заданий из файла…</value>
+  </data>
+  <data name="ToolExportFile" xml:space="preserve">
+    <value>Экспорт заданий в файл…</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>Экспорт заданий</value>
+  </data>
+  <data name="ExportTasksHeading" xml:space="preserve">
+    <value>Какие задания выгрузить в файл:</value>
+  </data>
+  <data name="ExportCheckAll" xml:space="preserve">
+    <value>Отметить все</value>
+  </data>
+  <data name="ExportCheckNone" xml:space="preserve">
+    <value>Снять все</value>
+  </data>
+  <data name="ExportChosen" xml:space="preserve">
+    <value>Выбрано: {0} из {1}</value>
+  </data>
+  <data name="ExportSecretsGroup" xml:space="preserve">
+    <value>Пароли и ключи</value>
+  </data>
+  <data name="ExportIncludeSecrets" xml:space="preserve">
+    <value>Включить в файл пароли и ключи, зашифровав их паролем экспорта</value>
+  </data>
+  <data name="ExportPassword" xml:space="preserve">
+    <value>Пароль экспорта:</value>
+  </data>
+  <data name="ExportSecretsCount" xml:space="preserve">
+    <value>В выбранных заданиях: паролей — {0}, SSH-ключей — {1}, облачных аккаунтов — {2}.</value>
+  </data>
+  <data name="ExportNoSecretsNote" xml:space="preserve">
+    <value>Без этой отметки паролей в файле нет, его можно хранить где угодно. При импорте пароли учётных записей и пароль архивов придётся ввести заново, SSH-ключи создать заново, облачные аккаунты подключить заново. Запишите пароль архивов: без него уже сделанные копии не открыть.</value>
+  </data>
+  <data name="ExportSecretsNote" xml:space="preserve">
+    <value>Пароли учётных записей, пароли архивов, SSH-ключи и токены облачных аккаунтов попадут в файл в зашифрованном виде (AES-256). Без пароля экспорта их не прочитает никто, в том числе CUSTOS: запомните или запишите его. Храните файл не на этом компьютере, например на флешке или в сетевой папке.</value>
+  </data>
+  <data name="ExportSave" xml:space="preserve">
+    <value>Сохранить…</value>
+  </data>
+  <data name="ExportFilter" xml:space="preserve">
+    <value>Задания CUSTOS (*.json)|*.json|Все файлы|*.*</value>
+  </data>
+  <data name="ExportNothingChosen" xml:space="preserve">
+    <value>Отметьте хотя бы одно задание.</value>
+  </data>
+  <data name="ExportDone" xml:space="preserve">
+    <value>Сохранено заданий без паролей: {0}.
+
+Файл: {1}</value>
+  </data>
+  <data name="ExportDoneSecrets" xml:space="preserve">
+    <value>Сохранено заданий вместе с паролями и ключами: {0}.
+
+Файл: {1}
+
+Сохраните пароль экспорта: без него пароли из файла не прочитать.</value>
+  </data>
+  <data name="ExportUnreadable" xml:space="preserve">
+    <value>Эти пароли не удалось прочитать на этом компьютере, в файл они не попали: {0}</value>
+  </data>
+  <data name="ExportCannotWrite" xml:space="preserve">
+    <value>Не удалось записать файл: {0}</value>
+  </data>
+  <data name="ImportFileTitle" xml:space="preserve">
+    <value>Импорт заданий из файла</value>
+  </data>
+  <data name="ImportFileLabel" xml:space="preserve">
+    <value>Файл:</value>
+  </data>
+  <data name="ImportFileNote" xml:space="preserve">
+    <value>Файл, сохранённый командой «Экспорт заданий в файл…» на этом или другом компьютере. Задания сохраняют свои идентификаторы: «Восстановить» найдёт копии, которые они сделали раньше, а хранение продолжит удалять старые по своим правилам.</value>
+  </data>
+  <data name="ImportFileFrom" xml:space="preserve">
+    <value>Выгружен с компьютера {0} {1}, CUSTOS {2}.</value>
+  </data>
+  <data name="ImportFileNoSecrets" xml:space="preserve">
+    <value>Паролей и ключей в файле нет.</value>
+  </data>
+  <data name="ImportFileHasSecrets" xml:space="preserve">
+    <value>В файле есть пароли и ключи. Чтобы взять их, введите пароль экспорта:</value>
+  </data>
+  <data name="ImportFileOpen" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="ImportFileOpened" xml:space="preserve">
+    <value>Пароли и ключи из файла открыты.</value>
+  </data>
+  <data name="ImportFileFound" xml:space="preserve">
+    <value>Заданий в файле: {0}</value>
+  </data>
+  <data name="ImportFileCannotRead" xml:space="preserve">
+    <value>Не удалось прочитать файл: {0}</value>
+  </data>
+  <data name="ColumnEnabled" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="ColumnHere" xml:space="preserve">
+    <value>На компьютере</value>
+  </data>
+  <data name="ImportHereReplaced" xml:space="preserve">
+    <value>есть, будет заменено</value>
+  </data>
+  <data name="RemarkReplaces" xml:space="preserve">
+    <value>Это задание уже есть на компьютере («{0}»): задание из файла заменит его. Снимите отметку, чтобы оставить своё.</value>
+  </data>
+  <data name="RemarkPasswordMissing" xml:space="preserve">
+    <value>Пароля учётной записи {0} в файле нет: введите его ниже. Если оставить поле пустым, задание придёт отключённым.</value>
+  </data>
+  <data name="RemarkArchivePasswordMissing" xml:space="preserve">
+    <value>Пароля архивов в файле нет: введите его ниже. Без него уже сделанные архивы не открыть. Если оставить поле пустым, задание придёт отключённым.</value>
+  </data>
+  <data name="RemarkSshKeyMissing" xml:space="preserve">
+    <value>SSH-ключа {0} в файле нет: задание придёт отключённым. Создайте новый ключ («Изменить» → «Источники» → Linux-сервер → «Создать новый ключ»), добавьте его строку на сервер и включите задание.</value>
+  </data>
+  <data name="RemarkCloudMissing" xml:space="preserve">
+    <value>Аккаунт {0} на этом компьютере не подключён: задание придёт отключённым. Подключите его заново (Настройки → список учётных записей → «Подключить заново…») и включите задание.</value>
+  </data>
+  <data name="ImportFileAccounts" xml:space="preserve">
+    <value>Пароли, которых нет в файле. Введите каждый один раз; задание, у которого пароль останется пустым, придёт отключённым:</value>
+  </data>
+  <data name="ImportFileSecretsNotOpened" xml:space="preserve">
+    <value>В файле есть пароли и ключи, но они не открыты. Импортировать без них?
+
+Тогда пароли вводятся здесь, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.</value>
+  </data>
+  <data name="ImportFileDone" xml:space="preserve">
+    <value>Импортировано заданий: {0}.</value>
+  </data>
+  <data name="ImportFileSwitchedOff" xml:space="preserve">
+    <value>Отключены, пока не будет добавлено недостающее: {0}. Потом включите их в редакторе.</value>
+  </data>
+  <data name="RemoteKeyNotHere" xml:space="preserve">
+    <value>{0}: ключа нет на этом компьютере (задание перенесено без ключей). Создайте новый ключ и добавьте его строку на сервер.</value>
+  </data>
+  <data name="RemoteCreateNewKey" xml:space="preserve">
+    <value>Создать новый ключ</value>
+  </data>
 </root>

@@ -1674,4 +1674,40 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="CloudAppsSaved" xml:space="preserve">
     <value>The applications of CUSTOS at the cloud drives were changed by {0}.</value>
   </data>
+  <data name="ExportNotAFile" xml:space="preserve">
+    <value>This is not a file of CUSTOS tasks. Choose a file saved with «Export tasks to a file…».</value>
+  </data>
+  <data name="ExportNewerVersion" xml:space="preserve">
+    <value>The file was made by a newer CUSTOS (format {0}). Update CUSTOS on this computer first.</value>
+  </data>
+  <data name="ExportDamaged" xml:space="preserve">
+    <value>The file is damaged: {0}</value>
+  </data>
+  <data name="ExportUnknownAccount" xml:space="preserve">
+    <value>the task «{0}» refers to an account that is not in the file</value>
+  </data>
+  <data name="ExportNoSecrets" xml:space="preserve">
+    <value>The file has no passwords or keys.</value>
+  </data>
+  <data name="ExportWrongPassword" xml:space="preserve">
+    <value>Wrong export password, or the file was changed.</value>
+  </data>
+  <data name="ExportPasswordTooShort" xml:space="preserve">
+    <value>The export password must be at least {0} characters long.</value>
+  </data>
+  <data name="ExportNoTasks" xml:space="preserve">
+    <value>There are no tasks to export.</value>
+  </data>
+  <data name="TasksExportedBy" xml:space="preserve">
+    <value>Tasks exported to a file without passwords: {0} ({1}).</value>
+  </data>
+  <data name="TasksExportedWithSecretsBy" xml:space="preserve">
+    <value>Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).</value>
+  </data>
+  <data name="TasksLoadedBy" xml:space="preserve">
+    <value>Tasks imported from a CUSTOS file: {0} ({1}).</value>
+  </data>
+  <data name="ExportNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may export tasks.</value>
+  </data>
 </root>

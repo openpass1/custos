@@ -2269,4 +2269,136 @@ static partial class Strings
 
     /// <summary>not chosen</summary>
     public static string RestoreStoreNone => Get(nameof(RestoreStoreNone));
+
+    /// <summary>Import tasks from a file…</summary>
+    public static string ToolImportFile => Get(nameof(ToolImportFile));
+
+    /// <summary>Export tasks to a file…</summary>
+    public static string ToolExportFile => Get(nameof(ToolExportFile));
+
+    /// <summary>Export tasks</summary>
+    public static string ExportTitle => Get(nameof(ExportTitle));
+
+    /// <summary>Tasks to put into the file:</summary>
+    public static string ExportTasksHeading => Get(nameof(ExportTasksHeading));
+
+    /// <summary>Tick all</summary>
+    public static string ExportCheckAll => Get(nameof(ExportCheckAll));
+
+    /// <summary>Untick all</summary>
+    public static string ExportCheckNone => Get(nameof(ExportCheckNone));
+
+    /// <summary>Chosen: {0} of {1}</summary>
+    public static string ExportChosen => Get(nameof(ExportChosen));
+
+    /// <summary>Passwords and keys</summary>
+    public static string ExportSecretsGroup => Get(nameof(ExportSecretsGroup));
+
+    /// <summary>Put passwords and keys into the file, encrypted with an export password</summary>
+    public static string ExportIncludeSecrets => Get(nameof(ExportIncludeSecrets));
+
+    /// <summary>Export password:</summary>
+    public static string ExportPassword => Get(nameof(ExportPassword));
+
+    /// <summary>The chosen tasks use: passwords {0}, SSH keys {1}, cloud accounts {2}.</summary>
+    public static string ExportSecretsCount => Get(nameof(ExportSecretsCount));
+
+    /// <summary>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts ...</summary>
+    public static string ExportNoSecretsNote => Get(nameof(ExportNoSecretsNote));
+
+    /// <summary>Passwords of accounts, archive passwords, SSH keys and tokens of cloud accounts go into the file encrypted ...</summary>
+    public static string ExportSecretsNote => Get(nameof(ExportSecretsNote));
+
+    /// <summary>Save…</summary>
+    public static string ExportSave => Get(nameof(ExportSave));
+
+    /// <summary>CUSTOS tasks (*.json)|*.json|All files|*.*</summary>
+    public static string ExportFilter => Get(nameof(ExportFilter));
+
+    /// <summary>Tick at least one task.</summary>
+    public static string ExportNothingChosen => Get(nameof(ExportNothingChosen));
+
+    /// <summary>Tasks saved without passwords: {0}.</summary>
+    public static string ExportDone => Get(nameof(ExportDone));
+
+    /// <summary>Tasks saved with passwords and keys: {0}.</summary>
+    public static string ExportDoneSecrets => Get(nameof(ExportDoneSecrets));
+
+    /// <summary>These passwords could not be read on this computer and are not in the file: {0}</summary>
+    public static string ExportUnreadable => Get(nameof(ExportUnreadable));
+
+    /// <summary>Cannot write the file: {0}</summary>
+    public static string ExportCannotWrite => Get(nameof(ExportCannotWrite));
+
+    /// <summary>Import tasks from a file</summary>
+    public static string ImportFileTitle => Get(nameof(ImportFileTitle));
+
+    /// <summary>File:</summary>
+    public static string ImportFileLabel => Get(nameof(ImportFileLabel));
+
+    /// <summary>A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore...</summary>
+    public static string ImportFileNote => Get(nameof(ImportFileNote));
+
+    /// <summary>Exported from {0} on {1}, CUSTOS {2}.</summary>
+    public static string ImportFileFrom => Get(nameof(ImportFileFrom));
+
+    /// <summary>There are no passwords or keys in the file.</summary>
+    public static string ImportFileNoSecrets => Get(nameof(ImportFileNoSecrets));
+
+    /// <summary>The file has passwords and keys. To use them, enter the export password:</summary>
+    public static string ImportFileHasSecrets => Get(nameof(ImportFileHasSecrets));
+
+    /// <summary>Open</summary>
+    public static string ImportFileOpen => Get(nameof(ImportFileOpen));
+
+    /// <summary>Passwords and keys of the file are open.</summary>
+    public static string ImportFileOpened => Get(nameof(ImportFileOpened));
+
+    /// <summary>Tasks in the file: {0}</summary>
+    public static string ImportFileFound => Get(nameof(ImportFileFound));
+
+    /// <summary>Cannot read the file: {0}</summary>
+    public static string ImportFileCannotRead => Get(nameof(ImportFileCannotRead));
+
+    /// <summary>On</summary>
+    public static string ColumnEnabled => Get(nameof(ColumnEnabled));
+
+    /// <summary>On this computer</summary>
+    public static string ColumnHere => Get(nameof(ColumnHere));
+
+    /// <summary>yes, replaced</summary>
+    public static string ImportHereReplaced => Get(nameof(ImportHereReplaced));
+
+    /// <summary>This computer has this task already («{0}»): the one from the file replaces it. Untick the task to keep the...</summary>
+    public static string RemarkReplaces => Get(nameof(RemarkReplaces));
+
+    /// <summary>The password of {0} is not in the file: enter it below. Left empty, the task comes switched off.</summary>
+    public static string RemarkPasswordMissing => Get(nameof(RemarkPasswordMissing));
+
+    /// <summary>The archive password is not in the file: enter it below. Without it the archives made before cannot be open...</summary>
+    public static string RemarkArchivePasswordMissing => Get(nameof(RemarkArchivePasswordMissing));
+
+    /// <summary>The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the L...</summary>
+    public static string RemarkSshKeyMissing => Get(nameof(RemarkSshKeyMissing));
+
+    /// <summary>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings ...</summary>
+    public static string RemarkCloudMissing => Get(nameof(RemarkCloudMissing));
+
+    /// <summary>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</summary>
+    public static string ImportFileAccounts => Get(nameof(ImportFileAccounts));
+
+    /// <summary>The file has passwords and keys, but they are not open. Import without them?</summary>
+    public static string ImportFileSecretsNotOpened => Get(nameof(ImportFileSecretsNotOpened));
+
+    /// <summary>Tasks imported: {0}.</summary>
+    public static string ImportFileDone => Get(nameof(ImportFileDone));
+
+    /// <summary>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</summary>
+    public static string ImportFileSwitchedOff => Get(nameof(ImportFileSwitchedOff));
+
+    /// <summary>{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line o...</summary>
+    public static string RemoteKeyNotHere => Get(nameof(RemoteKeyNotHere));
+
+    /// <summary>Create new key</summary>
+    public static string RemoteCreateNewKey => Get(nameof(RemoteCreateNewKey));
 }

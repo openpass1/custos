@@ -567,3 +567,16 @@ CloudNotAllowed	Only an administrator of this computer can connect accounts of c
 CloudBadRedirect	The address the sign-in returns to must be on this computer (http://127.0.0.1 or http://localhost).	Адрес, на который возвращается вход, должен быть на этом компьютере (http://127.0.0.1 или http://localhost).
 CloudConnected	The account {0} of {1} was connected by {2}.	Аккаунт {0} ({1}) подключил {2}.
 CloudAppsSaved	The applications of CUSTOS at the cloud drives were changed by {0}.	Приложения CUSTOS у облачных дисков изменил {0}.
+# Export and import of tasks (section 9a)
+ExportNotAFile	This is not a file of CUSTOS tasks. Choose a file saved with «Export tasks to a file…».	Это не файл заданий CUSTOS. Выберите файл, сохранённый командой «Экспорт заданий в файл…».
+ExportNewerVersion	The file was made by a newer CUSTOS (format {0}). Update CUSTOS on this computer first.	Файл сделан более новой версией CUSTOS (формат {0}). Сначала обновите CUSTOS на этом компьютере.
+ExportDamaged	The file is damaged: {0}	Файл повреждён: {0}
+ExportUnknownAccount	the task «{0}» refers to an account that is not in the file	задание «{0}» ссылается на учётную запись, которой нет в файле
+ExportNoSecrets	The file has no passwords or keys.	В файле нет паролей и ключей.
+ExportWrongPassword	Wrong export password, or the file was changed.	Неверный пароль экспорта, или файл был изменён.
+ExportPasswordTooShort	The export password must be at least {0} characters long.	Пароль экспорта должен быть не короче {0} символов.
+ExportNoTasks	There are no tasks to export.	Нет заданий для экспорта.
+TasksExportedBy	Tasks exported to a file without passwords: {0} ({1}).	Задания выгружены в файл без паролей: {0} ({1}).
+TasksExportedWithSecretsBy	Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).	Задания выгружены в файл вместе с паролями и ключами, зашифрованными паролем экспорта: {0} ({1}).
+TasksLoadedBy	Tasks imported from a CUSTOS file: {0} ({1}).	Импортировано заданий из файла CUSTOS: {0} ({1}).
+ExportNotAllowed	Only administrators of this computer may export tasks.	Выгружать задания могут только администраторы этого компьютера.

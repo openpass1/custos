@@ -51,6 +51,9 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.CloudFinish,
         PipeProtocol.Methods.CloudAppsGet,
         PipeProtocol.Methods.CloudAppsSave,
+
+        // The passwords stored here leave the service only this way, encrypted with a password of the person's choice.
+        PipeProtocol.Methods.TasksExport,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -346,6 +349,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
                     : method is PipeProtocol.Methods.ServerConnect or PipeProtocol.Methods.ServerReset ? Messages.MonitorNotAllowed
                     : method.StartsWith("cloud.", StringComparison.Ordinal) ? Messages.CloudNotAllowed
+                    : method is PipeProtocol.Methods.TasksExport ? Messages.ExportNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
@@ -415,6 +419,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.TasksImport =>
                 Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user, identity.Sid)),
+            PipeProtocol.Methods.TasksExport =>
+                PipeMessage.Success(id, agent.ExportTasks(request.GetData(json.TasksExportRequest), user), json.TasksExportResult),
             PipeProtocol.Methods.CredentialSave =>
                 PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.SaveCredential(request.GetData(json.CredentialInput)) }, json.CredentialSaveResult),
             PipeProtocol.Methods.CredentialDelete =>

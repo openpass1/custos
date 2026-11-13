@@ -266,10 +266,19 @@ internal sealed class RemoteSourceDialog : DialogForm
     {
         _credentialId = credential.Id;
         _publicKey = credential.PublicKey;
-        _key.Text = Strings.Format(Strings.RemoteKeyIs, credential.DisplayName);
-        _createKey.Visible = false;
+
+        // A task imported from a file without keys keeps the account, but the private key stayed on the old computer:
+        // a new key is made here, and its line goes to the server.
+        bool missing = !credential.HasSecret;
+        _key.Text = Strings.Format(missing ? Strings.RemoteKeyNotHere : Strings.RemoteKeyIs, credential.DisplayName);
+        _key.ForeColor = missing ? Glyphs.WarningText : SystemColors.ControlText;
+        _createKey.Text = Strings.RemoteCreateNewKey;
+        _createKey.Visible = missing;
         UpdateBlock();
     }
+
+    /// <summary>Whether «Create new key» is offered (window tests).</summary>
+    internal bool OffersNewKey => _createKey.Visible;
 
     private static TextBox Lines(int height) => new()
     {

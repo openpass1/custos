@@ -2328,4 +2328,144 @@ Save the destination as it is all the same?</value>
   <data name="RestoreStoreNone" xml:space="preserve">
     <value>not chosen</value>
   </data>
+  <data name="ToolImportFile" xml:space="preserve">
+    <value>Import tasks from a file…</value>
+  </data>
+  <data name="ToolExportFile" xml:space="preserve">
+    <value>Export tasks to a file…</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>Export tasks</value>
+  </data>
+  <data name="ExportTasksHeading" xml:space="preserve">
+    <value>Tasks to put into the file:</value>
+  </data>
+  <data name="ExportCheckAll" xml:space="preserve">
+    <value>Tick all</value>
+  </data>
+  <data name="ExportCheckNone" xml:space="preserve">
+    <value>Untick all</value>
+  </data>
+  <data name="ExportChosen" xml:space="preserve">
+    <value>Chosen: {0} of {1}</value>
+  </data>
+  <data name="ExportSecretsGroup" xml:space="preserve">
+    <value>Passwords and keys</value>
+  </data>
+  <data name="ExportIncludeSecrets" xml:space="preserve">
+    <value>Put passwords and keys into the file, encrypted with an export password</value>
+  </data>
+  <data name="ExportPassword" xml:space="preserve">
+    <value>Export password:</value>
+  </data>
+  <data name="ExportSecretsCount" xml:space="preserve">
+    <value>The chosen tasks use: passwords {0}, SSH keys {1}, cloud accounts {2}.</value>
+  </data>
+  <data name="ExportNoSecretsNote" xml:space="preserve">
+    <value>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts and the archive password are typed again, SSH keys are made again and cloud accounts connected again. Write the archive password down: without it the backups made before cannot be opened.</value>
+  </data>
+  <data name="ExportSecretsNote" xml:space="preserve">
+    <value>Passwords of accounts, archive passwords, SSH keys and tokens of cloud accounts go into the file encrypted (AES-256). Without the export password nobody can read them, CUSTOS included: remember it or write it down. Keep the file away from this computer, for example on a USB stick or a network share.</value>
+  </data>
+  <data name="ExportSave" xml:space="preserve">
+    <value>Save…</value>
+  </data>
+  <data name="ExportFilter" xml:space="preserve">
+    <value>CUSTOS tasks (*.json)|*.json|All files|*.*</value>
+  </data>
+  <data name="ExportNothingChosen" xml:space="preserve">
+    <value>Tick at least one task.</value>
+  </data>
+  <data name="ExportDone" xml:space="preserve">
+    <value>Tasks saved without passwords: {0}.
+
+File: {1}</value>
+  </data>
+  <data name="ExportDoneSecrets" xml:space="preserve">
+    <value>Tasks saved with passwords and keys: {0}.
+
+File: {1}
+
+Keep the export password: without it the passwords in the file cannot be read.</value>
+  </data>
+  <data name="ExportUnreadable" xml:space="preserve">
+    <value>These passwords could not be read on this computer and are not in the file: {0}</value>
+  </data>
+  <data name="ExportCannotWrite" xml:space="preserve">
+    <value>Cannot write the file: {0}</value>
+  </data>
+  <data name="ImportFileTitle" xml:space="preserve">
+    <value>Import tasks from a file</value>
+  </data>
+  <data name="ImportFileLabel" xml:space="preserve">
+    <value>File:</value>
+  </data>
+  <data name="ImportFileNote" xml:space="preserve">
+    <value>A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore» finds the backups they made before, and retention goes on deleting old ones by its rules.</value>
+  </data>
+  <data name="ImportFileFrom" xml:space="preserve">
+    <value>Exported from {0} on {1}, CUSTOS {2}.</value>
+  </data>
+  <data name="ImportFileNoSecrets" xml:space="preserve">
+    <value>There are no passwords or keys in the file.</value>
+  </data>
+  <data name="ImportFileHasSecrets" xml:space="preserve">
+    <value>The file has passwords and keys. To use them, enter the export password:</value>
+  </data>
+  <data name="ImportFileOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="ImportFileOpened" xml:space="preserve">
+    <value>Passwords and keys of the file are open.</value>
+  </data>
+  <data name="ImportFileFound" xml:space="preserve">
+    <value>Tasks in the file: {0}</value>
+  </data>
+  <data name="ImportFileCannotRead" xml:space="preserve">
+    <value>Cannot read the file: {0}</value>
+  </data>
+  <data name="ColumnEnabled" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="ColumnHere" xml:space="preserve">
+    <value>On this computer</value>
+  </data>
+  <data name="ImportHereReplaced" xml:space="preserve">
+    <value>yes, replaced</value>
+  </data>
+  <data name="RemarkReplaces" xml:space="preserve">
+    <value>This computer has this task already («{0}»): the one from the file replaces it. Untick the task to keep the one here.</value>
+  </data>
+  <data name="RemarkPasswordMissing" xml:space="preserve">
+    <value>The password of {0} is not in the file: enter it below. Left empty, the task comes switched off.</value>
+  </data>
+  <data name="RemarkArchivePasswordMissing" xml:space="preserve">
+    <value>The archive password is not in the file: enter it below. Without it the archives made before cannot be opened. Left empty, the task comes switched off.</value>
+  </data>
+  <data name="RemarkSshKeyMissing" xml:space="preserve">
+    <value>The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the Linux server → «Create new key»), add its line on the server and switch the task on.</value>
+  </data>
+  <data name="RemarkCloudMissing" xml:space="preserve">
+    <value>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings → the list of accounts → «Connect again…») and switch the task on.</value>
+  </data>
+  <data name="ImportFileAccounts" xml:space="preserve">
+    <value>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</value>
+  </data>
+  <data name="ImportFileSecretsNotOpened" xml:space="preserve">
+    <value>The file has passwords and keys, but they are not open. Import without them?
+
+Then the passwords are typed here, and the tasks with SSH keys or cloud accounts come switched off.</value>
+  </data>
+  <data name="ImportFileDone" xml:space="preserve">
+    <value>Tasks imported: {0}.</value>
+  </data>
+  <data name="ImportFileSwitchedOff" xml:space="preserve">
+    <value>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</value>
+  </data>
+  <data name="RemoteKeyNotHere" xml:space="preserve">
+    <value>{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line on the server.</value>
+  </data>
+  <data name="RemoteCreateNewKey" xml:space="preserve">
+    <value>Create new key</value>
+  </data>
 </root>
