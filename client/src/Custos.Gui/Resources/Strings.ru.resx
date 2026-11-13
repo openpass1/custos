@@ -662,7 +662,8 @@
 Сетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.
 USB-диск ищется по метке тома, поэтому смена буквы диска не мешает.
 SFTP, FTP, FTPS, WebDAV — папка на сервере.
-S3 — бакет Amazon S3 или совместимого хранилища; умеет защищать копии от удаления (Object Lock).</value>
+S3 — бакет Amazon S3 или совместимого хранилища; умеет защищать копии от удаления (Object Lock).
+Google Диск, Яндекс Диск, Dropbox — папка в облачном аккаунте, аккаунт подключается через браузер.</value>
   </data>
   <data name="KindLocal" xml:space="preserve">
     <value>Локальная папка</value>
@@ -1155,7 +1156,7 @@ S3 — бакет Amazon S3 или совместимого хранилища; 
     <value>English</value>
   </data>
   <data name="SettingsAccounts" xml:space="preserve">
-    <value>Учётные записи для сетевых папок и серверов</value>
+    <value>Учётные записи сетевых папок, серверов и облачных дисков</value>
   </data>
   <data name="SettingsAccountsNote" xml:space="preserve">
     <value>Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.</value>
@@ -2154,5 +2155,177 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   </data>
   <data name="KeyFileFilter" xml:space="preserve">
     <value>Закрытые ключи|*.pem;*.key;id_*|Все файлы|*.*</value>
+  </data>
+  <data name="KindGDrive" xml:space="preserve">
+    <value>Google Диск</value>
+  </data>
+  <data name="KindYaDisk" xml:space="preserve">
+    <value>Яндекс Диск</value>
+  </data>
+  <data name="KindDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="AccountKindGDrive" xml:space="preserve">
+    <value>Google Диск</value>
+  </data>
+  <data name="AccountKindYaDisk" xml:space="preserve">
+    <value>Яндекс Диск</value>
+  </data>
+  <data name="AccountKindDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="CloudAppFolder" xml:space="preserve">
+    <value>Приложения/CUSTOS</value>
+  </data>
+  <data name="DestinationFolderInCloud" xml:space="preserve">
+    <value>Папка в «{0}»:</value>
+  </data>
+  <data name="DestinationFolderCloudHelp" xml:space="preserve">
+    <value>Папка внутри папки CUSTOS в аккаунте, например office/pc01. Пусто — сама папка CUSTOS. Доступ у CUSTOS только к этой папке, остальные файлы аккаунта ему недоступны.</value>
+  </data>
+  <data name="DestinationAccountHelpCloud" xml:space="preserve">
+    <value>Аккаунт сервиса подключается через браузер: нажмите «Подключить…», войдите и разрешите доступ. Пароль CUSTOS не видит: сервис выдаёт ему токен, который открывает только папку CUSTOS. Подключить аккаунт может только администратор и только на этом компьютере: сервер мониторинга может выбрать подключённый здесь аккаунт, но не добавить новый.</value>
+  </data>
+  <data name="ButtonConnectAccount" xml:space="preserve">
+    <value>Подключить…</value>
+  </data>
+  <data name="DestinationPartSize" xml:space="preserve">
+    <value>Размер части:</value>
+  </data>
+  <data name="DestinationPartUnit" xml:space="preserve">
+    <value>МБ (0 — одним файлом)</value>
+  </data>
+  <data name="DestinationPartHelp" xml:space="preserve">
+    <value>Архив больше этого размера пишется частями имя.zip.001, имя.zip.002 и т. д. 7-Zip открывает их как один архив, CUSTOS восстанавливает из них сам. Нужно там, где у сервиса есть предел размера файла: Яндекс Диск без подписки принимает файлы до 1 ГБ, поэтому у нового назначения на Яндекс Диске сразу стоит 900 МБ. 0 — архив одним файлом. Копию без сжатия это не касается.</value>
+  </data>
+  <data name="DestinationCloudWarning" xml:space="preserve">
+    <value>Облачный диск не должен быть единственной копией: тот, кто получит права администратора на этом компьютере (например, шифровальщик), сможет удалить копии и там.</value>
+  </data>
+  <data name="ErrorCloudAccountRequired" xml:space="preserve">
+    <value>Подключите аккаунт: нажмите «Подключить…».</value>
+  </data>
+  <data name="DestinationCloudPlainNote" xml:space="preserve">
+    <value>Копия без сжатия в {0}: каждый файл — это отдельные запросы, а сервис ограничивает их число, поэтому тысячи мелких файлов идут медленно. ZIP на странице «Архив» намного быстрее.</value>
+  </data>
+  <data name="CloudConnectTitle" xml:space="preserve">
+    <value>Подключение аккаунта: {0}</value>
+  </data>
+  <data name="CloudReconnectTitle" xml:space="preserve">
+    <value>Подключение заново: {0}</value>
+  </data>
+  <data name="CloudConnectSteps" xml:space="preserve">
+    <value>1. Нажмите «Открыть страницу входа». В браузере войдите в {0} и разрешите доступ приложению CUSTOS. Оно получит доступ только к папке «{1}», пароль от аккаунта CUSTOS не видит.
+2. Когда браузер вернётся, аккаунт подключится сам. Если этого не случилось (браузер на другом компьютере или сервис показал код), скопируйте код со страницы или весь адрес из адресной строки браузера, вставьте его ниже и нажмите «Подключить».</value>
+  </data>
+  <data name="CloudReconnectNote" xml:space="preserve">
+    <value>Задания сохранят этот аккаунт, обновится только доступ. Войдите в тот же аккаунт «{0}».</value>
+  </data>
+  <data name="CloudOpenPage" xml:space="preserve">
+    <value>Открыть страницу входа</value>
+  </data>
+  <data name="CloudCopyLink" xml:space="preserve">
+    <value>Скопировать ссылку</value>
+  </data>
+  <data name="CloudLinkCopied" xml:space="preserve">
+    <value>Ссылка скопирована: откройте её в браузере.</value>
+  </data>
+  <data name="CloudAnswer" xml:space="preserve">
+    <value>Код или адрес:</value>
+  </data>
+  <data name="CloudPasteTip" xml:space="preserve">
+    <value>Вставить из буфера обмена</value>
+  </data>
+  <data name="CloudConnectButton" xml:space="preserve">
+    <value>Подключить</value>
+  </data>
+  <data name="CloudPreparing" xml:space="preserve">
+    <value>Подготовка входа…</value>
+  </data>
+  <data name="CloudReady" xml:space="preserve">
+    <value>Ожидание входа в браузере.</value>
+  </data>
+  <data name="CloudReadyCode" xml:space="preserve">
+    <value>После входа сервис покажет код: скопируйте его и вставьте ниже.</value>
+  </data>
+  <data name="CloudReadyAddress" xml:space="preserve">
+    <value>После входа браузер покажет страницу с ошибкой, так и должно быть. Скопируйте весь адрес из адресной строки и вставьте его ниже.</value>
+  </data>
+  <data name="CloudConnecting" xml:space="preserve">
+    <value>Подключение аккаунта…</value>
+  </data>
+  <data name="CloudAnswerRequired" xml:space="preserve">
+    <value>Вставьте код или адрес из браузера.</value>
+  </data>
+  <data name="CloudBrowserDone" xml:space="preserve">
+    <value>CUSTOS получил ответ. Эту вкладку можно закрыть и вернуться в программу.</value>
+  </data>
+  <data name="CloudTryAgain" xml:space="preserve">
+    <value>Откройте страницу входа ещё раз.</value>
+  </data>
+  <data name="CloudBrowserFailed" xml:space="preserve">
+    <value>Не удалось открыть браузер: {0}. Скопируйте ссылку и откройте её сами.</value>
+  </data>
+  <data name="SettingsCloud" xml:space="preserve">
+    <value>Облачные диски</value>
+  </data>
+  <data name="SettingsCloudBuiltIn" xml:space="preserve">
+    <value>Встроенные приложения CUSTOS: {0}.</value>
+  </data>
+  <data name="SettingsCloudNone" xml:space="preserve">
+    <value>нет</value>
+  </data>
+  <data name="SettingsCloudNote" xml:space="preserve">
+    <value>Аккаунты облачных дисков подключаются в свойствах назначения или кнопкой «Подключить облачный диск…» ниже. Своё приложение нужно для сборки без встроенных или чтобы не зависеть от приложения проекта.</value>
+  </data>
+  <data name="SettingsCloudOwn" xml:space="preserve">
+    <value>Свои приложения…</value>
+  </data>
+  <data name="CloudAdminOnly" xml:space="preserve">
+    <value>Подключать облачные диски может только администратор.</value>
+  </data>
+  <data name="ButtonConnectCloud" xml:space="preserve">
+    <value>Подключить облачный диск…</value>
+  </data>
+  <data name="ButtonReconnect" xml:space="preserve">
+    <value>Подключить заново…</value>
+  </data>
+  <data name="CloudAppsTitle" xml:space="preserve">
+    <value>Свои приложения облачных дисков</value>
+  </data>
+  <data name="CloudAppsClientId" xml:space="preserve">
+    <value>Client ID:</value>
+  </data>
+  <data name="CloudAppsSecret" xml:space="preserve">
+    <value>Секрет клиента:</value>
+  </data>
+  <data name="CloudAppsNote" xml:space="preserve">
+    <value>Приложения, которые вы сами зарегистрировали у сервисов (раздел «Облачные диски» в README клиента). Они хранятся только на этом компьютере и на сервер мониторинга не уходят. Пусто — используется встроенное приложение. Аккаунт работает с тем приложением, через которое он подключён, пока оно здесь известно.</value>
+  </data>
+  <data name="CloudAppsBuiltIn" xml:space="preserve">
+    <value>встроенное приложение: есть</value>
+  </data>
+  <data name="CloudAppsNoBuiltIn" xml:space="preserve">
+    <value>встроенного приложения нет</value>
+  </data>
+  <data name="CloudAppsSecretNote" xml:space="preserve">
+    <value>Google нужен и секрет; Яндексу — если он есть у приложения; Dropbox секрет не нужен.</value>
+  </data>
+  <data name="ErrorCloudSecretRequired" xml:space="preserve">
+    <value>Для Google нужен секрет клиента вместе с Client ID.</value>
+  </data>
+  <data name="RestoreByStore" xml:space="preserve">
+    <value>Копии на сервере или в облаке:</value>
+  </data>
+  <data name="RestoreChooseStore" xml:space="preserve">
+    <value>Указать…</value>
+  </data>
+  <data name="RestoreStoreTitle" xml:space="preserve">
+    <value>Где искать копии</value>
+  </data>
+  <data name="RestoreStoreRequired" xml:space="preserve">
+    <value>Укажите сервер или облачный диск: нажмите «Указать…».</value>
+  </data>
+  <data name="RestoreStoreNone" xml:space="preserve">
+    <value>не указано</value>
   </data>
 </root>

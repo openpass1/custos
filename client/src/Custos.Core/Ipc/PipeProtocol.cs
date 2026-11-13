@@ -121,6 +121,20 @@ public static class PipeProtocol
 
         /// <summary>Forgets the monitoring server and its key (A.3). Administrators only.</summary>
         public const string ServerReset = "server.reset";
+
+        /// <summary>Administrators only, always. Starts connecting an account of a cloud drive (section 6.3):
+        /// <see cref="CloudBeginRequest"/> → <see cref="CloudBeginResult"/>, the page to open in the browser.</summary>
+        public const string CloudBegin = "cloud.begin";
+
+        /// <summary>Administrators only, always. What came back from the browser; the service trades it for tokens and
+        /// stores the account: <see cref="CloudFinishRequest"/> → <see cref="CredentialSaveResult"/>.</summary>
+        public const string CloudFinish = "cloud.finish";
+
+        /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="CloudAppsResult"/>.</summary>
+        public const string CloudAppsGet = "cloud.apps_get";
+
+        /// <summary>Administrators only, always. <see cref="CloudAppsSaveRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string CloudAppsSave = "cloud.apps_save";
     }
 
     /// <summary>Event names.</summary>

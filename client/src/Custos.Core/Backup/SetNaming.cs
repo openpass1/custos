@@ -88,7 +88,7 @@ public static class SetNaming
             return true;
         }
 
-        foreach (string extension in (string[])[".7z", ".zip", ".7z.001"])
+        foreach (string extension in (string[])[".7z", ".zip", ".7z.001", ".zip.001"])
         {
             if (taken.Contains(name + extension) || taken.Contains(name + extension + SetCatalog.PartialSuffix))
             {

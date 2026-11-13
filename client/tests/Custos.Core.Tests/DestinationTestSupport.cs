@@ -36,8 +36,24 @@ internal static class TestDestinations
     private static readonly Dictionary<string, string> Fingerprints = new(StringComparer.Ordinal);
     private static readonly HashSet<string> Buckets = new(StringComparer.Ordinal);
 
+    /// <summary>Cloud drives answered by the in-memory stand-ins of <see cref="FakeCloud"/>: they run in every build.</summary>
+    public const string GDrive = "gdrive-fake";
+    public const string YaDisk = "yadisk-fake";
+    public const string Dropbox = "dropbox-fake";
+
     /// <summary>Every kind, for theories.</summary>
-    public static TheoryData<string> All => [Local, Sftp, SftpKey, Ftp, Ftps, WebDav, WebDavs, S3];
+    public static TheoryData<string> All => [Local, Sftp, SftpKey, Ftp, Ftps, WebDav, WebDavs, S3, GDrive, YaDisk, Dropbox];
+
+    /// <summary>The cloud drives.</summary>
+    public static TheoryData<string> Clouds => [GDrive, YaDisk, Dropbox];
+
+    /// <summary>A fake drive of the kind.</summary>
+    public static FakeCloud FakeOf(string kind) => kind switch
+    {
+        GDrive => new FakeGoogleDrive(),
+        YaDisk => new FakeYandexDisk(),
+        _ => new FakeDropbox(),
+    };
 
     /// <summary>The kinds on servers.</summary>
     public static TheoryData<string> Remote => [Sftp, SftpKey, Ftp, Ftps, WebDav, WebDavs, S3];
@@ -77,6 +93,20 @@ internal static class TestDestinations
         if (kind == Local)
         {
             return new TaskDestination { Kind = DestinationKinds.Local, Path = temp.Combine(folder) };
+        }
+
+        if (kind is GDrive or YaDisk or Dropbox)
+        {
+            var cloud = FakeOf(kind);
+            var drive = new TaskDestination
+            {
+                Kind = kind switch { GDrive => DestinationKinds.GDrive, YaDisk => DestinationKinds.YaDisk, _ => DestinationKinds.Dropbox },
+                Path = "office/" + folder,
+                CredentialId = Guid.NewGuid().ToString(),
+            };
+            platform.CloudAccounts[drive.CredentialId] = cloud.Account();
+            platform.Clouds[drive.CredentialId] = cloud;
+            return drive;
         }
 
         string[] settings = Settings(kind);

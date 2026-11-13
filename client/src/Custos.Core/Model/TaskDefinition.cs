@@ -310,6 +310,10 @@ public sealed class TaskDestination
     /// <summary>S3: one of <see cref="ObjectLockModes"/>; null = <see cref="ObjectLockModes.Governance"/>.</summary>
     public string? ObjectLockMode { get; set; }
 
+    /// <summary>Cloud drives: an archive is written in parts of this many MB (<c>name.zip.001</c>, <c>.002</c> …), for
+    /// services that limit the size of one file (section 6.3); 0 = one file.</summary>
+    public int PartMb { get; set; }
+
     /// <summary>
     /// The server this destination trusts: the SSH key of an SFTP server ("SHA256:…") or the SHA-256 of a TLS
     /// certificate Windows does not trust by itself ("AB:CD:…", FTPS, WebDAV, S3). Set on this computer only, by

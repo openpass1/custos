@@ -23,6 +23,17 @@
     <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
+  <!-- Built-in cloud drive applications (stage 4b). The ids come from the environment of the build (GitHub Actions
+       variables and secrets of the repository), never from the repository itself; without them the client asks for
+       an own application in the settings. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="CustosGDriveClientId" Value="$(CUSTOS_GDRIVE_CLIENT_ID)" Condition="'$(CUSTOS_GDRIVE_CLIENT_ID)' != ''" />
+    <AssemblyMetadata Include="CustosGDriveClientSecret" Value="$(CUSTOS_GDRIVE_CLIENT_SECRET)" Condition="'$(CUSTOS_GDRIVE_CLIENT_SECRET)' != ''" />
+    <AssemblyMetadata Include="CustosYaDiskClientId" Value="$(CUSTOS_YADISK_CLIENT_ID)" Condition="'$(CUSTOS_YADISK_CLIENT_ID)' != ''" />
+    <AssemblyMetadata Include="CustosYaDiskClientSecret" Value="$(CUSTOS_YADISK_CLIENT_SECRET)" Condition="'$(CUSTOS_YADISK_CLIENT_SECRET)' != ''" />
+    <AssemblyMetadata Include="CustosDropboxClientId" Value="$(CUSTOS_DROPBOX_CLIENT_ID)" Condition="'$(CUSTOS_DROPBOX_CLIENT_ID)' != ''" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- custos-helper as it is in the repository: the wizard puts it into the install block (stage 2a). -->
     <EmbeddedResource Include="..\..\..\helper\custos-helper" LogicalName="Custos.Core.custos-helper" />

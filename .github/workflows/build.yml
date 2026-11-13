@@ -54,6 +54,12 @@ jobs:
         working-directory: client
         env:
           CUSTOS_REQUIRE_7Z: '1'
+          # Built-in cloud drive applications (client stage 4b): repository variables and secrets, empty when not set.
+          CUSTOS_GDRIVE_CLIENT_ID: ${{ vars.CUSTOS_GDRIVE_CLIENT_ID }}
+          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ secrets.CUSTOS_GDRIVE_CLIENT_SECRET }}
+          CUSTOS_YADISK_CLIENT_ID: ${{ vars.CUSTOS_YADISK_CLIENT_ID }}
+          CUSTOS_YADISK_CLIENT_SECRET: ${{ secrets.CUSTOS_YADISK_CLIENT_SECRET }}
+          CUSTOS_DROPBOX_CLIENT_ID: ${{ vars.CUSTOS_DROPBOX_CLIENT_ID }}
         run: .\build.ps1 -Configuration Release -Version 0.4.${{ github.run_number }} -TestUpdateVersion 0.4.${{ github.run_number }}.1
 
       - name: Upload the installer

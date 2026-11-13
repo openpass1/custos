@@ -14,6 +14,7 @@ final class TaskFormTest extends TestCase
 {
     private const CRED = '11111111-1111-4111-8111-111111111111';
     private const ARCHIVE = '22222222-2222-4222-8222-222222222222';
+    private const CLOUD = '33333333-3333-4333-8333-333333333333';
 
     public function testFormOfATaskGivesTheSameTaskBack(): void
     {
@@ -127,6 +128,48 @@ final class TaskFormTest extends TestCase
         $this->assertContains('task_form.error.no_sources', array_column($form->errors, 'key'));
     }
 
+    public function testCloudDriveTakesOnlyAnAccountConnectedOnTheMachine(): void
+    {
+        $task = $this->task();
+        $post = self::formFor($task);
+        $post['destinations'][] = ['id' => '', 'kind' => 'yadisk', 'path' => '/office/pc01/', 'credential' => self::CLOUD, 'part_mb' => '900',
+                                   'speed_limit_kbps' => '0'];
+        $form = TaskForm::parse($task, $post, $this->credentials());
+        $this->assertSame([], $form->errors);
+        $cloud = $form->task()['destinations'][1];
+        $this->assertSame(['yadisk', 'office/pc01', 900, self::CLOUD], [$cloud['kind'], $cloud['path'], $cloud['part_mb'], $cloud['credential_id']]);
+        $this->assertSame([], $form->newCredentials);
+
+        // No account, a new one typed in, or an account of another service: connect it on the machine.
+        foreach (['', 'new', self::CRED] as $choice) {
+            $post['destinations'][1]['credential'] = $choice;
+            $post['destinations'][1]['cred_user'] = 'someone';
+            $post['destinations'][1]['cred_password'] = 'secret';
+            $form = TaskForm::parse($task, $post, $this->credentials());
+            $this->assertSame(['task_form.error.cloud_account'], array_column($form->errors, 'key'), "choice '$choice'");
+            $this->assertSame([], $form->newCredentials);
+        }
+
+        // 7z cannot go there, and neither can a mirror.
+        $post['destinations'][1]['credential'] = self::CLOUD;
+        $post['archive']['format'] = '7z';
+        $post['backup_type'] = 'mirror';
+        $post['mirror_mode'] = 'exact';
+        $keys = array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key');
+        $this->assertContains('task_form.error.7z', $keys);
+        $this->assertContains('task_form.error.cloud_mirror', $keys);
+    }
+
+    public function testCloudDriveInATemplateNamesNoAccount(): void
+    {
+        $task = $this->task();
+        $post = self::formFor($task);
+        $post['destinations'][] = ['id' => '', 'kind' => 'gdrive', 'path' => 'office', 'credential' => '', 'part_mb' => '0', 'speed_limit_kbps' => '0'];
+        $form = TaskForm::parse($task, $post, $this->credentials(), template: true);
+        $this->assertSame([], $form->errors);
+        $this->assertNull($form->task()['destinations'][1]['credential_id'], 'each machine takes its own connected account');
+    }
+
     public function testDiffMatchesListItemsById(): void
     {
         $old = $this->task();
@@ -150,6 +193,7 @@ final class TaskFormTest extends TestCase
         return [
             self::CRED => ['id' => self::CRED, 'kind' => 'windows', 'user' => 'svc-backup', 'domain' => '.', 'has_secret' => true],
             self::ARCHIVE => ['id' => self::ARCHIVE, 'kind' => 'archive_password', 'user' => '', 'domain' => null, 'has_secret' => true],
+            self::CLOUD => ['id' => self::CLOUD, 'kind' => 'yadisk', 'user' => 'backup.office', 'domain' => null, 'has_secret' => true],
         ];
     }
 

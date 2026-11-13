@@ -57,9 +57,15 @@ public static class DestinationKinds
     public const string Sftp = "sftp";
     public const string S3 = "s3";
     public const string WebDav = "webdav";
+    public const string GDrive = "gdrive";
+    public const string YaDisk = "yadisk";
+    public const string Dropbox = "dropbox";
 
     /// <summary>Kinds this version can write to.</summary>
-    public static bool IsSupported(string kind) => kind is Local or Unc or Usb or Ftp or Ftps or Sftp or S3 or WebDav;
+    public static bool IsSupported(string kind) => kind is Local or Unc or Usb or Ftp or Ftps or Sftp or S3 or WebDav or GDrive or YaDisk or Dropbox;
+
+    /// <summary>A cloud drive of a personal account (section 6.3, «Облачные диски»): Google Drive, Yandex Disk, Dropbox.</summary>
+    public static bool IsCloudDrive(string? kind) => kind is GDrive or YaDisk or Dropbox;
 
     /// <summary>A folder of this computer, of a share or of a USB disk; the others are servers (stage 4).</summary>
     public static bool IsFileSystem(string kind) => kind is Local or Unc or Usb;
@@ -72,6 +78,9 @@ public static class DestinationKinds
         Sftp => CredentialKinds.Sftp,
         S3 => CredentialKinds.S3,
         WebDav => CredentialKinds.WebDav,
+        GDrive => CredentialKinds.GDrive,
+        YaDisk => CredentialKinds.YaDisk,
+        Dropbox => CredentialKinds.Dropbox,
         _ => null,
     };
 
@@ -206,6 +215,18 @@ public static class CredentialKinds
 
     /// <summary>An Ed25519 key the agent made for a Linux server; the private part never leaves the agent.</summary>
     public const string SshKey = "ssh_key";
+
+    /// <summary>Accounts of cloud drives (section 6.3): connected through the browser on this computer only, the
+    /// secret is the OAuth refresh token.</summary>
+    public const string GDrive = "gdrive";
+    public const string YaDisk = "yadisk";
+    public const string Dropbox = "dropbox";
+
+    /// <summary>Kinds whose secret only this computer makes; the server may refer to them, never send or replace them.</summary>
+    public static bool IsMadeHere(string? kind) => kind is SshKey or GDrive or YaDisk or Dropbox;
+
+    /// <summary>An account of a cloud drive.</summary>
+    public static bool IsCloud(string? kind) => kind is GDrive or YaDisk or Dropbox;
 }
 
 /// <summary>Values of <see cref="TaskDatabaseServer.Engine"/>.</summary>

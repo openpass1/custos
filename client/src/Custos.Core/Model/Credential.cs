@@ -26,6 +26,10 @@ public sealed class Credential
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? PublicKey { get; set; }
 
+    /// <summary>For a cloud drive: the client id of the application that issued the token, which only works with it.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ClientId { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 

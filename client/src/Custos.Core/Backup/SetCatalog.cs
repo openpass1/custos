@@ -191,7 +191,8 @@ public static partial class SetCatalog
     /// <summary>An archive found in a folder: one file, or the volumes .001, .002 … of one.</summary>
     public sealed record FoundArchive(string Format, IReadOnlyList<string> Parts, long Bytes, DateTime ModifiedUtc);
 
-    /// <summary>Finished archives directly in <paramref name="root"/>: *.7z, *.zip and complete runs of *.7z.001, .002 ….</summary>
+    /// <summary>Finished archives directly in <paramref name="root"/>: *.7z, *.zip and complete runs of *.7z.001, .002 …
+    /// and of *.zip.001, .002 … (a ZIP archive in parts on a cloud drive, section 6.3).</summary>
     public static List<FoundArchive> FindArchives(DestinationStore store, string root)
     {
         ArgumentNullException.ThrowIfNull(store);
@@ -233,7 +234,8 @@ public static partial class SetCatalog
                 continue;
             }
 
-            result.Add(new FoundArchive(ArchiveFormats.SevenZip, [.. parts.Values.Select(f => f.Path)],
+            string format = parts.Values.First().Name.EndsWith(".7z.001", StringComparison.OrdinalIgnoreCase) ? ArchiveFormats.SevenZip : ArchiveFormats.Zip;
+            result.Add(new FoundArchive(format, [.. parts.Values.Select(f => f.Path)],
                 parts.Values.Sum(f => f.Size), parts.Values.Max(f => f.ModifiedUtc)));
         }
 
@@ -534,6 +536,6 @@ public static partial class SetCatalog
         LocalStore.Default.DeleteFolder(folder);
     }
 
-    [GeneratedRegex(@"^(.+\.7z)\.(\d{3,})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^(.+\.(?:7z|zip))\.(\d{3,})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex VolumeName();
 }

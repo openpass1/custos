@@ -81,7 +81,7 @@ public sealed partial class BackupEngine
         var options = task.Archive;
         bool sevenZip = options.Format == ArchiveFormats.SevenZip;
         string extension = sevenZip ? ".7z" : ".zip";
-        long volumeSize = sevenZip && options.SplitMb > 0 ? options.SplitMb * 1024L * 1024 : 0;
+        long splitSize = sevenZip && options.SplitMb > 0 ? options.SplitMb * 1024L * 1024 : 0;
         var startedLocal = TimeZoneInfo.ConvertTime(run.Request.StartedAt, run.Request.TimeZone).DateTime;
         run.SetName = UniqueAcrossTargets(run, SetNaming.Expand(task.Layout.NameTemplate, task.Name, startedLocal, _platform.ComputerName, run.BackupType));
 
@@ -92,6 +92,9 @@ public sealed partial class BackupEngine
             target.SetFolder = target.Root;
             string first = target.Store.Combine(target.Root, run.SetName + extension);
             var mode = sevenZip ? StoreWriteMode.Seekable : StoreWriteMode.Stream;
+
+            // A cloud drive may take files of a limited size only: the archive goes there in parts (section 6.3).
+            long volumeSize = splitSize > 0 ? splitSize : PartSize(target.Destination);
             try
             {
                 Stream stream = volumeSize > 0
@@ -244,6 +247,10 @@ public sealed partial class BackupEngine
 
         return taken;
     }
+
+    /// <summary>The size of the parts of an archive in a cloud drive; 0 = one file.</summary>
+    private static long PartSize(TaskDestination destination) =>
+        DestinationKinds.IsCloudDrive(destination.Kind) && destination.PartMb > 0 ? Math.Max(1, destination.PartMb) * 1024L * 1024 : 0;
 
     /// <summary>Starts a file of the archive (the archive itself or a volume) under its temporary name.</summary>
     private static PartStream CreatePart(Target target, string final, StoreWriteMode mode)

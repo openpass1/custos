@@ -146,6 +146,16 @@ public sealed class RealDestinationTests : IDisposable
         task.Verify.EveryRuns = 1;
 
         var first = Run(task, Start);
+        if (DestinationKinds.IsCloudDrive(destination.Kind))
+        {
+            // A mirror is not kept on a cloud drive (section 6.3): the run says so and writes nothing.
+            Assert.Equal(RunStatuses.Error, first.Status);
+            Assert.Contains(_log.Lines, l => l.Level == RunLogLevel.Error && l.Message.Contains(Messages.Format(Messages.CloudNoMirror, DestinationStores.Label(destination)), StringComparison.Ordinal));
+            using var refused = _platform.OpenStore(destination);
+            Assert.Empty(refused.List(refused.Root));
+            return;
+        }
+
         Assert.Equal(RunStatuses.Success, first.Status);
         Assert.Equal(5, first.FilesProcessed);
 

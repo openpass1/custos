@@ -7,7 +7,7 @@ namespace Custos.Gui;
 
 /// <summary>
 /// Restore to a date (section 6.11): find the sets of a task (or in any folder, for example a backup disk on a new
-/// computer), pick a date, pick where to, restore. The service does the work, so the window may be closed meanwhile.
+/// computer, or on a server or a cloud drive given like a destination), pick a date, pick where to, restore. The service does the work, so the window may be closed meanwhile.
 /// </summary>
 internal sealed class RestoreForm : Form
 {
@@ -19,6 +19,9 @@ internal sealed class RestoreForm : Form
     private readonly RadioButton _byFolder = new() { Text = Strings.RestoreByFolder, AutoSize = true, Anchor = AnchorStyles.Left };
     private readonly TextBox _folder = new() { Dock = DockStyle.Fill };
     private readonly Button _browseFolder = new() { Text = Strings.ButtonBrowse, AutoSize = true };
+    private readonly RadioButton _byStore = new() { Text = Strings.RestoreByStore, AutoSize = true, Anchor = AnchorStyles.Left };
+    private readonly TextBox _store = new() { Dock = DockStyle.Fill, ReadOnly = true, Text = Strings.RestoreStoreNone };
+    private readonly Button _chooseStore = new() { Text = Strings.RestoreChooseStore, AutoSize = true };
     private readonly ComboBox _account = new() { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
     private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
     private readonly Button _search = new() { Text = Strings.RestoreSearch, AutoSize = true, MinimumSize = new Size(110, 0) };
@@ -49,6 +52,7 @@ internal sealed class RestoreForm : Form
     private readonly System.Windows.Forms.Timer _poll = new() { Interval = 500 };
     private readonly List<string?> _accountIds = [null];
     private List<TaskDefinition> _tasks = [];
+    private TaskDestination? _storeDestination;
     private bool _running;
     private bool _polling;
 
@@ -78,11 +82,14 @@ internal sealed class RestoreForm : Form
         where.Controls.Add(_browseFolder, 2, 1);
         where.Controls.Add(new Label { Text = Strings.RestoreAccount, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(20, 6, 8, 6) }, 0, 2);
         where.Controls.Add(_account, 1, 2);
-        where.Controls.Add(new Label { Text = Strings.RestorePassword, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(20, 6, 8, 6) }, 0, 3);
-        where.Controls.Add(_password, 1, 3);
-        where.Controls.Add(_search, 2, 3);
+        where.Controls.Add(_byStore, 0, 3);
+        where.Controls.Add(_store, 1, 3);
+        where.Controls.Add(_chooseStore, 2, 3);
+        where.Controls.Add(new Label { Text = Strings.RestorePassword, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(20, 6, 8, 6) }, 0, 4);
+        where.Controls.Add(_password, 1, 4);
+        where.Controls.Add(_search, 2, 4);
         var note = new Label { Text = Strings.RestorePasswordNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(20, 0, 0, 6) };
-        where.Controls.Add(note, 0, 4);
+        where.Controls.Add(note, 0, 5);
         where.SetColumnSpan(note, 3);
 
         _sets.Columns.Add(Strings.ColumnStarted, 140);
@@ -142,6 +149,8 @@ internal sealed class RestoreForm : Form
         FillChoices(taskId);
         _byTask.CheckedChanged += (_, _) => UpdateControls();
         _byFolder.CheckedChanged += (_, _) => UpdateControls();
+        _byStore.CheckedChanged += (_, _) => UpdateControls();
+        _chooseStore.Click += (_, _) => ChooseStore();
         _toFolder.CheckedChanged += (_, _) => UpdateControls();
         _sets.SelectedIndexChanged += (_, _) => UpdateControls();
         _task.SelectedIndexChanged += (_, _) => ClearSets();
@@ -228,6 +237,8 @@ internal sealed class RestoreForm : Form
         _account.Enabled = idle && _byFolder.Checked;
         _byTask.Enabled = idle && _tasks.Count > 0;
         _byFolder.Enabled = idle;
+        _byStore.Enabled = idle;
+        _chooseStore.Enabled = idle && _byStore.Checked;
         _password.Enabled = idle;
         _search.Enabled = idle;
         _sets.Enabled = idle;
@@ -255,6 +266,42 @@ internal sealed class RestoreForm : Form
         _bar.Visible = _running;
     }
 
+    /// <summary>
+    /// «Указать…»: a server or a cloud drive, entered like a destination of a task (on another computer: the same
+    /// account and the folder of the sets). A folder of this computer or of the network goes to «Копии в папке».
+    /// </summary>
+    private void ChooseStore()
+    {
+        using var toolTip = new ToolTip();
+        var start = _storeDestination ?? new TaskDestination { Kind = DestinationKinds.GDrive };
+        using var dialog = new DestinationDialog(new EditorContext(_monitor, toolTip), start, isNew: _storeDestination is null, Strings.RestoreStoreTitle);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        var chosen = dialog.Destination;
+        if (DestinationKinds.IsFileSystem(chosen.Kind))
+        {
+            if (chosen.Kind == DestinationKinds.Usb || !Path.IsPathFullyQualified(chosen.Path))
+            {
+                Ui.ShowWarning(this, Strings.RestoreChooseFolder);
+                return;
+            }
+
+            _folder.Text = chosen.Path;
+            int account = _accountIds.FindIndex(id => string.Equals(id, chosen.CredentialId, StringComparison.OrdinalIgnoreCase));
+            _account.SelectedIndex = Math.Max(0, account);
+            _byFolder.Checked = true;
+            return;
+        }
+
+        _storeDestination = chosen;
+        _store.Text = TaskDescriber.Destination(chosen);
+        _byStore.Checked = true;
+        ClearSets();
+    }
+
     private void ClearSets()
     {
         _sets.Items.Clear();
@@ -266,6 +313,7 @@ internal sealed class RestoreForm : Form
     {
         TaskId = _byTask.Checked && _task.SelectedIndex >= 0 ? _tasks[_task.SelectedIndex].Id : null,
         Folder = _byFolder.Checked ? _folder.Text.Trim() : null,
+        Destination = _byStore.Checked ? _storeDestination : null,
         CredentialId = _byFolder.Checked ? _accountIds[Math.Max(0, _account.SelectedIndex)] : null,
         Password = _password.Text.Length > 0 ? _password.Text : null,
     };
@@ -275,6 +323,12 @@ internal sealed class RestoreForm : Form
         if (_byFolder.Checked && !Path.IsPathFullyQualified(_folder.Text.Trim()))
         {
             Ui.ShowWarning(this, Strings.RestoreChooseFolder);
+            return;
+        }
+
+        if (_byStore.Checked && _storeDestination is null)
+        {
+            Ui.ShowWarning(this, Strings.RestoreStoreRequired);
             return;
         }
 
@@ -390,6 +444,7 @@ internal sealed class RestoreForm : Form
         {
             TaskId = source.TaskId,
             Folder = source.Folder,
+            Destination = source.Destination,
             CredentialId = source.CredentialId,
             Password = source.Password,
             Location = set.Location,

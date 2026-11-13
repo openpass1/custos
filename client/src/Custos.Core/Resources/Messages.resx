@@ -1608,4 +1608,70 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="SetLocked" xml:space="preserve">
     <value>Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.</value>
   </data>
+  <data name="CloudGDrive" xml:space="preserve">
+    <value>Google Drive</value>
+  </data>
+  <data name="CloudYaDisk" xml:space="preserve">
+    <value>Yandex Disk</value>
+  </data>
+  <data name="CloudDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="CloudAppFolder" xml:space="preserve">
+    <value>Apps/CUSTOS</value>
+  </data>
+  <data name="CloudNoMirror" xml:space="preserve">
+    <value>{0}: a mirror cannot be kept in a cloud drive. Choose a full, incremental or differential backup.</value>
+  </data>
+  <data name="CloudWrongAccount" xml:space="preserve">
+    <value>{0}: the account belongs to another service.</value>
+  </data>
+  <data name="CloudAccountOnlyConnected" xml:space="preserve">
+    <value>An account of a cloud drive is connected only through the browser on this computer (settings, «Cloud drives», or «Connect…» in the destination).</value>
+  </data>
+  <data name="CloudAccountMissing" xml:space="preserve">
+    <value>{0}: no account is connected for this destination. Connect one in the destination («Connect…»).</value>
+  </data>
+  <data name="CloudAccessRevoked" xml:space="preserve">
+    <value>Access to the account {0} ({1}) has been revoked. Connect it again in the settings («Connect again…»).</value>
+  </data>
+  <data name="CloudAppMissing" xml:space="preserve">
+    <value>{0}: this version has no CUSTOS application for the service. Enter the ids of your own application in the settings, «Cloud drives».</value>
+  </data>
+  <data name="CloudAppRefused" xml:space="preserve">
+    <value>{0} does not know the CUSTOS application ({1}). Check the application ids in the settings, «Cloud drives».</value>
+  </data>
+  <data name="CloudSignInFailed" xml:space="preserve">
+    <value>{0}: the sign-in failed: {1}</value>
+  </data>
+  <data name="CloudSignInRefused" xml:space="preserve">
+    <value>{0}: access was not allowed on the page of the service.</value>
+  </data>
+  <data name="CloudSignInExpired" xml:space="preserve">
+    <value>The sign-in took too long or was started again. Close this window and connect the account once more.</value>
+  </data>
+  <data name="CloudNoRefreshToken" xml:space="preserve">
+    <value>{0} gave no refresh token, and CUSTOS cannot work without one. Try again; if it repeats, first remove CUSTOS from the connected applications of the account.</value>
+  </data>
+  <data name="CloudFileTooLarge" xml:space="preserve">
+    <value>{0} does not take a file this large ({1}). Set «Part size» in the destination (Yandex Disk without a subscription takes files of up to 1 GB).</value>
+  </data>
+  <data name="CloudUploadExpired" xml:space="preserve">
+    <value>{0}: the upload of {1} expired at the service; the file was not written.</value>
+  </data>
+  <data name="CloudUploadLost" xml:space="preserve">
+    <value>{0}: the service lost a part of {1} it had already confirmed; the file was not written.</value>
+  </data>
+  <data name="CloudNotAllowed" xml:space="preserve">
+    <value>Only an administrator of this computer can connect accounts of cloud drives and change their applications.</value>
+  </data>
+  <data name="CloudBadRedirect" xml:space="preserve">
+    <value>The address the sign-in returns to must be on this computer (http://127.0.0.1 or http://localhost).</value>
+  </data>
+  <data name="CloudConnected" xml:space="preserve">
+    <value>The account {0} of {1} was connected by {2}.</value>
+  </data>
+  <data name="CloudAppsSaved" xml:space="preserve">
+    <value>The applications of CUSTOS at the cloud drives were changed by {0}.</value>
+  </data>
 </root>

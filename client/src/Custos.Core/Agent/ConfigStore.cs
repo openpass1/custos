@@ -324,11 +324,24 @@ public sealed partial class ConfigStore
                 throw new ConfigException(Messages.ConfigSshKeyOnlyMade);
             }
 
+            if ((CredentialKinds.IsCloud(copy.Kind) || CredentialKinds.IsCloud(existing?.Credential.Kind))
+                && (existing?.Credential.Kind != copy.Kind || password is not null))
+            {
+                // A cloud account is connected through the browser only (section 6.3): its token never comes in here.
+                throw new ConfigException(Messages.CloudAccountOnlyConnected);
+            }
+
             StoredCredential updated;
             if (existing is not null && copy.PublicKey is null)
             {
                 // The editor of an account does not send the public key of an SSH key back.
                 copy.PublicKey = existing.Credential.PublicKey;
+            }
+
+            if (existing is not null)
+            {
+                // Which application issued a token is known here only.
+                copy.ClientId = existing.Credential.ClientId;
             }
 
             if (existing is not null && password is null)
@@ -525,6 +538,20 @@ public sealed partial class ConfigStore
             throw new ConfigException(Messages.MirrorNeedsPlainFiles);
         }
 
+        foreach (var destination in task.Destinations.Where(d => DestinationKinds.IsCloudDrive(d.Kind)))
+        {
+            if (task.BackupType == BackupTypes.Mirror)
+            {
+                throw new ConfigException(Messages.Format(Messages.CloudNoMirror, Destinations.DestinationStores.Label(destination)));
+            }
+
+            // A cloud destination logs in with an account of its own service only.
+            if (destination.CredentialId is { } account && KindOf(account) is { } kind && kind != DestinationKinds.CredentialKind(destination.Kind))
+            {
+                throw new ConfigException(Messages.Format(Messages.CloudWrongAccount, Destinations.DestinationStores.Label(destination)));
+            }
+        }
+
         if (task.Retention.Mode == RetentionModes.Age && task.Retention.MaxAgeDays < 1)
         {
             throw new ConfigException(Messages.ConfigBadMaxAge);
@@ -536,6 +563,9 @@ public sealed partial class ConfigStore
             throw new ConfigException(Messages.ConfigBadGfs);
         }
     }
+
+    /// <summary>The kind of a stored account; null when there is no such account (an import brings it).</summary>
+    private string? KindOf(string credentialId) => FindCredential(credentialId)?.Credential.Kind;
 
     private static void ValidateDbServer(TaskDatabaseServer server)
     {
@@ -682,6 +712,7 @@ public sealed partial class ConfigStore
             destination.ObjectLockMode = destination.ObjectLockDays > 0 && destination.ObjectLockMode is ObjectLockModes.Governance or ObjectLockModes.Compliance
                 ? destination.ObjectLockMode
                 : null;
+            destination.PartMb = DestinationKinds.IsCloudDrive(destination.Kind) ? Math.Clamp(destination.PartMb, 0, 1_000_000) : 0;
         }
 
         task.DbServers ??= [];
@@ -839,6 +870,7 @@ public sealed partial class ConfigStore
         Domain = string.IsNullOrWhiteSpace(credential.Domain) ? null : credential.Domain.Trim(),
         HasSecret = credential.HasSecret,
         PublicKey = string.IsNullOrWhiteSpace(credential.PublicKey) ? null : credential.PublicKey.Trim(),
+        ClientId = string.IsNullOrWhiteSpace(credential.ClientId) ? null : credential.ClientId.Trim(),
         ExtensionData = credential.ExtensionData is null ? null : new Dictionary<string, JsonElement>(credential.ExtensionData),
     };
 

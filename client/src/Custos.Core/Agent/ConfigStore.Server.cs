@@ -157,6 +157,12 @@ public sealed partial class ConfigStore
                     throw new ConfigException(Messages.ConfigSshKeyOnlyMade);
                 }
 
+                if (index >= 0 && CredentialKinds.IsCloud(stored[index].Credential.Kind))
+                {
+                    // A connected cloud account is never replaced from outside (section 6.3, A.9).
+                    throw new ConfigException(Messages.CloudAccountOnlyConnected);
+                }
+
                 var protectedCredential = Protect(credential, input.Secret);
                 if (index >= 0)
                 {

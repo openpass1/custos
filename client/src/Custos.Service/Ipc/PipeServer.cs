@@ -45,6 +45,12 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         // The server may change tasks and install updates: who it is, only an administrator decides (A.3).
         PipeProtocol.Methods.ServerConnect,
         PipeProtocol.Methods.ServerReset,
+
+        // An account of a cloud drive lets SYSTEM into somebody's cloud (section 6.3).
+        PipeProtocol.Methods.CloudBegin,
+        PipeProtocol.Methods.CloudFinish,
+        PipeProtocol.Methods.CloudAppsGet,
+        PipeProtocol.Methods.CloudAppsSave,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -339,6 +345,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 ServiceLog.RequestForbidden(logger, identity.User, connection.Id, method);
                 string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
                     : method is PipeProtocol.Methods.ServerConnect or PipeProtocol.Methods.ServerReset ? Messages.MonitorNotAllowed
+                    : method.StartsWith("cloud.", StringComparison.Ordinal) ? Messages.CloudNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
@@ -435,6 +442,14 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.PowerCancel =>
                 Ok(id, agent.CancelPower(user)),
             PipeProtocol.Methods.ServerConnect => ServerConnect(id, request.GetData(json.ServerConnectRequest), user),
+            PipeProtocol.Methods.CloudBegin =>
+                PipeMessage.Success(id, agent.BeginCloud(request.GetData(json.CloudBeginRequest)), json.CloudBeginResult),
+            PipeProtocol.Methods.CloudFinish =>
+                PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.FinishCloud(request.GetData(json.CloudFinishRequest), user) }, json.CredentialSaveResult),
+            PipeProtocol.Methods.CloudAppsGet =>
+                PipeMessage.Success(id, agent.GetCloudApps(), json.CloudAppsResult),
+            PipeProtocol.Methods.CloudAppsSave =>
+                Ok(id, agent.SaveCloudApps(request.GetData(json.CloudAppsSaveRequest).Apps, user)),
             PipeProtocol.Methods.ServerReset =>
                 Ok(id, agent.ResetServer(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
