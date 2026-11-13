@@ -1313,6 +1313,8 @@ internal sealed class ArchivePasswordDialog : DialogForm
 internal sealed class SettingsForm : DialogForm
 {
     private static readonly string[] Languages = ["auto", "ru", "en"];
+    private static readonly string[] TrayModeValues = [TrayModes.Full, TrayModes.Status, TrayModes.Hidden];
+    private static readonly string[] ThemeValues = [Themes.Auto, Themes.Light, Themes.Dark];
 
     private readonly ServiceMonitor _monitor;
     private readonly ComboBox _logLevel = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
@@ -1351,6 +1353,12 @@ internal sealed class SettingsForm : DialogForm
     private readonly Button _serverReset = new() { Text = Strings.ServerResetButton, AutoSize = true, Margin = new Padding(8, 3, 0, 3) };
     private readonly Label _serverKeys = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 4, 0, 2) };
     private readonly CheckBox _allowRemoteEdit = new() { Text = Strings.AllowRemoteEdit, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly CheckBox _allowAll = new() { Text = Strings.AllowAllUsersEdit, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly ComboBox _trayMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly Label _passwordState = new() { AutoSize = true, Margin = new Padding(0, 6, 8, 0) };
+    private readonly Button _passwordSet = new() { AutoSize = true, MinimumSize = new Size(100, 0), Margin = new Padding(0, 0, 6, 0) };
+    private readonly Button _passwordRemove = new() { Text = Strings.ProgramPasswordRemoveButton, AutoSize = true, MinimumSize = new Size(100, 0), Margin = new Padding(0) };
+    private readonly ComboBox _theme = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly bool _isAdmin;
 
     public SettingsForm(ServiceMonitor monitor)
@@ -1361,6 +1369,8 @@ internal sealed class SettingsForm : DialogForm
         _logLevel.Items.AddRange([Strings.LogLevelSummary, Strings.LogLevelFiles]);
         _priority.Items.AddRange([Strings.PriorityLow, Strings.PriorityNormal]);
         _language.Items.AddRange([Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish]);
+        _trayMode.Items.AddRange([Strings.TrayModeFull, Strings.TrayModeStatus, Strings.TrayModeHidden]);
+        _theme.Items.AddRange([Strings.ThemeAuto, Strings.ThemeLight, Strings.ThemeDark]);
         _accounts.Columns.Add(Strings.ColumnAccount, 200);
         _accounts.Columns.Add(Strings.ColumnAccountKind, 150);
         _accounts.Columns.Add(Strings.ColumnUsedBy, 220);
@@ -1395,11 +1405,34 @@ internal sealed class SettingsForm : DialogForm
             AddNote(Strings.ServerAdminOnly);
         }
 
+        // Section 4: who may change things, what users see, the program password.
+        var rightsHeading = new Label { Text = Strings.SettingsRights, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+        rightsHeading.Font = heading.Font;
+        AddWide(rightsHeading);
+        var allowAll = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        var allowAllHelp = Ui.HelpIcon(_toolTip, Strings.AllowAllUsersEditHelp);
+        allowAllHelp.Margin = new Padding(6, 8, 0, 0);
+        allowAll.Controls.AddRange([_allowAll, allowAllHelp]);
+        AddWide(allowAll);
+        AddRow(Strings.TrayModeLabel, _trayMode, Ui.HelpIcon(_toolTip, Strings.TrayModeHelp));
+        var password = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        password.Controls.AddRange([_passwordState, _passwordSet, _passwordRemove]);
+        AddRow(Strings.ProgramPasswordLabel, password, Ui.HelpIcon(_toolTip, Strings.ProgramPasswordHelp));
+        if (!_isAdmin)
+        {
+            AddNote(Strings.SettingsRightsAdminOnly);
+        }
+
         AddWide(heading);
         AddRow(Strings.DefaultLogLevel, _logLevel, Ui.HelpIcon(_toolTip, Strings.DefaultLogLevelHelp));
         AddRow(Strings.LogRetention, _retention);
         AddRow(Strings.CopyPriority, _priority, Ui.HelpIcon(_toolTip, Strings.CopyPriorityHelp));
         AddRow(Strings.ServiceLanguage, _language, Ui.HelpIcon(_toolTip, Strings.ServiceLanguageHelp));
+
+        var lookHeading = new Label { Text = Strings.SettingsLook, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+        lookHeading.Font = heading.Font;
+        AddWide(lookHeading);
+        AddRow(Strings.ThemeLabel, _theme, Ui.HelpIcon(_toolTip, Strings.ThemeHelp));
 
         var archiverHeading = new Label { Text = Strings.Settings7Zip, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         archiverHeading.Font = heading.Font;
@@ -1465,11 +1498,35 @@ internal sealed class SettingsForm : DialogForm
         int language = Array.IndexOf(Languages, settings.Language);
         _language.SelectedIndex = language < 0 ? 0 : language;
 
+        int theme = Array.IndexOf(ThemeValues, settings.Theme);
+        _theme.SelectedIndex = theme < 0 ? 0 : theme;
+        int trayMode = Array.IndexOf(TrayModeValues, settings.TrayMode);
+        _trayMode.SelectedIndex = trayMode < 0 ? 0 : trayMode;
+        _allowAll.Checked = settings.AllowAllUsersEdit;
+
         _allowRemoteEdit.Checked = settings.AllowRemoteEdit;
-        foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _addAccount, _allowRemoteEdit })
+        foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _theme, _addAccount })
         {
             control.Enabled = _canEdit;
         }
+
+        // The rights stay with the administrators even when everybody may change tasks (the service keeps them so).
+        foreach (var control in new Control[] { _allowRemoteEdit, _allowAll, _trayMode })
+        {
+            control.Enabled = _canEdit && _isAdmin;
+        }
+
+        _allowAll.CheckedChanged += (_, _) =>
+        {
+            // Turning it on hands out the rights of an administrator: said plainly, and only on "Yes".
+            if (_allowAll.Checked && !settings.AllowAllUsersEdit && !Ui.Confirm(this, Strings.AllowAllUsersEditWarning))
+            {
+                _allowAll.Checked = false;
+            }
+        };
+        _passwordSet.Click += (_, _) => SetPassword();
+        _passwordRemove.Click += (_, _) => Ui.Run(this, RemovePasswordAsync);
+        ShowPassword();
 
         foreach (var control in new Control[] { _serverLine, _serverPaste, _serverConnect })
         {
@@ -1597,6 +1654,9 @@ internal sealed class SettingsForm : DialogForm
         settings.LogRetentionDays = (int)_retention.Value;
         settings.ProcessPriority = _priority.SelectedIndex == 1 ? "normal" : "low";
         settings.Language = Languages[Math.Max(0, _language.SelectedIndex)];
+        settings.Theme = ThemeValues[Math.Max(0, _theme.SelectedIndex)];
+        settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.SelectedIndex)];
+        settings.AllowAllUsersEdit = _allowAll.Checked;
         settings.AllowRemoteEdit = _allowRemoteEdit.Checked;
         SetBusy(true);
         Ui.Run(this, async () =>
@@ -1617,7 +1677,40 @@ internal sealed class SettingsForm : DialogForm
     private void OnSnapshotChanged(object? sender, EventArgs e)
     {
         FillAccounts();
+        ShowPassword();
         ShowServer();
+    }
+
+    /// <summary>Whether a program password is set, and the buttons for it (administrators only).</summary>
+    private void ShowPassword()
+    {
+        bool set = _monitor.Snapshot?.ProgramPasswordSet == true;
+        _passwordState.Text = set ? Strings.ProgramPasswordIsSet : Strings.ProgramPasswordNotSet;
+        _passwordSet.Text = set ? Strings.ProgramPasswordChangeButton : Strings.ProgramPasswordSetButton;
+        _passwordSet.Enabled = _isAdmin && _monitor.IsConnected;
+        _passwordRemove.Visible = set;
+        _passwordRemove.Enabled = _isAdmin && _monitor.IsConnected;
+    }
+
+    private void SetPassword()
+    {
+        using var form = new ProgramPasswordForm(_monitor);
+        if (form.ShowDialog(this) == DialogResult.OK)
+        {
+            Ui.ShowInfo(this, Strings.ProgramPasswordSaved);
+        }
+    }
+
+    private async Task RemovePasswordAsync()
+    {
+        if (!Ui.Confirm(this, Strings.ProgramPasswordRemoveConfirm))
+        {
+            return;
+        }
+
+        await _monitor.RequestAsync(PipeProtocol.Methods.PasswordSet, new PasswordRequest { Password = null },
+            IpcJsonContext.Default.PasswordRequest, IpcJsonContext.Default.OkResult);
+        Ui.ShowInfo(this, Strings.ProgramPasswordRemoved);
     }
 
     /// <summary>The state of the connection to the monitoring server, the fingerprints and the reports waiting.</summary>

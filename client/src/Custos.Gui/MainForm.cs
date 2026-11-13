@@ -178,6 +178,9 @@ internal sealed class MainForm : Form
             Hide();
         }
 
+        // Whoever opens the window next types the program password again (section 4).
+        _monitor.Lock();
+
         base.OnFormClosing(e);
     }
 
@@ -277,7 +280,8 @@ internal sealed class MainForm : Form
 
     private void AddTab(string title, Control content)
     {
-        var page = new TabPage(title) { UseVisualStyleBackColor = true };
+        // The visual style of a tab page is light whatever the colour mode: in the dark theme the page takes the colour of the window.
+        var page = new TabPage(title) { UseVisualStyleBackColor = !Theme.IsDark };
         page.Controls.Add(content);
         _tabs.TabPages.Add(page);
     }
@@ -664,9 +668,10 @@ internal sealed class MainForm : Form
         }
     }
 
-    private void CreateTask()
+    // The windows for changes ask for the program password before they open, not after a whole task was filled in.
+    private void CreateTask() => Ui.Run(this, async () =>
     {
-        if (!_monitor.CanEdit)
+        if (!_monitor.CanEdit || !await _monitor.EnsureUnlockedAsync())
         {
             return;
         }
@@ -676,18 +681,19 @@ internal sealed class MainForm : Form
         {
             SelectWhenShown(saved.Id);
         }
-    }
+    });
 
-    private void EditTask()
+    private void EditTask() => Ui.Run(this, async () =>
     {
-        if (SelectedTask() is not { } task || !_monitor.CanEdit)
+        if (SelectedTask() is not { } task || !_monitor.CanEdit || !await _monitor.EnsureUnlockedAsync())
         {
             return;
         }
 
-        using var editor = new TaskEditorForm(_monitor, task.Clone(), isNew: false);
+        // The task as it is now: the snapshot may have changed while the password was typed.
+        using var editor = new TaskEditorForm(_monitor, (SelectedTask() ?? task).Clone(), isNew: false);
         editor.ShowDialog(this);
-    }
+    });
 
     private void CloneTask()
     {
@@ -773,27 +779,27 @@ internal sealed class MainForm : Form
         form.ShowDialog(this);
     }
 
-    private void OpenRestore()
+    private void OpenRestore() => Ui.Run(this, async () =>
     {
-        if (_monitor.Status.Hello?.IsAdmin != true)
+        if (_monitor.Status.Hello?.IsAdmin != true || !await _monitor.EnsureUnlockedAsync())
         {
             return;
         }
 
         using var form = new RestoreForm(_monitor, SelectedTask()?.Id);
         form.ShowDialog(this);
-    }
+    });
 
-    private void ImportTasks()
+    private void ImportTasks() => Ui.Run(this, async () =>
     {
-        if (!_monitor.CanEdit)
+        if (!_monitor.CanEdit || !await _monitor.EnsureUnlockedAsync())
         {
             return;
         }
 
         using var form = new CobianImportForm(_monitor);
         form.ShowDialog(this);
-    }
+    });
 
     private void SelectWhenShown(string taskId)
     {

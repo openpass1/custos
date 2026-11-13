@@ -24,7 +24,11 @@ internal sealed class LogLinesEventArgs(IReadOnlyList<LogLine> lines) : EventArg
 }
 
 /// <summary>A request the interface could not send or the service refused; the message is for the user.</summary>
-internal sealed class ServiceUnavailableException(string message) : Exception(message);
+internal class ServiceUnavailableException(string message) : Exception(message);
+
+/// <summary>The service asked for the program password and the user did not type it: the change is not made, and
+/// there is nothing more to tell.</summary>
+internal sealed class PasswordNotTypedException() : ServiceUnavailableException(Strings.PasswordNotTyped);
 
 /// <summary>
 /// Keeps a connection to the service: connects, says hello, holds the latest snapshot, the live log and the progress,
@@ -82,6 +86,10 @@ internal sealed class ServiceMonitor : IDisposable
     /// <summary>Whether this user may change tasks and settings. The service decides; this only greys out buttons.</summary>
     public bool CanEdit => IsConnected && (Status.Hello?.IsAdmin == true || Snapshot?.Settings.AllowAllUsersEdit == true);
 
+    /// <summary>Asks the user for the program password and sends it with <see cref="UnlockAsync"/>; true when the
+    /// service took it. Set by the tray, which knows the windows; without it a request that needs the password fails.</summary>
+    public Func<Task<bool>>? AskPassword { get; set; }
+
     public void Start() => _ = RunAsync(_stop.Token);
 
     /// <summary>The service state in a few words, as in the status bar and the tray tooltip.</summary>
@@ -102,6 +110,80 @@ internal sealed class ServiceMonitor : IDisposable
         JsonTypeInfo<TResult> resultType,
         TimeSpan? timeout = null)
     {
+        try
+        {
+            return await SendAsync(method, parameters, parametersType, resultType, timeout);
+        }
+        catch (PasswordRequiredException)
+        {
+            // A program password is set and was not typed yet, or too long ago (section 4): ask once, then try again.
+            if (AskPassword is { } ask && await ask())
+            {
+                try
+                {
+                    return await SendAsync(method, parameters, parametersType, resultType, timeout);
+                }
+                catch (PasswordRequiredException)
+                {
+                }
+            }
+
+            throw new PasswordNotTypedException();
+        }
+    }
+
+    /// <summary>
+    /// Before a window for changes opens: when a program password is set and this interface has not typed it lately,
+    /// asks for it now, so that the user does not fill in a whole task first. False when the user gave up.
+    /// </summary>
+    public async Task<bool> EnsureUnlockedAsync()
+    {
+        if (Snapshot?.ProgramPasswordSet != true)
+        {
+            return true;
+        }
+
+        var state = await RequestAsync(PipeProtocol.Methods.PasswordState, EmptyRequest.Instance,
+            IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.PasswordStateResult);
+        return !state.Set || state.Unlocked || (AskPassword is { } ask && await ask());
+    }
+
+    /// <summary>Sends the program password typed by the user.</summary>
+    /// <exception cref="ServiceUnavailableException">A wrong password, or no connection; the message says which.</exception>
+    public Task<OkResult> UnlockAsync(string password) =>
+        RequestAsync(PipeProtocol.Methods.PasswordUnlock, new PasswordRequest { Password = password },
+            IpcJsonContext.Default.PasswordRequest, IpcJsonContext.Default.OkResult);
+
+    /// <summary>The main window was closed: the typed program password is forgotten (section 4).</summary>
+    public void Lock()
+    {
+        if (!IsConnected || Snapshot?.ProgramPasswordSet != true)
+        {
+            return;
+        }
+
+        _ = LockAsync();
+
+        async Task LockAsync()
+        {
+            try
+            {
+                await CommandAsync(PipeProtocol.Methods.PasswordLock);
+            }
+            catch (ServiceUnavailableException)
+            {
+                // Without a connection the service has forgotten it anyway.
+            }
+        }
+    }
+
+    private async Task<TResult> SendAsync<TParams, TResult>(
+        string method,
+        TParams parameters,
+        JsonTypeInfo<TParams> parametersType,
+        JsonTypeInfo<TResult> resultType,
+        TimeSpan? timeout)
+    {
         var client = _client;
         if (client is null || Status.State != ServiceState.Running)
         {
@@ -112,6 +194,10 @@ internal sealed class ServiceMonitor : IDisposable
         {
             return await client.RequestAsync(method, parameters, parametersType, resultType, _stop.Token)
                 .WaitAsync(timeout ?? DefaultRequestTimeout, _stop.Token);
+        }
+        catch (ServiceRequestException ex) when (ex.Code == PipeProtocol.Errors.PasswordRequired)
+        {
+            throw new PasswordRequiredException();
         }
         catch (ServiceRequestException ex)
         {
@@ -378,6 +464,9 @@ internal sealed class ServiceMonitor : IDisposable
         Status = status;
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>The service answered <see cref="PipeProtocol.Errors.PasswordRequired"/>.</summary>
+    private sealed class PasswordRequiredException() : Exception(Strings.PasswordPromptText);
 
     private static string DescribeProblem(Exception ex) => ex switch
     {

@@ -259,7 +259,10 @@ CUSTOS бакеты не создаёт и их настройки не меня
 3. Вкладка «Settings»: «App folder name» — `CUSTOS` (так папка и будет называться в «Приложения»); в «Redirect
    URIs» добавьте `http://localhost:47901/`; «Allow public clients (Implicit Grant & PKCE)» оставьте «Allow».
    Сохраните «App key» — это Client ID. Секрет CUSTOS не нужен.
-4. В состоянии «Development» приложение подключают до 500 аккаунтов. Если нужно больше, «Apply for production».
+4. В состоянии «Development» приложение подключают до 500 аккаунтов, но после 50-го подключённого аккаунта даётся
+   две недели, чтобы получить состояние «Production» («Apply for production»); иначе новые аккаунты подключить
+   нельзя, пока его не дадут. Заявку принимают от 50 аккаунтов; нужны значок приложения на вкладке «Branding» и
+   соблюдение правил Dropbox для разработчиков. Для своего приложения на несколько компьютеров это не важно.
 
 Порт 47901 на компьютере должен быть свободен во время подключения (Google порт не важен). Если он занят, вход всё
 равно возможен: код вводится вручную.
@@ -345,6 +348,36 @@ GitHub, сверит его SHA-256 с опубликованным, прове�
 работают как обычно. Установщик CUSTOS не заменяет
 более новый `7z.dll` более старым.
 
+## Права, пароль программы и тема
+
+CUSTOS → «Настройки» → «Права и защита» (менять может только администратор этого компьютера):
+
+- **«Разрешить всем пользователям менять задания»** — по умолчанию выключено. Служба работает от имени SYSTEM, поэтому
+  это фактически даёт каждому пользователю права администратора; программа спрашивает подтверждение. Восстанавливать
+  копии и менять сами права по-прежнему могут только администраторы.
+- **«Интерфейс для пользователей»** — что видят пользователи, которые не администраторы: «Полный», «Только состояние»
+  (значок в трее и окно со списком заданий, без кнопок изменения) или «Скрыт» (значка нет; из меню «Пуск» открывается
+  окно состояния). Администраторы всегда видят полный интерфейс. Окно с отсчётом перед выключением после задания
+  появляется в любом режиме.
+- **«Пароль программы»** — «Задать…», «Сменить…», «Убрать». Если пароль задан, для изменения заданий и настроек и для
+  восстановления его нужно ввести, даже администратору. После ввода он не спрашивается 30 минут после последнего
+  изменения или пока главное окно не закрыто. Пароль можно задать и убрать и на сайте мониторинга (машина →
+  «Настройки агента»). Хранится только его хэш (PBKDF2-SHA256). Это защита от случайных правок и посторонних, а не от
+  администратора Windows.
+
+**Если пароль забыт.** Проще всего убрать его на сайте мониторинга. Без сайта — на самом компьютере, с правами
+администратора:
+
+1. Открыть командную строку от имени администратора (в PowerShell сначала набрать `cmd`) и остановить службу:
+   `net stop CustosService`.
+2. Открыть файл настроек в Блокноте: `notepad C:\ProgramData\CUSTOS\config\settings.json`.
+3. Найти строку `"program_password_hash": "pbkdf2-sha256$…",` и заменить значение на `null`:
+   `"program_password_hash": null,`. Сохранить файл.
+4. Запустить службу: `net start CustosService`.
+
+**Тема** — «Настройки» → «Оформление» → «Тема»: «Как в Windows» (по умолчанию, по режиму приложений Windows),
+«Светлая» или «Тёмная». Одна на весь компьютер; открытые окна CUSTOS откроются заново в новой теме.
+
 ## Files on the computer
 
 | Where | What |
@@ -355,6 +388,7 @@ GitHub, сверит его SHA-256 с опубликованным, прове�
 | `C:\ProgramData\CUSTOS\config\server.json`, `agent.key` | The monitoring server, its pinned key and the registration code (DPAPI); the agent's own RSA key (DPAPI) |
 | `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
+| `%APPDATA%\CUSTOS\last-known.json` | The theme and the tray mode the service gave last, so the interface starts in them before the service answers |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
 | `C:\Program Files\CUSTOS\7z.dll`, `7-Zip-License.txt` | 7-Zip library for 7z archives (x64, GNU LGPL) and its license |
 | `C:\Program Files\CUSTOS\THIRD-PARTY-NOTICES.txt` | Licenses of the other libraries CUSTOS ships with (SSH.NET, BouncyCastle, SharpZipLib, Serilog, SQLite …) |

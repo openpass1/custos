@@ -29,6 +29,10 @@ internal static class Ui
         {
             await action();
         }
+        catch (PasswordNotTypedException)
+        {
+            // The user closed the password window: they know nothing was done.
+        }
         catch (ServiceUnavailableException ex)
         {
             ShowError(owner, ex.Message);

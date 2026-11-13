@@ -197,6 +197,14 @@ MissedTooOld	Task «{0}» missed its run at {1}. That was more than 7 days ago, 
 DeleteWhileRunning	The task is running now. Stop it first, then delete it.	Задание сейчас выполняется. Сначала остановите его, потом удаляйте.
 DatabaseRecreated	The database of the service was damaged and has been started anew. The history of earlier runs is gone; the next run of each task makes a full backup.	База службы была повреждена и создана заново. История прежних запусков потеряна, следующий запуск каждого задания сделает полную копию.
 NotAllowed	Only administrators of this computer may change tasks and settings.	Менять задания и настройки могут только администраторы этого компьютера.
+PasswordRequired	The program password is set: type it to change tasks and settings or to restore.	Задан пароль программы: введите его, чтобы менять задания и настройки или восстанавливать копии.
+PasswordWrong	Wrong program password.	Неверный пароль программы.
+PasswordTooShort	The program password must be at least {0} characters long.	Пароль программы должен быть не короче {0} знаков.
+PasswordTooLong	The program password must be at most {0} characters long.	Пароль программы должен быть не длиннее {0} знаков.
+PasswordSetBy	Program password set ({0}).	Пароль программы задан ({0}).
+PasswordRemovedBy	Program password removed ({0}).	Пароль программы убран ({0}).
+PasswordWrongBy	Wrong program password typed ({0}).	Введён неверный пароль программы ({0}).
+PasswordNotAllowed	Only administrators of this computer may set or remove the program password.	Задавать и убирать пароль программы могут только администраторы этого компьютера.
 
 # Archives (section 6.5)
 ArchiveSettings	Archive: {0}, compression level {1}{2}.	Архив: {0}, уровень сжатия {1}{2}.

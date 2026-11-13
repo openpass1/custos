@@ -69,6 +69,61 @@ internal sealed class UiState
     }
 }
 
+/// <summary>
+/// What the service last said about the look of the interface for this user: the theme and what of the interface they
+/// get (section 4). Kept in <c>%APPDATA%\CUSTOS\last-known.json</c>, apart from ui.json (which the main window rewrites
+/// as a whole), so that at the next logon the interface starts right away in the right theme and, for a user who
+/// should not see it, without a tray icon that flashes up until the service has answered.
+/// </summary>
+internal sealed class LastKnown
+{
+    /// <summary>The theme of the settings (A.9).</summary>
+    public string Theme { get; set; } = Core.Model.Themes.Auto;
+
+    /// <summary>What this user gets: <see cref="Core.Model.TrayModes.Full"/> for an administrator, else the setting.</summary>
+    public string TrayMode { get; set; } = Core.Model.TrayModes.Full;
+
+    private static string FilePath => Path.Combine(UiState.Folder, "last-known.json");
+
+    public static LastKnown Load()
+    {
+        try
+        {
+            using var stream = File.OpenRead(FilePath);
+            var known = JsonSerializer.Deserialize(stream, UiJsonContext.Default.LastKnown) ?? new LastKnown();
+            if (!Core.Model.Themes.IsKnown(known.Theme))
+            {
+                known.Theme = Core.Model.Themes.Auto;
+            }
+
+            if (!Core.Model.TrayModes.IsKnown(known.TrayMode))
+            {
+                known.TrayMode = Core.Model.TrayModes.Full;
+            }
+
+            return known;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return new LastKnown();
+        }
+    }
+
+    public void Save()
+    {
+        try
+        {
+            Directory.CreateDirectory(UiState.Folder);
+            File.WriteAllBytes(FilePath, JsonSerializer.SerializeToUtf8Bytes(this, UiJsonContext.Default.LastKnown));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The service tells it again at the next start.
+        }
+    }
+}
+
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(UiState))]
+[JsonSerializable(typeof(LastKnown))]
 internal sealed partial class UiJsonContext : JsonSerializerContext;

@@ -1,3 +1,5 @@
+using Custos.Core.Agent;
+
 namespace Custos.Core.Ipc;
 
 /// <summary>
@@ -93,6 +95,23 @@ public static class PipeProtocol
         /// <summary>Administrators. <see cref="SettingsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string SettingsSave = "settings.save";
 
+        /// <summary>Everyone. Whether a program password is set and whether this connection has typed it:
+        /// <see cref="EmptyRequest"/> → <see cref="PasswordStateResult"/>.</summary>
+        public const string PasswordState = "password.state";
+
+        /// <summary>Everyone. The program password typed by the user (section 4): this connection may change things for
+        /// <see cref="ProgramPassword.UnlockTime"/> after its last change. <see cref="PasswordRequest"/> →
+        /// <see cref="OkResult"/>, or the error <see cref="Errors.Invalid"/> for a wrong password.</summary>
+        public const string PasswordUnlock = "password.unlock";
+
+        /// <summary>Everyone. Forgets the typed password of this connection (the main window was closed):
+        /// <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string PasswordLock = "password.lock";
+
+        /// <summary>Administrators only, always. Sets, changes or removes the program password:
+        /// <see cref="PasswordRequest"/> (null = remove) → <see cref="OkResult"/>.</summary>
+        public const string PasswordSet = "password.set";
+
         /// <summary>Administrators only, always. Sets to restore: <see cref="RestoreListRequest"/> → <see cref="RestoreListResult"/>.</summary>
         public const string RestoreList = "restore.list";
 
@@ -182,5 +201,9 @@ public static class PipeProtocol
 
         /// <summary>The first request must be hello.</summary>
         public const string HelloFirst = "hello_first";
+
+        /// <summary>A program password is set and this connection has not typed it (or did so too long ago): ask
+        /// for it with <see cref="Methods.PasswordUnlock"/> and send the request again.</summary>
+        public const string PasswordRequired = "password_required";
     }
 }

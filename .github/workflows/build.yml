@@ -45,22 +45,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # Windows PowerShell 5.1, the same shell the build is run with on a test machine. CUSTOS_REQUIRE_7Z makes the 7z
-      # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.4.<run number>,
+      # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.5.<run number>,
       # so a later build can be installed over an earlier one by an update from the server; the test update
-      # 0.4.<run number>.1 is the same code with a higher version, to try that with a single build (the update
+      # 0.5.<run number>.1 is the same code with a higher version, to try that with a single build (the update
       # package of a build has the version of its installer, so it cannot update a machine installed from it).
       - name: Build, test and make the installer
         shell: powershell
         working-directory: client
         env:
           CUSTOS_REQUIRE_7Z: '1'
+          # The window tests save pictures of the windows in both themes here (Stage5Tests).
+          CUSTOS_SCREENSHOTS: ${{ github.workspace }}\client\artifacts\screenshots
           # Built-in cloud drive applications (client stage 4b): repository variables and secrets, empty when not set.
           CUSTOS_GDRIVE_CLIENT_ID: ${{ vars.CUSTOS_GDRIVE_CLIENT_ID }}
           CUSTOS_GDRIVE_CLIENT_SECRET: ${{ secrets.CUSTOS_GDRIVE_CLIENT_SECRET }}
           CUSTOS_YADISK_CLIENT_ID: ${{ vars.CUSTOS_YADISK_CLIENT_ID }}
           CUSTOS_YADISK_CLIENT_SECRET: ${{ secrets.CUSTOS_YADISK_CLIENT_SECRET }}
           CUSTOS_DROPBOX_CLIENT_ID: ${{ vars.CUSTOS_DROPBOX_CLIENT_ID }}
-        run: .\build.ps1 -Configuration Release -Version 0.4.${{ github.run_number }} -TestUpdateVersion 0.4.${{ github.run_number }}.1
+        run: .\build.ps1 -Configuration Release -Version 0.5.${{ github.run_number }} -TestUpdateVersion 0.5.${{ github.run_number }}.1
 
       - name: Upload the installer
         uses: actions/upload-artifact@v6
@@ -70,13 +72,23 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # Pictures of the main windows in the light and the dark theme, made by the window tests.
+      - name: Upload the pictures of the windows
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: client-screenshots
+          path: client/artifacts/screenshots/*.png
+          if-no-files-found: ignore
+          retention-days: 14
+
       # The update packages go up as they are (archive: false, the artifact is named after the file), so what is
       # downloaded from the run page is the very zip the site takes. Wrapped into GitHub's own zip, it was refused
       # by the site ("no manifest.json") when uploaded as downloaded.
       - name: Upload the update package
         uses: actions/upload-artifact@v7
         with:
-          path: client/artifacts/update/custos-0.4.${{ github.run_number }}.zip
+          path: client/artifacts/update/custos-0.5.${{ github.run_number }}.zip
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -84,7 +96,7 @@ jobs:
       - name: Upload the test update package
         uses: actions/upload-artifact@v7
         with:
-          path: client/artifacts/update-test/custos-0.4.${{ github.run_number }}.1-test.zip
+          path: client/artifacts/update-test/custos-0.5.${{ github.run_number }}.1-test.zip
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -93,7 +105,7 @@ jobs:
       - name: Say what the files are for
         shell: pwsh
         run: |
-          $v = '0.4.${{ github.run_number }}'
+          $v = '0.5.${{ github.run_number }}'
           @"
           ### CUSTOS ${v}: что скачивать
 
@@ -101,6 +113,7 @@ jobs:
           |---|---|
           | ``CUSTOS-Setup`` | Установщик версии ${v} (zip, внутри ``CUSTOS-Setup-${v}.exe``). |
           | ``custos-${v}.zip`` | Пакет обновления ${v} для сайта, раздел «Обновления». Обновляет машины, где стоит более старая версия. Загружается на сайт как есть, без распаковки. |
+          | ``client-screenshots`` | Снимки окон программы в светлой и тёмной теме, сделанные тестами. Нужны, чтобы посмотреть оформление без установки. |
           | ``custos-${v}.1-test.zip`` | Пробное обновление: те же программы с версией ${v}.1. Нужно только для проверки обновления с сайта на машине, где уже стоит ${v}. Загружается на сайт как есть, без распаковки. |
           "@ >> $env:GITHUB_STEP_SUMMARY
 

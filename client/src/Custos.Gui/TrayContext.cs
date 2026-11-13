@@ -9,6 +9,12 @@ namespace Custos.Gui;
 /// (docs/client-ui.md, section 4). Closing the window keeps the tray icon; "Close interface" ends the process. The
 /// service keeps running either way; the menu can also start and stop it (with administrator rights).
 /// </summary>
+/// <remarks>
+/// A user who is not an administrator gets what the setting «Интерфейс для пользователей» says (section 4): the full
+/// interface, only the state (the icon and <see cref="StatusForm"/>), or no icon at all. The process runs in every
+/// mode: the countdown before a shutdown must reach every session, and the Start menu opens the state window. The
+/// theme of the settings applies to the windows; open ones are made anew when it changes.
+/// </remarks>
 internal sealed class TrayContext : ApplicationContext
 {
     /// <summary>Windows cuts the tooltip of a tray icon at 127 characters.</summary>
@@ -34,8 +40,18 @@ internal sealed class TrayContext : ApplicationContext
     };
 
     private readonly RegisteredWaitHandle _activateWait;
+    private readonly ToolStripMenuItem _open;
+    private readonly ToolStripItem[] _fullOnly;
+    private readonly LastKnown _lastKnown;
     private MainForm? _mainForm;
+    private StatusForm? _statusForm;
     private PowerCountdownForm? _powerForm;
+
+    /// <summary>What this user gets of the interface now (<see cref="TrayModes"/>).</summary>
+    private string _mode;
+
+    /// <summary>The open windows are to be made anew in the new theme as soon as no dialog is open over them.</summary>
+    private bool _recreatePending;
 
     /// <param name="activate">Set by a second copy started in the same session: show the window.</param>
     /// <param name="showWindow">Open the main window right away (started by the user, not at logon).</param>
@@ -44,9 +60,11 @@ internal sealed class TrayContext : ApplicationContext
         _ui = SynchronizationContext.Current
             ?? throw new InvalidOperationException("TrayContext must be created on the UI thread.");
 
+        _lastKnown = LastKnown.Load();
+        _mode = _lastKnown.TrayMode;
         _menu = new ContextMenuStrip();
         _boldFont = new Font(_menu.Font, FontStyle.Bold);
-        var open = new ToolStripMenuItem(Strings.MenuOpen, null, (_, _) => ShowMainForm()) { Font = _boldFont };
+        var open = _open = new ToolStripMenuItem(Strings.MenuOpen, null, (_, _) => ShowWindow()) { Font = _boldFont };
         _runAll = new ToolStripMenuItem(Strings.MenuRunAll, null, (_, _) => RunAll());
         _stopAll = new ToolStripMenuItem(Strings.MenuStopAll, null, (_, _) => StopAll());
 
@@ -59,7 +77,9 @@ internal sealed class TrayContext : ApplicationContext
         _serviceStart = new ToolStripMenuItem(Strings.MenuServiceStart, _shield, (_, _) => ControlService(start: true));
         _serviceStop = new ToolStripMenuItem(Strings.MenuServiceStop, _shield, (_, _) => ControlService(start: false));
         var close = new ToolStripMenuItem(Strings.MenuClose, null, (_, _) => ExitThread());
-        _menu.Items.AddRange([open, _runAll, _stopAll, new ToolStripSeparator(), _serviceStart, _serviceStop, new ToolStripSeparator(), close]);
+        var serviceSeparator = new ToolStripSeparator();
+        _fullOnly = [_runAll, _stopAll, serviceSeparator, _serviceStart, _serviceStop];
+        _menu.Items.AddRange([open, _runAll, _stopAll, serviceSeparator, _serviceStart, _serviceStop, new ToolStripSeparator(), close]);
         _menu.Opening += (_, _) => UpdateServiceItems();
 
         _trayIcon = new NotifyIcon { ContextMenuStrip = _menu };
@@ -67,31 +87,35 @@ internal sealed class TrayContext : ApplicationContext
         {
             if (e.Button == MouseButtons.Left)
             {
-                ShowMainForm();
+                ShowWindow();
             }
         };
 
         _monitor = new ServiceMonitor();
+        _monitor.AskPassword = () => PasswordPromptForm.AskAsync(_monitor, Form.ActiveForm);
         _monitor.StatusChanged += (_, _) =>
         {
+            ApplySettings();
             UpdateTray();
             UpdatePower();
         };
         _monitor.SnapshotChanged += (_, _) =>
         {
+            ApplySettings();
             UpdateTray();
             UpdatePower();
         };
         _monitor.ProgressChanged += (_, _) => UpdateTray();
+        Application.Idle += OnIdle;
+        ShowMode();
         UpdateTray();
-        _trayIcon.Visible = true;
         _monitor.Start();
 
         _activateWait = ThreadPool.RegisterWaitForSingleObject(
-            activate, (_, _) => _ui.Post(_ => ShowMainForm(), null), null, Timeout.Infinite, executeOnlyOnce: false);
+            activate, (_, _) => _ui.Post(_ => ShowWindow(), null), null, Timeout.Infinite, executeOnlyOnce: false);
         if (showWindow)
         {
-            ShowMainForm();
+            ShowWindow();
         }
     }
 
@@ -106,6 +130,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        Application.Idle -= OnIdle;
         _activateWait.Unregister(null);
         _trayIcon.Visible = false;
         _powerForm?.Dispose();
@@ -114,6 +139,8 @@ internal sealed class TrayContext : ApplicationContext
             _mainForm.SaveLayout();
             _mainForm.Dispose();
         }
+
+        _statusForm?.Dispose();
 
         _monitor.Dispose();
         base.ExitThreadCore();
@@ -136,20 +163,134 @@ internal sealed class TrayContext : ApplicationContext
         base.Dispose(disposing);
     }
 
-    private void ShowMainForm()
+    /// <summary>The window of this user: the main window, or the state window when they get only the state.</summary>
+    private void ShowWindow()
     {
-        if (_mainForm is null || _mainForm.IsDisposed)
+        Form form;
+        if (_mode == TrayModes.Full)
         {
-            _mainForm = new MainForm(_monitor);
+            CloseStatusForm();
+            form = _mainForm is { IsDisposed: false } main ? main : _mainForm = new MainForm(_monitor);
+        }
+        else
+        {
+            CloseMainForm();
+            form = _statusForm is { IsDisposed: false } status ? status : _statusForm = new StatusForm(_monitor);
         }
 
-        _mainForm.Show();
-        if (_mainForm.WindowState == FormWindowState.Minimized)
+        form.Show();
+        if (form.WindowState == FormWindowState.Minimized)
         {
-            _mainForm.WindowState = FormWindowState.Normal;
+            form.WindowState = FormWindowState.Normal;
         }
 
-        _mainForm.Activate();
+        form.Activate();
+    }
+
+    private void CloseMainForm()
+    {
+        if (_mainForm is { IsDisposed: false } main)
+        {
+            main.SaveLayout();
+            main.Dispose();
+        }
+
+        _mainForm = null;
+    }
+
+    private void CloseStatusForm()
+    {
+        _statusForm?.Dispose();
+        _statusForm = null;
+    }
+
+    /// <summary>
+    /// What the service says about this user's interface and the theme. Without an answer from the service what it
+    /// said last stays (<see cref="LastKnown"/>): a user without the icon does not get it back while the service starts.
+    /// </summary>
+    private void ApplySettings()
+    {
+        if (!_monitor.IsConnected || _monitor.Snapshot is not { } snapshot)
+        {
+            return;
+        }
+
+        string mode = _monitor.Status.Hello?.IsAdmin == true || !TrayModes.IsKnown(snapshot.Settings.TrayMode)
+            ? TrayModes.Full : snapshot.Settings.TrayMode;
+        string theme = Themes.IsKnown(snapshot.Settings.Theme) ? snapshot.Settings.Theme : Themes.Auto;
+        if (mode == _lastKnown.TrayMode && theme == _lastKnown.Theme)
+        {
+            return;
+        }
+
+        bool newTheme = theme != _lastKnown.Theme;
+        _lastKnown.TrayMode = mode;
+        _lastKnown.Theme = theme;
+        _lastKnown.Save();
+        if (mode != _mode)
+        {
+            _mode = mode;
+            ShowMode();
+        }
+
+        if (newTheme)
+        {
+            Theme.Apply(theme);
+        }
+
+        // The open window changes kind or theme; while a dialog is open over it, that waits (OnIdle).
+        _recreatePending = true;
+        RecreateWindows();
+    }
+
+    /// <summary>The icon and its menu for the current mode.</summary>
+    private void ShowMode()
+    {
+        bool full = _mode == TrayModes.Full;
+        _open.Text = full ? Strings.MenuOpen : Strings.MenuOpenStatus;
+        foreach (var item in _fullOnly)
+        {
+            item.Visible = full;
+        }
+
+        _trayIcon.Visible = _mode != TrayModes.Hidden;
+    }
+
+    private void OnIdle(object? sender, EventArgs e)
+    {
+        if (_recreatePending)
+        {
+            RecreateWindows();
+        }
+    }
+
+    /// <summary>
+    /// Makes the open windows anew, in the current theme and of the kind of the current mode, once nothing else is open
+    /// over them: a dialog would lose what the user typed. Hidden windows are simply dropped; they are made when needed.
+    /// </summary>
+    private void RecreateWindows()
+    {
+        var ours = new HashSet<Form?> { _mainForm, _statusForm, _powerForm };
+        if (Application.OpenForms.Cast<Form>().Any(f => !ours.Contains(f)))
+        {
+            return;
+        }
+
+        _recreatePending = false;
+        bool visible = (_mainForm is { IsDisposed: false, Visible: true }) || (_statusForm is { IsDisposed: false, Visible: true });
+        CloseMainForm();
+        CloseStatusForm();
+        if (_powerForm is not null)
+        {
+            _powerForm.Dispose();
+            _powerForm = null;
+            UpdatePower();
+        }
+
+        if (visible)
+        {
+            ShowWindow();
+        }
     }
 
     /// <summary>Shows the countdown to a shutdown or sleep after a run while the service counts, and hides it after.</summary>

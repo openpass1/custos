@@ -72,6 +72,9 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     /// </summary>
     public bool AllUsersMayEdit => _config.GetSettings().AllowAllUsersEdit;
 
+    /// <summary>The hash of the program password (section 4), or null when none is set.</summary>
+    public string? ProgramPasswordHash => _config.GetSettings().ProgramPasswordHash;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Leave the start of the host at once; loading the configuration and the database may take a while.
@@ -146,9 +149,11 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         var settings = _config.GetSettings();
+        bool passwordSet = settings.ProgramPasswordHash is not null;
         settings.ProgramPasswordHash = null;
         return new AgentSnapshot
         {
+            ProgramPasswordSet = passwordSet,
             Version = version,
             ConfigRevision = _config.ConfigRevision,
             ComputerName = Environment.MachineName,
@@ -396,8 +401,19 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public OkResult SaveSettings(AgentSettings settings, string user)
+    /// <param name="isAdmin">False for a user who may change settings only because everybody may: the rights
+    /// (who may change things and what users see of the interface) stay as an administrator set them.</param>
+    public OkResult SaveSettings(AgentSettings settings, string user, bool isAdmin)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (!isAdmin)
+        {
+            var current = _config.GetSettings();
+            settings.AllowAllUsersEdit = current.AllowAllUsersEdit;
+            settings.TrayMode = current.TrayMode;
+            settings.AllowRemoteEdit = current.AllowRemoteEdit;
+        }
+
         try
         {
             _config.SaveSettings(settings);
@@ -413,6 +429,25 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         PublishSnapshot();
         return OkResult.Instance;
     }
+
+    /// <summary>Sets, changes or removes (null) the program password (section 4). The site learns from the next
+    /// configuration snapshot that a password is set, never the password or its hash.</summary>
+    public OkResult SetProgramPassword(string? password, string user)
+    {
+        if (password is not null && ProgramPassword.Problem(password) is { } problem)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, problem);
+        }
+
+        _config.SetProgramPasswordHash(password is null ? null : ProgramPassword.Hash(password));
+        Log(LogLineLevels.Info, Messages.Format(password is null ? Messages.PasswordRemovedBy : Messages.PasswordSetBy, user));
+        NoteConfigChange();
+        PublishSnapshot();
+        return OkResult.Instance;
+    }
+
+    /// <summary>A wrong program password was typed: noted in the live log, where an administrator sees it.</summary>
+    public void NoteWrongPassword(string user) => Log(LogLineLevels.Warning, Messages.Format(Messages.PasswordWrongBy, user));
 
     /// <summary>"Find" in the database server dialog: running servers and folders of their programs.</summary>
     public DbFindResult FindDatabases() => DbFinder.Find(_stopping);

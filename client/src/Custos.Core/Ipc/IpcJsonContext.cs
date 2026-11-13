@@ -40,6 +40,8 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(RemoteTestRequest))]
 [JsonSerializable(typeof(RemoteTestResult))]
 [JsonSerializable(typeof(SettingsSaveRequest))]
+[JsonSerializable(typeof(PasswordRequest))]
+[JsonSerializable(typeof(PasswordStateResult))]
 [JsonSerializable(typeof(OkResult))]
 [JsonSerializable(typeof(ServerConnectRequest))]
 [JsonSerializable(typeof(SevenZipCheckResult))]
