@@ -28,7 +28,8 @@ shows every computer in one place, warns when something goes wrong and lets you 
   by day, week, month or timer; a run missed while the computer was off is made after it starts.
 - Writes straight to the destination, without a temporary copy on the local disk. Destinations: a local folder, a
   network share with its own account, a USB disk found by its volume label, SFTP, FTP and FTPS, WebDAV, S3 (with
-  Object Lock against deletion). One task can write to several destinations at once.
+  Object Lock against deletion), Google Drive, Yandex Disk and Dropbox. One task can write to several destinations at
+  once.
 - 7z or ZIP archives with AES-256 encryption, 7z volumes, verification of new and stored copies.
 - Retention by count, by age or grandfather-father-son (GFS). A set is deleted only as a whole, never after a failed
   run, and the last good full copy is always kept.
@@ -36,7 +37,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
 - Database dumps: MySQL, MariaDB and PostgreSQL, OSPanel included.
 - Linux servers: files and database dumps are pulled over SSH through the read-only script
   [custos-helper](helper/README.md).
-- Restore to a date, import of tasks from Cobian Backup 11, Russian and English, light and dark theme.
+- Restore to a date, import of tasks from Cobian Backup 11, Russian and English.
 
 ## CUSTOS Monitor
 
