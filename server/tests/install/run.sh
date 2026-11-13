@@ -46,12 +46,14 @@ php=$(in_box 'sed -n "s/^PHP=//p" /etc/custos/install.conf')
 step "The site answers"
 code=$(in_box 'curl -s -o /dev/null -w "%{http_code}" http://localhost/login')
 [ "$code" = 200 ] || fail "GET /login answered $code instead of 200."
-in_box 'curl -s http://localhost/login' | grep -q 'CUSTOS' || fail "The login page does not mention CUSTOS."
+# Outputs go into variables before grep -q: with pipefail, grep -q that stops reading early can fail the writer.
+login=$(in_box 'curl -s http://localhost/login')
+[[ "$login" == *CUSTOS* ]] || fail "The login page does not mention CUSTOS."
 health=$(in_box 'curl -s http://localhost/api/health')
 echo "$health"
-echo "$health" | grep -q '"status":"ok"' || fail "/api/health is not ok: $health"
+[[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok: $health"
 in_box 'grep -q "cron.php" /etc/cron.d/custos' || fail "No cron job."
-in_box 'stat -c "%U %a" /var/www/custos/server/config/config.php' | grep -qx 'custos 600' \
+[ "$(in_box 'stat -c "%U %a" /var/www/custos/server/config/config.php')" = 'custos 600' ] \
     || fail "config.php must belong to custos with mode 600."
 
 step "A fake agent registers"
@@ -70,6 +72,7 @@ docker exec "$name" bash /opt/install.sh --update --package=/opt/custos-server.z
 grep -q 'is already installed' /tmp/"$name"-update.txt || fail "--update did not see that the version is installed."
 docker exec "$name" bash /opt/install.sh --update --force --package=/opt/custos-server.zip | tee /tmp/"$name"-force.txt
 grep -q 'Database schema is up to date' /tmp/"$name"-force.txt || fail "--update --force did not run migrate.php."
-in_box 'curl -s http://localhost/api/health' | grep -q '"status":"ok"' || fail "/api/health is not ok after the update."
+health=$(in_box 'curl -s http://localhost/api/health')
+[[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok after the update: $health"
 
 printf '\n[PASS] %s\n' "$base"

@@ -375,7 +375,9 @@ if [ -f "$config" ]; then
     db_password=$("$php_bin" -r '$c = require $argv[1]; echo $c["db"]["password"] ?? "";' "$config")
     ok "Settings kept: $config"
 else
-    db_password=$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)
+    # Cut in bash, not with "| head": with pipefail a reader that stops early can fail the pipeline.
+    db_password=$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')
+    db_password=${db_password:0:24}
 fi
 [ -n "$db_password" ] || die "No database password in $config."
 [[ "$db_password" =~ ^[A-Za-z0-9_.-]+$ ]] \
