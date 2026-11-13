@@ -21,14 +21,14 @@ $wallUrl = $base . '/wall?token=' . rawurlencode($wallToken);
         <dd>
             <span class="copy-row">
                 <input type="text" id="wall-url" class="mono" value="<?= e($wallUrl) ?>" readonly size="60">
-                <button type="button" data-copy="wall-url"><?= e(t('common.copy')) ?></button>
+                <button type="button" class="secondary" data-copy="wall-url" data-copied="<?= e(t('common.copied')) ?>"><?= icon('copy') ?><?= e(t('common.copy')) ?></button>
                 <a class="button-link" href="<?= e($wallUrl) ?>" target="_blank" rel="noopener"><?= e(t('integrations.wall.open')) ?></a>
             </span>
         </dd>
     </dl>
     <form method="post" action="<?= e(url('/settings/integrations/wall-token')) ?>" data-confirm="<?= e(t('integrations.confirm.wall')) ?>">
         <?= csrf_field() ?>
-        <button type="submit" class="secondary"><?= e(t('integrations.action.token')) ?></button>
+        <button type="submit" class="secondary"><?= icon('key') ?><?= e(t('integrations.action.token')) ?></button>
         <span class="note"><?= e(t('integrations.token.hint')) ?></span>
     </form>
 </section>
@@ -44,7 +44,7 @@ $wallUrl = $base . '/wall?token=' . rawurlencode($wallToken);
             <code>{$CUSTOS.TOKEN}</code> =
             <span class="copy-row">
                 <input type="text" id="zabbix-token" class="mono" value="<?= e($zabbixToken) ?>" readonly size="52">
-                <button type="button" data-copy="zabbix-token"><?= e(t('common.copy')) ?></button>
+                <button type="button" class="secondary" data-copy="zabbix-token" data-copied="<?= e(t('common.copied')) ?>"><?= icon('copy') ?><?= e(t('common.copy')) ?></button>
             </span>
         </dd>
         <dt><?= e(t('integrations.zabbix.template')) ?></dt>
@@ -62,7 +62,7 @@ $wallUrl = $base . '/wall?token=' . rawurlencode($wallToken);
     </dl>
     <form method="post" action="<?= e(url('/settings/integrations/zabbix-token')) ?>" data-confirm="<?= e(t('integrations.confirm.zabbix')) ?>">
         <?= csrf_field() ?>
-        <button type="submit" class="secondary"><?= e(t('integrations.action.token')) ?></button>
+        <button type="submit" class="secondary"><?= icon('key') ?><?= e(t('integrations.action.token')) ?></button>
         <span class="note"><?= e(t('integrations.token.hint')) ?></span>
     </form>
 </section>

@@ -25,9 +25,126 @@ document.addEventListener('click', async (event) => {
         // Plain HTTP pages have no clipboard API; the selected text can still be copied with Ctrl+C.
         document.execCommand('copy');
     }
-    const text = button.textContent;
-    button.textContent = '✓';
-    setTimeout(() => { button.textContent = text; }, 1500);
+    // The button answers in words for a moment: "✓ Copied" (data-copied), then reads as before.
+    if (button.hasAttribute('data-copying')) {
+        return;
+    }
+    const before = button.innerHTML;
+    button.setAttribute('data-copying', '');
+    button.textContent = '✓ ' + (button.getAttribute('data-copied') || '');
+    setTimeout(() => {
+        button.innerHTML = before;
+        button.removeAttribute('data-copying');
+    }, 1600);
+});
+
+// "More" menus (details.dropdown): one open at a time, closed by a click elsewhere or Esc. A menu inside a table that
+// scrolls sideways is placed over the page (position: fixed), so that the edge of the table does not cut it off; it
+// opens upwards when there is no room below. Any menu opens rightwards when there is no room on the left (phones).
+(() => {
+    const closeAll = (except) => {
+        for (const open of document.querySelectorAll('details.dropdown[open]')) {
+            if (open !== except && !open.contains(except)) {
+                open.open = false;
+            }
+        }
+    };
+    const place = (dropdown) => {
+        const menu = dropdown.querySelector('.dropdown-menu');
+        const summary = dropdown.querySelector('summary');
+        if (!menu || !summary) {
+            return;
+        }
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.bottom = '';
+        menu.style.right = '';
+        menu.style.left = '';
+        if (!dropdown.closest('.table-wrap')) {
+            // The menu hangs from the right edge of its button; a button at the left of a narrow screen opens it rightwards.
+            if (menu.getBoundingClientRect().left < 8) {
+                menu.style.right = 'auto';
+                menu.style.left = '0';
+            }
+            return;
+        }
+        const box = summary.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.right = Math.max(8, document.documentElement.clientWidth - box.right) + 'px';
+        if (box.bottom + menu.offsetHeight + 12 > window.innerHeight && box.top > menu.offsetHeight + 12) {
+            menu.style.top = (box.top - menu.offsetHeight - 6) + 'px';
+        } else {
+            menu.style.top = (box.bottom + 6) + 'px';
+        }
+    };
+    // "toggle" does not bubble: listen while it goes down.
+    document.addEventListener('toggle', (event) => {
+        const dropdown = event.target;
+        if (dropdown instanceof HTMLDetailsElement && dropdown.classList.contains('dropdown') && dropdown.open) {
+            closeAll(dropdown);
+            place(dropdown);
+        }
+    }, true);
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('details.dropdown')) {
+            closeAll(null);
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        const open = document.querySelector('details.dropdown[open]');
+        if (open) {
+            open.open = false;
+            const summary = open.querySelector('summary');
+            if (summary) {
+                summary.focus();
+            }
+        }
+    });
+    // A fixed menu would stay where it was while the page moves under it.
+    window.addEventListener('scroll', () => {
+        for (const open of document.querySelectorAll('.table-wrap details.dropdown[open]')) {
+            open.open = false;
+        }
+    }, { passive: true });
+})();
+
+// Small dialogs (rename a machine, change its group): [data-dialog="id"] opens <dialog id="id">, [data-dialog-close]
+// or a click outside the dialog closes it. The first field gets the focus.
+document.addEventListener('click', (event) => {
+    const opener = event.target.closest('[data-dialog]');
+    if (opener) {
+        const dialog = document.getElementById(opener.getAttribute('data-dialog'));
+        if (dialog && typeof dialog.showModal === 'function') {
+            const menu = opener.closest('details.dropdown');
+            if (menu) {
+                menu.open = false;
+            }
+            dialog.showModal();
+            const field = dialog.querySelector('input:not([type="hidden"]), select, textarea');
+            if (field) {
+                field.focus();
+                if (typeof field.select === 'function' && field.tagName === 'INPUT') {
+                    field.select();
+                }
+            }
+        }
+        return;
+    }
+    const closer = event.target.closest('[data-dialog-close]');
+    if (closer && closer.closest('dialog')) {
+        closer.closest('dialog').close();
+        return;
+    }
+    if (event.target instanceof HTMLDialogElement && event.target.open) {
+        const box = event.target.getBoundingClientRect();
+        const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+        if (!inside) {
+            event.target.close();
+        }
+    }
 });
 
 // A select with data-autosubmit sends its form as soon as the choice changes.
@@ -76,8 +193,8 @@ document.addEventListener('change', (event) => {
             const data = await response.json();
             for (const [name, html] of Object.entries(data.parts || {})) {
                 const part = block.querySelector('[data-part="' + name + '"]');
-                // A form being filled in (or with focus inside) is left alone until the next round.
-                if (part && !part.contains(document.activeElement)) {
+                // A form being filled in (or with focus inside) and an open menu are left alone until the next round.
+                if (part && !part.contains(document.activeElement) && !part.querySelector('details.dropdown[open]')) {
                     part.innerHTML = html;
                 }
             }

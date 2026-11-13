@@ -427,6 +427,15 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.3.** No migrations. Settings → General keeps one connection string: it holds both the server address and the registration code. The separate "Server address" and "Registration code" fields are gone. `bin/install.php` prints the connection string at the end as well, and the fake agent takes it in `--connect='...'`. When there is nothing to update (the machines already run this version or newer), the site says so in a plain message, not in red.
 
+**Version 0.4.4.** No migrations. Pages are put in order (the first part of the new look):
+- a machine page starts with the name, the state and the main buttons, "Add task" and "Agent settings"; rare actions (inventory, rename, group, disable, delete) are in the "More" menu, and rename and group open a small dialog;
+- one line under the name sums the machine up (group, OS, IP, versions, last contact); the full machine details fold into "Machine details";
+- a task row has one button ("Run" or "Stop") and the rest under "⋯"; the task page has the same: the main button, "Edit" and "More";
+- while nothing runs, one line with the nearest run replaces the empty "Now" block; empty blocks take one line;
+- buttons get icons and one set of rules: blue is the main action, white an ordinary one, a red outline deletes or does something risky and asks first;
+- the tables of "Machines", "Runs", "Audit log", "Users" and "Notices" sit in panels, and a row lights up under the pointer;
+- the "Copy" button answers "✓ Copied".
+
 ## What to keep in backups
 
 - the `custos` database;

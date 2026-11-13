@@ -30,6 +30,7 @@ $theme = $view->theme();
     <?php endforeach ?>
 </head>
 <body>
+<?php include __DIR__ . '/_sprite.php' ?>
 <header class="top">
     <a class="brand" href="<?= e(url('/')) ?>"><img src="<?= e(url('/favicon.svg')) ?>" alt="" width="20" height="20"><?= e($serverName) ?></a>
     <?php if ($user !== null): ?>
@@ -41,7 +42,7 @@ $theme = $view->theme();
             <?php endforeach ?>
         </nav>
         <a class="bell<?= $section === 'notices' ? ' active' : '' ?>" href="<?= e(url('/notices')) ?>" title="<?= e(t('nav.notices')) ?>">
-            <span aria-hidden="true">🔔</span><span class="visually-hidden"><?= e(t('nav.notices')) ?></span>
+            <?= icon('bell') ?><span class="visually-hidden"><?= e(t('nav.notices')) ?></span>
             <span class="count" data-bell<?= $unread === 0 ? ' hidden' : '' ?>><?= $unread ?></span>
         </a>
         <form class="whoami" method="post" action="<?= e(url('/logout')) ?>">

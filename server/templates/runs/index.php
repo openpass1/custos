@@ -26,15 +26,17 @@ $statuses = ['success', 'warning', 'error', 'aborted', 'running'];
     </label>
     <label><?= e(t('common.from')) ?> <input type="date" name="from" value="<?= e($filter['from']) ?>"></label>
     <label><?= e(t('common.to')) ?> <input type="date" name="to" value="<?= e($filter['to']) ?>"></label>
-    <button type="submit"><?= e(t('common.apply')) ?></button>
+    <button type="submit" class="secondary"><?= e(t('common.apply')) ?></button>
     <?php if (array_filter($filter) !== []): ?><a href="<?= e(url('/runs')) ?>"><?= e(t('common.reset')) ?></a><?php endif ?>
-    <a class="button-link" href="<?= e(url('/runs/export', $filter)) ?>" title="<?= e(t('runs.export.hint')) ?>"><?= e(t('runs.export')) ?></a>
+    <a class="button-link" href="<?= e(url('/runs/export', $filter)) ?>" title="<?= e(t('runs.export.hint')) ?>"><?= icon('download') ?><?= e(t('runs.export')) ?></a>
 </form>
 
 <?php if ($runs === []): ?>
     <p class="empty"><?= e(t('runs.empty')) ?></p>
 <?php else: ?>
-    <p class="note"><?= e(t('runs.total', ['n' => $total])) ?></p>
-    <?php $showAgent = true; include __DIR__ . '/_table.php'; ?>
+    <section class="panel">
+        <p class="note"><?= e(t('runs.total', ['n' => $total])) ?></p>
+        <?php $showAgent = true; include __DIR__ . '/_table.php'; ?>
+    </section>
     <?= pager($page, $pages, '/runs', $filter) ?>
 <?php endif ?>

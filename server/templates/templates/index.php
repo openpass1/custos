@@ -1,12 +1,14 @@
 <?php
 /** @var list<array> $templates */
 ?>
-<h1><?= e(t('templates.title')) ?></h1>
-<p class="hint"><?= e(t('templates.hint')) ?></p>
-<div class="actions-row">
-    <a class="button-link" href="<?= e(url('/templates/new')) ?>"><?= e(t('templates.action.new')) ?></a>
+<div class="page-head">
+    <h1><?= e(t('templates.title')) ?></h1>
+    <div class="page-tools">
+        <a class="button-link primary" href="<?= e(url('/templates/new')) ?>"><?= icon('plus') ?><?= e(t('templates.action.new')) ?></a>
+    </div>
 </div>
-<section class="panel">
+<p class="hint"><?= e(t('templates.hint')) ?></p>
+<section class="panel<?= $templates === [] ? ' panel-empty' : '' ?>">
     <?php if ($templates === []): ?>
         <p class="empty"><?= e(t('templates.empty')) ?></p>
     <?php else: ?>

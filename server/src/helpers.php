@@ -366,3 +366,9 @@ function selected(mixed $value, mixed $current): string
 {
     return (string) $value === (string) $current ? ' selected' : '';
 }
+
+/** One of the site's icons (templates/_sprite.php). It is decoration: the word next to it says what it means. */
+function icon(string $name): string
+{
+    return '<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"/></svg>';
+}
