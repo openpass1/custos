@@ -99,7 +99,13 @@ internal sealed class TaskExportForm : Form
         Controls.Add(bottom);
         ResumeLayout(performLayout: true);
 
-        FillTasks();
+        // The list is filled once its window exists: a ListView that gets its window later checks its items again one by
+        // one, and its item list is not complete while it does.
+        Load += (_, _) =>
+        {
+            FillTasks();
+            UpdateState();
+        };
         _checkAll.Click += (_, _) => CheckAll(true);
         _checkNone.Click += (_, _) => CheckAll(false);
         _tasks.ItemChecked += (_, _) =>
@@ -215,7 +221,7 @@ internal sealed class TaskExportForm : Form
         UpdateState();
     }
 
-    private List<TaskDefinition> Chosen() => [.. _tasks.Items.Cast<ListViewItem>().Where(i => i.Checked).Select(i => (TaskDefinition)i.Tag!)];
+    private List<TaskDefinition> Chosen() => [.. _tasks.Items.Cast<ListViewItem>().Where(i => i.Checked).Select(i => i.Tag).OfType<TaskDefinition>()];
 
     private void UpdateState()
     {

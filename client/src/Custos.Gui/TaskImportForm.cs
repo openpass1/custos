@@ -309,7 +309,12 @@ internal sealed class TaskImportForm : Form
     /// <summary>Fills the list from the file and what is on this computer, keeping the ticks of a list already shown.</summary>
     private void Plan()
     {
-        var previous = _tasks.Items.Cast<ListViewItem>().ToDictionary(i => ((ImportItem)i.Tag!).Task.Id, i => i.Checked, StringComparer.OrdinalIgnoreCase);
+        var previous = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        foreach (var shown in _tasks.Items.Cast<ListViewItem>().Where(i => i.Tag is ImportItem))
+        {
+            previous[((ImportItem)shown.Tag!).Task.Id] = shown.Checked;
+        }
+
         var snapshot = _monitor.Snapshot;
         _plan = _exported is null ? null : new TaskImport(_exported, _secrets, snapshot?.Tasks ?? [], snapshot?.Credentials ?? []);
         string? selected = _tasks.SelectedItems.Count > 0 ? ((ImportItem)_tasks.SelectedItems[0].Tag!).Task.Id : null;
@@ -421,7 +426,7 @@ internal sealed class TaskImportForm : Form
         _accountRows.Clear();
     }
 
-    private List<ImportItem> Chosen() => [.. _tasks.Items.Cast<ListViewItem>().Where(i => i.Checked).Select(i => (ImportItem)i.Tag!)];
+    private List<ImportItem> Chosen() => [.. _tasks.Items.Cast<ListViewItem>().Where(i => i.Checked).Select(i => i.Tag).OfType<ImportItem>()];
 
     private void Import()
     {
