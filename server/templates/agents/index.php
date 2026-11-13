@@ -12,7 +12,7 @@ use Custos\Domain\Agents;
         <h2><?= e(t('agents.pending.title')) ?></h2>
         <p class="hint"><?= e(t('agents.pending.hint')) ?></p>
         <div class="table-wrap">
-            <table>
+            <table class="cards">
                 <thead>
                 <tr>
                     <th><?= e(t('agents.col.name')) ?></th>
@@ -33,11 +33,11 @@ use Custos\Domain\Agents;
                                 <div class="note"><?= e(t('agents.rereg', ['name' => Agents::name($old)])) ?></div>
                             <?php endif ?>
                         </td>
-                        <td><?= e($a['last_ip'] ?? '—') ?></td>
-                        <td><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?></div></td>
-                        <td><code class="fingerprint"><?= e($a['key_fingerprint']) ?></code></td>
-                        <td><?= e(fmt_time($a['first_seen_at'])) ?></td>
-                        <td class="actions">
+                        <td data-label="<?= e(t('agents.col.ip')) ?>"><?= e($a['last_ip'] ?? '—') ?></td>
+                        <td data-label="<?= e(t('agents.col.os')) ?>"><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?></div></td>
+                        <td data-label="<?= e(t('agents.col.fingerprint')) ?>"><code class="fingerprint"><?= e($a['key_fingerprint']) ?></code></td>
+                        <td data-label="<?= e(t('agents.col.first_seen')) ?>"><?= e(fmt_time($a['first_seen_at'])) ?></td>
+                        <td class="actions card-end">
                             <form method="post" action="<?= e(url('/agents/' . $a['id'] . '/approve')) ?>">
                                 <?= csrf_field() ?><input type="hidden" name="back" value="list">
                                 <button type="submit" class="small"><?= icon('check') ?><?= e(t($old === null ? 'agents.action.approve' : 'agents.action.approve_new')) ?></button>
