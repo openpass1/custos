@@ -1010,7 +1010,7 @@ static partial class Messages
     /// <summary>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server...</summary>
     public static string RemoteHostKeyChanged => Get(nameof(RemoteHostKeyChanged));
 
-    /// <summary>{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task o...</summary>
+    /// <summary>{0}: the server does not accept the key of CUSTOS for the user «{1}». If the task has an office IP, the key...</summary>
     public static string RemoteKeyRefused => Get(nameof(RemoteKeyRefused));
 
     /// <summary>{0}: no connection: {1}</summary>
