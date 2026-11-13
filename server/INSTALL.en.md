@@ -445,6 +445,11 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - "More" menus and dialogs fade in, "Machine details" and other folded blocks open smoothly, pages change with a short cross-fade (Chrome, Edge, Safari; Firefox may stay as before);
 - with Windows animation effects off (or "Reduce motion" on another system) the site shows everything without animation, and the bottom of the page says that effects are off and where to switch them on.
 
+**Version 0.4.7.** No migrations. Navigation (the third part of the new look):
+- the top menu bar stays at the top while the page scrolls; on a wide screen (1440 pixels and more) all sections stand in the middle, on a narrower one the rarer sections (templates, updates, users, audit log, settings) are under "Manage", on a tablet or phone all of them open with the ☰ button;
+- there is no "Profile" page any more: everything moved to the menu under your login at the top right: theme (same as the system, light, dark), language, "Change password" (opens a dialog) and "Log out"; after a choice you stay on the same page. An old bookmark to `/profile` opens the home page;
+- on a phone the lists of machines, tasks, runs, problems and notices are shown as cards, with no sideways scrolling; menu items and row buttons are bigger for a finger.
+
 ## What to keep in backups
 
 - the `custos` database;

@@ -27,7 +27,7 @@ $button = function (array $task, string $action, string $class, string $iconName
         <p class="empty"><?= e(t('agent.tasks.empty')) ?></p>
     <?php else: ?>
         <div class="table-wrap">
-            <table class="row-links">
+            <table class="row-links cards">
                 <thead>
                 <tr>
                     <th><?= e(t('tasks.col.name')) ?></th>
@@ -52,8 +52,8 @@ $button = function (array $task, string $action, string $class, string $iconName
                             <?php if ($task['queued']): ?><span class="note"><?= e(t('tasks.queued')) ?></span><?php endif ?>
                             <?php if (isset($edits[$task['id']])): ?><div class="note"><?= e(t('tasks.edit_pending')) ?> <?= badge($edits[$task['id']]['status']) ?></div><?php endif ?>
                         </td>
-                        <td><?= e(schedule_label($task['schedule'])) ?></td>
-                        <td class="nowrap">
+                        <td data-label="<?= e(t('tasks.col.schedule')) ?>"><?= e(schedule_label($task['schedule'])) ?></td>
+                        <td class="nowrap" data-label="<?= e(t('tasks.col.last_run')) ?>">
                             <?php if ($task['last_run_id'] !== null): ?>
                                 <a href="<?= e(url('/runs/' . $task['last_run_id'])) ?>"><?= e(fmt_time($task['last_run_at'])) ?></a>
                                 <?php if ($task['last_run_status'] !== $task['status'] && !$running): ?><?= badge($task['last_run_status']) ?><?php endif ?>
@@ -64,9 +64,9 @@ $button = function (array $task, string $action, string $class, string $iconName
                                 <span class="note"><?= e(t('tasks.never')) ?></span>
                             <?php endif ?>
                         </td>
-                        <td class="nowrap"><?= e(fmt_unix($task['next_at'])) ?></td>
+                        <td class="nowrap" data-label="<?= e(t('tasks.col.next')) ?>"><?= e(fmt_unix($task['next_at'])) ?></td>
                         <?php if ($approved): ?>
-                            <td class="row-actions">
+                            <td class="row-actions card-side">
                                 <?= $running ? $button($task, 'stop', 'small danger', 'stop') : $button($task, 'run', 'small secondary', 'play') ?>
                                 <details class="dropdown">
                                     <summary class="dots" title="<?= e(t('common.more')) ?>"><?= icon('dots') ?><span class="visually-hidden"><?= e(t('tasks.more_for', ['name' => $task['name']])) ?></span></summary>
