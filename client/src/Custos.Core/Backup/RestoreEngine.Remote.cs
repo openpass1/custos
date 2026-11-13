@@ -50,7 +50,7 @@ public sealed partial class RestoreEngine
         }
 
         var header = request.Set.Header;
-        var listing = request.Access.Session.Run(() => SetCatalog.ReadManifest(request.Set, request.Access).Files);
+        var listing = SetCatalog.ReadManifest(request.Set, request.Access).Files;
         var state = new RemoteRestore();
         foreach (var file in listing)
         {
@@ -70,7 +70,7 @@ public sealed partial class RestoreEngine
                 cancellationToken.ThrowIfCancellationRequested();
                 var set = chain[i];
                 var files = ReferenceEquals(set, request.Set) ? listing
-                    : request.Access.Session.Run(() => SetCatalog.ReadManifest(set, request.Access).Files);
+                    : SetCatalog.ReadManifest(set, request.Access).Files;
                 var hashes = new Dictionary<string, string>(StringComparer.Ordinal);
                 foreach (var file in files.Where(f => f.InSet && f.Sha256 is not null))
                 {
@@ -222,8 +222,8 @@ public sealed partial class RestoreEngine
             }
             else
             {
-                using var input = request.Access.Session.Run(() => new FileStream(
-                    Path.Combine(set.Location, BackupEngine.RemoteTarName), FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan));
+                var store = request.Access.Store;
+                using var input = store.OpenRead(store.Combine(set.Location, BackupEngine.RemoteTarName));
                 var buffer = new byte[BufferSize];
                 int read;
                 while ((read = input.Read(buffer, 0, buffer.Length)) > 0 && state.WriteError is null)

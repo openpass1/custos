@@ -1,21 +1,24 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Custos.Core.Archives;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
 namespace Custos.Core.Backup;
 
 /// <summary>
-/// Performs one run of a task: full, incremental or differential copy or a mirror into one or more local, network or
-/// USB destinations, as plain files or as a 7z or ZIP archive, with change tracking, set manifests, verification and
+/// Performs one run of a task: full, incremental or differential copy or a mirror into one or more destinations (a
+/// folder, a share, a USB disk, an FTP, SFTP or WebDAV server, an S3 bucket), as plain files or as a 7z or ZIP archive, with change tracking, set manifests, verification and
 /// retention (sections 6.1–6.8 and 7 of the client spec).
 /// </summary>
 /// <remarks>
 /// Every file is read once and written to all destinations at the same time; a destination that fails is dropped,
 /// the others go on. A copy is never left looking finished when it is not: files are written under a temporary name
-/// and renamed when complete, a set folder or archive carries ".partial" until it is complete. The database and the
-/// destinations are only cleaned up after a successful run.
+/// and renamed when complete, a set folder or archive carries ".partial" until it is complete (in S3, where nothing
+/// can be renamed, a set is complete when its manifest, written last, is there). The database and the destinations
+/// are only cleaned up after a successful run. The destinations are reached only through
+/// <see cref="DestinationStore"/>, so all of this is the same for every kind of them.
 /// </remarks>
 public sealed partial class BackupEngine
 {
@@ -219,13 +222,29 @@ public sealed partial class BackupEngine
         {
             throw new BackupException(Messages.NoDestinations);
         }
+
+        foreach (var destination in task.Destinations)
+        {
+            if (task.Archive.Format == ArchiveFormats.SevenZip && DestinationKinds.IsSupported(destination.Kind) && !DestinationKinds.CanSeek(destination.Kind))
+            {
+                // 7z goes back to the start of the archive when it is complete (section 6.5).
+                throw new BackupException(Messages.Format(Messages.SevenZipNeedsSeek, DestinationStores.Label(destination)));
+            }
+
+            if (destination.Kind == DestinationKinds.S3 && destination.ObjectLockDays > 0
+                && (task.BackupType == BackupTypes.Mirror || !(SeparateSets(task) || IsArchive(task))))
+            {
+                // A locked file cannot be replaced, and these two ways of copying replace files (section 6.3).
+                throw new BackupException(Messages.Format(Messages.ObjectLockNeedsSets, DestinationStores.Label(destination)));
+            }
+        }
     }
 
     private void PrepareTargets(RunContext run)
     {
         foreach (var destination in run.Task.Destinations)
         {
-            var target = new Target(destination, DescribeDestination(destination));
+            var target = new Target(destination, DestinationStores.Label(destination));
             run.Targets.Add(target);
             _progress.Destinations.Add(target.Progress);
             try
@@ -235,37 +254,42 @@ public sealed partial class BackupEngine
                     throw new BackupException(Messages.Format(Messages.DestinationKindNotSupported, destination.Kind));
                 }
 
-                target.Root = ResolveRoot(destination);
-                if (run.Task.BackupType == BackupTypes.Mirror)
+                var store = _platform.OpenStore(destination, destination.Kind == DestinationKinds.Unc ? Session(destination.CredentialId) : null);
+                store.Cancellation = run.Cancellation;
+                store.LowPriority = _lowIo;
+                target.Store = store;
+                target.Root = store.Root;
+                target.SecurityFailed = !store.KeepsSecurity;
+                if (run.Task.BackupType == BackupTypes.Mirror && DestinationKinds.IsFileSystem(destination.Kind))
                 {
                     CheckMirrorRoot(run.Task, target.Root);
                 }
 
-                target.Session = Session(destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null);
-                target.Session.Run(() =>
+                store.CreateFolder(target.Root);
+                store.CheckReady();
+                if (run.Access is { } access)
                 {
-                    Directory.CreateDirectory(target.Root);
-                    if (run.Access is { } access)
-                    {
-                        // Archives always carry their date: every run is a set of its own.
-                        target.Sets = SetCatalog.Scan(target.Root, run.Task.Id, access.WithSession(target.Session), (path, reason) =>
-                            _log.Write(RunLogLevel.Detail, Messages.Format(Messages.ArchiveSkipped, path, reason)));
-                    }
-                    else if (run.Task.BackupType == BackupTypes.Mirror)
-                    {
-                        ReadMirror(run, target);
-                    }
-                    else if (SeparateSets(run.Task))
-                    {
-                        target.Sets = SetCatalog.Scan(target.Root, run.Task.Id);
-                    }
-                    else
-                    {
-                        target.SharedManifest = SetCatalog.TryReadHeader(Path.Combine(target.Root, SetManifest.FileName));
-                    }
-                });
-                string where = string.Equals(target.Label, target.Root, StringComparison.OrdinalIgnoreCase) ? target.Root : $"{target.Label} ({target.Root})";
-                _log.Write(RunLogLevel.Info, Messages.Format(Messages.DestinationReady, where, AccountText(target.Session)));
+                    // Archives always carry their date: every run is a set of its own.
+                    target.Sets = SetCatalog.Scan(store, target.Root, run.Task.Id, access.WithStore(store), (path, reason) =>
+                        _log.Write(RunLogLevel.Detail, Messages.Format(Messages.ArchiveSkipped, path, reason)));
+                }
+                else if (run.Task.BackupType == BackupTypes.Mirror)
+                {
+                    ReadMirror(run, target);
+                }
+                else if (SeparateSets(run.Task))
+                {
+                    target.Sets = SetCatalog.Scan(store, target.Root, run.Task.Id);
+                }
+                else
+                {
+                    target.SharedManifest = SetCatalog.TryReadHeader(store, store.Combine(target.Root, SetManifest.FileName));
+                }
+
+                string where = string.Equals(target.Label, target.Root, StringComparison.OrdinalIgnoreCase) || !DestinationKinds.IsFileSystem(destination.Kind)
+                    ? target.Label
+                    : $"{target.Label} ({target.Root})";
+                _log.Write(RunLogLevel.Info, Messages.Format(Messages.DestinationReady, where, AccountText(store.Account)));
             }
             catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
             {
@@ -274,29 +298,9 @@ public sealed partial class BackupEngine
         }
     }
 
-    private string ResolveRoot(TaskDestination destination) => ResolveRoot(_platform, destination);
-
-    /// <summary>The folder of a destination: its path, or for a USB disk the folder on the disk with that label.</summary>
+    /// <summary>The folder of a local destination: its path, or for a USB disk the folder on the disk with that label.</summary>
     /// <exception cref="BackupException">The disk is not connected or the path is not absolute.</exception>
-    public static string ResolveRoot(IBackupPlatform platform, TaskDestination destination)
-    {
-        ArgumentNullException.ThrowIfNull(platform);
-        ArgumentNullException.ThrowIfNull(destination);
-        if (destination.Kind == DestinationKinds.Usb)
-        {
-            string label = destination.UsbLabel ?? string.Empty;
-            string volume = platform.FindVolumeByLabel(label)
-                ?? throw new BackupException(Messages.Format(Messages.UsbDiskNotFound, label));
-            return Path.Combine(volume, DestinationKinds.UsbFolder(destination.Path));
-        }
-
-        if (string.IsNullOrWhiteSpace(destination.Path) || !Path.IsPathFullyQualified(destination.Path))
-        {
-            throw new BackupException(Messages.Format(Messages.PathNotAbsolute, destination.Path));
-        }
-
-        return destination.Path;
-    }
+    public static string ResolveRoot(IBackupPlatform platform, TaskDestination destination) => DestinationStores.ResolveRoot(platform, destination);
 
     private void DecideBackupType(RunContext run)
     {
@@ -522,8 +526,8 @@ public sealed partial class BackupEngine
         long needed = (long)(run.BytesToCopy * ratio) + (1024 * 1024);
         foreach (var target in run.ActiveTargets)
         {
-            long? free = target.Session.Run(() => _platform.GetFreeSpace(target.Root));
-            if (free is { } available && available < needed)
+            // A server that does not tell how much room it has is not checked (section 6.3).
+            if (FreeSpace(target) is { } available && available < needed)
             {
                 run.Result.OutOfSpace = true;
                 FailTarget(run, target, Messages.Format(Messages.NotEnoughSpace, target.Label, Sizes.Format(needed), Sizes.Format(available)));
@@ -540,36 +544,39 @@ public sealed partial class BackupEngine
         run.SetName = SetNaming.Expand(task.Layout.NameTemplate, task.Name, startedLocal, _platform.ComputerName, run.BackupType);
         foreach (var target in run.ActiveTargets)
         {
+            var store = target.Store;
             try
             {
-                target.Session.Run(() =>
+                if (SeparateSets(task))
                 {
-                    if (SeparateSets(task))
-                    {
-                        target.SetName = SetNaming.MakeUnique(target.Root, run.SetName);
-                        target.SetFolder = Path.Combine(target.Root, target.SetName);
-                        target.WriteFolder = target.SetFolder + SetCatalog.PartialSuffix;
-                        Directory.CreateDirectory(target.WriteFolder);
-                    }
-                    else
-                    {
-                        target.SetName = run.SetName;
-                        target.SetFolder = target.Root;
-                        target.WriteFolder = target.Root;
-                    }
+                    target.SetName = SetNaming.MakeUnique(SetNaming.TakenNames(store, target.Root), run.SetName);
+                    target.SetFolder = store.Combine(target.Root, target.SetName);
 
-                    if (run.BackupType is BackupTypes.Full or BackupTypes.Mirror && !task.Layout.DeleteEmptyDirs)
+                    // Where a folder cannot be renamed (S3), the set is written in place: it counts when its
+                    // manifest, written last, is there.
+                    target.WriteFolder = store.RenamesFolders ? target.SetFolder + SetCatalog.PartialSuffix : target.SetFolder;
+                    target.OwnsWriteFolder = true;
+                    store.CreateFolder(target.WriteFolder);
+                }
+                else
+                {
+                    target.SetName = run.SetName;
+                    target.SetFolder = target.Root;
+                    target.WriteFolder = target.Root;
+                }
+
+                if (run.BackupType is BackupTypes.Full or BackupTypes.Mirror && !task.Layout.DeleteEmptyDirs && store.HasFolders)
+                {
+                    // A full copy and a mirror reproduce the folder tree, empty folders included.
+                    foreach (var context in run.Sources.Where(s => s.Scan is { Found: true, IsFile: false }))
                     {
-                        // A full copy and a mirror reproduce the folder tree, empty folders included.
-                        foreach (var context in run.Sources.Where(s => s.Scan is { Found: true, IsFile: false }))
+                        foreach (string folder in context.Scan!.Folders)
                         {
-                            foreach (string folder in context.Scan!.Folders)
-                            {
-                                CreateFolder(target, Path.Combine(target.WriteFolder, context.Target, folder));
-                            }
+                            CreateFolder(target, store.Combine(target.WriteFolder, context.Target, folder));
                         }
                     }
-                });
+                }
+
                 target.Progress.State = DestinationStates.Writing;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -704,16 +711,16 @@ public sealed partial class BackupEngine
                 continue;
             }
 
-            string final = Path.Combine(target.WriteFolder, targetPath);
-            string temp = final + TempSuffix;
+            var store = target.Store;
+            string final = store.Combine(target.WriteFolder, targetPath);
             try
             {
-                var stream = target.Session.Run(() =>
+                if (store.Parent(final) is { } folder)
                 {
-                    CreateFolder(target, Path.GetDirectoryName(final)!);
-                    return Lowered(new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 1));
-                });
-                outputs.Add(new Output(target, stream, temp, final));
+                    CreateFolder(target, folder);
+                }
+
+                outputs.Add(new Output(target, store.BeginWrite(final, TempSuffix), final));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -729,7 +736,7 @@ public sealed partial class BackupEngine
             var output = outputs[i];
             try
             {
-                output.Stream.Write(buffer, 0, count);
+                output.Writer.Stream.Write(buffer, 0, count);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -747,25 +754,15 @@ public sealed partial class BackupEngine
             var output = outputs[i];
             try
             {
-                output.Stream.Dispose();
-                output.Target.Session.Run(() =>
+                var store = output.Target.Store;
+                if (IsSafeMirror(run) && store.FileExists(output.Final))
                 {
-                    if (File.Exists(output.Final))
-                    {
-                        if (IsSafeMirror(run))
-                        {
-                            // A safe mirror keeps the version it replaces (section 6.1).
-                            MoveToBin(run, output.Target, output.Final);
-                        }
-                        else
-                        {
-                            File.SetAttributes(output.Final, FileAttributes.Normal);
-                        }
-                    }
+                    // A safe mirror keeps the version it replaces (section 6.1).
+                    MoveToBin(run, output.Target, output.Final);
+                }
 
-                    File.Move(output.Temp, output.Final, overwrite: true);
-                    ApplyMetadata(output.Final, file);
-                });
+                output.Writer.Commit();
+                store.SetFileTimes(output.Final, file.CreationUtc, file.LastWriteUtc, file.Attributes);
                 if (security is not null)
                 {
                     ApplySecurity(run, output.Target, output.Final, folder: false, security);
@@ -780,17 +777,6 @@ public sealed partial class BackupEngine
                 Abandon(output);
                 FailTarget(run, output.Target, Messages.Format(Messages.DestinationWriteFailed, output.Target.Label, ex.Message));
             }
-        }
-    }
-
-    private static void ApplyMetadata(string path, ScannedFile file)
-    {
-        File.SetCreationTimeUtc(path, file.CreationUtc);
-        File.SetLastWriteTimeUtc(path, file.LastWriteUtc);
-        var kept = file.Attributes & (FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System | FileAttributes.Archive);
-        if (kept != 0 && kept != FileAttributes.Archive)
-        {
-            File.SetAttributes(path, kept);
         }
     }
 
@@ -816,18 +802,9 @@ public sealed partial class BackupEngine
         outputs.Clear();
     }
 
-    private static void Abandon(Output output)
-    {
-        try
-        {
-            output.Stream.Dispose();
-            output.Target.Session.Run(() => File.Delete(output.Temp));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // The destination is gone; the temporary file never looks like a finished copy anyway.
-        }
-    }
+    /// <summary>Gives up a file being written. Never throws: if the destination is gone, the temporary file stays, and
+    /// it never looks like a finished copy anyway.</summary>
+    private static void Abandon(Output output) => output.Writer.Abort();
 
     private void FinishSets(RunContext run)
     {
@@ -864,27 +841,24 @@ public sealed partial class BackupEngine
                     VerifyNewFolder(run, target);
                 }
 
-                target.Session.Run(() =>
+                var store = target.Store;
+                using (var writer = store.BeginWrite(store.Combine(target.WriteFolder, SetManifest.FileName), TempSuffix, StoreWriteMode.Stream))
                 {
-                    string manifest = Path.Combine(target.WriteFolder, SetManifest.FileName);
-                    string temp = manifest + TempSuffix;
-                    using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024))
-                    {
-                        SetManifest.Write(stream, header, files ?? ManifestFiles(run));
-                        stream.Flush(flushToDisk: true);
-                    }
+                    writer.Durable = true;
+                    SetManifest.Write(writer.Stream, header, files ?? ManifestFiles(run));
+                    writer.Commit();
+                }
 
-                    File.Move(temp, manifest, overwrite: true);
-                    if (!string.Equals(target.WriteFolder, target.SetFolder, StringComparison.Ordinal))
-                    {
-                        Directory.Move(target.WriteFolder, target.SetFolder);
-                    }
+                if (!string.Equals(target.WriteFolder, target.SetFolder, StringComparison.Ordinal))
+                {
+                    store.MoveFolder(target.WriteFolder, target.SetFolder);
+                }
 
-                    if (run.Task.Layout.DeleteEmptyDirs && !SeparateSets(run.Task))
-                    {
-                        RemoveEmptyFolders(target.SetFolder);
-                    }
-                });
+                if (run.Task.Layout.DeleteEmptyDirs && !SeparateSets(run.Task) && store.HasFolders)
+                {
+                    RemoveEmptyFolders(store, target.SetFolder);
+                }
+
                 target.Completed = true;
                 target.NewSet = new StoredSet(target.SetFolder, header);
                 target.Progress.State = DestinationStates.Done;
@@ -1019,12 +993,18 @@ public sealed partial class BackupEngine
                 RetentionModes.Gfs => SetCatalog.PlanGfsRetention(target.Kept, retention.Gfs, run.Request.TimeZone, run.Request.RunId),
                 _ => SetCatalog.PlanCountRetention(target.Kept, retention.KeepFull, run.Request.RunId),
             };
+            var locked = LockedChains(run, target, plan);
             foreach (var set in plan)
             {
                 run.Cancellation.ThrowIfCancellationRequested();
+                if (locked.Contains(ChainOf(set)))
+                {
+                    continue;
+                }
+
                 try
                 {
-                    target.Session.Run(() => SetCatalog.DeleteSet(set));
+                    SetCatalog.DeleteSet(set, target.Store);
                     target.Kept.Remove(set);
                     run.Result.DeletedSets++;
                     _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetDeleted, set.Header.SetName, target.Label));
@@ -1038,6 +1018,39 @@ public sealed partial class BackupEngine
         }
     }
 
+    /// <summary>The full set a set belongs to: sets are only ever deleted as whole chains (section 6.6).</summary>
+    private static string ChainOf(StoredSet set) => set.Header.ParentFullRunId ?? set.Header.RunId;
+
+    /// <summary>
+    /// The chains retention has to leave for now, because the destination still refuses to delete one of their sets
+    /// (S3 Object Lock, section 6.3). That is not an error: the first run after the time deletes them.
+    /// </summary>
+    private HashSet<string> LockedChains(RunContext run, Target target, List<StoredSet> plan)
+    {
+        var chains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var set in plan)
+        {
+            DateTimeOffset? until;
+            try
+            {
+                until = target.Store.LockedUntil(SetCatalog.LastWritten(set, target.Store));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // The destination does not tell: deleting will.
+                until = null;
+            }
+
+            if (until is { } time)
+            {
+                chains.Add(ChainOf(set));
+                _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetLocked, set.Header.SetName, target.Label, TimeZoneInfo.ConvertTime(time, run.Request.TimeZone).ToString("dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)));
+            }
+        }
+
+        return chains;
+    }
+
     // ---- Finishing ---------------------------------------------------------------------------------------------
 
     private void Cleanup(RunContext run)
@@ -1047,17 +1060,29 @@ public sealed partial class BackupEngine
             RemoveArchiveLeftovers(target);
         }
 
-        foreach (var target in run.Targets.Where(t => !t.Completed && t.WriteFolder.Length > 0
-            && !string.Equals(t.WriteFolder, t.SetFolder, StringComparison.Ordinal)))
+        foreach (var target in run.Targets.Where(t => !t.Completed && t.OwnsWriteFolder))
         {
             // Our own unfinished set folder: remove it, it is not a backup.
             try
             {
-                target.Session.Run(() => SetCatalog.DeleteSetFolder(target.WriteFolder));
+                target.Store.Cancellation = CancellationToken.None;
+                target.Store.DeleteFolder(target.WriteFolder);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
+            {
+                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.PartialNotRemoved, target.WriteFolder, ex.Message));
+            }
+        }
+
+        foreach (var target in run.Targets)
+        {
+            try
+            {
+                target.Store.Dispose();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.PartialNotRemoved, target.WriteFolder, ex.Message));
+                // The connection was gone already.
             }
         }
 
@@ -1180,26 +1205,32 @@ public sealed partial class BackupEngine
 
     private static void CreateFolder(Target target, string folder)
     {
-        if (target.CreatedFolders.Add(folder))
+        if (target.Store.HasFolders && target.CreatedFolders.Add(folder))
         {
-            Directory.CreateDirectory(folder);
+            target.Store.CreateFolder(folder);
         }
     }
 
-    private static void RemoveEmptyFolders(string root)
+    /// <summary>Removes the folders below <paramref name="root"/> that hold nothing; links are left alone.</summary>
+    private static void RemoveEmptyFolders(DestinationStore store, string root)
     {
-        foreach (string folder in Directory.EnumerateDirectories(root))
+        foreach (var folder in store.List(root).Where(e => e.IsFolder))
         {
-            if ((File.GetAttributes(folder) & FileAttributes.ReparsePoint) != 0)
-            {
-                continue;
-            }
+            RemoveEmptyFolders(store, folder.Path);
+            store.RemoveEmptyFolder(folder.Path);
+        }
+    }
 
-            RemoveEmptyFolders(folder);
-            if (!Directory.EnumerateFileSystemEntries(folder).Any())
-            {
-                Directory.Delete(folder);
-            }
+    /// <summary>Bytes free in a destination; null if it does not tell.</summary>
+    private static long? FreeSpace(Target target)
+    {
+        try
+        {
+            return target.Store.GetSpace(target.Root).FreeBytes;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 
@@ -1240,12 +1271,8 @@ public sealed partial class BackupEngine
         }
     }
 
-    private static string DescribeDestination(TaskDestination destination) => destination.Kind == DestinationKinds.Usb
-        ? Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel)
-        : destination.Path;
-
-    private static string AccountText(INetworkSession session) =>
-        session.Account is { } account ? Messages.Format(Messages.AsAccount, account) : string.Empty;
+    private static string AccountText(string? account) =>
+        account is not null ? Messages.Format(Messages.AsAccount, account) : string.Empty;
 
     private static string Unique(HashSet<string> used, string name)
     {
@@ -1381,7 +1408,8 @@ public sealed partial class BackupEngine
 
         public DestinationProgress Progress { get; } = new() { DestinationId = destination.Id, Label = label };
 
-        public INetworkSession Session { get; set; } = ProcessSession.Instance;
+        /// <summary>Where the files go; until the destination is opened, a stand-in that is never written to.</summary>
+        public DestinationStore Store { get; set; } = LocalStore.Default;
 
         public string Root { get; set; } = string.Empty;
 
@@ -1394,6 +1422,9 @@ public sealed partial class BackupEngine
         public string SetFolder { get; set; } = string.Empty;
 
         public string WriteFolder { get; set; } = string.Empty;
+
+        /// <summary><see cref="WriteFolder"/> is a set folder this run made: removed if the run does not finish it.</summary>
+        public bool OwnsWriteFolder { get; set; }
 
         public HashSet<string> CreatedFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -1423,11 +1454,17 @@ public sealed partial class BackupEngine
         /// <summary>Final names of the archive files, in order.</summary>
         public List<string> Parts { get; } = [];
 
-        /// <summary>The names they are written under (<see cref="Parts"/> + ".partial").</summary>
-        public List<string> Temps { get; } = [];
+        /// <summary>The files of the archive as they are written, in the order of <see cref="Parts"/>.</summary>
+        public List<StoreWriter> Writers { get; } = [];
+
+        /// <summary>Where each of them is read before it has its name (<see cref="StoreWriter.ReadPath"/>).</summary>
+        public List<string> Temps => [.. Writers.Select(w => w.ReadPath)];
 
         /// <summary>Files already given their final name.</summary>
         public List<string> Renamed { get; } = [];
+
+        /// <summary>The names in the destination folder, read once when a free set name is looked for.</summary>
+        public HashSet<string>? TakenNames { get; set; }
 
         // ---- Mirror
 
@@ -1448,7 +1485,7 @@ public sealed partial class BackupEngine
 
     private readonly record struct MirrorEntry(long Size, DateTime ModifiedUtc);
 
-    private sealed record Output(Target Target, FileStream Stream, string Temp, string Final);
+    private sealed record Output(Target Target, StoreWriter Writer, string Final);
 
     private sealed class SourceReadException(string message, Exception inner) : IOException(message, inner);
 

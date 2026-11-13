@@ -59,7 +59,21 @@ public static class DestinationKinds
     public const string WebDav = "webdav";
 
     /// <summary>Kinds this version can write to.</summary>
-    public static bool IsSupported(string kind) => kind is Local or Unc or Usb;
+    public static bool IsSupported(string kind) => kind is Local or Unc or Usb or Ftp or Ftps or Sftp or S3 or WebDav;
+
+    /// <summary>A folder of this computer, of a share or of a USB disk; the others are servers (stage 4).</summary>
+    public static bool IsFileSystem(string kind) => kind is Local or Unc or Usb;
+
+    /// <summary>The kind of credential a destination of this kind logs in with; null if it needs none.</summary>
+    public static string? CredentialKind(string kind) => kind switch
+    {
+        Unc => CredentialKinds.Windows,
+        Ftp or Ftps => CredentialKinds.Ftp,
+        Sftp => CredentialKinds.Sftp,
+        S3 => CredentialKinds.S3,
+        WebDav => CredentialKinds.WebDav,
+        _ => null,
+    };
 
     /// <summary>Kinds that let a writer go back in the file, which 7z needs to finish its header (section 6.5).</summary>
     public static bool CanSeek(string kind) => kind is Local or Unc or Usb or Sftp;
@@ -163,6 +177,18 @@ public static class RunStatuses
 
     /// <summary>A run that counts as a backup: its set is complete, at most some files were skipped.</summary>
     public static bool IsSuccessful(string? status) => status is Success or Warning;
+}
+
+/// <summary>Values of <see cref="TaskDestination.ObjectLockMode"/> (section 6.3).</summary>
+public static class ObjectLockModes
+{
+    /// <summary>An account with the permission s3:BypassGovernanceRetention can still delete; the agent's must not have it.</summary>
+    public const string Governance = "governance";
+
+    /// <summary>Nobody can delete before the time, the owner of the bucket included.</summary>
+    public const string Compliance = "compliance";
+
+    public static bool IsKnown(string? mode) => mode is null or Governance or Compliance;
 }
 
 /// <summary>Values of <see cref="Credential.Kind"/>.</summary>

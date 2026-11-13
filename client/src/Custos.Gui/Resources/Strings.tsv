@@ -221,7 +221,7 @@ DestinationsNote	Where the backups go. With several destinations the files are r
 DestinationAddTitle	Add destination	Добавить назначение
 DestinationEditTitle	Destination	Назначение
 DestinationKind	Type:	Тип:
-DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск — ищется по метке тома, поэтому смена буквы диска не мешает.
+DestinationKindHelp	Local folder: a folder on a disk of this computer.\nNetwork folder: a path like \\server\share\folder, opened under the chosen account.\nUSB disk: found by its volume label, so a new drive letter does not matter.\nSFTP, FTP, FTPS, WebDAV: a folder on a server.\nS3: a bucket of Amazon S3 or of a compatible storage; it can protect the copies from deletion (Object Lock).	Локальная папка — папка на диске этого компьютера.\nСетевая папка — путь вида \\server\share\folder, открывается под выбранной учётной записью.\nUSB-диск ищется по метке тома, поэтому смена буквы диска не мешает.\nSFTP, FTP, FTPS, WebDAV — папка на сервере.\nS3 — бакет Amazon S3 или совместимого хранилища; умеет защищать копии от удаления (Object Lock).
 KindLocal	Local folder	Локальная папка
 KindUnc	Network folder	Сетевая папка
 KindUsb	USB disk	USB-диск
@@ -388,8 +388,8 @@ ServiceLanguageHelp	The language of the run logs and of the messages of the serv
 LanguageAuto	Automatic	Автоматически
 LanguageRussian	Русский	Русский
 LanguageEnglish	English	English
-SettingsAccounts	Accounts for network folders	Учётные записи для сетевых папок
-SettingsAccountsNote	The service keeps the passwords encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которую использует задание, удалить нельзя.
+SettingsAccounts	Accounts for network folders and servers	Учётные записи для сетевых папок и серверов
+SettingsAccountsNote	The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.
 SettingsReadOnly	Only administrators can change the settings.	Изменять настройки могут только администраторы.
 ColumnUsedBy	Used by tasks	Используется в заданиях
 # ---- Import from Cobian Backup
@@ -473,7 +473,7 @@ ArchiveFormat	Format	Формат
 ArchiveMirrorNote	A mirror keeps plain files: compression and encryption do not apply to it. Verification does.	Зеркало хранит обычные файлы: сжатие и шифрование к нему не применяются, проверка — применяется.
 ArchiveNone	No compression: plain files	Без сжатия: обычные файлы
 ArchiveZipHelp	A ZIP archive opens in Windows and in any archiver. Written as a stream, so it suits every kind of destination.	ZIP открывается средствами Windows и любым архиватором. Пишется потоком, поэтому подходит для любых назначений.
-ArchiveSevenZipHelp	7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in the file: a folder, a network folder or a USB disk.	7z сжимает лучше и умеет шифровать имена файлов. Нужно назначение, в котором можно вернуться к началу файла: папка, сетевая папка или USB-диск.
+ArchiveSevenZipHelp	7z compresses better and can encrypt the file names. Needs a destination that lets the writer go back in the file: a folder, a network folder, a USB disk or an SFTP server. For FTP, WebDAV and S3 choose ZIP.	7z сжимает лучше и умеет шифровать имена файлов. Нужно назначение, в котором можно вернуться к началу файла: папка, сетевая папка, USB-диск или сервер SFTP. Для FTP, WebDAV и S3 выберите ZIP.
 ArchiveSevenZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}
 ArchiveOpenAnywhere	Archives stay ordinary 7z and ZIP files: 7-Zip opens them without CUSTOS.	Архивы остаются обычными файлами 7z и ZIP: их можно открыть 7-Zip и без CUSTOS.
 ArchiveLevel	Compression level:	Уровень сжатия:
@@ -657,3 +657,72 @@ ServerPasteTip	Paste from the clipboard	Вставить из буфера об�
 ServerPasteEmpty	The clipboard holds no text. Copy the connection line on the site (Settings → Connecting agents) and press the button again.	В буфере обмена нет текста. Скопируйте строку подключения на сайте («Настройки» → «Подключение агентов») и нажмите кнопку ещё раз.
 AllowRemoteEdit	Allow the server to change tasks	Разрешить серверу менять задания
 AllowRemoteEditHelp	When it is on, tasks, accounts and settings can be changed from the site. When it is off, the site only shows them; starting, stopping and updates from the site still work.	Если включено, задания, учётные записи и настройки можно менять с сайта. Если выключено, сайт их только показывает; запуск, остановка и обновления с сайта работают и так.
+# ---- Stage 4: remote destinations
+KindSftp	SFTP server	Сервер SFTP
+KindFtp	FTP server	Сервер FTP
+KindFtps	FTP server with TLS (FTPS)	Сервер FTP с шифрованием (FTPS)
+KindWebDav	WebDAV	WebDAV
+KindS3	S3 storage	Хранилище S3
+DestinationHost	Server:	Сервер:
+DestinationHostHelp	The name or the address of the server, for example backup.example.org. Fill in the port only if it is not the usual one (SFTP 22, FTP and FTPS 21).	Имя или адрес сервера, например backup.example.org. Порт указывайте, только если он не обычный (SFTP 22, FTP и FTPS 21).
+DestinationPort	port:	порт:
+DestinationAddress	Address:	Адрес:
+DestinationAddressHelp	The address of WebDAV as the server gives it, for example https://cloud.example.org/remote.php/dav/files/user. Without «https://» in front, https is used.	Адрес WebDAV, как его даёт сервер, например https://cloud.example.org/remote.php/dav/files/user. Если не написать «https://» в начале, используется https.
+DestinationEndpoint	Storage address:	Адрес хранилища:
+DestinationEndpointHelp	For a storage compatible with S3 (MinIO, a cloud provider): its address, for example https://s3.example.org. Leave it empty for Amazon S3.	Для хранилища, совместимого с S3 (MinIO, облачный провайдер): его адрес, например https://s3.example.org. Для Amazon S3 оставьте пустым.
+DestinationBucket	Bucket:	Бакет:
+DestinationBucketHelp	The name of the bucket. CUSTOS does not create buckets: make it in the storage first (with Object Lock, if the copies are to be protected from deletion).	Имя бакета. CUSTOS бакеты не создаёт: сначала создайте его в хранилище (с Object Lock, если копии нужно защитить от удаления).
+DestinationRegion	Region:	Регион:
+DestinationRegionHelp	The region of the bucket, for example eu-central-1. Many compatible storages need none: leave it empty then.	Регион бакета, например eu-central-1. Многим совместимым хранилищам он не нужен: тогда оставьте пустым.
+DestinationFolderOnServer	Folder on the server:	Папка на сервере:
+DestinationFolderInBucket	Folder in the bucket:	Папка в бакете:
+DestinationFolderServerHelp	A path from the root of the server (/backup/office) or, without a slash in front, from the folder the account starts in (backup/office). Empty: that folder itself. The folder is created if it is not there.	Путь от корня сервера (/backup/office) или, без косой черты в начале, от папки, в которую попадает учётная запись (backup/office). Пусто — сама эта папка. Если папки нет, она создаётся.
+DestinationFolderWebDavHelp	A folder below the address, for example backup/office. Empty: the address itself. The folder is created if it is not there.	Папка внутри адреса, например backup/office. Пусто — сам адрес. Если папки нет, она создаётся.
+DestinationFolderBucketHelp	The start of the names of the files in the bucket, for example office/pc01. Empty: the bucket itself. Several computers can share a bucket if each has a folder of its own.	Начало имён файлов в бакете, например office/pc01. Пусто — сам бакет. Несколько компьютеров могут писать в один бакет, если у каждого своя папка.
+DestinationAccountHelpSftp	The user of the SFTP server, with a password or with a private key.	Пользователь сервера SFTP, с паролем или с закрытым ключом.
+DestinationAccountHelpFtp	The user and the password of the FTP server. «No account» logs in as anonymous.	Пользователь и пароль сервера FTP. «Без учётной записи» — вход как anonymous.
+DestinationAccountHelpWebDav	The user and the password of the WebDAV server. Many cloud services give a separate «app password» for this.	Пользователь и пароль сервера WebDAV. Многие облачные сервисы выдают для этого отдельный «пароль приложения».
+DestinationAccountHelpS3	The access key of the storage (Access Key ID) and its secret key. Give this key only the rights listed in the README of CUSTOS: with Object Lock it must not be able to lift the protection.	Ключ доступа к хранилищу (Access Key ID) и его секретный ключ. Дайте этому ключу только права из README CUSTOS: при Object Lock у него не должно быть права снимать защиту.
+AccountNone	No account	Без учётной записи
+DestinationSpeed	Speed limit:	Ограничение скорости:
+DestinationSpeedHelp	How fast the copies are sent to this destination, so that the line is left for other work too. 0 means no limit.	С какой скоростью копии отправляются в это назначение, чтобы канал оставался и для другой работы. 0 — без ограничения.
+DestinationLock	Protection from deletion:	Защита от удаления:
+DestinationLockUnit	days (0 — off)	дней (0 — выключена)
+DestinationLockMode	Protection mode:	Режим защиты:
+LockModeGovernance	Governance: the owner of the storage can lift it	Governance: владелец хранилища может снять
+LockModeCompliance	Compliance: nobody can lift it before the time	Compliance: до срока не может снять никто
+DestinationLockHelp	Object Lock: for this many days after it is written, a file of a copy cannot be deleted or replaced, not even by a virus that got hold of the access key. The bucket must have been created with Object Lock. It works with archives and with «a separate folder for each copy», not with a mirror.\n\nRetention deletes a copy in the first run after its time, so do not set more days than the copies are kept for: the storage fills up.\n\nIn the mode «Compliance» nobody can delete the files before the time, the support of the storage included. Try «Governance» first.	Object Lock: столько дней после записи файл копии нельзя удалить или заменить, даже вирусу, который добрался до ключа доступа. Бакет должен быть создан с Object Lock. Работает с архивами и с «отдельной папкой для каждой копии», но не с зеркалом.\n\nХранение удаляет копию первым же запуском после срока, поэтому не ставьте дней больше, чем хранятся копии: хранилище переполнится.\n\nВ режиме «Compliance» удалить файлы до срока не может никто, включая поддержку хранилища. Сначала попробуйте «Governance».
+DestinationServerKey	Server key:	Ключ сервера:
+DestinationServerKeyNone	not confirmed yet: press «Check access»	ещё не подтверждён: нажмите «Проверить доступ»
+ButtonForgetKey	Forget	Забыть
+DestinationKeyConfirm	The server {0} shows the key or the certificate\n{1}\n\nIt has not been confirmed for this destination yet. Trust it only if it is your server: compare it with what the server itself shows. For SFTP the keys are shown on the server by:\nfor f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done\n\nTrust it?	Сервер {0} показывает ключ или сертификат\n{1}\n\nДля этого назначения он ещё не подтверждён. Доверяйте ему, только если это ваш сервер: сравните с тем, что показывает сам сервер. Для SFTP ключи на сервере показывает команда:\nfor f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done\n\nДоверять?
+DestinationKeyChanged	{0}\n\nTrust the new one only if you know why it changed (the server was reinstalled, its certificate was renewed). Otherwise someone may be listening in on the connection.\n\nTrust the new one?	{0}\n\nДоверяйте новому, только если знаете, почему он изменился (сервер переустановили, сертификат перевыпустили). Иначе, возможно, подключение кто-то перехватывает.\n\nДоверять новому?
+DestinationKeyAsk	The key of the server is not confirmed yet, and the task cannot connect until it is: press «Check access» for that.\n\nSave the destination as it is all the same?	Ключ сервера ещё не подтверждён, и пока это не сделано, задание не подключится: нажмите «Проверить доступ».\n\nВсё равно сохранить назначение как есть?
+TestOkRemote	Access is fine: {0}.	Доступ есть: {0}.
+ErrorHostRequired	Enter the server.	Укажите сервер.
+ErrorAddressRequired	Enter the address of WebDAV, for example https://cloud.example.org/dav.	Укажите адрес WebDAV, например https://cloud.example.org/dav.
+ErrorBucketRequired	Enter the bucket.	Укажите бакет.
+ErrorAccountRequired	Choose the account. To enter a new one, press «Add…».	Выберите учётную запись. Чтобы ввести новую, нажмите «Добавить…».
+ErrorPortBad	The port is a number from 1 to 65535.	Порт — число от 1 до 65535.
+AccountKind	Kind:	Вид:
+AccountKindWindows	Windows (network folders)	Windows (сетевые папки)
+AccountKindFtp	FTP and FTPS	FTP и FTPS
+AccountKindSftp	SFTP	SFTP
+AccountKindWebDav	WebDAV	WebDAV
+AccountKindS3	S3	S3
+AccountAccessKey	Access key:	Ключ доступа:
+AccountSecretKey	Secret key:	Секретный ключ:
+AccountBySecret	With a password	По паролю
+AccountByKey	With a private key	По закрытому ключу
+AccountPrivateKey	Private key:	Закрытый ключ:
+ButtonKeyFile	From a file…	Из файла…
+AccountKeyNote	The private key in the OpenSSH or PEM format, without a passphrase: the text that starts with «-----BEGIN». Paste it here or take it from its file. The service keeps it encrypted (Windows DPAPI) and never shows it again.	Закрытый ключ в формате OpenSSH или PEM, без пароля на ключе: текст, который начинается с «-----BEGIN». Вставьте его сюда или возьмите из файла. Служба хранит его в зашифрованном виде (Windows DPAPI) и больше не показывает.
+AccountKeepSecretNote	Leave the field empty to keep what is stored.	Оставьте поле пустым, чтобы не менять сохранённое.
+AccountSecretNote	The service keeps the secret key encrypted (Windows DPAPI) and never shows it again.	Служба хранит секретный ключ в зашифрованном виде (Windows DPAPI) и больше его не показывает.
+ErrorKeyRequired	Paste the private key or take it from its file.	Вставьте закрытый ключ или возьмите его из файла.
+ErrorKeyBad	This does not look like a private key: its text starts with «-----BEGIN».	Это не похоже на закрытый ключ: его текст начинается с «-----BEGIN».
+ErrorKeyFile	The file {0} cannot be read: {1}	Не удалось прочитать файл {0}: {1}
+ErrorAccessKeyRequired	Enter the access key.	Введите ключ доступа.
+ErrorSecretKeyRequired	Enter the secret key.	Введите секретный ключ.
+ColumnAccountKind	Kind	Вид
+KeyFileFilter	Private keys|*.pem;*.key;id_*|All files|*.*	Закрытые ключи|*.pem;*.key;id_*|Все файлы|*.*

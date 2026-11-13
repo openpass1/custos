@@ -1,4 +1,5 @@
 using Custos.Core.Model;
+using Custos.Core.Text;
 
 namespace Custos.Gui.Tests;
 
@@ -99,6 +100,88 @@ public sealed class EditorTests
         };
 
         Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Fact]
+    public void Destinations_on_servers_come_back_unchanged() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions { Format = ArchiveFormats.Zip, Level = 5 };
+        task.Destinations =
+        [
+            Samples.Remote(DestinationKinds.Sftp), Samples.Remote(DestinationKinds.Ftp), Samples.Remote(DestinationKinds.Ftps),
+            Samples.Remote(DestinationKinds.WebDav), Samples.Remote(DestinationKinds.S3),
+        ];
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Theory]
+    [InlineData(DestinationKinds.Ftp)]
+    [InlineData(DestinationKinds.WebDav)]
+    [InlineData(DestinationKinds.S3)]
+    public void Seven_zip_is_not_accepted_with_a_server_that_takes_files_from_start_to_end_only(string kind) => Sta.Run("en-US", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 5 };
+        task.Destinations.Add(Samples.Remote(kind));
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        string why = Strings.Format(Strings.ArchiveSevenZipNeedsSeek, TaskDescriber.Destination(Samples.Remote(kind)));
+        Assert.Null(editor.Collect(out string? problem));
+        Assert.Equal(why, problem);
+
+        // The page says why, and once another format is chosen 7z is no longer offered.
+        editor.SelectPage(editor.Pages[5]);
+        Sta.Pump();
+        Assert.True(Sta.Shows(editor.Pages[5], why));
+        Sta.Find<RadioButton>(editor.Pages[5]).Single(r => r.Text == Strings.ArchiveZip).Checked = true;
+        Sta.Pump();
+
+        Assert.False(Sta.Find<RadioButton>(editor.Pages[5]).Single(r => r.Text == Strings.ArchiveSevenZip).Enabled);
+        Assert.Equal(ArchiveFormats.Zip, editor.Collect(out problem)!.Archive.Format);
+        Assert.Null(problem);
+    });
+
+    [Fact]
+    public void Seven_zip_goes_to_sftp() => Sta.Run("en-US", () =>
+    {
+        var task = Samples.Office();
+        task.Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 5 };
+        task.Destinations.Add(Samples.Remote(DestinationKinds.Sftp));
+
+        Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_protection_from_deletion_is_not_accepted_where_files_are_replaced(bool mirror) => Sta.Run("en-US", () =>
+    {
+        // A mirror, or plain copies in one shared folder: both write over the files of the last run.
+        var task = Samples.Office();
+        task.Destinations = [Samples.Remote(DestinationKinds.S3)];
+        if (mirror)
+        {
+            task.BackupType = BackupTypes.Mirror;
+            task.MirrorMode = MirrorModes.Exact;
+        }
+        else
+        {
+            task.BackupType = BackupTypes.Full;
+            task.Layout.SeparateFolders = false;
+        }
+
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        Assert.Null(editor.Collect(out string? problem));
+        Assert.Equal(Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, "s3://office-backup/pc01"), problem);
     });
 
     [Fact]

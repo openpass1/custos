@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 
 namespace Custos.Core.Backup;
@@ -57,10 +58,13 @@ public static class SetNaming
     }
 
     /// <summary><paramref name="name"/>, or "name (2)", "name (3)" … if a set with it exists in any form.</summary>
-    public static string MakeUnique(string root, string name)
+    public static string MakeUnique(string root, string name) => MakeUnique(TakenNames(LocalStore.Default, root), name);
+
+    /// <summary>The same against the names of a folder read before with <see cref="TakenNames"/>.</summary>
+    public static string MakeUnique(IReadOnlySet<string> taken, string name)
     {
         string candidate = name;
-        for (int i = 2; IsTaken(root, candidate); i++)
+        for (int i = 2; IsTaken(taken, candidate); i++)
         {
             candidate = Numbered(name, i);
         }
@@ -73,22 +77,33 @@ public static class SetNaming
 
     /// <summary>Whether <paramref name="root"/> holds a set called <paramref name="name"/>: a folder, an archive or
     /// its volumes, finished or still partial.</summary>
-    public static bool IsTaken(string root, string name)
+    public static bool IsTaken(string root, string name) => IsTaken(TakenNames(LocalStore.Default, root), name);
+
+    /// <summary>The same against the names of a folder read before with <see cref="TakenNames"/>.</summary>
+    public static bool IsTaken(IReadOnlySet<string> taken, string name)
     {
-        string path = Path.Combine(root, name);
-        if (Directory.Exists(path) || Directory.Exists(path + SetCatalog.PartialSuffix))
+        ArgumentNullException.ThrowIfNull(taken);
+        if (taken.Contains(name) || taken.Contains(name + SetCatalog.PartialSuffix))
         {
             return true;
         }
 
         foreach (string extension in (string[])[".7z", ".zip", ".7z.001"])
         {
-            if (File.Exists(path + extension) || File.Exists(path + extension + SetCatalog.PartialSuffix))
+            if (taken.Contains(name + extension) || taken.Contains(name + extension + SetCatalog.PartialSuffix))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /// <summary>The names of everything directly in a folder of a destination, whatever their case: asked once, a
+    /// server is not asked again for every name tried.</summary>
+    public static HashSet<string> TakenNames(DestinationStore store, string root)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        return store.List(root).Select(e => e.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 }

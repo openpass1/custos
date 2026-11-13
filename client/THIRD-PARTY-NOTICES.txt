@@ -16,6 +16,9 @@ SSH.NET                           2026.0.0    MIT           Copyright (c) Renci 
 BouncyCastle.Cryptography         2.7.0       MIT           Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc.
                                                             (https://www.bouncycastle.org)
 SharpZipLib                       1.4.2       MIT           Copyright (c) 2000-2022 SharpZipLib Contributors
+FluentFTP                         55.1.0      MIT           Copyright (c) 2015 Robin Rodricks and FluentFTP Contributors
+AWS SDK for .NET (AWSSDK.S3, AWSSDK.Core, AWSSDK.Extensions.Numerics)
+                                  4.1.0       Apache-2.0    Copyright Amazon.com, Inc. or its affiliates
 Serilog, Serilog.Extensions.Hosting, Serilog.Extensions.Logging, Serilog.Sinks.Console,
   Serilog.Sinks.EventLog, Serilog.Sinks.File
                                   4.x–10.x    Apache-2.0    Copyright (c) Serilog Contributors
@@ -24,7 +27,8 @@ SQLitePCLRaw (core, bundle_e_sqlite3, provider.e_sqlite3, lib.e_sqlite3)
 SQLite (e_sqlite3.dll)            3.x         Public domain  https://www.sqlite.org/copyright.html
 
 Where to find them: https://github.com/dotnet/runtime, https://github.com/sshnet/SSH.NET,
-https://www.bouncycastle.org, https://github.com/icsharpcode/SharpZipLib, https://serilog.net,
+https://www.bouncycastle.org, https://github.com/icsharpcode/SharpZipLib,
+https://github.com/robinrodricks/FluentFTP, https://github.com/aws/aws-sdk-net, https://serilog.net,
 https://github.com/ericsink/SQLitePCL.raw, https://www.sqlite.org.
 
 

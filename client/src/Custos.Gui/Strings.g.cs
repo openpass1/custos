@@ -1127,10 +1127,10 @@ static partial class Strings
     /// <summary>English</summary>
     public static string LanguageEnglish => Get(nameof(LanguageEnglish));
 
-    /// <summary>Accounts for network folders</summary>
+    /// <summary>Accounts for network folders and servers</summary>
     public static string SettingsAccounts => Get(nameof(SettingsAccounts));
 
-    /// <summary>The service keeps the passwords encrypted (Windows DPAPI) and never shows them. An account used by a task c...</summary>
+    /// <summary>The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by...</summary>
     public static string SettingsAccountsNote => Get(nameof(SettingsAccountsNote));
 
     /// <summary>Only administrators can change the settings.</summary>
@@ -1894,4 +1894,208 @@ static partial class Strings
 
     /// <summary>When it is on, tasks, accounts and settings can be changed from the site. When it is off, the site only sho...</summary>
     public static string AllowRemoteEditHelp => Get(nameof(AllowRemoteEditHelp));
+
+    /// <summary>SFTP server</summary>
+    public static string KindSftp => Get(nameof(KindSftp));
+
+    /// <summary>FTP server</summary>
+    public static string KindFtp => Get(nameof(KindFtp));
+
+    /// <summary>FTP server with TLS (FTPS)</summary>
+    public static string KindFtps => Get(nameof(KindFtps));
+
+    /// <summary>WebDAV</summary>
+    public static string KindWebDav => Get(nameof(KindWebDav));
+
+    /// <summary>S3 storage</summary>
+    public static string KindS3 => Get(nameof(KindS3));
+
+    /// <summary>Server:</summary>
+    public static string DestinationHost => Get(nameof(DestinationHost));
+
+    /// <summary>The name or the address of the server, for example backup.example.org. Fill in the port only if it is not t...</summary>
+    public static string DestinationHostHelp => Get(nameof(DestinationHostHelp));
+
+    /// <summary>port:</summary>
+    public static string DestinationPort => Get(nameof(DestinationPort));
+
+    /// <summary>Address:</summary>
+    public static string DestinationAddress => Get(nameof(DestinationAddress));
+
+    /// <summary>The address of WebDAV as the server gives it, for example https://cloud.example.org/remote.php/dav/files/us...</summary>
+    public static string DestinationAddressHelp => Get(nameof(DestinationAddressHelp));
+
+    /// <summary>Storage address:</summary>
+    public static string DestinationEndpoint => Get(nameof(DestinationEndpoint));
+
+    /// <summary>For a storage compatible with S3 (MinIO, a cloud provider): its address, for example https://s3.example.org...</summary>
+    public static string DestinationEndpointHelp => Get(nameof(DestinationEndpointHelp));
+
+    /// <summary>Bucket:</summary>
+    public static string DestinationBucket => Get(nameof(DestinationBucket));
+
+    /// <summary>The name of the bucket. CUSTOS does not create buckets: make it in the storage first (with Object Lock, if ...</summary>
+    public static string DestinationBucketHelp => Get(nameof(DestinationBucketHelp));
+
+    /// <summary>Region:</summary>
+    public static string DestinationRegion => Get(nameof(DestinationRegion));
+
+    /// <summary>The region of the bucket, for example eu-central-1. Many compatible storages need none: leave it empty then.</summary>
+    public static string DestinationRegionHelp => Get(nameof(DestinationRegionHelp));
+
+    /// <summary>Folder on the server:</summary>
+    public static string DestinationFolderOnServer => Get(nameof(DestinationFolderOnServer));
+
+    /// <summary>Folder in the bucket:</summary>
+    public static string DestinationFolderInBucket => Get(nameof(DestinationFolderInBucket));
+
+    /// <summary>A path from the root of the server (/backup/office) or, without a slash in front, from the folder the accou...</summary>
+    public static string DestinationFolderServerHelp => Get(nameof(DestinationFolderServerHelp));
+
+    /// <summary>A folder below the address, for example backup/office. Empty: the address itself. The folder is created if ...</summary>
+    public static string DestinationFolderWebDavHelp => Get(nameof(DestinationFolderWebDavHelp));
+
+    /// <summary>The start of the names of the files in the bucket, for example office/pc01. Empty: the bucket itself. Sever...</summary>
+    public static string DestinationFolderBucketHelp => Get(nameof(DestinationFolderBucketHelp));
+
+    /// <summary>The user of the SFTP server, with a password or with a private key.</summary>
+    public static string DestinationAccountHelpSftp => Get(nameof(DestinationAccountHelpSftp));
+
+    /// <summary>The user and the password of the FTP server. «No account» logs in as anonymous.</summary>
+    public static string DestinationAccountHelpFtp => Get(nameof(DestinationAccountHelpFtp));
+
+    /// <summary>The user and the password of the WebDAV server. Many cloud services give a separate «app password» for this.</summary>
+    public static string DestinationAccountHelpWebDav => Get(nameof(DestinationAccountHelpWebDav));
+
+    /// <summary>The access key of the storage (Access Key ID) and its secret key. Give this key only the rights listed in t...</summary>
+    public static string DestinationAccountHelpS3 => Get(nameof(DestinationAccountHelpS3));
+
+    /// <summary>No account</summary>
+    public static string AccountNone => Get(nameof(AccountNone));
+
+    /// <summary>Speed limit:</summary>
+    public static string DestinationSpeed => Get(nameof(DestinationSpeed));
+
+    /// <summary>How fast the copies are sent to this destination, so that the line is left for other work too. 0 means no l...</summary>
+    public static string DestinationSpeedHelp => Get(nameof(DestinationSpeedHelp));
+
+    /// <summary>Protection from deletion:</summary>
+    public static string DestinationLock => Get(nameof(DestinationLock));
+
+    /// <summary>days (0 — off)</summary>
+    public static string DestinationLockUnit => Get(nameof(DestinationLockUnit));
+
+    /// <summary>Protection mode:</summary>
+    public static string DestinationLockMode => Get(nameof(DestinationLockMode));
+
+    /// <summary>Governance: the owner of the storage can lift it</summary>
+    public static string LockModeGovernance => Get(nameof(LockModeGovernance));
+
+    /// <summary>Compliance: nobody can lift it before the time</summary>
+    public static string LockModeCompliance => Get(nameof(LockModeCompliance));
+
+    /// <summary>Object Lock: for this many days after it is written, a file of a copy cannot be deleted or replaced, not ev...</summary>
+    public static string DestinationLockHelp => Get(nameof(DestinationLockHelp));
+
+    /// <summary>Server key:</summary>
+    public static string DestinationServerKey => Get(nameof(DestinationServerKey));
+
+    /// <summary>not confirmed yet: press «Check access»</summary>
+    public static string DestinationServerKeyNone => Get(nameof(DestinationServerKeyNone));
+
+    /// <summary>Forget</summary>
+    public static string ButtonForgetKey => Get(nameof(ButtonForgetKey));
+
+    /// <summary>The server {0} shows the key or the certificate</summary>
+    public static string DestinationKeyConfirm => Get(nameof(DestinationKeyConfirm));
+
+    /// <summary>{0}</summary>
+    public static string DestinationKeyChanged => Get(nameof(DestinationKeyChanged));
+
+    /// <summary>The key of the server is not confirmed yet, and the task cannot connect until it is: press «Check access» f...</summary>
+    public static string DestinationKeyAsk => Get(nameof(DestinationKeyAsk));
+
+    /// <summary>Access is fine: {0}.</summary>
+    public static string TestOkRemote => Get(nameof(TestOkRemote));
+
+    /// <summary>Enter the server.</summary>
+    public static string ErrorHostRequired => Get(nameof(ErrorHostRequired));
+
+    /// <summary>Enter the address of WebDAV, for example https://cloud.example.org/dav.</summary>
+    public static string ErrorAddressRequired => Get(nameof(ErrorAddressRequired));
+
+    /// <summary>Enter the bucket.</summary>
+    public static string ErrorBucketRequired => Get(nameof(ErrorBucketRequired));
+
+    /// <summary>Choose the account. To enter a new one, press «Add…».</summary>
+    public static string ErrorAccountRequired => Get(nameof(ErrorAccountRequired));
+
+    /// <summary>The port is a number from 1 to 65535.</summary>
+    public static string ErrorPortBad => Get(nameof(ErrorPortBad));
+
+    /// <summary>Kind:</summary>
+    public static string AccountKind => Get(nameof(AccountKind));
+
+    /// <summary>Windows (network folders)</summary>
+    public static string AccountKindWindows => Get(nameof(AccountKindWindows));
+
+    /// <summary>FTP and FTPS</summary>
+    public static string AccountKindFtp => Get(nameof(AccountKindFtp));
+
+    /// <summary>SFTP</summary>
+    public static string AccountKindSftp => Get(nameof(AccountKindSftp));
+
+    /// <summary>WebDAV</summary>
+    public static string AccountKindWebDav => Get(nameof(AccountKindWebDav));
+
+    /// <summary>S3</summary>
+    public static string AccountKindS3 => Get(nameof(AccountKindS3));
+
+    /// <summary>Access key:</summary>
+    public static string AccountAccessKey => Get(nameof(AccountAccessKey));
+
+    /// <summary>Secret key:</summary>
+    public static string AccountSecretKey => Get(nameof(AccountSecretKey));
+
+    /// <summary>With a password</summary>
+    public static string AccountBySecret => Get(nameof(AccountBySecret));
+
+    /// <summary>With a private key</summary>
+    public static string AccountByKey => Get(nameof(AccountByKey));
+
+    /// <summary>Private key:</summary>
+    public static string AccountPrivateKey => Get(nameof(AccountPrivateKey));
+
+    /// <summary>From a file…</summary>
+    public static string ButtonKeyFile => Get(nameof(ButtonKeyFile));
+
+    /// <summary>The private key in the OpenSSH or PEM format, without a passphrase: the text that starts with «-----BEGIN»....</summary>
+    public static string AccountKeyNote => Get(nameof(AccountKeyNote));
+
+    /// <summary>Leave the field empty to keep what is stored.</summary>
+    public static string AccountKeepSecretNote => Get(nameof(AccountKeepSecretNote));
+
+    /// <summary>The service keeps the secret key encrypted (Windows DPAPI) and never shows it again.</summary>
+    public static string AccountSecretNote => Get(nameof(AccountSecretNote));
+
+    /// <summary>Paste the private key or take it from its file.</summary>
+    public static string ErrorKeyRequired => Get(nameof(ErrorKeyRequired));
+
+    /// <summary>This does not look like a private key: its text starts with «-----BEGIN».</summary>
+    public static string ErrorKeyBad => Get(nameof(ErrorKeyBad));
+
+    /// <summary>The file {0} cannot be read: {1}</summary>
+    public static string ErrorKeyFile => Get(nameof(ErrorKeyFile));
+
+    /// <summary>Enter the access key.</summary>
+    public static string ErrorAccessKeyRequired => Get(nameof(ErrorAccessKeyRequired));
+
+    /// <summary>Enter the secret key.</summary>
+    public static string ErrorSecretKeyRequired => Get(nameof(ErrorSecretKeyRequired));
+
+    /// <summary>Kind</summary>
+    public static string ColumnAccountKind => Get(nameof(ColumnAccountKind));
+
+    /// <summary>Private keys|*.pem;*.key;id_*|All files|*.*</summary>
+    public static string KeyFileFilter => Get(nameof(KeyFileFilter));
 }

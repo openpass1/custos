@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using Custos.Core.Archives;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
@@ -89,12 +90,13 @@ public sealed partial class BackupEngine
         {
             target.SetName = run.SetName;
             target.SetFolder = target.Root;
-            string first = Path.Combine(target.Root, run.SetName + extension);
+            string first = target.Store.Combine(target.Root, run.SetName + extension);
+            var mode = sevenZip ? StoreWriteMode.Seekable : StoreWriteMode.Stream;
             try
             {
                 Stream stream = volumeSize > 0
-                    ? new VolumeStream(volumeSize, n => CreatePart(target, string.Concat(first, ".", n.ToString("000", CultureInfo.InvariantCulture))), n => ReopenPart(target, n))
-                    : CreatePart(target, first);
+                    ? new VolumeStream(volumeSize, n => CreatePart(target, string.Concat(first, ".", n.ToString("000", CultureInfo.InvariantCulture)), mode), n => ReopenPart(target, n))
+                    : CreatePart(target, first, mode);
                 target.Output = stream;
                 target.Progress.State = DestinationStates.Writing;
                 outputs.Add(new StreamTarget(target, stream));
@@ -119,7 +121,7 @@ public sealed partial class BackupEngine
         using (var output = new MultiTargetStream(outputs, (failed, ex) =>
         {
             var target = (Target)failed.Owner;
-            CloseOutput(target);
+            CloseOutput(target, abandon: true);
             FailTarget(run, target, Messages.Format(Messages.DestinationWriteFailed, target.Label, ex.Message));
         }))
         {
@@ -175,15 +177,13 @@ public sealed partial class BackupEngine
                     VerifyNewArchive(run, target);
                 }
 
-                target.Session.Run(() =>
+                // The last volume first: until the first one has its name, the others are no archive to anybody.
+                for (int i = target.Writers.Count - 1; i >= 0; i--)
                 {
-                    // The last volume first: until the first one has its name, the others are no archive to anybody.
-                    for (int i = target.Temps.Count - 1; i >= 0; i--)
-                    {
-                        File.Move(target.Temps[i], target.Parts[i]);
-                        target.Renamed.Add(target.Parts[i]);
-                    }
-                });
+                    target.Writers[i].Commit();
+                    target.Renamed.Add(target.Parts[i]);
+                }
+
                 target.Completed = true;
                 target.Files = run.Copied.Count + run.Dumps.Count(d => d.InSet) + (int)(run.Remote?.StoredFiles ?? 0);
                 target.Bytes = run.ArchiveBytes;
@@ -196,7 +196,7 @@ public sealed partial class BackupEngine
                 };
                 target.Progress.State = DestinationStates.Done;
                 string volumes = target.Parts.Count > 1 ? Messages.Format(Messages.ArchiveVolumeCount, target.Parts.Count) : string.Empty;
-                _log.Write(RunLogLevel.Info, Messages.Format(Messages.ArchiveWritten, Path.GetFileName(target.Parts[0]), target.Label, target.Files, Sizes.Format(run.ArchiveBytes), volumes));
+                _log.Write(RunLogLevel.Info, Messages.Format(Messages.ArchiveWritten, target.Store.Name(target.Parts[0]), target.Label, target.Files, Sizes.Format(run.ArchiveBytes), volumes));
             }
             catch (BackupException ex)
             {
@@ -232,7 +232,9 @@ public sealed partial class BackupEngine
         {
             try
             {
-                taken |= target.Session.Run(() => SetNaming.IsTaken(target.Root, name));
+                // One look into the folder serves every name tried.
+                target.TakenNames ??= SetNaming.TakenNames(target.Store, target.Root);
+                taken |= SetNaming.IsTaken(target.TakenNames, name);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -243,20 +245,29 @@ public sealed partial class BackupEngine
         return taken;
     }
 
-    private FileStream CreatePart(Target target, string final)
+    /// <summary>Starts a file of the archive (the archive itself or a volume) under its temporary name.</summary>
+    private static PartStream CreatePart(Target target, string final, StoreWriteMode mode)
     {
-        string temp = final + SetCatalog.PartialSuffix;
-        var stream = Lowered(target.Session.Run(() => new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, ArchiveBufferSize)));
+        var writer = target.Store.BeginWrite(final, SetCatalog.PartialSuffix, mode);
         target.Parts.Add(final);
-        target.Temps.Add(temp);
-        return stream;
+        target.Writers.Add(writer);
+        return new PartStream(writer.Stream, writer);
     }
 
-    private FileStream ReopenPart(Target target, int number) =>
-        Lowered(target.Session.Run(() => new FileStream(target.Temps[number - 1], FileMode.Open, FileAccess.Write, FileShare.None, ArchiveBufferSize)));
+    /// <summary>Opens a volume written before, to change it in place (the header of a 7z archive in volumes).</summary>
+    private static PartStream ReopenPart(Target target, int number) => new(target.Writers[number - 1].Reopen(), null);
 
-    private static void CloseOutput(Target target)
+    /// <param name="abandon">The destination failed: what is being uploaded stops at once instead of being completed.</param>
+    private static void CloseOutput(Target target, bool abandon = false)
     {
+        if (abandon)
+        {
+            foreach (var writer in target.Writers)
+            {
+                writer.Abort();
+            }
+        }
+
         try
         {
             target.Output?.Dispose();
@@ -272,29 +283,75 @@ public sealed partial class BackupEngine
     /// <summary>Removes what an unfinished archive left in a destination.</summary>
     private void RemoveArchiveLeftovers(Target target)
     {
-        CloseOutput(target);
-        if (target.Temps.Count == 0)
+        if (target.Writers.Count == 0)
         {
+            CloseOutput(target);
             return;
         }
 
+        // The run is over or stopped: the leftovers are removed whatever happened to it.
+        target.Store.Cancellation = CancellationToken.None;
+        CloseOutput(target, abandon: true);
         try
         {
-            target.Session.Run(() =>
+            foreach (string file in target.Renamed)
             {
-                foreach (string file in target.Temps.Concat(target.Renamed))
-                {
-                    if (File.Exists(file))
-                    {
-                        File.SetAttributes(file, FileAttributes.Normal);
-                        File.Delete(file);
-                    }
-                }
-            });
+                target.Store.DeleteFile(file);
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OperationCanceledException)
         {
-            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.PartialFileNotRemoved, target.Temps[0], ex.Message));
+            _log.Write(RunLogLevel.Warning, Messages.Format(Messages.PartialFileNotRemoved, target.Parts[0], ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// A file of an archive as the archive writer sees it. Closing it ends the writing in the destination, which is
+    /// where an upload reports its failure.
+    /// </summary>
+    private sealed class PartStream(Stream inner, StoreWriter? writer) : Stream
+    {
+        public override bool CanRead => false;
+
+        public override bool CanSeek => inner.CanSeek;
+
+        public override bool CanWrite => true;
+
+        public override long Length => inner.Length;
+
+        public override long Position
+        {
+            get => inner.Position;
+            set => inner.Position = value;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
+
+        public override void Write(ReadOnlySpan<byte> buffer) => inner.Write(buffer);
+
+        public override void Flush() => inner.Flush();
+
+        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+
+        public override void SetLength(long value) => inner.SetLength(value);
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (writer is not null)
+                {
+                    writer.Close();
+                }
+                else
+                {
+                    inner.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
         }
     }
 

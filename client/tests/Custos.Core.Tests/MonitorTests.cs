@@ -389,6 +389,33 @@ public sealed class ServerConfigTests : IDisposable
     }
 
     [Fact]
+    public void The_key_of_a_destination_server_is_confirmed_here_and_never_taken_from_the_site()
+    {
+        const string confirmed = "SHA256:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU";
+        const string foreign = "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        var credential = new ServerCredential(CredentialId, CredentialKinds.Sftp, "backup", null, "secret");
+
+        // A new task from the site: whatever key it names, the server is not trusted yet.
+        _store.UpsertFromServer(SftpTaskJson("backup.example.org", foreign), 0, [credential], Now);
+        Assert.Null(_store.GetTask(TaskId)!.Destinations[0].ServerFingerprint);
+
+        // The administrator confirms the key on this computer («Test access»).
+        var local = _store.GetTask(TaskId)!;
+        local.Destinations[0].ServerFingerprint = confirmed;
+        _store.SaveTask(local, local.Revision, "local:admin", Now);
+
+        // An edit from the site that leaves the server alone keeps it, with or without the field.
+        _store.UpsertFromServer(SftpTaskJson("backup.example.org", null), 2, [], Now);
+        Assert.Equal(confirmed, _store.GetTask(TaskId)!.Destinations[0].ServerFingerprint);
+        _store.UpsertFromServer(SftpTaskJson("BACKUP.example.org", foreign), 3, [], Now);
+        Assert.Equal(confirmed, _store.GetTask(TaskId)!.Destinations[0].ServerFingerprint);
+
+        // Another server has to be confirmed anew: neither the old key nor the one the site sends goes with it.
+        _store.UpsertFromServer(SftpTaskJson("other.example.org", confirmed), 4, [], Now);
+        Assert.Null(_store.GetTask(TaskId)!.Destinations[0].ServerFingerprint);
+    }
+
+    [Fact]
     public void Settings_from_the_server_never_touch_the_local_ones()
     {
         _store.SetServerUrl("https://custos.example.lan");
@@ -424,6 +451,24 @@ public sealed class ServerConfigTests : IDisposable
 
         Assert.Equal(["0b8f5a2e-1c3d-4e5f-8a9b-0c1d2e3f4a5b"], snapshot["deleted_task_ids"]!.AsArray().Select(n => n!.GetValue<string>()));
     }
+
+    private static JsonElement SftpTaskJson(string host, string? fingerprint) => JsonSerializer.SerializeToElement(new JsonObject
+    {
+        ["id"] = TaskId,
+        ["name"] = "To a server",
+        ["updated_by"] = "server:alice",
+        ["enabled"] = false,
+        ["destinations"] = new JsonArray(new JsonObject
+        {
+            ["id"] = "d1",
+            ["kind"] = "sftp",
+            ["host"] = host,
+            ["path"] = "/srv/backup",
+            ["credential_id"] = CredentialId,
+            ["object_lock_days"] = 0,
+            ["server_fingerprint"] = fingerprint,
+        }),
+    }, TestJson.Default.JsonNode);
 
     private static JsonElement TaskJson(string name, string updatedBy) => JsonSerializer.SerializeToElement(new JsonObject
     {

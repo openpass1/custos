@@ -344,6 +344,22 @@ public sealed class DestinationTestResult
 
     /// <summary>What went wrong, in words.</summary>
     public string? Error { get; set; }
+
+    /// <summary>
+    /// The SSH key or the TLS certificate the server showed ("SHA256:…"); null for servers that show none. The editor
+    /// keeps it in <see cref="TaskDestination.ServerFingerprint"/> once the administrator has agreed.
+    /// </summary>
+    public string? Fingerprint { get; set; }
+
+    /// <summary>The test stopped only because the destination does not trust <see cref="Fingerprint"/> yet: the
+    /// editor asks whether to trust it and tries again.</summary>
+    public bool TrustNeeded { get; set; }
+
+    /// <summary>The server showed another key or certificate than the one the destination trusts.</summary>
+    public bool FingerprintChanged { get; set; }
+
+    /// <summary>More about the destination, a sentence each (an S3 bucket: Object Lock, versions).</summary>
+    public List<string> Details { get; set; } = [];
 }
 
 /// <summary>What <see cref="PipeProtocol.Methods.DatabasesFind"/> found: running servers first.</summary>
@@ -557,6 +573,10 @@ public sealed class RestoreStartRequest : RestoreSource
 {
     /// <summary><see cref="RestoreSetInfo.Location"/> of the set whose date to restore.</summary>
     public required string Location { get; set; }
+
+    /// <summary><see cref="RestoreSetInfo.Where"/> of that set: the destination it lies in. Tells apart sets of the
+    /// same name on two servers and saves connecting to the others; null looks in every destination.</summary>
+    public string? Where { get; set; }
 
     /// <summary>Folder to restore into; null = the original places.</summary>
     public string? TargetFolder { get; set; }

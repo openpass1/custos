@@ -675,6 +675,15 @@ public sealed partial class ConfigStore
         task.Copy.ReadRetries = Math.Clamp(task.Copy.ReadRetries, 0, 5);
         UniqueIds(task.Sources, s => s.Id, (s, id) => s.Id = id);
         UniqueIds(task.Destinations, d => d.Id, (d, id) => d.Id = id);
+        foreach (var destination in task.Destinations)
+        {
+            destination.ServerFingerprint = string.IsNullOrWhiteSpace(destination.ServerFingerprint) ? null : destination.ServerFingerprint.Trim();
+            destination.ObjectLockDays = destination.Kind == DestinationKinds.S3 ? Math.Clamp(destination.ObjectLockDays, 0, 36500) : 0;
+            destination.ObjectLockMode = destination.ObjectLockDays > 0 && destination.ObjectLockMode is ObjectLockModes.Governance or ObjectLockModes.Compliance
+                ? destination.ObjectLockMode
+                : null;
+        }
+
         task.DbServers ??= [];
         foreach (var server in task.DbServers)
         {

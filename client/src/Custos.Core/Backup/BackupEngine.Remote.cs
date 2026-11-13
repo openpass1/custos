@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using Custos.Core.Archives;
 using Custos.Core.Databases;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Custos.Core.Remote;
 using Custos.Core.Text;
@@ -247,7 +248,7 @@ public sealed partial class BackupEngine
 
             try
             {
-                var files = target.Session.Run(() => SetCatalog.ReadManifest(set, run.Access?.WithSession(target.Session)).Files);
+                var files = SetCatalog.ReadManifest(set, run.Access?.WithStore(target.Store), target.Store).Files;
                 var now = remote.Listing.Select(e => e.Key).ToHashSet(StringComparer.Ordinal);
                 return files.Count(f => f.Posix?.Type is "f" or "l" && !now.Contains(RemotePath.Key(f)));
             }
@@ -358,12 +359,10 @@ public sealed partial class BackupEngine
         {
             foreach (var target in run.ActiveTargets)
             {
-                string final = Path.Combine(target.WriteFolder, RemoteTarName);
-                string temp = final + TempSuffix;
+                string final = target.Store.Combine(target.WriteFolder, RemoteTarName);
                 try
                 {
-                    var stream = target.Session.Run(() => Lowered(new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 1)));
-                    outputs.Add(new Output(target, stream, temp, final));
+                    outputs.Add(new Output(target, target.Store.BeginWrite(final, TempSuffix, StoreWriteMode.Stream), final));
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
@@ -391,8 +390,7 @@ public sealed partial class BackupEngine
                 var output = outputs[i];
                 try
                 {
-                    output.Stream.Dispose();
-                    output.Target.Session.Run(() => File.Move(output.Temp, output.Final, overwrite: true));
+                    output.Writer.Commit();
                     output.Target.Files += (int)run.Remote!.StoredFiles;
                     output.Target.Bytes += run.Remote.TarBytes;
                 }

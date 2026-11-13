@@ -45,16 +45,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # Windows PowerShell 5.1, the same shell the build is run with on a test machine. CUSTOS_REQUIRE_7Z makes the 7z
-      # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.3.<run number>,
+      # tests fail instead of being skipped if 7z.dll went missing. Every run gets its own version 0.4.<run number>,
       # so a later build can be installed over an earlier one by an update from the server; the test update
-      # 0.3.<run number>.1 is the same code with a higher version, to try that with a single build (the update
+      # 0.4.<run number>.1 is the same code with a higher version, to try that with a single build (the update
       # package of a build has the version of its installer, so it cannot update a machine installed from it).
       - name: Build, test and make the installer
         shell: powershell
         working-directory: client
         env:
           CUSTOS_REQUIRE_7Z: '1'
-        run: .\build.ps1 -Configuration Release -Version 0.3.${{ github.run_number }} -TestUpdateVersion 0.3.${{ github.run_number }}.1
+        run: .\build.ps1 -Configuration Release -Version 0.4.${{ github.run_number }} -TestUpdateVersion 0.4.${{ github.run_number }}.1
 
       - name: Upload the installer
         uses: actions/upload-artifact@v6
@@ -70,7 +70,7 @@ jobs:
       - name: Upload the update package
         uses: actions/upload-artifact@v7
         with:
-          path: client/artifacts/update/custos-0.3.${{ github.run_number }}.zip
+          path: client/artifacts/update/custos-0.4.${{ github.run_number }}.zip
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -78,7 +78,7 @@ jobs:
       - name: Upload the test update package
         uses: actions/upload-artifact@v7
         with:
-          path: client/artifacts/update-test/custos-0.3.${{ github.run_number }}.1-test.zip
+          path: client/artifacts/update-test/custos-0.4.${{ github.run_number }}.1-test.zip
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -87,7 +87,7 @@ jobs:
       - name: Say what the files are for
         shell: pwsh
         run: |
-          $v = '0.3.${{ github.run_number }}'
+          $v = '0.4.${{ github.run_number }}'
           @"
           ### CUSTOS ${v}: что скачивать
 
@@ -168,6 +168,40 @@ jobs:
         env:
           CUSTOS_REQUIRE_SSH: '1'
         run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~RealRemote"
+
+  # Remote destinations of stage 4 (section 6.3 of CUSTOS-client.md) against real servers on the runner: OpenSSH,
+  # vsftpd with and without TLS, Apache WebDAV over http and https, and MinIO with Object Lock
+  # (client/tools/ci-destinations.sh). Whole runs go through the backup engine: copy, verify, restore, retention.
+  # MinIO publishes neither images nor programs any more, so the script builds the server from its source with Go
+  # (the version below, checked by Go's checksum database); the cache keeps the built program for the next runs.
+  destinations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      MINIO_VERSION: v0.0.0-20260212201848-7aac2a2c5b7c
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Keep the built S3 server between runs
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/custos-ci
+          key: minio-${{ env.MINIO_VERSION }}
+
+      - name: Start the servers
+        env:
+          CUSTOS_MINIO: build
+        run: bash client/tools/ci-destinations.sh
+
+      - name: Test the destinations
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_DESTINATIONS: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release --filter "FullyQualifiedName~DestinationStoreTests|FullyQualifiedName~RealDestinationTests"
 
   # The protocol against a real CUSTOS Monitor (server/): registration, approval, the configuration snapshot, run
   # reports with a log, progress, the inventory and a command (RealMonitorTests). The server runs on PHP's own web

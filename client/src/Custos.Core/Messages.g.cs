@@ -1504,4 +1504,91 @@ static partial class Messages
 
     /// <summary>the SHA-256 of {0} differs from manifest.json</summary>
     public static string MonitorPackageFileHash => Get(nameof(MonitorPackageFileHash));
+
+    /// <summary>The file in the destination is shorter than it should be.</summary>
+    public static string StoreFileShorter => Get(nameof(StoreFileShorter));
+
+    /// <summary>{0}: {1}</summary>
+    public static string StoreFailed => Get(nameof(StoreFailed));
+
+    /// <summary>{0}: the server answered {1} ({2})</summary>
+    public static string StoreHttpFailed => Get(nameof(StoreHttpFailed));
+
+    /// <summary>{0}: no connection: {1}</summary>
+    public static string StoreUnreachable => Get(nameof(StoreUnreachable));
+
+    /// <summary>the server did not answer in time</summary>
+    public static string StoreNoAnswer => Get(nameof(StoreNoAnswer));
+
+    /// <summary>{0}: the server refused the login «{1}». Check the account of the destination.</summary>
+    public static string StoreLoginRefused => Get(nameof(StoreLoginRefused));
+
+    /// <summary>{0}: there is no room left on the server.</summary>
+    public static string StoreFull => Get(nameof(StoreFull));
+
+    /// <summary>the server did not take the file</summary>
+    public static string StoreUploadRefused => Get(nameof(StoreUploadRefused));
+
+    /// <summary>The server of the destination is not set.</summary>
+    public static string StoreHostMissing => Get(nameof(StoreHostMissing));
+
+    /// <summary>The bucket of the destination is not set.</summary>
+    public static string StoreBucketMissing => Get(nameof(StoreBucketMissing));
+
+    /// <summary>{0}: there is no bucket «{1}».</summary>
+    public static string StoreBucketNotFound => Get(nameof(StoreBucketNotFound));
+
+    /// <summary>The account of the destination is not set or its password cannot be read.</summary>
+    public static string StoreAccountMissing => Get(nameof(StoreAccountMissing));
+
+    /// <summary>The private key of the account cannot be read (a key protected by a passphrase is not supported): {0}</summary>
+    public static string StoreKeyBad => Get(nameof(StoreKeyBad));
+
+    /// <summary>{0}: the server shows the key {1}. Check it and confirm it in the destination («Test access»).</summary>
+    public static string StoreHostKeyNew => Get(nameof(StoreHostKeyNew));
+
+    /// <summary>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If the server...</summary>
+    public static string StoreHostKeyChanged => Get(nameof(StoreHostKeyChanged));
+
+    /// <summary>{0}: Windows does not trust the certificate of the server (SHA-256 {1}). If it is your own server with a se...</summary>
+    public static string StoreCertificateUnknown => Get(nameof(StoreCertificateUnknown));
+
+    /// <summary>{0}: THE CERTIFICATE OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If th...</summary>
+    public static string StoreCertificateChanged => Get(nameof(StoreCertificateChanged));
+
+    /// <summary>The bucket «{0}» has no Object Lock, and the destination asks to protect the copies for {1} days. Object Lo...</summary>
+    public static string StoreObjectLockMissing => Get(nameof(StoreObjectLockMissing));
+
+    /// <summary>Object Lock: the bucket has it.</summary>
+    public static string StoreLockOn => Get(nameof(StoreLockOn));
+
+    /// <summary>Object Lock: the bucket has it; its own rule locks every object ({0}).</summary>
+    public static string StoreLockOnDefault => Get(nameof(StoreLockOnDefault));
+
+    /// <summary>Object Lock: the bucket has none.</summary>
+    public static string StoreLockOff => Get(nameof(StoreLockOff));
+
+    /// <summary>Object Lock: the server does not tell whether the bucket has it.</summary>
+    public static string StoreLockUnknown => Get(nameof(StoreLockUnknown));
+
+    /// <summary>{0}, {1} days</summary>
+    public static string StoreLockDefaultDays => Get(nameof(StoreLockDefaultDays));
+
+    /// <summary>{0}, {1} years</summary>
+    public static string StoreLockDefaultYears => Get(nameof(StoreLockDefaultYears));
+
+    /// <summary>Versions: the bucket keeps versions of objects; CUSTOS deletes every version of what it deletes.</summary>
+    public static string StoreVersionsOn => Get(nameof(StoreVersionsOn));
+
+    /// <summary>Versions: the bucket keeps none.</summary>
+    public static string StoreVersionsOff => Get(nameof(StoreVersionsOff));
+
+    /// <summary>A 7z archive cannot be written to {0}: such a destination takes a file only from its start to its end, and ...</summary>
+    public static string SevenZipNeedsSeek => Get(nameof(SevenZipNeedsSeek));
+
+    /// <summary>{0}: protection from deletion (Object Lock) works only with copies that are never overwritten: archives or ...</summary>
+    public static string ObjectLockNeedsSets => Get(nameof(ObjectLockNeedsSets));
+
+    /// <summary>Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.</summary>
+    public static string SetLocked => Get(nameof(SetLocked));
 }

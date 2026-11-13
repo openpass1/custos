@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.IO.Enumeration;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 
 namespace Custos.Core.Backup;
@@ -13,6 +13,8 @@ namespace Custos.Core.Backup;
 /// <remarks>
 /// Only files the mirror's own manifest lists are ever deleted: whatever else lies in the folder stays. Nothing is
 /// deleted when a source or one of its folders could not be read, because then its files only look deleted.
+/// A server that does not keep the time of the original (FTP, SFTP, WebDAV, S3) shows the time of the upload; there
+/// the time is taken from the mirror's manifest while the file still has the size the manifest knows.
 /// </remarks>
 public sealed partial class BackupEngine
 {
@@ -22,8 +24,8 @@ public sealed partial class BackupEngine
     private const string BinTimeFormat = "yyyy-MM-dd HH-mm";
     private static readonly TimeSpan TimeTolerance = TimeSpan.FromSeconds(2);
 
-    /// <summary>Each run makes a set folder of its own (a mirror never does).</summary>
-    /// <summary>Every run makes a set folder of its own. Always so for a Linux server: its sets are a tar each.</summary>
+    /// <summary>Every run makes a set folder of its own (a mirror never does). Always so for a Linux server: its sets
+    /// are a tar each.</summary>
     private static bool SeparateSets(TaskDefinition task) => (task.Layout.SeparateFolders || IsRemote(task)) && task.BackupType != BackupTypes.Mirror;
 
     private static bool IsSafeMirror(RunContext run) =>
@@ -51,18 +53,26 @@ public sealed partial class BackupEngine
         string.Equals(path, folder, StringComparison.OrdinalIgnoreCase)
         || path.StartsWith(folder.EndsWith(Path.DirectorySeparatorChar) ? folder : folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>A path of the destination as the manifest has it: below the mirror, with the separators of this system.</summary>
+    private static string MirrorPath(DestinationStore store, string root, string path)
+    {
+        string relative = store.Relative(root, path);
+        return Path.DirectorySeparatorChar == '/' ? relative : relative.Replace('/', Path.DirectorySeparatorChar);
+    }
+
     /// <summary>What the mirror holds: the files in the folder and the manifest of the last run.</summary>
     private static void ReadMirror(RunContext run, Target target)
     {
-        string manifest = Path.Combine(target.Root, SetManifest.FileName);
-        if (SetCatalog.TryReadHeader(manifest) is { } header
+        var store = target.Store;
+        string manifest = store.Combine(target.Root, SetManifest.FileName);
+        if (SetCatalog.TryReadHeader(store, manifest) is { } header
             && header.BackupType == BackupTypes.Mirror
             && string.Equals(header.TaskId, run.Task.Id, StringComparison.OrdinalIgnoreCase))
         {
             target.SharedManifest = header;
             try
             {
-                using var stream = new FileStream(manifest, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024);
+                using var stream = store.OpenRead(manifest);
                 foreach (var file in SetManifest.ReadFiles(stream).Where(f => f.InSet))
                 {
                     target.Previous[file.Path] = file;
@@ -75,45 +85,54 @@ public sealed partial class BackupEngine
             }
         }
 
-        string bin = Path.Combine(target.Root, MirrorBinName);
-        var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint };
-        var files = new FileSystemEnumerable<(string Path, MirrorEntry Entry)>(target.Root,
-            (ref FileSystemEntry e) => (e.ToFullPath(), new MirrorEntry(e.Length, e.LastWriteTimeUtc.UtcDateTime)), options)
+        string bin = store.Combine(target.Root, MirrorBinName);
+        foreach (var entry in store.ListFiles(target.Root, folder => string.Equals(folder, bin, StringComparison.OrdinalIgnoreCase)))
         {
-            ShouldIncludePredicate = (ref FileSystemEntry e) => !e.IsDirectory,
-            ShouldRecursePredicate = (ref FileSystemEntry e) => !string.Equals(e.ToFullPath(), bin, StringComparison.OrdinalIgnoreCase),
-        };
-        foreach (var (path, entry) in files)
-        {
-            string relative = Path.GetRelativePath(target.Root, path);
-            if (!string.Equals(relative, SetManifest.FileName, StringComparison.OrdinalIgnoreCase)
-                && !relative.EndsWith(TempSuffix, StringComparison.OrdinalIgnoreCase))
+            string relative = MirrorPath(store, target.Root, entry.Path);
+            if (string.Equals(relative, SetManifest.FileName, StringComparison.OrdinalIgnoreCase)
+                || relative.EndsWith(TempSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                target.Existing[relative] = entry;
+                continue;
             }
+
+            var modified = entry.ModifiedUtc;
+            if (!store.KeepsTimes && target.Previous.TryGetValue(relative, out var known) && known.Size == entry.Size)
+            {
+                // The server shows when the file was uploaded, not the time of the original.
+                modified = known.ModifiedUtc;
+            }
+
+            target.Existing[relative] = new MirrorEntry(entry.Size, modified);
         }
     }
 
     /// <summary>Moves a file of the mirror into the bin of this run, keeping its place in the tree.</summary>
     private static void MoveToBin(RunContext run, Target target, string path)
     {
+        var store = target.Store;
         if (target.Bin is null)
         {
             var local = TimeZoneInfo.ConvertTime(run.Request.StartedAt, run.Request.TimeZone).DateTime;
             string name = local.ToString(BinTimeFormat, CultureInfo.InvariantCulture);
-            string bin = Path.Combine(target.Root, MirrorBinName, name);
-            for (int i = 2; Directory.Exists(bin); i++)
+            string bins = store.Combine(target.Root, MirrorBinName);
+            var taken = SetNaming.TakenNames(store, bins);
+            string bin = name;
+            for (int i = 2; taken.Contains(bin); i++)
             {
-                bin = Path.Combine(target.Root, MirrorBinName, SetNaming.Numbered(name, i));
+                bin = SetNaming.Numbered(name, i);
             }
 
-            Directory.CreateDirectory(bin);
-            target.Bin = bin;
+            target.Bin = store.Combine(bins, bin);
+            CreateFolder(target, target.Bin);
         }
 
-        string moved = Path.Combine(target.Bin, Path.GetRelativePath(target.Root, path));
-        Directory.CreateDirectory(Path.GetDirectoryName(moved)!);
-        File.Move(path, moved, overwrite: true);
+        string moved = store.Combine(target.Bin, store.Relative(target.Root, path));
+        if (store.Parent(moved) is { } folder)
+        {
+            CreateFolder(target, folder);
+        }
+
+        store.MoveFile(path, moved);
         target.MirrorRemoved++;
     }
 
@@ -160,23 +179,19 @@ public sealed partial class BackupEngine
             foreach (string path in target.Previous.Keys.Where(p => !present.Contains(p) && target.Existing.ContainsKey(p)).ToList())
             {
                 run.Cancellation.ThrowIfCancellationRequested();
-                string full = Path.Combine(target.Root, path);
+                string full = target.Store.Combine(target.Root, path);
                 try
                 {
-                    target.Session.Run(() =>
+                    if (safe)
                     {
-                        if (safe)
-                        {
-                            MoveToBin(run, target, full);
-                        }
-                        else
-                        {
-                            File.SetAttributes(full, FileAttributes.Normal);
-                            File.Delete(full);
-                        }
+                        MoveToBin(run, target, full);
+                    }
+                    else
+                    {
+                        target.Store.DeleteFile(full);
+                    }
 
-                        RemoveEmptyParents(target.Root, full, folders);
-                    });
+                    RemoveEmptyParents(target, full, folders);
                     target.Existing.Remove(path);
                     deleted++;
                     _log.Write(RunLogLevel.Detail, safe ? Messages.Format(Messages.MirrorFileMoved, path, target.Bin) : Messages.Format(Messages.MirrorFileDeleted, path));
@@ -200,19 +215,25 @@ public sealed partial class BackupEngine
     }
 
     /// <summary>Deletes the folders a deleted file leaves empty, up to the first folder the sources still have.</summary>
-    private static void RemoveEmptyParents(string root, string file, HashSet<string> keep)
+    private static void RemoveEmptyParents(Target target, string file, HashSet<string> keep)
     {
-        string? folder = Path.GetDirectoryName(file);
-        string top = Path.TrimEndingDirectorySeparator(root);
-        while (folder is not null && folder.Length > top.Length)
+        var store = target.Store;
+        if (!store.HasFolders)
         {
-            if (keep.Contains(Path.GetRelativePath(root, folder)) || Directory.EnumerateFileSystemEntries(folder).Any())
+            return;
+        }
+
+        int top = target.Root.TrimEnd('/', '\\').Length;
+        string? folder = store.Parent(file);
+        while (folder is not null && folder.Length > top)
+        {
+            if (keep.Contains(MirrorPath(store, target.Root, folder)) || !store.RemoveEmptyFolder(folder))
             {
                 return;
             }
 
-            Directory.Delete(folder);
-            folder = Path.GetDirectoryName(folder);
+            target.CreatedFolders.Remove(folder);
+            folder = store.Parent(folder);
         }
     }
 
@@ -272,13 +293,14 @@ public sealed partial class BackupEngine
         var limit = TimeZoneInfo.ConvertTime(run.Request.StartedAt, run.Request.TimeZone).DateTime.AddDays(-days);
         foreach (var target in run.Targets.Where(t => t.Completed))
         {
-            string bin = Path.Combine(target.Root, MirrorBinName);
-            List<string> old;
+            var store = target.Store;
+            string bin = store.Combine(target.Root, MirrorBinName);
+            List<StoreEntry> old;
             try
             {
-                old = target.Session.Run(() => Directory.Exists(bin)
-                    ? [.. Directory.EnumerateDirectories(bin).Where(f => !string.Equals(f, target.Bin, StringComparison.OrdinalIgnoreCase) && BinTime(f) < limit)]
-                    : new List<string>());
+                old = [.. store.List(bin).Where(e => e.IsFolder
+                    && !string.Equals(e.Path, target.Bin, StringComparison.OrdinalIgnoreCase)
+                    && BinTime(e, run.Request.TimeZone) is { } made && made < limit)];
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -287,29 +309,34 @@ public sealed partial class BackupEngine
                 continue;
             }
 
-            foreach (string folder in old)
+            foreach (var folder in old)
             {
                 try
                 {
-                    target.Session.Run(() => SetCatalog.DeleteSetFolder(folder));
-                    _log.Write(RunLogLevel.Info, Messages.Format(Messages.MirrorBinRemoved, folder, target.Label));
+                    store.DeleteFolder(folder.Path);
+                    _log.Write(RunLogLevel.Info, Messages.Format(Messages.MirrorBinRemoved, folder.Path, target.Label));
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     run.Result.Warnings++;
-                    _log.Write(RunLogLevel.Warning, Messages.Format(Messages.MirrorBinRemoveFailed, folder, target.Label, ex.Message));
+                    _log.Write(RunLogLevel.Warning, Messages.Format(Messages.MirrorBinRemoveFailed, folder.Path, target.Label, ex.Message));
                 }
             }
         }
     }
 
-    /// <summary>When a bin folder was made: from its name, or else from the folder itself (local time).</summary>
-    private static DateTime BinTime(string folder)
+    /// <summary>When a bin folder was made (local time): from its name, or else from the folder itself; null where
+    /// the server does not tell (such a folder is left alone).</summary>
+    private static DateTime? BinTime(StoreEntry folder, TimeZoneInfo zone)
     {
-        string name = Path.GetFileName(folder);
-        return name.Length >= BinTimeFormat.Length
-            && DateTime.TryParseExact(name[..BinTimeFormat.Length], BinTimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time)
-            ? time
-            : Directory.GetCreationTime(folder);
+        if (folder.Name.Length >= BinTimeFormat.Length
+            && DateTime.TryParseExact(folder.Name[..BinTimeFormat.Length], BinTimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
+        {
+            return time;
+        }
+
+        return folder.ModifiedUtc == DateTime.MinValue
+            ? null
+            : TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(folder.ModifiedUtc, DateTimeKind.Utc), zone);
     }
 }

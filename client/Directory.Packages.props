@@ -23,6 +23,10 @@
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <!-- SSH to Linux servers through custos-helper (stage 2a): MIT; brings BouncyCastle.Cryptography (MIT) -->
     <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+    <!-- FTP and FTPS destinations (stage 4): MIT -->
+    <PackageVersion Include="FluentFTP" Version="55.1.0" />
+    <!-- S3 destinations (stage 4): Apache-2.0; brings AWSSDK.Core (Apache-2.0) -->
+    <PackageVersion Include="AWSSDK.S3" Version="4.1.0" />
     <!-- Starting and stopping the service from the tray menu (the service itself gets it through Hosting.WindowsServices): MIT -->
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
     <!-- WMI, for the shadow copies (VSS): MIT -->

@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using Custos.Core;
 using Custos.Core.Archives;
 using Custos.Core.Backup;
+using Custos.Core.Destinations;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Service.Platform;
@@ -90,7 +91,7 @@ internal sealed partial class AgentService
         var problems = new List<string>();
         Place? found = null;
         StoredSet? set = null;
-        foreach (var place in Places(request, problems))
+        foreach (var place in Places(request, problems, request.Where))
         {
             var match = found is null ? place.Sets.FirstOrDefault(s => string.Equals(s.Location, request.Location, StringComparison.OrdinalIgnoreCase)) : null;
             if (match is not null)
@@ -207,7 +208,8 @@ internal sealed partial class AgentService
     }
 
     /// <summary>The places a restore looks in: every destination of the task, or the folder; with their sets.</summary>
-    private List<Place> Places(RestoreSource request, List<string> problems)
+    /// <param name="only">The place a set was found in (<see cref="RestoreSetInfo.Where"/>): the others are not opened.</param>
+    private List<Place> Places(RestoreSource request, List<string> problems, string? only = null)
     {
         var places = new List<Place>();
         if (request.TaskId is { } taskId)
@@ -237,9 +239,13 @@ internal sealed partial class AgentService
                     continue;
                 }
 
-                string label = destination.Kind == DestinationKinds.Usb ? Messages.Format(Messages.UsbDiskLabel, destination.UsbLabel) : destination.Path;
-                if (OpenPlace(label, () => BackupEngine.ResolveRoot(Platform, destination),
-                    destination.Kind == DestinationKinds.Unc ? destination.CredentialId : null, password, taskId, problems) is { } place)
+                string label = DestinationStores.Label(destination);
+                if (only is not null && !string.Equals(label, only, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (OpenPlace(label, () => Platform.OpenStore(destination), password, taskId, problems) is { } place)
                 {
                     places.Add(place);
                 }
@@ -247,8 +253,13 @@ internal sealed partial class AgentService
         }
         else if (!string.IsNullOrWhiteSpace(request.Folder) && Path.IsPathFullyQualified(request.Folder))
         {
-            string folder = request.Folder;
-            if (OpenPlace(folder, () => folder, request.CredentialId, request.Password, null, problems) is { } place)
+            var folder = new TaskDestination
+            {
+                Kind = request.CredentialId is null ? DestinationKinds.Local : DestinationKinds.Unc,
+                Path = request.Folder,
+                CredentialId = request.CredentialId,
+            };
+            if (OpenPlace(request.Folder, () => Platform.OpenStore(folder), request.Password, null, problems) is { } place)
             {
                 places.Add(place);
             }
@@ -261,25 +272,22 @@ internal sealed partial class AgentService
         return places;
     }
 
-    private Place? OpenPlace(string label, Func<string> root, string? credentialId, string? password, string? taskId, List<string> problems)
+    private Place? OpenPlace(string label, Func<DestinationStore> open, string? password, string? taskId, List<string> problems)
     {
-        INetworkSession? session = null;
+        DestinationStore? store = null;
         try
         {
-            session = Platform.OpenSession(credentialId);
-            string folder = root();
-            var access = new ArchiveAccess(Platform.Archives, password, session);
-            var sets = session.Run(() =>
+            store = open();
+            if (store.HasFolders && !store.FolderExists(store.Root))
             {
-                if (!Directory.Exists(folder))
-                {
-                    throw new DirectoryNotFoundException(Messages.Format(Messages.RestoreFolderMissing, folder));
-                }
+                throw new DirectoryNotFoundException(Messages.Format(Messages.RestoreFolderMissing, store.Root));
+            }
 
-                return SetCatalog.Scan(folder, taskId, access, (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)), mirror: true);
-            });
-            var place = new Place(label, session, access, sets);
-            session = null;
+            var access = new ArchiveAccess(Platform.Archives, password, store);
+            var sets = SetCatalog.Scan(store, store.Root, taskId, access,
+                (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)), mirror: true);
+            var place = new Place(label, store, access, sets);
+            store = null;
             return place;
         }
         catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException)
@@ -289,12 +297,12 @@ internal sealed partial class AgentService
         }
         finally
         {
-            session?.Dispose();
+            store?.Dispose();
         }
     }
 
-    /// <summary>A destination opened for a restore: its logon stays open until the restore is done.</summary>
-    private sealed class Place(string label, INetworkSession session, ArchiveAccess access, List<StoredSet> sets) : IDisposable
+    /// <summary>A destination opened for a restore: its logon or connection stays open until the restore is done.</summary>
+    private sealed class Place(string label, DestinationStore store, ArchiveAccess access, List<StoredSet> sets) : IDisposable
     {
         public string Label { get; } = label;
 
@@ -302,7 +310,7 @@ internal sealed partial class AgentService
 
         public List<StoredSet> Sets { get; } = sets;
 
-        public void Dispose() => session.Dispose();
+        public void Dispose() => store.Dispose();
     }
 
     /// <summary>The restore in progress, or the last one.</summary>

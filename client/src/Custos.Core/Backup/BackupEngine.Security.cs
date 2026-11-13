@@ -5,7 +5,9 @@ namespace Custos.Core.Backup;
 /// <summary>NTFS permissions of plain copies (section 6.8): files as they are copied, folders after the files.</summary>
 public sealed partial class BackupEngine
 {
-    private static bool KeepsSecurity(RunContext run) => run.Task.Copy.PreserveAcl && !IsArchive(run.Task);
+    /// <summary>The task copies permissions and a destination is left that can hold them (a folder on NTFS, not a server).</summary>
+    private static bool KeepsSecurity(RunContext run) =>
+        run.Task.Copy.PreserveAcl && !IsArchive(run.Task) && run.Targets.Any(t => !t.Failed && !t.SecurityFailed);
 
     /// <summary>
     /// Gives the folders of the copy the permissions of the source folders. This runs after the files: a folder that
@@ -35,8 +37,8 @@ public sealed partial class BackupEngine
                 byte[]? security = null;
                 foreach (var target in targets)
                 {
-                    string copy = Path.Combine(target.WriteFolder, context.Target, folder);
-                    if (!target.Session.Run(() => Directory.Exists(copy)))
+                    string copy = target.Store.Combine(target.WriteFolder, context.Target, folder);
+                    if (!target.Store.FolderExists(copy))
                     {
                         continue;
                     }
@@ -62,7 +64,7 @@ public sealed partial class BackupEngine
 
         try
         {
-            if (!target.Session.Run(() => _platform.WriteSecurity(path, folder, security)))
+            if (!target.Store.WriteSecurity(path, folder, security))
             {
                 // FAT or exFAT: there is nothing to keep permissions in, and nothing to warn about.
                 target.SecurityFailed = true;

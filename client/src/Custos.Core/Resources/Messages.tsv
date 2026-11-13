@@ -515,3 +515,32 @@ MonitorPackageProtocol	it needs protocol {0}, newer than this agent speaks	ем�
 MonitorPackageBadPath	the path «{0}» leads outside the program folder	путь «{0}» ведёт за пределы папки программы
 MonitorPackageMissingFile	the file {0} is missing	нет файла {0}
 MonitorPackageFileHash	the SHA-256 of {0} differs from manifest.json	SHA-256 файла {0} не совпадает с manifest.json
+StoreFileShorter	The file in the destination is shorter than it should be.	Файл в назначении короче, чем должен быть.
+StoreFailed	{0}: {1}	{0}: {1}
+StoreHttpFailed	{0}: the server answered {1} ({2})	{0}: сервер ответил {1} ({2})
+StoreUnreachable	{0}: no connection: {1}	{0}: нет соединения: {1}
+StoreNoAnswer	the server did not answer in time	сервер не ответил вовремя
+StoreLoginRefused	{0}: the server refused the login «{1}». Check the account of the destination.	{0}: сервер не принял учётную запись «{1}». Проверьте учётную запись назначения.
+StoreFull	{0}: there is no room left on the server.	{0}: на сервере не осталось места.
+StoreUploadRefused	the server did not take the file	сервер не принял файл
+StoreHostMissing	The server of the destination is not set.	У назначения не указан сервер.
+StoreBucketMissing	The bucket of the destination is not set.	У назначения не указан бакет.
+StoreBucketNotFound	{0}: there is no bucket «{1}».	{0}: бакета «{1}» нет.
+StoreAccountMissing	The account of the destination is not set or its password cannot be read.	У назначения не указана учётная запись, или её пароль не читается.
+StoreKeyBad	The private key of the account cannot be read (a key protected by a passphrase is not supported): {0}	Закрытый ключ учётной записи не читается (ключ, защищённый паролем, не поддерживается): {0}
+StoreHostKeyNew	{0}: the server shows the key {1}. Check it and confirm it in the destination («Test access»).	{0}: сервер показывает ключ {1}. Сверьте его и подтвердите в назначении («Проверить доступ»).
+StoreHostKeyChanged	{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If the server was reinstalled, check the new key and confirm it in the destination («Test access»); otherwise someone may be in the way.	{0}: КЛЮЧ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не отправлялись. Если сервер переустанавливали, сверьте новый ключ и подтвердите его в назначении («Проверить доступ»); иначе соединение могли перехватить.
+StoreCertificateUnknown	{0}: Windows does not trust the certificate of the server (SHA-256 {1}). If it is your own server with a self-made certificate, check the fingerprint and confirm it in the destination («Test access»).	{0}: Windows не доверяет сертификату сервера (SHA-256 {1}). Если это ваш сервер с самоподписанным сертификатом, сверьте отпечаток и подтвердите его в назначении («Проверить доступ»).
+StoreCertificateChanged	{0}: THE CERTIFICATE OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was sent. If the certificate was renewed, check the new fingerprint and confirm it in the destination («Test access»); otherwise someone may be in the way.	{0}: СЕРТИФИКАТ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не отправлялись. Если сертификат перевыпускали, сверьте новый отпечаток и подтвердите его в назначении («Проверить доступ»); иначе соединение могли перехватить.
+StoreObjectLockMissing	The bucket «{0}» has no Object Lock, and the destination asks to protect the copies for {1} days. Object Lock is turned on when a bucket is created; make such a bucket or set the days to 0.	У бакета «{0}» нет Object Lock, а назначение просит защищать копии {1} дн. Object Lock включают при создании бакета; создайте такой бакет или поставьте 0 дней.
+StoreLockOn	Object Lock: the bucket has it.	Object Lock: у бакета есть.
+StoreLockOnDefault	Object Lock: the bucket has it; its own rule locks every object ({0}).	Object Lock: у бакета есть; собственное правило бакета запирает каждый объект ({0}).
+StoreLockOff	Object Lock: the bucket has none.	Object Lock: у бакета нет.
+StoreLockUnknown	Object Lock: the server does not tell whether the bucket has it.	Object Lock: сервер не сообщает, есть ли он у бакета.
+StoreLockDefaultDays	{0}, {1} days	{0}, {1} дн.
+StoreLockDefaultYears	{0}, {1} years	{0}, {1} г.
+StoreVersionsOn	Versions: the bucket keeps versions of objects; CUSTOS deletes every version of what it deletes.	Версии: бакет хранит версии объектов; CUSTOS удаляет все версии того, что удаляет.
+StoreVersionsOff	Versions: the bucket keeps none.	Версии: бакет их не хранит.
+SevenZipNeedsSeek	A 7z archive cannot be written to {0}: such a destination takes a file only from its start to its end, and 7z goes back to the start when the archive is complete. Choose ZIP or no compression, or another destination.	Архив 7z нельзя записать в {0}: такое назначение принимает файл только подряд, а 7z в конце возвращается к началу архива. Выберите ZIP или «без сжатия» либо другое назначение.
+ObjectLockNeedsSets	{0}: protection from deletion (Object Lock) works only with copies that are never overwritten: archives or a separate folder for each copy. A mirror and a shared folder replace files, and a locked file cannot be replaced.	{0}: защита от удаления (Object Lock) работает только с копиями, которые не перезаписываются: архивы или отдельная папка для каждой копии. Зеркало и общая папка заменяют файлы, а запертый файл заменить нельзя.
+SetLocked	Set «{0}» in {1} is protected from deletion until {2} (Object Lock); retention will delete it after that.	Набор «{0}» в {1} защищён от удаления до {2} (Object Lock); хранение удалит его после этого срока.

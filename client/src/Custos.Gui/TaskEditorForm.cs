@@ -280,7 +280,8 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     /// <summary>Raised when an account was added while the editor is open.</summary>
     public event EventHandler? CredentialsChanged;
 
-    /// <summary>Raised when the name, the backup type, the forced full backup or the archive format changed on their pages.</summary>
+    /// <summary>Raised when the name, the backup type, the forced full backup, the archive format or what the
+    /// destinations can take changed on their pages.</summary>
     public event EventHandler? ShapeChanged;
 
     /// <summary>The name as typed on the first page.</summary>
@@ -296,6 +297,23 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
 
     /// <summary>Whether a full backup is forced on the first page (every N-th run, a weekday or a day of the month).</summary>
     public bool HasForcedFull { get; private set; }
+
+    /// <summary>
+    /// A destination of the task that takes a file only from its start to its end (FTP, WebDAV, S3), in words; null
+    /// if there is none. A 7z archive cannot be written there (section 6.5).
+    /// </summary>
+    public string? StreamOnlyDestination
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
 
     /// <summary>How many database servers the task has now (a task with them needs no sources).</summary>
     public int DbServerCount { get; set; }
@@ -338,18 +356,18 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     }
 
     /// <summary>The stored Windows accounts, including the ones added in this editor.</summary>
-    public List<Credential> Credentials
+    public List<Credential> Credentials => CredentialsOf(CredentialKinds.Windows);
+
+    /// <summary>The stored accounts of a kind (<see cref="CredentialKinds"/>), including the ones added in this editor.</summary>
+    public List<Credential> CredentialsOf(string kind)
     {
-        get
-        {
-            var stored = Monitor.Snapshot?.Credentials ?? [];
-            return
-            [
-                .. stored.Concat(_added.Where(a => !stored.Any(s => string.Equals(s.Id, a.Id, StringComparison.OrdinalIgnoreCase))))
-                    .Where(c => c.Kind == CredentialKinds.Windows)
-                    .OrderBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase),
-            ];
-        }
+        var stored = Monitor.Snapshot?.Credentials ?? [];
+        return
+        [
+            .. stored.Concat(_added.Where(a => !stored.Any(s => string.Equals(s.Id, a.Id, StringComparison.OrdinalIgnoreCase))))
+                .Where(c => c.Kind == kind)
+                .OrderBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase),
+        ];
     }
 
     /// <summary>A stored account of any kind, including the ones saved in this editor; null if there is none.</summary>
@@ -362,17 +380,17 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
     public void RememberCredential(Credential credential)
     {
         _added.Add(credential);
-        if (credential.Kind == CredentialKinds.Windows)
+        if (credential.Kind is CredentialKinds.Windows or CredentialKinds.Ftp or CredentialKinds.Sftp or CredentialKinds.WebDav or CredentialKinds.S3)
         {
             CredentialsChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    /// <summary>Asks for a new account and stores it in the service.</summary>
+    /// <summary>Asks for a new account of a kind (<see cref="CredentialKinds"/>) and stores it in the service.</summary>
     /// <returns>The stored account, or null if the user cancelled.</returns>
-    public Credential? AddCredential(IWin32Window owner)
+    public Credential? AddCredential(IWin32Window owner, string kind = CredentialKinds.Windows)
     {
-        using var dialog = new CredentialDialog(Monitor, null);
+        using var dialog = new CredentialDialog(Monitor, null, kind);
         if (dialog.ShowDialog(owner) != DialogResult.OK || dialog.Saved is not { } saved)
         {
             return null;

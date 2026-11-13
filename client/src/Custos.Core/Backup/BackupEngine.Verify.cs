@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Custos.Core.Archives;
+using Custos.Core.Destinations;
 using Custos.Core.Model;
 using Custos.Core.Remote;
 
@@ -58,7 +59,7 @@ public sealed partial class BackupEngine
                 continue;
             }
 
-            string? problem = CheckFile(run, target.Session, Path.Combine(target.WriteFolder, stored), expected);
+            string? problem = CheckFile(run, target.Store, target.Store.Combine(target.WriteFolder, stored), expected);
             if (problem is not null)
             {
                 throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, Messages.Format(Messages.VerifyFileProblem, stored, problem)));
@@ -69,13 +70,13 @@ public sealed partial class BackupEngine
         {
             run.Cancellation.ThrowIfCancellationRequested();
             string stored = LocalSetPath(dump.File!);
-            if (CheckFile(run, target.Session, Path.Combine(target.WriteFolder, stored), dump.Sha256!) is { } problem)
+            if (CheckFile(run, target.Store, target.Store.Combine(target.WriteFolder, stored), dump.Sha256!) is { } problem)
             {
                 throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, Messages.Format(Messages.VerifyFileProblem, stored, problem)));
             }
         }
 
-        if (run.Remote is { } remote && CheckTarFile(run, target.Session, Path.Combine(target.WriteFolder, RemoteTarName), RemoteExpected(remote)) is { } tarProblem)
+        if (run.Remote is { } remote && CheckTarFile(run, target.Store, target.Store.Combine(target.WriteFolder, RemoteTarName), RemoteExpected(remote)) is { } tarProblem)
         {
             throw new BackupException(Messages.Format(Messages.VerifyNewFailed, target.Label, tarProblem));
         }
@@ -99,7 +100,7 @@ public sealed partial class BackupEngine
             expected[ArchivePaths.ToWindows(dump.File!)] = dump.Sha256!;
         }
 
-        string? problem = CheckArchive(run, run.Access!.WithSession(target.Session), run.Task.Archive.Format, target.Temps, expected,
+        string? problem = CheckArchive(run, run.Access!.WithStore(target.Store), run.Task.Archive.Format, target.Temps, expected,
             run.Remote is { } remote ? RemoteExpected(remote) : null);
         if (problem is not null)
         {
@@ -173,13 +174,13 @@ public sealed partial class BackupEngine
     }
 
     /// <summary>Null if the set is whole, or what is wrong with it.</summary>
-    private string? CheckSet(RunContext run, Target target, StoredSet set)
+    private static string? CheckSet(RunContext run, Target target, StoredSet set)
     {
-        var access = run.Access?.WithSession(target.Session);
+        var access = run.Access?.WithStore(target.Store);
         List<ManifestFile> files;
         try
         {
-            files = target.Session.Run(() => SetCatalog.ReadManifest(set, access).Files);
+            files = SetCatalog.ReadManifest(set, access, target.Store).Files;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or ArchiveException)
         {
@@ -203,7 +204,7 @@ public sealed partial class BackupEngine
                 return CheckArchive(run, access!, set.Format ?? ArchiveFormats.SevenZip, set.Parts, expectedDumps, inTar);
             }
 
-            if (CheckTarFile(run, target.Session, Path.Combine(set.Location, RemoteTarName), inTar) is { } tarProblem)
+            if (CheckTarFile(run, target.Store, target.Store.Combine(set.Location, RemoteTarName), inTar) is { } tarProblem)
             {
                 return tarProblem;
             }
@@ -224,7 +225,7 @@ public sealed partial class BackupEngine
         {
             run.Cancellation.ThrowIfCancellationRequested();
             string stored = LocalSetPath(dump.File!);
-            if (CheckFile(run, target.Session, Path.Combine(set.Location, stored), dump.Sha256!) is { } problem)
+            if (CheckFile(run, target.Store, target.Store.Combine(set.Location, stored), dump.Sha256!) is { } problem)
             {
                 return Messages.Format(Messages.VerifyFileProblem, stored, problem);
             }
@@ -233,7 +234,7 @@ public sealed partial class BackupEngine
         foreach (var file in files.Where(f => f.InSet && f.Sha256 is not null))
         {
             run.Cancellation.ThrowIfCancellationRequested();
-            if (CheckFile(run, target.Session, Path.Combine(set.Location, file.Path), file.Sha256!) is { } problem)
+            if (CheckFile(run, target.Store, target.Store.Combine(set.Location, file.Path), file.Sha256!) is { } problem)
             {
                 return Messages.Format(Messages.VerifyFileProblem, file.Path, problem);
             }
@@ -249,11 +250,11 @@ public sealed partial class BackupEngine
     private static bool IsRemoteTar(string archivePath) => string.Equals(ArchivePaths.ToZip(archivePath), RemoteTarName, StringComparison.Ordinal);
 
     /// <summary>Null if the tar file of a plain set holds every expected file with its SHA-256, or what is wrong.</summary>
-    private string? CheckTarFile(RunContext run, INetworkSession session, string path, IReadOnlyDictionary<string, string> expected)
+    private static string? CheckTarFile(RunContext run, DestinationStore store, string path, IReadOnlyDictionary<string, string> expected)
     {
         try
         {
-            using var stream = Lowered(session.Run(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
+            using var stream = store.OpenRead(path);
             using var check = new TarCheckStream(expected);
             var buffer = new byte[BufferSize];
             int read;
@@ -279,11 +280,11 @@ public sealed partial class BackupEngine
     private static string LocalSetPath(string setPath) => ArchivePaths.ToWindows(setPath).Replace('\\', Path.DirectorySeparatorChar);
 
     /// <summary>Null if the file has this SHA-256, or what is wrong with it.</summary>
-    private string? CheckFile(RunContext run, INetworkSession session, string path, string expected)
+    private static string? CheckFile(RunContext run, DestinationStore store, string path, string expected)
     {
         try
         {
-            using var stream = Lowered(session.Run(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
+            using var stream = store.OpenRead(path);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[BufferSize];
             int read;
