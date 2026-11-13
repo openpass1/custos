@@ -219,6 +219,23 @@ public sealed class TaskExportTests : IDisposable
     }
 
     [Fact]
+    public void A_file_not_opened_yet_says_so_instead_of_saying_the_passwords_are_missing()
+    {
+        var file = TaskExport.Read(TaskExport.Serialize(Export(ExportPassword)));
+        var plan = new TaskImport(file, null, _new.GetTasks(), _new.GetCredentials());
+
+        Assert.True(plan.SecretsLocked);
+        Assert.All(plan.Items, i => Assert.Equal(ImportRemarkCodes.SecretsLocked, Assert.Single(i.Remarks).Code));
+
+        // Declined, the passwords can still be typed as for a file without them.
+        Assert.Equal(new[] { _share.Id, _archive.Id }.Order(), plan.AccountsToAsk(plan.Items).Select(a => a.Credential.Id).Order());
+
+        var opened = new TaskImport(file, TaskExport.Open(file, ExportPassword), _new.GetTasks(), _new.GetCredentials());
+        Assert.False(opened.SecretsLocked);
+        Assert.All(opened.Items, i => Assert.Empty(i.Remarks));
+    }
+
+    [Fact]
     public void A_task_that_only_misses_a_typed_password_stays_on_once_it_is_typed()
     {
         var file = TaskExport.Read(TaskExport.Serialize(Export(password: null, _docs)));

@@ -73,11 +73,17 @@ public sealed class TransferTests
             Assert.Equal(Strings.ImportHereReplaced, form.TaskList.Items[0].SubItems[4].Text);
             Assert.Contains(TaskImportForm.Describe(new ImportRemark(ImportRemarkCodes.Replaces, "Office documents")), form.RemarksText, StringComparison.Ordinal);
 
-            // Not opened: the password of the new share account is asked for, the SSH key cannot be typed.
-            Assert.Equal(1, form.AccountCount);
+            // Not opened: no password rows yet (they were taken for the place of the export password), and the remark
+            // says the passwords are in the file rather than missing.
+            Assert.Equal(0, form.AccountCount);
             form.TaskList.Items[2].Selected = true;
             Sta.Pump();
-            Assert.Contains(TaskImportForm.Describe(new ImportRemark(ImportRemarkCodes.SshKeyMissing, "custos@vps.example.org")), form.RemarksText, StringComparison.Ordinal);
+            Assert.Contains(Strings.RemarkSecretsLocked, form.RemarksText, StringComparison.Ordinal);
+
+            // Without the passwords of the file: the password of the new share account is asked for, the SSH key cannot be typed.
+            form.DeclineSecrets();
+            Sta.Pump();
+            Assert.Equal(1, form.AccountCount);
 
             form.OpenSecrets("wrong password");
             Sta.Pump();
@@ -112,6 +118,39 @@ public sealed class TransferTests
 
             Assert.False(form.AsksExportPassword);
             Assert.Equal(1, form.AccountCount);
+            form.TaskList.Items[2].Selected = true;
+            Sta.Pump();
+            Assert.Contains(TaskImportForm.Describe(new ImportRemark(ImportRemarkCodes.SshKeyMissing, "custos@vps.example.org")), form.RemarksText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_export_password_dialog_stays_open_on_a_wrong_password(string culture) => Sta.Run(culture, () =>
+    {
+        string path = WriteFile(withPassword: true);
+        try
+        {
+            var file = TaskExport.Read(File.ReadAllBytes(path));
+            using var dialog = new ExportPasswordDialog(file);
+            dialog.Show();
+            Sta.Pump();
+            Assert.Contains(Sta.Find<Button>(dialog), b => b.Text == Strings.ExportPasswordSkip);
+
+            dialog.Open("wrong password");
+            Sta.Pump();
+            Assert.Null(dialog.Secrets);
+            Assert.NotEmpty(dialog.ErrorText);
+
+            dialog.Open(ExportPassword);
+            Sta.Pump();
+            Assert.NotNull(dialog.Secrets);
+            Assert.Equal(DialogResult.OK, dialog.DialogResult);
         }
         finally
         {

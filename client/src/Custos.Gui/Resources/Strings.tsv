@@ -810,9 +810,15 @@ ImportFileLabel	File:	Файл:
 ImportFileNote	A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore» finds the backups they made before, and retention goes on deleting old ones by its rules.	Файл, сохранённый командой «Экспорт заданий в файл…» на этом или другом компьютере. Задания сохраняют свои идентификаторы: «Восстановить» найдёт копии, которые они сделали раньше, а хранение продолжит удалять старые по своим правилам.
 ImportFileFrom	Exported from {0} on {1}, CUSTOS {2}.	Выгружен с компьютера {0} {1}, CUSTOS {2}.
 ImportFileNoSecrets	There are no passwords or keys in the file.	Паролей и ключей в файле нет.
-ImportFileHasSecrets	The file has passwords and keys. To use them, enter the export password:	В файле есть пароли и ключи. Чтобы взять их, введите пароль экспорта:
+ImportFileHasSecrets	The file has passwords and keys, encrypted with the export password. They are not open yet.	В файле есть пароли и ключи, зашифрованные паролем экспорта. Они ещё не открыты.
+ImportFileEnterPassword	Enter the export password…	Ввести пароль экспорта…
 ImportFileOpen	Open	Открыть
 ImportFileOpened	Passwords and keys of the file are open.	Пароли и ключи из файла открыты.
+ExportPasswordTitle	Export password	Пароль экспорта
+ExportPasswordAsk	The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks were exported:	В файле зашифрованы пароли и ключи заданий. Введите пароль, который задали при экспорте:
+ExportPasswordEmpty	Enter the export password.	Введите пароль экспорта.
+ExportPasswordSkip	Without passwords from the file	Без паролей из файла
+ExportPasswordSkipNote	Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can then be typed in the import window, and tasks with SSH keys or cloud accounts come switched off.	Не помните пароль? Нажмите «Без паролей из файла»: тогда пароли учётных записей и архивов можно будет ввести в окне импорта, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.
 ImportFileFound	Tasks in the file: {0}	Заданий в файле: {0}
 ImportFileCannotRead	Cannot read the file: {0}	Не удалось прочитать файл: {0}
 ColumnEnabled	On	Включено
@@ -823,8 +829,9 @@ RemarkPasswordMissing	The password of {0} is not in the file: enter it below. Le
 RemarkArchivePasswordMissing	The archive password is not in the file: enter it below. Without it the archives made before cannot be opened. Left empty, the task comes switched off.	Пароля архивов в файле нет: введите его ниже. Без него уже сделанные архивы не открыть. Если оставить поле пустым, задание придёт отключённым.
 RemarkSshKeyMissing	The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the Linux server → «Create new key»), add its line on the server and switch the task on.	SSH-ключа {0} в файле нет: задание придёт отключённым. Создайте новый ключ («Изменить» → «Источники» → Linux-сервер → «Создать новый ключ»), добавьте его строку на сервер и включите задание.
 RemarkCloudMissing	The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings → the list of accounts → «Connect again…») and switch the task on.	Аккаунт {0} на этом компьютере не подключён: задание придёт отключённым. Подключите его заново (Настройки → список учётных записей → «Подключить заново…») и включите задание.
+RemarkSecretsLocked	The passwords and keys of this task are in the file, encrypted with the export password. Open them with «Enter the export password…» at the top. Without them, type the passwords below; a task with an SSH key or a cloud account then comes switched off.	Пароли и ключи этого задания есть в файле, зашифрованные паролем экспорта. Откройте их кнопкой «Ввести пароль экспорта…» вверху. Без них пароли можно ввести ниже, а задание с SSH-ключом или облачным аккаунтом придёт отключённым.
 ImportFileAccounts	Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:	Пароли, которых нет в файле. Введите каждый один раз; задание, у которого пароль останется пустым, придёт отключённым:
-ImportFileSecretsNotOpened	The file has passwords and keys, but they are not open. Import without them?\n\nThen the passwords are typed here, and the tasks with SSH keys or cloud accounts come switched off.	В файле есть пароли и ключи, но они не открыты. Импортировать без них?\n\nТогда пароли вводятся здесь, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.
+ImportFileAccountsLocked	The passwords of the file are not open, so type here the passwords of accounts and archives (not the export password). A task whose password stays empty comes switched off:	Пароли файла не открыты, поэтому введите здесь пароли учётных записей и архивов (не пароль экспорта). Задание, у которого пароль останется пустым, придёт отключённым:
 ImportFileDone	Tasks imported: {0}.	Импортировано заданий: {0}.
 ImportFileSwitchedOff	Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.	Отключены, пока не будет добавлено недостающее: {0}. Потом включите их в редакторе.
 RemoteKeyNotHere	{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line on the server.	{0}: ключа нет на этом компьютере (задание перенесено без ключей). Создайте новый ключ и добавьте его строку на сервер.

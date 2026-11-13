@@ -2410,13 +2410,31 @@ Keep the export password: without it the passwords in the file cannot be read.</
     <value>There are no passwords or keys in the file.</value>
   </data>
   <data name="ImportFileHasSecrets" xml:space="preserve">
-    <value>The file has passwords and keys. To use them, enter the export password:</value>
+    <value>The file has passwords and keys, encrypted with the export password. They are not open yet.</value>
+  </data>
+  <data name="ImportFileEnterPassword" xml:space="preserve">
+    <value>Enter the export password…</value>
   </data>
   <data name="ImportFileOpen" xml:space="preserve">
     <value>Open</value>
   </data>
   <data name="ImportFileOpened" xml:space="preserve">
     <value>Passwords and keys of the file are open.</value>
+  </data>
+  <data name="ExportPasswordTitle" xml:space="preserve">
+    <value>Export password</value>
+  </data>
+  <data name="ExportPasswordAsk" xml:space="preserve">
+    <value>The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks were exported:</value>
+  </data>
+  <data name="ExportPasswordEmpty" xml:space="preserve">
+    <value>Enter the export password.</value>
+  </data>
+  <data name="ExportPasswordSkip" xml:space="preserve">
+    <value>Without passwords from the file</value>
+  </data>
+  <data name="ExportPasswordSkipNote" xml:space="preserve">
+    <value>Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can then be typed in the import window, and tasks with SSH keys or cloud accounts come switched off.</value>
   </data>
   <data name="ImportFileFound" xml:space="preserve">
     <value>Tasks in the file: {0}</value>
@@ -2448,13 +2466,14 @@ Keep the export password: without it the passwords in the file cannot be read.</
   <data name="RemarkCloudMissing" xml:space="preserve">
     <value>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings → the list of accounts → «Connect again…») and switch the task on.</value>
   </data>
+  <data name="RemarkSecretsLocked" xml:space="preserve">
+    <value>The passwords and keys of this task are in the file, encrypted with the export password. Open them with «Enter the export password…» at the top. Without them, type the passwords below; a task with an SSH key or a cloud account then comes switched off.</value>
+  </data>
   <data name="ImportFileAccounts" xml:space="preserve">
     <value>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</value>
   </data>
-  <data name="ImportFileSecretsNotOpened" xml:space="preserve">
-    <value>The file has passwords and keys, but they are not open. Import without them?
-
-Then the passwords are typed here, and the tasks with SSH keys or cloud accounts come switched off.</value>
+  <data name="ImportFileAccountsLocked" xml:space="preserve">
+    <value>The passwords of the file are not open, so type here the passwords of accounts and archives (not the export password). A task whose password stays empty comes switched off:</value>
   </data>
   <data name="ImportFileDone" xml:space="preserve">
     <value>Tasks imported: {0}.</value>

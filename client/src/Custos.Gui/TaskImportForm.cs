@@ -8,8 +8,10 @@ namespace Custos.Gui;
 
 /// <summary>
 /// Import of a file of exported tasks (section 9a of the spec), for example after reinstalling Windows: reads the
-/// file, opens its passwords with the export password, shows every task with what it still needs, asks once for each
-/// password that is not in the file, and adds the chosen tasks with their ids.
+/// file, asks for the export password at once when the file has passwords and keys, shows every task with what it still
+/// needs, asks once for each password that is not in the file, and adds the chosen tasks with their ids. The rows for
+/// those passwords appear only once the file is opened or the person chose to go without its passwords: shown next to
+/// a closed file, they were taken for the place of the export password.
 /// </summary>
 internal sealed class TaskImportForm : Form
 {
@@ -18,10 +20,8 @@ internal sealed class TaskImportForm : Form
     private readonly Button _browse = new() { Text = Strings.ButtonBrowse, AutoSize = true };
     private readonly Button _read = new() { Text = Strings.ImportRead, AutoSize = true };
     private readonly Label _from = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 2) };
-    private readonly Label _secretsCaption = new() { Text = Strings.ImportFileHasSecrets, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 8, 6) };
-    private readonly TextBox _password = new() { UseSystemPasswordChar = true, Width = 200 };
-    private readonly Button _open = new() { Text = Strings.ImportFileOpen, AutoSize = true };
-    private readonly Label _secretsState = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(8, 6, 0, 6) };
+    private readonly Label _secretsState = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 8, 6) };
+    private readonly Button _enterPassword = new() { Text = Strings.ImportFileEnterPassword, AutoSize = true };
     private readonly FlowLayoutPanel _secretsRow = new() { AutoSize = true, WrapContents = true, Dock = DockStyle.Fill, Margin = new Padding(0), Visible = false };
     private readonly ListView _tasks = new()
     {
@@ -45,6 +45,9 @@ internal sealed class TaskImportForm : Form
     private ExportSecrets? _secrets;
     private TaskImport? _plan;
     private bool _filling;
+
+    /// <summary>The person chose to import without the passwords of the file.</summary>
+    private bool _declined;
 
     public TaskImportForm(ServiceMonitor monitor)
     {
@@ -75,7 +78,7 @@ internal sealed class TaskImportForm : Form
         top.SetColumnSpan(note, 4);
         top.Controls.Add(_from);
         top.SetColumnSpan(_from, 4);
-        _secretsRow.Controls.AddRange([_secretsCaption, _password, _open, _secretsState]);
+        _secretsRow.Controls.AddRange([_secretsState, _enterPassword]);
         top.Controls.Add(_secretsRow);
         top.SetColumnSpan(_secretsRow, 4);
 
@@ -115,16 +118,8 @@ internal sealed class TaskImportForm : Form
         ResumeLayout(performLayout: true);
 
         _browse.Click += (_, _) => Browse();
-        _read.Click += (_, _) => ReadFile();
-        _open.Click += (_, _) => OpenSecrets();
-        _password.KeyDown += (_, e) =>
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                e.SuppressKeyPress = true;
-                OpenSecrets();
-            }
-        };
+        _read.Click += (_, _) => ReadAndAsk();
+        _enterPassword.Click += (_, _) => AskExportPassword();
         _import.Click += (_, _) => Import();
         _tasks.SelectedIndexChanged += (_, _) => ShowRemarks();
         _tasks.ItemChecked += (_, _) =>
@@ -143,7 +138,7 @@ internal sealed class TaskImportForm : Form
     /// <summary>Accounts whose password is asked for, one row each (window tests).</summary>
     internal int AccountCount => _accountRows.Count;
 
-    /// <summary>Whether the row with the export password is shown (window tests).</summary>
+    /// <summary>Whether the row about the passwords of the file is shown (window tests).</summary>
     internal bool AsksExportPassword => _secretsRow.Visible;
 
     /// <summary>Whether the secrets of the file are open (window tests).</summary>
@@ -152,19 +147,24 @@ internal sealed class TaskImportForm : Form
     /// <summary>The remarks of the selected task (window tests).</summary>
     internal string RemarksText => _remarks.Text;
 
-    /// <summary>Reads a file as «Read» does (window tests).</summary>
+    /// <summary>Reads a file as «Read» does, without asking for the export password (window tests).</summary>
     internal void ReadFile(string path)
     {
         _file.Text = path;
         ReadFile();
     }
 
-    /// <summary>Opens the secrets as «Open» does, and waits for it (window tests).</summary>
+    /// <summary>Opens the secrets as the export password dialog does (window tests).</summary>
     internal void OpenSecrets(string password)
     {
-        _password.Text = password;
-        Open(_exported, password);
+        if (_exported?.Secrets is not null && ExportPasswordDialog.TryOpen(_exported, password).Secrets is { } secrets)
+        {
+            Opened(secrets);
+        }
     }
+
+    /// <summary>Goes on without the passwords of the file, as «Without passwords from the file» does (window tests).</summary>
+    internal void DeclineSecrets() => Declined();
 
     /// <summary>A remark in words.</summary>
     internal static string Describe(ImportRemark remark)
@@ -177,6 +177,7 @@ internal sealed class TaskImportForm : Form
             ImportRemarkCodes.ArchivePasswordMissing => Strings.RemarkArchivePasswordMissing,
             ImportRemarkCodes.SshKeyMissing => Strings.Format(Strings.RemarkSshKeyMissing, argument),
             ImportRemarkCodes.CloudMissing => Strings.Format(Strings.RemarkCloudMissing, argument),
+            ImportRemarkCodes.SecretsLocked => Strings.RemarkSecretsLocked,
             _ => remark.Code + (argument.Length > 0 ? ": " + argument : string.Empty),
         };
     }
@@ -187,7 +188,6 @@ internal sealed class TaskImportForm : Form
         {
             ClearAccountRows();
             _accountsHeading.Dispose();
-            _password.Clear();
             _secrets = null;
         }
 
@@ -205,14 +205,22 @@ internal sealed class TaskImportForm : Form
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
             _file.Text = dialog.FileName;
-            ReadFile();
+            ReadAndAsk();
         }
+    }
+
+    /// <summary>Reads the file and, when it has passwords and keys, asks for the export password straight away.</summary>
+    private void ReadAndAsk()
+    {
+        ReadFile();
+        AskExportPassword();
     }
 
     private void ReadFile()
     {
         _exported = null;
         _secrets = null;
+        _declined = false;
         try
         {
             _exported = TaskExport.Read(File.ReadAllBytes(_file.Text.Trim().Trim('"')));
@@ -226,9 +234,8 @@ internal sealed class TaskImportForm : Form
             Ui.ShowError(this, ex.Message);
         }
 
-        _password.Clear();
-        _secretsState.Text = string.Empty;
         _secretsRow.Visible = _exported?.Secrets is not null;
+        ShowSecretsState();
         _from.Text = _exported is null ? string.Empty
             : Strings.Format(Strings.ImportFileFrom, _exported.Computer ?? "?", Ui.Time(_exported.ExportedAt), _exported.ProgramVersion ?? "?")
                 + (_exported.Secrets is null ? " " + Strings.ImportFileNoSecrets : string.Empty);
@@ -238,72 +245,55 @@ internal sealed class TaskImportForm : Form
         Plan();
     }
 
-    private void OpenSecrets()
+    /// <summary>Asks for the export password of a file with passwords and keys that are not open yet.</summary>
+    private void AskExportPassword()
     {
-        if (_exported?.Secrets is null || _password.Text.Length == 0)
+        if (_exported?.Secrets is null || _secrets is not null)
         {
             return;
         }
 
         var file = _exported;
-        string password = _password.Text;
-        _open.Enabled = false;
-        UseWaitCursor = true;
-        Ui.Run(this, async () =>
-        {
-            try
-            {
-                // PBKDF2 takes a moment: not on the thread of the window.
-                var opened = await Task.Run(() => TryOpen(file, password));
-                if (ReferenceEquals(file, _exported))
-                {
-                    Opened(opened.Secrets, opened.Error);
-                }
-            }
-            finally
-            {
-                _open.Enabled = true;
-                UseWaitCursor = false;
-            }
-        });
-    }
-
-    private void Open(ExportFile? file, string password)
-    {
-        if (file?.Secrets is null)
+        using var dialog = new ExportPasswordDialog(file);
+        bool opened = dialog.ShowDialog(this) == DialogResult.OK && dialog.Secrets is not null;
+        if (!ReferenceEquals(file, _exported))
         {
             return;
         }
 
-        var opened = TryOpen(file, password);
-        Opened(opened.Secrets, opened.Error);
-    }
-
-    private static (ExportSecrets? Secrets, string? Error) TryOpen(ExportFile file, string password)
-    {
-        try
+        if (opened)
         {
-            return (TaskExport.Open(file, password), null);
+            Opened(dialog.Secrets!);
         }
-        catch (ExportException ex)
+        else
         {
-            return (null, ex.Message);
+            Declined();
         }
     }
 
-    private void Opened(ExportSecrets? secrets, string? error)
+    private void Opened(ExportSecrets secrets)
     {
         _secrets = secrets;
-        _secretsState.ForeColor = secrets is null ? Glyphs.ErrorText : Glyphs.Green;
-        _secretsState.Text = secrets is null ? error ?? string.Empty : Strings.ImportFileOpened;
-        if (secrets is not null)
-        {
-            _password.Clear();
-        }
+        ShowSecretsState();
 
         // Accounts whose secret is in the file now need no row.
         ClearAccountRows();
         Plan();
+    }
+
+    private void Declined()
+    {
+        _declined = true;
+        ShowSecretsState();
+        UpdateAccounts();
+    }
+
+    private void ShowSecretsState()
+    {
+        bool open = _secrets is not null;
+        _secretsState.ForeColor = open ? Glyphs.Green : Glyphs.WarningText;
+        _secretsState.Text = open ? Strings.ImportFileOpened : Strings.ImportFileHasSecrets;
+        _enterPassword.Visible = !open;
     }
 
     /// <summary>Fills the list from the file and what is on this computer, keeping the ticks of a list already shown.</summary>
@@ -382,8 +372,11 @@ internal sealed class TaskImportForm : Form
             return;
         }
 
+        // Next to a file that is not opened, these rows were taken for the place of the export password: they appear
+        // only once the person chose to go without the passwords of the file.
         var chosen = Chosen();
-        var needed = _plan.AccountsToAsk(chosen);
+        var needed = _plan.SecretsLocked && !_declined ? [] : _plan.AccountsToAsk(chosen);
+        _accountsHeading.Text = _plan.SecretsLocked ? Strings.ImportFileAccountsLocked : Strings.ImportFileAccounts;
         _accounts.SuspendLayout();
         _accounts.Controls.Clear();
         _accounts.RowStyles.Clear();
@@ -436,8 +429,10 @@ internal sealed class TaskImportForm : Form
             return;
         }
 
-        if (_exported?.Secrets is not null && _secrets is null && !Ui.Confirm(this, Strings.ImportFileSecretsNotOpened))
+        if (_plan.SecretsLocked && !_declined)
         {
+            // The file is not opened and the person has not said to go without it: ask first, then they look again.
+            AskExportPassword();
             return;
         }
 
@@ -547,5 +542,109 @@ internal sealed class TaskImportForm : Form
             _both?.Dispose();
             _tasks.Dispose();
         }
+    }
+}
+
+/// <summary>
+/// Asks for the export password of a file and opens its passwords and keys with it. A wrong password is said in the
+/// dialog, which stays open; «Without passwords from the file» closes it with the file not opened.
+/// </summary>
+internal sealed class ExportPasswordDialog : DialogForm
+{
+    private readonly ExportFile _file;
+    private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
+    private readonly CheckBox _show = new() { Text = Strings.ShowPassword, AutoSize = true };
+    private readonly Label _error = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.ErrorText, Margin = new Padding(0, 2, 0, 4) };
+
+    public ExportPasswordDialog(ExportFile file)
+        : base(Strings.ExportPasswordTitle, new Size(580, 270))
+    {
+        _file = file;
+        OkButton.Text = Strings.ImportFileOpen;
+        CancelButtonControl.Text = Strings.ExportPasswordSkip;
+        AddWide(new Label { Text = Strings.ExportPasswordAsk, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 8) });
+        AddRow(Strings.ExportPassword, _password);
+        AddWide(_show);
+        AddWide(_error);
+        AddNote(Strings.ExportPasswordSkipNote);
+        EndBuild();
+        _show.CheckedChanged += (_, _) => _password.UseSystemPasswordChar = !_show.Checked;
+        Shown += (_, _) => _password.Focus();
+    }
+
+    /// <summary>The opened passwords and keys, after «Open».</summary>
+    public ExportSecrets? Secrets { get; private set; }
+
+    /// <summary>What went wrong with the last password (window tests).</summary>
+    internal string ErrorText => _error.Text;
+
+    /// <summary>Opens the file as «Open» does, and waits for it (window tests).</summary>
+    internal void Open(string password) => Done(TryOpen(_file, password));
+
+    internal static (ExportSecrets? Secrets, string? Error) TryOpen(ExportFile file, string password)
+    {
+        try
+        {
+            return (TaskExport.Open(file, password), null);
+        }
+        catch (ExportException ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    protected override void OnOk()
+    {
+        string password = _password.Text;
+        if (password.Length == 0)
+        {
+            ShowError(Strings.ExportPasswordEmpty);
+            return;
+        }
+
+        _error.Text = string.Empty;
+        SetBusy(true);
+        Ui.Run(this, async () =>
+        {
+            try
+            {
+                // PBKDF2 takes a moment: not on the thread of the window.
+                Done(await Task.Run(() => TryOpen(_file, password)));
+            }
+            finally
+            {
+                SetBusy(false);
+            }
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _password.Clear();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private void Done((ExportSecrets? Secrets, string? Error) opened)
+    {
+        if (opened.Secrets is null)
+        {
+            ShowError(opened.Error ?? string.Empty);
+            return;
+        }
+
+        Secrets = opened.Secrets;
+        _password.Clear();
+        DialogResult = DialogResult.OK;
+    }
+
+    private void ShowError(string text)
+    {
+        _error.Text = text;
+        _password.Focus();
+        _password.SelectAll();
     }
 }

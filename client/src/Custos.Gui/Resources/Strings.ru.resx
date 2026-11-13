@@ -2410,13 +2410,31 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
     <value>Паролей и ключей в файле нет.</value>
   </data>
   <data name="ImportFileHasSecrets" xml:space="preserve">
-    <value>В файле есть пароли и ключи. Чтобы взять их, введите пароль экспорта:</value>
+    <value>В файле есть пароли и ключи, зашифрованные паролем экспорта. Они ещё не открыты.</value>
+  </data>
+  <data name="ImportFileEnterPassword" xml:space="preserve">
+    <value>Ввести пароль экспорта…</value>
   </data>
   <data name="ImportFileOpen" xml:space="preserve">
     <value>Открыть</value>
   </data>
   <data name="ImportFileOpened" xml:space="preserve">
     <value>Пароли и ключи из файла открыты.</value>
+  </data>
+  <data name="ExportPasswordTitle" xml:space="preserve">
+    <value>Пароль экспорта</value>
+  </data>
+  <data name="ExportPasswordAsk" xml:space="preserve">
+    <value>В файле зашифрованы пароли и ключи заданий. Введите пароль, который задали при экспорте:</value>
+  </data>
+  <data name="ExportPasswordEmpty" xml:space="preserve">
+    <value>Введите пароль экспорта.</value>
+  </data>
+  <data name="ExportPasswordSkip" xml:space="preserve">
+    <value>Без паролей из файла</value>
+  </data>
+  <data name="ExportPasswordSkipNote" xml:space="preserve">
+    <value>Не помните пароль? Нажмите «Без паролей из файла»: тогда пароли учётных записей и архивов можно будет ввести в окне импорта, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.</value>
   </data>
   <data name="ImportFileFound" xml:space="preserve">
     <value>Заданий в файле: {0}</value>
@@ -2448,13 +2466,14 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="RemarkCloudMissing" xml:space="preserve">
     <value>Аккаунт {0} на этом компьютере не подключён: задание придёт отключённым. Подключите его заново (Настройки → список учётных записей → «Подключить заново…») и включите задание.</value>
   </data>
+  <data name="RemarkSecretsLocked" xml:space="preserve">
+    <value>Пароли и ключи этого задания есть в файле, зашифрованные паролем экспорта. Откройте их кнопкой «Ввести пароль экспорта…» вверху. Без них пароли можно ввести ниже, а задание с SSH-ключом или облачным аккаунтом придёт отключённым.</value>
+  </data>
   <data name="ImportFileAccounts" xml:space="preserve">
     <value>Пароли, которых нет в файле. Введите каждый один раз; задание, у которого пароль останется пустым, придёт отключённым:</value>
   </data>
-  <data name="ImportFileSecretsNotOpened" xml:space="preserve">
-    <value>В файле есть пароли и ключи, но они не открыты. Импортировать без них?
-
-Тогда пароли вводятся здесь, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.</value>
+  <data name="ImportFileAccountsLocked" xml:space="preserve">
+    <value>Пароли файла не открыты, поэтому введите здесь пароли учётных записей и архивов (не пароль экспорта). Задание, у которого пароль останется пустым, придёт отключённым:</value>
   </data>
   <data name="ImportFileDone" xml:space="preserve">
     <value>Импортировано заданий: {0}.</value>

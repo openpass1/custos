@@ -2345,14 +2345,32 @@ static partial class Strings
     /// <summary>There are no passwords or keys in the file.</summary>
     public static string ImportFileNoSecrets => Get(nameof(ImportFileNoSecrets));
 
-    /// <summary>The file has passwords and keys. To use them, enter the export password:</summary>
+    /// <summary>The file has passwords and keys, encrypted with the export password. They are not open yet.</summary>
     public static string ImportFileHasSecrets => Get(nameof(ImportFileHasSecrets));
+
+    /// <summary>Enter the export password…</summary>
+    public static string ImportFileEnterPassword => Get(nameof(ImportFileEnterPassword));
 
     /// <summary>Open</summary>
     public static string ImportFileOpen => Get(nameof(ImportFileOpen));
 
     /// <summary>Passwords and keys of the file are open.</summary>
     public static string ImportFileOpened => Get(nameof(ImportFileOpened));
+
+    /// <summary>Export password</summary>
+    public static string ExportPasswordTitle => Get(nameof(ExportPasswordTitle));
+
+    /// <summary>The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks...</summary>
+    public static string ExportPasswordAsk => Get(nameof(ExportPasswordAsk));
+
+    /// <summary>Enter the export password.</summary>
+    public static string ExportPasswordEmpty => Get(nameof(ExportPasswordEmpty));
+
+    /// <summary>Without passwords from the file</summary>
+    public static string ExportPasswordSkip => Get(nameof(ExportPasswordSkip));
+
+    /// <summary>Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can th...</summary>
+    public static string ExportPasswordSkipNote => Get(nameof(ExportPasswordSkipNote));
 
     /// <summary>Tasks in the file: {0}</summary>
     public static string ImportFileFound => Get(nameof(ImportFileFound));
@@ -2384,11 +2402,14 @@ static partial class Strings
     /// <summary>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings ...</summary>
     public static string RemarkCloudMissing => Get(nameof(RemarkCloudMissing));
 
+    /// <summary>The passwords and keys of this task are in the file, encrypted with the export password. Open them with «En...</summary>
+    public static string RemarkSecretsLocked => Get(nameof(RemarkSecretsLocked));
+
     /// <summary>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</summary>
     public static string ImportFileAccounts => Get(nameof(ImportFileAccounts));
 
-    /// <summary>The file has passwords and keys, but they are not open. Import without them?</summary>
-    public static string ImportFileSecretsNotOpened => Get(nameof(ImportFileSecretsNotOpened));
+    /// <summary>The passwords of the file are not open, so type here the passwords of accounts and archives (not the export...</summary>
+    public static string ImportFileAccountsLocked => Get(nameof(ImportFileAccountsLocked));
 
     /// <summary>Tasks imported: {0}.</summary>
     public static string ImportFileDone => Get(nameof(ImportFileDone));

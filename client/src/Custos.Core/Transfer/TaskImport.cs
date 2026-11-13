@@ -27,6 +27,10 @@ public static class ImportRemarkCodes
     /// <summary>The token of a cloud account is not in the file: the task comes switched off until the account is connected
     /// again. Argument: "service: account".</summary>
     public const string CloudMissing = "cloud_missing";
+
+    /// <summary>The file has passwords and keys, but they are not opened with the export password yet: what the task
+    /// needs may well be there. Given instead of the four remarks above.</summary>
+    public const string SecretsLocked = "secrets_locked";
 }
 
 /// <summary>A task of the file as the import window shows it.</summary>
@@ -95,9 +99,15 @@ public sealed class TaskImport
                 remarks.Add(new ImportRemark(ImportRemarkCodes.Replaces, here.Name));
             }
 
-            foreach (string id in TaskExport.UsedCredentialIds([task]).Where(Lacks))
+            var lacking = TaskExport.UsedCredentialIds([task]).Where(Lacks).ToList();
+            if (SecretsLocked && lacking.Count > 0)
             {
-                remarks.Add(Missing(_fileAccounts[id]));
+                // Not "not in the file": it most likely is, the file is just not opened.
+                remarks.Add(new ImportRemark(ImportRemarkCodes.SecretsLocked));
+            }
+            else
+            {
+                remarks.AddRange(lacking.Select(id => Missing(_fileAccounts[id])));
             }
 
             return new ImportItem { Task = task, Here = here, Remarks = remarks };
@@ -107,6 +117,9 @@ public sealed class TaskImport
     public ExportFile File { get; }
 
     public ExportSecrets? Secrets { get; }
+
+    /// <summary>The file has passwords and keys, and they are not opened.</summary>
+    public bool SecretsLocked => File.Secrets is not null && Secrets is null;
 
     /// <summary>The tasks of the file, in its order.</summary>
     public IReadOnlyList<ImportItem> Items { get; }
