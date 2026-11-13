@@ -38,6 +38,7 @@ internal sealed class TaskImportForm : Form
     private readonly Panel _accountsPanel = new() { Dock = DockStyle.Bottom, Height = 140, AutoScroll = true, Visible = false };
     private readonly Label _accountsHeading = new() { Text = Strings.ImportFileAccounts, AutoSize = true, Margin = new Padding(0, 6, 0, 4) };
     private readonly Label _summary = new() { AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = SystemColors.GrayText };
+    private readonly CheckBox _spare = new() { AutoSize = true, Checked = true, Visible = false, Margin = new Padding(0, 0, 0, 6) };
     private readonly Button _import = new() { Text = Strings.ImportButton, AutoSize = true, MinimumSize = new Size(110, 0), Enabled = false };
     private readonly Button _cancel = new() { Text = Strings.ButtonCancel, AutoSize = true, MinimumSize = new Size(88, 0), DialogResult = DialogResult.Cancel };
     private readonly Dictionary<string, AccountRow> _accountRows = new(StringComparer.OrdinalIgnoreCase);
@@ -106,9 +107,11 @@ internal sealed class TaskImportForm : Form
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        bottom.Controls.Add(_summary, 0, 0);
-        bottom.Controls.Add(_import, 1, 0);
-        bottom.Controls.Add(_cancel, 2, 0);
+        bottom.Controls.Add(_spare, 0, 0);
+        bottom.SetColumnSpan(_spare, 3);
+        bottom.Controls.Add(_summary, 0, 1);
+        bottom.Controls.Add(_import, 1, 1);
+        bottom.Controls.Add(_cancel, 2, 1);
 
         // Docking goes from the last control added to the first.
         Controls.Add(middle);
@@ -121,6 +124,7 @@ internal sealed class TaskImportForm : Form
         _read.Click += (_, _) => ReadAndAsk();
         _enterPassword.Click += (_, _) => AskExportPassword();
         _import.Click += (_, _) => Import();
+        _spare.CheckedChanged += (_, _) => UpdateAccounts();
         _tasks.SelectedIndexChanged += (_, _) => ShowRemarks();
         _tasks.ItemChecked += (_, _) =>
         {
@@ -143,6 +147,9 @@ internal sealed class TaskImportForm : Form
 
     /// <summary>Whether the secrets of the file are open (window tests).</summary>
     internal bool SecretsOpen => _secrets is not null;
+
+    /// <summary>«Also the accounts of the file that no task uses» (window tests).</summary>
+    internal CheckBox SpareAccounts => _spare;
 
     /// <summary>The remarks of the selected task (window tests).</summary>
     internal string RemarksText => _remarks.Text;
@@ -221,6 +228,7 @@ internal sealed class TaskImportForm : Form
         _exported = null;
         _secrets = null;
         _declined = false;
+        _spare.Checked = true;
         try
         {
             _exported = TaskExport.Read(File.ReadAllBytes(_file.Text.Trim().Trim('"')));
@@ -341,6 +349,10 @@ internal sealed class TaskImportForm : Form
         }
 
         _summary.Text = _plan is null ? string.Empty : Strings.Format(Strings.ImportFileFound, _plan.Items.Count);
+        var spare = _plan?.SpareAccounts ?? [];
+        _spare.Visible = spare.Count > 0;
+        _spare.Text = Strings.Format(Strings.ImportFileSpare, spare.Count,
+            string.Join(", ", spare.Take(5).Select(c => c.DisplayName)) + (spare.Count > 5 ? ", …" : string.Empty));
         ShowRemarks();
         UpdateAccounts();
     }
@@ -405,7 +417,7 @@ internal sealed class TaskImportForm : Form
 
         _accounts.ResumeLayout(performLayout: true);
         _accountsPanel.Visible = needed.Count > 0;
-        _import.Enabled = chosen.Count > 0;
+        _import.Enabled = chosen.Count > 0 || SpareChosen;
     }
 
     private void ClearAccountRows()
@@ -419,12 +431,14 @@ internal sealed class TaskImportForm : Form
         _accountRows.Clear();
     }
 
+    private bool SpareChosen => _spare.Checked && _plan?.SpareAccounts.Count > 0;
+
     private List<ImportItem> Chosen() => [.. _tasks.Items.Cast<ListViewItem>().Where(i => i.Checked).Select(i => i.Tag).OfType<ImportItem>()];
 
     private void Import()
     {
         var chosen = Chosen();
-        if (_plan is null || chosen.Count == 0)
+        if (_plan is null || (chosen.Count == 0 && !SpareChosen))
         {
             return;
         }
@@ -450,7 +464,8 @@ internal sealed class TaskImportForm : Form
             }
         }
 
-        var build = _plan.Build(chosen, typed, useStored);
+        var build = _plan.Build(chosen, typed, useStored, SpareChosen);
+        int spareCount = SpareChosen ? _plan.SpareAccounts.Count : 0;
         _import.Enabled = false;
         _cancel.Enabled = false;
         UseWaitCursor = true;
@@ -461,6 +476,11 @@ internal sealed class TaskImportForm : Form
                 await _monitor.RequestAsync(PipeProtocol.Methods.TasksImport, build.Request,
                     IpcJsonContext.Default.TasksImportRequest, IpcJsonContext.Default.OkResult);
                 string text = Strings.Format(Strings.ImportFileDone, build.Request.Tasks.Count);
+                if (spareCount > 0)
+                {
+                    text += Environment.NewLine + Strings.Format(Strings.ImportFileSpareDone, spareCount);
+                }
+
                 if (build.SwitchedOff.Count > 0)
                 {
                     text += Environment.NewLine + Environment.NewLine + Strings.Format(Strings.ImportFileSwitchedOff, string.Join(", ", build.SwitchedOff));

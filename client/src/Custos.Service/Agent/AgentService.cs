@@ -416,7 +416,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         {
             bool secrets = request.Password is not null;
             file = Core.Transfer.TaskExport.Create(tasks, _config.GetCredentials(), secrets ? Secret : null, secrets ? _config.GetCloudApps() : null,
-                request.Password, Environment.MachineName, DateTimeOffset.UtcNow);
+                request.Password, Environment.MachineName, DateTimeOffset.UtcNow, request.AllAccounts);
         }
         catch (Core.Transfer.ExportException ex)
         {

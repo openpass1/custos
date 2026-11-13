@@ -2340,6 +2340,9 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="ExportTasksHeading" xml:space="preserve">
     <value>Какие задания выгрузить в файл:</value>
   </data>
+  <data name="ExportAllAccounts" xml:space="preserve">
+    <value>Также учётные записи из настроек, которые не нужны выбранным заданиям ({0}): {1}</value>
+  </data>
   <data name="ExportCheckAll" xml:space="preserve">
     <value>Отметить все</value>
   </data>
@@ -2359,7 +2362,7 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
     <value>Пароль экспорта:</value>
   </data>
   <data name="ExportSecretsCount" xml:space="preserve">
-    <value>В выбранных заданиях: паролей — {0}, SSH-ключей — {1}, облачных аккаунтов — {2}.</value>
+    <value>Учётные записи в файле: с паролем — {0}, SSH-ключей — {1}, облачных аккаунтов — {2}.</value>
   </data>
   <data name="ExportNoSecretsNote" xml:space="preserve">
     <value>Без этой отметки паролей в файле нет, его можно хранить где угодно. При импорте пароли учётных записей и пароль архивов придётся ввести заново, SSH-ключи создать заново, облачные аккаунты подключить заново. Запишите пароль архивов: без него уже сделанные копии не открыть.</value>
@@ -2439,6 +2442,9 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="ImportFileFound" xml:space="preserve">
     <value>Заданий в файле: {0}</value>
   </data>
+  <data name="ImportFileSpare" xml:space="preserve">
+    <value>Также учётные записи из файла без заданий ({0}): {1}</value>
+  </data>
   <data name="ImportFileCannotRead" xml:space="preserve">
     <value>Не удалось прочитать файл: {0}</value>
   </data>
@@ -2477,6 +2483,9 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   </data>
   <data name="ImportFileDone" xml:space="preserve">
     <value>Импортировано заданий: {0}.</value>
+  </data>
+  <data name="ImportFileSpareDone" xml:space="preserve">
+    <value>Добавлено учётных записей без заданий: {0}. Они в Настройках, в списке учётных записей.</value>
   </data>
   <data name="ImportFileSwitchedOff" xml:space="preserve">
     <value>Отключены, пока не будет добавлено недостающее: {0}. Потом включите их в редакторе.</value>

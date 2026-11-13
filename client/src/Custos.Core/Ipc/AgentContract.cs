@@ -316,6 +316,9 @@ public sealed class TasksExportRequest
 
     /// <summary>The export password: the secrets of the accounts go into the file encrypted with it. Null = no secrets.</summary>
     public string? Password { get; set; }
+
+    /// <summary>Also the accounts of the settings that no exported task uses.</summary>
+    public bool AllAccounts { get; set; }
 }
 
 public sealed class TasksExportResult

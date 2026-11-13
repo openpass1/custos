@@ -9,8 +9,8 @@ using Custos.Core.Transfer;
 namespace Custos.Gui;
 
 /// <summary>
-/// Export of tasks to a file (section 9a of the spec): the tasks to put in, and whether their passwords and keys go
-/// along, encrypted with an export password. The service makes the file (only it can read the passwords); this window
+/// Export of tasks to a file (section 9a of the spec): the tasks to put in, whether the accounts that wait for a task
+/// go too, and whether the passwords and keys go along, encrypted with an export password. The service makes the file (only it can read the passwords); this window
 /// saves it where the person chooses, as that person.
 /// </summary>
 internal sealed class TaskExportForm : Form
@@ -29,9 +29,11 @@ internal sealed class TaskExportForm : Form
     private readonly Button _checkAll = new() { Text = Strings.ExportCheckAll, AutoSize = true };
     private readonly Button _checkNone = new() { Text = Strings.ExportCheckNone, AutoSize = true };
     private readonly Label _chosen = new() { AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = SystemColors.GrayText, Margin = new Padding(12, 6, 0, 6) };
+    private readonly CheckBox _allAccounts = new() { AutoSize = true, Dock = DockStyle.Bottom, Checked = true, Padding = new Padding(0, 6, 0, 0), Visible = false };
     private readonly CheckBox _include = new() { Text = Strings.ExportIncludeSecrets, AutoSize = true, Margin = new Padding(0, 2, 0, 6) };
     private readonly TextBox _password = new() { UseSystemPasswordChar = true, Width = 220 };
     private readonly TextBox _repeat = new() { UseSystemPasswordChar = true, Width = 220 };
+    private readonly Label _repeatCaption = Caption(Strings.ArchivePasswordRepeat);
     private readonly CheckBox _show = new() { Text = Strings.ShowPassword, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(12, 3, 0, 3) };
     private readonly Label _counts = new() { AutoSize = true, Margin = new Padding(0, 6, 0, 2) };
     private readonly Label _note = new() { AutoSize = true, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 2, 0, 4) };
@@ -64,6 +66,7 @@ internal sealed class TaskExportForm : Form
         var middle = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 4) };
         middle.Controls.Add(_tasks);
         middle.Controls.Add(listButtons);
+        middle.Controls.Add(_allAccounts);
         middle.Controls.Add(heading);
 
         var passwords = new TableLayoutPanel { AutoSize = true, ColumnCount = 3, Margin = new Padding(20, 0, 0, 0) };
@@ -72,9 +75,9 @@ internal sealed class TaskExportForm : Form
         passwords.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         passwords.Controls.Add(Caption(Strings.ExportPassword), 0, 0);
         passwords.Controls.Add(_password, 1, 0);
-        passwords.Controls.Add(Caption(Strings.ArchivePasswordRepeat), 0, 1);
+        passwords.Controls.Add(_show, 2, 0);
+        passwords.Controls.Add(_repeatCaption, 0, 1);
         passwords.Controls.Add(_repeat, 1, 1);
-        passwords.Controls.Add(_show, 2, 1);
 
         // Passwords and keys: a table that sizes itself to its rows, so the list above takes the rest of the window.
         var secrets = new TableLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, ColumnCount = 1, Padding = new Padding(12, 4, 12, 0) };
@@ -116,10 +119,15 @@ internal sealed class TaskExportForm : Form
             }
         };
         _include.CheckedChanged += (_, _) => UpdateState();
+        _allAccounts.CheckedChanged += (_, _) => UpdateState();
+
+        // A password one can see needs no second typing.
         _show.CheckedChanged += (_, _) =>
         {
             _password.UseSystemPasswordChar = !_show.Checked;
             _repeat.UseSystemPasswordChar = !_show.Checked;
+            _repeatCaption.Visible = !_show.Checked;
+            _repeat.Visible = !_show.Checked;
         };
         _save.Click += (_, _) => Save();
         Resize += (_, _) => WrapNote();
@@ -136,6 +144,11 @@ internal sealed class TaskExportForm : Form
     internal TextBox PasswordBox => _password;
 
     internal TextBox RepeatBox => _repeat;
+
+    internal CheckBox ShowPassword => _show;
+
+    /// <summary>«Also the accounts the chosen tasks do not use» (window tests).</summary>
+    internal CheckBox AllAccounts => _allAccounts;
 
     /// <summary>The line with the counts of secrets in the chosen tasks (window tests).</summary>
     internal string CountsText => _counts.Text;
@@ -170,7 +183,7 @@ internal sealed class TaskExportForm : Form
             return Messages.Format(Messages.ExportPasswordTooShort, TaskExport.MinPasswordLength);
         }
 
-        return string.Equals(_password.Text, _repeat.Text, StringComparison.Ordinal) ? null : Strings.ArchivePasswordMismatch;
+        return _show.Checked || string.Equals(_password.Text, _repeat.Text, StringComparison.Ordinal) ? null : Strings.ArchivePasswordMismatch;
     }
 
     protected override void Dispose(bool disposing)
@@ -231,9 +244,16 @@ internal sealed class TaskExportForm : Form
         _repeat.Enabled = _include.Checked;
         _show.Enabled = _include.Checked;
 
-        // What the chosen tasks hold that is secret: so the person sees what a file without passwords leaves behind.
+        // Accounts of the settings that the chosen tasks do not use: moving a whole computer takes them too.
         var used = TaskExport.UsedCredentialIds(chosen);
-        var accounts = (_monitor.Snapshot?.Credentials ?? []).Where(c => used.Contains(c.Id) && c.HasSecret).ToList();
+        var credentials = _monitor.Snapshot?.Credentials ?? [];
+        var spare = credentials.Where(c => TaskExport.IsListed(c.Kind) && !used.Contains(c.Id)).ToList();
+        _allAccounts.Visible = spare.Count > 0;
+        _allAccounts.Text = Strings.Format(Strings.ExportAllAccounts, spare.Count,
+            string.Join(", ", spare.Take(5).Select(c => c.DisplayName)) + (spare.Count > 5 ? ", …" : string.Empty));
+
+        // What the file holds that is secret: so the person sees what a file without passwords leaves behind.
+        var accounts = credentials.Where(c => (used.Contains(c.Id) || (_allAccounts.Checked && spare.Contains(c))) && c.HasSecret).ToList();
         int keys = accounts.Count(c => c.Kind == CredentialKinds.SshKey);
         int clouds = accounts.Count(c => CredentialKinds.IsCloud(c.Kind));
         _counts.Text = Strings.Format(Strings.ExportSecretsCount, accounts.Count - keys - clouds, keys, clouds);
@@ -277,6 +297,7 @@ internal sealed class TaskExportForm : Form
         {
             TaskIds = [.. Chosen().Select(t => t.Id)],
             Password = _include.Checked ? _password.Text : null,
+            AllAccounts = _allAccounts.Checked,
         };
         _save.Enabled = false;
         _cancel.Enabled = false;

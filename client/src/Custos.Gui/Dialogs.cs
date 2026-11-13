@@ -1241,7 +1241,8 @@ internal sealed class ArchivePasswordDialog : DialogForm
     private readonly string? _existingId;
     private readonly string _taskName;
     private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
-    private readonly TextBox _repeat = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
+    private readonly TextBox _repeat = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true, Margin = new Padding(0, 3, 0, 3) };
+    private readonly Label _repeatCaption = Caption(Strings.ArchivePasswordRepeat);
     private readonly CheckBox _show = new() { Text = Strings.ShowPassword, AutoSize = true };
 
     public ArchivePasswordDialog(ServiceMonitor monitor, string? existingId, string taskName)
@@ -1251,14 +1252,20 @@ internal sealed class ArchivePasswordDialog : DialogForm
         _existingId = existingId;
         _taskName = taskName;
         AddRow(Strings.AccountPassword, _password);
-        AddRow(Strings.ArchivePasswordRepeat, _repeat);
+        Body.Controls.Add(_repeatCaption);
+        Body.Controls.Add(_repeat);
+        Body.Controls.Add(new Label { AutoSize = true });
         AddWide(_show);
         AddNote(existingId is null ? Strings.ArchivePasswordWarning : Strings.ArchivePasswordChangeNote);
         EndBuild();
+
+        // A password one can see needs no second typing.
         _show.CheckedChanged += (_, _) =>
         {
             _password.UseSystemPasswordChar = !_show.Checked;
             _repeat.UseSystemPasswordChar = !_show.Checked;
+            _repeatCaption.Visible = !_show.Checked;
+            _repeat.Visible = !_show.Checked;
         };
     }
 
@@ -1273,7 +1280,7 @@ internal sealed class ArchivePasswordDialog : DialogForm
             return;
         }
 
-        if (!string.Equals(_password.Text, _repeat.Text, StringComparison.Ordinal))
+        if (!_show.Checked && !string.Equals(_password.Text, _repeat.Text, StringComparison.Ordinal))
         {
             Ui.ShowWarning(this, Strings.ArchivePasswordMismatch);
             return;

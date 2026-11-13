@@ -2340,6 +2340,9 @@ Save the destination as it is all the same?</value>
   <data name="ExportTasksHeading" xml:space="preserve">
     <value>Tasks to put into the file:</value>
   </data>
+  <data name="ExportAllAccounts" xml:space="preserve">
+    <value>Also the accounts of the settings that the chosen tasks do not use ({0}): {1}</value>
+  </data>
   <data name="ExportCheckAll" xml:space="preserve">
     <value>Tick all</value>
   </data>
@@ -2359,7 +2362,7 @@ Save the destination as it is all the same?</value>
     <value>Export password:</value>
   </data>
   <data name="ExportSecretsCount" xml:space="preserve">
-    <value>The chosen tasks use: passwords {0}, SSH keys {1}, cloud accounts {2}.</value>
+    <value>Accounts in the file: with a password {0}, SSH keys {1}, cloud accounts {2}.</value>
   </data>
   <data name="ExportNoSecretsNote" xml:space="preserve">
     <value>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts and the archive password are typed again, SSH keys are made again and cloud accounts connected again. Write the archive password down: without it the backups made before cannot be opened.</value>
@@ -2439,6 +2442,9 @@ Keep the export password: without it the passwords in the file cannot be read.</
   <data name="ImportFileFound" xml:space="preserve">
     <value>Tasks in the file: {0}</value>
   </data>
+  <data name="ImportFileSpare" xml:space="preserve">
+    <value>Also the accounts of the file that no task uses ({0}): {1}</value>
+  </data>
   <data name="ImportFileCannotRead" xml:space="preserve">
     <value>Cannot read the file: {0}</value>
   </data>
@@ -2477,6 +2483,9 @@ Keep the export password: without it the passwords in the file cannot be read.</
   </data>
   <data name="ImportFileDone" xml:space="preserve">
     <value>Tasks imported: {0}.</value>
+  </data>
+  <data name="ImportFileSpareDone" xml:space="preserve">
+    <value>Accounts without tasks added: {0}. Settings → the list of accounts.</value>
   </data>
   <data name="ImportFileSwitchedOff" xml:space="preserve">
     <value>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</value>

@@ -2282,6 +2282,9 @@ static partial class Strings
     /// <summary>Tasks to put into the file:</summary>
     public static string ExportTasksHeading => Get(nameof(ExportTasksHeading));
 
+    /// <summary>Also the accounts of the settings that the chosen tasks do not use ({0}): {1}</summary>
+    public static string ExportAllAccounts => Get(nameof(ExportAllAccounts));
+
     /// <summary>Tick all</summary>
     public static string ExportCheckAll => Get(nameof(ExportCheckAll));
 
@@ -2300,7 +2303,7 @@ static partial class Strings
     /// <summary>Export password:</summary>
     public static string ExportPassword => Get(nameof(ExportPassword));
 
-    /// <summary>The chosen tasks use: passwords {0}, SSH keys {1}, cloud accounts {2}.</summary>
+    /// <summary>Accounts in the file: with a password {0}, SSH keys {1}, cloud accounts {2}.</summary>
     public static string ExportSecretsCount => Get(nameof(ExportSecretsCount));
 
     /// <summary>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts ...</summary>
@@ -2375,6 +2378,9 @@ static partial class Strings
     /// <summary>Tasks in the file: {0}</summary>
     public static string ImportFileFound => Get(nameof(ImportFileFound));
 
+    /// <summary>Also the accounts of the file that no task uses ({0}): {1}</summary>
+    public static string ImportFileSpare => Get(nameof(ImportFileSpare));
+
     /// <summary>Cannot read the file: {0}</summary>
     public static string ImportFileCannotRead => Get(nameof(ImportFileCannotRead));
 
@@ -2413,6 +2419,9 @@ static partial class Strings
 
     /// <summary>Tasks imported: {0}.</summary>
     public static string ImportFileDone => Get(nameof(ImportFileDone));
+
+    /// <summary>Accounts without tasks added: {0}. Settings → the list of accounts.</summary>
+    public static string ImportFileSpareDone => Get(nameof(ImportFileSpareDone));
 
     /// <summary>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</summary>
     public static string ImportFileSwitchedOff => Get(nameof(ImportFileSwitchedOff));

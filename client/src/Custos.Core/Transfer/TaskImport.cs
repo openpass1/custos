@@ -90,6 +90,14 @@ public sealed class TaskImport
             _here.TryAdd(credential.Id, credential);
         }
 
+        // Accounts that wait for a task: exported with «all accounts». One this computer has already (by id, or the same
+        // kind, user and domain) is not offered again.
+        var used = TaskExport.UsedCredentialIds(file.Tasks);
+        SpareAccounts = [.. file.Credentials.Where(c => TaskExport.IsListed(c.Kind) && !used.Contains(c.Id) && !_here.ContainsKey(c.Id)
+            && !credentialsHere.Any(h => h.Kind == c.Kind
+                && string.Equals(h.User, c.User, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(h.Domain ?? string.Empty, c.Domain ?? string.Empty, StringComparison.OrdinalIgnoreCase)))];
+
         Items = [.. file.Tasks.Select(task =>
         {
             var here = tasksHere.FirstOrDefault(t => SameId(t.Id, task.Id));
@@ -124,6 +132,9 @@ public sealed class TaskImport
     /// <summary>The tasks of the file, in its order.</summary>
     public IReadOnlyList<ImportItem> Items { get; }
 
+    /// <summary>Accounts of the file that none of its tasks uses and that this computer does not have.</summary>
+    public IReadOnlyList<Credential> SpareAccounts { get; }
+
     /// <summary>
     /// The accounts of the chosen tasks whose password the person types: they had one where they were exported, it is
     /// not in the file (or the file was not opened), and they are not stored here with one. SSH keys and cloud accounts
@@ -157,7 +168,9 @@ public sealed class TaskImport
     /// <summary>The request for the chosen tasks.</summary>
     /// <param name="typed">Account id → the password typed for it (empty = none).</param>
     /// <param name="useStored">Account id of the file → id of a similar account here whose password is used instead.</param>
-    public ImportBuild Build(IEnumerable<ImportItem> chosen, IReadOnlyDictionary<string, string> typed, IReadOnlyDictionary<string, string> useStored)
+    /// <param name="spare">Also <see cref="SpareAccounts"/>, with their secrets from the file when it is opened.</param>
+    public ImportBuild Build(IEnumerable<ImportItem> chosen, IReadOnlyDictionary<string, string> typed, IReadOnlyDictionary<string, string> useStored,
+        bool spare = false)
     {
         ArgumentNullException.ThrowIfNull(chosen);
         ArgumentNullException.ThrowIfNull(typed);
@@ -196,6 +209,15 @@ public sealed class TaskImport
             if (secret is null && account.HasSecret)
             {
                 lacking.Add(id);
+            }
+        }
+
+        if (spare)
+        {
+            foreach (var account in SpareAccounts)
+            {
+                string? secret = Secrets?.Credentials.GetValueOrDefault(account.Id) is { Length: > 0 } inFile ? inFile : null;
+                request.Credentials.Add(new CredentialInput { Credential = Copy(account), Password = secret });
             }
         }
 

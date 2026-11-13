@@ -20,9 +20,15 @@ public sealed class TransferTests
         form.Show();
         Sta.Pump();
 
-        // Every task is ticked; the office task uses one account with a password.
+        // Every task is ticked; the office task uses one account with a password. The accounts no task uses go too
+        // unless unticked: four servers and three cloud drives.
         Assert.Equal(3, form.TaskList.Items.Count);
         Assert.All(form.TaskList.Items.Cast<ListViewItem>(), i => Assert.True(i.Checked));
+        Assert.True(form.AllAccounts.Visible);
+        Assert.True(form.AllAccounts.Checked);
+        Assert.Equal(Strings.Format(Strings.ExportSecretsCount, 5, 0, 3), form.CountsText);
+        form.AllAccounts.Checked = false;
+        Sta.Pump();
         Assert.Equal(Strings.Format(Strings.ExportSecretsCount, 1, 0, 0), form.CountsText);
         Assert.False(form.PasswordBox.Enabled);
         Assert.Null(form.Problem());
@@ -35,6 +41,13 @@ public sealed class TransferTests
         form.RepeatBox.Text = ExportPassword + "!";
         Assert.Equal(Strings.ArchivePasswordMismatch, form.Problem());
         form.RepeatBox.Text = ExportPassword;
+        Assert.Null(form.Problem());
+
+        // A password one can see is not typed twice.
+        form.RepeatBox.Text = string.Empty;
+        form.ShowPassword.Checked = true;
+        Sta.Pump();
+        Assert.False(form.RepeatBox.Visible);
         Assert.Null(form.Problem());
 
         foreach (ListViewItem item in form.TaskList.Items)
@@ -96,6 +109,30 @@ public sealed class TransferTests
             Assert.Equal(0, form.AccountCount);
             Assert.Equal([false, true, true], form.TaskList.Items.Cast<ListViewItem>().Select(i => i.Checked));
             Assert.Equal("—", form.TaskList.Items[2].SubItems[5].Text);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    });
+
+    [Fact]
+    public void Accounts_without_tasks_are_offered_with_the_tasks() => Sta.Run("en-US", () =>
+    {
+        string path = WriteFile(withPassword: true, spare: true);
+        try
+        {
+            using var monitor = Samples.Monitor();
+            using var form = new TaskImportForm(monitor);
+            form.Show();
+            Sta.Pump();
+            form.ReadFile(path);
+            form.OpenSecrets(ExportPassword);
+            Sta.Pump();
+
+            Assert.True(form.SpareAccounts.Visible);
+            Assert.True(form.SpareAccounts.Checked);
+            Assert.Contains("ftp-user", form.SpareAccounts.Text, StringComparison.Ordinal);
         }
         finally
         {
@@ -211,7 +248,7 @@ public sealed class TransferTests
     /// A file from "another computer": the office task of the samples (so it is here already), a new task on a share
     /// with an account this computer does not have, and a new Linux server task with its own SSH key.
     /// </summary>
-    private static string WriteFile(bool withPassword)
+    private static string WriteFile(bool withPassword, bool spare = false)
     {
         var share = new Credential { Id = "bbbbbbbb-0000-4000-8000-000000000001", User = "copy-user", Domain = "OTHER", HasSecret = true };
         var key = new Credential
@@ -231,14 +268,16 @@ public sealed class TransferTests
         serverTask.Destinations = [new TaskDestination { Kind = DestinationKinds.Local, Path = @"D:\Server" }];
         serverTask.Sources[0].CredentialId = key.Id;
 
+        var waiting = new Credential { Id = "bbbbbbbb-0000-4000-8000-000000000003", Kind = CredentialKinds.Ftp, User = "ftp-user", HasSecret = true };
         var file = TaskExport.Create(
             [Samples.Office(), shareTask, serverTask],
-            [Samples.Account(), share, key],
+            spare ? [Samples.Account(), share, key, waiting] : [Samples.Account(), share, key],
             id => "secret-of-" + id,
             null,
             withPassword ? ExportPassword : null,
             "OLD-PC",
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            allAccounts: spare);
         string path = Path.Combine(Path.GetTempPath(), "custos-gui-tests", Guid.NewGuid().ToString("N") + ".json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllBytes(path, TaskExport.Serialize(file));

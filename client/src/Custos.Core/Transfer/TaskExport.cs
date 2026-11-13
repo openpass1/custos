@@ -40,10 +40,13 @@ public static class TaskExport
     /// Makes the file for <paramref name="tasks"/>, with the accounts they refer to. With a password, the secrets of those
     /// accounts and the own cloud applications their tokens need go in encrypted.
     /// </summary>
-    /// <param name="credentials">The accounts stored on this computer (without secrets); only those the tasks use go in.</param>
+    /// <param name="credentials">The accounts stored on this computer (without secrets); those the tasks use go in, and
+    /// with <paramref name="allAccounts"/> also every other account of the settings.</param>
     /// <param name="secretOf">The secret of an account by id, null when it has none; only asked when a password is given.</param>
     /// <param name="ownApps">The administrator's own applications at the cloud drives.</param>
     /// <param name="password">The export password; null = no secrets in the file.</param>
+    /// <param name="allAccounts">Also the accounts no exported task uses (<see cref="IsListed"/>): moving a whole computer
+    /// takes the accounts that wait for a task, too.</param>
     /// <exception cref="ExportException">The password is too short.</exception>
     public static ExportFile Create(
         IReadOnlyList<TaskDefinition> tasks,
@@ -52,7 +55,8 @@ public static class TaskExport
         CloudAppsFile? ownApps,
         string? password,
         string computer,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        bool allAccounts = false)
     {
         ArgumentNullException.ThrowIfNull(tasks);
         ArgumentNullException.ThrowIfNull(credentials);
@@ -70,7 +74,7 @@ public static class TaskExport
             Computer = computer,
             ProgramVersion = CustosInfo.Version,
             Tasks = [.. tasks.Select(t => t.Clone())],
-            Credentials = [.. credentials.Where(c => used.Contains(c.Id)).Select(Copy)],
+            Credentials = [.. credentials.Where(c => used.Contains(c.Id) || (allAccounts && IsListed(c.Kind))).Select(Copy)],
         };
 
         if (password is null)
@@ -192,6 +196,10 @@ public static class TaskExport
             CryptographicOperations.ZeroMemory(plain);
         }
     }
+
+    /// <summary>An account of the settings list, which lives on its own: not an SSH key or an archive password, which
+    /// belong to their task.</summary>
+    public static bool IsListed(string? kind) => kind is not (CredentialKinds.SshKey or CredentialKinds.ArchivePassword);
 
     /// <summary>Ids of the accounts the tasks refer to: network sources, SSH keys, database servers, destinations and the
     /// archive password.</summary>

@@ -236,6 +236,33 @@ public sealed class TaskExportTests : IDisposable
     }
 
     [Fact]
+    public void With_all_accounts_the_ones_without_a_task_move_too()
+    {
+        var unusedKey = _old.CreateSshKey("custos@old.example.org", "custos@OLD-PC");
+        var file = TaskExport.Read(TaskExport.Serialize(TaskExport.Create(
+            [_docs], _old.GetCredentials(), _old.GetPassword, _old.GetCloudApps(), ExportPassword, "OLD-PC", Now, allAccounts: true)));
+
+        // Every account of the settings goes, the Site task's cloud account included; a key or archive password
+        // without its task does not.
+        Assert.Contains(file.Credentials, c => c.Id == _unused.Id);
+        Assert.Contains(file.Credentials, c => c.Id == _drive.Id);
+        Assert.DoesNotContain(file.Credentials, c => c.Id == unusedKey.Id || c.Id == _key.Id);
+
+        // Here: one of them is stored already under its own id, as the same user.
+        _new.SaveCloudAccount(null, CredentialKinds.GDrive, "BACKUP@example.org", "other-token", "other-app");
+        var plan = new TaskImport(file, TaskExport.Open(file, ExportPassword), _new.GetTasks(), _new.GetCredentials());
+        Assert.Equal([_unused.Id], plan.SpareAccounts.Select(c => c.Id));
+
+        Import(_new, plan.Build(plan.Items, Empty, Empty));
+        Assert.Null(_new.GetCredential(_unused.Id));
+
+        Import(_new, plan.Build([], Empty, Empty, spare: true));
+        Assert.Equal("unused-pw", _new.GetPassword(_unused.Id));
+        Assert.Null(_new.GetCredential(_drive.Id));
+        Assert.Single(_new.GetCredentials(), c => c.Kind == CredentialKinds.GDrive);
+    }
+
+    [Fact]
     public void A_task_that_only_misses_a_typed_password_stays_on_once_it_is_typed()
     {
         var file = TaskExport.Read(TaskExport.Serialize(Export(password: null, _docs)));
