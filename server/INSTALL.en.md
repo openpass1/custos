@@ -445,7 +445,19 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - "More" menus and dialogs fade in, "Machine details" and other folded blocks open smoothly, pages change with a short cross-fade (Chrome, Edge, Safari; Firefox may stay as before);
 - with Windows animation effects off (or "Reduce motion" on another system) the site shows everything without animation, and the bottom of the page says that effects are off and where to switch them on.
 
-**Version 0.4.6.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
+**Version 0.4.7.** No migrations. Navigation (the third part of the new look):
+- the top menu bar stays at the top while the page scrolls; on a wide screen (1440 pixels and more) all sections stand in the middle, on a narrower one the rarer sections (templates, updates, users, audit log, settings) are under "Manage", on a tablet or phone all of them open with the ☰ button;
+- there is no "Profile" page any more: everything moved to the menu under your login at the top right: theme (same as the system, light, dark), language, "Change password" (opens a dialog) and "Log out"; after a choice you stay on the same page. An old bookmark to `/profile` opens the home page;
+- on a phone the lists of machines, tasks, runs, problems and notices are shown as cards, with no sideways scrolling; menu items and row buttons are bigger for a finger.
+
+**Version 0.4.8.** No migrations. Big forms (the last part of the new look):
+- task editor: a table of contents on the left marks the current section and jumps to any section; rarely changed sections ("Compression, encryption, verification", "Reliability and log", "Events before and after", account passwords) are folded into one line with a summary of what is set; the backup type is chosen on cards. When saving finds errors, all sections are open and the table of contents puts a red dot on the section with the error;
+- Settings → General: each group (General, Thresholds, Retention, Allowed networks) has its own Save button, short fields stand in several columns, and units (min, days, %) are written inside the field;
+- Machines: one table with groups as heading rows; above it "All", "With problems", "Running", "Offline" with counts and a search by name (they work at once, without reloading);
+- Home: the 30-day heat map moved up under "Needs attention"; the Tasks tile has a bar of states with words;
+- the notice "New machine … waits for approval" becomes read by itself once the machine is approved. Close older ones with "Mark all as read".
+
+**Version 0.4.9.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
 
 ## What to keep in backups
 

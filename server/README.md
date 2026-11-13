@@ -23,7 +23,7 @@ Stage 4 is done (0.4.0): task charts (Chart.js, source size, written, duration, 
 of results on the dashboard, storages of a machine from the inventory with a free-space forecast (least squares over
 30 days, recalculated hourly by cron) and a "space" problem when a storage fills up within `space_warn_days` (14 by
 default), CSV export of runs, the Zabbix endpoints with the template in `zabbix/`,
-`/api/health`, the wall screen (`/wall?token=…`), the user profile (language, theme, password), the dark theme,
+`/api/health`, the wall screen (`/wall?token=…`), the user menu (theme, language, password), the dark theme,
 the English interface and the site icon. Database dumps reported by agents (`databases` in `runs/finish`) are kept and
 shown on the run page; tasks that only dump databases need no file sources.
 

@@ -147,18 +147,63 @@ h2 { font-size: 1.1rem; margin: 0 0 .75rem; }
 h3 { font-size: 1rem; margin: 1rem 0 .5rem; }
 code, .mono, pre { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .9em; }
 
+/* The top bar stays at the top while the page scrolls. Wide screen: all sections in the middle. Narrower than 1440 px
+   (a laptop, an old square monitor, a zoomed page): the five rarer ones go under "Manage". Tablet and phone: all of them
+   behind ☰. The user menu holds theme, language, password and sign-out (layout.php). */
+html { scroll-padding-top: 4.5rem; }
 header.top {
-    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem;
-    padding: .6rem 1.25rem; background: var(--top-bg); color: #fff;
+    position: sticky; top: 0; z-index: 40;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: .5rem 1rem;
+    padding: .4rem 1.25rem; background: var(--top-bg); color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 4px 14px rgba(0, 0, 0, .12);
 }
 header.top a { color: var(--top-text); }
-header.top .brand { font-weight: 700; color: #fff; letter-spacing: .03em; display: inline-flex; align-items: center; gap: .45rem; }
-header.top .brand img { display: block; }
-header.top .menu { display: flex; flex-wrap: wrap; gap: .25rem 1rem; flex: 1; }
-header.top .menu a.active, header.top .whoami a.active { color: #fff; border-bottom: 2px solid #8fb1ff; }
-header.top .count { background: #8fb1ff; color: #1d2330; border-radius: 9px; padding: 0 .45rem; font-size: .8rem; font-weight: 700; }
-header.top .whoami { display: flex; gap: .5rem; align-items: center; color: var(--top-text); }
-header.top .whoami button { color: var(--top-text); }
+header.top .brand { justify-self: start; max-width: 100%; min-width: 0; font-weight: 700; color: #fff; letter-spacing: .03em;
+    display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+header.top .brand:hover { text-decoration: none; }
+header.top .brand img { display: block; flex: none; }
+header.top .menu { grid-column: 2; display: flex; align-items: center; gap: .15rem; }
+header.top .menu > a, header.top .top-tools > .bell, header.top details.dropdown > summary {
+    display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .7rem; border: 0; border-radius: 7px;
+    background: none; color: var(--top-text); font-weight: 500; white-space: nowrap; }
+header.top .menu > a:hover, header.top .top-tools > .bell:hover, header.top details.dropdown > summary:hover,
+header.top details.dropdown[open] > summary { background: rgba(255, 255, 255, .09); color: #fff; text-decoration: none; }
+header.top .menu > a.active, header.top .top-tools > .bell.active, header.top .nav-more.active > summary {
+    background: rgba(143, 177, 255, .2); color: #fff; box-shadow: inset 0 -2px 0 var(--accent-soft); }
+header.top .count { background: #8fb1ff; color: #1d2330; border-radius: 9px; padding: 0 .45rem; font-size: .8rem; font-weight: 700; line-height: 1.35; }
+header.top .top-tools { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: .25rem; }
+header.top .user-menu > summary > .icon:first-child { width: 1.2em; height: 1.2em; }
+header.top .user-menu > summary > .icon:last-child, header.top .nav-more > summary > .icon { width: .9em; height: .9em; opacity: .7; }
+header.top .nav-phone > summary > .icon { width: 1.3em; height: 1.3em; }
+header.top .nav-more, header.top .nav-phone { display: none; }
+header.top .nav-more .dropdown-menu { left: 0; right: auto; }
+header.top .dropdown-menu { z-index: 45; }
+header.top .dropdown-menu a.menu-item { color: var(--text); }
+header.top .dropdown-menu a.menu-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+header.top .dropdown-menu a.menu-item .count { margin-left: auto; }
+.menu-label { padding: .45rem .65rem .2rem; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.menu-label:first-child { padding-top: .25rem; }
+.menu-item[aria-pressed="true"] { font-weight: 600; }
+.menu-check { display: inline-flex; margin-left: auto; padding-left: 1.25rem; color: var(--accent); }
+.menu-item .menu-check .icon { color: var(--accent); }
+.menu-code { display: inline-flex; justify-content: center; width: 1.05rem; flex: none; font-size: .7rem; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+dialog.modal input[type="password"] { width: 100%; }
+
+@media (max-width: 1439px) {
+    header.top .menu > a.rare { display: none; }
+    header.top .nav-more { display: inline-block; }
+}
+@media (max-width: 900px) {
+    header.top { padding: .35rem .75rem; gap: .5rem; }
+    header.top .menu { display: none; }
+    header.top .nav-phone { display: inline-block; }
+    /* The menus hang from the bar itself and take the width of the screen. */
+    header.top .top-tools > details.dropdown { position: static; }
+    header.top .top-tools .dropdown-menu { top: 100%; left: .5rem; right: .5rem; max-height: calc(100vh - 4rem); overflow-y: auto; }
+    header.top .top-tools .menu-item { padding: .6rem .75rem; }
+}
+@media (max-width: 480px) {
+    header.top .user-name { display: none; }
+}
 
 main { max-width: 1280px; margin: 0 auto; padding: 1.25rem; }
 footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 1.5rem; }
@@ -249,9 +294,7 @@ pre.log.full { max-height: none; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .info-text { color: var(--info); }
 
-header.top .bell { position: relative; font-size: 1.1rem; line-height: 1; display: inline-flex; align-items: center; gap: .25rem; }
-header.top .bell:hover { text-decoration: none; }
-header.top .bell.active { border-bottom: 2px solid #8fb1ff; }
+header.top .bell { position: relative; font-size: 1.1rem; line-height: 1; }
 header.top .count-bad { background: #ff8f8f; }
 
 .tabs { display: flex; flex-wrap: wrap; gap: .25rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
@@ -283,7 +326,15 @@ h2 .count { background: var(--info-bg); color: var(--info); border-radius: 9px; 
 .dot-bad { background: var(--bad); }
 .dot-info { background: var(--info); }
 
-.dashboard-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 0 1rem; align-items: start; }
+.dashboard-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid-template-rows: auto 1fr;
+    grid-template-areas: "main side" "heat side"; gap: 0 1rem; align-items: start; }
+.dash-main { grid-area: main; min-width: 0; }
+.dash-heat { grid-area: heat; min-width: 0; }
+.dash-side { grid-area: side; min-width: 0; }
+/* The heat map needs the whole width before the columns fold. */
+@media (max-width: 1199px) {
+    .dashboard-grid { grid-template-rows: auto auto; grid-template-areas: "main side" "heat heat"; }
+}
 .panel-bad { border-color: var(--bad-border); }
 .panel.calm { background: var(--panel-soft); }
 .panel.calm h3 { color: var(--muted); font-weight: 600; font-size: .9rem; }
@@ -530,14 +581,46 @@ form.stack > .table-wrap { align-self: stretch; min-width: 0; }
 }
 
 @media (max-width: 900px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
+    .dashboard-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "side" "heat"; }
 }
 
 @media (max-width: 640px) {
     main { padding: .75rem; }
-    table.grid { table-layout: auto; min-width: 600px; }
     dl.props { grid-template-columns: minmax(0, 1fr); }
     dl.props dt { margin-top: .4rem; }
+}
+
+/* Phone: the main lists (machines, tasks, runs, problems, notices) turn into cards. The first cell is the title, a
+   .card-side cell (state, buttons) stands at its right, facts with data-label follow side by side with their column
+   names above them, a .card-end cell closes the card. */
+@media (max-width: 640px) {
+    table.cards, table.cards > tbody { display: block; }
+    table.cards { table-layout: auto; background: none; }
+    table.cards > thead { display: none; }
+    table.cards > tbody > tr { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 1.1rem; padding: .7rem .5rem; border-bottom: 1px solid var(--border); }
+    table.cards > tbody > tr:last-child { border-bottom: 0; }
+    /* Ends the title line: everything else starts below it. */
+    table.cards > tbody > tr::after { content: ""; order: 1; flex: 0 0 100%; }
+    table.cards > tbody > tr > td { order: 2; flex: 1 1 100%; min-width: 0; margin-top: .4rem; padding: 0; border: 0; background: none !important;
+        box-shadow: none !important; white-space: normal; }
+    table.cards > tbody > tr > td:first-child { order: 0; flex: 1 1 0; margin-top: 0; font-weight: 600; }
+    table.cards > tbody > tr > td.card-side { order: 1; flex: 0 1 auto; max-width: 60%; margin-top: 0; text-align: right; }
+    table.cards > tbody > tr > td[data-label] { order: 3; flex: 0 1 auto; font-size: .9rem; }
+    table.cards > tbody > tr > td[data-label]::before { content: attr(data-label); display: block; color: var(--muted); font-size: .75rem; font-weight: 400; }
+    table.cards > tbody > tr > td.card-end { order: 4; flex-basis: 100%; }
+    table.cards > tbody > tr > td.num { text-align: left; }
+    table.cards > tbody > tr:hover { background: var(--hover); }
+    table.cards > tbody > tr.unread { background: var(--unread-bg); box-shadow: inset 3px 0 0 var(--info); }
+    table.cards > tbody > tr.warn-row { background: var(--warn-bg); }
+    table.cards > tbody > tr.bad-row { background: var(--bad-bg); }
+    table.cards .task-desc { max-width: none; }
+}
+
+/* Fingers need bigger targets than a mouse. */
+@media (pointer: coarse), (max-width: 640px) {
+    .menu-item { min-height: 2.6rem; }
+    details.dropdown > summary.dots { padding: .5rem .6rem; }
+    button.small, a.button-link.small { min-height: 2.25rem; }
 }
 
 /* "Back to top" button: appears once the top of a long page has scrolled away (app.js). */
@@ -624,6 +707,8 @@ li.problem.arrived, .progress-item.arrived { animation: slide-in .3s ease-out, g
     details:not(.dropdown)::details-content { height: 0; overflow: clip; overflow-clip-margin: .25rem;
         transition: height .22s ease, content-visibility .22s allow-discrete; }
     details:not(.dropdown)[open]::details-content { height: auto; }
+    /* Opened by a jump (the editor's table of contents): at once, so that the page can scroll to it. */
+    details.at-once::details-content { transition: none; }
 }
 
 /* From page to page: a short cross-fade; the menu bar stays put. Browsers that cannot do it open pages as before. */
@@ -656,3 +741,90 @@ header.top { view-transition-name: top-bar; }
     button.busy::after { content: "…"; width: auto; height: auto; border: 0; }
     button:not(:disabled):active, a.button-link:active, details.dropdown > summary:active, a.tile:hover, a.heat:hover { transform: none; }
 }
+
+/* Interface, part 3b: the task editor has a table of contents (sticky at the left on a wide screen, a row of links on a
+   narrow one) and folds the rarely changed sections into one line with a summary of what is set. */
+.editor-layout { display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 0 1.25rem; align-items: start; }
+.editor-toc { position: sticky; top: 4.25rem; display: flex; flex-direction: column; gap: .1rem; max-height: calc(100vh - 5.5rem); overflow-y: auto;
+    padding: .25rem 0; font-size: .92rem; }
+.editor-toc a { padding: .35rem .7rem; border-radius: var(--radius); color: var(--muted); line-height: 1.3; }
+.editor-toc a:hover { background: var(--hover); color: var(--text); text-decoration: none; }
+.editor-toc a[aria-current="true"] { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+.editor-toc a.has-error::after { content: ""; display: inline-block; width: .45rem; height: .45rem; margin-left: .4rem; border-radius: 50%; background: var(--bad); vertical-align: middle; }
+fieldset.editor > .panel { scroll-margin-top: 4.5rem; }
+details.fold > summary { cursor: pointer; align-items: center; }
+details.fold > summary h2 { margin: 0; }
+details.fold > summary .fold-summary { flex: 1 1 12rem; min-width: 0; }
+details.fold[open] > summary .fold-summary { display: none; }
+details.fold.panel { padding-top: .8rem; padding-bottom: .8rem; }
+details.fold[open].panel { padding-bottom: 1rem; }
+.choice-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .6rem; }
+.choice-cards label.choice { align-items: flex-start; padding: .65rem .8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); cursor: pointer;
+    transition: border-color .12s, background-color .12s, box-shadow .12s; }
+.choice-cards label.choice:hover { border-color: var(--border-strong); background: var(--hover); }
+.choice-cards label.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 1px var(--accent) inset; }
+.choice-cards label.choice > span { display: flex; flex-direction: column; gap: .2rem; }
+.choice-cards label.choice small { color: var(--muted); font-size: .85rem; line-height: 1.4; }
+@media (max-width: 1100px) {
+    .editor-layout { display: block; }
+    .editor-toc { position: static; flex-direction: row; flex-wrap: wrap; gap: .35rem; max-height: none; margin-bottom: 1rem; font-size: .88rem; }
+    .editor-toc a { padding: .25rem .7rem; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); }
+}
+
+/* Settings: one panel and one button per group; short fields stand side by side with their unit inside the field. */
+.field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: 1rem 1.5rem; align-items: start; }
+.field-grid > .field-wide { grid-column: 1 / -1; margin: 0; }
+label.field { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+label.field > input, label.field > select, label.field > textarea { width: 100%; }
+label.field > .note { font-size: .85rem; }
+label.field > .field-error { margin-top: 0; }
+.unit-input { display: flex; align-items: stretch; width: 11rem; max-width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    background: var(--input-bg); overflow: hidden; }
+.unit-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.unit-input > input:focus-visible { outline: none; }
+.unit-input > input { flex: 1 1 auto; min-width: 0; width: 100%; border: 0; border-radius: 0; background: none; box-shadow: none; outline: none; }
+.unit-input > .unit { display: flex; align-items: center; padding: 0 .6rem; border-left: 1px solid var(--border); background: var(--panel-soft); color: var(--muted);
+    font-size: .88rem; white-space: nowrap; }
+.form-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1rem; }
+
+/* Machine list: quick choices, search and the group on one line above one table; a group is a heading row. */
+.list-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; margin-bottom: .75rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+button.chip { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .8rem; border: 1px solid var(--border-strong); border-radius: 999px;
+    background: var(--panel); color: var(--muted); font-size: .9rem; font-weight: 500; }
+button.chip:hover { background: var(--hover); color: var(--text); filter: none; }
+button.chip b { color: var(--text); font-variant-numeric: tabular-nums; }
+button.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+button.chip[aria-pressed="true"] b { color: var(--accent); }
+button.chip[disabled] { opacity: .5; cursor: default; }
+.dot { flex: none; }
+.chip .dot { width: .55rem; height: .55rem; }
+.dot-muted { background: var(--border-strong); }
+.list-tools-end { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+.list-tools-end form { display: inline-flex; margin: 0; }
+input.list-search { width: 14rem; max-width: 100%; }
+tr.group-row > th { padding: .45rem .6rem; background: var(--panel-soft); color: var(--text); font-size: .9rem; font-weight: 600; white-space: normal; }
+tr.group-row .count { background: var(--info-bg); color: var(--info); border-radius: 9px; padding: 0 .45rem; font-size: .8rem; font-weight: 700; }
+#agent-list > p.empty { margin: .5rem 0; }
+@media (max-width: 640px) {
+    table.cards > tbody > tr.group-row { display: block; padding: .55rem .5rem .35rem; background: var(--panel-soft); }
+    table.cards > tbody > tr.group-row::after { content: none; }
+    table.cards > tbody > tr.group-row > th { display: block; width: auto; padding: 0; border: 0; background: none; }
+    .list-tools-end, input.list-search { width: 100%; }
+    .list-tools-end { justify-content: space-between; }
+}
+
+/* Dashboard: the task tile has a bar of states with a legend in words; the heat map stands under "Needs attention". */
+.seg-bar { display: block; width: 100%; height: .5rem; margin: .35rem 0 .25rem; border-radius: 4px; overflow: hidden; background: var(--muted-bg); }
+.seg-bar .seg-ok { fill: var(--heat-success); }
+.seg-bar .seg-warn { fill: var(--heat-warning); }
+.seg-bar .seg-bad { fill: var(--bad); }
+.seg-bar .seg-info { fill: var(--info); }
+.seg-bar .seg-muted { fill: var(--border-strong); }
+.tile-legend { display: flex; flex-wrap: wrap; gap: .1rem .75rem; color: var(--muted); font-size: .8rem; }
+.tile-legend > span { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+.tile-legend b { color: var(--text); font-variant-numeric: tabular-nums; }
+.tile-legend .dot { width: .5rem; height: .5rem; }
+.dot-muted { background: var(--border-strong); }
+h2.with-link { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.h2-link { font-size: .85rem; font-weight: 400; }

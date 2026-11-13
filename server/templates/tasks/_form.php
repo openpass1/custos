@@ -207,6 +207,48 @@ $passwordChoice = !empty($archive['_password_new']) ? 'new' : (string) ($archive
 $format = (string) ($archive['format'] ?? 'none');
 $type = (string) ($task['backup_type'] ?? 'incremental');
 $scheduleType = (string) ($schedule['type'] ?? 'daily');
+
+// Rarely changed sections are folded with a one-line summary of what is set; an error on saving opens them all.
+$folded = $errors === [];
+$archiveSummary = [t('task_form.archive.format.' . $format)];
+if ($format !== 'none') {
+    $archiveSummary[] = t('task_form.fold.level', ['n' => (int) ($archive['level'] ?? 5)]);
+    if (!empty($archive['encrypt'])) {
+        $archiveSummary[] = t('task_form.fold.encrypted');
+    }
+}
+$archiveSummary[] = (int) ($verify['every_runs'] ?? 0) > 0 || (int) ($verify['stored_every_days'] ?? 0) > 0
+    ? t('task_form.fold.verify') : t('task_form.fold.no_verify');
+$reliabilitySummary = [
+    t(!empty($vss['enabled'] ?? true) ? 'task_form.fold.vss' : 'task_form.fold.no_vss'),
+    t(!empty($copy['preserve_acl'] ?? true) ? 'task_form.fold.acl' : 'task_form.fold.no_acl'),
+    t('task_form.fold.log', ['level' => t('task_form.log_level.' . (string) ($task['log_level'] ?? 'inherit'))]),
+];
+$eventCount = fn(string $when): int => count(array_filter((array) ($events[$when] ?? []), 'is_array'));
+$eventsSummary = [$eventCount('pre') + $eventCount('post') === 0 ? t('task_form.fold.events.none')
+    : t('task_form.fold.events', ['pre' => $eventCount('pre'), 'post' => $eventCount('post')])];
+if (($events['after'] ?? 'none') !== 'none') {
+    $eventsSummary[] = t('task_form.fold.after', ['what' => t('task_form.events.after.' . (string) $events['after'])]);
+}
+$showAccounts = !$templateMode && $credentials !== [];
+$sections = ['general', 'type', 'sources', 'destinations', 'archive', 'retention', 'schedule', 'reliability', 'events'];
+if ($showAccounts) {
+    $sections[] = 'accounts';
+}
+$foldOpen = fn(): string => $folded ? '' : ' open';
+// An error on saving puts a red dot on its section in the table of contents (where the error says which one).
+$errorMap = ['name' => 'general', 'name_long' => 'general', 'source_path' => 'sources', 'no_sources' => 'sources',
+             'dest_path' => 'destinations', 'no_destinations' => 'destinations', 'host' => 'destinations', 'bucket' => 'destinations',
+             'usb_label' => 'destinations', 'archive_password' => 'archive', 'gfs' => 'retention', 'time' => 'schedule',
+             'no_times' => 'schedule', 'no_weekdays' => 'schedule', 'no_month_days' => 'schedule', 'event_service' => 'events',
+             'event_command' => 'events'];
+$errorSections = [];
+foreach ($errors as $error) {
+    $section = $errorMap[substr((string) ($error['key'] ?? ''), strlen('task_form.error.'))] ?? null;
+    if ($section !== null) {
+        $errorSections[$section] = true;
+    }
+}
 ?>
 <?php if ($errors !== []): ?>
     <div class="alert alert-bad">
@@ -215,11 +257,17 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
     </div>
 <?php endif ?>
 
+<div class="editor-layout">
+<nav class="editor-toc" aria-label="<?= e(t('task_form.toc')) ?>" data-toc>
+    <?php foreach ($sections as $key): ?>
+        <a href="#task-<?= e($key) ?>"<?= isset($errorSections[$key]) ? ' class="has-error"' : '' ?>><?= e(t('task_form.section.' . $key)) ?></a>
+    <?php endforeach ?>
+</nav>
 <fieldset class="editor" data-scope data-editor
           data-seekable="<?= e(implode('|', TaskForm::SEEKABLE)) ?>"
           data-credential-kinds="<?= e(json_encode(TaskForm::CREDENTIAL_KINDS)) ?>"<?= $readOnly ? ' disabled' : '' ?>>
 
-    <section class="panel">
+    <section class="panel" id="task-general">
         <h2><?= e(t('task_form.section.general')) ?></h2>
         <div class="row-fields">
             <label class="grow"><?= e(t($templateMode ? 'templates.field.name' : 'task_form.name')) ?>
@@ -236,18 +284,19 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         <p class="note"><?= e(t('task_form.priority.hint')) ?></p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="task-type">
         <h2><?= e(t('task_form.section.type')) ?></h2>
-        <div class="choices">
+        <?php $sentence = fn(string $text): string => mb_strtoupper(mb_substr($text, 0, 1)) . mb_substr($text, 1); ?>
+        <div class="choices choice-cards">
             <?php foreach (TaskForm::BACKUP_TYPES as $k): ?>
                 <label class="choice"><input type="radio" name="backup_type" value="<?= e($k) ?>"<?= checked($type === $k) ?>>
-                    <span><strong><?= e(t('backup.' . $k)) ?></strong> — <?= e(t('task_form.type.hint.' . $k)) ?></span></label>
+                    <span><strong><?= e(t('backup.' . $k)) ?></strong><small><?= e($sentence(t('task_form.type.hint.' . $k))) ?></small></span></label>
             <?php endforeach ?>
         </div>
-        <div class="choices" data-show-if="backup_type=mirror">
+        <div class="choices choice-cards" data-show-if="backup_type=mirror">
             <?php foreach (TaskForm::MIRROR_MODES as $k): ?>
                 <label class="choice"><input type="radio" name="mirror_mode" value="<?= e($k) ?>"<?= checked(($task['mirror_mode'] ?? 'exact') === $k) ?>>
-                    <span><strong><?= e(t('summary.mirror.' . $k)) ?></strong> — <?= e(t('task_form.mirror.hint.' . $k)) ?></span></label>
+                    <span><strong><?= e(t('summary.mirror.' . $k)) ?></strong><small><?= e($sentence(t('task_form.mirror.hint.' . $k))) ?></small></span></label>
             <?php endforeach ?>
         </div>
         <div data-show-if="backup_type=incremental|differential">
@@ -278,7 +327,7 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="task-sources">
         <h2><?= e(t('task_form.section.sources')) ?></h2>
         <div data-rows="sources">
             <?php foreach (array_values(array_filter((array) ($task['sources'] ?? []), 'is_array')) as $i => $item): ?>
@@ -309,7 +358,7 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="task-destinations">
         <h2><?= e(t('task_form.section.destinations')) ?></h2>
         <div data-rows="destinations">
             <?php foreach (array_values(array_filter((array) ($task['destinations'] ?? []), 'is_array')) as $i => $item): ?>
@@ -332,8 +381,8 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         </div>
     </section>
 
-    <section class="panel">
-        <h2><?= e(t('task_form.section.archive')) ?></h2>
+    <details class="panel facts fold" id="task-archive"<?= $foldOpen() ?>>
+        <summary><?= icon('chevron') ?><h2><?= e(t('task_form.section.archive')) ?></h2> <small class="fold-summary" data-fold-summary="<?= e(t('task_form.fold.changed')) ?>"><?= e(implode(', ', $archiveSummary)) ?></small></summary>
         <div class="choices">
             <?php foreach (TaskForm::ARCHIVE_FORMATS as $k): ?>
                 <label class="choice"><input type="radio" name="archive[format]" value="<?= e($k) ?>"<?= checked($format === $k) ?><?= $k === '7z' ? ' data-needs-seekable' : '' ?>>
@@ -385,9 +434,9 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                 <input type="number" name="verify[stored_every_days]" value="<?= (int) ($verify['stored_every_days'] ?? 0) ?>" min="0" max="3650" class="short"></label>
         </div>
         <p class="note"><?= e(t('task_form.verify.hint')) ?></p>
-    </section>
+    </details>
 
-    <section class="panel">
+    <section class="panel" id="task-retention">
         <h2><?= e(t('task_form.section.retention')) ?></h2>
         <label><?= e(t('task_form.retention.mode')) ?>
             <select name="retention[mode]">
@@ -411,7 +460,7 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         <p class="note"><?= e(t('task_form.retention.hint')) ?></p>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="task-schedule">
         <h2><?= e(t('task_form.section.schedule')) ?></h2>
         <div class="row-fields">
             <label><?= e(t('task_form.schedule.type')) ?>
@@ -449,8 +498,8 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
         <p class="note"><?= e(t('task_form.schedule.hint')) ?></p>
     </section>
 
-    <section class="panel">
-        <h2><?= e(t('task_form.section.reliability')) ?></h2>
+    <details class="panel facts fold" id="task-reliability"<?= $foldOpen() ?>>
+        <summary><?= icon('chevron') ?><h2><?= e(t('task_form.section.reliability')) ?></h2> <small class="fold-summary" data-fold-summary="<?= e(t('task_form.fold.changed')) ?>"><?= e(implode(', ', $reliabilitySummary)) ?></small></summary>
         <div class="row-fields">
             <label class="check"><input type="checkbox" name="vss[enabled]" value="1"<?= checked((bool) ($vss['enabled'] ?? true)) ?>> <?= e(t('task_form.vss')) ?></label>
             <label data-show-if="vss[enabled]=1"><?= e(t('task_form.vss.on_failure')) ?>
@@ -473,10 +522,10 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                 </select>
             </label>
         </div>
-    </section>
+    </details>
 
-    <section class="panel">
-        <h2><?= e(t('task_form.section.events')) ?></h2>
+    <details class="panel facts fold" id="task-events"<?= $foldOpen() ?>>
+        <summary><?= icon('chevron') ?><h2><?= e(t('task_form.section.events')) ?></h2> <small class="fold-summary" data-fold-summary="<?= e(t('task_form.fold.changed')) ?>"><?= e(implode(', ', $eventsSummary)) ?></small></summary>
         <?php foreach (['pre', 'post'] as $when): ?>
             <h3><?= e(t('task_form.events.' . $when)) ?></h3>
             <div data-rows="events-<?= $when ?>">
@@ -496,35 +545,34 @@ $scheduleType = (string) ($schedule['type'] ?? 'daily');
                 <?php endforeach ?>
             </select>
         </label>
-    </section>
+    </details>
 
-    <?php if (!$templateMode): ?>
-        <?php if ($credentials !== []): ?>
-            <section class="panel">
-                <h2><?= e(t('task_form.section.accounts')) ?></h2>
-                <p class="note"><?= e(t('task_form.accounts.hint')) ?></p>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th><?= e(t('credentials.user')) ?></th><th><?= e(t('credentials.secret')) ?></th><th></th></tr></thead>
-                        <tbody>
-                        <?php foreach ($credentials as $c): ?>
-                            <tr>
-                                <td><?= e(account_label($c)) ?><?php if (($c['kind'] ?? '') === 'archive_password'): ?> <span class="note"><?= e(substr($c['id'], 0, 8)) ?></span><?php endif ?></td>
-                                <td><?= e(t(!empty($c['has_secret']) ? 'credentials.secret.set' : 'credentials.secret.none')) ?></td>
-                                <?php if (in_array($c['kind'] ?? '', TaskForm::MACHINE_ONLY_SECRETS, true)): ?>
-                                    <td class="note"><?= e(t('task_form.accounts.machine_only')) ?></td>
-                                <?php else: ?>
-                                    <td><details class="reveal"><summary><?= e(t('task_form.accounts.replace')) ?></summary>
-                                            <input type="password" name="replace_secret[<?= e($c['id']) ?>]" value="" autocomplete="new-password"
-                                                   aria-label="<?= e(t('task_form.accounts.new_password')) ?>" placeholder="<?= e(t('task_form.accounts.new_password')) ?>">
-                                        </details></td>
-                                <?php endif ?>
-                            </tr>
-                        <?php endforeach ?>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        <?php endif ?>
+    <?php if ($showAccounts): ?>
+        <details class="panel facts fold" id="task-accounts"<?= $foldOpen() ?>>
+            <summary><?= icon('chevron') ?><h2><?= e(t('task_form.section.accounts')) ?></h2> <small class="fold-summary" data-fold-summary="<?= e(t('task_form.fold.changed')) ?>"><?= e(t('task_form.fold.accounts', ['n' => count($credentials)])) ?></small></summary>
+            <p class="note"><?= e(t('task_form.accounts.hint')) ?></p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th><?= e(t('credentials.user')) ?></th><th><?= e(t('credentials.secret')) ?></th><th></th></tr></thead>
+                    <tbody>
+                    <?php foreach ($credentials as $c): ?>
+                        <tr>
+                            <td><?= e(account_label($c)) ?><?php if (($c['kind'] ?? '') === 'archive_password'): ?> <span class="note"><?= e(substr($c['id'], 0, 8)) ?></span><?php endif ?></td>
+                            <td><?= e(t(!empty($c['has_secret']) ? 'credentials.secret.set' : 'credentials.secret.none')) ?></td>
+                            <?php if (in_array($c['kind'] ?? '', TaskForm::MACHINE_ONLY_SECRETS, true)): ?>
+                                <td class="note"><?= e(t('task_form.accounts.machine_only')) ?></td>
+                            <?php else: ?>
+                                <td><details class="reveal"><summary><?= e(t('task_form.accounts.replace')) ?></summary>
+                                        <input type="password" name="replace_secret[<?= e($c['id']) ?>]" value="" autocomplete="new-password"
+                                               aria-label="<?= e(t('task_form.accounts.new_password')) ?>" placeholder="<?= e(t('task_form.accounts.new_password')) ?>">
+                                    </details></td>
+                            <?php endif ?>
+                        </tr>
+                    <?php endforeach ?>
+                    </tbody>
+                </table>
+            </div>
+        </details>
     <?php endif ?>
 </fieldset>
+</div>

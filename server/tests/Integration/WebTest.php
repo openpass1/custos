@@ -156,6 +156,10 @@ final class WebTest extends TestCase
         $this->assertSame(400, $status);
         [$status] = $this->post("/agents/{$id[1]}/approve", ['back' => 'list']);
         $this->assertSame(303, $status);
+        // The notice that the machine waited for approval stays in the list but is no longer unread.
+        [, $notices] = $this->http('GET', '/notices');
+        $this->assertStringContainsString('ждёт подтверждения', $notices);
+        $this->assertStringNotContainsString('class="unread"', $notices);
 
         [$exit, $output] = $this->fakeAgent(['--result=error', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
@@ -245,7 +249,7 @@ final class WebTest extends TestCase
         $live = json_decode($json, true);
         $this->assertSame(['summary', 'attention', 'running', 'notices', 'versions'], array_keys($live['parts']));
         $this->assertStringContainsString('Documents', $live['parts']['attention']);
-        $this->assertGreaterThan(0, $live['bell'], 'registration and the first configuration are notices');
+        $this->assertSame(0, $live['bell'], 'the notice of the registration was settled by the approval');
 
         [, $live] = $this->http('GET', "/agents/$agentId/live");
         $this->assertSame(['now', 'problems', 'tasks'], array_keys(json_decode($live, true)['parts']));
@@ -495,20 +499,28 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('Дампы баз данных', $run);
         $this->assertStringContainsString('connection refused', $run);
 
-        // Profile: English and the dark theme for this user only.
-        [$status, $profile] = $this->http('GET', '/profile');
-        $this->assertSame(200, $status);
-        $this->assertStringContainsString('Язык интерфейса', $profile);
-        [$status] = $this->post('/profile', ['language' => 'en', 'theme' => 'dark']);
+        // The user menu (no profile page any more): English and the dark theme for this user only, back to the same page.
+        [$status, , $headers] = $this->http('GET', '/profile');
         $this->assertSame(303, $status);
+        [, $home] = $this->http('GET', '/');
+        $this->assertStringContainsString('class="dropdown user-menu"', $home);
+        $this->assertStringContainsString('Как на сайте (Русский)', $home);
+        $this->assertStringContainsString('id="password-dialog"', $home);
+        [$status, , $headers] = $this->post('/profile', ['language' => 'en', 'theme' => 'dark', 'back' => '/runs?status=error']);
+        $this->assertSame(303, $status);
+        $this->assertStringEndsWith('/runs?status=error', $headers['location']);
         [, $home, $headers] = $this->http('GET', '/');
         $this->assertStringContainsString('<html lang="en" data-theme="dark"', $home);
         $this->assertSame('en', $headers['content-language']);
         $this->assertStringContainsString('Results for 30 days', $home);
-        $this->post('/profile/password', ['current' => 'wrong', 'password' => 'another-password-1', 'repeat' => 'another-password-1']);
-        $this->assertStringContainsString('The current password is wrong.', $this->http('GET', '/profile')[1]);
+        $this->assertMatchesRegularExpression('/name="theme" value="dark" aria-pressed="true"/', $home);
+        // Another host is never a way back.
+        [, , $headers] = $this->post('/profile', ['language' => 'en', 'theme' => 'dark', 'back' => '//evil.example/']);
+        $this->assertStringNotContainsString('evil', $headers['location']);
+        $this->post('/profile/password', ['current' => 'wrong', 'password' => 'another-password-1', 'repeat' => 'another-password-1', 'back' => '/agents']);
+        $this->assertStringContainsString('The current password is wrong.', $this->http('GET', '/agents')[1]);
         $this->post('/profile/password', ['current' => self::PASSWORD, 'password' => 'another-password-1', 'repeat' => 'other']);
-        $this->assertStringContainsString('The new password and its repeat do not match.', $this->http('GET', '/profile')[1]);
+        $this->assertStringContainsString('The new password and its repeat do not match.', $this->http('GET', '/')[1]);
         $this->post('/profile', ['language' => '', 'theme' => 'auto']);
         [, $home] = $this->http('GET', '/');
         $this->assertStringContainsString('<html lang="ru">', $home);

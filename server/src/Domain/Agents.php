@@ -111,6 +111,8 @@ final class Agents
             [Time::now(), $id]
         );
         $this->monitor->watchFrom($id, null, time());
+        // "A new machine waits for approval" has done its job: the bell and the dashboard stop repeating it.
+        $this->notices->settle($id, ['agent.pending', 'agent.reregistered']);
     }
 
     /**
