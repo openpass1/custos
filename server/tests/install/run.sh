@@ -36,6 +36,9 @@ docker exec -e CUSTOS_ADMIN_PASSWORD="$password" "$name" \
         --language=en --timezone=Europe/Berlin | tee /tmp/"$name"-install.txt
 connection=$(sed -nE 's/^[[:space:]]*Connection string:[[:space:]]+(http[^ ]+).*/\1/p' /tmp/"$name"-install.txt | tail -n 1)
 [ -n "$connection" ] || fail "The script printed no connection string."
+grep -qE "^  Connection string:  $connection\$" /tmp/"$name"-install.txt \
+    || fail "The summary at the end does not show the connection string."
+grep -q 'Add a cron job' /tmp/"$name"-install.txt && fail "The output asks to add the cron job that the script has added."
 echo "Connection string: $connection"
 php=$(in_box 'sed -n "s/^PHP=//p" /etc/custos/install.conf')
 [ -n "$php" ] || fail "/etc/custos/install.conf has no PHP version."

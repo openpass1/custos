@@ -484,7 +484,7 @@ ok "nginx serves $url from $dir/server/public"
 # Install: the site itself
 
 say "Installing the site"
-install_args=()
+install_args=(--cron-added)
 [ -z "$language" ] || install_args+=("--language=$language")
 if [ -n "$admin" ]; then
     install_args+=("--admin-login=$admin")
@@ -518,7 +518,7 @@ fi
 mkdir -p "$(dirname "$STATE_FILE")"
 printf '# Written by the CUSTOS Monitor install.sh; used by install.sh --update.\nDIR=%s\nPHP=%s\n' "$dir" "$php_version" > "$STATE_FILE"
 
-connection=$(sed -nE 's/^Connection string:[[:space:]]+//p' "$workdir/install.txt" | tail -n 1)
+connection=$(sed -nE 's/^[[:space:]]*Connection string:[[:space:]]+//p' "$workdir/install.txt" | tail -n 1)
 cat <<EOF
 
 ==> CUSTOS Monitor is installed
