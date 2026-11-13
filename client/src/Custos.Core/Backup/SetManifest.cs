@@ -1,5 +1,7 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Custos.Core.Json;
 
@@ -167,13 +169,29 @@ public static class SetManifest
 {
     public const string FileName = "custos-set.json";
 
-    /// <summary>The file list comes last, so that the header can be read without the whole list.</summary>
+    /// <summary>
+    /// Letters other than Latin are written as they are (UTF-8), not as <c>\uXXXX</c>: a Cyrillic letter takes 2 bytes
+    /// instead of 6 and the file stays readable. The manifest is never put into HTML, so the stricter default encoder
+    /// buys nothing here; quotes, backslashes and control characters are still escaped.
+    /// </summary>
+    private static readonly JavaScriptEncoder TextEncoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
+    private static ReadOnlySpan<byte> EntryIndent => "\n    "u8;
+
+    /// <summary>
+    /// The file list comes last, so that the header can be read without the whole list. The header is indented; each
+    /// file is one compact line, because a source may hold hundreds of thousands of files and indenting every field
+    /// of every file made the list about a quarter larger.
+    /// </summary>
     public static void Write(Stream stream, SetManifestHeader header, IEnumerable<ManifestFile> files)
     {
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(files);
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+        // "\n" on every system: the same file from Windows and Linux, and the lines of the list (EntryIndent) match.
+        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = TextEncoder });
+        var line = new ArrayBufferWriter<byte>(1024);
+        using var lineWriter = new Utf8JsonWriter(line, new JsonWriterOptions { Encoder = TextEncoder });
         writer.WriteStartObject();
         writer.WriteString("format", header.Format);
         writer.WriteNumber("format_version", header.FormatVersion);
@@ -259,41 +277,13 @@ public static class SetManifest
         writer.WriteStartArray("files");
         foreach (var file in files)
         {
-            writer.WriteStartObject();
-            if (file.PathBase64 is not null)
-            {
-                writer.WriteString("path_b64", file.PathBase64);
-            }
-            else
-            {
-                writer.WriteString("path", file.Path);
-            }
-
-            writer.WriteNumber("size", file.Size);
-            writer.WriteString("modified", Time(file.ModifiedUtc));
-            writer.WriteBoolean("in_set", file.InSet);
-            if (file.Sha256 is not null)
-            {
-                writer.WriteString("sha256", file.Sha256);
-            }
-
-            if (file.Posix is { } posix)
-            {
-                writer.WriteString("type", posix.Type);
-                writer.WriteString("mode", posix.Mode);
-                writer.WriteNumber("uid", posix.Uid);
-                writer.WriteNumber("gid", posix.Gid);
-                writer.WriteString("user", posix.User);
-                writer.WriteString("group", posix.Group);
-                if (posix.Link is not null)
-                {
-                    writer.WriteString("link", posix.Link);
-                }
-
-                writer.WriteString("ctime", Time(posix.ChangedUtc));
-            }
-
-            writer.WriteEndObject();
+            // The indented writer puts raw values one after another, so each line brings its own line break.
+            line.ResetWrittenCount();
+            line.Write(EntryIndent);
+            lineWriter.Reset();
+            WriteFile(lineWriter, file);
+            lineWriter.Flush();
+            writer.WriteRawValue(line.WrittenSpan, skipInputValidation: true);
             if (writer.BytesPending > 64 * 1024)
             {
                 writer.Flush();
@@ -303,6 +293,46 @@ public static class SetManifest
         writer.WriteEndArray();
         writer.WriteEndObject();
         writer.Flush();
+    }
+
+    /// <summary>One entry of the file list, written compactly.</summary>
+    private static void WriteFile(Utf8JsonWriter writer, ManifestFile file)
+    {
+        writer.WriteStartObject();
+        if (file.PathBase64 is not null)
+        {
+            writer.WriteString("path_b64", file.PathBase64);
+        }
+        else
+        {
+            writer.WriteString("path", file.Path);
+        }
+
+        writer.WriteNumber("size", file.Size);
+        writer.WriteString("modified", Time(file.ModifiedUtc));
+        writer.WriteBoolean("in_set", file.InSet);
+        if (file.Sha256 is not null)
+        {
+            writer.WriteString("sha256", file.Sha256);
+        }
+
+        if (file.Posix is { } posix)
+        {
+            writer.WriteString("type", posix.Type);
+            writer.WriteString("mode", posix.Mode);
+            writer.WriteNumber("uid", posix.Uid);
+            writer.WriteNumber("gid", posix.Gid);
+            writer.WriteString("user", posix.User);
+            writer.WriteString("group", posix.Group);
+            if (posix.Link is not null)
+            {
+                writer.WriteString("link", posix.Link);
+            }
+
+            writer.WriteString("ctime", Time(posix.ChangedUtc));
+        }
+
+        writer.WriteEndObject();
     }
 
     /// <summary>Reads the header of a manifest, stopping at the file list.</summary>
