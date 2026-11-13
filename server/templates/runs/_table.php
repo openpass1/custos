@@ -3,7 +3,7 @@
 use Custos\Domain\Agents;
 ?>
 <div class="table-wrap">
-    <table>
+    <table class="row-links">
         <thead>
         <tr>
             <th><?= e(t('runs.col.started')) ?></th>

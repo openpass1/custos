@@ -1,11 +1,207 @@
 // CUSTOS Monitor: small helpers for the pages. No build step, no dependencies.
 'use strict';
 
-document.addEventListener('submit', (event) => {
-    const form = event.target;
-    const question = form.getAttribute('data-confirm');
-    if (question && !window.confirm(question)) {
+// Less motion: Windows with its animation effects off, or "reduce motion" on another system. app.css then shows
+// everything without movement; scripts skip their own movement too, and nothing waits for an animation to end.
+const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const still = () => stillQuery.matches;
+
+// A quiet note at the bottom of the page says why the site is so still, and on Windows where to switch effects on.
+(() => {
+    const note = document.querySelector('[data-motion-note]');
+    if (!note) {
+        return;
+    }
+    if (/Windows/.test(navigator.userAgent)) {
+        note.textContent = note.getAttribute('data-windows') || note.textContent;
+        note.title = note.getAttribute('data-windows-hint') || note.title;
+    }
+    const show = () => {
+        note.hidden = !still();
+    };
+    show();
+    if (typeof stillQuery.addEventListener === 'function') {
+        stillQuery.addEventListener('change', show);
+    }
+})();
+
+// A form with data-confirm asks first, in the site's own dialog (#confirm-dialog, layout.php): the first sentence is the
+// question, the rest explains, and the button repeats the action ("Delete machine"); for a risky action it is red and
+// Cancel has the focus. Where the dialog is missing (wall screen, an old browser) the browser asks instead.
+(() => {
+    const dialog = document.getElementById('confirm-dialog');
+    let pending = null;
+
+    const send = (form, submitter) => {
+        form.setAttribute('data-confirmed', '');
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+        } else {
+            form.submit();
+        }
+    };
+
+    const ask = (form, submitter, question) => {
+        const m = /^(.*?[?？])\s+([\s\S]+)$/.exec(question.trim());
+        const title = dialog.querySelector('#confirm-title');
+        const text = dialog.querySelector('#confirm-text');
+        const ok = dialog.querySelector('[data-confirm-ok]');
+        const cancel = dialog.querySelector('[data-confirm-cancel]');
+        title.textContent = m ? m[1] : question;
+        text.textContent = m ? m[2] : '';
+        text.hidden = !m;
+        const risky = !!submitter && submitter.classList.contains('danger');
+        ok.textContent = (submitter && submitter.textContent.trim()) || ok.getAttribute('data-default') || 'OK';
+        ok.className = risky ? 'danger-fill' : '';
+        // The menu the question came from closes; the focus comes back to its button afterwards.
+        const menu = form.closest('details.dropdown');
+        if (menu) {
+            menu.open = false;
+        }
+        pending = { form, submitter, back: menu ? menu.querySelector('summary') : submitter };
+        dialog.showModal();
+        (risky ? cancel : ok).focus();
+    };
+
+    if (dialog) {
+        dialog.querySelector('[data-confirm-ok]').addEventListener('click', () => {
+            const job = pending;
+            pending = null;
+            dialog.close();
+            if (job) {
+                send(job.form, job.submitter);
+            }
+        });
+        dialog.querySelector('[data-confirm-cancel]').addEventListener('click', () => dialog.close());
+        // Cancel, Esc and a click outside all end here.
+        dialog.addEventListener('close', () => {
+            if (pending) {
+                const back = pending.back;
+                pending = null;
+                if (back && back.isConnected) {
+                    back.focus();
+                }
+            }
+        });
+    }
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        const question = form.getAttribute('data-confirm');
+        if (!question) {
+            return;
+        }
+        if (form.hasAttribute('data-confirmed')) {
+            // Asked and answered: this is the sending itself. The next sending asks again.
+            form.removeAttribute('data-confirmed');
+            return;
+        }
         event.preventDefault();
+        if (dialog && typeof dialog.showModal === 'function') {
+            ask(form, event.submitter || null, question);
+        } else if (window.confirm(question)) {
+            send(form, event.submitter || null);
+        }
+    });
+})();
+
+// A form on its way: the button shows that the site is working, and a second click does not send the form again.
+// Back to the page from the browser history, or no answer within 10 seconds (a file download): the button is ready again.
+(() => {
+    const ready = (form) => {
+        form.removeAttribute('data-sending');
+        for (const button of form.querySelectorAll('.busy')) {
+            button.classList.remove('busy');
+            button.removeAttribute('aria-busy');
+        }
+    };
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (event.defaultPrevented) {
+            return;
+        }
+        if (form.hasAttribute('data-sending')) {
+            event.preventDefault();
+            return;
+        }
+        form.setAttribute('data-sending', '');
+        const button = event.submitter || form.querySelector('button[type="submit"], button:not([type])');
+        if (button) {
+            button.classList.add('busy');
+            button.setAttribute('aria-busy', 'true');
+        }
+        setTimeout(() => ready(form), 10000);
+    });
+    window.addEventListener('pageshow', () => {
+        for (const form of document.querySelectorAll('form[data-sending]')) {
+            ready(form);
+        }
+    });
+})();
+
+// Messages after an action (layout.php, .toasts) float over the page: a plain one goes away by itself after a time long
+// enough to read it (the pointer over it holds it), an error stays until its × is pressed.
+(() => {
+    const box = document.querySelector('.toasts');
+    if (!box) {
+        return;
+    }
+    const label = box.getAttribute('data-close-label') || '×';
+    const close = (toast) => {
+        if (toast.classList.contains('leaving')) {
+            return;
+        }
+        toast.classList.add('leaving');
+        setTimeout(() => {
+            toast.remove();
+            if (!box.querySelector('.flash')) {
+                box.remove();
+            }
+        }, still() ? 0 : 200);
+    };
+    for (const toast of box.querySelectorAll('.flash')) {
+        const error = toast.classList.contains('flash-error');
+        toast.setAttribute('role', error ? 'alert' : 'status');
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'toast-close';
+        x.title = label;
+        x.setAttribute('aria-label', label);
+        x.innerHTML = '<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>';
+        x.addEventListener('click', () => close(toast));
+        toast.append(x);
+        if (error) {
+            continue;
+        }
+        let timer = 0;
+        const wait = (ms) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => close(toast), ms);
+        };
+        wait(Math.min(12000, 3500 + toast.textContent.length * 45));
+        toast.addEventListener('mouseenter', () => clearTimeout(timer));
+        toast.addEventListener('mouseleave', () => wait(2500));
+    }
+})();
+
+// A table with class row-links opens the first link of a row wherever the row is clicked (Ctrl: in a new tab).
+// Links, buttons and menus in the row keep their own job; selecting text does not open anything.
+document.addEventListener('click', (event) => {
+    const row = event.target.closest('table.row-links tbody tr');
+    if (!row || event.button !== 0 || event.target.closest('a, button, input, select, textarea, label, summary, details, form, .row-actions')) {
+        return;
+    }
+    if (String(window.getSelection() || '') !== '') {
+        return;
+    }
+    const link = row.querySelector('a[href]');
+    if (!link) {
+        return;
+    }
+    if (event.ctrlKey || event.metaKey || event.shiftKey) {
+        window.open(link.href, '_blank', 'noopener');
+    } else {
+        window.location.href = link.href;
     }
 });
 
@@ -25,9 +221,126 @@ document.addEventListener('click', async (event) => {
         // Plain HTTP pages have no clipboard API; the selected text can still be copied with Ctrl+C.
         document.execCommand('copy');
     }
-    const text = button.textContent;
-    button.textContent = '✓';
-    setTimeout(() => { button.textContent = text; }, 1500);
+    // The button answers in words for a moment: "✓ Copied" (data-copied), then reads as before.
+    if (button.hasAttribute('data-copying')) {
+        return;
+    }
+    const before = button.innerHTML;
+    button.setAttribute('data-copying', '');
+    button.textContent = '✓ ' + (button.getAttribute('data-copied') || '');
+    setTimeout(() => {
+        button.innerHTML = before;
+        button.removeAttribute('data-copying');
+    }, 1600);
+});
+
+// "More" menus (details.dropdown): one open at a time, closed by a click elsewhere or Esc. A menu inside a table that
+// scrolls sideways is placed over the page (position: fixed), so that the edge of the table does not cut it off; it
+// opens upwards when there is no room below. Any menu opens rightwards when there is no room on the left (phones).
+(() => {
+    const closeAll = (except) => {
+        for (const open of document.querySelectorAll('details.dropdown[open]')) {
+            if (open !== except && !open.contains(except)) {
+                open.open = false;
+            }
+        }
+    };
+    const place = (dropdown) => {
+        const menu = dropdown.querySelector('.dropdown-menu');
+        const summary = dropdown.querySelector('summary');
+        if (!menu || !summary) {
+            return;
+        }
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.bottom = '';
+        menu.style.right = '';
+        menu.style.left = '';
+        if (!dropdown.closest('.table-wrap')) {
+            // The menu hangs from the right edge of its button; a button at the left of a narrow screen opens it rightwards.
+            if (menu.getBoundingClientRect().left < 8) {
+                menu.style.right = 'auto';
+                menu.style.left = '0';
+            }
+            return;
+        }
+        const box = summary.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.right = Math.max(8, document.documentElement.clientWidth - box.right) + 'px';
+        if (box.bottom + menu.offsetHeight + 12 > window.innerHeight && box.top > menu.offsetHeight + 12) {
+            menu.style.top = (box.top - menu.offsetHeight - 6) + 'px';
+        } else {
+            menu.style.top = (box.bottom + 6) + 'px';
+        }
+    };
+    // "toggle" does not bubble: listen while it goes down.
+    document.addEventListener('toggle', (event) => {
+        const dropdown = event.target;
+        if (dropdown instanceof HTMLDetailsElement && dropdown.classList.contains('dropdown') && dropdown.open) {
+            closeAll(dropdown);
+            place(dropdown);
+        }
+    }, true);
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('details.dropdown')) {
+            closeAll(null);
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        const open = document.querySelector('details.dropdown[open]');
+        if (open) {
+            open.open = false;
+            const summary = open.querySelector('summary');
+            if (summary) {
+                summary.focus();
+            }
+        }
+    });
+    // A fixed menu would stay where it was while the page moves under it.
+    window.addEventListener('scroll', () => {
+        for (const open of document.querySelectorAll('.table-wrap details.dropdown[open]')) {
+            open.open = false;
+        }
+    }, { passive: true });
+})();
+
+// Small dialogs (rename a machine, change its group): [data-dialog="id"] opens <dialog id="id">, [data-dialog-close]
+// or a click outside the dialog closes it. The first field gets the focus.
+document.addEventListener('click', (event) => {
+    const opener = event.target.closest('[data-dialog]');
+    if (opener) {
+        const dialog = document.getElementById(opener.getAttribute('data-dialog'));
+        if (dialog && typeof dialog.showModal === 'function') {
+            const menu = opener.closest('details.dropdown');
+            if (menu) {
+                menu.open = false;
+            }
+            dialog.showModal();
+            const field = dialog.querySelector('input:not([type="hidden"]), select, textarea');
+            if (field) {
+                field.focus();
+                if (typeof field.select === 'function' && field.tagName === 'INPUT') {
+                    field.select();
+                }
+            }
+        }
+        return;
+    }
+    const closer = event.target.closest('[data-dialog-close]');
+    if (closer && closer.closest('dialog')) {
+        closer.closest('dialog').close();
+        return;
+    }
+    if (event.target instanceof HTMLDialogElement && event.target.open) {
+        const box = event.target.getBoundingClientRect();
+        const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
+        if (!inside) {
+            event.target.close();
+        }
+    }
 });
 
 // A select with data-autosubmit sends its form as soon as the choice changes.
@@ -49,6 +362,57 @@ document.addEventListener('change', (event) => {
     const url = block.getAttribute('data-live');
     const every = Math.max(5, parseInt(block.getAttribute('data-live-every'), 10) || 15) * 1000;
     let busy = false;
+
+    // What changed is shown for a moment: a row whose state changed ([data-key] with a new data-sig) lights up, a new
+    // one (a problem, a run) slides in, and a progress bar glides to its new value instead of jumping.
+    const flag = (el, name, ms = 1600) => {
+        el.classList.add(name);
+        setTimeout(() => el.classList.remove(name), ms);
+    };
+    const snapshot = (part) => {
+        const map = new Map();
+        for (const el of part.querySelectorAll('[data-key]')) {
+            map.set(el.getAttribute('data-key'), {
+                sig: el.getAttribute('data-sig'),
+                values: [...el.querySelectorAll('progress')].map((bar) => bar.value),
+            });
+        }
+        return map;
+    };
+    const glide = (bar, from) => {
+        const to = bar.value;
+        if (still() || !(to > from)) {
+            return;
+        }
+        const start = performance.now();
+        bar.value = from;
+        const step = (now) => {
+            const k = Math.min(1, (now - start) / 900);
+            bar.value = from + (to - from) * (1 - Math.pow(1 - k, 3));
+            if (k < 1 && bar.isConnected) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    };
+    const mark = (part, before) => {
+        for (const el of part.querySelectorAll('[data-key]')) {
+            const old = before.get(el.getAttribute('data-key'));
+            if (!old) {
+                flag(el, 'arrived');
+                continue;
+            }
+            if (old.sig !== null && old.sig !== el.getAttribute('data-sig')) {
+                flag(el, 'changed');
+            }
+            el.querySelectorAll('progress').forEach((bar, i) => {
+                if (old.values[i] !== undefined) {
+                    glide(bar, old.values[i]);
+                }
+            });
+        }
+    };
+
     // The wall screen says so when the data it shows is getting old.
     const offline = (on) => {
         for (const mark of block.querySelectorAll('[data-live-offline]')) {
@@ -76,15 +440,21 @@ document.addEventListener('change', (event) => {
             const data = await response.json();
             for (const [name, html] of Object.entries(data.parts || {})) {
                 const part = block.querySelector('[data-part="' + name + '"]');
-                // A form being filled in (or with focus inside) is left alone until the next round.
-                if (part && !part.contains(document.activeElement)) {
+                // A form being filled in (or with focus inside) and an open menu are left alone until the next round.
+                if (part && !part.contains(document.activeElement) && !part.querySelector('details.dropdown[open]')) {
+                    const before = snapshot(part);
                     part.innerHTML = html;
+                    mark(part, before);
                 }
             }
             if (typeof data.bell === 'number') {
                 for (const bell of document.querySelectorAll('[data-bell]')) {
+                    const was = parseInt(bell.textContent, 10) || 0;
                     bell.textContent = String(data.bell);
                     bell.hidden = data.bell === 0;
+                    if (data.bell > was) {
+                        flag(bell, 'bump', 700);
+                    }
                 }
             }
         } catch {
@@ -176,7 +546,13 @@ document.addEventListener('change', (event) => {
         for (const el of document.querySelectorAll('[data-show-if]')) {
             const scope = el.parentElement ? el.parentElement.closest('[data-scope]') : null;
             if (scope) {
+                const was = el.hidden;
                 el.hidden = !holds(scope, el.getAttribute('data-show-if'));
+                // A part that appears after a choice fades in, so the eye finds what was added.
+                if (changed !== null && was && !el.hidden) {
+                    el.classList.add('appearing');
+                    setTimeout(() => el.classList.remove('appearing'), 400);
+                }
             }
         }
         // [data-placeholders='{"folder": "D:\\Data", ...}']: the example in an empty field follows the kind of its row.
@@ -422,8 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', schedule, { passive: true });
     update();
     button.addEventListener('click', () => {
-        const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+        window.scrollTo({ top: 0, behavior: still() ? 'auto' : 'smooth' });
         // The button hides at the top; keyboard focus goes to the first link of the page instead of getting lost.
         const first = document.querySelector('header.top a');
         if (first) {

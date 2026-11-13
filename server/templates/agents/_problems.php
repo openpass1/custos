@@ -6,7 +6,7 @@
         <h2><?= e(t('agent.problems')) ?></h2>
         <ul class="problems">
             <?php foreach ($problems as $p): ?>
-                <li class="problem problem-<?= e($p['kind']) ?>">
+                <li class="problem problem-<?= e($p['kind']) ?>" data-key="p<?= (int) $p['id'] ?>">
                     <?= badge($p['kind']) ?>
                     <a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>"><?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a>
                     <div class="problem-text"><?= e(problem_text($p)) ?></div>

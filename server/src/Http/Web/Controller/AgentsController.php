@@ -172,10 +172,12 @@ final class AgentsController extends Controller
             case 'disable':
                 $agents->setDisabled($id, true);
                 $this->audit('agent.disable', 'agent', $id, $details);
+                $this->session->flash('info', $this->t('agents.flash.disabled', ['name' => $name]));
                 break;
             case 'enable':
                 $agents->setDisabled($id, false);
                 $this->audit('agent.enable', 'agent', $id, $details);
+                $this->session->flash('info', $this->t('agents.flash.enabled', ['name' => $name]));
                 break;
             case 'delete':
                 $agents->delete($id);
@@ -187,12 +189,14 @@ final class AgentsController extends Controller
                 $newName = $newName === '' ? null : mb_substr($newName, 0, 255);
                 $agents->rename($id, $newName);
                 $this->audit('agent.rename', 'agent', $id, $details + ['new_name' => $newName ?? $agent['hostname']]);
+                $this->session->flash('info', $this->t('agents.flash.renamed', ['name' => $newName ?? $agent['hostname']]));
                 break;
             case 'group':
                 $groupId = ctype_digit($this->post('group_id')) ? (int) $this->post('group_id') : null;
                 $group = $groupId === null ? null : $this->app->groups()->find($groupId);
                 $agents->setGroup($id, $group === null ? null : (int) $group['id']);
                 $this->audit('agent.group', 'agent', $id, $details + ['group' => $group['name'] ?? null]);
+                $this->session->flash('info', $this->t('agents.flash.group', ['name' => $name, 'group' => $group['name'] ?? $this->t('groups.none')]));
                 break;
             case 'inventory':
                 if ($this->approved($agent)) {

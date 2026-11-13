@@ -8,18 +8,54 @@ $def = $task['def'];
 $taskUrl = '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
 $isNew = !empty($task['new']);
 $approved = $agent['status'] === 'approved';
-$command = function (string $action, string $class = 'secondary', ?string $confirm = null) use ($taskUrl): string {
+$running = in_array($task['status'], ['running', 'paused'], true);
+// A button that sends a command to the task, with a question first when given.
+$command = function (string $action, string $class, string $iconName, ?string $confirm = null) use ($taskUrl): string {
     return '<form method="post" action="' . e(url($taskUrl . '/' . $action)) . '"' . ($confirm === null ? '' : ' data-confirm="' . e($confirm) . '"') . '>'
-        . csrf_field() . '<button type="submit" class="' . e($class) . '">' . e(t('task.action.' . $action)) . '</button></form>';
+        . csrf_field() . '<button type="submit"' . ($class === '' ? '' : ' class="' . e($class) . '"') . '>' . icon($iconName)
+        . e(t('task.action.' . $action)) . '</button></form>';
 };
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a> ›
     <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><?= e($agent['name']) ?></a></p>
-<h1><?= e($task['name']) ?> <?= badge($task['status']) ?>
-    <?php foreach (array_diff($task['flags'], [$task['status'], 'ok', 'never', 'disabled']) as $flag): ?><?= badge($flag) ?><?php endforeach ?>
-    <?php if (!empty($task['deleted'])): ?><?= badge('deleted', t('tasks.deleted')) ?><?php endif ?>
-</h1>
-<p class="summary"><?= e(task_summary($def)) ?></p>
+<div class="page-head">
+    <h1><?= e($task['name']) ?> <?= badge($task['status']) ?>
+        <?php foreach (array_diff($task['flags'], [$task['status'], 'ok', 'never', 'disabled']) as $flag): ?><?= badge($flag) ?><?php endforeach ?>
+        <?php if (!empty($task['deleted'])): ?><?= badge('deleted', t('tasks.deleted')) ?><?php endif ?>
+    </h1>
+    <?php if ($approved && empty($task['deleted'])): ?>
+        <div class="page-tools">
+            <?php if (!$isNew): ?>
+                <?php if ($running): ?>
+                    <?= $task['status'] === 'paused' ? $command('resume', '', 'play') : $command('pause', 'secondary', 'pause') ?>
+                    <?= $command('stop', 'danger', 'stop', t('task.confirm.stop')) ?>
+                <?php else: ?>
+                    <?= $command('run', '', 'play') ?>
+                <?php endif ?>
+            <?php endif ?>
+            <a class="button-link" href="<?= e(url($taskUrl . '/edit')) ?>"><?= icon('pencil') ?><?= e(t('task.action.edit')) ?></a>
+            <?php if (!$isNew): ?>
+                <details class="dropdown">
+                    <summary><?= e(t('common.more')) ?><?= icon('chevron') ?></summary>
+                    <div class="dropdown-menu">
+                        <?= !empty($def['enabled']) ? $command('disable', 'menu-item', 'power', t('task.confirm.disable')) : $command('enable', 'menu-item', 'power') ?>
+                        <a class="menu-item" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new', ['from' => $task['id']])) ?>"><?= icon('copy') ?><?= e(t('task.action.clone')) ?></a>
+                        <a class="menu-item" href="<?= e(url('/templates/new', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= icon('template') ?><?= e(t('task.action.template')) ?></a>
+                        <?php if ($versionCount > 0): ?>
+                            <a class="menu-item" href="<?= e(url($taskUrl . '/versions')) ?>"><?= icon('clock') ?><?= e(t('task.action.history')) ?></a>
+                        <?php endif ?>
+                        <div class="menu-sep"></div>
+                        <?= $command('delete', 'menu-item danger', 'trash', t('task.confirm.delete', ['name' => $task['name']])) ?>
+                    </div>
+                </details>
+            <?php endif ?>
+        </div>
+    <?php endif ?>
+    <p class="page-meta">
+        <span><?= e(task_summary($def)) ?></span>
+        <?php if (!$running && $progress === null && $task['next_at'] !== null): ?><span><?= e(t('task.meta.next', ['time' => fmt_unix($task['next_at'])])) ?></span><?php endif ?>
+    </p>
+</div>
 
 <?php if ($pending !== null): ?>
     <div class="alert alert-info"><?= e(t($isNew ? 'task.pending.new' : 'task.pending', [
@@ -30,26 +66,6 @@ $command = function (string $action, string $class = 'secondary', ?string $confi
     <p class="note"><?= e(t('task.template', ['name' => $templateLink['name'], 'revision' => (int) $templateLink['template_revision']])) ?>
         <?php if ((int) $templateLink['template_revision'] < (int) $templateLink['revision']): ?><?= badge('warning', t('task.template.outdated', ['revision' => (int) $templateLink['revision']])) ?><?php endif ?>
         <a href="<?= e(url('/templates/' . $templateLink['id'])) ?>"><?= e(t('task.template.open')) ?></a></p>
-<?php endif ?>
-
-<?php if ($approved && empty($task['deleted'])): ?>
-    <div class="actions-row">
-        <?php if (!$isNew): ?>
-            <?php if (in_array($task['status'], ['running', 'paused'], true)): ?>
-                <?= $task['status'] === 'paused' ? $command('resume', '') : $command('pause') ?>
-                <?= $command('stop', 'danger', t('task.confirm.stop')) ?>
-            <?php else: ?>
-                <?= $command('run', '') ?>
-            <?php endif ?>
-            <?= !empty($def['enabled']) ? $command('disable', 'secondary', t('task.confirm.disable')) : $command('enable') ?>
-        <?php endif ?>
-        <a class="button-link" href="<?= e(url($taskUrl . '/edit')) ?>"><?= e(t('task.action.edit')) ?></a>
-        <?php if (!$isNew): ?>
-            <a class="button-link" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new', ['from' => $task['id']])) ?>"><?= e(t('task.action.clone')) ?></a>
-            <a class="button-link" href="<?= e(url('/templates/new', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= e(t('task.action.template')) ?></a>
-            <?= $command('delete', 'danger', t('task.confirm.delete', ['name' => $task['name']])) ?>
-        <?php endif ?>
-    </div>
 <?php endif ?>
 
 <div class="columns">
@@ -73,21 +89,20 @@ $command = function (string $action, string $class = 'secondary', ?string $confi
         <p><a href="<?= e(url('/runs', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= e(t('task.all_runs')) ?></a></p>
     </section>
 
-    <section class="panel">
-        <h2><?= e(t('task.now')) ?></h2>
-        <?php if ($progress !== null || $agent['running_task'] === $task['id']): ?>
+    <?php /* While the task does not run, the head says when it runs next: no panel for one line. */ ?>
+    <?php if ($progress !== null || $agent['running_task'] === $task['id']): ?>
+        <section class="panel">
+            <h2><?= e(t('task.now')) ?></h2>
             <?php $item = ['agent' => $agent, 'task' => $task, 'progress' => $progress]; include __DIR__ . '/../agents/_progress.php'; ?>
-        <?php else: ?>
-            <p class="empty"><?= e(t('task.not_running')) ?></p>
-        <?php endif ?>
-    </section>
+        </section>
+    <?php endif ?>
 </div>
 
 <?php if (empty($task['new'])): ?>
     <?php include __DIR__ . '/_charts.php' ?>
 <?php endif ?>
 
-<section class="panel">
+<section class="panel<?= $problems === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('task.problems')) ?></h2>
     <?php if ($problems === []): ?>
         <p class="empty"><?= e(t('task.problems.none')) ?></p>
@@ -142,7 +157,7 @@ $command = function (string $action, string $class = 'secondary', ?string $confi
     <?php endif ?>
 </section>
 
-<section class="panel">
+<section class="panel<?= $runs === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('agent.runs')) ?></h2>
     <?php if ($runs === []): ?>
         <p class="empty"><?= e(t('runs.empty')) ?></p>

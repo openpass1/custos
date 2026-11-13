@@ -25,7 +25,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
             <?php else: ?>
                 <span class="copy-row">
                     <input type="text" id="connection-string" class="mono" value="<?= e($connection) ?>" readonly size="72">
-                    <button type="button" data-copy="connection-string"><?= e(t('common.copy')) ?></button>
+                    <button type="button" class="secondary" data-copy="connection-string" data-copied="<?= e(t('common.copied')) ?>"><?= icon('copy') ?><?= e(t('common.copy')) ?></button>
                 </span>
             <?php endif ?>
         </dd>
@@ -34,7 +34,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
     </dl>
     <form method="post" action="<?= e(url('/settings/registration-key')) ?>" data-confirm="<?= e(t('settings.confirm.key')) ?>">
         <?= csrf_field() ?>
-        <button type="submit"><?= e(t('settings.action.key')) ?></button>
+        <button type="submit" class="secondary"><?= icon('key') ?><?= e(t('settings.action.key')) ?></button>
         <span class="note"><?= e(t('settings.key.hint')) ?></span>
     </form>
 </section>

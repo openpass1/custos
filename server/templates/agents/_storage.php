@@ -4,6 +4,7 @@
 <section class="panel">
     <h2><?= e(t('storage.title')) ?></h2>
     <p class="hint"><?= e(t('storage.hint')) ?></p>
+    <div class="storages">
     <?php foreach ($storages as $s): ?>
         <?php
         $total = $s['total_bytes'] === null ? null : (int) $s['total_bytes'];
@@ -57,4 +58,5 @@
             <?php endif ?>
         </div>
     <?php endforeach ?>
+    </div>
 </section>

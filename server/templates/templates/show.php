@@ -8,17 +8,18 @@ use Custos\Domain\Agents;
 $outdated = count(array_filter($links, fn($l) => (int) $l['template_revision'] < (int) $tpl['revision']));
 ?>
 <p class="crumbs"><a href="<?= e(url('/templates')) ?>"><?= e(t('templates.title')) ?></a></p>
-<h1><?= e($tpl['name']) ?></h1>
-<p class="summary"><?= e(task_summary($tpl['task'])) ?></p>
-
-<div class="actions-row">
-    <a class="button-link" href="<?= e(url('/templates/' . $tpl['id'] . '/edit')) ?>"><?= e(t('templates.action.edit')) ?></a>
-    <form method="post" action="<?= e(url('/templates/' . $tpl['id'] . '/delete')) ?>"
-          data-confirm="<?= e(t('templates.confirm.delete', ['name' => $tpl['name']])) ?>">
-        <?= csrf_field() ?>
-        <button type="submit" class="danger"><?= e(t('templates.action.delete')) ?></button>
-    </form>
-    <span class="note"><?= e(t('templates.revision', ['n' => (int) $tpl['revision'], 'time' => fmt_time($tpl['updated_at']), 'by' => $tpl['updated_by']])) ?></span>
+<div class="page-head">
+    <h1><?= e($tpl['name']) ?></h1>
+    <div class="page-tools">
+        <a class="button-link" href="<?= e(url('/templates/' . $tpl['id'] . '/edit')) ?>"><?= icon('pencil') ?><?= e(t('templates.action.edit')) ?></a>
+        <form method="post" action="<?= e(url('/templates/' . $tpl['id'] . '/delete')) ?>"
+              data-confirm="<?= e(t('templates.confirm.delete', ['name' => $tpl['name']])) ?>">
+            <?= csrf_field() ?>
+            <button type="submit" class="danger"><?= icon('trash') ?><?= e(t('templates.action.delete')) ?></button>
+        </form>
+    </div>
+    <p class="page-meta"><span><?= e(task_summary($tpl['task'])) ?></span>
+        <span><?= e(t('templates.revision', ['n' => (int) $tpl['revision'], 'time' => fmt_time($tpl['updated_at']), 'by' => $tpl['updated_by']])) ?></span></p>
 </div>
 
 <div class="columns">
