@@ -12,7 +12,7 @@ use Custos\Domain\Agents;
         <h2><?= e(t('agents.pending.title')) ?></h2>
         <p class="hint"><?= e(t('agents.pending.hint')) ?></p>
         <div class="table-wrap">
-            <table>
+            <table class="cards">
                 <thead>
                 <tr>
                     <th><?= e(t('agents.col.name')) ?></th>
@@ -33,11 +33,11 @@ use Custos\Domain\Agents;
                                 <div class="note"><?= e(t('agents.rereg', ['name' => Agents::name($old)])) ?></div>
                             <?php endif ?>
                         </td>
-                        <td><?= e($a['last_ip'] ?? '—') ?></td>
-                        <td><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?></div></td>
-                        <td><code class="fingerprint"><?= e($a['key_fingerprint']) ?></code></td>
-                        <td><?= e(fmt_time($a['first_seen_at'])) ?></td>
-                        <td class="actions">
+                        <td data-label="<?= e(t('agents.col.ip')) ?>"><?= e($a['last_ip'] ?? '—') ?></td>
+                        <td data-label="<?= e(t('agents.col.os')) ?>"><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?></div></td>
+                        <td data-label="<?= e(t('agents.col.fingerprint')) ?>"><code class="fingerprint"><?= e($a['key_fingerprint']) ?></code></td>
+                        <td data-label="<?= e(t('agents.col.first_seen')) ?>"><?= e(fmt_time($a['first_seen_at'])) ?></td>
+                        <td class="actions card-end">
                             <form method="post" action="<?= e(url('/agents/' . $a['id'] . '/approve')) ?>">
                                 <?= csrf_field() ?><input type="hidden" name="back" value="list">
                                 <button type="submit" class="small"><?= icon('check') ?><?= e(t($old === null ? 'agents.action.approve' : 'agents.action.approve_new')) ?></button>
@@ -89,7 +89,7 @@ use Custos\Domain\Agents;
         <section class="panel">
             <?php if ($section['name'] !== null): ?><h2><?= e($section['name']) ?> <span class="count"><?= count($section['agents']) ?></span></h2><?php endif ?>
             <div class="table-wrap">
-                <table class="grid row-links">
+                <table class="grid row-links cards">
                     <thead>
                     <tr>
                         <th><?= e(t('agents.col.name')) ?></th>
@@ -105,16 +105,16 @@ use Custos\Domain\Agents;
                             <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['name']) ?></a>
                                 <?php if ($a['name'] !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
                             </td>
-                            <td>
+                            <td class="card-side">
                                 <?php if ($a['status'] === 'disabled'): ?>
                                     <?= badge('disabled') ?>
                                 <?php else: ?>
                                     <?= $a['online'] ? badge('online') : badge('offline') ?>
                                 <?php endif ?>
                             </td>
-                            <td class="nowrap" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
-                            <td><?= e($a['agent_version']) ?></td>
-                            <td class="pills">
+                            <td class="nowrap" data-label="<?= e(t('agents.col.last_seen')) ?>" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
+                            <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?></td>
+                            <td class="pills card-end">
                                 <?php $agentTasks = $board->tasksOf($a['id']); ?>
                                 <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
                                 <?php foreach ($agentTasks as $task): ?>

@@ -3,15 +3,16 @@
 use Custos\Domain\Agents;
 
 $row = function (array $p, bool $isOpen): string {
+    $lastLabel = t($isOpen ? 'problems.col.duration' : 'problems.col.closed');
     ob_start(); ?>
     <tr>
         <td><?= badge($isOpen ? $p['kind'] : 'closed', t('problem.kind.' . $p['kind'])) ?></td>
-        <td class="nowrap"><a href="<?= e(url('/agents/' . $p['agent_id'])) ?>"><?= e(Agents::name($p)) ?></a></td>
-        <td><a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>"><?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a></td>
+        <td class="nowrap" data-label="<?= e(t('problems.col.agent')) ?>"><a href="<?= e(url('/agents/' . $p['agent_id'])) ?>"><?= e(Agents::name($p)) ?></a></td>
+        <td data-label="<?= e(t('problems.col.task')) ?>"><a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>"><?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a></td>
         <td><?= e(problem_text($p)) ?></td>
-        <td class="nowrap"><?= e(fmt_time($p['opened_at'])) ?></td>
-        <td><?= $isOpen ? e(fmt_ago($p['opened_at'])) : e(fmt_time($p['closed_at']) . ' · ' . t('closed_by.' . $p['closed_by'])) ?></td>
-        <td class="note"><?= e(t('notify.state.' . $p['notify'])) ?></td>
+        <td class="nowrap" data-label="<?= e(t('problems.col.opened')) ?>"><?= e(fmt_time($p['opened_at'])) ?></td>
+        <td data-label="<?= e($lastLabel) ?>"><?= $isOpen ? e(fmt_ago($p['opened_at'])) : e(fmt_time($p['closed_at']) . ' · ' . t('closed_by.' . $p['closed_by'])) ?></td>
+        <td class="note" data-label="<?= e(t('problems.col.notify')) ?>"><?= e(t('notify.state.' . $p['notify'])) ?></td>
     </tr>
     <?php return (string) ob_get_clean();
 };
@@ -27,7 +28,7 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
     <?php if ($open === []): ?>
         <p class="all-good"><?= e(t('dashboard.no_problems')) ?></p>
     <?php else: ?>
-        <div class="table-wrap"><table><?= sprintf($head, e(t('problems.col.duration'))) ?><tbody>
+        <div class="table-wrap"><table class="cards"><?= sprintf($head, e(t('problems.col.duration'))) ?><tbody>
             <?php foreach ($open as $p): ?><?= $row($p, true) ?><?php endforeach ?>
         </tbody></table></div>
     <?php endif ?>
@@ -38,7 +39,7 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
     <?php if ($closed === []): ?>
         <p class="empty"><?= e(t('problems.closed.none')) ?></p>
     <?php else: ?>
-        <div class="table-wrap"><table><?= sprintf($head, e(t('problems.col.closed'))) ?><tbody>
+        <div class="table-wrap"><table class="cards"><?= sprintf($head, e(t('problems.col.closed'))) ?><tbody>
             <?php foreach ($closed as $p): ?><?= $row($p, false) ?><?php endforeach ?>
         </tbody></table></div>
         <?= pager($page, $pages, '/problems', []) ?>

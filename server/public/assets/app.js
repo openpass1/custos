@@ -256,6 +256,9 @@ document.addEventListener('click', async (event) => {
         menu.style.bottom = '';
         menu.style.right = '';
         menu.style.left = '';
+        if (dropdown.closest('header.top')) {
+            return; // app.css places the menus of the top bar
+        }
         if (!dropdown.closest('.table-wrap')) {
             // The menu hangs from the right edge of its button; a button at the left of a narrow screen opens it rightwards.
             if (menu.getBoundingClientRect().left < 8) {

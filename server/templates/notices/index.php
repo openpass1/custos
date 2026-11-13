@@ -18,7 +18,7 @@
 <?php else: ?>
     <section class="panel">
         <div class="table-wrap">
-            <table>
+            <table class="cards">
                 <thead><tr><th><?= e(t('notices.col.time')) ?></th><th><?= e(t('notices.col.text')) ?></th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($notices as $n): ?>
@@ -32,7 +32,7 @@
                     <tr class="<?= $n['read_at'] === null ? 'unread' : '' ?>">
                         <td class="nowrap"><?= e(fmt_time($n['created_at'])) ?></td>
                         <td><?php if ($link !== null): ?><a href="<?= e($link) ?>"><?= e(notice_text($n)) ?></a><?php else: ?><?= e(notice_text($n)) ?><?php endif ?></td>
-                        <td>
+                        <td class="card-side">
                             <?php if ($n['read_at'] === null): ?>
                                 <form method="post" action="<?= e(url('/notices/read')) ?>">
                                     <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $n['id'] ?>">
