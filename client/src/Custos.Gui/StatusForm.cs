@@ -109,9 +109,10 @@ internal sealed class StatusForm : Form
 
     private void ShowState()
     {
+        // Like the main window: the monitor drops the snapshot when the connection ends.
         var status = _monitor.Status;
         var snapshot = _monitor.Snapshot;
-        bool connected = snapshot is not null && status.State == ServiceState.Running;
+        bool connected = snapshot is not null;
         _tasks.Visible = connected;
         _noConnection.Visible = !connected;
         _noConnection.Text = connected ? string.Empty : Strings.Format(Strings.NoConnection, status.Problem ?? ServiceMonitor.Describe(status.State));
@@ -129,7 +130,7 @@ internal sealed class StatusForm : Form
     internal static string Summary(ServiceMonitor monitor)
     {
         var snapshot = monitor.Snapshot;
-        if (snapshot is null || monitor.Status.State != ServiceState.Running)
+        if (snapshot is null)
         {
             return string.Empty;
         }

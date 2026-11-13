@@ -1184,7 +1184,7 @@ static partial class Strings
     /// <summary>Change…</summary>
     public static string ProgramPasswordChangeButton => Get(nameof(ProgramPasswordChangeButton));
 
-    /// <summary>Remove</summary>
+    /// <summary>Remove password</summary>
     public static string ProgramPasswordRemoveButton => Get(nameof(ProgramPasswordRemoveButton));
 
     /// <summary>Remove the program password? Changes will then need only the rights of the user.</summary>

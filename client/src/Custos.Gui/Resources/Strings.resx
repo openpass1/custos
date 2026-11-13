@@ -1215,7 +1215,7 @@ Allow it?</value>
     <value>Change…</value>
   </data>
   <data name="ProgramPasswordRemoveButton" xml:space="preserve">
-    <value>Remove</value>
+    <value>Remove password</value>
   </data>
   <data name="ProgramPasswordRemoveConfirm" xml:space="preserve">
     <value>Remove the program password? Changes will then need only the rights of the user.</value>

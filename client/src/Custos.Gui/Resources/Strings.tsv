@@ -408,7 +408,7 @@ ProgramPasswordIsSet	set	задан
 ProgramPasswordNotSet	not set	не задан
 ProgramPasswordSetButton	Set…	Задать…
 ProgramPasswordChangeButton	Change…	Сменить…
-ProgramPasswordRemoveButton	Remove	Убрать
+ProgramPasswordRemoveButton	Remove password	Убрать пароль
 ProgramPasswordRemoveConfirm	Remove the program password? Changes will then need only the rights of the user.	Убрать пароль программы? Тогда для изменений будет достаточно прав пользователя.
 ProgramPasswordRemoved	The program password is removed.	Пароль программы убран.
 ProgramPasswordSaved	The program password is set. Changes and restores now need it.	Пароль программы задан. Теперь он нужен для изменений и восстановления.
