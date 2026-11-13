@@ -251,6 +251,27 @@ internal sealed partial class AgentService
                 }
             }
         }
+        else if (request.Destination is { } destination)
+        {
+            // A destination on a server or in a cloud drive, typed for this restore (another computer: the same
+            // account, the folder of the sets).
+            if (!DestinationKinds.IsSupported(destination.Kind) || DestinationKinds.IsFileSystem(destination.Kind))
+            {
+                throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.DestinationKindNotSupported, destination.Kind));
+            }
+
+            if (DestinationStores.Problem(destination) is { } lacking)
+            {
+                throw new AgentRequestException(PipeProtocol.Errors.Invalid, lacking);
+            }
+
+            string label = DestinationStores.Label(destination);
+            if ((only is null || string.Equals(label, only, StringComparison.Ordinal))
+                && OpenPlace(label, () => Platform.OpenStore(destination), request.Password, null, problems) is { } place)
+            {
+                places.Add(place);
+            }
+        }
         else if (!string.IsNullOrWhiteSpace(request.Folder) && Path.IsPathFullyQualified(request.Folder))
         {
             var folder = new TaskDestination

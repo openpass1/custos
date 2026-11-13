@@ -32,8 +32,9 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
     $new = isset($item['_cred']);
     $typed = (array) ($item['_cred'] ?? []);
     ob_start(); ?>
+    <?php $cloud = implode('|', TaskForm::CLOUD_KINDS); ?>
     <div class="cred" data-show-if="kind=<?= e(implode('|', array_keys(TaskForm::CREDENTIAL_KINDS))) ?>">
-        <label><?= e(t('task_form.credential')) ?>
+        <label<?= $templateMode ? ' data-show-if="kind!=' . e($cloud) . '"' : '' ?>><?= e(t('task_form.credential')) ?>
             <select name="<?= e($prefix) ?>[credential]" data-credential-select>
                 <option value=""><?= e(t('task_form.credential.none')) ?></option>
                 <?php foreach ($credentials as $c): ?>
@@ -44,7 +45,8 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
                 <?php if ($current !== null && !$new && !isset($credentials[$current])): ?>
                     <option value="<?= e($current) ?>" selected><?= e(t('task_form.credential.unknown')) ?></option>
                 <?php endif ?>
-                <option value="new"<?= $new ? ' selected' : '' ?>><?= e(t('task_form.credential.new')) ?></option>
+                <?php /* A cloud drive account is connected on the machine only (7.5): no new one here. */ ?>
+                <option value="new" data-show-if="kind!=<?= e($cloud) ?>"<?= $new ? ' selected' : '' ?>><?= e(t('task_form.credential.new')) ?></option>
             </select>
         </label>
         <div class="row-fields" data-show-if="credential=new">
@@ -62,6 +64,7 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
             <?php endif ?>
         </div>
         <?php if ($templateMode): ?><p class="note" data-show-if="credential=new"><?= e(t('task_form.cred_template')) ?></p><?php endif ?>
+        <p class="note" data-show-if="kind=<?= e($cloud) ?>"><?= e(t($templateMode ? 'task_form.cloud.note_template' : 'task_form.cloud.note')) ?></p>
     </div>
     <?php return (string) ob_get_clean();
 };
@@ -73,7 +76,8 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
 $pathExamples = [
     'source' => ['folder' => 'D:\\Data', 'file' => 'D:\\Data\\report.xlsx', 'unc' => '\\\\fileserver\\share\\Data'],
     'destination' => ['local' => 'E:\\Backup', 'unc' => '\\\\fileserver\\backup', 'usb' => 'Backup', 'ftp' => '/backup',
-                      'ftps' => '/backup', 'sftp' => '/backup', 's3' => 'backup', 'webdav' => '/backup'],
+                      'ftps' => '/backup', 'sftp' => '/backup', 's3' => 'backup', 'webdav' => '/backup',
+                      'gdrive' => 'office/pc01', 'yadisk' => 'office/pc01', 'dropbox' => 'office/pc01'],
 ];
 $pathExample = fn(string $side, string $kind): string =>
     ' placeholder="' . e($pathExamples[$side][$kind] ?? '') . '" data-placeholders="' . e(json_encode($pathExamples[$side], JSON_UNESCAPED_SLASHES)) . '"';
@@ -146,12 +150,15 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
             </label>
         </div>
         <div class="row-fields">
-            <label class="grow"><span data-show-if="kind=local|unc"><?= e(t('task_form.path')) ?></span><span data-show-if="kind!=local|unc"><?= e(t('task_form.path.remote')) ?></span>
+            <label class="grow"><span data-show-if="kind=local|unc"><?= e(t('task_form.path')) ?></span><span data-show-if="kind!=local|unc|gdrive|yadisk|dropbox"><?= e(t('task_form.path.remote')) ?></span><span data-show-if="kind=gdrive|yadisk|dropbox"><?= e(t('task_form.path.cloud')) ?></span>
                 <input type="text" name="<?= e($prefix) ?>[path]" value="<?= $field('path') ?>" class="mono" maxlength="1000"
                        <?= $pathExample('destination', $kind) ?>>
             </label>
             <label><?= e(t('task_form.speed')) ?>
                 <input type="number" name="<?= e($prefix) ?>[speed_limit_kbps]" value="<?= (int) ($item['speed_limit_kbps'] ?? 0) ?>" min="0" class="short">
+            </label>
+            <label data-show-if="kind=gdrive|yadisk|dropbox"><?= e(t('task_form.part_mb')) ?>
+                <input type="number" name="<?= e($prefix) ?>[part_mb]" value="<?= (int) ($item['part_mb'] ?? 0) ?>" min="0" max="1000000" class="short">
             </label>
             <label class="check" data-show-if="kind=unc">
                 <input type="checkbox" name="<?= e($prefix) ?>[disconnect_after]" value="1"<?= checked((bool) ($item['disconnect_after'] ?? true)) ?>>

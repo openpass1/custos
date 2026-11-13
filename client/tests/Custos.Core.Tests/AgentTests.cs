@@ -308,6 +308,14 @@ public sealed class SlotPlannerTests
     }
 }
 
+/// <summary>
+/// Tests that switch <see cref="Messages.Culture"/>, which every test shares: they run alone, after the others, so a
+/// test running beside them never writes its log in the other language.
+/// </summary>
+[CollectionDefinition(nameof(MessagesCultureTests), DisableParallelization = true)]
+public sealed class MessagesCultureTests;
+
+[Collection(nameof(MessagesCultureTests))]
 public sealed class TaskDescriberTests : IDisposable
 {
     private readonly CultureInfo? _previous = Messages.Culture;

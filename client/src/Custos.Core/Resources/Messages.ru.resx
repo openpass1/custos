@@ -1608,4 +1608,70 @@
   <data name="SetLocked" xml:space="preserve">
     <value>Набор «{0}» в {1} защищён от удаления до {2} (Object Lock); хранение удалит его после этого срока.</value>
   </data>
+  <data name="CloudGDrive" xml:space="preserve">
+    <value>Google Диск</value>
+  </data>
+  <data name="CloudYaDisk" xml:space="preserve">
+    <value>Яндекс Диск</value>
+  </data>
+  <data name="CloudDropbox" xml:space="preserve">
+    <value>Dropbox</value>
+  </data>
+  <data name="CloudAppFolder" xml:space="preserve">
+    <value>Приложения/CUSTOS</value>
+  </data>
+  <data name="CloudNoMirror" xml:space="preserve">
+    <value>{0}: зеркало в облачном диске недоступно. Выберите полную, инкрементную или дифференциальную копию.</value>
+  </data>
+  <data name="CloudWrongAccount" xml:space="preserve">
+    <value>{0}: учётная запись относится к другому сервису.</value>
+  </data>
+  <data name="CloudAccountOnlyConnected" xml:space="preserve">
+    <value>Аккаунт облачного диска подключается только через браузер на этом компьютере (настройки, «Облачные диски», или «Подключить…» в назначении).</value>
+  </data>
+  <data name="CloudAccountMissing" xml:space="preserve">
+    <value>{0}: у назначения нет подключённого аккаунта. Подключите его в назначении («Подключить…»).</value>
+  </data>
+  <data name="CloudAccessRevoked" xml:space="preserve">
+    <value>Доступ к аккаунту {0} ({1}) отозван. Подключите его заново в настройках («Подключить заново…»).</value>
+  </data>
+  <data name="CloudAppMissing" xml:space="preserve">
+    <value>{0}: в этой версии нет приложения CUSTOS для сервиса. Укажите идентификаторы своего приложения в настройках, раздел «Облачные диски».</value>
+  </data>
+  <data name="CloudAppRefused" xml:space="preserve">
+    <value>{0} не знает приложение CUSTOS ({1}). Проверьте идентификаторы приложения в настройках, раздел «Облачные диски».</value>
+  </data>
+  <data name="CloudSignInFailed" xml:space="preserve">
+    <value>{0}: вход не удался: {1}</value>
+  </data>
+  <data name="CloudSignInRefused" xml:space="preserve">
+    <value>{0}: на странице сервиса доступ не разрешили.</value>
+  </data>
+  <data name="CloudSignInExpired" xml:space="preserve">
+    <value>Вход занял слишком много времени или был начат заново. Закройте это окно и подключите аккаунт ещё раз.</value>
+  </data>
+  <data name="CloudNoRefreshToken" xml:space="preserve">
+    <value>{0} не выдал токен обновления, без него CUSTOS работать не сможет. Попробуйте ещё раз; если повторится, сначала уберите CUSTOS из подключённых приложений аккаунта.</value>
+  </data>
+  <data name="CloudFileTooLarge" xml:space="preserve">
+    <value>{0} не принимает такой большой файл ({1}). Задайте «Размер части» в назначении (Яндекс Диск без подписки принимает файлы до 1 ГБ).</value>
+  </data>
+  <data name="CloudUploadExpired" xml:space="preserve">
+    <value>{0}: загрузка {1} у сервиса истекла, файл не записан.</value>
+  </data>
+  <data name="CloudUploadLost" xml:space="preserve">
+    <value>{0}: сервис потерял уже подтверждённую часть {1}, файл не записан.</value>
+  </data>
+  <data name="CloudNotAllowed" xml:space="preserve">
+    <value>Подключать аккаунты облачных дисков и менять их приложения может только администратор этого компьютера.</value>
+  </data>
+  <data name="CloudBadRedirect" xml:space="preserve">
+    <value>Адрес, на который возвращается вход, должен быть на этом компьютере (http://127.0.0.1 или http://localhost).</value>
+  </data>
+  <data name="CloudConnected" xml:space="preserve">
+    <value>Аккаунт {0} ({1}) подключил {2}.</value>
+  </data>
+  <data name="CloudAppsSaved" xml:space="preserve">
+    <value>Приложения CUSTOS у облачных дисков изменил {0}.</value>
+  </data>
 </root>

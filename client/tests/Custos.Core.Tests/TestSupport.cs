@@ -71,6 +71,9 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public override string ComputerName => "TESTPC";
 
+    /// <summary>The fake drives behind <see cref="LocalBackupPlatform.CloudAccounts"/>, by account id.</summary>
+    public Dictionary<string, FakeCloud> Clouds { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public override string? FindVolumeByLabel(string label) => Volumes.TryGetValue(label, out string? root) ? root : null;
 
     public override long? GetFreeSpace(string path) => FreeSpace;

@@ -231,6 +231,12 @@ public sealed partial class BackupEngine
                 throw new BackupException(Messages.Format(Messages.SevenZipNeedsSeek, DestinationStores.Label(destination)));
             }
 
+            if (DestinationKinds.IsCloudDrive(destination.Kind) && task.BackupType == BackupTypes.Mirror)
+            {
+                // A mirror compares and replaces file by file: too many requests for a cloud drive (section 6.3).
+                throw new BackupException(Messages.Format(Messages.CloudNoMirror, DestinationStores.Label(destination)));
+            }
+
             if (destination.Kind == DestinationKinds.S3 && destination.ObjectLockDays > 0
                 && (task.BackupType == BackupTypes.Mirror || !(SeparateSets(task) || IsArchive(task))))
             {

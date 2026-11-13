@@ -282,7 +282,12 @@ internal sealed class DestinationDialog : DialogForm
     [
         DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb,
         DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3,
+        DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox,
     ];
+
+    /// <summary>The part size a new Yandex Disk destination starts with: the Disk without a subscription takes files
+    /// of up to 1 GB.</summary>
+    internal const int YandexPartMb = 900;
 
     private static readonly string[] LockModes = [ObjectLockModes.Governance, ObjectLockModes.Compliance];
 
@@ -319,6 +324,11 @@ internal sealed class DestinationDialog : DialogForm
     private readonly NumericUpDown _speed = new() { Minimum = 0, Maximum = 10_000_000, Increment = 100, Width = 90, Margin = new Padding(0) };
     private readonly FlowLayoutPanel _speedRow = new() { AutoSize = true, WrapContents = false };
     private readonly PictureBox _speedHelp;
+    private readonly Label _partLabel = Caption(Strings.DestinationPartSize);
+    private readonly NumericUpDown _part = new() { Minimum = 0, Maximum = 1_000_000, Increment = 100, Width = 90, Margin = new Padding(0) };
+    private readonly FlowLayoutPanel _partRow = new() { AutoSize = true, WrapContents = false };
+    private readonly PictureBox _partHelp;
+    private readonly Label _cloudWarning = new() { Text = Strings.DestinationCloudWarning, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 4, 0, 6) };
     private readonly Label _lockLabel = Caption(Strings.DestinationLock);
     private readonly NumericUpDown _lockDays = new() { Minimum = 0, Maximum = 36500, Width = 90, Margin = new Padding(0) };
     private readonly FlowLayoutPanel _lockRow = new() { AutoSize = true, WrapContents = false };
@@ -336,8 +346,9 @@ internal sealed class DestinationDialog : DialogForm
     private string _fingerprintOf = string.Empty;
     private bool _filling = true;
 
-    public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew)
-        : base(isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle, new Size(700, 500))
+    /// <param name="title">The title when the dialog is used elsewhere than in the task editor (restore).</param>
+    public DestinationDialog(EditorContext context, TaskDestination destination, bool isNew, string? title = null)
+        : base(title ?? (isNew ? Strings.DestinationAddTitle : Strings.DestinationEditTitle), new Size(700, 500))
     {
         _context = context;
         _original = destination;
@@ -351,6 +362,7 @@ internal sealed class DestinationDialog : DialogForm
         _usbHelp = Ui.HelpIcon(Tips, Strings.DestinationUsbHelp);
         _accountHelp = Ui.HelpIcon(Tips, Strings.DestinationAccountHelp);
         _speedHelp = Ui.HelpIcon(Tips, Strings.DestinationSpeedHelp);
+        _partHelp = Ui.HelpIcon(Tips, Strings.DestinationPartHelp);
         _lockHelp = Ui.HelpIcon(Tips, Strings.DestinationLockHelp);
         foreach (string kind in Kinds)
         {
@@ -373,6 +385,8 @@ internal sealed class DestinationDialog : DialogForm
         _hostRow.Controls.Add(_port, 2, 0);
         _speedRow.Controls.Add(_speed);
         _speedRow.Controls.Add(new Label { Text = Strings.RemoteSpeedUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
+        _partRow.Controls.Add(_part);
+        _partRow.Controls.Add(new Label { Text = Strings.DestinationPartUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
         _lockRow.Controls.Add(_lockDays);
         _lockRow.Controls.Add(new Label { Text = Strings.DestinationLockUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
         var pathExtra = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
@@ -388,10 +402,12 @@ internal sealed class DestinationDialog : DialogForm
         AddGridRow(_labelLabel, _usbLabel, _usbHelp);
         AddGridRow(_accountLabel, _account, _accountHelp);
         AddGridRow(_speedLabel, _speedRow, _speedHelp);
+        AddGridRow(_partLabel, _partRow, _partHelp);
         AddGridRow(_lockLabel, _lockRow, _lockHelp);
         AddGridRow(_lockModeLabel, _lockMode, _lockModeGap);
         AddGridRow(_keyLabel, _key, _forgetKey);
         AddWide(_unsupported);
+        AddWide(_cloudWarning);
         AddNote(Strings.PathVariablesNote);
         var testRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 6, 0, 0) };
         testRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -413,6 +429,7 @@ internal sealed class DestinationDialog : DialogForm
         _bucket.Text = destination.Bucket ?? string.Empty;
         _region.Text = destination.Region ?? string.Empty;
         _speed.Value = Math.Clamp(destination.SpeedLimitKbps, 0, (int)_speed.Maximum);
+        _part.Value = Math.Clamp(destination.PartMb, 0, (int)_part.Maximum);
         _lockDays.Value = Math.Clamp(destination.ObjectLockDays, 0, (int)_lockDays.Maximum);
         _lockMode.SelectedIndex = destination.ObjectLockMode == ObjectLockModes.Compliance ? 1 : 0;
         _account.SelectedId = destination.CredentialId;
@@ -468,6 +485,9 @@ internal sealed class DestinationDialog : DialogForm
                 return string.IsNullOrWhiteSpace(destination.Bucket) ? Strings.ErrorBucketRequired
                     : string.IsNullOrEmpty(destination.CredentialId) ? Strings.ErrorAccountRequired
                     : null;
+            case DestinationKinds.GDrive or DestinationKinds.YaDisk or DestinationKinds.Dropbox:
+                // The folder may be empty: the folder of CUSTOS in the account itself.
+                return string.IsNullOrEmpty(destination.CredentialId) ? Strings.ErrorCloudAccountRequired : null;
             default:
                 return string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
                     : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
@@ -514,11 +534,13 @@ internal sealed class DestinationDialog : DialogForm
     }
 
     /// <summary>The destination from the fields; what the dialog does not show is kept as it was.</summary>
-    private TaskDestination Build()
+    /// <summary>The destination as the fields now say.</summary>
+    internal TaskDestination Build()
     {
         string kind = Kind;
         bool server = kind is DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps;
         bool s3 = kind == DestinationKinds.S3;
+        bool cloud = DestinationKinds.IsCloudDrive(kind);
         string path = _path.Text.Trim().Trim('"');
         int lockDays = s3 ? (int)_lockDays.Value : 0;
         return new TaskDestination
@@ -540,7 +562,8 @@ internal sealed class DestinationDialog : DialogForm
             SpeedLimitKbps = DestinationKinds.CredentialKind(kind) is null ? 0 : (int)_speed.Value,
             ObjectLockDays = lockDays,
             ObjectLockMode = lockDays > 0 ? LockModes[Math.Max(0, _lockMode.SelectedIndex)] : null,
-            ServerFingerprint = DestinationKinds.IsFileSystem(kind) ? null : _fingerprint,
+            ServerFingerprint = DestinationKinds.IsFileSystem(kind) || cloud ? null : _fingerprint,
+            PartMb = cloud ? (int)_part.Value : 0,
             ExtensionData = _original.ExtensionData,
         };
     }
@@ -557,6 +580,7 @@ internal sealed class DestinationDialog : DialogForm
         bool server = kind is DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps;
         bool dav = kind == DestinationKinds.WebDav;
         bool s3 = kind == DestinationKinds.S3;
+        bool cloud = DestinationKinds.IsCloudDrive(kind);
         bool files = DestinationKinds.IsFileSystem(kind) || !_supported;
         string? accountKind = _supported ? DestinationKinds.CredentialKind(kind) : null;
 
@@ -572,11 +596,13 @@ internal sealed class DestinationDialog : DialogForm
         _pathLabel.Text = usb ? Strings.DestinationFolderOnDisk
             : server ? Strings.DestinationFolderOnServer
             : s3 ? Strings.DestinationFolderInBucket
+            : cloud ? Strings.Format(Strings.DestinationFolderInCloud, CloudNames.AppFolder(kind))
             : Strings.DestinationFolder;
         _browse.Visible = kind == DestinationKinds.Local;
         _pathHelp.Visible = !files;
         Tips.SetToolTip(_pathHelp, Custos.Core.Text.LineWrap.Wrap(
-            s3 ? Strings.DestinationFolderBucketHelp : dav ? Strings.DestinationFolderWebDavHelp : Strings.DestinationFolderServerHelp));
+            s3 ? Strings.DestinationFolderBucketHelp : dav ? Strings.DestinationFolderWebDavHelp
+            : cloud ? Strings.DestinationFolderCloudHelp : Strings.DestinationFolderServerHelp));
         _labelLabel.Visible = _usbLabel.Visible = _usbHelp.Visible = usb;
 
         _accountLabel.Visible = _account.Visible = _accountHelp.Visible = accountKind is not null;
@@ -594,12 +620,21 @@ internal sealed class DestinationDialog : DialogForm
                 CredentialKinds.Ftp => Strings.DestinationAccountHelpFtp,
                 CredentialKinds.WebDav => Strings.DestinationAccountHelpWebDav,
                 CredentialKinds.S3 => Strings.DestinationAccountHelpS3,
+                _ when cloud => Strings.DestinationAccountHelpCloud,
                 _ => Strings.DestinationAccountHelp,
             }));
         }
 
         _speedLabel.Visible = _speedRow.Visible = _speedHelp.Visible = accountKind is not null;
         _lockLabel.Visible = _lockRow.Visible = _lockHelp.Visible = s3;
+        _partLabel.Visible = _partRow.Visible = _partHelp.Visible = cloud && _supported;
+        _cloudWarning.Visible = cloud && _supported;
+        if (kind == DestinationKinds.YaDisk && _original.Kind != DestinationKinds.YaDisk && _part.Value == 0)
+        {
+            // Yandex Disk without a subscription takes files of up to 1 GB (section 6.3).
+            _part.Value = YandexPartMb;
+        }
+
         _unsupported.Visible = !_supported;
         _kind.Enabled = _path.Enabled = _test.Enabled = _supported;
         _testResult.Text = string.Empty;
@@ -1010,6 +1045,9 @@ internal sealed class CredentialDialog : DialogForm
         CredentialKinds.Ftp => Strings.AccountKindFtp,
         CredentialKinds.WebDav => Strings.AccountKindWebDav,
         CredentialKinds.S3 => Strings.AccountKindS3,
+        CredentialKinds.GDrive => Strings.AccountKindGDrive,
+        CredentialKinds.YaDisk => Strings.AccountKindYaDisk,
+        CredentialKinds.Dropbox => Strings.AccountKindDropbox,
         _ => kind,
     };
 
@@ -1294,6 +1332,11 @@ internal sealed class SettingsForm : DialogForm
     private readonly Button _addAccount = new() { Text = Strings.ButtonAdd, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly Button _editAccount = new() { Text = Strings.ButtonChangePassword, AutoSize = true, MinimumSize = new Size(110, 0) };
     private readonly Button _deleteAccount = new() { Text = Strings.ButtonRemove, AutoSize = true, MinimumSize = new Size(110, 0) };
+    private readonly Button _connectCloud = new() { Text = Strings.ButtonConnectCloud, AutoSize = true, MinimumSize = new Size(110, 0) };
+    private readonly ContextMenuStrip _cloudMenu = new();
+    private readonly Label _cloudApps = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
+    private readonly Button _cloudOwn = new() { Text = Strings.SettingsCloudOwn, AutoSize = true, Margin = new Padding(8, 0, 0, 0), Enabled = false };
+    private CloudAppsResult? _cloudAppsResult;
     private readonly ToolTip _toolTip = new();
     private readonly bool _canEdit;
     private readonly Label _archiver = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
@@ -1378,12 +1421,30 @@ internal sealed class SettingsForm : DialogForm
 
         _sevenZipCheck.Click += (_, _) => Ui.Run(this, CheckSevenZipAsync);
 
+        // Cloud drives (section 6.3): what this version brings, and the administrator's own applications.
+        var cloudHeading = new Label { Text = Strings.SettingsCloud, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+        cloudHeading.Font = heading.Font;
+        AddWide(cloudHeading);
+        var cloudRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+        cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        cloudRow.Controls.Add(_cloudApps, 0, 0);
+        cloudRow.Controls.Add(_cloudOwn, 1, 0);
+        AddWide(cloudRow);
+        AddNote(admin ? Strings.SettingsCloudNote : Strings.CloudAdminOnly);
+        _cloudApps.Text = admin ? string.Empty : Strings.Format(Strings.SettingsCloudBuiltIn, "—");
+        foreach (string kind in CloudNames.Kinds)
+        {
+            string chosen = kind;
+            _cloudMenu.Items.Add(CloudNames.Name(kind), null, (_, _) => ConnectCloud(chosen, null));
+        }
+
         var accountsHeading = new Label { Text = Strings.SettingsAccounts, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         accountsHeading.Font = heading.Font;
         AddWide(accountsHeading);
         AddNote(Strings.SettingsAccountsNote);
         var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(8, 0, 0, 0) };
-        buttons.Controls.AddRange([_addAccount, _editAccount, _deleteAccount]);
+        buttons.Controls.AddRange([_addAccount, _connectCloud, _editAccount, _deleteAccount]);
         var row = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -1425,6 +1486,19 @@ internal sealed class SettingsForm : DialogForm
 
         _accounts.SelectedIndexChanged += (_, _) => UpdateButtons();
         _addAccount.Click += (_, _) => AddAccount();
+        _connectCloud.Enabled = _isAdmin && monitor.IsConnected;
+        if (!_isAdmin)
+        {
+            _toolTip.SetToolTip(_connectCloud, Strings.CloudAdminOnly);
+        }
+
+        _connectCloud.Click += (_, _) => _cloudMenu.Show(_connectCloud, new Point(0, _connectCloud.Height));
+        _cloudOwn.Click += (_, _) => EditCloudApps();
+        if (_isAdmin && monitor.IsConnected)
+        {
+            Ui.Run(this, LoadCloudAppsAsync);
+        }
+
         _editAccount.Click += (_, _) => EditAccount();
         _deleteAccount.Click += (_, _) => DeleteAccount();
         _monitor.SnapshotChanged += OnSnapshotChanged;
@@ -1438,6 +1512,7 @@ internal sealed class SettingsForm : DialogForm
         {
             _monitor.SnapshotChanged -= OnSnapshotChanged;
             _toolTip.Dispose();
+            _cloudMenu.Dispose();
         }
 
         base.Dispose(disposing);
@@ -1659,9 +1734,10 @@ internal sealed class SettingsForm : DialogForm
         string? selected = _accounts.SelectedItems.Count > 0 ? (string)_accounts.SelectedItems[0].Tag! : null;
         _accounts.BeginUpdate();
         _accounts.Items.Clear();
+        string[] kinds = [.. CredentialDialog.Kinds, .. CloudNames.Kinds];
         var shown = (snapshot?.Credentials ?? [])
-            .Where(c => Array.IndexOf(CredentialDialog.Kinds, c.Kind) >= 0)
-            .OrderBy(c => Array.IndexOf(CredentialDialog.Kinds, c.Kind))
+            .Where(c => Array.IndexOf(kinds, c.Kind) >= 0)
+            .OrderBy(c => Array.IndexOf(kinds, c.Kind))
             .ThenBy(c => c.DisplayName, StringComparer.CurrentCultureIgnoreCase);
         foreach (var credential in shown)
         {
@@ -1678,7 +1754,11 @@ internal sealed class SettingsForm : DialogForm
     private void UpdateButtons()
     {
         bool any = _accounts.SelectedItems.Count > 0;
-        _editAccount.Enabled = _canEdit && any;
+        bool cloud = CredentialKinds.IsCloud(SelectedAccount()?.Kind);
+
+        // An account of a cloud drive has no password here: it is connected again in the browser.
+        _editAccount.Text = cloud ? Strings.ButtonReconnect : Strings.ButtonChangePassword;
+        _editAccount.Enabled = _canEdit && any && (!cloud || _isAdmin);
         _deleteAccount.Enabled = _canEdit && any;
     }
 
@@ -1699,8 +1779,69 @@ internal sealed class SettingsForm : DialogForm
             return;
         }
 
+        if (CredentialKinds.IsCloud(account.Kind))
+        {
+            ConnectCloud(account.Kind, account);
+            return;
+        }
+
         using var dialog = new CredentialDialog(_monitor, account);
         dialog.ShowDialog(this);
+    }
+
+    /// <summary>Connects a new account of a cloud drive, or an existing one again.</summary>
+    private void ConnectCloud(string kind, Credential? existing)
+    {
+        using var dialog = new CloudConnectDialog(_monitor, kind, existing);
+        dialog.ShowDialog(this);
+    }
+
+    /// <summary>Which services this version has an application for; only administrators may ask.</summary>
+    private async Task LoadCloudAppsAsync()
+    {
+        try
+        {
+            _cloudAppsResult = await _monitor.RequestAsync(PipeProtocol.Methods.CloudAppsGet, EmptyRequest.Instance,
+                IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.CloudAppsResult);
+        }
+        catch (ServiceUnavailableException ex)
+        {
+            if (!IsDisposed)
+            {
+                _cloudApps.Text = ex.Message;
+            }
+
+            return;
+        }
+
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        ShowCloudApps();
+        _cloudOwn.Enabled = true;
+    }
+
+    private void ShowCloudApps()
+    {
+        var builtIn = _cloudAppsResult?.BuiltIn ?? [];
+        string names = builtIn.Count == 0 ? Strings.SettingsCloudNone : string.Join(", ", CloudNames.Kinds.Where(builtIn.Contains).Select(CloudNames.Name));
+        _cloudApps.Text = Strings.Format(Strings.SettingsCloudBuiltIn, names);
+    }
+
+    private void EditCloudApps()
+    {
+        if (_cloudAppsResult is not { } current)
+        {
+            return;
+        }
+
+        using var dialog = new CloudAppsDialog(_monitor, current);
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            current.Own = dialog.Entered();
+        }
     }
 
     private void DeleteAccount()

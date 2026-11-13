@@ -183,6 +183,16 @@ final class ManagementTest extends TestCase
         $this->assertSame(0, (int) $templates->all()[0]['outdated']);
         $this->assertSame(['id' => $id, 'name' => 'Shared folders', 'revision' => 2, 'template_revision' => 2],
             array_map(fn($v) => is_numeric($v) ? (int) $v : $v, $templates->linkOf($agent['id'], $machineTaskId)));
+
+        // A cloud drive in a template takes the account of that service connected on each machine; this one has none.
+        $cloud = $made['task'];
+        $cloud['name'] = 'To the cloud';
+        $cloud['destinations'][] = ['id' => 'cccccccc-0000-4000-8000-000000000001', 'kind' => 'gdrive', 'path' => 'office',
+                                    'credential_id' => null, 'part_mb' => 0, 'speed_limit_kbps' => 0];
+        $cloudTemplate = $templates->find($templates->save(null, $cloud, $made['credentials'], 'admin'));
+        $result = $templates->apply($cloudTemplate, [$agent], [], self::USER);
+        $this->assertSame('templates.apply.cloud_account', $result[0]['error']['key']);
+        $this->assertNull($result[0]['command']);
     }
 
     public function testAgentAndSevenZipUpdates(): void

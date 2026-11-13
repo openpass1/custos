@@ -112,7 +112,8 @@ final class Templates
         $map = [];
         $credentials = [];
         foreach (TaskForm::credentialRefs($copy) as $ref) {
-            if (!isset($machine[$ref])) {
+            if (!isset($machine[$ref]) || in_array($machine[$ref]['kind'] ?? '', TaskForm::CLOUD_KINDS, true)) {
+                // A cloud drive account stays on its machine: the template takes the one connected on each machine.
                 continue;
             }
             $id = Crypto::uuid4();
@@ -193,8 +194,9 @@ final class Templates
             } else {
                 $task = self::machineTask($template, $agent['id']);
                 $existing = TaskEdits::credentials($agent);
+                $error = $this->cloudAccounts($agent, $task, $existing);
                 $secrets = [];
-                foreach (TaskForm::credentialRefs($template['task']) as $ref) {
+                foreach ($error === null ? TaskForm::credentialRefs($template['task']) : [] as $ref) {
                     $c = $template['credential_list'][$ref] ?? null;
                     if ($c === null) {
                         continue;
@@ -223,6 +225,40 @@ final class Templates
             $results[] = ['agent' => $agent, 'command' => $command, 'error' => $error];
         }
         return $results;
+    }
+
+    /**
+     * A template names no cloud drive account (7.5): each machine uses the account of that service connected on it.
+     * One the machine's task already uses is kept (the administrator may have chosen among several).
+     *
+     * @return array{key: string, params: array}|null what is missing, or null
+     */
+    private function cloudAccounts(array $agent, array &$task, array $existing): ?array
+    {
+        $before = [];
+        foreach ((array) ($this->edits->current($agent, (string) $task['id'])['task']['destinations'] ?? []) as $d) {
+            if (is_array($d) && is_string($d['id'] ?? null)) {
+                $before[$d['id']] = $d['credential_id'] ?? null;
+            }
+        }
+        foreach ((array) ($task['destinations'] ?? []) as $i => $d) {
+            $kind = is_array($d) ? (string) ($d['kind'] ?? '') : '';
+            if (!in_array($kind, TaskForm::CLOUD_KINDS, true)) {
+                continue;
+            }
+            $kept = $before[(string) ($d['id'] ?? '')] ?? null;
+            if (is_string($kept) && ($existing[$kept]['kind'] ?? null) === $kind) {
+                $task['destinations'][$i]['credential_id'] = $kept;
+                continue;
+            }
+            $accounts = array_values(array_filter($existing, fn($c) => ($c['kind'] ?? null) === $kind));
+            if (count($accounts) !== 1) {
+                return ['key' => $accounts === [] ? 'templates.apply.cloud_account' : 'templates.apply.cloud_accounts',
+                        'params' => ['service' => ['key' => 'credential.kind.' . $kind, 'params' => []]]];
+            }
+            $task['destinations'][$i]['credential_id'] = (string) $accounts[0]['id'];
+        }
+        return null;
     }
 
     public static function accountName(array $c): string

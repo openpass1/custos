@@ -457,6 +457,8 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - Home: the 30-day heat map moved up under "Needs attention"; the Tasks tile has a bar of states with words;
 - the notice "New machine … waits for approval" becomes read by itself once the machine is approved. Close older ones with "Mark all as read".
 
+**Version 0.4.9.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
+
 ## What to keep in backups
 
 - the `custos` database;

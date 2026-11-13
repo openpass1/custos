@@ -22,7 +22,9 @@ final class TaskForm
     public const BACKUP_TYPES = ['full', 'incremental', 'differential', 'mirror'];
     public const MIRROR_MODES = ['exact', 'safe'];
     public const SOURCE_KINDS = ['folder', 'file', 'unc'];
-    public const DESTINATION_KINDS = ['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav'];
+    public const DESTINATION_KINDS = ['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav', 'gdrive', 'yadisk', 'dropbox'];
+    /** Cloud drives (client stage 4b): their accounts are connected on the machine only, in the browser (7.5). */
+    public const CLOUD_KINDS = ['gdrive', 'yadisk', 'dropbox'];
     /** Destinations a 7z writer can go back in (client spec 6.5). */
     public const SEEKABLE = ['local', 'unc', 'usb', 'sftp'];
     public const HOST_KINDS = ['ftp', 'ftps', 'sftp', 'webdav'];
@@ -41,7 +43,8 @@ final class TaskForm
     public const ACCOUNT_KINDS = ['windows', 'ftp', 'sftp', 's3', 'webdav', 'archive_password', 'db'];
 
     /** Kind of the account a source or destination needs; kinds missing here take no account. */
-    public const CREDENTIAL_KINDS = ['unc' => 'windows', 'ftp' => 'ftp', 'ftps' => 'ftp', 'sftp' => 'sftp', 's3' => 's3', 'webdav' => 'webdav'];
+    public const CREDENTIAL_KINDS = ['unc' => 'windows', 'ftp' => 'ftp', 'ftps' => 'ftp', 'sftp' => 'sftp', 's3' => 's3', 'webdav' => 'webdav',
+                                     'gdrive' => 'gdrive', 'yadisk' => 'yadisk', 'dropbox' => 'dropbox'];
     /** Accounts whose secret is made on the machine (an SSH key, a cloud drive sign-in): the site cannot replace it. */
     public const MACHINE_ONLY_SECRETS = ['ssh_key', 'gdrive', 'yadisk', 'dropbox'];
 
@@ -203,6 +206,14 @@ final class TaskForm
         }
         $task['filters'] = $this->filters(self::sub($base, 'filters'), (array) ($post['filters'] ?? []));
         $task['destinations'] = $this->destinations(self::sub($base, 'destinations'), (array) ($post['destinations'] ?? []));
+        if ($task['backup_type'] === 'mirror') {
+            // A mirror looks at and replaces single files: not on a cloud drive (client spec 6.3).
+            foreach ($task['destinations'] as $n => $d) {
+                if (in_array($d['kind'] ?? '', self::CLOUD_KINDS, true)) {
+                    $this->error('task_form.error.cloud_mirror', ['what' => $this->label('task_form.destination', $n + 1)]);
+                }
+            }
+        }
         $task['layout'] = $this->layout(self::sub($base, 'layout'), (array) ($post['layout'] ?? []));
         $task['archive'] = $this->archive(self::sub($base, 'archive'), (array) ($post['archive'] ?? []), $task['destinations']);
         $verify = (array) ($post['verify'] ?? []);
@@ -337,6 +348,13 @@ final class TaskForm
                         $this->error('task_form.error.usb_label', ['what' => $what]);
                     }
                     break;
+                case 'gdrive':
+                case 'yadisk':
+                case 'dropbox':
+                    // The folder lies inside the folder of CUSTOS in the account; empty is that folder itself.
+                    $item['path'] = trim($path, '/\\');
+                    $item['part_mb'] = $this->int($row, 'part_mb', 0, 1_000_000, 'task_form.field.part_mb', $n);
+                    break;
                 case 's3':
                     $item['endpoint'] = self::nullIfEmpty(trim(self::str($row, 'endpoint')));
                     $item['bucket'] = trim(self::str($row, 'bucket'));
@@ -352,8 +370,15 @@ final class TaskForm
                         $this->error('task_form.error.host', ['what' => $what]);
                     }
             }
+            if (!in_array($kind, self::CLOUD_KINDS, true) && isset($item['part_mb'])) {
+                $item['part_mb'] = 0;
+            }
             $credentialKind = self::CREDENTIAL_KINDS[$kind] ?? null;
-            $item['credential_id'] = $credentialKind === null ? null : $this->credential($row, $credentialKind, 'task_form.destination', $n, $item);
+            if (in_array($kind, self::CLOUD_KINDS, true)) {
+                $item['credential_id'] = $this->cloudAccount($row, $kind, $what, $item);
+            } else {
+                $item['credential_id'] = $credentialKind === null ? null : $this->credential($row, $credentialKind, 'task_form.destination', $n, $item);
+            }
             $result[] = $item;
         }
         if ($result === []) {
@@ -555,6 +580,24 @@ final class TaskForm
             return null;
         }
         return isset($this->credentials[$choice]) ? $choice : null;
+    }
+
+    /**
+     * The account of a cloud drive: one already connected on the machine, never a new one (7.5). A template names
+     * none: applying it takes the account of that service connected on each machine (Templates::apply).
+     */
+    private function cloudAccount(array $row, string $kind, array $what, array &$item): ?string
+    {
+        unset($item['_cred']);
+        if ($this->template) {
+            return null;
+        }
+        $choice = self::str($row, 'credential');
+        if ($choice !== '' && $choice !== 'new' && ($this->credentials[$choice]['kind'] ?? null) === $kind) {
+            return $choice;
+        }
+        $this->error('task_form.error.cloud_account', ['what' => $what, 'service' => ['key' => 'credential.kind.' . $kind, 'params' => []]]);
+        return null;
     }
 
     // ---- small helpers --------------------------------------------------------------------------------------------
