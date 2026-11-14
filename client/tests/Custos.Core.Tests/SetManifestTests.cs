@@ -73,6 +73,41 @@ public sealed class SetManifestTests
         Assert.Contains("\"parent_full_run_id\": null", Encoding.UTF8.GetString(stream.ToArray()), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Each_file_is_one_line_with_letters_as_they_are()
+    {
+        var files = Files(5);
+        string text = Encoding.UTF8.GetString(Write(files));
+        string[] lines = text.Split('\n');
+
+        // Cyrillic is UTF-8, not \uXXXX: 2 bytes a letter instead of 6, and the file can be read in Notepad.
+        Assert.Contains("файл 0.txt", text, StringComparison.Ordinal);
+        Assert.DoesNotContain('\r', text);
+        Assert.DoesNotContain("\\u0", text, StringComparison.Ordinal);
+        Assert.Equal(files.Count, lines.Count(l => l.StartsWith("    {\"path\":", StringComparison.Ordinal)));
+        Assert.Contains("  \"files\": [", lines);
+        Assert.Contains("  \"task_name\": \"Docs\",", lines);
+    }
+
+    [Fact]
+    public void Paths_with_quotes_slashes_tabs_and_emoji_survive_a_round_trip()
+    {
+        var modified = new DateTime(2026, 11, 13, 10, 0, 0, DateTimeKind.Utc).AddTicks(1234567);
+        List<ManifestFile> files =
+        [
+            new("Data\\\"кавычки\" и\tтаб\\😀 <b>&'+.txt", 1, modified, true, new string('b', 64)),
+            new("/var/www/site/data/www/example.com/index.php", 2, modified, false, null)
+            {
+                Posix = new ManifestPosix("f", "644", 1001, 1001, "site", "site", null, modified),
+            },
+            new("/srv/\uFFFD.bin", 3, modified, true, null) { PathBase64 = "L3Nydi//LmJpbg==" },
+        ];
+
+        var read = SetManifest.ReadFiles(new MemoryStream(Write(files)));
+
+        Assert.Equal(files, read);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("[]")]
