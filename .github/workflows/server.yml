@@ -102,3 +102,39 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 14
+
+      # The same site with the version X.Y.Z.1, zipped like a release package: only for trying the «Update» button
+      # (upload from file) on a site where X.Y.Z is installed. Goes up as it is, so it is uploaded to the site as
+      # downloaded.
+      - name: Build the test update package
+        if: matrix.php == '8.4'
+        id: testpkg
+        run: |
+          version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" ../dist/server/src/App.php)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          rm -rf ../testpkg && mkdir ../testpkg
+          cp -a ../dist/server ../testpkg/server
+          sed -i "s/const VERSION = '[^']*'/const VERSION = '$version.1'/" ../testpkg/server/src/App.php
+          (cd ../testpkg && zip -q -r -X "../custos-server-$version.1-test.zip" server)
+
+      - name: Upload the test update package
+        if: matrix.php == '8.4'
+        uses: actions/upload-artifact@v7
+        with:
+          path: custos-server-${{ steps.testpkg.outputs.version }}.1-test.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Say what the files are for
+        if: matrix.php == '8.4'
+        run: |
+          v='${{ steps.testpkg.outputs.version }}'
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ### Сайт CUSTOS ${v}: что скачивать
+
+          | Файл | Что это |
+          |---|---|
+          | \`custos-server\` | Сайт версии ${v} (zip, внутри папка \`server\`). Ставится и обновляется по INSTALL.md. |
+          | \`custos-server-${v}.1-test.zip\` | Пробное обновление: тот же сайт с версией ${v}.1. Нужно только для проверки кнопки «Обновить» на сайте, где уже стоит ${v}: «Обновления» → «Сайт мониторинга» → «Обновить из файла». Загружается на сайт как есть, без распаковки. |
+          EOF
