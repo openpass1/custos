@@ -533,7 +533,7 @@ The script asks for the site address (it suggests `http://server-IP`) and the lo
 ✅ At the end, a block `CUSTOS Monitor is installed`: the site address, the connection string for the program, where the files are. The site is in `/var/www/custos/server`, the database password is in `config/config.php`.
 
 - Running it again is safe: settings, keys, the database and users stay.
-- Updating: `sudo bash install.sh --update`. The script downloads the newest release, checks its SHA-256, unpacks it over the site and updates the database.
+- Updating: with "Update the site to …" under Updates, or `sudo bash install.sh --update`. The script downloads the newest release, checks its SHA-256 and installs it with `bin/update.php`, like the button of the site: if anything fails, the old version comes back by itself. Without access to GitHub: `sudo bash install.sh --update --package=custos-server-1.0.1.zip`.
 - HTTPS: if the site has a public name that points to this server, add `--https`. The Let's Encrypt certificate renews by itself.
 - If the server cannot reach GitHub, download the package (step 1), put it next to the script and run `sudo bash install.sh --package=custos-server-1.0.0.zip` (with the name of your file).
 - All options: `bash install.sh --help`.
