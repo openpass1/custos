@@ -53,7 +53,7 @@ jobs:
           digest() { echo "$assets" | awk -v n="$1" '$1 == n { sub(/^sha256:/, "", $2); print $2 }'; }
           installer="7z${short}-x64.exe"
           {
-            echo "Вышла 7-Zip $latest, в CUSTOS сейчас $pinned. Перейти на новую версию: заменить значения в \`client/installer/7-zip.json\` на эти, собрать и проверить на виртуалке. Уже установленные компьютеры можно обновить и без новой сборки: раздел «Замена 7z.dll» в \`client/README.md\`."
+            echo "Вышла 7-Zip $latest, в CUSTOS сейчас $pinned. Перейти на новую версию: заменить значения в \`client/installer/7-zip.json\` на эти, собрать и проверить на виртуалке. Уже установленные компьютеры можно обновить и без новой сборки: раздел «Замена 7z.dll» в \`client/README.ru.md\`."
             echo
             echo "7-Zip $latest is out; CUSTOS ships $pinned. Release: https://github.com/ip7z/7zip/releases/tag/$latest"
             echo

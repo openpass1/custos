@@ -34,7 +34,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
   once.
 - Google Drive works in the released program as it is. For Yandex Disk and Dropbox, register a free application of
   your own with the service and enter it under Settings → Cloud drives → Own applications…
-  ([steps, in Russian](client/README.md#приложения-custos-у-сервисов)).
+  ([steps](client/README.md#custos-applications-at-the-services)).
 - 7z or ZIP archives with AES-256 encryption, 7z volumes, verification of new and stored copies.
 - Retention by count, by age or grandfather-father-son (GFS). A set is deleted only as a whole, never after a failed
   run, and the last good full copy is always kept.
@@ -77,7 +77,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
 
 | Document | What is in it |
 |---|---|
-| [client/README.md](client/README.md) | Building the client; databases, Linux servers, remote destinations, moving from Cobian Backup, files on the computer (parts in Russian) |
+| [client/README.md](client/README.md) | Building the client; databases, Linux servers, remote destinations, cloud drives, updates, moving tasks and from Cobian Backup, files on the computer |
 | [server/INSTALL.en.md](server/INSTALL.en.md), [server/INSTALL.md](server/INSTALL.md) | Installing and updating the site on CloudPanel or plain nginx, Telegram, e-mail, Zabbix |
 | [server/README.md](server/README.md) | How the site is built, tests, the fake agent |
 | [helper/README.md](helper/README.md) | custos-helper on Linux servers (in Russian) |

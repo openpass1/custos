@@ -19,7 +19,7 @@ CUSTOS состоит из двух частей. Программа для Wind
 | Что это | Программа резервного копирования: служба Windows и значок в трее | Сайт: сводка, уведомления, удалённое управление |
 | Где работает | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64) | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ |
 | Скачать | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<версия>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<версия>.zip` |
-| Инструкция | [client/README.md](client/README.md) | [server/INSTALL.md](server/INSTALL.md) |
+| Инструкция | [client/README.ru.md](client/README.ru.md) | [server/INSTALL.md](server/INSTALL.md) |
 
 <img src="docs/screenshots/ru/client-main-window.png" alt="CUSTOS для Windows: главное окно со списком заданий и карточкой выбранного задания">
 
@@ -35,7 +35,7 @@ CUSTOS состоит из двух частей. Программа для Wind
   Object Lock), Google Диск, Яндекс Диск и Dropbox. Одно задание может писать в несколько назначений сразу.
 - Google Диск работает в выпущенной программе сразу. Для Яндекс Диска и Dropbox зарегистрируйте у сервиса своё
   бесплатное приложение и впишите его в «Настройки» → «Облачные диски» → «Свои приложения…»
-  ([по шагам](client/README.md#приложения-custos-у-сервисов)).
+  ([по шагам](client/README.ru.md#приложения-custos-у-сервисов)).
 - Архивы 7z и ZIP с шифрованием AES-256, тома 7z, проверка новых и хранящихся копий.
 - Хранение по количеству, по возрасту или по схеме «дед-отец-сын» (GFS). Набор удаляется только целиком, никогда
   после неудачного запуска, а последняя удачная полная копия остаётся всегда.
@@ -80,7 +80,7 @@ CUSTOS состоит из двух частей. Программа для Wind
 
 | Документ | Что в нём |
 |---|---|
-| [client/README.md](client/README.md) | Сборка клиента; базы данных, Linux-серверы, назначения на серверах, переход с Cobian Backup, файлы на компьютере |
+| [client/README.ru.md](client/README.ru.md) | Сборка клиента; базы данных, Linux-серверы, назначения на серверах, облачные диски, обновления, перенос заданий и переход с Cobian Backup, файлы на компьютере |
 | [server/INSTALL.md](server/INSTALL.md), [server/INSTALL.en.md](server/INSTALL.en.md) | Установка и обновление сайта на CloudPanel или на чистом nginx, Telegram, почта, Zabbix |
 | [server/README.md](server/README.md) | Устройство сайта, тесты, имитатор агента (на английском) |
 | [helper/README.md](helper/README.md) | custos-helper на Linux-серверах |
