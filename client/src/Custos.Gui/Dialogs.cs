@@ -1612,7 +1612,8 @@ internal sealed class SettingsForm : DialogForm
         var update = _monitor.Snapshot?.ProgramUpdate ?? new ProgramUpdateInfo();
         bool site = update.ManagedBySite;
         _checkUpdates.Enabled = _canEdit && _isAdmin && !site;
-        _updatesCheck.Enabled = _isAdmin && _monitor.IsConnected && !site;
+        // Off (or a site decides): a check would show nowhere, so there is nothing to press.
+        _updatesCheck.Enabled = _isAdmin && _monitor.IsConnected && update.Checking;
         _toolTip.SetToolTip(_updatesCheck, _isAdmin ? null : Strings.UpdateAdminOnly);
         _updatesState.ForeColor = update.Error is null || site ? SystemColors.ControlText : Glyphs.WarningText;
         if (site)
@@ -1625,8 +1626,9 @@ internal sealed class SettingsForm : DialogForm
             ?? (update.Latest is null ? Strings.UpdatesNone
                 : update.Available ? Strings.Format(Strings.UpdatesAvailable, update.Latest)
                 : Strings.Format(Strings.UpdatesLatest, CustosInfo.Version));
-        _updatesState.Text = update.CheckedAt is { } at ? Strings.Format(Strings.UpdatesLastCheck, Ui.Time(at), found)
-            : update.Checking ? Strings.UpdatesNever : Strings.UpdatesOff;
+        _updatesState.Text = !update.Checking ? Strings.UpdatesOff
+            : update.CheckedAt is { } at ? Strings.Format(Strings.UpdatesLastCheck, Ui.Time(at), found)
+            : Strings.UpdatesNever;
     }
 
     /// <summary>«Проверить сейчас»: the service asks GitHub at once.</summary>

@@ -74,8 +74,23 @@ public sealed class ProgramUpdateTests
             Assert.False(Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.UpdatesCheckNow).Enabled);
         }
 
+        // Turned off: the last check is not shown as if it still went on.
+        var off = Samples.Snapshot(3);
+        off.Settings.CheckUpdates = false;
+        off.ProgramUpdate = new ProgramUpdateInfo { CheckedAt = new DateTimeOffset(2026, 11, 14, 9, 0, 0, TimeSpan.Zero), Latest = "99.0.0" };
+        monitor.SimulateSnapshot(off);
+        using (var settings = new SettingsForm(monitor))
+        {
+            settings.Show();
+            Sta.Pump();
+
+            Assert.False(Assert.Single(Sta.Find<CheckBox>(settings), c => c.Text == Strings.CheckUpdates).Checked);
+            Assert.True(Sta.Shows(settings, Strings.UpdatesOff));
+            Assert.False(Assert.Single(Sta.Find<Button>(settings), b => b.Text == Strings.UpdatesCheckNow).Enabled);
+        }
+
         // Connected to a monitoring site: the site decides, GitHub is not asked.
-        var managed = Samples.Snapshot(3);
+        var managed = Samples.Snapshot(4);
         managed.Settings.CheckUpdates = false;
         managed.ProgramUpdate = new ProgramUpdateInfo { ManagedBySite = true };
         monitor.SimulateSnapshot(managed);
