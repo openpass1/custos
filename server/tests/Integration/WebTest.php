@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Custos\Tests\Integration;
 
+use Custos\Http\Web\Controller\AgentsController;
 use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
@@ -203,6 +204,27 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         $this->assertStringContainsString('<title>Настройки · Backup monitor</title>', $this->http('GET', '/settings')[1]);
 
+        // Log out after inactivity (Settings → General): days, 7 by default, 0 = never.
+        $this->assertMatchesRegularExpression('/name="logout_after_days" value="7"/', $this->http('GET', '/settings')[1]);
+        [$status, $body] = $this->post('/settings', ['logout_after_days' => '-5']);
+        $this->assertSame(422, $status);
+        $this->assertStringContainsString('Нужно целое число от 0 до 365', $body);
+        [$status] = $this->post('/settings', ['logout_after_days' => '1']);
+        $this->assertSame(303, $status, 'the other fields of the page keep their values');
+        $this->idle(12 * 3600);
+        $this->assertSame(200, $this->http('GET', '/settings')[0], 'half a day is not enough');
+        $this->idle(30 * 3600);
+        [$status, , $headers] = $this->http('GET', '/settings');
+        $this->assertSame(303, $status, 'more than a day without activity ends the login');
+        $this->assertStringEndsWith('/login', $headers['location']);
+        $this->assertStringContainsString('Сеанс завершён из-за бездействия', $this->http('GET', '/login')[1]);
+        $this->post('/login', ['login' => 'admin', 'password' => self::PASSWORD]);
+        $this->post('/settings', ['logout_after_days' => '0']);
+        $this->idle(400 * 86400);
+        $this->assertSame(200, $this->http('GET', '/settings')[0], '0: no logout for inactivity');
+        $this->post('/settings', ['logout_after_days' => '7']);
+        $this->assertSame('7', (string) Db::connect(TestEnv::db())->value("SELECT value FROM settings WHERE name = 'logout_after_days'"));
+
         $before = $this->connectionString();
         $this->post('/settings/registration-key', []);
         $this->assertNotSame($before, $this->connectionString());
@@ -251,8 +273,35 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('Documents', $live['parts']['attention']);
         $this->assertSame(0, $live['bell'], 'the notice of the registration was settled by the approval');
 
-        [, $live] = $this->http('GET', "/agents/$agentId/live");
-        $this->assertSame(['now', 'problems', 'tasks'], array_keys(json_decode($live, true)['parts']));
+        // A page with live parts asks for itself again (app.js): the same page with its parts, but a message after an
+        // action is left for the page the person opens next.
+        [$status, $machine] = $this->http('GET', "/agents/$agentId");
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('<main data-live-page="' . AgentsController::REFRESH_S . '">', $machine);
+        foreach (['head', 'facts', 'problems', 'now', 'tasks', 'storage', 'runs', 'commands'] as $part) {
+            $this->assertStringContainsString('data-part="' . $part . '"', $machine);
+        }
+        $this->assertMatchesRegularExpression('#data-nav-count="problems">\d+</span>#', $machine, 'the open problem is counted in the menu');
+        $this->post("/agents/$agentId/rename", ['display_name' => '']);
+        [$status, $live] = $this->http('GET', "/agents/$agentId", null, ['X-Custos-Live: 1']);
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('data-part="tasks"', $live);
+        $this->assertStringContainsString('Documents', $live);
+        $this->assertStringNotContainsString('class="toasts"', $live, 'a refresh does not take the message of the rename');
+        [, $machine] = $this->http('GET', "/agents/$agentId");
+        $this->assertStringContainsString('class="toasts"', $machine, 'the message waits for the page the person opens');
+        foreach (['/agents' => ['pending', 'chips', 'list'], "/agents/$agentId/tasks/$taskId" => ['head', 'state', 'problems', 'slots', 'runs', 'commands'],
+                  '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['machines'],
+                  "/agents/$agentId/settings" => ['state', 'form']] as $path => $parts) {
+            [$status, $page] = $this->http('GET', $path, null, ['X-Custos-Live: 1']);
+            $this->assertSame(200, $status, $path);
+            $this->assertStringContainsString('<main data-live-page=', $page, $path);
+            foreach ($parts as $part) {
+                $this->assertStringContainsString('data-part="' . $part . '"', $page, "$path: $part");
+            }
+        }
+        [, $groups] = $this->http('GET', '/groups');
+        $this->assertStringNotContainsString('data-live-page', $groups, 'a page without live parts does not ask for itself');
 
         [$status, $task] = $this->http('GET', "/agents/$agentId/tasks/$taskId");
         $this->assertSame(200, $status);
@@ -288,6 +337,11 @@ final class WebTest extends TestCase
             [$status, $json] = $this->http('GET', '/dashboard/live');
             $this->assertSame(401, $status);
             $this->assertSame(['error' => 'login'], json_decode($json, true));
+            [$status, $json] = $this->http('GET', "/agents/$agentId", null, ['X-Custos-Live: 1']);
+            $this->assertSame(401, $status, 'a page refreshing itself is told to log in, not sent to the login page');
+            $this->assertSame(['error' => 'login'], json_decode($json, true));
+            [$status] = $this->http('GET', "/agents/$agentId");
+            $this->assertContains($status, [302, 303], 'opened by a person, the page sends them to the login');
         } finally {
             self::$cookies = $jar;
         }
@@ -586,6 +640,16 @@ final class WebTest extends TestCase
         return $overrides + ['server_name' => 'CUSTOS', 'heartbeat_interval_s' => '60', 'offline_after_min' => '60', 'ip_allow_site' => '', 'ip_allow_agents' => ''];
     }
 
+    /** Makes the login of this cookie jar look idle for so many seconds (moves last_activity in its session file). */
+    private function idle(int $seconds): void
+    {
+        preg_match('/\tCUSTOSSID\t(\S+)/', (string) file_get_contents(self::$cookies), $m);
+        $file = TestEnv::dir() . '/var/sessions/sess_' . ($m[1] ?? 'none');
+        $data = (string) file_get_contents($file);
+        $this->assertMatchesRegularExpression('/last_activity\|i:\d+;/', $data);
+        file_put_contents($file, preg_replace('/last_activity\|i:\d+;/', 'last_activity|i:' . (time() - $seconds) . ';', $data));
+    }
+
     /** The connection string of the settings page: the site address, "#" and the registration code. */
     private function connectionString(): string
     {
@@ -671,13 +735,15 @@ final class WebTest extends TestCase
      *
      * @return array{0: int, 1: string, 2: array<string, string>}
      */
-    private function http(string $method, string $path, array|string|null $fields = null): array
+    /** @param list<string> $send extra request headers ("Name: value") */
+    private function http(string $method, string $path, array|string|null $fields = null, array $send = []): array
     {
         $headers = [];
         $curl = curl_init(self::$base . $path);
         curl_setopt_array($curl, [
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $send,
             CURLOPT_COOKIEJAR => self::$cookies,
             CURLOPT_COOKIEFILE => self::$cookies,
             CURLOPT_PROXY => '',

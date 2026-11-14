@@ -130,6 +130,8 @@ $short = fn(string $sha) => substr($sha, 0, 16) . '…';
 </section>
 </div>
 
+<?php /* Live part: versions and updates on their way change by themselves (app.js) until a machine is ticked here. */ ?>
+<div data-part="machines">
 <section class="panel">
     <h2><?= e(t('updates.machines')) ?></h2>
     <?php if ($agents === []): ?>
@@ -185,3 +187,4 @@ $short = fn(string $sha) => substr($sha, 0, 16) . '…';
     </form>
     <?php endif ?>
 </section>
+</div>

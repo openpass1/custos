@@ -20,6 +20,8 @@ use Custos\Infra\Time;
 final class TasksController extends Controller
 {
     public const SLOT_DAYS = 30;
+    /** The task page refreshes its live parts this often (seconds). */
+    public const REFRESH_S = 10;
 
     /** Commands of the task page and what they need: an edit is refused by an agent that does not allow remote edits. */
     private const COMMANDS = ['run' => 'task.run', 'stop' => 'task.stop', 'pause' => 'task.pause', 'resume' => 'task.resume',
@@ -77,6 +79,7 @@ final class TasksController extends Controller
             'pending' => $this->app->taskEdits()->pending($agent, $taskId),
             'templateLink' => $this->app->templates()->linkOf($agentId, $taskId),
             'versionCount' => (int) $db->value('SELECT COUNT(*) FROM task_versions WHERE agent_id = ? AND task_id = ?', [$agentId, $taskId]),
+            'live' => self::REFRESH_S,
         ], $task['name'] . ' · ' . Agents::name($agent));
     }
 

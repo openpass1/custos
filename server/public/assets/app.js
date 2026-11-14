@@ -354,16 +354,28 @@ document.addEventListener('change', (event) => {
     }
 });
 
-// Live parts: a [data-live] block asks its URL every data-live-every seconds and replaces each
-// [data-part] inside it with the HTML that comes back; the bell count is refreshed too.
-// A page whose session has ended is reloaded so that the login form appears.
+// Live parts: blocks of a page that show what agents and cron change carry data-part="name" and are put in place again
+// every few seconds, so that a page left open shows a new machine, the tasks it sent, a finished run or a change the
+// agent confirmed without F5.
+// - <main data-live-page="10"> (layout.php, 'live' => 10 in the controller): the page asks for itself again (header
+//   X-Custos-Live) and takes the parts with the same names from the answer, and the counters of the menu and the bell.
+// - [data-live="url"] with data-live-every (dashboard, wall screen): the URL answers {parts: {name: html}, bell, counts}.
+// A part is left as it is for a round while it is in use: a field of it has the focus or was changed (a form being
+// filled in keeps what was typed until it is sent), text in it is selected, a menu of it is open, a form of it is on
+// its way, or a dialog is open over the page. A folded block (details) stays open or closed as the user left it.
+// The requests do not keep the session alive; a page whose session has ended is reloaded so that the login appears.
+// After a round that changed something, "custos:parts" goes to the document for the helpers below.
 (() => {
-    const block = document.querySelector('[data-live]');
+    const json = document.querySelector('[data-live]');
+    const block = json || document.querySelector('[data-live-page]');
     if (!block) {
         return;
     }
-    const url = block.getAttribute('data-live');
-    const every = Math.max(5, parseInt(block.getAttribute('data-live-every'), 10) || 15) * 1000;
+    const url = json ? json.getAttribute('data-live') : null;
+    const seconds = parseInt(json ? block.getAttribute('data-live-every') : block.getAttribute('data-live-page'), 10);
+    const every = Math.max(5, seconds || 15) * 1000;
+    const scope = json ? block : document;
+    const last = new WeakMap(); // the HTML each part got last time, to leave a part alone when nothing changed
     let busy = false;
 
     // What changed is shown for a moment: a row whose state changed ([data-key] with a new data-sig) lights up, a new
@@ -416,11 +428,115 @@ document.addEventListener('change', (event) => {
         }
     };
 
+    // A field changed by hand keeps its part as it is until the page is sent or opened again.
+    const touch = (event) => {
+        const field = event.target;
+        if (field instanceof Element && field.matches('input, select, textarea')) {
+            const part = field.closest('[data-part]');
+            if (part) {
+                part.setAttribute('data-touched', '');
+            }
+        }
+    };
+    document.addEventListener('input', touch);
+    document.addEventListener('change', touch);
+
+    const inUse = (part) => {
+        const focus = document.activeElement;
+        if (part.hasAttribute('data-touched')
+            || (focus && part.contains(focus) && focus.matches('input, select, textarea, [contenteditable]'))
+            || part.querySelector('details.dropdown[open], form[data-sending]')) {
+            return true;
+        }
+        const selection = window.getSelection();
+        return !!selection && !selection.isCollapsed && selection.rangeCount > 0
+            && part.contains(selection.getRangeAt(0).commonAncestorContainer);
+    };
+
+    const folds = (part) => [...part.querySelectorAll('details:not(.dropdown)')];
+    const foldKey = (el, i) => el.id || el.getAttribute('data-key') || String(i);
+    const put = (part, html) => {
+        if (last.has(part) ? last.get(part) === html : part.innerHTML === html) {
+            last.set(part, html);
+            return false;
+        }
+        const open = new Map(folds(part).map((el, i) => [foldKey(el, i), el.open]));
+        const before = snapshot(part);
+        part.innerHTML = html;
+        last.set(part, html);
+        folds(part).forEach((el, i) => {
+            const was = open.get(foldKey(el, i));
+            if (was !== undefined && was !== el.open) {
+                el.open = was;
+            }
+        });
+        mark(part, before);
+        return true;
+    };
+
+    const counters = (bell, counts) => {
+        if (typeof bell === 'number') {
+            for (const el of document.querySelectorAll('[data-bell]')) {
+                const was = parseInt(el.textContent, 10) || 0;
+                el.textContent = String(bell);
+                el.hidden = bell === 0;
+                if (bell > was) {
+                    flag(el, 'bump', 700);
+                }
+            }
+        }
+        for (const [key, n] of Object.entries(counts || {})) {
+            for (const el of document.querySelectorAll('[data-nav-count="' + key + '"]')) {
+                const was = parseInt(el.textContent, 10) || 0;
+                el.textContent = String(n);
+                el.hidden = n === 0;
+                if (n > was) {
+                    flag(el, 'bump', 700);
+                }
+            }
+        }
+    };
+
     // The wall screen says so when the data it shows is getting old.
     const offline = (on) => {
-        for (const mark of block.querySelectorAll('[data-live-offline]')) {
-            mark.hidden = !on;
+        for (const el of block.querySelectorAll('[data-live-offline]')) {
+            el.hidden = !on;
         }
+    };
+
+    // The fresh parts, the bell and the menu counters: from the JSON of the live URL, or from the page itself.
+    const fetchFresh = async () => {
+        const response = await fetch(url || window.location.href, {
+            headers: url ? { 'Accept': 'application/json' } : { 'X-Custos-Live': '1' },
+            credentials: 'same-origin',
+            cache: 'no-store',
+        });
+        // 401: the session has ended; 403 on the wall screen: its token was replaced. The page shows why.
+        if (response.status === 401 || (response.status === 403 && block.hasAttribute('data-live-public'))) {
+            window.location.reload();
+            return null;
+        }
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        if (url) {
+            return response.json();
+        }
+        // Somewhere else now (the machine or task was deleted): the page stays as it is.
+        if (response.redirected) {
+            return {};
+        }
+        const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const parts = {};
+        for (const el of doc.querySelectorAll('[data-part]')) {
+            parts[el.getAttribute('data-part')] = el.innerHTML;
+        }
+        const bell = doc.querySelector('[data-bell]');
+        const counts = {};
+        for (const el of doc.querySelectorAll('[data-nav-count]')) {
+            counts[el.getAttribute('data-nav-count')] = parseInt(el.textContent, 10) || 0;
+        }
+        return { parts, bell: bell ? parseInt(bell.textContent, 10) || 0 : undefined, counts };
     };
 
     const refresh = async () => {
@@ -429,36 +545,25 @@ document.addEventListener('change', (event) => {
         }
         busy = true;
         try {
-            const response = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', cache: 'no-store' });
-            // 401: the session has ended; 403 on the wall screen: its token was replaced. The page shows why.
-            if (response.status === 401 || (response.status === 403 && block.hasAttribute('data-live-public'))) {
-                window.location.reload();
-                return;
-            }
-            if (!response.ok) {
-                offline(true);
+            const data = await fetchFresh();
+            if (data === null) {
                 return;
             }
             offline(false);
-            const data = await response.json();
+            // A question or a small form open over the page: its button may belong to a part, so nothing moves.
+            if (document.querySelector('dialog[open]')) {
+                return;
+            }
+            let changed = false;
             for (const [name, html] of Object.entries(data.parts || {})) {
-                const part = block.querySelector('[data-part="' + name + '"]');
-                // A form being filled in (or with focus inside) and an open menu are left alone until the next round.
-                if (part && !part.contains(document.activeElement) && !part.querySelector('details.dropdown[open]')) {
-                    const before = snapshot(part);
-                    part.innerHTML = html;
-                    mark(part, before);
+                const part = scope.querySelector('[data-part="' + name + '"]');
+                if (part && !inUse(part) && put(part, html)) {
+                    changed = true;
                 }
             }
-            if (typeof data.bell === 'number') {
-                for (const bell of document.querySelectorAll('[data-bell]')) {
-                    const was = parseInt(bell.textContent, 10) || 0;
-                    bell.textContent = String(data.bell);
-                    bell.hidden = data.bell === 0;
-                    if (data.bell > was) {
-                        flag(bell, 'bump', 700);
-                    }
-                }
+            counters(data.bell, data.counts);
+            if (changed) {
+                document.dispatchEvent(new CustomEvent('custos:parts'));
             }
         } catch {
             // The server is unreachable for a moment: try again on the next round.
@@ -630,16 +735,21 @@ document.addEventListener('change', (event) => {
         }
     }, true);
 
-    if (document.querySelector('[data-show-if], [data-editor]')) {
-        for (const el of document.querySelectorAll('[data-show-if]')) {
-            const form = el.closest('form');
-            if (form) {
-                form.noValidate = true;
-                form.setAttribute('data-check-visible', '');
+    const init = () => {
+        if (document.querySelector('[data-show-if], [data-editor]')) {
+            for (const el of document.querySelectorAll('[data-show-if]')) {
+                const form = el.closest('form');
+                if (form) {
+                    form.noValidate = true;
+                    form.setAttribute('data-check-visible', '');
+                }
             }
+            update(null);
         }
-        update(null);
-    }
+    };
+    init();
+    // A live part may bring a form with conditional parts (agent settings, updates): it is set up the same way.
+    document.addEventListener('custos:parts', init);
 })();
 
 // SMTP form: choosing SSL or STARTTLS fills in the usual port (465 or 587), unless a non-standard port was typed in;
@@ -906,19 +1016,25 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // Lists with quick choices and a search ([data-list-filter="id of the list"], the machine list): rows carry
-// data-flags and data-search; a group (tbody[data-group]) without a shown row hides with its heading.
+// data-flags and data-search; a group (tbody[data-group]) without a shown row hides with its heading. The list and
+// the choices are live parts (they come again from the server every few seconds): the choice made and the search typed
+// are applied to them again each time.
 (() => {
     for (const tools of document.querySelectorAll('[data-list-filter]')) {
-        const list = document.getElementById(tools.getAttribute('data-list-filter'));
-        if (!list) {
-            continue;
-        }
-        const chips = [...tools.querySelectorAll('[data-filter]')];
+        const id = tools.getAttribute('data-list-filter');
         const search = tools.querySelector('[data-list-search]');
-        const empty = list.querySelector('[data-list-empty]');
-        const table = list.querySelector('table');
-        let filter = (chips.find((chip) => chip.getAttribute('aria-pressed') === 'true') || { getAttribute: () => '' }).getAttribute('data-filter');
+        const pressed = tools.querySelector('[data-filter][aria-pressed="true"]');
+        let filter = pressed ? pressed.getAttribute('data-filter') || '' : '';
         const apply = () => {
+            for (const chip of tools.querySelectorAll('[data-filter]')) {
+                chip.setAttribute('aria-pressed', String((chip.getAttribute('data-filter') || '') === filter));
+            }
+            const list = document.getElementById(id);
+            if (!list) {
+                return;
+            }
+            const empty = list.querySelector('[data-list-empty]');
+            const table = list.querySelector('table');
             const words = (search ? search.value : '').trim().toLowerCase().split(/\s+/).filter(Boolean);
             let shown = 0;
             for (const body of list.querySelectorAll('tbody[data-group]')) {
@@ -940,15 +1056,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 table.hidden = shown === 0;
             }
         };
-        for (const chip of chips) {
-            chip.addEventListener('click', () => {
+        tools.addEventListener('click', (event) => {
+            const chip = event.target.closest('[data-filter]');
+            if (chip && !chip.disabled) {
                 filter = chip.getAttribute('data-filter') || '';
-                for (const other of chips) {
-                    other.setAttribute('aria-pressed', String(other === chip));
-                }
                 apply();
-            });
-        }
+            }
+        });
         if (search) {
             search.addEventListener('input', apply);
             search.addEventListener('keydown', (event) => {
@@ -961,5 +1075,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // The browser may bring back the search text when the page is opened again with "Back".
         apply();
         window.addEventListener('pageshow', apply);
+        document.addEventListener('custos:parts', apply);
     }
 })();

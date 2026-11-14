@@ -41,7 +41,7 @@ use Custos\Infra\ServerKeys;
  */
 final class App
 {
-    public const VERSION = '0.4.9';
+    public const VERSION = '0.4.10';
     /** Interface languages: lang/<code>.php. */
     public const LANGUAGES = ['ru', 'en'];
     public const DEFAULT_LANGUAGE = 'ru';
@@ -237,6 +237,15 @@ final class App
     }
 
     /** Statuses of all machines and tasks right now (or of one machine). */
+    /** @return array{agents: int, problems: int} counters of the menu: machines waiting for approval, open problems */
+    public function navCounts(): array
+    {
+        return [
+            'agents' => (int) $this->db()->value("SELECT COUNT(*) FROM agents WHERE status = 'pending'"),
+            'problems' => (int) $this->db()->value('SELECT COUNT(*) FROM problems WHERE closed_at IS NULL'),
+        ];
+    }
+
     public function board(?string $agentId = null, ?int $now = null): Board
     {
         return Board::load($this->db(), $this->settings(), $this->monitor(), $now ?? time(), $agentId);

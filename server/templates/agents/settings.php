@@ -14,6 +14,7 @@ $action = $values['password_action'] ?? 'keep';
     <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><?= e(Agents::name($agent)) ?></a></p>
 <h1><?= e(t('agent_settings.title', ['name' => Agents::name($agent)])) ?></h1>
 <p class="hint"><?= e(t('agent_settings.hint')) ?></p>
+<div data-part="state">
 <?php if ($refusal !== null): ?>
     <div class="alert alert-warn"><?= e($refusal) ?></div>
 <?php endif ?>
@@ -24,8 +25,11 @@ $action = $values['password_action'] ?? 'keep';
     <div class="alert alert-info"><?= e(t('agent_settings.pending', ['time' => fmt_time($pending['created_at']), 'by' => (string) $pending['created_by_login']])) ?>
         <?= badge($pending['status']) ?></div>
 <?php endif ?>
+</div>
 <?= $error('agent') ?>
 
+<?php /* Live part: filled in again when the agent sends its settings, as long as nothing was changed here (app.js). */ ?>
+<div data-part="form">
 <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/settings')) ?>" class="stack" autocomplete="off">
     <?= csrf_field() ?>
     <fieldset class="editor" data-scope<?= $refusal !== null ? ' disabled' : '' ?>>
@@ -88,3 +92,4 @@ $action = $values['password_action'] ?? 'keep';
         <?php endif ?>
     </fieldset>
 </form>
+</div>

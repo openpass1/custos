@@ -459,6 +459,16 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 
 **Version 0.4.9.** No migrations. The task and template editor knows cloud drives (Google Drive, Yandex Disk, Dropbox; client stage 4b). A cloud drive account is connected only in CUSTOS on the machine itself, in the browser; the site chooses an account already connected there and cannot create one. 7z and a mirror are not available for a cloud drive; the archive can be written in parts ("Part size, MB"). A template keeps no account: when it is applied, each machine gets the account of that service connected on it; if there is none or several, the site says so.
 
+**Version 0.4.10.** No migrations. Pages refresh themselves, no F5 needed: every 10–15 seconds the site quietly reads the data again and changes only what changed.
+- Machines: a new machine shows up under "Awaiting approval" by itself, and once approved its tasks appear in the list as soon as the agent sends them. The numbers on "All", "With problems" and the other buttons follow too; the chosen button and the search text stay;
+- the machine page: besides problems, "Now" and tasks, the head (online, last contact, the Approve and update buttons), "Machine details", "Storages", "Recent runs" and "Commands" (sent → done) are refreshed as well;
+- the task page (state, progress, problems, expected runs, runs, commands, "change not confirmed by the agent yet"), the run page (while it runs or while its log, also a requested one, is missing), Runs, Problems, Notices, the machine list of Updates and of a template, Agent settings;
+- the menu numbers (Machines waiting for approval, Problems) and the bell are refreshed on any of these pages;
+- what you are working with is left alone: an open "More" menu, selected text, an open question dialog, a folded or unfolded block stay as they are. A form in which you changed something (agent settings, machine ticks in Updates) is no longer refreshed until it is sent. The task and template editors never refresh themselves;
+- these requests do not extend the login: an open page does not prevent the logout after inactivity.
+
+Also in this version: the logout after inactivity is set on the site, Settings → General → "Log out after inactivity of", in days; 7 days by default (it used to be 8 hours), 0 = never log out for inactivity. The login still ends with "Log out" and when the browser is closed. The `session_timeout_hours` line of `config.php` is no longer used and can be deleted.
+
 ## What to keep in backups
 
 - the `custos` database;

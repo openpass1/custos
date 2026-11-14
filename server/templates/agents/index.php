@@ -2,11 +2,16 @@
 /**
  * @var \Custos\Domain\Board $board @var list<array{name: ?string, agents: list<array>}> $sections @var list<array> $groups
  * @var string $filter @var list<array> $pending @var array $byId @var bool $hasAgents
+ *
+ * New machines, the quick choices and the list are live parts (data-part): the page refreshes them by itself (app.js),
+ * so a machine that has just registered or sent its tasks shows up without reloading. The search and the group filter
+ * are outside them and keep what was typed or chosen.
  */
 use Custos\Domain\Agents;
 ?>
 <h1><?= e(t('agents.title')) ?></h1>
 
+<div data-part="pending">
 <?php if ($pending !== []): ?>
     <section class="panel attention">
         <h2><?= e(t('agents.pending.title')) ?></h2>
@@ -26,7 +31,7 @@ use Custos\Domain\Agents;
                 <tbody>
                 <?php foreach ($pending as $a): ?>
                     <?php $old = $a['reregistration_of'] === null ? null : ($byId[$a['reregistration_of']] ?? null); ?>
-                    <tr>
+                    <tr data-key="n<?= e($a['id']) ?>">
                         <td>
                             <a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['hostname']) ?></a>
                             <?php if ($old !== null): ?>
@@ -62,9 +67,12 @@ use Custos\Domain\Agents;
         </div>
     </section>
 <?php endif ?>
+</div>
 
 <?php if (!$hasAgents): ?>
-    <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/settings')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
+    <div data-part="list">
+        <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/settings')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
+    </div>
 <?php else: ?>
     <?php
     // Quick choices over the listed machines: with open problems, running a task now, offline. The search and the
@@ -98,7 +106,7 @@ use Custos\Domain\Agents;
     $dots = ['' => '', 'problem' => 'bad', 'running' => 'info', 'offline' => 'muted'];
     ?>
     <div class="list-tools" data-list-filter="agent-list">
-        <div class="chips" role="group" aria-label="<?= e(t('agents.chips')) ?>">
+        <div class="chips" role="group" aria-label="<?= e(t('agents.chips')) ?>" data-part="chips">
             <?php foreach ($chipCounts as $key => $n): ?>
                 <button type="button" class="chip" data-filter="<?= e($key) ?>" aria-pressed="<?= $key === '' ? 'true' : 'false' ?>"<?= $n === 0 && $key !== '' ? ' disabled' : '' ?>>
                     <?php if ($dots[$key] !== ''): ?><i class="dot dot-<?= $dots[$key] ?>"></i><?php endif ?><?= e(t('agents.chip.' . ($key === '' ? 'all' : $key))) ?> <b><?= $n ?></b></button>
@@ -124,6 +132,7 @@ use Custos\Domain\Agents;
         </div>
     </div>
 
+    <div data-part="list">
     <?php if ($sections === []): ?>
         <p class="empty"><?= e(t('agents.filter.empty')) ?></p>
     <?php else: ?>
@@ -145,7 +154,9 @@ use Custos\Domain\Agents;
                             <tr class="group-row"><th colspan="5"><?= e($section['name']) ?> <span class="count"><?= count($section['agents']) ?></span></th></tr>
                         <?php endif ?>
                         <?php foreach ($section['agents'] as $a): ?>
-                            <tr data-flags="<?= e(implode(' ', $flags($a))) ?>" data-search="<?= e(mb_strtolower($a['name'] . ' ' . $a['hostname'])) ?>">
+                            <?php $agentTasks = $board->tasksOf($a['id']); ?>
+                            <tr data-flags="<?= e(implode(' ', $flags($a))) ?>" data-search="<?= e(mb_strtolower($a['name'] . ' ' . $a['hostname'])) ?>"
+                                data-key="a<?= e($a['id']) ?>" data-sig="<?= e(implode('|', [$a['status'], $a['online'] ? 'on' : 'off', implode(',', array_column($agentTasks, 'status'))])) ?>">
                                 <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e($a['name']) ?></a>
                                     <?php if ($a['name'] !== $a['hostname']): ?><div class="note"><?= e($a['hostname']) ?></div><?php endif ?>
                                 </td>
@@ -159,7 +170,6 @@ use Custos\Domain\Agents;
                                 <td class="nowrap" data-label="<?= e(t('agents.col.last_seen')) ?>" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
                                 <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?></td>
                                 <td class="pills card-end">
-                                    <?php $agentTasks = $board->tasksOf($a['id']); ?>
                                     <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
                                     <?php foreach ($agentTasks as $task): ?>
                                         <?php $agent = $a; include __DIR__ . '/_pill.php'; ?>
@@ -174,6 +184,7 @@ use Custos\Domain\Agents;
             <p class="empty" data-list-empty hidden><?= e(t('agents.search.empty')) ?></p>
         </section>
     <?php endif ?>
+    </div>
     <p class="legend note">
         <?php foreach (['ok', 'warning', 'error', 'missed', 'running', 'missed_offline', 'stale', 'never', 'disabled'] as $s): ?>
             <span class="pill pill-<?= e(status_class($s)) ?>"><?= e(t('status.' . $s)) ?></span>

@@ -18,9 +18,6 @@ return [
     // Time zone used to show dates on the site (IANA name, for example Europe/Berlin).
     'timezone' => 'UTC',
 
-    // Log out after this many hours without activity.
-    'session_timeout_hours' => 8,
-
     // Reverse proxies in front of the site whose X-Forwarded-For and X-Forwarded-Proto headers are trusted
     // (list of addresses or CIDR ranges). Leave empty when nginx and PHP run on this server without a proxy.
     'trusted_proxies' => [],

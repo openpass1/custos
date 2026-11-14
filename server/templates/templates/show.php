@@ -67,7 +67,8 @@ $outdated = count(array_filter($links, fn($l) => (int) $l['template_revision'] <
     </form>
 </section>
 
-<section class="panel">
+<?php /* Live part: whether the agents took the template shows up by itself (app.js). */ ?>
+<section class="panel" data-part="machines">
     <h2><?= e(t('templates.machines')) ?>
         <?php if ($outdated > 0): ?><?= badge('warning', t('templates.outdated', ['n' => $outdated])) ?><?php endif ?></h2>
     <?php if ($links === []): ?>

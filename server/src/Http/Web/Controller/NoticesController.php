@@ -11,6 +11,8 @@ use Custos\Http\Web\Controller;
 final class NoticesController extends Controller
 {
     public const PER_PAGE = 50;
+    /** The page refreshes its list this often (seconds). */
+    public const REFRESH_S = 15;
 
     public function index(): Response
     {
@@ -22,6 +24,7 @@ final class NoticesController extends Controller
             'unread' => $notices->unreadCount(),
             'page' => $page,
             'pages' => max(1, (int) ceil($notices->count() / self::PER_PAGE)),
+            'live' => self::REFRESH_S,
         ], $this->t('notices.title'));
     }
 
