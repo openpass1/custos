@@ -344,7 +344,7 @@ ReadmeMissing	{0} «{1}» was not dumped: {2}	{0} «{1}»: дамп не сня�
 # Linux servers over SSH (CUSTOS-remote-pull.md, stage 2a)
 RemoteHostKeyNew	{0}: the server shows the key {1}. Check it and confirm it in the task.	{0}: сервер показывает ключ {1}. Сверьте его и подтвердите в задании.
 RemoteHostKeyChanged	{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server was reinstalled, check the new key and confirm it in the task; otherwise someone may be in the way.	{0}: КЛЮЧ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не читались. Если сервер переустанавливали, сверьте новый ключ и подтвердите его в задании; иначе соединение могли перехватить.
-RemoteKeyRefused	{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task on the server again.	{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Выполните на сервере блок установки из задания ещё раз.
+RemoteKeyRefused	{0}: the server does not accept the key of CUSTOS for the user «{1}». If the task has an office IP, the key works only from that address: check which address this computer goes out to the internet from, add it to «Office IP» separated by a comma and run the install block on the server again. Otherwise run the install block from the task on the server again.	{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Если в задании указан «IP офиса», ключ работает только с этого адреса: проверьте, с какого адреса этот компьютер выходит в интернет, допишите его в «IP офиса» через запятую и выполните блок установки на сервере ещё раз. Иначе просто выполните на сервере блок установки из задания ещё раз.
 RemoteUnreachable	{0}: no connection: {1}	{0}: нет соединения: {1}
 RemoteConnectionLost	The connection to the server broke: {0}	Соединение с сервером оборвалось: {0}
 RemoteNoRoots	Add at least one folder to take.	Добавьте хотя бы одну папку, которую забирать.
@@ -567,3 +567,16 @@ CloudNotAllowed	Only an administrator of this computer can connect accounts of c
 CloudBadRedirect	The address the sign-in returns to must be on this computer (http://127.0.0.1 or http://localhost).	Адрес, на который возвращается вход, должен быть на этом компьютере (http://127.0.0.1 или http://localhost).
 CloudConnected	The account {0} of {1} was connected by {2}.	Аккаунт {0} ({1}) подключил {2}.
 CloudAppsSaved	The applications of CUSTOS at the cloud drives were changed by {0}.	Приложения CUSTOS у облачных дисков изменил {0}.
+# Export and import of tasks (section 9a)
+ExportNotAFile	This is not a file of CUSTOS tasks. Choose a file saved with «Export tasks to a file…».	Это не файл заданий CUSTOS. Выберите файл, сохранённый командой «Экспорт заданий в файл…».
+ExportNewerVersion	The file was made by a newer CUSTOS (format {0}). Update CUSTOS on this computer first.	Файл сделан более новой версией CUSTOS (формат {0}). Сначала обновите CUSTOS на этом компьютере.
+ExportDamaged	The file is damaged: {0}	Файл повреждён: {0}
+ExportUnknownAccount	the task «{0}» refers to an account that is not in the file	задание «{0}» ссылается на учётную запись, которой нет в файле
+ExportNoSecrets	The file has no passwords or keys.	В файле нет паролей и ключей.
+ExportWrongPassword	Wrong export password, or the file was changed.	Неверный пароль экспорта, или файл был изменён.
+ExportPasswordTooShort	The export password must be at least {0} characters long.	Пароль экспорта должен быть не короче {0} символов.
+ExportNoTasks	There are no tasks to export.	Нет заданий для экспорта.
+TasksExportedBy	Tasks exported to a file without passwords: {0} ({1}).	Задания выгружены в файл без паролей: {0} ({1}).
+TasksExportedWithSecretsBy	Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).	Задания выгружены в файл вместе с паролями и ключами, зашифрованными паролем экспорта: {0} ({1}).
+TasksLoadedBy	Tasks imported from a CUSTOS file: {0} ({1}).	Импортировано заданий из файла CUSTOS: {0} ({1}).
+ExportNotAllowed	Only administrators of this computer may export tasks.	Выгружать задания могут только администраторы этого компьютера.

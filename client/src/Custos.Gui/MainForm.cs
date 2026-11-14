@@ -25,7 +25,9 @@ internal sealed class MainForm : Form
     private readonly UiState _uiState = UiState.Load();
     private readonly ToolStrip _toolbar = new() { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(4, 2, 4, 2) };
     private readonly ToolStripSplitButton _create = Button<ToolStripSplitButton>(Strings.ToolCreate);
+    private readonly ToolStripMenuItem _importFile = new(Strings.ToolImportFile);
     private readonly ToolStripMenuItem _import = new(Strings.ToolImportCobian);
+    private readonly ToolStripMenuItem _export = new(Strings.ToolExportFile);
     private readonly ToolStripButton _edit = Button<ToolStripButton>(Strings.ToolEdit);
     private readonly ToolStripButton _clone = Button<ToolStripButton>(Strings.ToolClone);
     private readonly ToolStripButton _delete = Button<ToolStripButton>(Strings.ToolDelete);
@@ -221,8 +223,11 @@ internal sealed class MainForm : Form
     {
         _create.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolCreate, "Ctrl+N");
         _create.ButtonClick += (_, _) => CreateTask();
-        _create.DropDownItems.Add(_import);
+        _create.DropDownItems.AddRange([_importFile, _import, new ToolStripSeparator(), _export]);
+        _create.DropDownOpening += (_, _) => _export.Enabled = _monitor.Status.Hello?.IsAdmin == true && _monitor.Snapshot?.Tasks.Count > 0;
+        _importFile.Click += (_, _) => ImportFile();
         _import.Click += (_, _) => ImportTasks();
+        _export.Click += (_, _) => ExportTasks();
         _edit.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolEdit, "Ctrl+E");
         _edit.Click += (_, _) => EditTask();
         _clone.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolClone, "Ctrl+D");
@@ -288,7 +293,9 @@ internal sealed class MainForm : Form
         int size = LogicalToDeviceUnits(ToolbarIconSize);
         _toolbar.ImageScalingSize = new Size(size, size);
         _create.Image = Glyphs.Draw(Glyph.Create, size);
+        _importFile.Image = Glyphs.Draw(Glyph.Import, LogicalToDeviceUnits(16));
         _import.Image = Glyphs.Draw(Glyph.Import, LogicalToDeviceUnits(16));
+        _export.Image = Glyphs.Draw(Glyph.Export, LogicalToDeviceUnits(16));
         _edit.Image = Glyphs.Draw(Glyph.Edit, size);
         _clone.Image = Glyphs.Draw(Glyph.Clone, size);
         _delete.Image = Glyphs.Draw(Glyph.Delete, size);
@@ -316,7 +323,7 @@ internal sealed class MainForm : Form
 
     private void DisposeImages()
     {
-        foreach (var item in new ToolStripItem[] { _create, _import, _edit, _clone, _delete, _run, _stop, _pause, _restore, _card, _settings, _lock })
+        foreach (var item in new ToolStripItem[] { _create, _importFile, _import, _export, _edit, _clone, _delete, _run, _stop, _pause, _restore, _card, _settings, _lock })
         {
             var image = item.Image;
             item.Image = null;
@@ -792,6 +799,29 @@ internal sealed class MainForm : Form
         }
 
         using var form = new CobianImportForm(_monitor);
+        form.ShowDialog(this);
+    }
+
+    private void ImportFile()
+    {
+        if (!_monitor.CanEdit)
+        {
+            return;
+        }
+
+        using var form = new TaskImportForm(_monitor);
+        form.ShowDialog(this);
+    }
+
+    private void ExportTasks()
+    {
+        // The passwords stored here leave the service only this way: administrators only (section 9a).
+        if (_monitor.Status.Hello?.IsAdmin != true)
+        {
+            return;
+        }
+
+        using var form = new TaskExportForm(_monitor);
         form.ShowDialog(this);
     }
 

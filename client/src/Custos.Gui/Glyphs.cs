@@ -16,6 +16,7 @@ internal enum Glyph
     Card,
     Settings,
     Import,
+    Export,
     Lock,
     Info,
     Folder,
@@ -149,6 +150,12 @@ internal static class Glyphs
                 g.DrawLines(pen, [new PointF(4, 14), new PointF(4, 20), new PointF(20, 20), new PointF(20, 14)]);
                 g.DrawLine(pen, 12, 3, 12, 15);
                 g.DrawLines(pen, [new PointF(7, 10), new PointF(12, 15), new PointF(17, 10)]);
+                break;
+
+            case Glyph.Export:
+                g.DrawLines(pen, [new PointF(4, 14), new PointF(4, 20), new PointF(20, 20), new PointF(20, 14)]);
+                g.DrawLine(pen, 12, 15, 12, 3);
+                g.DrawLines(pen, [new PointF(7, 8), new PointF(12, 3), new PointF(17, 8)]);
                 break;
 
             case Glyph.Lock:
