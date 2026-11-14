@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Задание «{0}» изменено ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Задание «{0}» включено ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Задание «{0}» отключено ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Задание «{0}» удалено ({1}). Его копии не тронуты.</value>
   </data>
@@ -603,6 +609,30 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Менять задания и настройки могут только администраторы этого компьютера.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>Задан пароль программы: введите его, чтобы менять задания и настройки или восстанавливать копии.</value>
+  </data>
+  <data name="PasswordWrong" xml:space="preserve">
+    <value>Неверный пароль программы.</value>
+  </data>
+  <data name="PasswordTooShort" xml:space="preserve">
+    <value>Пароль программы должен быть не короче {0} знаков.</value>
+  </data>
+  <data name="PasswordTooLong" xml:space="preserve">
+    <value>Пароль программы должен быть не длиннее {0} знаков.</value>
+  </data>
+  <data name="PasswordSetBy" xml:space="preserve">
+    <value>Пароль программы задан ({0}).</value>
+  </data>
+  <data name="PasswordRemovedBy" xml:space="preserve">
+    <value>Пароль программы убран ({0}).</value>
+  </data>
+  <data name="PasswordWrongBy" xml:space="preserve">
+    <value>Введён неверный пароль программы ({0}).</value>
+  </data>
+  <data name="PasswordNotAllowed" xml:space="preserve">
+    <value>Задавать и убирать пароль программы могут только администраторы этого компьютера.</value>
   </data>
   <data name="ArchiveSettings" xml:space="preserve">
     <value>Архив: {0}, уровень сжатия {1}{2}.</value>
@@ -1023,7 +1053,7 @@
     <value>{0}: КЛЮЧ СЕРВЕРА ИЗМЕНИЛСЯ. Ожидался {1}, сервер показывает {2}. Данные не читались. Если сервер переустанавливали, сверьте новый ключ и подтвердите его в задании; иначе соединение могли перехватить.</value>
   </data>
   <data name="RemoteKeyRefused" xml:space="preserve">
-    <value>{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Выполните на сервере блок установки из задания ещё раз.</value>
+    <value>{0}: сервер не принимает ключ CUSTOS для пользователя «{1}». Если в задании указан «IP офиса», ключ работает только с этого адреса: проверьте, с какого адреса этот компьютер выходит в интернет, допишите его в «IP офиса» через запятую и выполните блок установки на сервере ещё раз. Иначе просто выполните на сервере блок установки из задания ещё раз.</value>
   </data>
   <data name="RemoteUnreachable" xml:space="preserve">
     <value>{0}: нет соединения: {1}</value>
@@ -1673,5 +1703,41 @@
   </data>
   <data name="CloudAppsSaved" xml:space="preserve">
     <value>Приложения CUSTOS у облачных дисков изменил {0}.</value>
+  </data>
+  <data name="ExportNotAFile" xml:space="preserve">
+    <value>Это не файл заданий CUSTOS. Выберите файл, сохранённый командой «Экспорт заданий в файл…».</value>
+  </data>
+  <data name="ExportNewerVersion" xml:space="preserve">
+    <value>Файл сделан более новой версией CUSTOS (формат {0}). Сначала обновите CUSTOS на этом компьютере.</value>
+  </data>
+  <data name="ExportDamaged" xml:space="preserve">
+    <value>Файл повреждён: {0}</value>
+  </data>
+  <data name="ExportUnknownAccount" xml:space="preserve">
+    <value>задание «{0}» ссылается на учётную запись, которой нет в файле</value>
+  </data>
+  <data name="ExportNoSecrets" xml:space="preserve">
+    <value>В файле нет паролей и ключей.</value>
+  </data>
+  <data name="ExportWrongPassword" xml:space="preserve">
+    <value>Неверный пароль экспорта, или файл был изменён.</value>
+  </data>
+  <data name="ExportPasswordTooShort" xml:space="preserve">
+    <value>Пароль экспорта должен быть не короче {0} символов.</value>
+  </data>
+  <data name="ExportNoTasks" xml:space="preserve">
+    <value>Нет заданий для экспорта.</value>
+  </data>
+  <data name="TasksExportedBy" xml:space="preserve">
+    <value>Задания выгружены в файл без паролей: {0} ({1}).</value>
+  </data>
+  <data name="TasksExportedWithSecretsBy" xml:space="preserve">
+    <value>Задания выгружены в файл вместе с паролями и ключами, зашифрованными паролем экспорта: {0} ({1}).</value>
+  </data>
+  <data name="TasksLoadedBy" xml:space="preserve">
+    <value>Импортировано заданий из файла CUSTOS: {0} ({1}).</value>
+  </data>
+  <data name="ExportNotAllowed" xml:space="preserve">
+    <value>Выгружать задания могут только администраторы этого компьютера.</value>
   </data>
 </root>

@@ -202,8 +202,13 @@ public sealed partial class ConfigStore
         }
     }
 
-    /// <summary>Adds imported tasks and their accounts in one go (section 9).</summary>
-    public List<TaskChange> Import(IReadOnlyList<TaskDefinition> tasks, IReadOnlyList<(Credential Credential, string? Password)> credentials, string updatedBy, DateTimeOffset now)
+    /// <summary>Adds imported tasks and their accounts in one go (sections 9 and 9a).</summary>
+    /// <param name="keepIds">
+    /// False (Cobian Backup): every task and account is new; a task whose id is taken gets a new one. True (a file of
+    /// exported tasks): ids are kept, so the sets made before are found again. A task with an id already here replaces it;
+    /// an account with an id already here stays as it is and only takes a secret it does not have.
+    /// </param>
+    public List<TaskChange> Import(IReadOnlyList<TaskDefinition> tasks, IReadOnlyList<(Credential Credential, string? Password)> credentials, string updatedBy, DateTimeOffset now, bool keepIds = false)
     {
         ArgumentNullException.ThrowIfNull(tasks);
         ArgumentNullException.ThrowIfNull(credentials);
@@ -214,32 +219,55 @@ public sealed partial class ConfigStore
             {
                 var copy = CopyCredential(credential);
                 ValidateCredential(copy);
-                if (stored.Any(c => string.Equals(c.Credential.Id, copy.Id, StringComparison.OrdinalIgnoreCase)))
+                int index = stored.FindIndex(c => string.Equals(c.Credential.Id, copy.Id, StringComparison.OrdinalIgnoreCase));
+                if (index < 0)
+                {
+                    stored.Add(Protect(copy, password));
+                    continue;
+                }
+
+                var existing = stored[index];
+                if (!keepIds || existing.Credential.Kind != copy.Kind)
                 {
                     throw new ConfigException(Messages.Format(Messages.ConfigCredentialExists, copy.DisplayName)) { IsConflict = true };
                 }
 
-                stored.Add(Protect(copy, password));
+                if (existing.SecretDpapi is null && !string.IsNullOrEmpty(password))
+                {
+                    stored[index] = Protect(CopyCredential(existing.Credential), password);
+                }
             }
 
             var known = stored.Select(c => c.Credential.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var list = new List<TaskDefinition>(_tasks.Tasks);
             var changes = new List<TaskChange>();
+            var imported = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var task in tasks)
             {
                 var copy = task.Clone();
                 Normalize(copy);
                 Validate(copy, known);
-                if (list.Any(t => string.Equals(t.Id, copy.Id, StringComparison.OrdinalIgnoreCase)))
+                int index = list.FindIndex(t => string.Equals(t.Id, copy.Id, StringComparison.OrdinalIgnoreCase));
+                var previous = keepIds && index >= 0 && !imported.Contains(copy.Id) ? list[index] : null;
+                if (previous is null && index >= 0)
                 {
                     copy.Id = TaskDefinition.NewId();
                 }
 
-                copy.Revision = 1;
+                imported.Add(copy.Id);
+                copy.Revision = (previous?.Revision ?? 0) + 1;
                 copy.UpdatedAt = Truncate(now);
                 copy.UpdatedBy = updatedBy;
-                list.Add(copy);
-                changes.Add(new TaskChange(copy.Clone(), null));
+                if (previous is not null)
+                {
+                    list[index] = copy;
+                }
+                else
+                {
+                    list.Add(copy);
+                }
+
+                changes.Add(new TaskChange(copy.Clone(), previous?.Clone()));
             }
 
             // Accounts first: a task must never point to an account that is not stored.
@@ -282,6 +310,34 @@ public sealed partial class ConfigStore
                 copy.DefaultLogLevel = LogLevels.Summary;
             }
 
+            if (!TrayModes.IsKnown(copy.TrayMode))
+            {
+                copy.TrayMode = TrayModes.Full;
+            }
+
+            if (!Themes.IsKnown(copy.Theme))
+            {
+                copy.Theme = Themes.Auto;
+            }
+
+            WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
+            _settings = copy;
+            BumpRevision();
+        }
+    }
+
+    /// <summary>Sets the program password (section 4) as a hash of A.2, or removes it (null).</summary>
+    public void SetProgramPasswordHash(string? hash)
+    {
+        if (hash is not null && !IsPasswordHash(hash))
+        {
+            throw new ArgumentException("Not a program password hash.", nameof(hash));
+        }
+
+        lock (_lock)
+        {
+            var copy = CopySettings(_settings);
+            copy.ProgramPasswordHash = hash;
             WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
             _settings = copy;
             BumpRevision();

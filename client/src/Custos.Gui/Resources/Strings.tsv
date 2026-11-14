@@ -392,6 +392,51 @@ SettingsAccounts	Accounts for network folders, servers and cloud drives	Учёт
 SettingsAccountsNote	The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.
 SettingsReadOnly	Only administrators can change the settings.	Изменять настройки могут только администраторы.
 ColumnUsedBy	Used by tasks	Используется в заданиях
+# ---- Stage 5: rights, program password, interface for users, theme (section 4)
+SettingsRights	Rights and protection	Права и защита
+AllowAllUsersEdit	Allow all users to change tasks	Разрешить всем пользователям менять задания
+AllowAllUsersEditHelp	Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM, so whoever may change a task may read any file through it or run any program in its events: in effect, every user becomes an administrator. Restoring stays for administrators either way.	По умолчанию выключено: задания и настройки меняют только администраторы этого компьютера. Служба работает от имени SYSTEM, поэтому тот, кто может менять задание, может через него прочитать любой файл или запустить любую программу в событиях: фактически каждый пользователь становится администратором. Восстанавливать копии по-прежнему могут только администраторы.
+AllowAllUsersEditWarning	Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this in effect gives every user the rights of an administrator.\n\nAllow it?	Все пользователи этого компьютера смогут менять задания и настройки. Служба работает от имени SYSTEM, поэтому это фактически даёт каждому пользователю права администратора.\n\nРазрешить?
+TrayModeLabel	Interface for users:	Интерфейс для пользователей:
+TrayModeHelp	What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what they may change still depends on the rights. «State only»: the tray icon and a window that only shows the state of the tasks. «Hidden»: no tray icon; started from the Start menu, CUSTOS shows the state window. Administrators always get the full interface.	Что видят пользователи, которые не администраторы. «Полный»: окно и значок в трее как обычно, а что можно менять, решают права. «Только состояние»: значок в трее и окно, которое только показывает состояние заданий. «Скрыт»: значка в трее нет; при запуске из меню «Пуск» открывается окно состояния. Администраторы всегда видят полный интерфейс.
+TrayModeFull	Full	Полный
+TrayModeStatus	State only	Только состояние
+TrayModeHidden	Hidden	Скрыт
+ProgramPasswordLabel	Program password:	Пароль программы:
+ProgramPasswordHelp	When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of Windows.	Если он задан, для изменения заданий и настроек и для восстановления нужен он, а не только права. После ввода его не спрашивают 30 минут после последнего изменения или пока окно не закрыто. Задать или убрать его можно и на сайте мониторинга. Он защищает от случайных правок и от посторонних, но не от администратора Windows.
+ProgramPasswordIsSet	set	задан
+ProgramPasswordNotSet	not set	не задан
+ProgramPasswordSetButton	Set…	Задать…
+ProgramPasswordChangeButton	Change…	Сменить…
+ProgramPasswordRemoveButton	Remove password	Убрать пароль
+ProgramPasswordRemoveConfirm	Remove the program password? Changes will then need only the rights of the user.	Убрать пароль программы? Тогда для изменений будет достаточно прав пользователя.
+ProgramPasswordRemoved	The program password is removed.	Пароль программы убран.
+ProgramPasswordSaved	The program password is set. Changes and restores now need it.	Пароль программы задан. Теперь он нужен для изменений и восстановления.
+SettingsRightsAdminOnly	Only an administrator of this computer can change the rights and the program password.	Права и пароль программы может менять только администратор этого компьютера.
+PasswordSetTitle	Program password	Пароль программы
+PasswordNew	New password:	Новый пароль:
+PasswordAgain	Once more:	Ещё раз:
+PasswordSetNote	At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, or see «Program password» in the client README.	Не короче {0} знаков. Хранится только его хэш. Если пароль забыт, уберите его на сайте мониторинга или посмотрите раздел «Пароль программы» в README клиента.
+PasswordMismatch	The two passwords differ.	Пароли не совпадают.
+PasswordTooShortUi	The password must be at least {0} characters long.	Пароль должен быть не короче {0} знаков.
+PasswordPromptTitle	Program password	Пароль программы
+PasswordPromptText	A program password is set on this computer. Type it to change tasks and settings or to restore.	На этом компьютере задан пароль программы. Введите его, чтобы менять задания и настройки или восстанавливать копии.
+PasswordPromptLabel	Password:	Пароль:
+PasswordNotTyped	The program password was not typed: nothing was changed.	Пароль программы не введён: ничего не изменено.
+SettingsLook	Look	Оформление
+ThemeLabel	Theme:	Тема:
+ThemeHelp	For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personalisation, Colours). The open windows of CUSTOS are reopened in the new theme.	Для всех пользователей этого компьютера. «Как в Windows» — по режиму приложений Windows («Параметры» → «Персонализация» → «Цвета»). Открытые окна CUSTOS откроются заново в новой теме.
+ThemeAuto	As in Windows	Как в Windows
+ThemeLight	Light	Светлая
+ThemeDark	Dark	Тёмная
+StatusTitle	CUSTOS: state of the backups	CUSTOS: состояние копий
+StatusNote	An administrator has set CUSTOS to only show the state on this computer.	Администратор настроил CUSTOS на этом компьютере так, что он только показывает состояние.
+MenuOpenStatus	State of the backups	Состояние копий
+ToolEnable	Switch on	Включить
+ToolDisable	Switch off	Отключить
+ToolEnableHint	Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A	Включить или отключить выбранные задания. Несколько — щелчок с Ctrl или Shift, все — Ctrl+A
+ConfirmDeleteMany	Delete {0} tasks?\n\nThe backups they have made stay where they are.	Удалить выбранные задания ({0})?\n\nУже сделанные копии останутся на месте.
+TasksNotChanged	Some tasks were not changed:	Некоторые задания не изменены:
 # ---- Import from Cobian Backup
 ImportTitle	Import from Cobian Backup	Импорт из Cobian Backup
 ImportFile	Task list:	Список заданий:
@@ -784,3 +829,58 @@ RestoreChooseStore	Choose…	Указать…
 RestoreStoreTitle	Where to look for backups	Где искать копии
 RestoreStoreRequired	Choose the server or the cloud drive: press «Choose…».	Укажите сервер или облачный диск: нажмите «Указать…».
 RestoreStoreNone	not chosen	не указано
+# ---- Export and import of tasks (section 9a)
+ToolImportFile	Import tasks from a file…	Импорт заданий из файла…
+ToolExportFile	Export tasks to a file…	Экспорт заданий в файл…
+ExportTitle	Export tasks	Экспорт заданий
+ExportTasksHeading	Tasks to put into the file:	Какие задания выгрузить в файл:
+ExportAllAccounts	Also the accounts of the settings that the chosen tasks do not use ({0}): {1}	Также учётные записи из настроек, которые не нужны выбранным заданиям ({0}): {1}
+ExportCheckAll	Tick all	Отметить все
+ExportCheckNone	Untick all	Снять все
+ExportChosen	Chosen: {0} of {1}	Выбрано: {0} из {1}
+ExportSecretsGroup	Passwords and keys	Пароли и ключи
+ExportIncludeSecrets	Put passwords and keys into the file, encrypted with an export password	Включить в файл пароли и ключи, зашифровав их паролем экспорта
+ExportPassword	Export password:	Пароль экспорта:
+ExportSecretsCount	Accounts in the file: with a password {0}, SSH keys {1}, cloud accounts {2}.	Учётные записи в файле: с паролем — {0}, SSH-ключей — {1}, облачных аккаунтов — {2}.
+ExportNoSecretsNote	Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts and the archive password are typed again, SSH keys are made again and cloud accounts connected again. Write the archive password down: without it the backups made before cannot be opened.	Без этой отметки паролей в файле нет, его можно хранить где угодно. При импорте пароли учётных записей и пароль архивов придётся ввести заново, SSH-ключи создать заново, облачные аккаунты подключить заново. Запишите пароль архивов: без него уже сделанные копии не открыть.
+ExportSecretsNote	Passwords of accounts, archive passwords, SSH keys and tokens of cloud accounts go into the file encrypted (AES-256). Without the export password nobody can read them, CUSTOS included: remember it or write it down. Keep the file away from this computer, for example on a USB stick or a network share.	Пароли учётных записей, пароли архивов, SSH-ключи и токены облачных аккаунтов попадут в файл в зашифрованном виде (AES-256). Без пароля экспорта их не прочитает никто, в том числе CUSTOS: запомните или запишите его. Храните файл не на этом компьютере, например на флешке или в сетевой папке.
+ExportSave	Save…	Сохранить…
+ExportFilter	CUSTOS tasks (*.json)|*.json|All files|*.*	Задания CUSTOS (*.json)|*.json|Все файлы|*.*
+ExportNothingChosen	Tick at least one task.	Отметьте хотя бы одно задание.
+ExportDone	Tasks saved without passwords: {0}.\n\nFile: {1}	Сохранено заданий без паролей: {0}.\n\nФайл: {1}
+ExportDoneSecrets	Tasks saved with passwords and keys: {0}.\n\nFile: {1}\n\nKeep the export password: without it the passwords in the file cannot be read.	Сохранено заданий вместе с паролями и ключами: {0}.\n\nФайл: {1}\n\nСохраните пароль экспорта: без него пароли из файла не прочитать.
+ExportUnreadable	These passwords could not be read on this computer and are not in the file: {0}	Эти пароли не удалось прочитать на этом компьютере, в файл они не попали: {0}
+ExportCannotWrite	Cannot write the file: {0}	Не удалось записать файл: {0}
+ImportFileTitle	Import tasks from a file	Импорт заданий из файла
+ImportFileLabel	File:	Файл:
+ImportFileNote	A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore» finds the backups they made before, and retention goes on deleting old ones by its rules.	Файл, сохранённый командой «Экспорт заданий в файл…» на этом или другом компьютере. Задания сохраняют свои идентификаторы: «Восстановить» найдёт копии, которые они сделали раньше, а хранение продолжит удалять старые по своим правилам.
+ImportFileFrom	Exported from {0} on {1}, CUSTOS {2}.	Выгружен с компьютера {0} {1}, CUSTOS {2}.
+ImportFileNoSecrets	There are no passwords or keys in the file.	Паролей и ключей в файле нет.
+ImportFileHasSecrets	The file has passwords and keys, encrypted with the export password. They are not open yet.	В файле есть пароли и ключи, зашифрованные паролем экспорта. Они ещё не открыты.
+ImportFileEnterPassword	Enter the export password…	Ввести пароль экспорта…
+ImportFileOpen	Open	Открыть
+ImportFileOpened	Passwords and keys of the file are open.	Пароли и ключи из файла открыты.
+ExportPasswordTitle	Export password	Пароль экспорта
+ExportPasswordAsk	The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks were exported:	В файле зашифрованы пароли и ключи заданий. Введите пароль, который задали при экспорте:
+ExportPasswordEmpty	Enter the export password.	Введите пароль экспорта.
+ExportPasswordSkip	Without passwords from the file	Без паролей из файла
+ExportPasswordSkipNote	Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can then be typed in the import window, and tasks with SSH keys or cloud accounts come switched off.	Не помните пароль? Нажмите «Без паролей из файла»: тогда пароли учётных записей и архивов можно будет ввести в окне импорта, а задания с SSH-ключами и облачными аккаунтами придут отключёнными.
+ImportFileFound	Tasks in the file: {0}	Заданий в файле: {0}
+ImportFileSpare	Also the accounts of the file that no task uses ({0}): {1}	Также учётные записи из файла без заданий ({0}): {1}
+ImportFileCannotRead	Cannot read the file: {0}	Не удалось прочитать файл: {0}
+ColumnEnabled	On	Включено
+ColumnHere	On this computer	На компьютере
+ImportHereReplaced	yes, replaced	есть, будет заменено
+RemarkReplaces	This computer has this task already («{0}»): the one from the file replaces it. Untick the task to keep the one here.	Это задание уже есть на компьютере («{0}»): задание из файла заменит его. Снимите отметку, чтобы оставить своё.
+RemarkPasswordMissing	The password of {0} is not in the file: enter it below. Left empty, the task comes switched off.	Пароля учётной записи {0} в файле нет: введите его ниже. Если оставить поле пустым, задание придёт отключённым.
+RemarkArchivePasswordMissing	The archive password is not in the file: enter it below. Without it the archives made before cannot be opened. Left empty, the task comes switched off.	Пароля архивов в файле нет: введите его ниже. Без него уже сделанные архивы не открыть. Если оставить поле пустым, задание придёт отключённым.
+RemarkSshKeyMissing	The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the Linux server → «Create new key»), add its line on the server and switch the task on.	SSH-ключа {0} в файле нет: задание придёт отключённым. Создайте новый ключ («Изменить» → «Источники» → Linux-сервер → «Создать новый ключ»), добавьте его строку на сервер и включите задание.
+RemarkCloudMissing	The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings → the list of accounts → «Connect again…») and switch the task on.	Аккаунт {0} на этом компьютере не подключён: задание придёт отключённым. Подключите его заново (Настройки → список учётных записей → «Подключить заново…») и включите задание.
+RemarkSecretsLocked	The passwords and keys of this task are in the file, encrypted with the export password. Open them with «Enter the export password…» at the top. Without them, type the passwords below; a task with an SSH key or a cloud account then comes switched off.	Пароли и ключи этого задания есть в файле, зашифрованные паролем экспорта. Откройте их кнопкой «Ввести пароль экспорта…» вверху. Без них пароли можно ввести ниже, а задание с SSH-ключом или облачным аккаунтом придёт отключённым.
+ImportFileAccounts	Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:	Пароли, которых нет в файле. Введите каждый один раз; задание, у которого пароль останется пустым, придёт отключённым:
+ImportFileAccountsLocked	The passwords of the file are not open, so type here the passwords of accounts and archives (not the export password). A task whose password stays empty comes switched off:	Пароли файла не открыты, поэтому введите здесь пароли учётных записей и архивов (не пароль экспорта). Задание, у которого пароль останется пустым, придёт отключённым:
+ImportFileDone	Tasks imported: {0}.	Импортировано заданий: {0}.
+ImportFileSpareDone	Accounts without tasks added: {0}. Settings → the list of accounts.	Добавлено учётных записей без заданий: {0}. Они в Настройках, в списке учётных записей.
+ImportFileSwitchedOff	Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.	Отключены, пока не будет добавлено недостающее: {0}. Потом включите их в редакторе.
+RemoteKeyNotHere	{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line on the server.	{0}: ключа нет на этом компьютере (задание перенесено без ключей). Создайте новый ключ и добавьте его строку на сервер.
+RemoteCreateNewKey	Create new key	Создать новый ключ

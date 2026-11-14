@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Task «{0}» changed ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Task «{0}» switched on ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Task «{0}» switched off ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Task «{0}» deleted ({1}). Its backups were not touched.</value>
   </data>
@@ -603,6 +609,30 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Only administrators of this computer may change tasks and settings.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>The program password is set: type it to change tasks and settings or to restore.</value>
+  </data>
+  <data name="PasswordWrong" xml:space="preserve">
+    <value>Wrong program password.</value>
+  </data>
+  <data name="PasswordTooShort" xml:space="preserve">
+    <value>The program password must be at least {0} characters long.</value>
+  </data>
+  <data name="PasswordTooLong" xml:space="preserve">
+    <value>The program password must be at most {0} characters long.</value>
+  </data>
+  <data name="PasswordSetBy" xml:space="preserve">
+    <value>Program password set ({0}).</value>
+  </data>
+  <data name="PasswordRemovedBy" xml:space="preserve">
+    <value>Program password removed ({0}).</value>
+  </data>
+  <data name="PasswordWrongBy" xml:space="preserve">
+    <value>Wrong program password typed ({0}).</value>
+  </data>
+  <data name="PasswordNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may set or remove the program password.</value>
   </data>
   <data name="ArchiveSettings" xml:space="preserve">
     <value>Archive: {0}, compression level {1}{2}.</value>
@@ -1023,7 +1053,7 @@ Load a database into an empty one: tables already there get in the way.</value>
     <value>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server was reinstalled, check the new key and confirm it in the task; otherwise someone may be in the way.</value>
   </data>
   <data name="RemoteKeyRefused" xml:space="preserve">
-    <value>{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task on the server again.</value>
+    <value>{0}: the server does not accept the key of CUSTOS for the user «{1}». If the task has an office IP, the key works only from that address: check which address this computer goes out to the internet from, add it to «Office IP» separated by a comma and run the install block on the server again. Otherwise run the install block from the task on the server again.</value>
   </data>
   <data name="RemoteUnreachable" xml:space="preserve">
     <value>{0}: no connection: {1}</value>
@@ -1673,5 +1703,41 @@ is missing on the new server gets the number of the old one. To see what a tar h
   </data>
   <data name="CloudAppsSaved" xml:space="preserve">
     <value>The applications of CUSTOS at the cloud drives were changed by {0}.</value>
+  </data>
+  <data name="ExportNotAFile" xml:space="preserve">
+    <value>This is not a file of CUSTOS tasks. Choose a file saved with «Export tasks to a file…».</value>
+  </data>
+  <data name="ExportNewerVersion" xml:space="preserve">
+    <value>The file was made by a newer CUSTOS (format {0}). Update CUSTOS on this computer first.</value>
+  </data>
+  <data name="ExportDamaged" xml:space="preserve">
+    <value>The file is damaged: {0}</value>
+  </data>
+  <data name="ExportUnknownAccount" xml:space="preserve">
+    <value>the task «{0}» refers to an account that is not in the file</value>
+  </data>
+  <data name="ExportNoSecrets" xml:space="preserve">
+    <value>The file has no passwords or keys.</value>
+  </data>
+  <data name="ExportWrongPassword" xml:space="preserve">
+    <value>Wrong export password, or the file was changed.</value>
+  </data>
+  <data name="ExportPasswordTooShort" xml:space="preserve">
+    <value>The export password must be at least {0} characters long.</value>
+  </data>
+  <data name="ExportNoTasks" xml:space="preserve">
+    <value>There are no tasks to export.</value>
+  </data>
+  <data name="TasksExportedBy" xml:space="preserve">
+    <value>Tasks exported to a file without passwords: {0} ({1}).</value>
+  </data>
+  <data name="TasksExportedWithSecretsBy" xml:space="preserve">
+    <value>Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).</value>
+  </data>
+  <data name="TasksLoadedBy" xml:space="preserve">
+    <value>Tasks imported from a CUSTOS file: {0} ({1}).</value>
+  </data>
+  <data name="ExportNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may export tasks.</value>
   </data>
 </root>

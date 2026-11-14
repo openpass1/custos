@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Runtime.Versioning;
 using Custos.Core;
+using Custos.Core.Agent;
 using Custos.Core.Ipc;
 using Custos.Service.Agent;
 using Microsoft.Extensions.Hosting;
@@ -46,11 +47,17 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.ServerConnect,
         PipeProtocol.Methods.ServerReset,
 
+        // The program password guards the administrators' own changes: everybody else is kept out by the rights.
+        PipeProtocol.Methods.PasswordSet,
+
         // An account of a cloud drive lets SYSTEM into somebody's cloud (section 6.3).
         PipeProtocol.Methods.CloudBegin,
         PipeProtocol.Methods.CloudFinish,
         PipeProtocol.Methods.CloudAppsGet,
         PipeProtocol.Methods.CloudAppsSave,
+
+        // The passwords stored here leave the service only this way, encrypted with a password of the person's choice.
+        PipeProtocol.Methods.TasksExport,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -58,6 +65,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.TaskSave,
         PipeProtocol.Methods.TaskDelete,
         PipeProtocol.Methods.TasksImport,
+        PipeProtocol.Methods.TasksEnable,
         PipeProtocol.Methods.CredentialSave,
         PipeProtocol.Methods.CredentialDelete,
         PipeProtocol.Methods.DestinationTest,
@@ -67,6 +75,22 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.RemoteTest,
         PipeProtocol.Methods.SettingsSave,
     ];
+
+    /// <summary>
+    /// Methods of administrators that only look, or stop what is running: they do not need the program password.
+    /// Every other method of <see cref="AdminOnlyMethods"/> and <see cref="AdminMethods"/> needs it when one is set
+    /// (section 4), so a method added to those lists later is guarded without being listed here.
+    /// </summary>
+    private static readonly HashSet<string> WithoutPassword =
+    [
+        PipeProtocol.Methods.RestoreStatus,
+        PipeProtocol.Methods.RestoreStop,
+        PipeProtocol.Methods.SevenZipCheck,
+        PipeProtocol.Methods.CloudAppsGet,
+    ];
+
+    /// <summary>A wrong program password costs this long, so that guessing it over the pipe is slow.</summary>
+    private static readonly TimeSpan WrongPasswordDelay = TimeSpan.FromSeconds(2);
 
     private readonly ConcurrentDictionary<long, Connection> _connections = new();
     private long _lastConnectionId;
@@ -346,9 +370,15 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 string refusal = method is PipeProtocol.Methods.SevenZipCheck or PipeProtocol.Methods.SevenZipUpdate ? Messages.SevenZipNotAllowed
                     : method is PipeProtocol.Methods.ServerConnect or PipeProtocol.Methods.ServerReset ? Messages.MonitorNotAllowed
                     : method.StartsWith("cloud.", StringComparison.Ordinal) ? Messages.CloudNotAllowed
+                    : method is PipeProtocol.Methods.PasswordSet ? Messages.PasswordNotAllowed
+                    : method is PipeProtocol.Methods.TasksExport ? Messages.ExportNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
+            }
+            else if (NeedsPassword(method) && !connection.Password.IsOpen(agent.ProgramPasswordHash, DateTimeOffset.UtcNow))
+            {
+                response = PipeMessage.Failure(requestId, PipeProtocol.Errors.PasswordRequired, Messages.PasswordRequired);
             }
             else
             {
@@ -359,8 +389,21 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                         await agent.CheckSevenZipAsync(connection.Closing).ConfigureAwait(false), IpcJsonContext.Default.SevenZipCheckResult),
                     PipeProtocol.Methods.SevenZipUpdate => Ok(requestId,
                         await agent.UpdateSevenZipAsync(identity.User, connection.Closing).ConfigureAwait(false)),
+                    PipeProtocol.Methods.PasswordUnlock => await UnlockAsync(connection, identity, requestId, request).ConfigureAwait(false),
+                    PipeProtocol.Methods.PasswordState => PipeMessage.Success(requestId, new PasswordStateResult
+                    {
+                        Set = agent.ProgramPasswordHash is not null,
+                        Unlocked = agent.ProgramPasswordHash is { } hash && connection.Password.IsOpen(hash, DateTimeOffset.UtcNow),
+                    }, IpcJsonContext.Default.PasswordStateResult),
+                    PipeProtocol.Methods.PasswordLock => Ok(requestId, Lock(connection)),
                     _ => Dispatch(identity, requestId, request),
                 };
+
+                // The time counts from the last change, so an administrator at work is not asked again and again.
+                if (NeedsPassword(method) && response.Error is null)
+                {
+                    connection.Password.Open(agent.ProgramPasswordHash, DateTimeOffset.UtcNow);
+                }
             }
         }
         catch (OperationCanceledException) when (connection.Closing.IsCancellationRequested)
@@ -415,6 +458,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.TasksImport =>
                 Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user, identity.Sid)),
+            PipeProtocol.Methods.TasksEnable =>
+                PipeMessage.Success(id, agent.EnableTasks(request.GetData(json.TasksEnableRequest), user), json.TasksEnableResult),
+            PipeProtocol.Methods.TasksExport =>
+                PipeMessage.Success(id, agent.ExportTasks(request.GetData(json.TasksExportRequest), user), json.TasksExportResult),
             PipeProtocol.Methods.CredentialSave =>
                 PipeMessage.Success(id, new CredentialSaveResult { Credential = agent.SaveCredential(request.GetData(json.CredentialInput)) }, json.CredentialSaveResult),
             PipeProtocol.Methods.CredentialDelete =>
@@ -430,7 +477,9 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.RemoteTest =>
                 PipeMessage.Success(id, agent.TestRemote(request.GetData(json.RemoteTestRequest)), json.RemoteTestResult),
             PipeProtocol.Methods.SettingsSave =>
-                Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user)),
+                Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user, identity.IsAdmin)),
+            PipeProtocol.Methods.PasswordSet =>
+                Ok(id, agent.SetProgramPassword(request.GetData(json.PasswordRequest).Password, user)),
             PipeProtocol.Methods.RestoreList =>
                 PipeMessage.Success(id, agent.ListRestoreSets(request.GetData(json.RestoreListRequest)), json.RestoreListResult),
             PipeProtocol.Methods.RestoreStart =>
@@ -454,6 +503,37 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.ResetServer(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),
         };
+    }
+
+    private static OkResult Lock(Connection connection)
+    {
+        connection.Password.Close();
+        return OkResult.Instance;
+    }
+
+    private static bool NeedsPassword(string method) =>
+        (AdminOnlyMethods.Contains(method) || AdminMethods.Contains(method)) && !WithoutPassword.Contains(method);
+
+    /// <summary>The program password typed in the interface: right, the connection is unlocked; wrong, a pause.</summary>
+    private async Task<PipeMessage> UnlockAsync(Connection connection, ClientIdentity identity, long requestId, PipeMessage request)
+    {
+        string password = request.GetData(IpcJsonContext.Default.PasswordRequest).Password ?? string.Empty;
+        if (agent.ProgramPasswordHash is not { } hash)
+        {
+            return Ok(requestId, OkResult.Instance);
+        }
+
+        if (ProgramPassword.Verify(password, hash))
+        {
+            connection.Password.Open(hash, DateTimeOffset.UtcNow);
+            ServiceLog.PasswordAccepted(logger, identity.User, connection.Id);
+            return Ok(requestId, OkResult.Instance);
+        }
+
+        ServiceLog.PasswordRejected(logger, identity.User, connection.Id);
+        agent.NoteWrongPassword(identity.User);
+        await Task.Delay(WrongPasswordDelay, connection.Closing).ConfigureAwait(false);
+        return PipeMessage.Failure(requestId, PipeProtocol.Errors.Invalid, Messages.PasswordWrong);
     }
 
     private PipeMessage History(long id, HistoryRequest request) =>
@@ -496,6 +576,9 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         }
 
         public Task Completion { get; set; } = Task.CompletedTask;
+
+        /// <summary>Whether the program password was typed on this connection lately (section 4).</summary>
+        public PasswordGate Password { get; } = new();
 
         public void Close()
         {

@@ -40,7 +40,11 @@ shows every computer in one place, warns when something goes wrong and lets you 
 - Database dumps: MySQL, MariaDB and PostgreSQL, OSPanel included.
 - Linux servers: files and database dumps are pulled over SSH through the read-only script
   [custos-helper](helper/README.md).
-- Restore to a date, import of tasks from Cobian Backup 11, Russian and English.
+- Restore to a date, moving tasks to another computer (export to a file and import, passwords encrypted if wanted),
+  import of tasks from Cobian Backup 11.
+- A program password and a limited interface for users who are not administrators (state only, or hidden); actions on
+  several tasks at once.
+- Russian and English, light and dark theme.
 
 ## CUSTOS Monitor
 

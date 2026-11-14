@@ -72,6 +72,9 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     /// </summary>
     public bool AllUsersMayEdit => _config.GetSettings().AllowAllUsersEdit;
 
+    /// <summary>The hash of the program password (section 4), or null when none is set.</summary>
+    public string? ProgramPasswordHash => _config.GetSettings().ProgramPasswordHash;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Leave the start of the host at once; loading the configuration and the database may take a while.
@@ -146,9 +149,11 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
 
         var settings = _config.GetSettings();
+        bool passwordSet = settings.ProgramPasswordHash is not null;
         settings.ProgramPasswordHash = null;
         return new AgentSnapshot
         {
+            ProgramPasswordSet = passwordSet,
             Version = version,
             ConfigRevision = _config.ConfigRevision,
             ComputerName = Environment.MachineName,
@@ -303,6 +308,54 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return change.Saved;
     }
 
+    /// <summary>
+    /// Switches several tasks on or off (the group action of the main window). Each goes through the same checks as
+    /// a save in the editor; one that fails is named in the result and the others still change. A task switched on
+    /// counts its schedule from now, so the tasks do not all catch up at once.
+    /// </summary>
+    public TasksEnableResult EnableTasks(TasksEnableRequest request, string user)
+    {
+        var result = new TasksEnableResult();
+        foreach (string taskId in request.TaskIds.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var task = _config.GetTask(taskId);
+            if (task is null || task.Enabled == request.Enabled)
+            {
+                continue;
+            }
+
+            int revision = task.Revision;
+            task.Enabled = request.Enabled;
+            TaskChange change;
+            try
+            {
+                change = _config.SaveTask(task, revision, "local:" + user, DateTimeOffset.UtcNow);
+            }
+            catch (ConfigException ex)
+            {
+                result.Problems.Add(task.Name + ": " + ex.Message);
+                continue;
+            }
+
+            if (change.ScheduleReset)
+            {
+                SetLastSlot(change.Saved.Id, DateTimeOffset.UtcNow);
+            }
+
+            Log(LogLineLevels.Info, Messages.Format(request.Enabled ? Messages.TaskEnabledBy : Messages.TaskDisabledBy, change.Saved.Name, user), change.Saved.Id);
+            NoteConfigChange(change.Saved);
+            result.Changed++;
+        }
+
+        if (result.Changed > 0)
+        {
+            PublishSnapshot();
+            _scheduleWake.Release();
+        }
+
+        return result;
+    }
+
     public OkResult DeleteTask(string taskId, string user)
     {
         lock (_lock)
@@ -335,29 +388,130 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     {
         foreach (var task in request.Tasks)
         {
+            // %USERPROFILE% and the like refer to whoever made the task (section 6.2). A task from a file keeps that
+            // person while their profile is on this computer; on a reinstalled one it is gone, and whoever imports
+            // takes their place.
+            if (request.KeepIds && task.ProfileSid is { } profile && !ProfileVariables.HasProfile(profile))
+            {
+                task.ProfileSid = null;
+            }
+
             task.ProfileSid ??= sid;
+        }
+
+        if (request.KeepIds && request.CloudApps is { } apps)
+        {
+            TakeCloudApps(apps);
         }
 
         List<TaskChange> changes;
         try
         {
-            changes = _config.Import(request.Tasks, [.. request.Credentials.Select(c => (c.Credential, c.Password))], "local:" + user, DateTimeOffset.UtcNow);
+            changes = _config.Import(request.Tasks, [.. request.Credentials.Select(c => (c.Credential, c.Password))], "local:" + user, DateTimeOffset.UtcNow,
+                keepIds: request.KeepIds);
         }
         catch (ConfigException ex)
         {
             throw Refused(ex);
         }
 
+        foreach (var credential in request.Credentials)
+        {
+            Core.Cloud.OAuthTokens.Forget(credential.Credential.Id);
+        }
+
         var now = DateTimeOffset.UtcNow;
         foreach (var change in changes)
         {
-            SetLastSlot(change.Saved.Id, now);
+            if (change.ScheduleReset)
+            {
+                SetLastSlot(change.Saved.Id, now);
+            }
+
             NoteConfigChange(change.Saved);
         }
 
-        Log(LogLineLevels.Info, Messages.Format(Messages.TasksImportedBy, changes.Count, user));
+        Log(LogLineLevels.Info, Messages.Format(request.KeepIds ? Messages.TasksLoadedBy : Messages.TasksImportedBy, changes.Count, user));
         PublishSnapshot();
+        _scheduleWake.Release();
         return OkResult.Instance;
+    }
+
+    /// <summary>
+    /// The file of exported tasks (section 9a). With a password, the secrets of their accounts go in encrypted with it:
+    /// this is the only way a password stored here ever leaves the service, so only administrators may ask.
+    /// </summary>
+    public TasksExportResult ExportTasks(TasksExportRequest request, string user)
+    {
+        var all = _config.GetTasks();
+        var tasks = request.TaskIds.Count == 0 ? all : [.. all.Where(t => request.TaskIds.Any(id => SameId(id, t.Id)))];
+        if (tasks.Count == 0)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.ExportNoTasks);
+        }
+
+        var unreadable = new List<string>();
+        string? Secret(string credentialId)
+        {
+            try
+            {
+                return _config.GetPassword(credentialId);
+            }
+            catch (ConfigException)
+            {
+                unreadable.Add(_config.GetCredential(credentialId)?.DisplayName ?? credentialId);
+                return null;
+            }
+        }
+
+        Core.Transfer.ExportFile file;
+        try
+        {
+            bool secrets = request.Password is not null;
+            file = Core.Transfer.TaskExport.Create(tasks, _config.GetCredentials(), secrets ? Secret : null, secrets ? _config.GetCloudApps() : null,
+                request.Password, Environment.MachineName, DateTimeOffset.UtcNow, request.AllAccounts);
+        }
+        catch (Core.Transfer.ExportException ex)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, ex.Message);
+        }
+
+        Log(LogLineLevels.Info, Messages.Format(request.Password is null ? Messages.TasksExportedBy : Messages.TasksExportedWithSecretsBy, tasks.Count, user));
+        return new TasksExportResult
+        {
+            Content = System.Text.Encoding.UTF8.GetString(Core.Transfer.TaskExport.Serialize(file)),
+            Tasks = tasks.Count,
+            Unreadable = unreadable,
+        };
+    }
+
+    /// <summary>Own applications of the cloud drives from a file: only for a service that has none set here.</summary>
+    private void TakeCloudApps(Core.Cloud.CloudAppsFile apps)
+    {
+        var own = _config.GetCloudApps();
+        bool changed = false;
+        if (own.Of(DestinationKinds.GDrive) is null && apps.Of(DestinationKinds.GDrive) is { } gdrive)
+        {
+            own.Gdrive = gdrive;
+            changed = true;
+        }
+
+        if (own.Of(DestinationKinds.YaDisk) is null && apps.Of(DestinationKinds.YaDisk) is { } yadisk)
+        {
+            own.Yadisk = yadisk;
+            changed = true;
+        }
+
+        if (own.Of(DestinationKinds.Dropbox) is null && apps.Of(DestinationKinds.Dropbox) is { } dropbox)
+        {
+            own.Dropbox = dropbox;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            _config.SaveCloudApps(own);
+        }
     }
 
     public Credential SaveCredential(CredentialInput input)
@@ -396,8 +550,19 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return OkResult.Instance;
     }
 
-    public OkResult SaveSettings(AgentSettings settings, string user)
+    /// <param name="isAdmin">False for a user who may change settings only because everybody may: the rights
+    /// (who may change things and what users see of the interface) stay as an administrator set them.</param>
+    public OkResult SaveSettings(AgentSettings settings, string user, bool isAdmin)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (!isAdmin)
+        {
+            var current = _config.GetSettings();
+            settings.AllowAllUsersEdit = current.AllowAllUsersEdit;
+            settings.TrayMode = current.TrayMode;
+            settings.AllowRemoteEdit = current.AllowRemoteEdit;
+        }
+
         try
         {
             _config.SaveSettings(settings);
@@ -413,6 +578,25 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         PublishSnapshot();
         return OkResult.Instance;
     }
+
+    /// <summary>Sets, changes or removes (null) the program password (section 4). The site learns from the next
+    /// configuration snapshot that a password is set, never the password or its hash.</summary>
+    public OkResult SetProgramPassword(string? password, string user)
+    {
+        if (password is not null && ProgramPassword.Problem(password) is { } problem)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, problem);
+        }
+
+        _config.SetProgramPasswordHash(password is null ? null : ProgramPassword.Hash(password));
+        Log(LogLineLevels.Info, Messages.Format(password is null ? Messages.PasswordRemovedBy : Messages.PasswordSetBy, user));
+        NoteConfigChange();
+        PublishSnapshot();
+        return OkResult.Instance;
+    }
+
+    /// <summary>A wrong program password was typed: noted in the live log, where an administrator sees it.</summary>
+    public void NoteWrongPassword(string user) => Log(LogLineLevels.Warning, Messages.Format(Messages.PasswordWrongBy, user));
 
     /// <summary>"Find" in the database server dialog: running servers and folders of their programs.</summary>
     public DbFindResult FindDatabases() => DbFinder.Find(_stopping);

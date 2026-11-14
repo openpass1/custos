@@ -1139,6 +1139,138 @@ static partial class Strings
     /// <summary>Used by tasks</summary>
     public static string ColumnUsedBy => Get(nameof(ColumnUsedBy));
 
+    /// <summary>Rights and protection</summary>
+    public static string SettingsRights => Get(nameof(SettingsRights));
+
+    /// <summary>Allow all users to change tasks</summary>
+    public static string AllowAllUsersEdit => Get(nameof(AllowAllUsersEdit));
+
+    /// <summary>Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM,...</summary>
+    public static string AllowAllUsersEditHelp => Get(nameof(AllowAllUsersEditHelp));
+
+    /// <summary>Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this...</summary>
+    public static string AllowAllUsersEditWarning => Get(nameof(AllowAllUsersEditWarning));
+
+    /// <summary>Interface for users:</summary>
+    public static string TrayModeLabel => Get(nameof(TrayModeLabel));
+
+    /// <summary>What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what th...</summary>
+    public static string TrayModeHelp => Get(nameof(TrayModeHelp));
+
+    /// <summary>Full</summary>
+    public static string TrayModeFull => Get(nameof(TrayModeFull));
+
+    /// <summary>State only</summary>
+    public static string TrayModeStatus => Get(nameof(TrayModeStatus));
+
+    /// <summary>Hidden</summary>
+    public static string TrayModeHidden => Get(nameof(TrayModeHidden));
+
+    /// <summary>Program password:</summary>
+    public static string ProgramPasswordLabel => Get(nameof(ProgramPasswordLabel));
+
+    /// <summary>When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is ...</summary>
+    public static string ProgramPasswordHelp => Get(nameof(ProgramPasswordHelp));
+
+    /// <summary>set</summary>
+    public static string ProgramPasswordIsSet => Get(nameof(ProgramPasswordIsSet));
+
+    /// <summary>not set</summary>
+    public static string ProgramPasswordNotSet => Get(nameof(ProgramPasswordNotSet));
+
+    /// <summary>Set…</summary>
+    public static string ProgramPasswordSetButton => Get(nameof(ProgramPasswordSetButton));
+
+    /// <summary>Change…</summary>
+    public static string ProgramPasswordChangeButton => Get(nameof(ProgramPasswordChangeButton));
+
+    /// <summary>Remove password</summary>
+    public static string ProgramPasswordRemoveButton => Get(nameof(ProgramPasswordRemoveButton));
+
+    /// <summary>Remove the program password? Changes will then need only the rights of the user.</summary>
+    public static string ProgramPasswordRemoveConfirm => Get(nameof(ProgramPasswordRemoveConfirm));
+
+    /// <summary>The program password is removed.</summary>
+    public static string ProgramPasswordRemoved => Get(nameof(ProgramPasswordRemoved));
+
+    /// <summary>The program password is set. Changes and restores now need it.</summary>
+    public static string ProgramPasswordSaved => Get(nameof(ProgramPasswordSaved));
+
+    /// <summary>Only an administrator of this computer can change the rights and the program password.</summary>
+    public static string SettingsRightsAdminOnly => Get(nameof(SettingsRightsAdminOnly));
+
+    /// <summary>Program password</summary>
+    public static string PasswordSetTitle => Get(nameof(PasswordSetTitle));
+
+    /// <summary>New password:</summary>
+    public static string PasswordNew => Get(nameof(PasswordNew));
+
+    /// <summary>Once more:</summary>
+    public static string PasswordAgain => Get(nameof(PasswordAgain));
+
+    /// <summary>At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, o...</summary>
+    public static string PasswordSetNote => Get(nameof(PasswordSetNote));
+
+    /// <summary>The two passwords differ.</summary>
+    public static string PasswordMismatch => Get(nameof(PasswordMismatch));
+
+    /// <summary>The password must be at least {0} characters long.</summary>
+    public static string PasswordTooShortUi => Get(nameof(PasswordTooShortUi));
+
+    /// <summary>Program password</summary>
+    public static string PasswordPromptTitle => Get(nameof(PasswordPromptTitle));
+
+    /// <summary>A program password is set on this computer. Type it to change tasks and settings or to restore.</summary>
+    public static string PasswordPromptText => Get(nameof(PasswordPromptText));
+
+    /// <summary>Password:</summary>
+    public static string PasswordPromptLabel => Get(nameof(PasswordPromptLabel));
+
+    /// <summary>The program password was not typed: nothing was changed.</summary>
+    public static string PasswordNotTyped => Get(nameof(PasswordNotTyped));
+
+    /// <summary>Look</summary>
+    public static string SettingsLook => Get(nameof(SettingsLook));
+
+    /// <summary>Theme:</summary>
+    public static string ThemeLabel => Get(nameof(ThemeLabel));
+
+    /// <summary>For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personal...</summary>
+    public static string ThemeHelp => Get(nameof(ThemeHelp));
+
+    /// <summary>As in Windows</summary>
+    public static string ThemeAuto => Get(nameof(ThemeAuto));
+
+    /// <summary>Light</summary>
+    public static string ThemeLight => Get(nameof(ThemeLight));
+
+    /// <summary>Dark</summary>
+    public static string ThemeDark => Get(nameof(ThemeDark));
+
+    /// <summary>CUSTOS: state of the backups</summary>
+    public static string StatusTitle => Get(nameof(StatusTitle));
+
+    /// <summary>An administrator has set CUSTOS to only show the state on this computer.</summary>
+    public static string StatusNote => Get(nameof(StatusNote));
+
+    /// <summary>State of the backups</summary>
+    public static string MenuOpenStatus => Get(nameof(MenuOpenStatus));
+
+    /// <summary>Switch on</summary>
+    public static string ToolEnable => Get(nameof(ToolEnable));
+
+    /// <summary>Switch off</summary>
+    public static string ToolDisable => Get(nameof(ToolDisable));
+
+    /// <summary>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</summary>
+    public static string ToolEnableHint => Get(nameof(ToolEnableHint));
+
+    /// <summary>Delete {0} tasks?</summary>
+    public static string ConfirmDeleteMany => Get(nameof(ConfirmDeleteMany));
+
+    /// <summary>Some tasks were not changed:</summary>
+    public static string TasksNotChanged => Get(nameof(TasksNotChanged));
+
     /// <summary>Import from Cobian Backup</summary>
     public static string ImportTitle => Get(nameof(ImportTitle));
 
@@ -2269,4 +2401,166 @@ static partial class Strings
 
     /// <summary>not chosen</summary>
     public static string RestoreStoreNone => Get(nameof(RestoreStoreNone));
+
+    /// <summary>Import tasks from a file…</summary>
+    public static string ToolImportFile => Get(nameof(ToolImportFile));
+
+    /// <summary>Export tasks to a file…</summary>
+    public static string ToolExportFile => Get(nameof(ToolExportFile));
+
+    /// <summary>Export tasks</summary>
+    public static string ExportTitle => Get(nameof(ExportTitle));
+
+    /// <summary>Tasks to put into the file:</summary>
+    public static string ExportTasksHeading => Get(nameof(ExportTasksHeading));
+
+    /// <summary>Also the accounts of the settings that the chosen tasks do not use ({0}): {1}</summary>
+    public static string ExportAllAccounts => Get(nameof(ExportAllAccounts));
+
+    /// <summary>Tick all</summary>
+    public static string ExportCheckAll => Get(nameof(ExportCheckAll));
+
+    /// <summary>Untick all</summary>
+    public static string ExportCheckNone => Get(nameof(ExportCheckNone));
+
+    /// <summary>Chosen: {0} of {1}</summary>
+    public static string ExportChosen => Get(nameof(ExportChosen));
+
+    /// <summary>Passwords and keys</summary>
+    public static string ExportSecretsGroup => Get(nameof(ExportSecretsGroup));
+
+    /// <summary>Put passwords and keys into the file, encrypted with an export password</summary>
+    public static string ExportIncludeSecrets => Get(nameof(ExportIncludeSecrets));
+
+    /// <summary>Export password:</summary>
+    public static string ExportPassword => Get(nameof(ExportPassword));
+
+    /// <summary>Accounts in the file: with a password {0}, SSH keys {1}, cloud accounts {2}.</summary>
+    public static string ExportSecretsCount => Get(nameof(ExportSecretsCount));
+
+    /// <summary>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts ...</summary>
+    public static string ExportNoSecretsNote => Get(nameof(ExportNoSecretsNote));
+
+    /// <summary>Passwords of accounts, archive passwords, SSH keys and tokens of cloud accounts go into the file encrypted ...</summary>
+    public static string ExportSecretsNote => Get(nameof(ExportSecretsNote));
+
+    /// <summary>Save…</summary>
+    public static string ExportSave => Get(nameof(ExportSave));
+
+    /// <summary>CUSTOS tasks (*.json)|*.json|All files|*.*</summary>
+    public static string ExportFilter => Get(nameof(ExportFilter));
+
+    /// <summary>Tick at least one task.</summary>
+    public static string ExportNothingChosen => Get(nameof(ExportNothingChosen));
+
+    /// <summary>Tasks saved without passwords: {0}.</summary>
+    public static string ExportDone => Get(nameof(ExportDone));
+
+    /// <summary>Tasks saved with passwords and keys: {0}.</summary>
+    public static string ExportDoneSecrets => Get(nameof(ExportDoneSecrets));
+
+    /// <summary>These passwords could not be read on this computer and are not in the file: {0}</summary>
+    public static string ExportUnreadable => Get(nameof(ExportUnreadable));
+
+    /// <summary>Cannot write the file: {0}</summary>
+    public static string ExportCannotWrite => Get(nameof(ExportCannotWrite));
+
+    /// <summary>Import tasks from a file</summary>
+    public static string ImportFileTitle => Get(nameof(ImportFileTitle));
+
+    /// <summary>File:</summary>
+    public static string ImportFileLabel => Get(nameof(ImportFileLabel));
+
+    /// <summary>A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore...</summary>
+    public static string ImportFileNote => Get(nameof(ImportFileNote));
+
+    /// <summary>Exported from {0} on {1}, CUSTOS {2}.</summary>
+    public static string ImportFileFrom => Get(nameof(ImportFileFrom));
+
+    /// <summary>There are no passwords or keys in the file.</summary>
+    public static string ImportFileNoSecrets => Get(nameof(ImportFileNoSecrets));
+
+    /// <summary>The file has passwords and keys, encrypted with the export password. They are not open yet.</summary>
+    public static string ImportFileHasSecrets => Get(nameof(ImportFileHasSecrets));
+
+    /// <summary>Enter the export password…</summary>
+    public static string ImportFileEnterPassword => Get(nameof(ImportFileEnterPassword));
+
+    /// <summary>Open</summary>
+    public static string ImportFileOpen => Get(nameof(ImportFileOpen));
+
+    /// <summary>Passwords and keys of the file are open.</summary>
+    public static string ImportFileOpened => Get(nameof(ImportFileOpened));
+
+    /// <summary>Export password</summary>
+    public static string ExportPasswordTitle => Get(nameof(ExportPasswordTitle));
+
+    /// <summary>The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks...</summary>
+    public static string ExportPasswordAsk => Get(nameof(ExportPasswordAsk));
+
+    /// <summary>Enter the export password.</summary>
+    public static string ExportPasswordEmpty => Get(nameof(ExportPasswordEmpty));
+
+    /// <summary>Without passwords from the file</summary>
+    public static string ExportPasswordSkip => Get(nameof(ExportPasswordSkip));
+
+    /// <summary>Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can th...</summary>
+    public static string ExportPasswordSkipNote => Get(nameof(ExportPasswordSkipNote));
+
+    /// <summary>Tasks in the file: {0}</summary>
+    public static string ImportFileFound => Get(nameof(ImportFileFound));
+
+    /// <summary>Also the accounts of the file that no task uses ({0}): {1}</summary>
+    public static string ImportFileSpare => Get(nameof(ImportFileSpare));
+
+    /// <summary>Cannot read the file: {0}</summary>
+    public static string ImportFileCannotRead => Get(nameof(ImportFileCannotRead));
+
+    /// <summary>On</summary>
+    public static string ColumnEnabled => Get(nameof(ColumnEnabled));
+
+    /// <summary>On this computer</summary>
+    public static string ColumnHere => Get(nameof(ColumnHere));
+
+    /// <summary>yes, replaced</summary>
+    public static string ImportHereReplaced => Get(nameof(ImportHereReplaced));
+
+    /// <summary>This computer has this task already («{0}»): the one from the file replaces it. Untick the task to keep the...</summary>
+    public static string RemarkReplaces => Get(nameof(RemarkReplaces));
+
+    /// <summary>The password of {0} is not in the file: enter it below. Left empty, the task comes switched off.</summary>
+    public static string RemarkPasswordMissing => Get(nameof(RemarkPasswordMissing));
+
+    /// <summary>The archive password is not in the file: enter it below. Without it the archives made before cannot be open...</summary>
+    public static string RemarkArchivePasswordMissing => Get(nameof(RemarkArchivePasswordMissing));
+
+    /// <summary>The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the L...</summary>
+    public static string RemarkSshKeyMissing => Get(nameof(RemarkSshKeyMissing));
+
+    /// <summary>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings ...</summary>
+    public static string RemarkCloudMissing => Get(nameof(RemarkCloudMissing));
+
+    /// <summary>The passwords and keys of this task are in the file, encrypted with the export password. Open them with «En...</summary>
+    public static string RemarkSecretsLocked => Get(nameof(RemarkSecretsLocked));
+
+    /// <summary>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</summary>
+    public static string ImportFileAccounts => Get(nameof(ImportFileAccounts));
+
+    /// <summary>The passwords of the file are not open, so type here the passwords of accounts and archives (not the export...</summary>
+    public static string ImportFileAccountsLocked => Get(nameof(ImportFileAccountsLocked));
+
+    /// <summary>Tasks imported: {0}.</summary>
+    public static string ImportFileDone => Get(nameof(ImportFileDone));
+
+    /// <summary>Accounts without tasks added: {0}. Settings → the list of accounts.</summary>
+    public static string ImportFileSpareDone => Get(nameof(ImportFileSpareDone));
+
+    /// <summary>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</summary>
+    public static string ImportFileSwitchedOff => Get(nameof(ImportFileSwitchedOff));
+
+    /// <summary>{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line o...</summary>
+    public static string RemoteKeyNotHere => Get(nameof(RemoteKeyNotHere));
+
+    /// <summary>Create new key</summary>
+    public static string RemoteCreateNewKey => Get(nameof(RemoteCreateNewKey));
 }

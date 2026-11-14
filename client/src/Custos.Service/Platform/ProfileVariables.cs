@@ -23,6 +23,20 @@ internal static class ProfileVariables
             : Environment.GetEnvironmentVariable(name);
     }
 
+    /// <summary>Whether this computer has a profile for the SID (a task from another computer may name one it lacks).</summary>
+    public static bool HasProfile(string sid)
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(Path.Combine(ProfileList, sid));
+            return key?.GetValue("ProfileImagePath") is string { Length: > 0 };
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException or ArgumentException)
+        {
+            return false;
+        }
+    }
+
     private static Dictionary<string, string> Read(string sid)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

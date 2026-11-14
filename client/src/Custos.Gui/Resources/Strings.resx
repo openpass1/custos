@@ -1167,6 +1167,142 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="ColumnUsedBy" xml:space="preserve">
     <value>Used by tasks</value>
   </data>
+  <data name="SettingsRights" xml:space="preserve">
+    <value>Rights and protection</value>
+  </data>
+  <data name="AllowAllUsersEdit" xml:space="preserve">
+    <value>Allow all users to change tasks</value>
+  </data>
+  <data name="AllowAllUsersEditHelp" xml:space="preserve">
+    <value>Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM, so whoever may change a task may read any file through it or run any program in its events: in effect, every user becomes an administrator. Restoring stays for administrators either way.</value>
+  </data>
+  <data name="AllowAllUsersEditWarning" xml:space="preserve">
+    <value>Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this in effect gives every user the rights of an administrator.
+
+Allow it?</value>
+  </data>
+  <data name="TrayModeLabel" xml:space="preserve">
+    <value>Interface for users:</value>
+  </data>
+  <data name="TrayModeHelp" xml:space="preserve">
+    <value>What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what they may change still depends on the rights. «State only»: the tray icon and a window that only shows the state of the tasks. «Hidden»: no tray icon; started from the Start menu, CUSTOS shows the state window. Administrators always get the full interface.</value>
+  </data>
+  <data name="TrayModeFull" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="TrayModeStatus" xml:space="preserve">
+    <value>State only</value>
+  </data>
+  <data name="TrayModeHidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="ProgramPasswordLabel" xml:space="preserve">
+    <value>Program password:</value>
+  </data>
+  <data name="ProgramPasswordHelp" xml:space="preserve">
+    <value>When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of Windows.</value>
+  </data>
+  <data name="ProgramPasswordIsSet" xml:space="preserve">
+    <value>set</value>
+  </data>
+  <data name="ProgramPasswordNotSet" xml:space="preserve">
+    <value>not set</value>
+  </data>
+  <data name="ProgramPasswordSetButton" xml:space="preserve">
+    <value>Set…</value>
+  </data>
+  <data name="ProgramPasswordChangeButton" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="ProgramPasswordRemoveButton" xml:space="preserve">
+    <value>Remove password</value>
+  </data>
+  <data name="ProgramPasswordRemoveConfirm" xml:space="preserve">
+    <value>Remove the program password? Changes will then need only the rights of the user.</value>
+  </data>
+  <data name="ProgramPasswordRemoved" xml:space="preserve">
+    <value>The program password is removed.</value>
+  </data>
+  <data name="ProgramPasswordSaved" xml:space="preserve">
+    <value>The program password is set. Changes and restores now need it.</value>
+  </data>
+  <data name="SettingsRightsAdminOnly" xml:space="preserve">
+    <value>Only an administrator of this computer can change the rights and the program password.</value>
+  </data>
+  <data name="PasswordSetTitle" xml:space="preserve">
+    <value>Program password</value>
+  </data>
+  <data name="PasswordNew" xml:space="preserve">
+    <value>New password:</value>
+  </data>
+  <data name="PasswordAgain" xml:space="preserve">
+    <value>Once more:</value>
+  </data>
+  <data name="PasswordSetNote" xml:space="preserve">
+    <value>At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, or see «Program password» in the client README.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>The two passwords differ.</value>
+  </data>
+  <data name="PasswordTooShortUi" xml:space="preserve">
+    <value>The password must be at least {0} characters long.</value>
+  </data>
+  <data name="PasswordPromptTitle" xml:space="preserve">
+    <value>Program password</value>
+  </data>
+  <data name="PasswordPromptText" xml:space="preserve">
+    <value>A program password is set on this computer. Type it to change tasks and settings or to restore.</value>
+  </data>
+  <data name="PasswordPromptLabel" xml:space="preserve">
+    <value>Password:</value>
+  </data>
+  <data name="PasswordNotTyped" xml:space="preserve">
+    <value>The program password was not typed: nothing was changed.</value>
+  </data>
+  <data name="SettingsLook" xml:space="preserve">
+    <value>Look</value>
+  </data>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>Theme:</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personalisation, Colours). The open windows of CUSTOS are reopened in the new theme.</value>
+  </data>
+  <data name="ThemeAuto" xml:space="preserve">
+    <value>As in Windows</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="StatusTitle" xml:space="preserve">
+    <value>CUSTOS: state of the backups</value>
+  </data>
+  <data name="StatusNote" xml:space="preserve">
+    <value>An administrator has set CUSTOS to only show the state on this computer.</value>
+  </data>
+  <data name="MenuOpenStatus" xml:space="preserve">
+    <value>State of the backups</value>
+  </data>
+  <data name="ToolEnable" xml:space="preserve">
+    <value>Switch on</value>
+  </data>
+  <data name="ToolDisable" xml:space="preserve">
+    <value>Switch off</value>
+  </data>
+  <data name="ToolEnableHint" xml:space="preserve">
+    <value>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</value>
+  </data>
+  <data name="ConfirmDeleteMany" xml:space="preserve">
+    <value>Delete {0} tasks?
+
+The backups they have made stay where they are.</value>
+  </data>
+  <data name="TasksNotChanged" xml:space="preserve">
+    <value>Some tasks were not changed:</value>
+  </data>
   <data name="ImportTitle" xml:space="preserve">
     <value>Import from Cobian Backup</value>
   </data>
@@ -2327,5 +2463,173 @@ Save the destination as it is all the same?</value>
   </data>
   <data name="RestoreStoreNone" xml:space="preserve">
     <value>not chosen</value>
+  </data>
+  <data name="ToolImportFile" xml:space="preserve">
+    <value>Import tasks from a file…</value>
+  </data>
+  <data name="ToolExportFile" xml:space="preserve">
+    <value>Export tasks to a file…</value>
+  </data>
+  <data name="ExportTitle" xml:space="preserve">
+    <value>Export tasks</value>
+  </data>
+  <data name="ExportTasksHeading" xml:space="preserve">
+    <value>Tasks to put into the file:</value>
+  </data>
+  <data name="ExportAllAccounts" xml:space="preserve">
+    <value>Also the accounts of the settings that the chosen tasks do not use ({0}): {1}</value>
+  </data>
+  <data name="ExportCheckAll" xml:space="preserve">
+    <value>Tick all</value>
+  </data>
+  <data name="ExportCheckNone" xml:space="preserve">
+    <value>Untick all</value>
+  </data>
+  <data name="ExportChosen" xml:space="preserve">
+    <value>Chosen: {0} of {1}</value>
+  </data>
+  <data name="ExportSecretsGroup" xml:space="preserve">
+    <value>Passwords and keys</value>
+  </data>
+  <data name="ExportIncludeSecrets" xml:space="preserve">
+    <value>Put passwords and keys into the file, encrypted with an export password</value>
+  </data>
+  <data name="ExportPassword" xml:space="preserve">
+    <value>Export password:</value>
+  </data>
+  <data name="ExportSecretsCount" xml:space="preserve">
+    <value>Accounts in the file: with a password {0}, SSH keys {1}, cloud accounts {2}.</value>
+  </data>
+  <data name="ExportNoSecretsNote" xml:space="preserve">
+    <value>Without this box the file holds no passwords and can be kept anywhere. On import the passwords of accounts and the archive password are typed again, SSH keys are made again and cloud accounts connected again. Write the archive password down: without it the backups made before cannot be opened.</value>
+  </data>
+  <data name="ExportSecretsNote" xml:space="preserve">
+    <value>Passwords of accounts, archive passwords, SSH keys and tokens of cloud accounts go into the file encrypted (AES-256). Without the export password nobody can read them, CUSTOS included: remember it or write it down. Keep the file away from this computer, for example on a USB stick or a network share.</value>
+  </data>
+  <data name="ExportSave" xml:space="preserve">
+    <value>Save…</value>
+  </data>
+  <data name="ExportFilter" xml:space="preserve">
+    <value>CUSTOS tasks (*.json)|*.json|All files|*.*</value>
+  </data>
+  <data name="ExportNothingChosen" xml:space="preserve">
+    <value>Tick at least one task.</value>
+  </data>
+  <data name="ExportDone" xml:space="preserve">
+    <value>Tasks saved without passwords: {0}.
+
+File: {1}</value>
+  </data>
+  <data name="ExportDoneSecrets" xml:space="preserve">
+    <value>Tasks saved with passwords and keys: {0}.
+
+File: {1}
+
+Keep the export password: without it the passwords in the file cannot be read.</value>
+  </data>
+  <data name="ExportUnreadable" xml:space="preserve">
+    <value>These passwords could not be read on this computer and are not in the file: {0}</value>
+  </data>
+  <data name="ExportCannotWrite" xml:space="preserve">
+    <value>Cannot write the file: {0}</value>
+  </data>
+  <data name="ImportFileTitle" xml:space="preserve">
+    <value>Import tasks from a file</value>
+  </data>
+  <data name="ImportFileLabel" xml:space="preserve">
+    <value>File:</value>
+  </data>
+  <data name="ImportFileNote" xml:space="preserve">
+    <value>A file saved with «Export tasks to a file…» on this or another computer. The tasks keep their ids: «Restore» finds the backups they made before, and retention goes on deleting old ones by its rules.</value>
+  </data>
+  <data name="ImportFileFrom" xml:space="preserve">
+    <value>Exported from {0} on {1}, CUSTOS {2}.</value>
+  </data>
+  <data name="ImportFileNoSecrets" xml:space="preserve">
+    <value>There are no passwords or keys in the file.</value>
+  </data>
+  <data name="ImportFileHasSecrets" xml:space="preserve">
+    <value>The file has passwords and keys, encrypted with the export password. They are not open yet.</value>
+  </data>
+  <data name="ImportFileEnterPassword" xml:space="preserve">
+    <value>Enter the export password…</value>
+  </data>
+  <data name="ImportFileOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="ImportFileOpened" xml:space="preserve">
+    <value>Passwords and keys of the file are open.</value>
+  </data>
+  <data name="ExportPasswordTitle" xml:space="preserve">
+    <value>Export password</value>
+  </data>
+  <data name="ExportPasswordAsk" xml:space="preserve">
+    <value>The file has the passwords and keys of its tasks, encrypted. Enter the password that was set when the tasks were exported:</value>
+  </data>
+  <data name="ExportPasswordEmpty" xml:space="preserve">
+    <value>Enter the export password.</value>
+  </data>
+  <data name="ExportPasswordSkip" xml:space="preserve">
+    <value>Without passwords from the file</value>
+  </data>
+  <data name="ExportPasswordSkipNote" xml:space="preserve">
+    <value>Do not remember it? Choose «Without passwords from the file»: the passwords of accounts and archives can then be typed in the import window, and tasks with SSH keys or cloud accounts come switched off.</value>
+  </data>
+  <data name="ImportFileFound" xml:space="preserve">
+    <value>Tasks in the file: {0}</value>
+  </data>
+  <data name="ImportFileSpare" xml:space="preserve">
+    <value>Also the accounts of the file that no task uses ({0}): {1}</value>
+  </data>
+  <data name="ImportFileCannotRead" xml:space="preserve">
+    <value>Cannot read the file: {0}</value>
+  </data>
+  <data name="ColumnEnabled" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="ColumnHere" xml:space="preserve">
+    <value>On this computer</value>
+  </data>
+  <data name="ImportHereReplaced" xml:space="preserve">
+    <value>yes, replaced</value>
+  </data>
+  <data name="RemarkReplaces" xml:space="preserve">
+    <value>This computer has this task already («{0}»): the one from the file replaces it. Untick the task to keep the one here.</value>
+  </data>
+  <data name="RemarkPasswordMissing" xml:space="preserve">
+    <value>The password of {0} is not in the file: enter it below. Left empty, the task comes switched off.</value>
+  </data>
+  <data name="RemarkArchivePasswordMissing" xml:space="preserve">
+    <value>The archive password is not in the file: enter it below. Without it the archives made before cannot be opened. Left empty, the task comes switched off.</value>
+  </data>
+  <data name="RemarkSshKeyMissing" xml:space="preserve">
+    <value>The SSH key {0} is not in the file: the task comes switched off. Make a new key («Edit» → «Sources» → the Linux server → «Create new key»), add its line on the server and switch the task on.</value>
+  </data>
+  <data name="RemarkCloudMissing" xml:space="preserve">
+    <value>The account {0} is not connected on this computer: the task comes switched off. Connect it again (Settings → the list of accounts → «Connect again…») and switch the task on.</value>
+  </data>
+  <data name="RemarkSecretsLocked" xml:space="preserve">
+    <value>The passwords and keys of this task are in the file, encrypted with the export password. Open them with «Enter the export password…» at the top. Without them, type the passwords below; a task with an SSH key or a cloud account then comes switched off.</value>
+  </data>
+  <data name="ImportFileAccounts" xml:space="preserve">
+    <value>Passwords that are not in the file. Enter each once; a task whose password stays empty comes switched off:</value>
+  </data>
+  <data name="ImportFileAccountsLocked" xml:space="preserve">
+    <value>The passwords of the file are not open, so type here the passwords of accounts and archives (not the export password). A task whose password stays empty comes switched off:</value>
+  </data>
+  <data name="ImportFileDone" xml:space="preserve">
+    <value>Tasks imported: {0}.</value>
+  </data>
+  <data name="ImportFileSpareDone" xml:space="preserve">
+    <value>Accounts without tasks added: {0}. Settings → the list of accounts.</value>
+  </data>
+  <data name="ImportFileSwitchedOff" xml:space="preserve">
+    <value>Switched off until what they lack is added: {0}. Switch them on in the editor afterwards.</value>
+  </data>
+  <data name="RemoteKeyNotHere" xml:space="preserve">
+    <value>{0}: the key is not on this computer (the task was moved without keys). Create a new key and add its line on the server.</value>
+  </data>
+  <data name="RemoteCreateNewKey" xml:space="preserve">
+    <value>Create new key</value>
   </data>
 </root>

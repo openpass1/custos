@@ -407,6 +407,12 @@ static partial class Messages
     /// <summary>Task «{0}» changed ({1}).</summary>
     public static string TaskChangedBy => Get(nameof(TaskChangedBy));
 
+    /// <summary>Task «{0}» switched on ({1}).</summary>
+    public static string TaskEnabledBy => Get(nameof(TaskEnabledBy));
+
+    /// <summary>Task «{0}» switched off ({1}).</summary>
+    public static string TaskDisabledBy => Get(nameof(TaskDisabledBy));
+
     /// <summary>Task «{0}» deleted ({1}). Its backups were not touched.</summary>
     public static string TaskDeletedBy => Get(nameof(TaskDeletedBy));
 
@@ -595,6 +601,30 @@ static partial class Messages
 
     /// <summary>Only administrators of this computer may change tasks and settings.</summary>
     public static string NotAllowed => Get(nameof(NotAllowed));
+
+    /// <summary>The program password is set: type it to change tasks and settings or to restore.</summary>
+    public static string PasswordRequired => Get(nameof(PasswordRequired));
+
+    /// <summary>Wrong program password.</summary>
+    public static string PasswordWrong => Get(nameof(PasswordWrong));
+
+    /// <summary>The program password must be at least {0} characters long.</summary>
+    public static string PasswordTooShort => Get(nameof(PasswordTooShort));
+
+    /// <summary>The program password must be at most {0} characters long.</summary>
+    public static string PasswordTooLong => Get(nameof(PasswordTooLong));
+
+    /// <summary>Program password set ({0}).</summary>
+    public static string PasswordSetBy => Get(nameof(PasswordSetBy));
+
+    /// <summary>Program password removed ({0}).</summary>
+    public static string PasswordRemovedBy => Get(nameof(PasswordRemovedBy));
+
+    /// <summary>Wrong program password typed ({0}).</summary>
+    public static string PasswordWrongBy => Get(nameof(PasswordWrongBy));
+
+    /// <summary>Only administrators of this computer may set or remove the program password.</summary>
+    public static string PasswordNotAllowed => Get(nameof(PasswordNotAllowed));
 
     /// <summary>Archive: {0}, compression level {1}{2}.</summary>
     public static string ArchiveSettings => Get(nameof(ArchiveSettings));
@@ -1010,7 +1040,7 @@ static partial class Messages
     /// <summary>{0}: THE KEY OF THE SERVER HAS CHANGED. Expected {1}, the server shows {2}. Nothing was read. If the server...</summary>
     public static string RemoteHostKeyChanged => Get(nameof(RemoteHostKeyChanged));
 
-    /// <summary>{0}: the server does not accept the key of CUSTOS for the user «{1}». Run the install block from the task o...</summary>
+    /// <summary>{0}: the server does not accept the key of CUSTOS for the user «{1}». If the task has an office IP, the key...</summary>
     public static string RemoteKeyRefused => Get(nameof(RemoteKeyRefused));
 
     /// <summary>{0}: no connection: {1}</summary>
@@ -1657,4 +1687,40 @@ static partial class Messages
 
     /// <summary>The applications of CUSTOS at the cloud drives were changed by {0}.</summary>
     public static string CloudAppsSaved => Get(nameof(CloudAppsSaved));
+
+    /// <summary>This is not a file of CUSTOS tasks. Choose a file saved with «Export tasks to a file…».</summary>
+    public static string ExportNotAFile => Get(nameof(ExportNotAFile));
+
+    /// <summary>The file was made by a newer CUSTOS (format {0}). Update CUSTOS on this computer first.</summary>
+    public static string ExportNewerVersion => Get(nameof(ExportNewerVersion));
+
+    /// <summary>The file is damaged: {0}</summary>
+    public static string ExportDamaged => Get(nameof(ExportDamaged));
+
+    /// <summary>the task «{0}» refers to an account that is not in the file</summary>
+    public static string ExportUnknownAccount => Get(nameof(ExportUnknownAccount));
+
+    /// <summary>The file has no passwords or keys.</summary>
+    public static string ExportNoSecrets => Get(nameof(ExportNoSecrets));
+
+    /// <summary>Wrong export password, or the file was changed.</summary>
+    public static string ExportWrongPassword => Get(nameof(ExportWrongPassword));
+
+    /// <summary>The export password must be at least {0} characters long.</summary>
+    public static string ExportPasswordTooShort => Get(nameof(ExportPasswordTooShort));
+
+    /// <summary>There are no tasks to export.</summary>
+    public static string ExportNoTasks => Get(nameof(ExportNoTasks));
+
+    /// <summary>Tasks exported to a file without passwords: {0} ({1}).</summary>
+    public static string TasksExportedBy => Get(nameof(TasksExportedBy));
+
+    /// <summary>Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).</summary>
+    public static string TasksExportedWithSecretsBy => Get(nameof(TasksExportedWithSecretsBy));
+
+    /// <summary>Tasks imported from a CUSTOS file: {0} ({1}).</summary>
+    public static string TasksLoadedBy => Get(nameof(TasksLoadedBy));
+
+    /// <summary>Only administrators of this computer may export tasks.</summary>
+    public static string ExportNotAllowed => Get(nameof(ExportNotAllowed));
 }
