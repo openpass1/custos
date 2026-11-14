@@ -407,6 +407,12 @@ static partial class Messages
     /// <summary>Task «{0}» changed ({1}).</summary>
     public static string TaskChangedBy => Get(nameof(TaskChangedBy));
 
+    /// <summary>Task «{0}» switched on ({1}).</summary>
+    public static string TaskEnabledBy => Get(nameof(TaskEnabledBy));
+
+    /// <summary>Task «{0}» switched off ({1}).</summary>
+    public static string TaskDisabledBy => Get(nameof(TaskDisabledBy));
+
     /// <summary>Task «{0}» deleted ({1}). Its backups were not touched.</summary>
     public static string TaskDeletedBy => Get(nameof(TaskDeletedBy));
 
@@ -595,6 +601,30 @@ static partial class Messages
 
     /// <summary>Only administrators of this computer may change tasks and settings.</summary>
     public static string NotAllowed => Get(nameof(NotAllowed));
+
+    /// <summary>The program password is set: type it to change tasks and settings or to restore.</summary>
+    public static string PasswordRequired => Get(nameof(PasswordRequired));
+
+    /// <summary>Wrong program password.</summary>
+    public static string PasswordWrong => Get(nameof(PasswordWrong));
+
+    /// <summary>The program password must be at least {0} characters long.</summary>
+    public static string PasswordTooShort => Get(nameof(PasswordTooShort));
+
+    /// <summary>The program password must be at most {0} characters long.</summary>
+    public static string PasswordTooLong => Get(nameof(PasswordTooLong));
+
+    /// <summary>Program password set ({0}).</summary>
+    public static string PasswordSetBy => Get(nameof(PasswordSetBy));
+
+    /// <summary>Program password removed ({0}).</summary>
+    public static string PasswordRemovedBy => Get(nameof(PasswordRemovedBy));
+
+    /// <summary>Wrong program password typed ({0}).</summary>
+    public static string PasswordWrongBy => Get(nameof(PasswordWrongBy));
+
+    /// <summary>Only administrators of this computer may set or remove the program password.</summary>
+    public static string PasswordNotAllowed => Get(nameof(PasswordNotAllowed));
 
     /// <summary>Archive: {0}, compression level {1}{2}.</summary>
     public static string ArchiveSettings => Get(nameof(ArchiveSettings));

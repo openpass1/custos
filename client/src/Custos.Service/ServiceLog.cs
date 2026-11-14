@@ -57,6 +57,14 @@ internal static partial class ServiceLog
         Message = "User {User} (connection {ConnectionId}) is not allowed to call {Method}")]
     public static partial void RequestForbidden(ILogger logger, string user, long connectionId, string method);
 
+    [LoggerMessage(EventId = 110, Level = LogLevel.Information,
+        Message = "User {User} (connection {ConnectionId}) typed the program password")]
+    public static partial void PasswordAccepted(ILogger logger, string user, long connectionId);
+
+    [LoggerMessage(EventId = 111, Level = LogLevel.Warning,
+        Message = "User {User} (connection {ConnectionId}) typed a wrong program password")]
+    public static partial void PasswordRejected(ILogger logger, string user, long connectionId);
+
     // ---- Agent: schedule, queue and runs ------------------------------------------------------------------------
 
     [LoggerMessage(EventId = 200, Level = LogLevel.Error,

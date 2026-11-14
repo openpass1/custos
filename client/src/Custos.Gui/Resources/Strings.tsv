@@ -392,6 +392,51 @@ SettingsAccounts	Accounts for network folders, servers and cloud drives	Учёт
 SettingsAccountsNote	The service keeps the passwords and keys encrypted (Windows DPAPI) and never shows them. An account used by a task cannot be removed.	Пароли и ключи служба хранит в зашифрованном виде (Windows DPAPI) и никогда не показывает. Учётную запись, которая используется в задании, удалить нельзя.
 SettingsReadOnly	Only administrators can change the settings.	Изменять настройки могут только администраторы.
 ColumnUsedBy	Used by tasks	Используется в заданиях
+# ---- Stage 5: rights, program password, interface for users, theme (section 4)
+SettingsRights	Rights and protection	Права и защита
+AllowAllUsersEdit	Allow all users to change tasks	Разрешить всем пользователям менять задания
+AllowAllUsersEditHelp	Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM, so whoever may change a task may read any file through it or run any program in its events: in effect, every user becomes an administrator. Restoring stays for administrators either way.	По умолчанию выключено: задания и настройки меняют только администраторы этого компьютера. Служба работает от имени SYSTEM, поэтому тот, кто может менять задание, может через него прочитать любой файл или запустить любую программу в событиях: фактически каждый пользователь становится администратором. Восстанавливать копии по-прежнему могут только администраторы.
+AllowAllUsersEditWarning	Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this in effect gives every user the rights of an administrator.\n\nAllow it?	Все пользователи этого компьютера смогут менять задания и настройки. Служба работает от имени SYSTEM, поэтому это фактически даёт каждому пользователю права администратора.\n\nРазрешить?
+TrayModeLabel	Interface for users:	Интерфейс для пользователей:
+TrayModeHelp	What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what they may change still depends on the rights. «State only»: the tray icon and a window that only shows the state of the tasks. «Hidden»: no tray icon; started from the Start menu, CUSTOS shows the state window. Administrators always get the full interface.	Что видят пользователи, которые не администраторы. «Полный»: окно и значок в трее как обычно, а что можно менять, решают права. «Только состояние»: значок в трее и окно, которое только показывает состояние заданий. «Скрыт»: значка в трее нет; при запуске из меню «Пуск» открывается окно состояния. Администраторы всегда видят полный интерфейс.
+TrayModeFull	Full	Полный
+TrayModeStatus	State only	Только состояние
+TrayModeHidden	Hidden	Скрыт
+ProgramPasswordLabel	Program password:	Пароль программы:
+ProgramPasswordHelp	When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of Windows.	Если он задан, для изменения заданий и настроек и для восстановления нужен он, а не только права. После ввода его не спрашивают 30 минут после последнего изменения или пока окно не закрыто. Задать или убрать его можно и на сайте мониторинга. Он защищает от случайных правок и от посторонних, но не от администратора Windows.
+ProgramPasswordIsSet	set	задан
+ProgramPasswordNotSet	not set	не задан
+ProgramPasswordSetButton	Set…	Задать…
+ProgramPasswordChangeButton	Change…	Сменить…
+ProgramPasswordRemoveButton	Remove password	Убрать пароль
+ProgramPasswordRemoveConfirm	Remove the program password? Changes will then need only the rights of the user.	Убрать пароль программы? Тогда для изменений будет достаточно прав пользователя.
+ProgramPasswordRemoved	The program password is removed.	Пароль программы убран.
+ProgramPasswordSaved	The program password is set. Changes and restores now need it.	Пароль программы задан. Теперь он нужен для изменений и восстановления.
+SettingsRightsAdminOnly	Only an administrator of this computer can change the rights and the program password.	Права и пароль программы может менять только администратор этого компьютера.
+PasswordSetTitle	Program password	Пароль программы
+PasswordNew	New password:	Новый пароль:
+PasswordAgain	Once more:	Ещё раз:
+PasswordSetNote	At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, or see «Program password» in the client README.	Не короче {0} знаков. Хранится только его хэш. Если пароль забыт, уберите его на сайте мониторинга или посмотрите раздел «Пароль программы» в README клиента.
+PasswordMismatch	The two passwords differ.	Пароли не совпадают.
+PasswordTooShortUi	The password must be at least {0} characters long.	Пароль должен быть не короче {0} знаков.
+PasswordPromptTitle	Program password	Пароль программы
+PasswordPromptText	A program password is set on this computer. Type it to change tasks and settings or to restore.	На этом компьютере задан пароль программы. Введите его, чтобы менять задания и настройки или восстанавливать копии.
+PasswordPromptLabel	Password:	Пароль:
+PasswordNotTyped	The program password was not typed: nothing was changed.	Пароль программы не введён: ничего не изменено.
+SettingsLook	Look	Оформление
+ThemeLabel	Theme:	Тема:
+ThemeHelp	For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personalisation, Colours). The open windows of CUSTOS are reopened in the new theme.	Для всех пользователей этого компьютера. «Как в Windows» — по режиму приложений Windows («Параметры» → «Персонализация» → «Цвета»). Открытые окна CUSTOS откроются заново в новой теме.
+ThemeAuto	As in Windows	Как в Windows
+ThemeLight	Light	Светлая
+ThemeDark	Dark	Тёмная
+StatusTitle	CUSTOS: state of the backups	CUSTOS: состояние копий
+StatusNote	An administrator has set CUSTOS to only show the state on this computer.	Администратор настроил CUSTOS на этом компьютере так, что он только показывает состояние.
+MenuOpenStatus	State of the backups	Состояние копий
+ToolEnable	Switch on	Включить
+ToolDisable	Switch off	Отключить
+ToolEnableHint	Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A	Включить или отключить выбранные задания. Несколько — щелчок с Ctrl или Shift, все — Ctrl+A
+ConfirmDeleteMany	Delete {0} tasks?\n\nThe backups they have made stay where they are.	Удалить выбранные задания ({0})?\n\nУже сделанные копии останутся на месте.
+TasksNotChanged	Some tasks were not changed:	Некоторые задания не изменены:
 # ---- Import from Cobian Backup
 ImportTitle	Import from Cobian Backup	Импорт из Cobian Backup
 ImportFile	Task list:	Список заданий:

@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Задание «{0}» изменено ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Задание «{0}» включено ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Задание «{0}» отключено ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Задание «{0}» удалено ({1}). Его копии не тронуты.</value>
   </data>
@@ -603,6 +609,30 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Менять задания и настройки могут только администраторы этого компьютера.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>Задан пароль программы: введите его, чтобы менять задания и настройки или восстанавливать копии.</value>
+  </data>
+  <data name="PasswordWrong" xml:space="preserve">
+    <value>Неверный пароль программы.</value>
+  </data>
+  <data name="PasswordTooShort" xml:space="preserve">
+    <value>Пароль программы должен быть не короче {0} знаков.</value>
+  </data>
+  <data name="PasswordTooLong" xml:space="preserve">
+    <value>Пароль программы должен быть не длиннее {0} знаков.</value>
+  </data>
+  <data name="PasswordSetBy" xml:space="preserve">
+    <value>Пароль программы задан ({0}).</value>
+  </data>
+  <data name="PasswordRemovedBy" xml:space="preserve">
+    <value>Пароль программы убран ({0}).</value>
+  </data>
+  <data name="PasswordWrongBy" xml:space="preserve">
+    <value>Введён неверный пароль программы ({0}).</value>
+  </data>
+  <data name="PasswordNotAllowed" xml:space="preserve">
+    <value>Задавать и убирать пароль программы могут только администраторы этого компьютера.</value>
   </data>
   <data name="ArchiveSettings" xml:space="preserve">
     <value>Архив: {0}, уровень сжатия {1}{2}.</value>

@@ -310,6 +310,34 @@ public sealed partial class ConfigStore
                 copy.DefaultLogLevel = LogLevels.Summary;
             }
 
+            if (!TrayModes.IsKnown(copy.TrayMode))
+            {
+                copy.TrayMode = TrayModes.Full;
+            }
+
+            if (!Themes.IsKnown(copy.Theme))
+            {
+                copy.Theme = Themes.Auto;
+            }
+
+            WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
+            _settings = copy;
+            BumpRevision();
+        }
+    }
+
+    /// <summary>Sets the program password (section 4) as a hash of A.2, or removes it (null).</summary>
+    public void SetProgramPasswordHash(string? hash)
+    {
+        if (hash is not null && !IsPasswordHash(hash))
+        {
+            throw new ArgumentException("Not a program password hash.", nameof(hash));
+        }
+
+        lock (_lock)
+        {
+            var copy = CopySettings(_settings);
+            copy.ProgramPasswordHash = hash;
             WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
             _settings = copy;
             BumpRevision();

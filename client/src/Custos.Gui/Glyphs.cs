@@ -30,6 +30,7 @@ internal enum Glyph
     Help,
     Database,
     Paste,
+    Toggle,
 }
 
 /// <summary>State of a task or a run, always shown with a picture and a color (docs/client-ui.md, section 1).</summary>
@@ -53,16 +54,24 @@ internal enum StateIcon
 /// </summary>
 internal static class Glyphs
 {
-    public static readonly Color Ink = Color.FromArgb(60, 64, 68);
-    public static readonly Color Green = Color.FromArgb(16, 124, 16);
-    public static readonly Color Red = Color.FromArgb(196, 43, 28);
-    public static readonly Color Amber = Color.FromArgb(214, 145, 0);
-    public static readonly Color Blue = Color.FromArgb(0, 103, 192);
-    public static readonly Color Grey = Color.FromArgb(128, 134, 140);
+    // Each colour has a light and a dark variant (Theme): the same hue, lighter on the dark background so that it
+    // keeps its contrast. A window takes the colours when it is created.
+    public static Color Ink => Theme.IsDark ? Color.FromArgb(222, 225, 228) : Color.FromArgb(60, 64, 68);
 
-    /// <summary>Text color for warnings and errors in lists (darker than the icons, for contrast on white).</summary>
-    public static readonly Color WarningText = Color.FromArgb(138, 90, 0);
-    public static readonly Color ErrorText = Color.FromArgb(176, 32, 20);
+    public static Color Green => Theme.IsDark ? Color.FromArgb(108, 203, 95) : Color.FromArgb(16, 124, 16);
+
+    public static Color Red => Theme.IsDark ? Color.FromArgb(255, 110, 96) : Color.FromArgb(196, 43, 28);
+
+    public static Color Amber => Theme.IsDark ? Color.FromArgb(252, 186, 50) : Color.FromArgb(214, 145, 0);
+
+    public static Color Blue => Theme.IsDark ? Color.FromArgb(96, 170, 255) : Color.FromArgb(0, 103, 192);
+
+    public static Color Grey => Theme.IsDark ? Color.FromArgb(150, 156, 162) : Color.FromArgb(128, 134, 140);
+
+    /// <summary>Text color for warnings and errors in lists (darker than the icons on white, lighter on black, for contrast).</summary>
+    public static Color WarningText => Theme.IsDark ? Color.FromArgb(252, 196, 90) : Color.FromArgb(138, 90, 0);
+
+    public static Color ErrorText => Theme.IsDark ? Color.FromArgb(255, 138, 128) : Color.FromArgb(176, 32, 20);
 
     public static Bitmap Draw(Glyph glyph, int size) => Draw(glyph, size, glyph switch
     {
@@ -128,6 +137,16 @@ internal static class Glyphs
             case Glyph.Pause:
                 g.FillRectangle(brush, 6, 5, 4, 14);
                 g.FillRectangle(brush, 14, 5, 4, 14);
+                break;
+
+            case Glyph.Toggle:
+                // A switch: on or off, the same picture.
+                using (var path = RoundedRectangle(new RectangleF(2, 7, 20, 10), 5))
+                {
+                    g.DrawPath(pen, path);
+                }
+
+                g.FillEllipse(brush, 13, 9, 6, 6);
                 break;
 
             case Glyph.Restore:
@@ -304,13 +323,14 @@ internal static class Glyphs
         return bitmap;
     }
 
+    /// <summary>The fill of a state icon: the same in both themes, since the white mark on it needs the darker hue.</summary>
     public static Color StateColor(StateIcon state) => state switch
     {
-        StateIcon.Success => Green,
-        StateIcon.Warning => Amber,
-        StateIcon.Error => Red,
-        StateIcon.Running or StateIcon.Queued => Blue,
-        _ => Grey,
+        StateIcon.Success => Color.FromArgb(16, 124, 16),
+        StateIcon.Warning => Color.FromArgb(214, 145, 0),
+        StateIcon.Error => Color.FromArgb(196, 43, 28),
+        StateIcon.Running or StateIcon.Queued => Color.FromArgb(0, 103, 192),
+        _ => Color.FromArgb(128, 134, 140),
     };
 
     /// <summary>An image list with every <see cref="StateIcon"/>, keyed by its name.</summary>

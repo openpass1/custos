@@ -43,6 +43,9 @@ internal static class Program
         Application.ThreadException += (_, e) => ShowUnexpected(e.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteErrorLog(e.ExceptionObject as Exception);
 
+        // The theme the service gave last time: the windows are created in it before the service has answered.
+        Theme.Apply(LastKnown.Load().Theme);
+
         SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
         // Started at logon: only the tray icon. Started by the user (menu, installer): the window as well.
         bool showWindow = !args.Contains(TrayArgument, StringComparer.OrdinalIgnoreCase);

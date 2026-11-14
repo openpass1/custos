@@ -294,6 +294,16 @@ public sealed partial class ConfigStore
                 throw new ConfigException(Messages.Format(Messages.MonitorSettingBad, "language", settings.Language));
             }
 
+            if (!TrayModes.IsKnown(settings.TrayMode))
+            {
+                throw new ConfigException(Messages.Format(Messages.MonitorSettingBad, "tray_mode", settings.TrayMode));
+            }
+
+            if (!Themes.IsKnown(settings.Theme))
+            {
+                throw new ConfigException(Messages.Format(Messages.MonitorSettingBad, "theme", settings.Theme));
+            }
+
             // The local ones from the file, whatever the parsing did with them.
             settings.AllowRemoteEdit = _settings.AllowRemoteEdit;
             settings.ServerUrl = _settings.ServerUrl;

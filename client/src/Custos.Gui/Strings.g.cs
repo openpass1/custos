@@ -1139,6 +1139,138 @@ static partial class Strings
     /// <summary>Used by tasks</summary>
     public static string ColumnUsedBy => Get(nameof(ColumnUsedBy));
 
+    /// <summary>Rights and protection</summary>
+    public static string SettingsRights => Get(nameof(SettingsRights));
+
+    /// <summary>Allow all users to change tasks</summary>
+    public static string AllowAllUsersEdit => Get(nameof(AllowAllUsersEdit));
+
+    /// <summary>Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM,...</summary>
+    public static string AllowAllUsersEditHelp => Get(nameof(AllowAllUsersEditHelp));
+
+    /// <summary>Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this...</summary>
+    public static string AllowAllUsersEditWarning => Get(nameof(AllowAllUsersEditWarning));
+
+    /// <summary>Interface for users:</summary>
+    public static string TrayModeLabel => Get(nameof(TrayModeLabel));
+
+    /// <summary>What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what th...</summary>
+    public static string TrayModeHelp => Get(nameof(TrayModeHelp));
+
+    /// <summary>Full</summary>
+    public static string TrayModeFull => Get(nameof(TrayModeFull));
+
+    /// <summary>State only</summary>
+    public static string TrayModeStatus => Get(nameof(TrayModeStatus));
+
+    /// <summary>Hidden</summary>
+    public static string TrayModeHidden => Get(nameof(TrayModeHidden));
+
+    /// <summary>Program password:</summary>
+    public static string ProgramPasswordLabel => Get(nameof(ProgramPasswordLabel));
+
+    /// <summary>When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is ...</summary>
+    public static string ProgramPasswordHelp => Get(nameof(ProgramPasswordHelp));
+
+    /// <summary>set</summary>
+    public static string ProgramPasswordIsSet => Get(nameof(ProgramPasswordIsSet));
+
+    /// <summary>not set</summary>
+    public static string ProgramPasswordNotSet => Get(nameof(ProgramPasswordNotSet));
+
+    /// <summary>Set…</summary>
+    public static string ProgramPasswordSetButton => Get(nameof(ProgramPasswordSetButton));
+
+    /// <summary>Change…</summary>
+    public static string ProgramPasswordChangeButton => Get(nameof(ProgramPasswordChangeButton));
+
+    /// <summary>Remove password</summary>
+    public static string ProgramPasswordRemoveButton => Get(nameof(ProgramPasswordRemoveButton));
+
+    /// <summary>Remove the program password? Changes will then need only the rights of the user.</summary>
+    public static string ProgramPasswordRemoveConfirm => Get(nameof(ProgramPasswordRemoveConfirm));
+
+    /// <summary>The program password is removed.</summary>
+    public static string ProgramPasswordRemoved => Get(nameof(ProgramPasswordRemoved));
+
+    /// <summary>The program password is set. Changes and restores now need it.</summary>
+    public static string ProgramPasswordSaved => Get(nameof(ProgramPasswordSaved));
+
+    /// <summary>Only an administrator of this computer can change the rights and the program password.</summary>
+    public static string SettingsRightsAdminOnly => Get(nameof(SettingsRightsAdminOnly));
+
+    /// <summary>Program password</summary>
+    public static string PasswordSetTitle => Get(nameof(PasswordSetTitle));
+
+    /// <summary>New password:</summary>
+    public static string PasswordNew => Get(nameof(PasswordNew));
+
+    /// <summary>Once more:</summary>
+    public static string PasswordAgain => Get(nameof(PasswordAgain));
+
+    /// <summary>At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, o...</summary>
+    public static string PasswordSetNote => Get(nameof(PasswordSetNote));
+
+    /// <summary>The two passwords differ.</summary>
+    public static string PasswordMismatch => Get(nameof(PasswordMismatch));
+
+    /// <summary>The password must be at least {0} characters long.</summary>
+    public static string PasswordTooShortUi => Get(nameof(PasswordTooShortUi));
+
+    /// <summary>Program password</summary>
+    public static string PasswordPromptTitle => Get(nameof(PasswordPromptTitle));
+
+    /// <summary>A program password is set on this computer. Type it to change tasks and settings or to restore.</summary>
+    public static string PasswordPromptText => Get(nameof(PasswordPromptText));
+
+    /// <summary>Password:</summary>
+    public static string PasswordPromptLabel => Get(nameof(PasswordPromptLabel));
+
+    /// <summary>The program password was not typed: nothing was changed.</summary>
+    public static string PasswordNotTyped => Get(nameof(PasswordNotTyped));
+
+    /// <summary>Look</summary>
+    public static string SettingsLook => Get(nameof(SettingsLook));
+
+    /// <summary>Theme:</summary>
+    public static string ThemeLabel => Get(nameof(ThemeLabel));
+
+    /// <summary>For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personal...</summary>
+    public static string ThemeHelp => Get(nameof(ThemeHelp));
+
+    /// <summary>As in Windows</summary>
+    public static string ThemeAuto => Get(nameof(ThemeAuto));
+
+    /// <summary>Light</summary>
+    public static string ThemeLight => Get(nameof(ThemeLight));
+
+    /// <summary>Dark</summary>
+    public static string ThemeDark => Get(nameof(ThemeDark));
+
+    /// <summary>CUSTOS: state of the backups</summary>
+    public static string StatusTitle => Get(nameof(StatusTitle));
+
+    /// <summary>An administrator has set CUSTOS to only show the state on this computer.</summary>
+    public static string StatusNote => Get(nameof(StatusNote));
+
+    /// <summary>State of the backups</summary>
+    public static string MenuOpenStatus => Get(nameof(MenuOpenStatus));
+
+    /// <summary>Switch on</summary>
+    public static string ToolEnable => Get(nameof(ToolEnable));
+
+    /// <summary>Switch off</summary>
+    public static string ToolDisable => Get(nameof(ToolDisable));
+
+    /// <summary>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</summary>
+    public static string ToolEnableHint => Get(nameof(ToolEnableHint));
+
+    /// <summary>Delete {0} tasks?</summary>
+    public static string ConfirmDeleteMany => Get(nameof(ConfirmDeleteMany));
+
+    /// <summary>Some tasks were not changed:</summary>
+    public static string TasksNotChanged => Get(nameof(TasksNotChanged));
+
     /// <summary>Import from Cobian Backup</summary>
     public static string ImportTitle => Get(nameof(ImportTitle));
 

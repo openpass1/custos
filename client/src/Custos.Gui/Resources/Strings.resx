@@ -1167,6 +1167,142 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="ColumnUsedBy" xml:space="preserve">
     <value>Used by tasks</value>
   </data>
+  <data name="SettingsRights" xml:space="preserve">
+    <value>Rights and protection</value>
+  </data>
+  <data name="AllowAllUsersEdit" xml:space="preserve">
+    <value>Allow all users to change tasks</value>
+  </data>
+  <data name="AllowAllUsersEditHelp" xml:space="preserve">
+    <value>Off by default: only administrators of this computer change tasks and settings. The service runs as SYSTEM, so whoever may change a task may read any file through it or run any program in its events: in effect, every user becomes an administrator. Restoring stays for administrators either way.</value>
+  </data>
+  <data name="AllowAllUsersEditWarning" xml:space="preserve">
+    <value>Every user of this computer will be able to change tasks and settings. The service works as SYSTEM, so this in effect gives every user the rights of an administrator.
+
+Allow it?</value>
+  </data>
+  <data name="TrayModeLabel" xml:space="preserve">
+    <value>Interface for users:</value>
+  </data>
+  <data name="TrayModeHelp" xml:space="preserve">
+    <value>What users who are not administrators get of CUSTOS. «Full»: the window and the tray icon as usual; what they may change still depends on the rights. «State only»: the tray icon and a window that only shows the state of the tasks. «Hidden»: no tray icon; started from the Start menu, CUSTOS shows the state window. Administrators always get the full interface.</value>
+  </data>
+  <data name="TrayModeFull" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="TrayModeStatus" xml:space="preserve">
+    <value>State only</value>
+  </data>
+  <data name="TrayModeHidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="ProgramPasswordLabel" xml:space="preserve">
+    <value>Program password:</value>
+  </data>
+  <data name="ProgramPasswordHelp" xml:space="preserve">
+    <value>When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of Windows.</value>
+  </data>
+  <data name="ProgramPasswordIsSet" xml:space="preserve">
+    <value>set</value>
+  </data>
+  <data name="ProgramPasswordNotSet" xml:space="preserve">
+    <value>not set</value>
+  </data>
+  <data name="ProgramPasswordSetButton" xml:space="preserve">
+    <value>Set…</value>
+  </data>
+  <data name="ProgramPasswordChangeButton" xml:space="preserve">
+    <value>Change…</value>
+  </data>
+  <data name="ProgramPasswordRemoveButton" xml:space="preserve">
+    <value>Remove password</value>
+  </data>
+  <data name="ProgramPasswordRemoveConfirm" xml:space="preserve">
+    <value>Remove the program password? Changes will then need only the rights of the user.</value>
+  </data>
+  <data name="ProgramPasswordRemoved" xml:space="preserve">
+    <value>The program password is removed.</value>
+  </data>
+  <data name="ProgramPasswordSaved" xml:space="preserve">
+    <value>The program password is set. Changes and restores now need it.</value>
+  </data>
+  <data name="SettingsRightsAdminOnly" xml:space="preserve">
+    <value>Only an administrator of this computer can change the rights and the program password.</value>
+  </data>
+  <data name="PasswordSetTitle" xml:space="preserve">
+    <value>Program password</value>
+  </data>
+  <data name="PasswordNew" xml:space="preserve">
+    <value>New password:</value>
+  </data>
+  <data name="PasswordAgain" xml:space="preserve">
+    <value>Once more:</value>
+  </data>
+  <data name="PasswordSetNote" xml:space="preserve">
+    <value>At least {0} characters. Only a hash of it is kept. If it is forgotten, remove it on the monitoring site, or see «Program password» in the client README.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>The two passwords differ.</value>
+  </data>
+  <data name="PasswordTooShortUi" xml:space="preserve">
+    <value>The password must be at least {0} characters long.</value>
+  </data>
+  <data name="PasswordPromptTitle" xml:space="preserve">
+    <value>Program password</value>
+  </data>
+  <data name="PasswordPromptText" xml:space="preserve">
+    <value>A program password is set on this computer. Type it to change tasks and settings or to restore.</value>
+  </data>
+  <data name="PasswordPromptLabel" xml:space="preserve">
+    <value>Password:</value>
+  </data>
+  <data name="PasswordNotTyped" xml:space="preserve">
+    <value>The program password was not typed: nothing was changed.</value>
+  </data>
+  <data name="SettingsLook" xml:space="preserve">
+    <value>Look</value>
+  </data>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>Theme:</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>For all users of this computer. «As in Windows» follows the colour mode of Windows apps (Settings, Personalisation, Colours). The open windows of CUSTOS are reopened in the new theme.</value>
+  </data>
+  <data name="ThemeAuto" xml:space="preserve">
+    <value>As in Windows</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="StatusTitle" xml:space="preserve">
+    <value>CUSTOS: state of the backups</value>
+  </data>
+  <data name="StatusNote" xml:space="preserve">
+    <value>An administrator has set CUSTOS to only show the state on this computer.</value>
+  </data>
+  <data name="MenuOpenStatus" xml:space="preserve">
+    <value>State of the backups</value>
+  </data>
+  <data name="ToolEnable" xml:space="preserve">
+    <value>Switch on</value>
+  </data>
+  <data name="ToolDisable" xml:space="preserve">
+    <value>Switch off</value>
+  </data>
+  <data name="ToolEnableHint" xml:space="preserve">
+    <value>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</value>
+  </data>
+  <data name="ConfirmDeleteMany" xml:space="preserve">
+    <value>Delete {0} tasks?
+
+The backups they have made stay where they are.</value>
+  </data>
+  <data name="TasksNotChanged" xml:space="preserve">
+    <value>Some tasks were not changed:</value>
+  </data>
   <data name="ImportTitle" xml:space="preserve">
     <value>Import from Cobian Backup</value>
   </data>

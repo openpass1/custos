@@ -45,6 +45,10 @@ public sealed class AgentSnapshot
     /// <summary>The computer is about to shut down, restart or sleep (section 6.9); every session shows a countdown.</summary>
     public PowerCountdown? Power { get; set; }
 
+    /// <summary>A program password is set (section 4). The hash itself never leaves the service: in
+    /// <see cref="Settings"/> it is always null.</summary>
+    public bool ProgramPasswordSet { get; set; }
+
     /// <summary>The connection to the monitoring server (section 8).</summary>
     public ServerLinkInfo Server { get; set; } = new();
 }
@@ -306,6 +310,24 @@ public sealed class TasksImportRequest
     /// <summary>The own applications at the cloud drives that issued the imported tokens; taken for a service that has
     /// none set here.</summary>
     public Cloud.CloudAppsFile? CloudApps { get; set; }
+}
+
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.TasksEnable"/>.</summary>
+public sealed class TasksEnableRequest
+{
+    public List<string> TaskIds { get; set; } = [];
+
+    /// <summary>True switches the tasks on, false off.</summary>
+    public bool Enabled { get; set; }
+}
+
+public sealed class TasksEnableResult
+{
+    /// <summary>How many tasks changed; those already on (or off) do not count.</summary>
+    public int Changed { get; set; }
+
+    /// <summary>Tasks that could not be changed, each «name: why».</summary>
+    public List<string> Problems { get; set; } = [];
 }
 
 /// <summary>Parameters of <see cref="PipeProtocol.Methods.TasksExport"/>.</summary>
@@ -577,6 +599,23 @@ public sealed class RemoteDatabases
 public sealed class SettingsSaveRequest
 {
     public required AgentSettings Settings { get; set; }
+}
+
+/// <summary><see cref="PipeProtocol.Methods.PasswordUnlock"/> and <see cref="PipeProtocol.Methods.PasswordSet"/>.</summary>
+public sealed class PasswordRequest
+{
+    /// <summary>The program password; for <see cref="PipeProtocol.Methods.PasswordSet"/> null removes it.</summary>
+    public string? Password { get; set; }
+}
+
+/// <summary><see cref="PipeProtocol.Methods.PasswordState"/>.</summary>
+public sealed class PasswordStateResult
+{
+    /// <summary>A program password is set on this computer.</summary>
+    public bool Set { get; set; }
+
+    /// <summary>This connection typed it and may change things now.</summary>
+    public bool Unlocked { get; set; }
 }
 
 /// <summary>Result of requests that only say "done".</summary>

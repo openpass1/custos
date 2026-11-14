@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Task «{0}» changed ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Task «{0}» switched on ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Task «{0}» switched off ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Task «{0}» deleted ({1}). Its backups were not touched.</value>
   </data>
@@ -603,6 +609,30 @@
   </data>
   <data name="NotAllowed" xml:space="preserve">
     <value>Only administrators of this computer may change tasks and settings.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>The program password is set: type it to change tasks and settings or to restore.</value>
+  </data>
+  <data name="PasswordWrong" xml:space="preserve">
+    <value>Wrong program password.</value>
+  </data>
+  <data name="PasswordTooShort" xml:space="preserve">
+    <value>The program password must be at least {0} characters long.</value>
+  </data>
+  <data name="PasswordTooLong" xml:space="preserve">
+    <value>The program password must be at most {0} characters long.</value>
+  </data>
+  <data name="PasswordSetBy" xml:space="preserve">
+    <value>Program password set ({0}).</value>
+  </data>
+  <data name="PasswordRemovedBy" xml:space="preserve">
+    <value>Program password removed ({0}).</value>
+  </data>
+  <data name="PasswordWrongBy" xml:space="preserve">
+    <value>Wrong program password typed ({0}).</value>
+  </data>
+  <data name="PasswordNotAllowed" xml:space="preserve">
+    <value>Only administrators of this computer may set or remove the program password.</value>
   </data>
   <data name="ArchiveSettings" xml:space="preserve">
     <value>Archive: {0}, compression level {1}{2}.</value>

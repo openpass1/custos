@@ -1167,6 +1167,142 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   <data name="ColumnUsedBy" xml:space="preserve">
     <value>Используется в заданиях</value>
   </data>
+  <data name="SettingsRights" xml:space="preserve">
+    <value>Права и защита</value>
+  </data>
+  <data name="AllowAllUsersEdit" xml:space="preserve">
+    <value>Разрешить всем пользователям менять задания</value>
+  </data>
+  <data name="AllowAllUsersEditHelp" xml:space="preserve">
+    <value>По умолчанию выключено: задания и настройки меняют только администраторы этого компьютера. Служба работает от имени SYSTEM, поэтому тот, кто может менять задание, может через него прочитать любой файл или запустить любую программу в событиях: фактически каждый пользователь становится администратором. Восстанавливать копии по-прежнему могут только администраторы.</value>
+  </data>
+  <data name="AllowAllUsersEditWarning" xml:space="preserve">
+    <value>Все пользователи этого компьютера смогут менять задания и настройки. Служба работает от имени SYSTEM, поэтому это фактически даёт каждому пользователю права администратора.
+
+Разрешить?</value>
+  </data>
+  <data name="TrayModeLabel" xml:space="preserve">
+    <value>Интерфейс для пользователей:</value>
+  </data>
+  <data name="TrayModeHelp" xml:space="preserve">
+    <value>Что видят пользователи, которые не администраторы. «Полный»: окно и значок в трее как обычно, а что можно менять, решают права. «Только состояние»: значок в трее и окно, которое только показывает состояние заданий. «Скрыт»: значка в трее нет; при запуске из меню «Пуск» открывается окно состояния. Администраторы всегда видят полный интерфейс.</value>
+  </data>
+  <data name="TrayModeFull" xml:space="preserve">
+    <value>Полный</value>
+  </data>
+  <data name="TrayModeStatus" xml:space="preserve">
+    <value>Только состояние</value>
+  </data>
+  <data name="TrayModeHidden" xml:space="preserve">
+    <value>Скрыт</value>
+  </data>
+  <data name="ProgramPasswordLabel" xml:space="preserve">
+    <value>Пароль программы:</value>
+  </data>
+  <data name="ProgramPasswordHelp" xml:space="preserve">
+    <value>Если он задан, для изменения заданий и настроек и для восстановления нужен он, а не только права. После ввода его не спрашивают 30 минут после последнего изменения или пока окно не закрыто. Задать или убрать его можно и на сайте мониторинга. Он защищает от случайных правок и от посторонних, но не от администратора Windows.</value>
+  </data>
+  <data name="ProgramPasswordIsSet" xml:space="preserve">
+    <value>задан</value>
+  </data>
+  <data name="ProgramPasswordNotSet" xml:space="preserve">
+    <value>не задан</value>
+  </data>
+  <data name="ProgramPasswordSetButton" xml:space="preserve">
+    <value>Задать…</value>
+  </data>
+  <data name="ProgramPasswordChangeButton" xml:space="preserve">
+    <value>Сменить…</value>
+  </data>
+  <data name="ProgramPasswordRemoveButton" xml:space="preserve">
+    <value>Убрать пароль</value>
+  </data>
+  <data name="ProgramPasswordRemoveConfirm" xml:space="preserve">
+    <value>Убрать пароль программы? Тогда для изменений будет достаточно прав пользователя.</value>
+  </data>
+  <data name="ProgramPasswordRemoved" xml:space="preserve">
+    <value>Пароль программы убран.</value>
+  </data>
+  <data name="ProgramPasswordSaved" xml:space="preserve">
+    <value>Пароль программы задан. Теперь он нужен для изменений и восстановления.</value>
+  </data>
+  <data name="SettingsRightsAdminOnly" xml:space="preserve">
+    <value>Права и пароль программы может менять только администратор этого компьютера.</value>
+  </data>
+  <data name="PasswordSetTitle" xml:space="preserve">
+    <value>Пароль программы</value>
+  </data>
+  <data name="PasswordNew" xml:space="preserve">
+    <value>Новый пароль:</value>
+  </data>
+  <data name="PasswordAgain" xml:space="preserve">
+    <value>Ещё раз:</value>
+  </data>
+  <data name="PasswordSetNote" xml:space="preserve">
+    <value>Не короче {0} знаков. Хранится только его хэш. Если пароль забыт, уберите его на сайте мониторинга или посмотрите раздел «Пароль программы» в README клиента.</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>Пароли не совпадают.</value>
+  </data>
+  <data name="PasswordTooShortUi" xml:space="preserve">
+    <value>Пароль должен быть не короче {0} знаков.</value>
+  </data>
+  <data name="PasswordPromptTitle" xml:space="preserve">
+    <value>Пароль программы</value>
+  </data>
+  <data name="PasswordPromptText" xml:space="preserve">
+    <value>На этом компьютере задан пароль программы. Введите его, чтобы менять задания и настройки или восстанавливать копии.</value>
+  </data>
+  <data name="PasswordPromptLabel" xml:space="preserve">
+    <value>Пароль:</value>
+  </data>
+  <data name="PasswordNotTyped" xml:space="preserve">
+    <value>Пароль программы не введён: ничего не изменено.</value>
+  </data>
+  <data name="SettingsLook" xml:space="preserve">
+    <value>Оформление</value>
+  </data>
+  <data name="ThemeLabel" xml:space="preserve">
+    <value>Тема:</value>
+  </data>
+  <data name="ThemeHelp" xml:space="preserve">
+    <value>Для всех пользователей этого компьютера. «Как в Windows» — по режиму приложений Windows («Параметры» → «Персонализация» → «Цвета»). Открытые окна CUSTOS откроются заново в новой теме.</value>
+  </data>
+  <data name="ThemeAuto" xml:space="preserve">
+    <value>Как в Windows</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Светлая</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Тёмная</value>
+  </data>
+  <data name="StatusTitle" xml:space="preserve">
+    <value>CUSTOS: состояние копий</value>
+  </data>
+  <data name="StatusNote" xml:space="preserve">
+    <value>Администратор настроил CUSTOS на этом компьютере так, что он только показывает состояние.</value>
+  </data>
+  <data name="MenuOpenStatus" xml:space="preserve">
+    <value>Состояние копий</value>
+  </data>
+  <data name="ToolEnable" xml:space="preserve">
+    <value>Включить</value>
+  </data>
+  <data name="ToolDisable" xml:space="preserve">
+    <value>Отключить</value>
+  </data>
+  <data name="ToolEnableHint" xml:space="preserve">
+    <value>Включить или отключить выбранные задания. Несколько — щелчок с Ctrl или Shift, все — Ctrl+A</value>
+  </data>
+  <data name="ConfirmDeleteMany" xml:space="preserve">
+    <value>Удалить выбранные задания ({0})?
+
+Уже сделанные копии останутся на месте.</value>
+  </data>
+  <data name="TasksNotChanged" xml:space="preserve">
+    <value>Некоторые задания не изменены:</value>
+  </data>
   <data name="ImportTitle" xml:space="preserve">
     <value>Импорт из Cobian Backup</value>
   </data>

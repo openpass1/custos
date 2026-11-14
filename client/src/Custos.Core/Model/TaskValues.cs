@@ -149,6 +149,35 @@ public static class LogLevels
     public const string Files = "files";
 }
 
+/// <summary>Values of <see cref="AgentSettings.TrayMode"/>: what ordinary users get of the interface (section 4).
+/// Administrators always get <see cref="Full"/>.</summary>
+public static class TrayModes
+{
+    /// <summary>The whole interface; what may be changed still depends on the rights.</summary>
+    public const string Full = "full";
+
+    /// <summary>Only the tray icon with the state and a window that shows the state.</summary>
+    public const string Status = "status";
+
+    /// <summary>No tray icon.</summary>
+    public const string Hidden = "hidden";
+
+    public static bool IsKnown(string? mode) => mode is Full or Status or Hidden;
+}
+
+/// <summary>Values of <see cref="AgentSettings.Theme"/>.</summary>
+public static class Themes
+{
+    /// <summary>As the apps of Windows: light or dark (the default).</summary>
+    public const string Auto = "auto";
+
+    public const string Light = "light";
+
+    public const string Dark = "dark";
+
+    public static bool IsKnown(string? theme) => theme is Auto or Light or Dark;
+}
+
 /// <summary>Values of <see cref="TaskEvent.Kind"/>.</summary>
 public static class TaskEventKinds
 {
