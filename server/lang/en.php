@@ -1089,6 +1089,8 @@ return [
     'settings.heartbeat_interval_s.hint' => 'How often agents contact the site. Approval, task edits and commands reach a machine within this time. Less means a faster reaction but more requests. The default is 20 seconds, which suits dozens of machines; for several hundred, 60 is better. An agent picks up the new value at its next contact.',
     'settings.offline_after_min' => 'A machine is "offline" without heartbeat after',
     'settings.offline_after_min.hint' => 'The default is 15. It is only the grey "offline" label of the machine, not a problem or a notification.',
+    'settings.logout_after_min' => 'Log out after inactivity of',
+    'settings.logout_after_min.hint' => 'After this many minutes without doing anything on the site, you have to log in again. A page that refreshes itself does not extend the login. The default is 480 (8 hours). 0 = never log out for inactivity: the login ends only with "Log out" or when the browser is closed. Applies to all users as soon as it is saved.',
     'settings.networks' => 'Allowed networks',
     'settings.networks.hint' => 'Addresses or CIDR networks, one per line. An empty list means no limits. Your address now: {ip}.',
     'settings.ip_allow_site' => 'For the site',

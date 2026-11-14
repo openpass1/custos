@@ -17,6 +17,9 @@ final class Settings
         'default_language' => 'ru',
         'heartbeat_interval_s' => '20',
         'offline_after_min' => '15',
+        // Log out after this many minutes without activity, 0 = never (Settings -> General). Empty until saved there:
+        // until then session_timeout_hours from config.php applies (8 hours by default), see Session::timeoutMinutes().
+        'logout_after_min' => '',
         'ip_allow_site' => '',
         'ip_allow_agents' => '',
         // Zabbix and the wall screen (section 4): their own allow-list and tokens, created by install.php and migrate.php.

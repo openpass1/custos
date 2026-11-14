@@ -7,6 +7,7 @@ namespace Custos\Http\Web\Controller;
 use Custos\Domain\RegistrationKey;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
+use Custos\Http\Web\Session;
 use Custos\Infra\Cidr;
 
 /** Settings of section 7.8: name, intervals, thresholds, retention, IP allow-lists, agent registration code. */
@@ -16,6 +17,7 @@ final class SettingsController extends Controller
     private const NUMBERS = [
         'heartbeat_interval_s' => [10, 3600],
         'offline_after_min' => [1, 10080],
+        'logout_after_min' => [0, 43200],
         'missed_grace_min' => [1, 1440],
         'stale_days' => [1, 365],
         'anomaly_drop_pct' => [1, 99],
@@ -23,7 +25,7 @@ final class SettingsController extends Controller
         'history_months' => [1, 120],
         'log_days' => [1, 3650],
     ];
-    private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'missed_grace_min', 'stale_days',
+    private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'logout_after_min', 'missed_grace_min', 'stale_days',
                             'anomaly_drop_pct', 'anomaly_growth_factor', 'space_warn_days', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
 
     public function index(): Response
@@ -34,11 +36,12 @@ final class SettingsController extends Controller
     public function save(): Response
     {
         $settings = $this->app->settings();
+        $current = $this->values();
         $values = [];
-        // The page sends one group of fields at a time: a field that the form did not send keeps its stored value.
+        // The page sends one group of fields at a time: a field that the form did not send keeps its current value.
         foreach (self::FIELDS as $name) {
             if (!isset($this->request->post[$name])) {
-                $values[$name] = (string) $settings->get($name);
+                $values[$name] = $current[$name];
             } else {
                 $values[$name] = str_starts_with($name, 'ip_allow_') ? $this->post($name) : trim($this->post($name));
             }
@@ -77,7 +80,7 @@ final class SettingsController extends Controller
 
         $changed = [];
         foreach ($values as $name => $value) {
-            if ($settings->get($name) !== $value) {
+            if ($current[$name] !== $value) {
                 $changed[$name] = $value;
                 $settings->set($name, $value);
             }
@@ -109,6 +112,8 @@ final class SettingsController extends Controller
         foreach (self::FIELDS as $name) {
             $values[$name] = $settings->get($name);
         }
+        // Until it is saved here, the logout time comes from config.php.
+        $values['logout_after_min'] = (string) Session::timeoutMinutes($this->app);
         return $values;
     }
 

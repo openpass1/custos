@@ -204,6 +204,27 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         $this->assertStringContainsString('<title>Настройки · Backup monitor</title>', $this->http('GET', '/settings')[1]);
 
+        // Log out after inactivity (Settings → General): minutes, 0 = never. Before it is saved, config.php gives 8 hours.
+        $this->assertMatchesRegularExpression('/name="logout_after_min" value="480"/', $this->http('GET', '/settings')[1]);
+        [$status, $body] = $this->post('/settings', ['logout_after_min' => '-5']);
+        $this->assertSame(422, $status);
+        $this->assertStringContainsString('Нужно целое число от 0 до 43200', $body);
+        [$status] = $this->post('/settings', ['logout_after_min' => '1']);
+        $this->assertSame(303, $status, 'the other fields of the page keep their values');
+        $this->idle(30);
+        $this->assertSame(200, $this->http('GET', '/settings')[0], 'half a minute is not enough');
+        $this->idle(90);
+        [$status, , $headers] = $this->http('GET', '/settings');
+        $this->assertSame(303, $status, 'a minute and a half without activity ends the login');
+        $this->assertStringEndsWith('/login', $headers['location']);
+        $this->assertStringContainsString('Сеанс завершён из-за бездействия', $this->http('GET', '/login')[1]);
+        $this->post('/login', ['login' => 'admin', 'password' => self::PASSWORD]);
+        $this->post('/settings', ['logout_after_min' => '0']);
+        $this->idle(40 * 86400);
+        $this->assertSame(200, $this->http('GET', '/settings')[0], '0: no logout for inactivity');
+        $this->post('/settings', ['logout_after_min' => '480']);
+        $this->assertSame('480', (string) Db::connect(TestEnv::db())->value("SELECT value FROM settings WHERE name = 'logout_after_min'"));
+
         $before = $this->connectionString();
         $this->post('/settings/registration-key', []);
         $this->assertNotSame($before, $this->connectionString());
@@ -617,6 +638,16 @@ final class WebTest extends TestCase
     private function settings(array $overrides): array
     {
         return $overrides + ['server_name' => 'CUSTOS', 'heartbeat_interval_s' => '60', 'offline_after_min' => '60', 'ip_allow_site' => '', 'ip_allow_agents' => ''];
+    }
+
+    /** Makes the login of this cookie jar look idle for so many seconds (moves last_activity in its session file). */
+    private function idle(int $seconds): void
+    {
+        preg_match('/\tCUSTOSSID\t(\S+)/', (string) file_get_contents(self::$cookies), $m);
+        $file = TestEnv::dir() . '/var/sessions/sess_' . ($m[1] ?? 'none');
+        $data = (string) file_get_contents($file);
+        $this->assertMatchesRegularExpression('/last_activity\|i:\d+;/', $data);
+        file_put_contents($file, preg_replace('/last_activity\|i:\d+;/', 'last_activity|i:' . (time() - $seconds) . ';', $data));
     }
 
     /** The connection string of the settings page: the site address, "#" and the registration code. */
