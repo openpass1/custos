@@ -569,6 +569,10 @@ public sealed partial class BackupEngine
                     target.SetName = run.SetName;
                     target.SetFolder = target.Root;
                     target.WriteFolder = target.Root;
+                    if (run.BackupType == BackupTypes.Full && store.KeepsTimes)
+                    {
+                        ReadHeldFiles(run, target);
+                    }
                 }
 
                 if (run.BackupType is BackupTypes.Full or BackupTypes.Mirror && !task.Layout.DeleteEmptyDirs && store.HasFolders)
@@ -592,6 +596,38 @@ public sealed partial class BackupEngine
         }
     }
 
+    /// <summary>
+    /// What a shared folder holds before a full copy into it, for example the files Cobian left there (section 6.4):
+    /// a file with the size and time of its source is not written again, the copy only reads its source for the
+    /// SHA-256. Replacing a file takes more rights than adding one, and some storage does not allow it at all.
+    /// </summary>
+    /// <remarks>Only the folders the sources go to are read, not the whole destination, which may hold much else.
+    /// If they cannot be read, every file is simply written.</remarks>
+    private void ReadHeldFiles(RunContext run, Target target)
+    {
+        var store = target.Store;
+        var sources = run.Sources.Where(s => s.Scan is { Found: true }).ToList();
+        var places = sources.Any(s => !s.Scan!.IsFile && s.Target.Length == 0)
+            ? [(Folder: target.Root, Below: true)]
+            : sources.Select(s => s.Scan!.IsFile ? (Folder: target.Root, Below: false) : (Folder: store.Combine(target.Root, s.Target), Below: true)).Distinct().ToList();
+        try
+        {
+            foreach (var (folder, below) in places)
+            {
+                var entries = below ? store.ListFiles(folder) : store.List(folder).Where(e => !e.IsFolder);
+                foreach (var entry in entries)
+                {
+                    target.Existing[MirrorPath(store, target.Root, entry.Path)] = new MirrorEntry(entry.Size, entry.ModifiedUtc);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            target.Existing.Clear();
+            _log.Write(RunLogLevel.Detail, Messages.Format(Messages.FolderUnreadable, target.Root, ex.Message));
+        }
+    }
+
     private void CopyFiles(RunContext run)
     {
         var buffer = new byte[BufferSize];
@@ -606,15 +642,21 @@ public sealed partial class BackupEngine
 
             _progress.CurrentFile = file.OriginalPath;
             Report(force: false);
-            if (CopyFile(run, context, file, StoredPath(context, file), buffer) is { } hash)
+            if (CopyFile(run, context, file, StoredPath(context, file), buffer, out bool written) is { } hash)
             {
                 run.Copied[file.OriginalPath] = hash;
-                run.Result.FilesProcessed++;
-                run.Result.BytesWritten += file.Size;
                 run.StoredBytes += file.Size;
+                if (written)
+                {
+                    run.Result.FilesProcessed++;
+                    run.Result.BytesWritten += file.Size;
+                }
+
                 if (run.Request.LogEveryFile)
                 {
-                    _log.Write(RunLogLevel.Detail, Messages.Format(Messages.FileCopied, file.OriginalPath, Sizes.Format(file.Size)));
+                    _log.Write(RunLogLevel.Detail, written
+                        ? Messages.Format(Messages.FileCopied, file.OriginalPath, Sizes.Format(file.Size))
+                        : Messages.Format(Messages.FileAlreadyThere, file.OriginalPath));
                 }
             }
 
@@ -623,11 +665,17 @@ public sealed partial class BackupEngine
 
         _progress.CurrentFile = null;
         Report(force: true);
+        foreach (var target in run.ActiveTargets.Where(t => t.HeldFiles > 0))
+        {
+            _log.Write(RunLogLevel.Info, Messages.Format(Messages.HeldFilesKept, target.Label, target.HeldFiles, Sizes.Format(target.HeldBytes)));
+        }
     }
 
-    /// <summary>Copies one file to every active destination. Returns its SHA-256, or null if it was not copied.</summary>
-    private string? CopyFile(RunContext run, SourceContext context, ScannedFile file, string targetPath, byte[] buffer)
+    /// <summary>Copies one file to every active destination. Returns its SHA-256, or null if no destination has it now.</summary>
+    /// <param name="written">The file was written somewhere; false when every destination had it already.</param>
+    private string? CopyFile(RunContext run, SourceContext context, ScannedFile file, string targetPath, byte[] buffer, out bool written)
     {
+        written = false;
         int attempts = 1 + Math.Clamp(run.Task.Copy.ReadRetries, 0, 5);
         long progressAtStart = _progress.BytesDone;
         for (int attempt = 1; ; attempt++)
@@ -638,8 +686,8 @@ public sealed partial class BackupEngine
             {
                 using var input = Lowered(context.Session.Run(() => new FileStream(
                     file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1, FileOptions.SequentialScan)));
-                OpenOutputs(run, targetPath, outputs);
-                if (outputs.Count == 0)
+                var held = OpenOutputs(run, targetPath, file, outputs);
+                if (outputs.Count == 0 && held.Count == 0)
                 {
                     return null;
                 }
@@ -657,7 +705,7 @@ public sealed partial class BackupEngine
 
                     hash.AppendData(buffer, 0, read);
                     WriteOutputs(run, outputs, buffer, read);
-                    if (outputs.Count == 0)
+                    if (outputs.Count == 0 && held.Count == 0)
                     {
                         return null;
                     }
@@ -667,9 +715,21 @@ public sealed partial class BackupEngine
                     Report(force: false);
                 }
 
-                byte[]? security = KeepsSecurity(run) ? context.Session.Run(() => _platform.ReadSecurity(file.ReadPath, folder: false)) : null;
-                CompleteOutputs(run, outputs, file, security);
-                return outputs.Count == 0 ? null : SetManifest.ToHex(hash.GetHashAndReset());
+                byte[]? security = KeepsSecurity(run) && outputs.Count > 0 ? context.Session.Run(() => _platform.ReadSecurity(file.ReadPath, folder: false)) : null;
+                CompleteOutputs(run, outputs, file, targetPath, security);
+                if (outputs.Count == 0 && held.Count == 0)
+                {
+                    return null;
+                }
+
+                foreach (var target in held)
+                {
+                    target.HeldFiles++;
+                    target.HeldBytes += file.Size;
+                }
+
+                written = outputs.Count > 0;
+                return SetManifest.ToHex(hash.GetHashAndReset());
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException && outputs.Count == 0)
             {
@@ -707,13 +767,24 @@ public sealed partial class BackupEngine
         }
     }
 
-    private void OpenOutputs(RunContext run, string targetPath, List<Output> outputs)
+    /// <returns>The destinations that hold this version of the file already (a full copy into a shared folder): they
+    /// are not written.</returns>
+    private List<Target> OpenOutputs(RunContext run, string targetPath, ScannedFile file, List<Output> outputs)
     {
+        var held = new List<Target>();
         foreach (var target in run.ActiveTargets)
         {
-            if (run.BackupType == BackupTypes.Mirror && !target.Needed.Contains(targetPath))
+            if (run.BackupType == BackupTypes.Mirror)
             {
-                // This mirror holds the file already.
+                if (!target.Needed.Contains(targetPath))
+                {
+                    // This mirror holds the file already.
+                    continue;
+                }
+            }
+            else if (target.Existing.TryGetValue(targetPath, out var there) && SameFile(there, file.Size, file.LastWriteUtc))
+            {
+                held.Add(target);
                 continue;
             }
 
@@ -733,6 +804,8 @@ public sealed partial class BackupEngine
                 FailTarget(run, target, Messages.Format(Messages.DestinationWriteFailed, target.Label, ex.Message));
             }
         }
+
+        return held;
     }
 
     private void WriteOutputs(RunContext run, List<Output> outputs, byte[] buffer, int count)
@@ -753,7 +826,7 @@ public sealed partial class BackupEngine
         }
     }
 
-    private void CompleteOutputs(RunContext run, List<Output> outputs, ScannedFile file, byte[]? security)
+    private void CompleteOutputs(RunContext run, List<Output> outputs, ScannedFile file, string targetPath, byte[]? security)
     {
         for (int i = outputs.Count - 1; i >= 0; i--)
         {
@@ -776,6 +849,16 @@ public sealed partial class BackupEngine
 
                 output.Target.Files++;
                 output.Target.Bytes += file.Size;
+            }
+            catch (ReplaceDeniedException ex)
+            {
+                // The file that was there stays; the destination goes on with the other files (section 6.4).
+                outputs.RemoveAt(i);
+                Abandon(output);
+                output.Target.Refused.Add(targetPath);
+                run.Refused.Add(file.OriginalPath);
+                run.Result.Warnings++;
+                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.FileReplaceRefused, output.Target.Label, ex.Path, ex.Message));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -832,7 +915,8 @@ public sealed partial class BackupEngine
         var remoteFiles = run.Remote is not null ? RemoteManifestFiles(run, out _, out _) : null;
         foreach (var target in run.ActiveTargets)
         {
-            var files = run.BackupType == BackupTypes.Mirror ? MirrorFiles(run, target) : remoteFiles;
+            var files = run.BackupType == BackupTypes.Mirror ? MirrorFiles(run, target)
+                : remoteFiles ?? (target.Refused.Count > 0 ? [.. ManifestFiles(run, target: target)] : null);
             var header = BuildHeader(run, target.SetName, finished, status);
             if (files is not null)
             {
@@ -873,6 +957,11 @@ public sealed partial class BackupEngine
             catch (BackupException ex)
             {
                 FailTarget(run, target, ex.Message);
+            }
+            catch (ReplaceDeniedException ex)
+            {
+                // The manifest of a shared folder is rewritten at every run, and such storage does not let it be.
+                FailTarget(run, target, Messages.Format(Messages.ManifestReplaceRefused, target.Label, ex.Path, ex.Message));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -920,7 +1009,8 @@ public sealed partial class BackupEngine
 
     /// <param name="pending">Files the archive writer has yet to read (7-Zip packs by name, so the manifest can come
     /// before them): they count as in the set, without a SHA-256.</param>
-    private static IEnumerable<ManifestFile> ManifestFiles(RunContext run, HashSet<string>? pending = null)
+    /// <param name="target">The destination of a plain copy: a file it would not let replace is not in its set.</param>
+    private static IEnumerable<ManifestFile> ManifestFiles(RunContext run, HashSet<string>? pending = null, Target? target = null)
     {
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
@@ -931,8 +1021,14 @@ public sealed partial class BackupEngine
                     continue;
                 }
 
+                string stored = StoredPath(context, file);
                 bool inSet = run.Copied.TryGetValue(file.OriginalPath, out string? hash) || pending?.Contains(file.OriginalPath) == true;
-                yield return new ManifestFile(StoredPath(context, file), file.Size, file.LastWriteUtc, inSet, hash);
+                if (inSet && target?.Refused.Contains(stored) == true)
+                {
+                    (inSet, hash) = (false, null);
+                }
+
+                yield return new ManifestFile(stored, file.Size, file.LastWriteUtc, inSet, hash);
             }
         }
     }
@@ -959,13 +1055,14 @@ public sealed partial class BackupEngine
                     continue;
                 }
 
-                if (!selected.Contains(file.OriginalPath) || run.Copied.ContainsKey(file.OriginalPath))
+                if (!selected.Contains(file.OriginalPath) || (run.Copied.ContainsKey(file.OriginalPath) && !run.Refused.Contains(file.OriginalPath)))
                 {
                     files.Add(new(file.OriginalPath, file.Stamp));
                 }
                 else if (run.LastState.TryGetValue(file.OriginalPath, out var previous))
                 {
-                    // Not copied this time: keep what the last copy had, so the next run tries again.
+                    // Not copied this time (or not to every destination): keep what the last copy had, so the next
+                    // run tries again.
                     files.Add(new(file.OriginalPath, previous));
                 }
             }
@@ -1363,6 +1460,9 @@ public sealed partial class BackupEngine
         /// <summary>Files that could not be read (archives only; the copy counts them in <see cref="FailedFiles"/>).</summary>
         public HashSet<string> Failed { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>Files a destination would not let replace (original paths): the next run copies them again.</summary>
+        public HashSet<string> Refused { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public string? SetName { get; set; }
 
         public bool SetsFinished { get; set; }
@@ -1472,9 +1572,18 @@ public sealed partial class BackupEngine
         /// <summary>The names in the destination folder, read once when a free set name is looked for.</summary>
         public HashSet<string>? TakenNames { get; set; }
 
+        /// <summary>Files of the run this destination would not let replace (paths in the set): it keeps its own.</summary>
+        public HashSet<string> Refused { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Files a full copy into a shared folder found there in the same version and did not write.</summary>
+        public int HeldFiles { get; set; }
+
+        public long HeldBytes { get; set; }
+
         // ---- Mirror
 
-        /// <summary>The files in the mirror before the run: path in the mirror → size and time.</summary>
+        /// <summary>The files in the mirror before the run (or, for a full copy into a shared folder, in the folders its
+        /// sources go to): path in the destination → size and time.</summary>
         public Dictionary<string, MirrorEntry> Existing { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>The files the last run put into the mirror (its manifest): only these are ever deleted.</summary>

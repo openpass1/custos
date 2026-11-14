@@ -53,9 +53,10 @@ public sealed partial class BackupEngine
             }
 
             string stored = StoredPath(context, file);
-            if (run.BackupType == BackupTypes.Mirror && !target.Needed.Contains(stored))
+            if ((run.BackupType == BackupTypes.Mirror && !target.Needed.Contains(stored)) || target.Refused.Contains(stored))
             {
-                // This mirror had the file already; the stored check looks at it.
+                // This mirror had the file already, the stored check looks at it; or the destination kept its own
+                // version. A file a shared folder held already is read back: it has to be what the source is.
                 continue;
             }
 
