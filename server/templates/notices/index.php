@@ -26,7 +26,9 @@
                 <?php foreach ($notices as $n): ?>
                     <?php
                     $link = null;
-                    if ($n['agent_id'] !== null && $n['hostname'] !== null) {
+                    if (in_array($n['kind'], ['site.update', 'site.updated', 'site.update_failed', 'client.release', 'sevenzip.outdated'], true)) {
+                        $link = url('/updates');
+                    } elseif ($n['agent_id'] !== null && $n['hostname'] !== null) {
                         $link = $n['task_id'] !== null && !str_starts_with($n['kind'], 'agent.')
                             ? url('/agents/' . $n['agent_id'] . '/tasks/' . $n['task_id']) : url('/agents/' . $n['agent_id']);
                     }

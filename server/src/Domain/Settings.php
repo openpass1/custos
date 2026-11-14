@@ -58,6 +58,15 @@ final class Settings
         'sevenzip_check_error' => '',
         'sevenzip_notified' => '',
         'agent_outdated_notified' => '',
+        // CUSTOS releases on GitHub (section 8): the daily check of the site and the program releases, the
+        // releases found (JSON) and the versions a notice was given for. See Domain\Releases.
+        'releases_check' => '1',
+        'releases_checked_at' => '',
+        'releases_check_error' => '',
+        'release_server' => '',
+        'release_client' => '',
+        'release_server_notified' => '',
+        'release_client_notified' => '',
     ];
 
     private ?array $values = null;

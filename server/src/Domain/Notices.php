@@ -19,6 +19,11 @@ use Custos\Infra\Time;
  *   task.deleted       {name}               a task was deleted on the machine
  *   task.conflict      {name, revision, by} an edit from the site overwrote this version on the machine (A.4)
  *   command.failed     {kind, status, message} a command was rejected or failed
+ *   agent.outdated, sevenzip.outdated        older CUSTOS or 7z.dll on machines (UpdateWatch)
+ *   site.update        {version, current}   a newer site release on GitHub (Releases)
+ *   client.release     {version}            a program release newer than every agent package on the server
+ *   site.updated       {from, to}           the site updated itself (Infra\Updater)
+ *   site.update_failed {to}                 a site update failed and was taken back
  */
 final class Notices
 {
@@ -65,6 +70,13 @@ final class Notices
             "UPDATE notices SET read_at = ? WHERE agent_id = ? AND kind IN ($marks) AND read_at IS NULL",
             [Time::now(), $agentId, ...$kinds]
         );
+    }
+
+    /** Marks every unread notice of these kinds as read (a new program version once it is downloaded). */
+    public function settleKinds(array $kinds): void
+    {
+        $marks = implode(', ', array_fill(0, count($kinds), '?'));
+        $this->db->exec("UPDATE notices SET read_at = ? WHERE kind IN ($marks) AND read_at IS NULL", [Time::now(), ...$kinds]);
     }
 
     public function markRead(?int $id, int $userId): void

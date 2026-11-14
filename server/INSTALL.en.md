@@ -384,14 +384,49 @@ If the error is different, send its full text or a screenshot.
 
 ## Updating
 
-**Do not delete the old `server` folder:** the new package is unpacked over it. It holds the settings and the server key. If the key is lost, every connected agent stops trusting the server and has to register again.
+From version 0.4.11 on, the site updates itself: with a button on the site or with one command over SSH. Version 0.4.11 itself is still installed the old way, by hand (the last way in this section).
 
-1. Download the new `custos-server.zip` (step 1) and upload it to the folder `custos.lan` (step 6).
+**From the site.** Once a day the site looks at the CUSTOS releases on GitHub, and the bell tells about a new version.
+
+1. Open Management → Updates. The "Monitoring site" block shows the installed version and the released one; "What is new" leads to the release page.
+2. Press **Update the site to X.Y.Z** and confirm.
+
+✅ Within a minute cron starts the update. For about a minute the site shows "The site is being updated", then it opens by itself; the new version is shown at the bottom of the page, and the "Monitoring site" block says "The site was updated from … to …".
+
+What happens meanwhile: the site downloads the package and checks its checksum, checks the PHP version, disk space and file permissions, moves the old files to `server/var/update/backup`, puts the new ones in place, applies the database migrations and checks that the new version works. If the migrations change tables, a copy of those tables is taken first. On any error the site puts the old files and tables back by itself and says in the "Monitoring site" block what happened (details under "Steps"). While the site shows the maintenance page, agents are told "being updated" and try again in a minute; their reports are not lost.
+
+- **A server without internet:** download `custos-server-X.Y.Z.zip` from the releases page on your computer. In the "Monitoring site" block unfold "Update from a file", choose the file and press **Upload and update**. The daily check of the releases can be turned off in the same block.
+- If cron does not work, the update does not start, and the page says so. Fix cron (step 12) or update over SSH.
+- If the site says "No permission to change …", some files were once unpacked as root. Run the command the site shows (`chown -R …`) as root and press the button again.
+
+**Over SSH.** As the site user:
+
+```bash
+cd ~/htdocs/custos.lan/server
+php8.4 bin/update.php
+```
+
+The script shows the installed and the new version and asks `Update the site to X.Y.Z? [y/N]`. Answer `y` and press Enter.
+
+✅ At the end: `[ok] The site is updated: … -> …`. The script does the same as the button on the site and puts the old version back by itself on an error, too.
+
+- **A server without internet:** upload `custos-server-X.Y.Z.zip` to the folder `custos.lan` (as in step 6) and run:
+  ```bash
+  cd ~/htdocs/custos.lan/server
+  php8.4 bin/update.php --package='../custos-server*.zip'
+  rm ../custos-server*.zip
+  ```
+- **Return to the previous version** (the one installed before the last update): `php8.4 bin/update.php --rollback`. If the update changed database tables, the script lists them and warns that what was written to them after the update is lost.
+- **The site keeps showing "The site is being updated".** Wait 2 minutes: if the update was interrupted (for example, the server was restarted), cron puts the old version back by itself. If the page stays, run `php8.4 bin/update.php --check` in the `server` folder and send what it prints.
+
+**By hand (versions before 0.4.11).** **Do not delete the old `server` folder:** the new package is unpacked over it. It holds the settings and the server key. If the key is lost, every connected agent stops trusting the server and has to register again.
+
+1. Download the new package `custos-server-X.Y.Z.zip` (step 1) and upload it to the folder `custos.lan` (step 6).
 2. Over SSH as the site user:
    ```bash
    cd ~/htdocs/custos.lan
-   unzip -o custos-server.zip
-   rm custos-server.zip
+   unzip -o custos-server*.zip
+   rm custos-server*.zip
    php8.4 server/bin/migrate.php
    ```
 
@@ -468,6 +503,12 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - these requests do not extend the login: an open page does not prevent the logout after inactivity.
 
 Also in this version: the logout after inactivity is set on the site, Settings → General → "Log out after inactivity of", in days; 7 days by default (it used to be 8 hours), 0 = never log out for inactivity. The login still ends with "Log out" and when the browser is closed. The `session_timeout_hours` line of `config.php` is no longer used and can be deleted.
+
+**Version 0.4.11.** No migrations. The site updates itself: with "Update the site to …" under Updates or with `php8.4 bin/update.php` (the Updating section above). Install this version by hand; the next ones go that way. Also in this version:
+- once a day the site looks at the CUSTOS releases on GitHub, of the site and of the Windows program, and tells about a new version in the bell. The check can be turned off in the "Monitoring site" block (a server without internet); the 7-Zip check is turned on and off separately, as before;
+- the CUSTOS block has an "On GitHub" line and a "Download X to the server" button: the site downloads the program's update package from GitHub, checks its checksum and signs it like an uploaded one. You make it current, as before;
+- while the site is being updated (usually less than a minute), pages show "The site is being updated" and open by themselves, agents repeat their requests a minute later, and Zabbix and the wall screen see the site as unavailable for that time;
+- `bin/cron.php` runs an update asked for on the site instead of its usual pass.
 
 ## What to keep in backups
 

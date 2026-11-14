@@ -10,8 +10,9 @@ use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 
 /**
- * Updates (section 8): agent update packages (upload, current version, update machines) and 7-Zip (the daily check of
- * the newest release, download or upload of the installer, update of 7z.dll on machines).
+ * Updates (section 8): the site itself (the newest release on GitHub or an uploaded package, run by cron), agent
+ * update packages (upload or download of the newest program release, current version, update machines) and 7-Zip
+ * (the daily check of the newest release, download or upload of the installer, update of 7z.dll on machines).
  */
 final class UpdatesController extends Controller
 {
@@ -26,7 +27,18 @@ final class UpdatesController extends Controller
         $current = $packages->current();
         $latestSevenZip = $watch->latestSevenZip();
         $settings = $this->app->settings();
+        $releases = $this->app->releases();
         return $this->render('updates/index', [
+            'repo' => $releases->repo,
+            'releasesOn' => $releases->checkOn(),
+            'releasesCheckedAt' => $settings->get('releases_checked_at'),
+            'releasesError' => $settings->get('releases_check_error'),
+            'siteLatest' => $releases->latest('server'),
+            'siteNewer' => $releases->newerSite(),
+            'siteState' => $this->app->siteUpdate()->state(),
+            'cronLastRun' => $settings->get('cron_last_run'),
+            'clientLatest' => $releases->latest('client'),
+            'clientNewer' => $releases->newerClient(),
             'section' => 'updates',
             'agentPackages' => $packages->all('agent'),
             'sevenZipPackages' => $packages->all('7zip'),
@@ -182,6 +194,93 @@ final class UpdatesController extends Controller
         $this->app->settings()->set('sevenzip_check', $on ? '1' : '0');
         $this->audit('settings.update', 'settings', null, ['sevenzip_check' => $on ? 'on' : 'off']);
         $this->session->flash('info', $this->t('settings.flash.saved'));
+        return $this->redirect('/updates');
+    }
+
+    /** "Check now" for the newest releases of the site and the program. */
+    public function releasesCheck(): Response
+    {
+        $releases = $this->app->releases();
+        if (!$releases->check(time())) {
+            $this->session->flash('error', $this->t('releases.flash.check_failed', ['error' => $this->app->settings()->get('releases_check_error')]));
+            return $this->redirect('/updates');
+        }
+        $site = $releases->latest('server');
+        $this->session->flash('info', $site === null
+            ? $this->t('releases.flash.checked_none')
+            : $this->t($releases->newerSite() === null ? 'releases.flash.checked_current' : 'releases.flash.checked_newer', ['version' => $site['version']]));
+        return $this->redirect('/updates');
+    }
+
+    /** Turns the daily check of CUSTOS releases on or off. */
+    public function releasesSettings(): Response
+    {
+        $on = $this->post('releases_check') === '1';
+        $this->app->settings()->set('releases_check', $on ? '1' : '0');
+        $this->audit('settings.update', 'settings', null, ['releases_check' => $on ? 'on' : 'off']);
+        $this->session->flash('info', $this->t('settings.flash.saved'));
+        return $this->redirect('/updates');
+    }
+
+    /** Downloads the newest program release from GitHub as an agent update package (checked and signed). */
+    public function clientDownload(): Response
+    {
+        @set_time_limit(300);
+        try {
+            $package = $this->app->releases()->downloadClient($this->user()['login'], $params);
+        } catch (\InvalidArgumentException $e) {
+            $this->session->flash('error', $this->t($e->getMessage(), $params ?? []));
+            return $this->redirect('/updates');
+        }
+        $this->audit('update.download', 'update', $package['version'], ['version' => $package['version'], 'sha256' => $package['sha256']]);
+        $this->session->flash('info', $this->t('releases.flash.client_stored', ['version' => $package['version']]));
+        return $this->redirect('/updates');
+    }
+
+    /** Queues the update of the site to the newest release; cron runs it within a minute. */
+    public function siteInstall(): Response
+    {
+        try {
+            $state = $this->app->siteUpdate()->request($this->user()['login']);
+        } catch (\InvalidArgumentException $e) {
+            $this->session->flash('error', $this->t($e->getMessage()));
+            return $this->redirect('/updates');
+        }
+        $this->audit('site.update', 'update', (string) $state['to'], ['from' => (string) $state['from'], 'to' => (string) $state['to']]);
+        $this->session->flash('info', $this->t('site.flash.queued', ['version' => (string) $state['to']]));
+        return $this->redirect('/updates');
+    }
+
+    /** Takes an uploaded site package and queues the update from it. */
+    public function siteUpload(): Response
+    {
+        $file = $this->uploaded('package');
+        if ($file === null) {
+            return $this->redirect('/updates');
+        }
+        try {
+            $state = $this->app->siteUpdate()->upload($file, $this->user()['login'], $params);
+        } catch (\InvalidArgumentException $e) {
+            $this->session->flash('error', $this->t($e->getMessage(), $params ?? []));
+            return $this->redirect('/updates');
+        }
+        $this->audit('site.upload', 'update', (string) $state['to'], [
+            'from' => (string) $state['from'], 'to' => (string) $state['to'], 'sha256' => (string) $state['package_sha256'],
+        ]);
+        $this->session->flash('info', $this->t('site.flash.queued', ['version' => (string) $state['to']]));
+        return $this->redirect('/updates');
+    }
+
+    /** Takes back a queued site update. */
+    public function siteCancel(): Response
+    {
+        $state = $this->app->siteUpdate()->cancel();
+        if ($state === null) {
+            $this->session->flash('error', $this->t('site.error.not_queued'));
+            return $this->redirect('/updates');
+        }
+        $this->audit('site.cancel', 'update', (string) $state['to'], ['to' => (string) $state['to']]);
+        $this->session->flash('info', $this->t('site.flash.cancelled', ['version' => (string) $state['to']]));
         return $this->redirect('/updates');
     }
 

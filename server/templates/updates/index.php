@@ -4,6 +4,8 @@
  * @var list<array> $groups @var array<string, array> $outdated @var ?array $latestSevenZip @var array<string, array> $sevenZipOutdated
  * @var ?array $github @var string $checkedAt @var string $checkError @var bool $checkOn @var array<string, array> $waitingAgent
  * @var array<string, array> $waitingSevenZip @var int $uploadLimit
+ * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
+ * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
  */
 use Custos\Domain\Agents;
 
@@ -11,15 +13,136 @@ $storedSevenZip = $sevenZipPackages[0] ?? null;
 $canDownload = is_array($github) && isset($github['version'])
     && ($storedSevenZip === null || version_compare($github['version'], $storedSevenZip['version'], '>'));
 $short = fn(string $sha) => substr($sha, 0, 16) . '…';
+$published = fn(?array $release) => !empty($release['published_at'])
+    ? t('releases.published', ['time' => fmt_time(gmdate('Y-m-d H:i:s', (int) strtotime((string) $release['published_at'])))]) : '';
+$siteStatus = (string) ($siteState['status'] ?? '');
+$siteBusy = in_array($siteStatus, ['queued', 'running'], true);
+$stateTime = fn(string $field) => isset($siteState[$field]) ? fmt_time((string) $siteState[$field]) : '';
+$stateError = function (?array $error): string {
+    return $error === null ? '' : t((string) ($error['key'] ?? 'site.error.unexpected'), (array) ($error['params'] ?? []));
+};
+$cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . ' UTC');
 ?>
 <h1><?= e(t('updates.title')) ?></h1>
 <p class="hint"><?= e(t('updates.hint')) ?></p>
+
+<section class="panel">
+    <h2><?= e(t('site.title')) ?></h2>
+    <p class="hint"><?= e(t('site.hint')) ?></p>
+    <?php /* Live part: the state of an update and the release found change by themselves (cron). */ ?>
+    <div data-part="site">
+    <dl class="props">
+        <dt><?= e(t('site.installed')) ?></dt>
+        <dd><strong><?= e(\Custos\App::VERSION) ?></strong></dd>
+        <dt><?= e(t('site.latest')) ?></dt>
+        <dd><?php if ($siteLatest !== null): ?>
+                <strong><?= e($siteLatest['version']) ?></strong>
+                <?php if ($siteNewer !== null): ?><?= badge('warning', t('site.newer')) ?><?php else: ?><span class="note"><?= e(t('site.up_to_date')) ?></span><?php endif ?>
+                <span class="note"><?= e($published($siteLatest)) ?></span>
+                <?php if (($siteLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($siteLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
+            <?php else: ?><?= e(t('site.latest.none')) ?><?php endif ?></dd>
+        <dt><?= e(t('releases.checked')) ?></dt>
+        <dd><?= e($releasesCheckedAt === '' ? t('time.never') : fmt_time($releasesCheckedAt)) ?>
+            <?php if ($releasesError !== ''): ?><div class="note bad-text"><?= e(t('releases.check_error', ['error' => $releasesError])) ?></div><?php endif ?></dd>
+    </dl>
+
+    <?php if ($siteStatus === 'queued'): ?>
+        <div class="stack gap-top">
+            <p><?= badge('queued') ?> <?= e(t('site.state.queued', ['version' => (string) $siteState['to'], 'by' => (string) $siteState['by'], 'time' => $stateTime('requested_at')])) ?></p>
+            <?php if ($cronAge === null || $cronAge > 180): ?>
+                <p class="bad-text"><?= e($cronAge === null ? t('site.state.cron_never') : t('site.state.cron_stale', ['time' => fmt_time($cronLastRun)])) ?></p>
+            <?php endif ?>
+            <form method="post" action="<?= e(url('/updates/site/cancel')) ?>">
+                <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('site.action.cancel')) ?></button>
+            </form>
+        </div>
+    <?php elseif ($siteStatus === 'running'): ?>
+        <p class="gap-top"><?= badge('running') ?> <?= e(t('site.state.running', ['version' => (string) ($siteState['to'] ?? '')])) ?></p>
+    <?php elseif ($siteStatus === 'done'): ?>
+        <p class="gap-top"><?= badge('ok', t('status.done')) ?> <?= e(t('site.state.done', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
+        <p class="note"><?= e(t('site.state.done.hint')) ?></p>
+    <?php elseif ($siteStatus === 'failed'): ?>
+        <p class="gap-top bad-text"><?= e(t('site.state.failed', ['version' => (string) ($siteState['to'] ?? '?'), 'time' => $stateTime('finished_at'), 'error' => $stateError($siteState['error'] ?? null)])) ?></p>
+        <?php if (isset($siteState['rollback_error'])): ?>
+            <p class="bad-text"><?= e($stateError($siteState['rollback_error'])) ?></p>
+        <?php else: ?>
+            <p><?= e(!empty($siteState['rolled_back']) ? t('site.state.failed.back', ['version' => (string) ($siteState['from'] ?? '')]) : t('site.state.failed.nothing')) ?></p>
+        <?php endif ?>
+    <?php elseif ($siteStatus === 'rolled_back'): ?>
+        <p class="gap-top"><?= e(t('site.state.rolled_back', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
+    <?php elseif ($siteStatus === 'cancelled'): ?>
+        <p class="gap-top note"><?= e(t('site.state.cancelled', ['version' => (string) ($siteState['to'] ?? ''), 'time' => $stateTime('finished_at')])) ?></p>
+    <?php endif ?>
+    <?php if (in_array($siteStatus, ['running', 'done', 'failed'], true) && ($siteState['steps'] ?? []) !== []): ?>
+        <details class="gap-top"<?= in_array($siteStatus, ['running', 'failed'], true) ? ' open' : '' ?> data-key="site-steps">
+            <summary><?= e(t('site.state.steps')) ?></summary>
+            <ol class="gap-top">
+                <?php foreach ($siteState['steps'] as $step): ?>
+                    <li><span class="note nowrap"><?= e(fmt_time((string) $step['at'])) ?></span>
+                        <?= e(t('site.step.' . $step['step'], (array) ($step['params'] ?? []) + ['to' => (string) ($siteState['to'] ?? '')])) ?></li>
+                <?php endforeach ?>
+            </ol>
+            <?php if (($siteState['output'] ?? '') !== ''): ?>
+                <p class="note"><?= e(t('site.state.output')) ?></p>
+                <pre class="log"><?= e((string) $siteState['output']) ?></pre>
+            <?php endif ?>
+        </details>
+    <?php endif ?>
+
+    <div class="buttons gap-top">
+        <?php if ($siteNewer !== null && !$siteBusy): ?>
+            <form method="post" action="<?= e(url('/updates/site/install')) ?>" data-confirm="<?= e(t('site.confirm.install', ['version' => $siteNewer['version']])) ?>">
+                <?= csrf_field() ?><button type="submit"><?= e(t('site.action.install', ['version' => $siteNewer['version']])) ?></button>
+            </form>
+        <?php endif ?>
+        <form method="post" action="<?= e(url('/updates/releases/check')) ?>">
+            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('releases.action.check')) ?></button>
+        </form>
+        <form method="post" action="<?= e(url('/updates/releases/settings')) ?>" class="inline">
+            <?= csrf_field() ?>
+            <input type="hidden" name="releases_check" value="<?= $releasesOn ? '0' : '1' ?>">
+            <button type="submit" class="link"><?= e(t($releasesOn ? 'releases.action.check_off' : 'releases.action.check_on')) ?></button>
+        </form>
+    </div>
+    <p class="note"><?= e($releasesOn ? t('releases.check.on', ['repo' => $repo]) : t('releases.check.off')) ?></p>
+    </div>
+
+    <?php if (!$siteBusy): ?>
+    <details class="gap-top">
+        <summary><?= e(t('site.upload')) ?></summary>
+        <form method="post" action="<?= e(url('/updates/site/upload')) ?>" enctype="multipart/form-data" class="stack gap-top"
+              data-confirm="<?= e(t('site.upload.confirm')) ?>">
+            <?= csrf_field() ?>
+            <p class="note"><?= e(t('site.upload.hint')) ?></p>
+            <label><?= e(t('site.upload.file')) ?>
+                <input type="file" name="package" accept=".zip,application/zip" required>
+                <span class="note"><?= e(t('updates.upload.hint', ['limit' => fmt_bytes($uploadLimit)])) ?></span>
+            </label>
+            <button type="submit"><?= e(t('site.upload.submit')) ?></button>
+        </form>
+    </details>
+    <?php endif ?>
+</section>
 
 <div class="columns">
 <section class="panel">
     <h2><?= e(t('updates.agent')) ?></h2>
     <p><?= $current === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $current['version']])) ?></p>
-    <form method="post" action="<?= e(url('/updates/upload')) ?>" enctype="multipart/form-data" class="stack">
+    <dl class="props">
+        <dt><?= e(t('client.github')) ?></dt>
+        <dd><?php if ($clientLatest !== null): ?>
+                <strong><?= e($clientLatest['version']) ?></strong>
+                <span class="note"><?= e($published($clientLatest)) ?></span>
+                <?php if (($clientLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($clientLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
+                <?php if ($clientNewer === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
+            <?php else: ?><?= e(t('client.github.none')) ?><?php endif ?></dd>
+    </dl>
+    <?php if ($clientNewer !== null): ?>
+        <form method="post" action="<?= e(url('/updates/releases/client')) ?>" class="gap-top">
+            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $clientNewer['version']])) ?></button>
+        </form>
+    <?php endif ?>
+    <form method="post" action="<?= e(url('/updates/upload')) ?>" enctype="multipart/form-data" class="stack gap-top">
         <?= csrf_field() ?>
         <label><?= e(t('updates.upload')) ?>
             <input type="file" name="package" accept=".zip,application/zip" required>
