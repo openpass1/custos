@@ -37,7 +37,8 @@ final class Web
     /**
      * [method, path pattern, controller, action, access]: access is "public" (no login), "user", "live" or "token".
      * "live" pages are polled by the browser for fresh data: they need a login but do not count as activity, so the
-     * inactivity timeout still works with a dashboard left open, and they answer 401 instead of redirecting.
+     * inactivity timeout still works with a dashboard left open, and they answer 401 instead of redirecting. A "user"
+     * page asked for again by itself (header X-Custos-Live, app.js) is handled the same way.
      * "token" pages (the wall screen, 7.9) need no login and no session: the wall token and the integrations allow-list
      * take the place of both, and the site allow-list does not apply.
      */
@@ -49,7 +50,6 @@ final class Web
         ['POST', '#^/logout$#', AuthController::class, 'logout', 'user'],
         ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
         ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', 'user'],
-        ['GET', '#^/agents/' . self::ID . '/live$#', AgentsController::class, 'live', 'live'],
         ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group|inventory|update|sevenzip)$#', AgentsController::class, 'action', 'user'],
         ['POST', '#^/agents/' . self::ID . '/commands/' . self::ID . '/cancel$#', AgentsController::class, 'cancel', 'user'],
         ['GET', '#^/agents/' . self::ID . '/settings$#', AgentsController::class, 'settings', 'user'],
@@ -160,6 +160,10 @@ final class Web
             return Response::text($lang->get($methodMismatch ? 'error.method' : 'error.not_found'), $methodMismatch ? 405 : 404);
         }
         [$class, $action, $access, $params] = $route;
+        // A page that refreshes its live parts asks for itself again: such a request is treated like a live route.
+        if ($access === 'user' && $request->isLive()) {
+            $access = 'live';
+        }
 
         $session = Session::start($this->app, $request, $access !== 'live');
         $this->app->useLanguage($session->user()['language'] ?? null);

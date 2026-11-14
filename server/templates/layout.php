@@ -2,14 +2,12 @@
 /**
  * @var string $title @var string $content @var ?array $user @var array $flash @var string $section
  * @var list<string> $scripts extra files in public/assets that the page needs (vendor/chart.umd.min.js)
+ * @var int $live seconds between refreshes of the page's live parts (data-part), 0 for a page without them
  */
 $view = \Custos\Http\Web\View::$current;
 $app = $view->app;
 $serverName = $app->settings()->get('server_name');
-$counts = $user === null ? [] : [
-    'agents' => (int) $app->db()->value("SELECT COUNT(*) FROM agents WHERE status = 'pending'"),
-    'problems' => (int) $app->db()->value('SELECT COUNT(*) FROM problems WHERE closed_at IS NULL'),
-];
+$counts = $user === null ? [] : $app->navCounts();
 $unread = $user === null ? 0 : $app->notices()->unreadCount();
 $nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'templates' => '/templates',
         'updates' => '/updates', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
@@ -19,9 +17,11 @@ $rare = ['templates', 'updates', 'users', 'audit', 'settings'];
 $navLink = function (string $key, string $class = '') use ($nav, $section, $counts): string {
     $active = $section === $key;
     $classes = trim($class . ($active ? ' active' : ''));
-    $count = $counts[$key] ?? 0;
+    // A counter is always there (hidden at 0), so that a live page can show it when a machine or a problem appears.
+    $count = isset($counts[$key]) ? ' <span class="count' . ($key === 'problems' ? ' count-bad' : '') . '" data-nav-count="' . e($key) . '"'
+        . ($counts[$key] === 0 ? ' hidden' : '') . '>' . $counts[$key] . '</span>' : '';
     return '<a href="' . e(url($nav[$key])) . '"' . ($classes === '' ? '' : ' class="' . e($classes) . '"') . ($active ? ' aria-current="page"' : '') . '>'
-        . e(t('nav.' . $key)) . ($count > 0 ? ' <span class="count' . ($key === 'problems' ? ' count-bad' : '') . '">' . $count . '</span>' : '') . '</a>';
+        . e(t('nav.' . $key)) . $count . '</a>';
 };
 // The user menu sends its choice and comes back to this page.
 $query = (string) parse_url($view->request->uri, PHP_URL_QUERY);
@@ -100,7 +100,7 @@ $check = fn(bool $on): string => $on ? '<span class="menu-check">' . icon('check
         </div>
     <?php endif ?>
 </header>
-<main>
+<main<?= $live > 0 ? ' data-live-page="' . $live . '"' : '' ?>>
     <?php /* Messages float over the page (app.js closes a plain one after a few seconds; an error stays until closed). */ ?>
     <?php if ($flash !== []): ?>
         <div class="toasts" data-close-label="<?= e(t('common.close')) ?>">

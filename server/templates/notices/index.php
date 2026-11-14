@@ -1,7 +1,8 @@
 <?php
 /** @var list<array> $notices @var int $unread @var int $page @var int $pages */
 ?>
-<div class="page-head">
+<?php /* Live parts: new notices and the unread count show up by themselves (app.js). */ ?>
+<div class="page-head" data-part="head">
     <h1><?= e(t('notices.title')) ?></h1>
     <?php if ($unread > 0): ?>
         <div class="page-tools">
@@ -13,6 +14,7 @@
     <?php endif ?>
 </div>
 <p class="hint"><?= e(t('notices.hint')) ?></p>
+<div data-part="list">
 <?php if ($notices === []): ?>
     <p class="empty"><?= e(t('notices.empty')) ?></p>
 <?php else: ?>
@@ -29,7 +31,7 @@
                             ? url('/agents/' . $n['agent_id'] . '/tasks/' . $n['task_id']) : url('/agents/' . $n['agent_id']);
                     }
                     ?>
-                    <tr class="<?= $n['read_at'] === null ? 'unread' : '' ?>">
+                    <tr class="<?= $n['read_at'] === null ? 'unread' : '' ?>" data-key="n<?= (int) $n['id'] ?>">
                         <td class="nowrap"><?= e(fmt_time($n['created_at'])) ?></td>
                         <td><?php if ($link !== null): ?><a href="<?= e($link) ?>"><?= e(notice_text($n)) ?></a><?php else: ?><?= e(notice_text($n)) ?><?php endif ?></td>
                         <td class="card-side">
@@ -50,3 +52,4 @@
     </section>
     <?= pager($page, $pages, '/notices', []) ?>
 <?php endif ?>
+</div>

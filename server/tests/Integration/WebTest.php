@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Custos\Tests\Integration;
 
+use Custos\Http\Web\Controller\AgentsController;
 use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
@@ -251,8 +252,35 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('Documents', $live['parts']['attention']);
         $this->assertSame(0, $live['bell'], 'the notice of the registration was settled by the approval');
 
-        [, $live] = $this->http('GET', "/agents/$agentId/live");
-        $this->assertSame(['now', 'problems', 'tasks'], array_keys(json_decode($live, true)['parts']));
+        // A page with live parts asks for itself again (app.js): the same page with its parts, but a message after an
+        // action is left for the page the person opens next.
+        [$status, $machine] = $this->http('GET', "/agents/$agentId");
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('<main data-live-page="' . AgentsController::REFRESH_S . '">', $machine);
+        foreach (['head', 'facts', 'problems', 'now', 'tasks', 'storage', 'runs', 'commands'] as $part) {
+            $this->assertStringContainsString('data-part="' . $part . '"', $machine);
+        }
+        $this->assertMatchesRegularExpression('#data-nav-count="problems">\d+</span>#', $machine, 'the open problem is counted in the menu');
+        $this->post("/agents/$agentId/rename", ['display_name' => '']);
+        [$status, $live] = $this->http('GET', "/agents/$agentId", null, ['X-Custos-Live: 1']);
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('data-part="tasks"', $live);
+        $this->assertStringContainsString('Documents', $live);
+        $this->assertStringNotContainsString('class="toasts"', $live, 'a refresh does not take the message of the rename');
+        [, $machine] = $this->http('GET', "/agents/$agentId");
+        $this->assertStringContainsString('class="toasts"', $machine, 'the message waits for the page the person opens');
+        foreach (['/agents' => ['pending', 'chips', 'list'], "/agents/$agentId/tasks/$taskId" => ['head', 'state', 'problems', 'slots', 'runs', 'commands'],
+                  '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['machines'],
+                  "/agents/$agentId/settings" => ['state', 'form']] as $path => $parts) {
+            [$status, $page] = $this->http('GET', $path, null, ['X-Custos-Live: 1']);
+            $this->assertSame(200, $status, $path);
+            $this->assertStringContainsString('<main data-live-page=', $page, $path);
+            foreach ($parts as $part) {
+                $this->assertStringContainsString('data-part="' . $part . '"', $page, "$path: $part");
+            }
+        }
+        [, $groups] = $this->http('GET', '/groups');
+        $this->assertStringNotContainsString('data-live-page', $groups, 'a page without live parts does not ask for itself');
 
         [$status, $task] = $this->http('GET', "/agents/$agentId/tasks/$taskId");
         $this->assertSame(200, $status);
@@ -288,6 +316,11 @@ final class WebTest extends TestCase
             [$status, $json] = $this->http('GET', '/dashboard/live');
             $this->assertSame(401, $status);
             $this->assertSame(['error' => 'login'], json_decode($json, true));
+            [$status, $json] = $this->http('GET', "/agents/$agentId", null, ['X-Custos-Live: 1']);
+            $this->assertSame(401, $status, 'a page refreshing itself is told to log in, not sent to the login page');
+            $this->assertSame(['error' => 'login'], json_decode($json, true));
+            [$status] = $this->http('GET', "/agents/$agentId");
+            $this->assertContains($status, [302, 303], 'opened by a person, the page sends them to the login');
         } finally {
             self::$cookies = $jar;
         }
@@ -671,13 +704,15 @@ final class WebTest extends TestCase
      *
      * @return array{0: int, 1: string, 2: array<string, string>}
      */
-    private function http(string $method, string $path, array|string|null $fields = null): array
+    /** @param list<string> $send extra request headers ("Name: value") */
+    private function http(string $method, string $path, array|string|null $fields = null, array $send = []): array
     {
         $headers = [];
         $curl = curl_init(self::$base . $path);
         curl_setopt_array($curl, [
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $send,
             CURLOPT_COOKIEJAR => self::$cookies,
             CURLOPT_COOKIEFILE => self::$cookies,
             CURLOPT_PROXY => '',

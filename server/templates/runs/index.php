@@ -31,6 +31,8 @@ $statuses = ['success', 'warning', 'error', 'aborted', 'running'];
     <a class="button-link" href="<?= e(url('/runs/export', $filter)) ?>" title="<?= e(t('runs.export.hint')) ?>"><?= icon('download') ?><?= e(t('runs.export')) ?></a>
 </form>
 
+<?php /* Live part: new runs and the end of a running one show up by themselves (app.js); the filter stays as chosen. */ ?>
+<div data-part="list">
 <?php if ($runs === []): ?>
     <p class="empty"><?= e(t('runs.empty')) ?></p>
 <?php else: ?>
@@ -40,3 +42,4 @@ $statuses = ['success', 'warning', 'error', 'aborted', 'running'];
     </section>
     <?= pager($page, $pages, '/runs', $filter) ?>
 <?php endif ?>
+</div>

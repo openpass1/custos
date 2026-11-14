@@ -15,6 +15,9 @@ use Custos\Http\Web\Controller;
  */
 final class TemplatesController extends Controller
 {
+    /** A template's list of machines (where it went and whether the agents took it) refreshes this often (seconds). */
+    public const REFRESH_S = 15;
+
     public function index(): Response
     {
         return $this->render('templates/index', [
@@ -62,6 +65,7 @@ final class TemplatesController extends Controller
             'agents' => $agents,
             'groups' => $this->app->groups()->all(),
             'accounts' => array_values(array_filter(array_map(fn($ref) => $template['credential_list'][$ref] ?? null, $refs))),
+            'live' => self::REFRESH_S,
         ], $this->t('templates.show.title', ['name' => $template['name']]));
     }
 

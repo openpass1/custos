@@ -83,6 +83,12 @@ final class Request
         return $this->headers[strtolower($name)] ?? null;
     }
 
+    /** A page asking for itself again to refresh its live parts (app.js), not a person opening it. */
+    public function isLive(): bool
+    {
+        return $this->method === 'GET' && $this->header('X-Custos-Live') === '1';
+    }
+
     /** URL path relative to the site root, starting with "/". */
     /**
      * Whether the web server says the client came over HTTPS. REQUEST_SCHEME (nginx $scheme, Apache) is the
