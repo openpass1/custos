@@ -1,6 +1,6 @@
 # Установка CUSTOS Monitor на CloudPanel, пошагово
 
-English version: [INSTALL.en.md](INSTALL.en.md). Установка на сервер без CloudPanel (обычный nginx) описана в разделе [«Без CloudPanel»](#без-cloudpanel) в конце.
+English version: [INSTALL.en.md](INSTALL.en.md). На чистом сервере Debian 12/13 или Ubuntu 24.04/26.04 без панели всё ставит одна команда, скрипт `install.sh`: раздел [«Без CloudPanel»](#без-cloudpanel) в конце.
 
 Делайте шаги по порядку. После каждого шага написано, что должно получиться. Если получилось не так, смотрите раздел «Если что-то пошло не так» в конце.
 
@@ -23,11 +23,11 @@ English version: [INSTALL.en.md](INSTALL.en.md). Установка на сер�
 
 ## Часть 1. Скачать пакет (на своём компьютере)
 
-**Шаг 1.** Откройте репозиторий на GitHub. Перейдите в **Actions**, слева выберите **Server**. Откройте верхний запуск с зелёной галочкой. Внизу страницы, в блоке **Artifacts**, нажмите `custos-server`.
+**Шаг 1.** Откройте страницу выпусков: https://github.com/openpass1/custos/releases. Найдите последний выпуск **CUSTOS Monitor** (не «CUSTOS for Windows»), раскройте **Assets** и скачайте `custos-server-X.Y.Z.zip`, где X.Y.Z — номер версии.
 
-✅ Скачался файл `custos-server.zip`. Распаковывать его на компьютере не нужно.
+✅ Скачался файл, например `custos-server-1.0.0.zip`. Распаковывать его на компьютере не нужно.
 
-> Пакет хранится 14 дней. Если в блоке Artifacts пусто, на странице **Actions → Server** нажмите **Run workflow**, подождите пару минут и откройте новый запуск.
+> Пробная сборка, ещё не выпущенная (например, чтобы проверить исправление): **Actions** → слева **Server** → верхний запуск с зелёной галочкой → внизу, в блоке **Artifacts**, `custos-server`. Скачается `custos-server.zip`, команды ниже подходят и для него. Такие сборки хранятся 14 дней.
 
 ---
 
@@ -68,11 +68,11 @@ if ($scheme != "https") {
 
 ## Часть 3. Загрузить пакет на сервер
 
-**Шаг 6.** В сайте вкладка **File Manager**. Откройте папку `custos.lan` и загрузите туда `custos-server.zip` (кнопка **Upload**).
+**Шаг 6.** В сайте вкладка **File Manager**. Откройте папку `custos.lan` и загрузите туда скачанный пакет `custos-server-….zip` (кнопка **Upload**).
 
 Можно и через WinSCP: протокол SFTP, логин `custos` и пароль из шага 2, папка `/home/custos/htdocs/custos.lan/`.
 
-✅ В папке `custos.lan` лежит `custos-server.zip`.
+✅ В папке `custos.lan` лежит `custos-server-….zip`.
 
 ---
 
@@ -96,13 +96,13 @@ whoami
 
 ```bash
 cd ~/htdocs/custos.lan
-unzip -o custos-server.zip
-rm custos-server.zip
+unzip -o custos-server*.zip
+rm custos-server*.zip
 cd server
 ls
 ```
 
-✅ `ls` показывает: `INSTALL.en.md INSTALL.md README.md bin composer.json composer.lock config lang migrations public src templates tools vendor zabbix`.
+✅ `ls` показывает среди прочего папки `bin`, `config`, `public`, `src` и `vendor`.
 
 С этого места все команды выполняются из папки `~/htdocs/custos.lan/server`.
 
@@ -477,6 +477,29 @@ curl -s http://custos.lan/api/health
 
 ## Без CloudPanel
 
+### Debian и Ubuntu: одной командой
+
+На чистом сервере Debian 12, Debian 13, Ubuntu 24.04 или Ubuntu 26.04 (подойдёт и версия для рабочего стола) всё ставит скрипт `install.sh`: nginx, MariaDB, PHP, пользователя сайта `custos`, базу данных со случайным паролем, `config.php`, сайт в nginx и cron. Запускать под root; в Ubuntu через `sudo`, в Debian войдите как root (`su -`) и пишите команды без `sudo`:
+
+```bash
+wget https://raw.githubusercontent.com/openpass1/custos/main/server/install.sh
+sudo bash install.sh
+```
+
+Скрипт спросит адрес сайта (предложит `http://IP-сервера`), логин и пароль первого администратора.
+
+✅ В конце блок `CUSTOS Monitor is installed`: адрес сайта, строка подключения для программы, где лежат файлы. Сайт стоит в `/var/www/custos/server`, пароль базы записан в `config/config.php`.
+
+- Повторный запуск безопасен: настройки, ключи, база и пользователи остаются.
+- Обновление: `sudo bash install.sh --update`. Скрипт скачает новейший выпуск, проверит SHA-256, распакует поверх и обновит базу.
+- HTTPS: если у сайта есть публичное имя, которое указывает на этот сервер, добавьте `--https`. Сертификат Let's Encrypt продлевается сам.
+- Если у сервера нет доступа к GitHub, скачайте пакет (шаг 1), положите рядом со скриптом и запустите `sudo bash install.sh --package=custos-server-1.0.0.zip` (с именем своего файла).
+- Все параметры: `bash install.sh --help`.
+
+Дальше проверьте сайт и агента, как в частях 6 и 7 (шаги 13–17). Команды там выполняйте под пользователем сайта (`su - custos`, затем `cd /var/www/custos/server`) и пишите ту версию PHP, которую скрипт назвал в строке `[ok] PHP 8.x`.
+
+### Вручную (другие системы)
+
 Пример для Ubuntu 24.04 (PHP 8.3, MariaDB, nginx). На других системах нужны те же части: PHP 8.3 или новее с PHP-FPM и расширениями `pdo_mysql`, `curl`, `mbstring`, `openssl`, `zlib`; MariaDB 10.11+ или MySQL 8.0+; nginx. В Debian 12 PHP 8.2, этого мало: поставьте PHP 8.4 из репозитория packages.sury.org и везде пишите `php8.4`.
 
 Все команды этого раздела, кроме отмеченных, выполняются **под root**. Сайт работает от отдельного пользователя `custos`, как в CloudPanel.
@@ -565,14 +588,14 @@ systemctl reload nginx
 
 ✅ `nginx -t` пишет `syntax is ok` и `test is successful`.
 
-**Шаг Н6. Пакет и установка.** Скачайте `custos-server.zip` (шаг 1) и загрузите его в `/home/custos/` (WinSCP, протокол SFTP; или `scp custos-server.zip root@адрес-сервера:/home/custos/`). Дальше **под пользователем сайта**:
+**Шаг Н6. Пакет и установка.** Скачайте пакет (шаг 1) и загрузите его в `/home/custos/` (WinSCP, протокол SFTP; или `scp custos-server-1.0.0.zip root@адрес-сервера:/home/custos/` с именем своего файла). Дальше **под пользователем сайта**:
 
 ```bash
-chown custos:custos /home/custos/custos-server.zip
+chown custos:custos /home/custos/custos-server*.zip
 su - custos
 cd /var/www/custos
-unzip -o ~/custos-server.zip
-rm ~/custos-server.zip
+unzip -o ~/custos-server*.zip
+rm ~/custos-server*.zip
 cd server
 cp config/config.example.php config/config.php
 nano config/config.php

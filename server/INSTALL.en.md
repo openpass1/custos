@@ -1,6 +1,6 @@
 # Installing CUSTOS Monitor on CloudPanel, step by step
 
-Русская версия: [INSTALL.md](INSTALL.md). Installing on a server without CloudPanel (plain nginx) is described in [Without CloudPanel](#without-cloudpanel) at the end.
+Русская версия: [INSTALL.md](INSTALL.md). On a clean Debian 12/13 or Ubuntu 24.04/26.04 server without a panel, one command installs everything, the script `install.sh`: see [Without CloudPanel](#without-cloudpanel) at the end.
 
 Do the steps in order. Each step says what you should see afterwards. If you see something else, look at [If something goes wrong](#if-something-goes-wrong) at the end.
 
@@ -23,11 +23,11 @@ Two rules:
 
 ## Part 1. Download the package (on your computer)
 
-**Step 1.** Open the repository on GitHub. Go to **Actions** and choose **Server** on the left. Open the top run with a green check mark. At the bottom of the page, in **Artifacts**, click `custos-server`.
+**Step 1.** Open the releases page: https://github.com/openpass1/custos/releases. Find the latest **CUSTOS Monitor** release (not "CUSTOS for Windows"), open **Assets** and download `custos-server-X.Y.Z.zip`, where X.Y.Z is the version.
 
-✅ The file `custos-server.zip` is downloaded. Do not unpack it on your computer.
+✅ A file such as `custos-server-1.0.0.zip` is downloaded. Do not unpack it on your computer.
 
-> The package is kept for 14 days. If Artifacts is empty, press **Run workflow** on the **Actions → Server** page, wait a couple of minutes and open the new run.
+> A test build that is not released yet (for example, to check a fix): **Actions** → **Server** on the left → the top run with a green check mark → at the bottom, in **Artifacts**, `custos-server`. It downloads as `custos-server.zip`; the commands below work for it too. Such builds are kept for 14 days.
 
 ---
 
@@ -68,11 +68,11 @@ If there is no such block, do nothing. With this block agents cannot work over H
 
 ## Part 3. Upload the package to the server
 
-**Step 6.** In the site, **File Manager** tab. Open the folder `custos.lan` and upload `custos-server.zip` there (**Upload** button).
+**Step 6.** In the site, **File Manager** tab. Open the folder `custos.lan` and upload the downloaded package `custos-server-….zip` there (**Upload** button).
 
 WinSCP works too: protocol SFTP, login `custos` and the password from step 2, folder `/home/custos/htdocs/custos.lan/`.
 
-✅ The folder `custos.lan` contains `custos-server.zip`.
+✅ The folder `custos.lan` contains `custos-server-….zip`.
 
 ---
 
@@ -96,13 +96,13 @@ whoami
 
 ```bash
 cd ~/htdocs/custos.lan
-unzip -o custos-server.zip
-rm custos-server.zip
+unzip -o custos-server*.zip
+rm custos-server*.zip
 cd server
 ls
 ```
 
-✅ `ls` shows: `INSTALL.en.md INSTALL.md README.md bin composer.json composer.lock config lang migrations public src templates tools vendor zabbix`.
+✅ Among other things, `ls` shows the folders `bin`, `config`, `public`, `src` and `vendor`.
 
 From here on every command runs in the folder `~/htdocs/custos.lan/server`.
 
@@ -478,6 +478,29 @@ Also in this version: the logout after inactivity is set on the site, Settings �
 
 ## Without CloudPanel
 
+### Debian and Ubuntu: one command
+
+On a clean Debian 12, Debian 13, Ubuntu 24.04 or Ubuntu 26.04 server (the desktop edition works too), the script `install.sh` installs everything: nginx, MariaDB, PHP, the site user `custos`, the database with a random password, `config.php`, the nginx site and cron. Run it as root; on Ubuntu with `sudo`, on Debian log in as root (`su -`) and type the commands without `sudo`:
+
+```bash
+wget https://raw.githubusercontent.com/openpass1/custos/main/server/install.sh
+sudo bash install.sh
+```
+
+The script asks for the site address (it suggests `http://server-IP`) and the login and password of the first administrator.
+
+✅ At the end, a block `CUSTOS Monitor is installed`: the site address, the connection string for the program, where the files are. The site is in `/var/www/custos/server`, the database password is in `config/config.php`.
+
+- Running it again is safe: settings, keys, the database and users stay.
+- Updating: `sudo bash install.sh --update`. The script downloads the newest release, checks its SHA-256, unpacks it over the site and updates the database.
+- HTTPS: if the site has a public name that points to this server, add `--https`. The Let's Encrypt certificate renews by itself.
+- If the server cannot reach GitHub, download the package (step 1), put it next to the script and run `sudo bash install.sh --package=custos-server-1.0.0.zip` (with the name of your file).
+- All options: `bash install.sh --help`.
+
+Then check the site and the agent as in parts 6 and 7 (steps 13–17). Run the commands there as the site user (`su - custos`, then `cd /var/www/custos/server`) and type the PHP version the script named in the line `[ok] PHP 8.x`.
+
+### By hand (other systems)
+
 An example for Ubuntu 24.04 (PHP 8.3, MariaDB, nginx). Other systems need the same parts: PHP 8.3 or newer with PHP-FPM and the extensions `pdo_mysql`, `curl`, `mbstring`, `openssl`, `zlib`; MariaDB 10.11+ or MySQL 8.0+; nginx. Debian 12 has PHP 8.2, which is not enough: install PHP 8.4 from the packages.sury.org repository and type `php8.4` everywhere.
 
 Every command in this section runs **as root** unless marked otherwise. The site runs as a separate user `custos`, like in CloudPanel.
@@ -566,14 +589,14 @@ systemctl reload nginx
 
 ✅ `nginx -t` says `syntax is ok` and `test is successful`.
 
-**Step N6. Package and installation.** Download `custos-server.zip` (step 1) and upload it to `/home/custos/` (WinSCP with protocol SFTP, or `scp custos-server.zip root@server-address:/home/custos/`). Then, **as the site user**:
+**Step N6. Package and installation.** Download the package (step 1) and upload it to `/home/custos/` (WinSCP with protocol SFTP, or `scp custos-server-1.0.0.zip root@server-address:/home/custos/` with the name of your file). Then, **as the site user**:
 
 ```bash
-chown custos:custos /home/custos/custos-server.zip
+chown custos:custos /home/custos/custos-server*.zip
 su - custos
 cd /var/www/custos
-unzip -o ~/custos-server.zip
-rm ~/custos-server.zip
+unzip -o ~/custos-server*.zip
+rm ~/custos-server*.zip
 cd server
 cp config/config.example.php config/config.php
 nano config/config.php

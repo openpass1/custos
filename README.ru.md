@@ -21,7 +21,19 @@ CUSTOS состоит из двух частей. Программа для Wind
 | Скачать | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<версия>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<версия>.zip` |
 | Инструкция | [client/README.md](client/README.md) | [server/INSTALL.md](server/INSTALL.md) |
 
-<!-- Здесь будут скриншоты окна программы и сайта. -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/ru/site-dashboard-dark.png">
+  <img src="docs/screenshots/ru/site-dashboard-light.png" alt="CUSTOS Monitor: главная страница с семью компьютерами, открытой проблемой и результатами за 30 дней">
+</picture>
+
+<details>
+<summary>Ещё скриншоты</summary>
+
+Страница одного компьютера: его задания, ближайшие запуски и свободное место в назначениях.
+
+<img src="docs/screenshots/ru/site-machine.png" alt="CUSTOS Monitor: страница одного компьютера">
+
+</details>
 
 ## CUSTOS для Windows
 

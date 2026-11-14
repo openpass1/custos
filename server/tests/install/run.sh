@@ -70,8 +70,11 @@ grep -qF "$connection" /tmp/"$name"-again.txt || fail "The connection string cha
 step "Update to the same version: nothing to do; with --force: unpacked and migrated"
 docker exec "$name" bash /opt/install.sh --update --package=/opt/custos-server.zip | tee /tmp/"$name"-update.txt
 grep -q 'is already installed' /tmp/"$name"-update.txt || fail "--update did not see that the version is installed."
-docker exec "$name" bash /opt/install.sh --update --force --package=/opt/custos-server.zip | tee /tmp/"$name"-force.txt
+# The copy inside the site: the update unpacks a new install.sh over the one that is running.
+docker exec "$name" bash /var/www/custos/server/install.sh --update --force --package=/opt/custos-server.zip \
+    | tee /tmp/"$name"-force.txt
 grep -q 'Database schema is up to date' /tmp/"$name"-force.txt || fail "--update --force did not run migrate.php."
+grep -q '^==> Done: CUSTOS Monitor' /tmp/"$name"-force.txt || fail "--update --force did not finish."
 health=$(in_box 'curl -s http://localhost/api/health')
 [[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok after the update: $health"
 
