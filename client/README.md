@@ -309,6 +309,28 @@ CUSTOS бакеты не создаёт и их настройки не меня
 - **Отключённая на сайте машина** работает автономно и шлёт только heartbeat с интервалом, который задаёт сервер
   (5 минут), поэтому после включения на сайте связь возвращается в течение нескольких минут.
 
+## Новые версии с GitHub (без сервера мониторинга)
+
+Компьютер без сервера мониторинга сам узнаёт о новых версиях: раз в день служба спрашивает
+[выпуски на GitHub](https://github.com/openpass1/custos/releases) (первый раз через несколько минут после запуска).
+Берутся только опубликованные выпуски программы (`client-vX.Y.Z`), черновики и предварительные версии пропускаются.
+
+- Когда вышла новая версия, в трее один раз появляется уведомление «Вышла CUSTOS X.Y.Z» (только администраторам), а
+  в главном окне над списком заданий — строка с кнопкой **«Обновить»** и ссылкой **«Что нового»** (страница выпуска).
+- «Обновить» доступна только администратору. Служба скачивает пакет `custos-X.Y.Z.zip` того же выпуска, сверяет его
+  SHA-256 с опубликованным на GitHub (сумма файла или `SHA256SUMS.txt`) и ставит его так же, как обновление с сайта:
+  дожидается конца текущего задания, запускает `Custos.Updater.exe`, при неудаче возвращает прежнюю версию.
+  Пакет, который не совпал с суммой, удаляется и не ставится.
+- **Настройки → «Обновления» → «Проверять новые версии на GitHub раз в день»** (включено по умолчанию) и кнопка
+  «Проверить сейчас». Там же видно, когда была последняя проверка и что она нашла. Выключенная галочка — служба
+  GitHub не спрашивает вовсе.
+- **Компьютер, подключённый к серверу мониторинга, GitHub не спрашивает никогда**, даже с включённой галочкой:
+  обновления ставит сайт.
+
+Каждая проверка записывается в журнал службы (`C:\ProgramData\CUSTOS\logs\service-ГГГГММДД.log`, строки
+`GitHub: …`), состояние последней проверки хранится в `C:\ProgramData\CUSTOS\config\program-update.json`. Итог
+установки, как и при обновлении с сайта, — в журнале Windows (4000 / 4001).
+
 ## Перенос заданий: экспорт и импорт
 
 Нужен, когда переустанавливаете Windows или переносите задания на другой компьютер. Делают это администраторы.
@@ -437,7 +459,8 @@ CUSTOS → «Настройки» → «Права и защита» (менят
 | `C:\ProgramData\CUSTOS\db\custos.db` | Run history and file states for incremental and differential backups |
 | `C:\ProgramData\CUSTOS\logs\` | Service log; `runs\` holds one log file per run |
 | `C:\ProgramData\CUSTOS\config\server.json`, `agent.key` | The monitoring server, its pinned key and the registration code (DPAPI); the agent's own RSA key (DPAPI) |
-| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server or GitHub and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\config\program-update.json` | The last check of GitHub for a new version of the program (computers without a monitoring server) |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
 | `%APPDATA%\CUSTOS\last-known.json` | The theme and the tray mode the service gave last, so the interface starts in them before the service answers |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |

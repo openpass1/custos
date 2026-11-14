@@ -67,7 +67,6 @@ internal sealed partial class AgentService
 
         bool handedOver = false;
         string package = Path.Combine(DataFolders.Updates, $"custos-{version}.zip");
-        string staging = Path.Combine(DataFolders.Updates, $"custos-{version}");
         try
         {
             Directory.CreateDirectory(DataFolders.Updates);
@@ -83,9 +82,47 @@ internal sealed partial class AgentService
                 return Rejected(version, Messages.MonitorPackageBadHash);
             }
 
+            if (await HandOverAsync(package, version, command.Id, cancellationToken).ConfigureAwait(false) is { } problem)
+            {
+                return problem.BadPackage ? Rejected(version, problem.Reason) : Failed(version, problem.Reason);
+            }
+
+            handedOver = true;
+
+            // The result is sent by the service that starts after the update (or by the watch below).
+            return null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            return Failed(version, ex.Message);
+        }
+        finally
+        {
+            TryDeleteFile(package);
+            if (!handedOver)
+            {
+                Interlocked.Exchange(ref _updateRunning, 0);
+            }
+        }
+    }
+
+    /// <summary>Why a checked package was not handed to Custos.Updater; <see cref="BadPackage"/> when the package itself is wrong.</summary>
+    private readonly record struct HandOverProblem(string Reason, bool BadPackage);
+
+    /// <summary>
+    /// The common end of an update from the server and from GitHub: the downloaded and checked package is unpacked,
+    /// the runs are let finish, and Custos.Updater takes over (it stops the service, replaces the files and starts it).
+    /// Null when the updater was started; the caller holds <see cref="_updateRunning"/>, which then stays taken.
+    /// </summary>
+    private async Task<HandOverProblem?> HandOverAsync(string package, string version, string? commandId, CancellationToken cancellationToken)
+    {
+        bool handedOver = false;
+        string staging = Path.Combine(DataFolders.Updates, $"custos-{version}");
+        try
+        {
             if (Unpack(package, staging, version) is { } problem)
             {
-                return Rejected(version, Messages.Format(Messages.MonitorPackageBad, problem));
+                return new HandOverProblem(Messages.Format(Messages.MonitorPackageBad, problem), BadPackage: true);
             }
 
             string updaterFolder = Path.Combine(DataFolders.Updates, "updater-" + Guid.NewGuid().ToString("N")[..8]);
@@ -116,10 +153,10 @@ internal sealed partial class AgentService
             if (restoreRunning)
             {
                 _sevenZipGate.Release();
-                return Failed(version, Messages.MonitorUpdateRestoreRunning);
+                return new HandOverProblem(Messages.MonitorUpdateRestoreRunning, BadPackage: false);
             }
 
-            var pending = new PendingUpdate { CommandId = command.Id, FromVersion = info.Version, ToVersion = version, StartedAt = DateTimeOffset.UtcNow };
+            var pending = new PendingUpdate { CommandId = commandId, FromVersion = info.Version, ToVersion = version, StartedAt = DateTimeOffset.UtcNow };
             File.WriteAllBytes(UpdatePendingFile, JsonSerializer.SerializeToUtf8Bytes(pending, MonitorJsonContext.Default.PendingUpdate));
             TryDeleteFile(UpdateResultFile);
 
@@ -148,26 +185,18 @@ internal sealed partial class AgentService
             {
                 TryDeleteFile(UpdatePendingFile);
                 _sevenZipGate.Release();
-                return Failed(version, ex.Message);
+                return new HandOverProblem(ex.Message, BadPackage: false);
             }
 
             handedOver = true;
             WatchUpdate(version);
-
-            // The result is sent by the service that starts after the update (or by the watch below).
             return null;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
-        {
-            return Failed(version, ex.Message);
         }
         finally
         {
-            TryDeleteFile(package);
             if (!handedOver)
             {
                 TryDeleteFolder(staging);
-                Interlocked.Exchange(ref _updateRunning, 0);
             }
         }
     }

@@ -1643,6 +1643,65 @@ The backups they have made stay where they are.</value>
   <data name="VerifyStoredDaysHelp" xml:space="preserve">
     <value>0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.</value>
   </data>
+  <data name="UpdateBanner" xml:space="preserve">
+    <value>CUSTOS {0} is out. This computer has {1}.</value>
+  </data>
+  <data name="UpdateInstall" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>Installing…</value>
+  </data>
+  <data name="UpdateWhatsNew" xml:space="preserve">
+    <value>What's new</value>
+  </data>
+  <data name="UpdateAdminOnly" xml:space="preserve">
+    <value>Only an administrator of this computer may update CUSTOS.</value>
+  </data>
+  <data name="UpdateAsk" xml:space="preserve">
+    <value>Install CUSTOS {0}?
+
+The service downloads it from GitHub, checks it and restarts for about a minute. A task in progress finishes first.</value>
+  </data>
+  <data name="UpdateBalloonTitle" xml:space="preserve">
+    <value>CUSTOS {0} is out</value>
+  </data>
+  <data name="UpdateBalloonText" xml:space="preserve">
+    <value>Open the program window to install it.</value>
+  </data>
+  <data name="SettingsUpdates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="CheckUpdates" xml:space="preserve">
+    <value>Check GitHub for new versions once a day</value>
+  </data>
+  <data name="CheckUpdatesHelp" xml:space="preserve">
+    <value>The service asks github.com/{0} once a day. A new version appears in the program window and in the tray; it is installed only when an administrator presses «Update». The package is checked against the SHA-256 of the release.</value>
+  </data>
+  <data name="UpdatesCheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="UpdatesNever" xml:space="preserve">
+    <value>Not checked yet.</value>
+  </data>
+  <data name="UpdatesLastCheck" xml:space="preserve">
+    <value>Checked {0}: {1}</value>
+  </data>
+  <data name="UpdatesLatest" xml:space="preserve">
+    <value>CUSTOS {0} is the newest version</value>
+  </data>
+  <data name="UpdatesAvailable" xml:space="preserve">
+    <value>CUSTOS {0} is out</value>
+  </data>
+  <data name="UpdatesNone" xml:space="preserve">
+    <value>no release on GitHub yet</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>The check is off.</value>
+  </data>
+  <data name="UpdatesManagedBySite" xml:space="preserve">
+    <value>This computer is connected to a monitoring site: new versions come from the site.</value>
+  </data>
   <data name="Settings7Zip" xml:space="preserve">
     <value>Archiver</value>
   </data>

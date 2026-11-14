@@ -1535,6 +1535,57 @@ static partial class Messages
     /// <summary>the SHA-256 of {0} differs from manifest.json</summary>
     public static string MonitorPackageFileHash => Get(nameof(MonitorPackageFileHash));
 
+    /// <summary>Could not ask GitHub for a new version of CUSTOS: {0}</summary>
+    public static string ProgramCheckFailed => Get(nameof(ProgramCheckFailed));
+
+    /// <summary>the answer is not a list of releases</summary>
+    public static string ProgramBadAnswer => Get(nameof(ProgramBadAnswer));
+
+    /// <summary>GitHub limits how often it may be asked from this address; the next check is tomorrow</summary>
+    public static string ProgramCheckLimited => Get(nameof(ProgramCheckLimited));
+
+    /// <summary>There is no published release of CUSTOS on GitHub yet.</summary>
+    public static string ProgramNoRelease => Get(nameof(ProgramNoRelease));
+
+    /// <summary>CUSTOS {0} is the newest version.</summary>
+    public static string ProgramUpToDate => Get(nameof(ProgramUpToDate));
+
+    /// <summary>CUSTOS {0} is out (this computer has {1}). An administrator installs it in the program window with «Update».</summary>
+    public static string ProgramFound => Get(nameof(ProgramFound));
+
+    /// <summary>SHA256SUMS.txt of the release does not list {0}, so the file cannot be checked and is not installed</summary>
+    public static string ProgramNoSum => Get(nameof(ProgramNoSum));
+
+    /// <summary>Downloading CUSTOS {0} from GitHub ({1}).</summary>
+    public static string ProgramDownloading => Get(nameof(ProgramDownloading));
+
+    /// <summary>Could not download {0}: {1}</summary>
+    public static string ProgramDownloadFailed => Get(nameof(ProgramDownloadFailed));
+
+    /// <summary>the file is bigger than an update package can be</summary>
+    public static string ProgramTooBig => Get(nameof(ProgramTooBig));
+
+    /// <summary>{0} has SHA-256 {1}, but the release on GitHub says {2}. The file was deleted and not used.</summary>
+    public static string ProgramChecksumMismatch => Get(nameof(ProgramChecksumMismatch));
+
+    /// <summary>{0}: SHA-256 matches the release on GitHub.</summary>
+    public static string ProgramVerified => Get(nameof(ProgramVerified));
+
+    /// <summary>Update to CUSTOS {0} from GitHub started ({1}).</summary>
+    public static string ProgramUpdateBy => Get(nameof(ProgramUpdateBy));
+
+    /// <summary>CUSTOS {0} is being installed. The service restarts in about a minute; the window connects again by itself.</summary>
+    public static string ProgramUpdateStarted => Get(nameof(ProgramUpdateStarted));
+
+    /// <summary>Only administrators may update CUSTOS.</summary>
+    public static string ProgramNotAllowed => Get(nameof(ProgramNotAllowed));
+
+    /// <summary>This computer is connected to a monitoring site: new versions of CUSTOS come from the site.</summary>
+    public static string ProgramManagedBySite => Get(nameof(ProgramManagedBySite));
+
+    /// <summary>There is no newer version of CUSTOS on GitHub than {0}.</summary>
+    public static string ProgramNothingNewer => Get(nameof(ProgramNothingNewer));
+
     /// <summary>The file in the destination is shorter than it should be.</summary>
     public static string StoreFileShorter => Get(nameof(StoreFileShorter));
 
