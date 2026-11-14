@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Custos\Domain;
+
+use Custos\App;
+use Custos\Infra\Time;
+
+/**
+ * Releases of CUSTOS on GitHub (section 8). Once a day one request reads the list of releases of the repository and
+ * remembers the newest published one of each part, chosen by version number by its tag prefix (never GitHub's
+ * "latest" mark, which mixes the parts):
+ *   server  tag server-vX.Y.Z, package custos-server-X.Y.Z.zip: the site updates itself from it (SiteUpdate);
+ *   client  tag client-vX.Y.Z, package custos-X.Y.Z.zip: the agent update package (A.10), which the site downloads
+ *           on request, checks and signs like an uploaded one.
+ * A bell notice tells once per version when the site is older, or when the program is newer than every agent
+ * package on the server. Drafts and pre-releases are skipped. The check can be turned off (server without internet).
+ *
+ * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server and release_client
+ * (JSON of the release found, see pick()), release_server_notified and release_client_notified (versions noticed).
+ */
+final class Releases
+{
+    public const CHECK_EVERY_S = 86400;
+    public const DEFAULT_REPO = 'openpass1/custos';
+    public const PARTS = ['server', 'client'];
+    /** Far above the size of the program's update package. */
+    private const MAX_CLIENT_BYTES = 100 * 1024 * 1024;
+
+    /** @param \Closure(string, int): array{0: int, 1: string, 2: string} $http */
+    public function __construct(
+        private readonly Settings $settings,
+        private readonly Notices $notices,
+        private readonly Packages $packages,
+        private readonly string $apiUrl,
+        public readonly string $repo,
+        private readonly \Closure $http,
+    ) {
+    }
+
+    /** One cron pass: the daily check and the notices. */
+    public function pass(int $now): array
+    {
+        $stats = [];
+        if ($this->checkOn()) {
+            $last = $this->settings->get('releases_checked_at');
+            if ($last === '' || Time::unix($last) <= $now - self::CHECK_EVERY_S) {
+                $stats['check'] = $this->check($now) ? 'ok' : 'failed';
+            }
+        }
+        $site = $this->newerSite();
+        if ($site !== null && $this->settings->get('release_server_notified') !== $site['version']) {
+            $this->notices->add('site.update', null, null, ['version' => $site['version'], 'current' => App::VERSION]);
+            $this->settings->set('release_server_notified', $site['version']);
+            $stats['site'] = $site['version'];
+        }
+        $client = $this->newerClient();
+        if ($client !== null && $this->settings->get('release_client_notified') !== $client['version']) {
+            $this->notices->add('client.release', null, null, ['version' => $client['version']]);
+            $this->settings->set('release_client_notified', $client['version']);
+            $stats['client'] = $client['version'];
+        }
+        return $stats;
+    }
+
+    public function checkOn(): bool
+    {
+        return $this->settings->get('releases_check') !== '0';
+    }
+
+    /** Reads the releases on GitHub and remembers the newest of each part. False when the list could not be read. */
+    public function check(int $now): bool
+    {
+        $this->settings->set('releases_checked_at', Time::db($now));
+        [$status, $body, $error] = ($this->http)($this->apiUrl . '/repos/' . $this->repo . '/releases?per_page=50', 4 * 1024 * 1024);
+        $releases = json_decode($body, true);
+        if ($status !== 200 || !is_array($releases)) {
+            $this->settings->set('releases_check_error', $error !== '' ? $error : "HTTP $status");
+            return false;
+        }
+        foreach (self::PARTS as $part) {
+            $found = self::pick($releases, $part);
+            // A part without a release keeps what was found before (a release can be taken down for a while).
+            if ($found !== null) {
+                $this->settings->set('release_' . $part, json_encode($found, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+        }
+        $this->settings->set('releases_check_error', '');
+        return true;
+    }
+
+    /**
+     * The newest release of a part in GitHub's list: version, tag, url (the release page), published_at, the package
+     * (zip_name, zip_url, zip_size), sha256 (GitHub's digest of the package, when given) and sums_url (the release's
+     * SHA256SUMS.txt, when present).
+     */
+    public static function pick(array $releases, string $part): ?array
+    {
+        $best = null;
+        foreach ($releases as $release) {
+            if (!is_array($release) || !empty($release['draft']) || !empty($release['prerelease'])
+                || !preg_match('/^' . $part . '-v(\d+\.\d+\.\d+)$/', (string) ($release['tag_name'] ?? ''), $m)) {
+                continue;
+            }
+            $version = $m[1];
+            if ($best !== null && version_compare($version, $best['version'], '<=')) {
+                continue;
+            }
+            $zipName = $part === 'server' ? "custos-server-$version.zip" : "custos-$version.zip";
+            $zip = $sums = null;
+            foreach ((array) ($release['assets'] ?? []) as $asset) {
+                $name = (string) ($asset['name'] ?? '');
+                if ($name === $zipName) {
+                    $zip = $asset;
+                } elseif ($name === 'SHA256SUMS.txt') {
+                    $sums = $asset;
+                }
+            }
+            if ($zip === null || empty($zip['browser_download_url'])) {
+                continue;
+            }
+            $digest = (string) ($zip['digest'] ?? '');
+            $best = [
+                'version' => $version,
+                'tag' => (string) $release['tag_name'],
+                'url' => (string) ($release['html_url'] ?? ''),
+                'published_at' => $release['published_at'] ?? null,
+                'zip_name' => $zipName,
+                'zip_url' => (string) $zip['browser_download_url'],
+                'zip_size' => (int) ($zip['size'] ?? 0),
+                'sha256' => preg_match('/^sha256:([0-9a-f]{64})$/i', $digest, $d) ? strtolower($d[1]) : null,
+                'sums_url' => $sums !== null && !empty($sums['browser_download_url']) ? (string) $sums['browser_download_url'] : null,
+            ];
+        }
+        return $best;
+    }
+
+    /** The newest release of a part found by the last check. */
+    public function latest(string $part): ?array
+    {
+        $latest = json_decode($this->settings->get('release_' . $part), true);
+        return is_array($latest) && isset($latest['version']) ? $latest : null;
+    }
+
+    /** The newest site release when it is newer than this site. */
+    public function newerSite(): ?array
+    {
+        $latest = $this->latest('server');
+        return $latest !== null && version_compare($latest['version'], App::VERSION, '>') ? $latest : null;
+    }
+
+    /** The newest program release when it is newer than every agent package on the server. */
+    public function newerClient(): ?array
+    {
+        $latest = $this->latest('client');
+        if ($latest === null) {
+            return null;
+        }
+        $stored = $this->packages->all('agent')[0]['version'] ?? null;
+        return $stored === null || version_compare($latest['version'], $stored, '>') ? $latest : null;
+    }
+
+    /**
+     * Downloads the newest program release to the server and adds it like an uploaded package (checked and signed).
+     * It does not become current by itself.
+     *
+     * @throws \InvalidArgumentException with a lang key; $params fills it
+     */
+    public function downloadClient(string $login, ?array &$params = null): array
+    {
+        $params = [];
+        $release = $this->latest('client');
+        if ($release === null) {
+            throw new \InvalidArgumentException('releases.error.not_checked');
+        }
+        $existing = $this->packages->find('agent', $release['version']);
+        if ($existing !== null) {
+            return $existing;
+        }
+        $params = ['name' => $release['zip_name']];
+        [$status, $body, $error] = ($this->http)($release['zip_url'], self::MAX_CLIENT_BYTES);
+        if ($status !== 200 || $body === '') {
+            $params['error'] = $error !== '' ? $error : "HTTP $status";
+            throw new \InvalidArgumentException('releases.error.download');
+        }
+        $expected = $this->expectedSha256($release, $params);
+        if ($expected === []) {
+            throw new \InvalidArgumentException('releases.error.no_checksum');
+        }
+        $actual = hash('sha256', $body);
+        foreach ($expected as $sha) {
+            if (!hash_equals($sha, $actual)) {
+                throw new \InvalidArgumentException('releases.error.checksum');
+            }
+        }
+        $tmp = tempnam(sys_get_temp_dir(), 'custos-client');
+        try {
+            file_put_contents($tmp, $body);
+            unset($body);
+            $package = $this->packages->addAgent($tmp, $login, $params);
+            $this->notices->settleKinds(['client.release']);
+            return $package;
+        } finally {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * SHA-256 values the release publishes for its package: GitHub's digest and the line of SHA256SUMS.txt.
+     *
+     * @return list<string>
+     */
+    private function expectedSha256(array $release, array &$params): array
+    {
+        $expected = [];
+        if (!empty($release['sha256'])) {
+            $expected[] = (string) $release['sha256'];
+        }
+        if (!empty($release['sums_url'])) {
+            [$status, $sums, $error] = ($this->http)((string) $release['sums_url'], 256 * 1024);
+            if ($status !== 200) {
+                $params = ['name' => 'SHA256SUMS.txt', 'error' => $error !== '' ? $error : "HTTP $status"];
+                throw new \InvalidArgumentException('releases.error.download');
+            }
+            if (preg_match('/^([0-9a-f]{64})\s+\*?' . preg_quote($release['zip_name'], '/') . '\s*$/mi', $sums, $m)) {
+                $expected[] = strtolower($m[1]);
+            }
+        }
+        return $expected;
+    }
+}

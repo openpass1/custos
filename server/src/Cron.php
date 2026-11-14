@@ -35,6 +35,7 @@ final class Cron
             'notify' => fn() => $this->app->notifier()->queueProblems($now),
             'send' => fn() => $this->app->notifier()->sendQueued($now),
             'updates' => fn() => $this->app->updateWatch()->pass($now),
+            'releases' => fn() => $this->app->releases()->pass($now),
             'cleanup' => fn() => $this->cleanup($now),
         ];
         foreach ($steps as $name => $step) {

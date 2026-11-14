@@ -511,8 +511,10 @@ document.addEventListener('change', (event) => {
             credentials: 'same-origin',
             cache: 'no-store',
         });
-        // 401: the session has ended; 403 on the wall screen: its token was replaced. The page shows why.
-        if (response.status === 401 || (response.status === 403 && block.hasAttribute('data-live-public'))) {
+        // 401: the session has ended; 403 on the wall screen: its token was replaced; 503 with X-Custos-Maintenance:
+        // the site is being updated. The page shows why (the update page reloads itself until the site is back).
+        if (response.status === 401 || (response.status === 403 && block.hasAttribute('data-live-public'))
+            || (response.status === 503 && response.headers.get('X-Custos-Maintenance'))) {
             window.location.reload();
             return null;
         }
@@ -527,6 +529,13 @@ document.addEventListener('change', (event) => {
             return {};
         }
         const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+        // The site was updated meanwhile: the whole page, with the new scripts and styles.
+        const version = doc.querySelector('footer[data-version]');
+        const shown = document.querySelector('footer[data-version]');
+        if (version && shown && version.getAttribute('data-version') !== shown.getAttribute('data-version')) {
+            window.location.reload();
+            return null;
+        }
         const parts = {};
         for (const el of doc.querySelectorAll('[data-part]')) {
             parts[el.getAttribute('data-part')] = el.innerHTML;

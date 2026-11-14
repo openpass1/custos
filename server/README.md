@@ -27,6 +27,18 @@ default), CSV export of runs, the Zabbix endpoints with the template in `zabbix/
 the English interface and the site icon. Database dumps reported by agents (`databases` in `runs/finish`) are kept and
 shown on the run page; tasks that only dump databases need no file sources.
 
+The site updates itself (0.4.11): once a day `Domain\Releases` reads the CUSTOS releases on GitHub (one request,
+tags `server-v*` and `client-v*`, newest by version number) and gives a bell notice about a newer site or program.
+The «Update the site» button on the Updates page (or an uploaded `custos-server-X.Y.Z.zip`) only queues the update in
+`var/update/state.json`; `bin/cron.php` runs it with `Infra\Updater` instead of its pass, and `bin/update.php` does the
+same over SSH (`--package=FILE`, `--rollback`, `--check`). The updater checks the package, PHP, disk space and
+permissions, puts up `var/update/maintenance.json` (`public/index.php` answers 503 before loading any class), copies
+the tables that the new migrations touch (`Infra\DbSnapshot`), swaps the top-level folders (old ones go to
+`var/update/backup`), runs `bin/migrate.php` and `bin/update.php --self-test` of the new version in their own
+processes, and puts everything back on any failure. The program's update package can be downloaded from its GitHub
+release on the same page; it is checked and signed like an uploaded one. Tests: `SiteUpdaterTest` (a copy of the site
+in a temporary folder) and `tests/update/run.sh` (the real package, in CI).
+
 Where the logic lives: `Domain\Monitor` (presence, slots, problems), `Domain\Board` (statuses for the pages),
 `Domain\Notifier` (outbox), `Domain\Maintenance` (retention), `Cron` (the order of the steps), `Domain\Commands`
 (command queue), `Domain\TaskForm` (the editor's checks), `Domain\TaskEdits` (task.upsert, versions),
@@ -47,7 +59,7 @@ run it again after changing items or triggers.
 ## Layout
 
 ```
-bin/         install.php, migrate.php, cron.php (command line only)
+bin/         install.php, migrate.php, cron.php, update.php (command line only)
 config/      config.example.php -> config.php; keys/ holds the server key pair (created by install.php)
 lang/        interface strings: ru.php (the reference) and en.php with the same keys
 migrations/  SQL migrations, applied in name order
@@ -57,7 +69,8 @@ templates/   page templates
 tools/       fake-agent.php and its Custos\Tools\ classes, make-update-package.php, make-favicon.py (site icons from
              the client's shield), make-zabbix-template.py, fake-space.php
 tests/       PHPUnit tests
-var/         sessions, logs, cron lock, update packages, fake agent state (created at run time)
+var/         sessions, logs, cron lock, update packages, fake agent state, update/ (site updates: state.json, the
+             previous version in backup/), created at run time
 zabbix/      custos_template.yaml, the Zabbix template "CUSTOS by HTTP"
 ```
 

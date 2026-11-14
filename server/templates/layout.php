@@ -111,7 +111,7 @@ $check = fn(bool $on): string => $on ? '<span class="menu-check">' . icon('check
     <?php endif ?>
     <?= $content ?>
 </main>
-<footer>CUSTOS Monitor <?= e(\Custos\App::VERSION) ?>
+<footer data-version="<?= e(\Custos\App::VERSION) ?>">CUSTOS Monitor <?= e(\Custos\App::VERSION) ?>
     <?php /* app.js shows it when the system asks for less motion (Windows: animation effects off). */ ?>
     <span class="motion-note" data-motion-note hidden title="<?= e(t('motion.off.hint')) ?>"
           data-windows="<?= e(t('motion.off.windows')) ?>" data-windows-hint="<?= e(t('motion.off.hint.windows')) ?>"><?= e(t('motion.off')) ?></span>

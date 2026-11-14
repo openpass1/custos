@@ -59,12 +59,39 @@ final class WebTest extends TestCase
             ]]],
             ['tag_name' => '24.09', 'assets' => []],
         ]));
+        // CUSTOS releases: the site 9.9.0 (a pre-release 9.10.0 is skipped) and the program 1.2.3 (a draft 1.2.4 is
+        // skipped), each with SHA256SUMS.txt; the program package is a real agent update package.
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.3', "--out=$dir/custos-1.2.3.zip"]);
+        $this->assertSame(0, $code, $output);
+        file_put_contents("$dir/custos-server-9.9.0.zip", 'not used: the site under test never updates itself');
+        $sha = fn(string $file) => hash_file('sha256', "$dir/$file");
+        file_put_contents("$dir/SHA256SUMS.txt", $sha('custos-1.2.3.zip') . "  custos-1.2.3.zip\n" . $sha('custos-server-9.9.0.zip') . "  custos-server-9.9.0.zip\n");
+        $asset = fn(string $name, bool $digest = true) => ['name' => $name, 'browser_download_url' => "http://127.0.0.1:$port/$name", 'size' => filesize("$dir/$name")]
+            + ($digest ? ['digest' => 'sha256:' . $sha($name)] : []);
+        file_put_contents("$dir/custos-releases.json", json_encode([
+            ['tag_name' => 'client-v1.2.4', 'draft' => true, 'assets' => []],
+            ['tag_name' => 'server-v9.10.0', 'prerelease' => true, 'assets' => [$asset('custos-server-9.9.0.zip')]],
+            ['tag_name' => 'server-v9.9.0', 'html_url' => 'https://github.example/releases/server-v9.9.0', 'published_at' => '2026-11-14T10:00:00Z',
+             'assets' => [$asset('custos-server-9.9.0.zip'), $asset('SHA256SUMS.txt', false)]],
+            ['tag_name' => 'client-v1.2.3', 'html_url' => 'https://github.example/releases/client-v1.2.3', 'published_at' => '2026-11-14T09:00:00Z',
+             'assets' => [$asset('custos-1.2.3.zip'), $asset('SHA256SUMS.txt', false)]],
+        ]));
         file_put_contents("$dir/router.php", <<<'PHP'
             <?php
             $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
             if ($path === '/repos/ip7z/7zip/releases' || $path === '/7z2410-x64.exe') {
                 header('Content-Type: ' . ($path === '/7z2410-x64.exe' ? 'application/octet-stream' : 'application/json'));
                 readfile(__DIR__ . ($path === '/7z2410-x64.exe' ? $path : '/releases.json'));
+                return;
+            }
+            if ($path === '/repos/openpass1/custos/releases') {
+                header('Content-Type: application/json');
+                readfile(__DIR__ . '/custos-releases.json');
+                return;
+            }
+            if (preg_match('#^/(custos-[0-9.]+\.zip|custos-server-[0-9.]+\.zip|SHA256SUMS\.txt)$#', $path, $m)) {
+                header('Content-Type: application/octet-stream');
+                readfile(__DIR__ . '/' . $m[1]);
                 return;
             }
             file_put_contents(__DIR__ . '/sent.log', json_encode($_POST) . "\n", FILE_APPEND);
@@ -291,7 +318,7 @@ final class WebTest extends TestCase
         [, $machine] = $this->http('GET', "/agents/$agentId");
         $this->assertStringContainsString('class="toasts"', $machine, 'the message waits for the page the person opens');
         foreach (['/agents' => ['pending', 'chips', 'list'], "/agents/$agentId/tasks/$taskId" => ['head', 'state', 'problems', 'slots', 'runs', 'commands'],
-                  '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['machines'],
+                  '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['site', 'machines'],
                   "/agents/$agentId/settings" => ['state', 'form']] as $path => $parts) {
             [$status, $page] = $this->http('GET', $path, null, ['X-Custos-Live: 1']);
             $this->assertSame(200, $status, $path);
@@ -375,6 +402,7 @@ final class WebTest extends TestCase
         $stats = json_decode(substr($output, strpos($output, '{')), true);
         $this->assertIsArray($stats, $output);
         $this->assertSame('ok', $stats['updates']['sevenzip_check'] ?? null, 'cron asked (the fake) GitHub for 7-Zip releases: ' . $output);
+        $this->assertSame(['check' => 'ok', 'site' => '9.9.0', 'client' => '1.2.3'], $stats['releases'] ?? null, 'and for CUSTOS releases: ' . $output);
         $sent = array_map(fn($line) => json_decode($line, true), file("$dir/sent.log", FILE_IGNORE_NEW_LINES));
         $this->assertCount(3, $sent, 'two test messages and one message about the problem');
         $this->assertSame('-1001234567890', $sent[2]['chat_id']);
@@ -496,8 +524,83 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('1.0.1', $versions);
     }
 
-    /** Stage 4 through the pages: icons, heat map, charts, storages, CSV, profile (English, dark), Zabbix and the wall. */
+    /**
+     * CUSTOS releases on (the fake) GitHub: the notices, the program downloaded as an agent package, the site update
+     * queued and cancelled, a bad site package refused. The site under test is the development copy, which never
+     * updates itself (the updater refuses it); the update itself is tested by SiteUpdaterTest and tests/update/run.sh.
+     */
     #[Depends('testManagementFromTheSite')]
+    public function testReleasesFromTheSite(): void
+    {
+        [, $notices] = $this->http('GET', '/notices');
+        $this->assertStringContainsString('Вышла новая версия сайта 9.9.0 (установлена ' . \Custos\App::VERSION . ')', $notices);
+        $this->assertStringContainsString('Вышла программа CUSTOS 1.2.3.', $notices);
+
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновить сайт до 9.9.0', $updates);
+        $this->assertStringContainsString('https://github.example/releases/server-v9.9.0', $updates);
+        $this->assertStringNotContainsString('9.10.0', $updates, 'pre-releases are skipped');
+        $this->assertStringContainsString('Скачать 1.2.3 на сервер', $updates);
+        $this->assertStringNotContainsString('1.2.4', $updates, 'drafts are skipped');
+
+        [$status] = $this->post('/updates/releases/client', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Программа 1.2.3 скачана с GitHub, проверена и подписана.', $updates);
+        $this->assertStringNotContainsString('Скачать 1.2.3 на сервер', $updates, 'the package is on the server now');
+        $this->assertStringContainsString('Обновить CUSTOS до 1.0.1', $updates, 'a downloaded package does not become current by itself');
+
+        [$status] = $this->post('/updates/releases/check', []);
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Вышла версия сайта 9.9.0.', $this->http('GET', '/updates')[1]);
+
+        // Queued, shown, and taken back before any cron pass could run it.
+        [$status] = $this->post('/updates/site/install', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновление до 9.9.0 начнётся в течение минуты.', $updates);
+        $this->assertStringContainsString('Обновление до 9.9.0 ждёт запуска', $updates);
+        $this->assertStringNotContainsString('Обновить сайт до 9.9.0', $updates, 'one update at a time');
+        [$status] = $this->post('/updates/site/cancel', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновление до 9.9.0 отменено', $updates);
+        $this->assertStringContainsString('Обновить сайт до 9.9.0', $updates);
+        [, $audit] = $this->http('GET', '/audit');
+        $this->assertStringContainsString('запрошено обновление сайта', $audit);
+        $this->assertStringContainsString('отменено обновление сайта', $audit);
+
+        // A file that is not a site package is refused at once, and nothing is queued.
+        preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
+        $wrong = TestEnv::dir() . '/custos-1.0.1.zip';
+        [$status] = $this->http('POST', '/updates/site/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($wrong, 'application/zip', 'custos-server-9.9.9.zip')]);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Это не пакет сайта CUSTOS: manifest.json is outside the folder server/', $updates);
+        $this->assertStringNotContainsString('ждёт запуска', $updates);
+
+        // While an update replaces the files, pages and the agent API answer 503 before any class is loaded.
+        $dir = TestEnv::config()['var_dir'] . '/update';
+        file_put_contents("$dir/maintenance.json", '{"version":"9.9.0"}');
+        touch("$dir/opcache-reset");
+        try {
+            [$status, $page, $headers] = $this->http('GET', '/agents');
+            $this->assertSame(503, $status);
+            $this->assertStringContainsString('Сайт обновляется до версии 9.9.0', $page);
+            $this->assertSame('1', $headers['x-custos-maintenance'] ?? null);
+            $this->assertSame('30', $headers['retry-after'] ?? null);
+            [$status, $json] = $this->http('POST', '/api/v1/heartbeat', '{}');
+            $this->assertSame(503, $status, 'agents try again later (A.11)');
+            $this->assertSame('maintenance', json_decode($json, true)['error'] ?? null);
+            $this->assertFileDoesNotExist("$dir/opcache-reset", 'the first request after an update clears the code cache');
+        } finally {
+            @unlink("$dir/maintenance.json");
+        }
+        $this->assertSame(200, $this->http('GET', '/updates')[0]);
+    }
+
+    /** Stage 4 through the pages: icons, heat map, charts, storages, CSV, profile (English, dark), Zabbix and the wall. */
+    #[Depends('testReleasesFromTheSite')]
     public function testAnalyticsProfileAndIntegrations(): void
     {
         foreach (['/favicon.svg' => '<svg', '/favicon.ico' => "\x00\x00\x01\x00", '/apple-touch-icon.png' => "\x89PNG"] as $path => $start) {

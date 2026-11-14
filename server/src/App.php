@@ -17,8 +17,10 @@ use Custos\Domain\Monitor;
 use Custos\Domain\Notices;
 use Custos\Domain\Notifier;
 use Custos\Domain\Packages;
+use Custos\Domain\Releases;
 use Custos\Domain\Reports;
 use Custos\Domain\Settings;
+use Custos\Domain\SiteUpdate;
 use Custos\Domain\Storage;
 use Custos\Domain\TaskEdits;
 use Custos\Domain\Tasks;
@@ -32,16 +34,18 @@ use Custos\Http\Response;
 use Custos\Http\Web\Web;
 use Custos\Infra\Config;
 use Custos\Infra\Db;
+use Custos\Infra\HttpGet;
 use Custos\Infra\Lang;
 use Custos\Infra\Log;
 use Custos\Infra\ServerKeys;
+use Custos\Infra\Updater;
 
 /**
  * The application: configuration, lazily created services, and the entry point for HTTP requests.
  */
 final class App
 {
-    public const VERSION = '0.4.10';
+    public const VERSION = '0.4.11';
     /** Interface languages: lang/<code>.php. */
     public const LANGUAGES = ['ru', 'en'];
     public const DEFAULT_LANGUAGE = 'ru';
@@ -214,10 +218,56 @@ final class App
     public function updateWatch(): UpdateWatch
     {
         return $this->services[UpdateWatch::class] ??= new UpdateWatch(
-            $this->db(), $this->settings(), $this->packages(), $this->notices(),
-            rtrim((string) $this->config->get('github_api_url', 'https://api.github.com'), '/'),
-            'CUSTOS-Monitor/' . self::VERSION
+            $this->db(), $this->settings(), $this->packages(), $this->notices(), $this->githubApi(), $this->userAgent(), $this->http()
         );
+    }
+
+    /** CUSTOS releases on GitHub: the site and the program (config "update_repo" names another repository, a fork). */
+    public function releases(): Releases
+    {
+        return $this->services[Releases::class] ??= new Releases(
+            $this->settings(), $this->notices(), $this->packages(), $this->githubApi(),
+            (string) $this->config->get('update_repo', Releases::DEFAULT_REPO), $this->http()
+        );
+    }
+
+    /** Updates of the site itself, as the site queues them. */
+    public function siteUpdate(): SiteUpdate
+    {
+        return $this->services[SiteUpdate::class] ??= new SiteUpdate($this->releases(), $this->config->varDir());
+    }
+
+    /**
+     * The engine that replaces the site's files (command line only: cron and bin/update.php).
+     *
+     * @param \Closure(string, array): void|null $say progress, a lang key with its parameters
+     */
+    public function updater(?\Closure $say = null): Updater
+    {
+        return new Updater($this->root(), $this->config->varDir(), fn() => $this->db()->pdo, $this->http(), $say ?? static function (): void {
+        });
+    }
+
+    /** GET for GitHub; tests replace it (setHttp) with a fake GitHub. */
+    public function http(): \Closure
+    {
+        return $this->services['http'] ??= (new HttpGet($this->userAgent()))(...);
+    }
+
+    public function setHttp(\Closure $http): void
+    {
+        $this->services['http'] = $http;
+        unset($this->services[UpdateWatch::class], $this->services[Releases::class], $this->services[SiteUpdate::class]);
+    }
+
+    private function githubApi(): string
+    {
+        return rtrim((string) $this->config->get('github_api_url', 'https://api.github.com'), '/');
+    }
+
+    private function userAgent(): string
+    {
+        return 'CUSTOS-Monitor/' . self::VERSION;
     }
 
     public function storage(): Storage

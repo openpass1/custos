@@ -29,6 +29,16 @@ if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
 }
 
 try {
+    // A site update asked for on the site (Updates page) runs instead of the pass; so does putting back a run that
+    // was cut off. The next minute's pass is done by whichever version is in place then.
+    $updater = $app->updater(isset($options['verbose']) ? static function (string $key, array $params): void {
+        fwrite(STDOUT, $key . ' ' . json_encode($params, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+    } : null);
+    $work = $updater->pending();
+    if ($work !== null) {
+        exit(($work === 'queued' ? $updater->runQueued() : $updater->recover()) === false ? 1 : 0);
+    }
+
     $result = (new Cron($app))->run(time());
     if (isset($options['verbose'])) {
         fwrite(STDOUT, json_encode($result['stats'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");

@@ -93,6 +93,7 @@ final class TestEnv
         $app->settings()->set('registration_key', RegistrationKey::generate());
         // Cron passes would ask GitHub for 7-Zip releases; tests that need the check turn it on with a fake HTTP client.
         $app->settings()->set('sevenzip_check', '0');
+        $app->settings()->set('releases_check', '0');
         return $app;
     }
 
