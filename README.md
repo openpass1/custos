@@ -20,19 +20,9 @@ shows every computer in one place, warns when something goes wrong and lets you 
 | Download | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<version>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<version>.zip` |
 | Guide | [client/README.md](client/README.md) | [server/INSTALL.en.md](server/INSTALL.en.md) |
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/en/site-dashboard-dark.png">
-  <img src="docs/screenshots/en/site-dashboard-light.png" alt="CUSTOS Monitor: dashboard with seven computers, an open problem and the results of the last 30 days">
-</picture>
+<img src="docs/screenshots/ru/client-main-window.png" alt="CUSTOS for Windows: the main window with the task list and the card of the selected task (Russian interface)">
 
-<details>
-<summary>More screenshots</summary>
-
-The page of one computer: its tasks, the next runs and the free space of its destinations.
-
-<img src="docs/screenshots/en/site-machine.png" alt="CUSTOS Monitor: the page of one computer">
-
-</details>
+<img src="docs/screenshots/en/site-dashboard.png" alt="CUSTOS Monitor: dashboard with seven computers, an open problem and the results of the last 30 days">
 
 ## CUSTOS for Windows
 
