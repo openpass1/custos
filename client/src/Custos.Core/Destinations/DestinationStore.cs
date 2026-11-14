@@ -151,6 +151,8 @@ public abstract class DestinationStore : IDisposable
     public abstract void DeleteFile(string path);
 
     /// <summary>Gives a file another name or place, replacing a file that is there.</summary>
+    /// <exception cref="ReplaceDeniedException">A folder of this computer or a share: the file that is there may not
+    /// be replaced (the other stores report that as any other failure).</exception>
     public abstract void MoveFile(string source, string target);
 
     /// <summary>Gives a copied file the times and attributes of its original, where the store keeps them.</summary>
@@ -313,6 +315,37 @@ public class StoreException : IOException
         : base(message, innerException)
     {
     }
+}
+
+/// <summary>
+/// The destination holds a file under the name a new copy is to get and does not let it be replaced: a NAS that
+/// protects written files from change (WORM), a file of another account, a file someone has open there (section 6.4).
+/// A problem of that one file, not of the destination.
+/// </summary>
+public sealed class ReplaceDeniedException : IOException
+{
+    public ReplaceDeniedException()
+    {
+    }
+
+    public ReplaceDeniedException(string message)
+        : base(message)
+    {
+    }
+
+    public ReplaceDeniedException(string message, Exception? innerException)
+        : base(message, innerException)
+    {
+    }
+
+    public ReplaceDeniedException(string message, string path, Exception? innerException)
+        : base(message, innerException)
+    {
+        Path = path;
+    }
+
+    /// <summary>The file that stays as it was.</summary>
+    public string Path { get; } = string.Empty;
 }
 
 /// <summary>

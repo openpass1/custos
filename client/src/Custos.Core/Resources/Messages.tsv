@@ -39,6 +39,10 @@ FileCopied	Copied {0} ({1})	Скопирован {0} ({1})
 FileRetry	Retrying {0}: {1}	Повтор чтения {0}: {1}
 FileFailed	Not copied: {0}: {1}	Не скопирован {0}: {1}
 FileVanished	{0} was deleted before it could be copied.	Файл {0} удалён до копирования.
+FileAlreadyThere	Already in the destination in this version: {0}	Уже есть в назначении в этой версии: {0}
+HeldFilesKept	{0}: {1} files ({2}) were there already in the same version (size and time) and were not written again.	{0}: файлы уже лежали там в той же версии (размер и время) и не записывались заново: {1} ({2}).
+FileReplaceRefused	{0}: {1} is there already and may not be replaced ({2}). The file was skipped, the others are copied, the next run tries it again. Either the storage protects written files from change and deletion (WORM on a NAS), or the file belongs to another account and this one may not change it.	{0}: файл {1} уже лежит в назначении, и заменить его нельзя ({2}). Файл пропущен, остальные копируются, следующий запуск попробует снова. Либо хранилище защищает записанные файлы от изменения и удаления (WORM на NAS), либо файл записан другой учётной записью и этой менять его нельзя.
+ManifestReplaceRefused	{0}: {1} of the last run may not be replaced ({2}). A shared folder rewrites it and every changed file at each run; storage that does not let written files change (WORM or protection from deletion on a NAS) needs «A separate folder for each backup»: then files are only added, nothing is replaced.	{0}: нельзя заменить {1} прошлого запуска ({2}). Общая папка при каждом запуске переписывает его и все изменившиеся файлы. Хранилищу, которое не даёт менять записанные файлы (WORM или запрет удаления на NAS), нужна «Отдельная папка для каждой копии»: тогда файлы только добавляются и ничего не заменяется.
 SetWritten	Set «{0}» written to {1}: {2} files, {3}.	Набор «{0}» записан в {1}: файлов {2}, {3}.
 SetDeleted	Old set «{0}» deleted from {1}.	Удалён старый набор «{0}» в {1}.
 SetDeleteFailed	Could not delete the old set «{0}» in {1}: {2}	Не удалось удалить старый набор «{0}» в {1}: {2}

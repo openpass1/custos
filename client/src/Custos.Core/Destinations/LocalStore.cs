@@ -166,12 +166,23 @@ public sealed class LocalStore : DestinationStore
 
     public override void MoveFile(string source, string target) => _session.Run(() =>
     {
-        if (File.Exists(target))
+        FileAttributes? held = TryGetAttributes(target);
+        try
         {
-            File.SetAttributes(target, FileAttributes.Normal);
-        }
+            // Only these keep a file from being replaced. Anything else is left alone: on a share, changing the
+            // attributes of a file takes the right to write that file, replacing it only the right to write the folder,
+            // so a file another account wrote (Cobian's) can often be replaced but not changed.
+            if (held is { } attributes && (attributes & Unreplaceable) != 0)
+            {
+                File.SetAttributes(target, attributes & ~Unreplaceable);
+            }
 
-        File.Move(source, target, overwrite: true);
+            File.Move(source, target, overwrite: true);
+        }
+        catch (Exception ex) when (held is not null && IsRefusal(ex))
+        {
+            throw new ReplaceDeniedException(ex.Message, target, ex);
+        }
     });
 
     public override void SetFileTimes(string path, DateTime createdUtc, DateTime modifiedUtc, FileAttributes attributes) => _session.Run(() =>
@@ -200,6 +211,32 @@ public sealed class LocalStore : DestinationStore
 
         base.Dispose(disposing);
     }
+
+    /// <summary>Attributes cleared before a file is replaced: with them Windows refuses to replace it.</summary>
+    private const FileAttributes Unreplaceable = FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System;
+
+    // ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION as HRESULTs.
+    private const int AccessDenied = unchecked((int)0x80070005);
+    private const int SharingViolation = unchecked((int)0x80070020);
+    private const int LockViolation = unchecked((int)0x80070021);
+
+    /// <summary>The attributes of a file; null when there is no file (or a folder) under that name.</summary>
+    private static FileAttributes? TryGetAttributes(string path)
+    {
+        try
+        {
+            var attributes = File.GetAttributes(path);
+            return (attributes & FileAttributes.Directory) == 0 ? attributes : null;
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The server said no to this file (rights, a lock, a file open there), as opposed to being gone or full.</summary>
+    private static bool IsRefusal(Exception ex) =>
+        ex is UnauthorizedAccessException || (ex is IOException && ex.HResult is AccessDenied or SharingViolation or LockViolation);
 
     /// <summary>A relative path with any separators → the separators of this system.</summary>
     private static string Local(string relative) =>

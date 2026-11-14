@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Custos.Core.Backup;
 using Custos.Core.Model;
+using Custos.Core.Text;
 
 namespace Custos.Core.Tests;
 
@@ -370,6 +371,95 @@ public sealed class BackupEngineTests : IDisposable
         Assert.Equal("alpha 2", File.ReadAllText(Path.Combine(destination, "Data", "a.txt")));
         Assert.Equal("beta", File.ReadAllText(Path.Combine(destination, "Data", "sub", "b.txt")));
         Assert.Equal(BackupTypes.Incremental, ReadManifest(destination).Header.BackupType);
+    }
+
+    [Fact]
+    public void A_full_copy_into_a_shared_folder_leaves_alone_the_files_already_there()
+    {
+        // What another program (Cobian) left in the folder: the same version of a.txt, read-only so that any attempt
+        // to replace it would show, and an older b.txt.
+        string destination = _temp.Combine("Backup");
+        string held = _temp.WriteFile("Backup/Data/a.txt", "alpha", Modified);
+        File.SetAttributes(held, FileAttributes.ReadOnly);
+        string older = _temp.WriteFile("Backup/Data/sub/b.txt", "old", Modified.AddDays(-1));
+        var task = NewTask(BackupTypes.Incremental, destination);
+        task.Layout.SeparateFolders = false;
+        task.Verify.EveryRuns = 1;
+
+        var first = Run(task, Start);
+
+        Assert.Equal(RunStatuses.Success, first.Status);
+        Assert.Equal(BackupTypes.Full, first.BackupType);
+        Assert.Equal(1, first.FilesProcessed);
+        Assert.Equal(4, first.BytesWritten);
+        Assert.True(File.GetAttributes(held).HasFlag(FileAttributes.ReadOnly));
+        Assert.Equal("beta", File.ReadAllText(older));
+        var (_, files) = ReadManifest(destination);
+        Assert.All(files, f => Assert.True(f.InSet));
+        Assert.Equal(Sha256("alpha"), files.Single(f => f.Path.EndsWith("a.txt", StringComparison.Ordinal)).Sha256);
+        Assert.Contains(_log.Lines, l => l.Message == Messages.Format(Messages.HeldFilesKept, destination, 1, Sizes.Format(5)));
+
+        // The next run takes only what changed, and replaces the read-only file it has to.
+        _temp.WriteFile("Data/a.txt", "alpha 2", Modified.AddHours(1));
+        var second = Run(task, Start.AddDays(1));
+
+        Assert.Equal(RunStatuses.Success, second.Status);
+        Assert.Equal(BackupTypes.Incremental, second.BackupType);
+        Assert.Equal(1, second.FilesProcessed);
+        Assert.Equal("alpha 2", File.ReadAllText(held));
+    }
+
+    [Fact]
+    public void A_full_copy_into_a_shared_folder_rewrites_a_file_of_another_version()
+    {
+        string destination = _temp.Combine("Backup");
+        string other = _temp.WriteFile("Backup/Data/a.txt", "ALPHA", Modified.AddMinutes(5));
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Layout.SeparateFolders = false;
+
+        var result = Run(task, Start);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.Equal(2, result.FilesProcessed);
+        Assert.Equal("alpha", File.ReadAllText(other));
+    }
+
+    [Fact]
+    public void A_file_the_destination_will_not_let_replace_is_skipped_and_the_rest_is_copied()
+    {
+        // A file open there without sharing deletion cannot be replaced; on a NAS the same comes from WORM or from a
+        // file of another account. Linux lets an open file be replaced, so this runs on Windows only.
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows refuses to replace an open file.");
+        string destination = _temp.Combine("Backup");
+        string kept = _temp.WriteFile("Backup/Data/a.txt", "old", Modified.AddDays(-1));
+        var task = NewTask(BackupTypes.Incremental, destination);
+        task.Layout.SeparateFolders = false;
+
+        BackupResult first;
+        using (new FileStream(kept, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            first = Run(task, Start);
+        }
+
+        Assert.Equal(RunStatuses.Warning, first.Status);
+        Assert.All(first.Destinations, d => Assert.Equal(RunStatuses.Success, d.Status));
+        Assert.Equal(1, first.FilesProcessed);
+        Assert.Equal("old", File.ReadAllText(kept));
+        Assert.Equal("beta", File.ReadAllText(Path.Combine(destination, "Data", "sub", "b.txt")));
+        Assert.Empty(Directory.GetFiles(destination, "*" + BackupEngine.TempSuffix, SearchOption.AllDirectories));
+        Assert.Contains(_log.Lines, l => l.Level == RunLogLevel.Warning && l.Message.Contains("a.txt", StringComparison.Ordinal));
+        var (_, files) = ReadManifest(destination);
+        var a = files.Single(f => f.Path.EndsWith("a.txt", StringComparison.Ordinal));
+        Assert.False(a.InSet);
+        Assert.Null(a.Sha256);
+
+        // Once the file may be replaced, the next run copies it although it has not changed.
+        var second = Run(task, Start.AddDays(1));
+
+        Assert.Equal(RunStatuses.Success, second.Status);
+        Assert.Equal(BackupTypes.Incremental, second.BackupType);
+        Assert.Equal(1, second.FilesProcessed);
+        Assert.Equal("alpha", File.ReadAllText(kept));
     }
 
     [Fact]

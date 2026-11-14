@@ -122,6 +122,18 @@ static partial class Messages
     /// <summary>{0} was deleted before it could be copied.</summary>
     public static string FileVanished => Get(nameof(FileVanished));
 
+    /// <summary>Already in the destination in this version: {0}</summary>
+    public static string FileAlreadyThere => Get(nameof(FileAlreadyThere));
+
+    /// <summary>{0}: {1} files ({2}) were there already in the same version (size and time) and were not written again.</summary>
+    public static string HeldFilesKept => Get(nameof(HeldFilesKept));
+
+    /// <summary>{0}: {1} is there already and may not be replaced ({2}). The file was skipped, the others are copied, the n...</summary>
+    public static string FileReplaceRefused => Get(nameof(FileReplaceRefused));
+
+    /// <summary>{0}: {1} of the last run may not be replaced ({2}). A shared folder rewrites it and every changed file at e...</summary>
+    public static string ManifestReplaceRefused => Get(nameof(ManifestReplaceRefused));
+
     /// <summary>Set «{0}» written to {1}: {2} files, {3}.</summary>
     public static string SetWritten => Get(nameof(SetWritten));
 

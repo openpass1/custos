@@ -251,7 +251,7 @@ public sealed partial class BackupEngine
             {
                 string stored = StoredPath(context, file);
                 listed.Add(stored);
-                if (target.Needed.Contains(stored) && run.Copied.TryGetValue(file.OriginalPath, out string? hash))
+                if (target.Needed.Contains(stored) && !target.Refused.Contains(stored) && run.Copied.TryGetValue(file.OriginalPath, out string? hash))
                 {
                     files.Add(new ManifestFile(stored, file.Size, file.LastWriteUtc, true, hash));
                 }
