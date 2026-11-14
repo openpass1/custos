@@ -218,7 +218,7 @@ internal sealed partial class AgentService
         {
             string sha256 = release.Sha256 ?? await ReadPublishedSumAsync(release, limit.Token).ConfigureAwait(false);
             Log(LogLineLevels.Info, Messages.Format(Messages.ProgramUpdateBy, version, user));
-            Log(LogLineLevels.Info, Messages.Format(Messages.ProgramDownloading, release.PackageUrl, Sizes.Format(release.Size)));
+            Log(LogLineLevels.Info, Messages.Format(Messages.ProgramDownloading, version, Sizes.Format(release.Size)));
             package = await ProgramReleases.DownloadAsync(Http, release, sha256, DataFolders.Updates, limit.Token).ConfigureAwait(false);
             Log(LogLineLevels.Info, Messages.Format(Messages.ProgramVerified, release.PackageName));
 
