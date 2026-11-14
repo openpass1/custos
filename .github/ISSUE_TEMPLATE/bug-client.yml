@@ -1,0 +1,43 @@
+name: Bug in the Windows program / Ошибка в программе для Windows
+description: Something in CUSTOS for Windows does not work as it should. / Что-то в CUSTOS для Windows работает не так.
+title: "[Windows] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in English or Russian. Please remove passwords, keys, addresses and names of your own computers and shares from logs and screenshots.
+        Пишите по-русски или по-английски. Уберите из журналов и скриншотов пароли, ключи, адреса и имена ваших компьютеров и папок.
+  - type: input
+    id: version
+    attributes:
+      label: Version / Версия
+      description: The status bar of the main window, or the name of the installer. / Строка внизу главного окна или имя установщика.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows
+      placeholder: Windows 11 24H2 / Windows Server 2022
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / Что произошло
+      description: What you did, what you expected and what you got instead. / Что вы делали, что ожидали и что получили.
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: Task settings / Настройки задания
+      description: Kind of copy, source and destination types, compression, schedule. / Тип копии, виды источника и назначения, сжатие, расписание.
+  - type: textarea
+    id: log
+    attributes:
+      label: Log / Журнал
+      description: The run log or the error text. / Журнал запуска или текст ошибки.
+      render: text

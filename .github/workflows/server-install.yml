@@ -1,0 +1,81 @@
+name: Server install script
+
+# Tests server/install.sh on clean Debian and Ubuntu containers with a freshly made server package: installation
+# without questions, the site and its health check, a fake agent, a second run and an update
+# (server/tests/install/run.sh). Runs only when the script, its test or this file changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/install.sh'
+      - 'server/tests/install/**'
+      - '.github/workflows/server-install.yml'
+  pull_request:
+    paths:
+      - 'server/install.sh'
+      - 'server/tests/install/**'
+      - '.github/workflows/server-install.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-install-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: ShellCheck
+        run: shellcheck server/install.sh server/tests/install/run.sh
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, openssl, curl, mbstring, zlib
+          tools: composer:v2
+          coverage: none
+
+      # The same package as the Release and Server workflows make.
+      - name: Make the package
+        run: |
+          set -euo pipefail
+          cd server
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          mkdir -p ../dist/server
+          rsync -a --exclude tests --exclude phpunit.xml.dist --exclude .phpunit.cache --exclude var \
+            --exclude config/config.php --exclude config/keys ./ ../dist/server/
+          cd ../dist
+          zip -q -r -X ../custos-server.zip server
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: install-test-package
+          path: custos-server.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  test:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        base: ['debian:12', 'debian:13', 'ubuntu:24.04', 'ubuntu:26.04']
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: install-test-package
+
+      - name: Install and check
+        env:
+          BASE: ${{ matrix.base }}
+        run: bash server/tests/install/run.sh "$BASE" custos-server.zip

@@ -1,0 +1,39 @@
+name: Bug on the monitoring site / Ошибка на сайте мониторинга
+description: Something in CUSTOS Monitor does not work as it should. / Что-то на сайте CUSTOS Monitor работает не так.
+title: "[Site] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in English or Russian. Please remove passwords, tokens, keys, addresses and domain names of your own systems from logs and screenshots.
+        Пишите по-русски или по-английски. Уберите из журналов и скриншотов пароли, токены, ключи, адреса и имена ваших сайтов.
+  - type: input
+    id: version
+    attributes:
+      label: Site version / Версия сайта
+      description: Shown at the bottom of every page. / Видна внизу каждой страницы.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Server / Сервер
+      description: System, PHP and database versions, CloudPanel or not. / Система, версии PHP и базы, CloudPanel или нет.
+      placeholder: Debian 12, PHP 8.4, MariaDB 10.11, CloudPanel
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / Что произошло
+      description: The page, what you did, what you expected and what you got instead. / Страница, что вы делали, что ожидали и что получили.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Error text or log / Текст ошибки или журнал
+      description: For example the newest lines of server/var/log. / Например, последние строки из server/var/log.
+      render: text

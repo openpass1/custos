@@ -1,0 +1,26 @@
+name: Idea / Предложение
+description: Something CUSTOS could do better or should learn. / Что CUSTOS мог бы делать лучше или чему научиться.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part / Часть
+      options:
+        - Windows program / Программа для Windows
+        - Monitoring site / Сайт мониторинга
+        - custos-helper (Linux)
+        - Documentation / Документация
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: What you need / Что нужно
+      description: The task you want to solve, not only the button you want. / Какую задачу вы решаете, а не только какая кнопка нужна.
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: How you do it now / Как вы делаете это сейчас

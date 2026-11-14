@@ -6,6 +6,7 @@
 //   php bin/install.php                       asks for the first administrator's login and password
 //   php bin/install.php --admin-login=admin   takes the password from the CUSTOS_ADMIN_PASSWORD environment variable
 //   php bin/install.php --language=en         sets the default language of the site (ru or en; Settings change it later)
+//   php bin/install.php --cron-added          leaves out the cron hint (install.sh writes the cron job itself)
 
 declare(strict_types=1);
 
@@ -133,6 +134,8 @@ if ($app->config->url() === '') {
     Cli::info('Connection string:       ' . RegistrationKey::connection($app->config->url(), $code));
     Cli::info('It is also shown on the site under Settings.');
 }
-Cli::info('');
-Cli::info('Add a cron job that runs every minute:');
-Cli::info('  * * * * * ' . PHP_BINARY . ' ' . $app->root() . '/bin/cron.php');
+if (!isset($options['cron-added'])) {
+    Cli::info('');
+    Cli::info('Add a cron job that runs every minute:');
+    Cli::info('  * * * * * ' . PHP_BINARY . ' ' . $app->root() . '/bin/cron.php');
+}
