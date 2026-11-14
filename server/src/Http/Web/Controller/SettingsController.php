@@ -7,7 +7,6 @@ namespace Custos\Http\Web\Controller;
 use Custos\Domain\RegistrationKey;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
-use Custos\Http\Web\Session;
 use Custos\Infra\Cidr;
 
 /** Settings of section 7.8: name, intervals, thresholds, retention, IP allow-lists, agent registration code. */
@@ -17,7 +16,7 @@ final class SettingsController extends Controller
     private const NUMBERS = [
         'heartbeat_interval_s' => [10, 3600],
         'offline_after_min' => [1, 10080],
-        'logout_after_min' => [0, 43200],
+        'logout_after_days' => [0, 365],
         'missed_grace_min' => [1, 1440],
         'stale_days' => [1, 365],
         'anomaly_drop_pct' => [1, 99],
@@ -25,7 +24,7 @@ final class SettingsController extends Controller
         'history_months' => [1, 120],
         'log_days' => [1, 3650],
     ];
-    private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'logout_after_min', 'missed_grace_min', 'stale_days',
+    private const FIELDS = ['server_name', 'default_language', 'heartbeat_interval_s', 'offline_after_min', 'logout_after_days', 'missed_grace_min', 'stale_days',
                             'anomaly_drop_pct', 'anomaly_growth_factor', 'space_warn_days', 'history_months', 'log_days', 'ip_allow_site', 'ip_allow_agents'];
 
     public function index(): Response
@@ -112,8 +111,6 @@ final class SettingsController extends Controller
         foreach (self::FIELDS as $name) {
             $values[$name] = $settings->get($name);
         }
-        // Until it is saved here, the logout time comes from config.php.
-        $values['logout_after_min'] = (string) Session::timeoutMinutes($this->app);
         return $values;
     }
 

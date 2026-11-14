@@ -204,26 +204,26 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         $this->assertStringContainsString('<title>Настройки · Backup monitor</title>', $this->http('GET', '/settings')[1]);
 
-        // Log out after inactivity (Settings → General): minutes, 0 = never. Before it is saved, config.php gives 8 hours.
-        $this->assertMatchesRegularExpression('/name="logout_after_min" value="480"/', $this->http('GET', '/settings')[1]);
-        [$status, $body] = $this->post('/settings', ['logout_after_min' => '-5']);
+        // Log out after inactivity (Settings → General): days, 7 by default, 0 = never.
+        $this->assertMatchesRegularExpression('/name="logout_after_days" value="7"/', $this->http('GET', '/settings')[1]);
+        [$status, $body] = $this->post('/settings', ['logout_after_days' => '-5']);
         $this->assertSame(422, $status);
-        $this->assertStringContainsString('Нужно целое число от 0 до 43200', $body);
-        [$status] = $this->post('/settings', ['logout_after_min' => '1']);
+        $this->assertStringContainsString('Нужно целое число от 0 до 365', $body);
+        [$status] = $this->post('/settings', ['logout_after_days' => '1']);
         $this->assertSame(303, $status, 'the other fields of the page keep their values');
-        $this->idle(30);
-        $this->assertSame(200, $this->http('GET', '/settings')[0], 'half a minute is not enough');
-        $this->idle(90);
+        $this->idle(12 * 3600);
+        $this->assertSame(200, $this->http('GET', '/settings')[0], 'half a day is not enough');
+        $this->idle(30 * 3600);
         [$status, , $headers] = $this->http('GET', '/settings');
-        $this->assertSame(303, $status, 'a minute and a half without activity ends the login');
+        $this->assertSame(303, $status, 'more than a day without activity ends the login');
         $this->assertStringEndsWith('/login', $headers['location']);
         $this->assertStringContainsString('Сеанс завершён из-за бездействия', $this->http('GET', '/login')[1]);
         $this->post('/login', ['login' => 'admin', 'password' => self::PASSWORD]);
-        $this->post('/settings', ['logout_after_min' => '0']);
-        $this->idle(40 * 86400);
+        $this->post('/settings', ['logout_after_days' => '0']);
+        $this->idle(400 * 86400);
         $this->assertSame(200, $this->http('GET', '/settings')[0], '0: no logout for inactivity');
-        $this->post('/settings', ['logout_after_min' => '480']);
-        $this->assertSame('480', (string) Db::connect(TestEnv::db())->value("SELECT value FROM settings WHERE name = 'logout_after_min'"));
+        $this->post('/settings', ['logout_after_days' => '7']);
+        $this->assertSame('7', (string) Db::connect(TestEnv::db())->value("SELECT value FROM settings WHERE name = 'logout_after_days'"));
 
         $before = $this->connectionString();
         $this->post('/settings/registration-key', []);

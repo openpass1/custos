@@ -467,7 +467,7 @@ Nothing has to be set up. If the site runs without CloudPanel, check the nginx b
 - what you are working with is left alone: an open "More" menu, selected text, an open question dialog, a folded or unfolded block stay as they are. A form in which you changed something (agent settings, machine ticks in Updates) is no longer refreshed until it is sent. The task and template editors never refresh themselves;
 - these requests do not extend the login: an open page does not prevent the logout after inactivity.
 
-Also in this version: the logout after inactivity is set on the site, Settings → General → "Log out after inactivity of", in minutes; 0 = never log out for inactivity (the login ends with "Log out" or when the browser is closed). Until the field is saved, the old `session_timeout_hours` of `config.php` applies (8 hours, that is 480 minutes). Once it is saved on the site, that line of `config.php` is no longer used and can be deleted.
+Also in this version: the logout after inactivity is set on the site, Settings → General → "Log out after inactivity of", in days; 7 days by default (it used to be 8 hours), 0 = never log out for inactivity. The login still ends with "Log out" and when the browser is closed. The `session_timeout_hours` line of `config.php` is no longer used and can be deleted.
 
 ## What to keep in backups
 

@@ -12,7 +12,6 @@ final class Config
     private const DEFAULTS = [
         'url' => '',
         'timezone' => 'UTC',
-        'session_timeout_hours' => 8,
         'trusted_proxies' => [],
     ];
 

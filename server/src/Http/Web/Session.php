@@ -26,20 +26,11 @@ final class Session
     /** Sessions without a timeout still end when the browser closes; their files are removed after this long unused. */
     private const KEEP_IDLE_S = 365 * 86400;
 
-    /**
-     * Minutes without activity after which the login ends, 0 = never: Settings -> General, or until it is saved there,
-     * session_timeout_hours of config.php (the setting of versions before 0.4.10).
-     */
-    public static function timeoutMinutes(App $app): int
-    {
-        $stored = $app->settings()->get('logout_after_min');
-        return $stored !== '' ? max(0, (int) $stored) : max(1, (int) $app->config->get('session_timeout_hours')) * 60;
-    }
-
     /** @param bool $activity false for requests the page makes by itself (live updates): they do not keep the session alive */
     public static function start(App $app, Request $request, bool $activity = true): self
     {
-        $timeout = self::timeoutMinutes($app) * 60;
+        // Settings -> General: days without activity after which the login ends, 0 = never.
+        $timeout = max(0, $app->settings()->int('logout_after_days')) * 86400;
         if (session_status() !== PHP_SESSION_ACTIVE) {
             $dir = $app->config->varDir() . '/sessions';
             if (!is_dir($dir)) {
