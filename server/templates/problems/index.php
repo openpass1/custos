@@ -5,7 +5,7 @@ use Custos\Domain\Agents;
 $row = function (array $p, bool $isOpen): string {
     $lastLabel = t($isOpen ? 'problems.col.duration' : 'problems.col.closed');
     ob_start(); ?>
-    <tr>
+    <tr data-key="p<?= (int) $p['id'] ?>">
         <td><?= badge($isOpen ? $p['kind'] : 'closed', t('problem.kind.' . $p['kind'])) ?></td>
         <td class="nowrap" data-label="<?= e(t('problems.col.agent')) ?>"><a href="<?= e(url('/agents/' . $p['agent_id'])) ?>"><?= e(Agents::name($p)) ?></a></td>
         <td data-label="<?= e(t('problems.col.task')) ?>"><a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>"><?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a></td>
@@ -23,6 +23,8 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
 <h1><?= e(t('problems.title')) ?></h1>
 <p class="hint"><?= e(t('problems.hint')) ?></p>
 
+<?php /* Live parts: problems that open or close show up by themselves (app.js). */ ?>
+<div data-part="open">
 <section class="panel<?= $open === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('problems.open.title')) ?></h2>
     <?php if ($open === []): ?>
@@ -34,6 +36,9 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
     <?php endif ?>
 </section>
 
+</div>
+
+<div data-part="closed">
 <section class="panel<?= $closed === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('problems.closed.title')) ?></h2>
     <?php if ($closed === []): ?>
@@ -45,3 +50,4 @@ $head = '<thead><tr><th>' . e(t('problems.col.kind')) . '</th><th>' . e(t('probl
         <?= pager($page, $pages, '/problems', []) ?>
     <?php endif ?>
 </section>
+</div>

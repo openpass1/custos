@@ -2,6 +2,9 @@
 /**
  * @var array $run @var array $destinations @var array $destinationInfo @var ?array $log @var ?array $logRequest
  * @var ?array $verify @var ?array $retention @var list<array> $dumps
+ *
+ * While the run goes on or its log is not here yet, the page refreshes itself (live parts, app.js): the result and a
+ * log requested from the agent show up without reloading.
  */
 use Custos\Domain\Agents;
 ?>
@@ -9,6 +12,7 @@ use Custos\Domain\Agents;
     <a href="<?= e(url('/agents/' . $run['agent_id'])) ?>"><?= e(Agents::name($run)) ?></a> ·
     <a href="<?= e(url('/agents/' . $run['agent_id'] . '/tasks/' . $run['task_id'])) ?>"><?= e($run['task_name'] ?? t('runs.unknown_task')) ?></a>
 </p>
+<div data-part="run">
 <h1><?= e(t('run.title', ['time' => fmt_time($run['started_at'])])) ?> <?= badge($run['status']) ?>
     <?php if ($run['anomaly'] !== null): ?><?= badge('anomaly') ?><?php endif ?></h1>
 
@@ -136,3 +140,4 @@ use Custos\Domain\Agents;
         <pre class="log"><?= e($run['log_tail']) ?></pre>
     <?php endif ?>
 </section>
+</div>

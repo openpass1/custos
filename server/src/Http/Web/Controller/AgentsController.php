@@ -17,8 +17,10 @@ use Custos\Infra\Time;
  */
 final class AgentsController extends Controller
 {
-    /** The machine page refreshes its "now" block and task statuses this often. */
+    /** The machine page and the agent settings refresh their live parts this often (seconds). */
     public const REFRESH_S = 10;
+    /** The machine list refreshes its live parts this often (seconds). */
+    public const REFRESH_LIST_S = 15;
     private const TRAY_MODES = ['full', 'status', 'hidden'];
 
     public function index(): Response
@@ -61,6 +63,7 @@ final class AgentsController extends Controller
             'pending' => array_values(array_filter($all, fn($a) => $a['status'] === 'pending')),
             'byId' => array_column($all, null, 'id'),
             'hasAgents' => count($all) > 0,
+            'live' => self::REFRESH_LIST_S,
         ], $this->t('agents.title'));
     }
 
@@ -77,7 +80,7 @@ final class AgentsController extends Controller
             'agent' => $agent,
             'replaces' => $replaces,
             'groups' => $this->app->groups()->all(),
-            'live' => $this->liveVars($agent['id']),
+            'state' => $this->liveVars($agent['id']),
             'credentials' => json_decode((string) $agent['credentials'], true) ?: [],
             'runs' => $db->all(
                 'SELECT r.*, t.name AS task_name FROM runs r
@@ -85,7 +88,7 @@ final class AgentsController extends Controller
                  WHERE r.agent_id = ? ORDER BY r.started_at DESC LIMIT 10',
                 [$agent['id']]
             ),
-            'refresh' => self::REFRESH_S,
+            'live' => self::REFRESH_S,
             'commands' => $this->app->commands()->forAgent($agent['id']),
             'currentVersion' => $this->app->packages()->current(),
             'latestSevenZip' => $this->app->packages()->latestSevenZip(),
@@ -94,21 +97,7 @@ final class AgentsController extends Controller
         ], Agents::name($agent));
     }
 
-    /** Fresh "now", problems and tasks blocks of the machine page. */
-    public function live(string $id): Response
-    {
-        $agent = $this->app->agents()->find($id);
-        if ($agent === null) {
-            return Response::json(404, ['error' => 'not_found']);
-        }
-        $vars = $this->liveVars($agent['id']);
-        $parts = [];
-        foreach (['now', 'problems', 'tasks'] as $name) {
-            $parts[$name] = $this->view->partial('agents/_' . $name, $vars);
-        }
-        return Response::json(200, ['parts' => $parts, 'bell' => $this->app->notices()->unreadCount()]);
-    }
-
+    /** What the "now", problems and tasks blocks of the machine page show: the board's copy of the machine. */
     private function liveVars(string $agentId): array
     {
         $board = $this->app->board($agentId);
@@ -329,6 +318,9 @@ final class AgentsController extends Controller
             ),
             'refusal' => $agent['status'] !== 'approved' ? $this->t('commands.error.not_approved')
                 : (TaskEdits::remoteEditOff($agent) ? $this->t('commands.error.remote_edit_off') : null),
+            // The form fills itself in when the agent sends its settings, unless it was changed here already (app.js);
+            // a form sent back with errors keeps what was typed.
+            'live' => $errors === [] && $this->request->method === 'GET' ? self::REFRESH_S : 0,
         ], $this->t('agent_settings.title', ['name' => Agents::name($agent)]), $status);
     }
 

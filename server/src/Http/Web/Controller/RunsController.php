@@ -17,6 +17,8 @@ final class RunsController extends Controller
     public const EXPORT_MAX = 100000;
     /** The log page shows at most this much unpacked text; the full log can be downloaded. */
     public const LOG_VIEW_BYTES = 16 * 1024 * 1024;
+    /** The run list and a run page that can still change refresh their live parts this often (seconds). */
+    public const REFRESH_S = 15;
 
     public function index(): Response
     {
@@ -47,6 +49,7 @@ final class RunsController extends Controller
             'page' => $page,
             'pages' => max(1, (int) ceil($total / self::PER_PAGE)),
             'total' => $total,
+            'live' => self::REFRESH_S,
         ], $this->t('runs.title'));
     }
 
@@ -170,12 +173,13 @@ final class RunsController extends Controller
             return $this->notFound();
         }
         $db = $this->app->db();
+        $log = $db->one('SELECT LENGTH(log_gz) AS size, source, received_at FROM run_logs WHERE run_id = ?', [$run['id']]);
         return $this->render('runs/show', [
             'section' => 'runs',
             'run' => $run,
             'destinations' => $db->all('SELECT * FROM run_destinations WHERE run_id = ? ORDER BY set_name', [$run['id']]),
             'destinationInfo' => $this->destinationInfo($run),
-            'log' => $db->one('SELECT LENGTH(log_gz) AS size, source, received_at FROM run_logs WHERE run_id = ?', [$run['id']]),
+            'log' => $log,
             'verify' => json_decode((string) $run['verify'], true),
             'retention' => json_decode((string) $run['retention'], true),
             'dumps' => array_values(array_filter((array) json_decode((string) $run['db_dumps'], true), 'is_array')),
@@ -184,6 +188,8 @@ final class RunsController extends Controller
                  ORDER BY created_at DESC LIMIT 1",
                 [$run['agent_id'], '%' . $run['id'] . '%']
             ),
+            // A finished run with its log does not change any more.
+            'live' => $run['finished_at'] === null || $log === null ? self::REFRESH_S : 0,
         ], $this->runTitle($run));
     }
 

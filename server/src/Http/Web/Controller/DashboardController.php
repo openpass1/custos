@@ -32,7 +32,7 @@ final class DashboardController extends Controller
 
     public function live(): Response
     {
-        return Response::json(200, ['parts' => $this->parts(), 'bell' => $this->app->notices()->unreadCount()]);
+        return Response::json(200, ['parts' => $this->parts(), 'bell' => $this->app->notices()->unreadCount(), 'counts' => $this->app->navCounts()]);
     }
 
     /** @return array<string, string> rendered blocks */

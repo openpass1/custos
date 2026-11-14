@@ -3,6 +3,9 @@
  * @var array $agent from the board @var array $task from the board @var list<array> $problems @var list<array> $slots
  * @var list<array> $runs @var ?array $progress @var list<array> $commands @var ?array $pending @var ?array $templateLink
  * @var int $versionCount @var list<array> $chart
+ *
+ * Everything but the charts is a live part (data-part): the page refreshes it by itself (app.js), so a run, its result
+ * and a change confirmed by the agent show up without reloading. The charts are history and come with the page only.
  */
 $def = $task['def'];
 $taskUrl = '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
@@ -18,6 +21,7 @@ $command = function (string $action, string $class, string $iconName, ?string $c
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a> ›
     <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><?= e($agent['name']) ?></a></p>
+<div data-part="head">
 <div class="page-head">
     <h1><?= e($task['name']) ?> <?= badge($task['status']) ?>
         <?php foreach (array_diff($task['flags'], [$task['status'], 'ok', 'never', 'disabled']) as $flag): ?><?= badge($flag) ?><?php endforeach ?>
@@ -67,8 +71,9 @@ $command = function (string $action, string $class, string $iconName, ?string $c
         <?php if ((int) $templateLink['template_revision'] < (int) $templateLink['revision']): ?><?= badge('warning', t('task.template.outdated', ['revision' => (int) $templateLink['revision']])) ?><?php endif ?>
         <a href="<?= e(url('/templates/' . $templateLink['id'])) ?>"><?= e(t('task.template.open')) ?></a></p>
 <?php endif ?>
+</div>
 
-<div class="columns">
+<div class="columns" data-part="state">
     <section class="panel">
         <h2><?= e(t('task.state')) ?></h2>
         <dl class="props">
@@ -102,6 +107,7 @@ $command = function (string $action, string $class, string $iconName, ?string $c
     <?php include __DIR__ . '/_charts.php' ?>
 <?php endif ?>
 
+<div data-part="problems">
 <section class="panel<?= $problems === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('task.problems')) ?></h2>
     <?php if ($problems === []): ?>
@@ -127,6 +133,9 @@ $command = function (string $action, string $class, string $iconName, ?string $c
     <?php endif ?>
 </section>
 
+</div>
+
+<div data-part="slots">
 <section class="panel">
     <h2><?= e(t('task.slots', ['days' => \Custos\Http\Web\Controller\TasksController::SLOT_DAYS])) ?></h2>
     <p class="hint"><?= e(t('task.slots.hint')) ?></p>
@@ -157,6 +166,9 @@ $command = function (string $action, string $class, string $iconName, ?string $c
     <?php endif ?>
 </section>
 
+</div>
+
+<div data-part="runs">
 <section class="panel<?= $runs === [] ? ' panel-empty' : '' ?>">
     <h2><?= e(t('agent.runs')) ?></h2>
     <?php if ($runs === []): ?>
@@ -166,9 +178,13 @@ $command = function (string $action, string $class, string $iconName, ?string $c
     <?php endif ?>
 </section>
 
+</div>
+
+<div data-part="commands">
 <?php if ($commands !== []): ?>
     <section class="panel">
         <h2><?= e(t('commands.title')) ?></h2>
         <?php $showTask = false; $back = $taskUrl; include __DIR__ . '/../agents/_commands.php'; ?>
     </section>
 <?php endif ?>
+</div>

@@ -11,6 +11,8 @@ use Custos\Http\Response;
 /**
  * Renders PHP templates from templates/ inside templates/layout.php.
  * The helpers in src/helpers.php (e, t, url, fmt_*) work through View::$current.
+ * A page whose blocks show what agents and cron change passes 'live' => seconds: app.js then asks for the page again
+ * that often and puts the blocks marked data-part="name" in place without reloading it.
  */
 final class View
 {
@@ -31,9 +33,11 @@ final class View
             'title' => $title,
             'content' => $content,
             'user' => $this->session?->user(),
-            'flash' => $this->session?->takeFlash() ?? [],
+            // A message after an action belongs to the page the person opens, not to a refresh of an open page.
+            'flash' => $this->request->isLive() ? [] : ($this->session?->takeFlash() ?? []),
             'section' => $vars['section'] ?? '',
             'scripts' => $vars['scripts'] ?? [],
+            'live' => (int) ($vars['live'] ?? 0),
         ]);
         return Response::html($html, $status);
     }

@@ -11,6 +11,8 @@ use Custos\Http\Web\Controller;
 final class ProblemsController extends Controller
 {
     public const PER_PAGE = 50;
+    /** The page refreshes its lists this often (seconds). */
+    public const REFRESH_S = 15;
 
     public function index(): Response
     {
@@ -27,6 +29,7 @@ final class ProblemsController extends Controller
                 [self::PER_PAGE, ($page - 1) * self::PER_PAGE]),
             'page' => $page,
             'pages' => max(1, (int) ceil($closedTotal / self::PER_PAGE)),
+            'live' => self::REFRESH_S,
         ], $this->t('problems.title'));
     }
 }

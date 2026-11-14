@@ -15,6 +15,9 @@ use Custos\Http\Web\Controller;
  */
 final class UpdatesController extends Controller
 {
+    /** The machine list of the page (versions, updates on their way) refreshes this often (seconds). */
+    public const REFRESH_S = 15;
+
     public function index(): Response
     {
         $packages = $this->app->packages();
@@ -40,6 +43,7 @@ final class UpdatesController extends Controller
             'waitingAgent' => $this->app->commands()->waiting('update.install'),
             'waitingSevenZip' => $this->app->commands()->waiting('sevenzip.update'),
             'uploadLimit' => self::uploadLimit(),
+            'live' => self::REFRESH_S,
         ], $this->t('updates.title'));
     }
 

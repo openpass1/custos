@@ -23,10 +23,14 @@ final class Session
     {
     }
 
+    /** Sessions without a timeout still end when the browser closes; their files are removed after this long unused. */
+    private const KEEP_IDLE_S = 365 * 86400;
+
     /** @param bool $activity false for requests the page makes by itself (live updates): they do not keep the session alive */
     public static function start(App $app, Request $request, bool $activity = true): self
     {
-        $timeout = max(1, (int) $app->config->get('session_timeout_hours')) * 3600;
+        // Settings -> General: days without activity after which the login ends, 0 = never.
+        $timeout = max(0, $app->settings()->int('logout_after_days')) * 86400;
         if (session_status() !== PHP_SESSION_ACTIVE) {
             $dir = $app->config->varDir() . '/sessions';
             if (!is_dir($dir)) {
@@ -34,7 +38,7 @@ final class Session
             }
             ini_set('session.use_strict_mode', '1');
             ini_set('session.use_only_cookies', '1');
-            ini_set('session.gc_maxlifetime', (string) $timeout);
+            ini_set('session.gc_maxlifetime', (string) ($timeout > 0 ? $timeout : self::KEEP_IDLE_S));
             ini_set('session.gc_probability', '1');
             ini_set('session.gc_divisor', '100');
             session_save_path($dir);
@@ -50,7 +54,7 @@ final class Session
         }
         $session = new self($app);
         $now = time();
-        if (isset($_SESSION['user_id']) && $now - (int) ($_SESSION['last_activity'] ?? 0) > $timeout) {
+        if ($timeout > 0 && isset($_SESSION['user_id']) && $now - (int) ($_SESSION['last_activity'] ?? 0) > $timeout) {
             unset($_SESSION['user_id']);
             $session->flash('info', $app->lang()->get('login.expired'));
         }

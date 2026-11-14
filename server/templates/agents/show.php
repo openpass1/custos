@@ -1,17 +1,18 @@
 <?php
 /**
- * @var array $agent @var ?array $replaces @var list<array> $groups @var array $live @var array $credentials
- * @var array $runs @var int $refresh @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
+ * @var array $agent @var ?array $replaces @var list<array> $groups @var array $state @var array $credentials
+ * @var array $runs @var list<array> $commands @var ?array $currentVersion @var ?array $latestSevenZip
  * @var array $settings @var list<array> $storages
  *
  * The machine page: a head with the name, the status and the buttons (one main button, rare steps under "More"),
  * a line of facts, notes that ask for something (approve, update, switched off), then problems, what runs now and
  * the tasks on the first screen. Details that are seldom needed are folded.
+ * Every block that the agent changes is a live part (data-part): the page refreshes it by itself (app.js).
  */
 use Custos\Domain\Agents;
 
 $machine = $agent; // the live parts below replace $agent with the board's copy of the machine
-$online = $live['online'];
+$online = $state['online'];
 $status = $agent['status'];
 $approved = $status === 'approved';
 $pending = $status === 'pending';
@@ -34,6 +35,7 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
 };
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a></p>
+<div data-part="head">
 <div class="page-head">
     <h1><?= e($name) ?>
         <button type="button" class="icon-button" data-dialog="agent-rename" title="<?= e(t('agents.action.rename')) ?>" aria-label="<?= e(t('agents.action.rename')) ?>"><?= icon('pencil') ?></button>
@@ -112,8 +114,10 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
             t('agent.confirm.sevenzip', ['version' => $latestSevenZip['version']])) ?>
     </div>
 <?php endif ?>
+</div>
 
-<details class="panel facts"<?= $pending ? ' open' : '' ?>>
+<div data-part="facts">
+<details class="panel facts" id="agent-facts"<?= $pending ? ' open' : '' ?>>
     <summary><?= icon('chevron') ?><?= e(t('agent.facts')) ?> <small><?= e(t('agent.facts.hint')) ?></small></summary>
     <dl class="props">
         <dt><?= e(t('agent.hostname')) ?></dt><dd><?= e($agent['hostname']) ?></dd>
@@ -156,17 +160,20 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         </div>
     <?php endif ?>
 </details>
-
-<div data-live="<?= e(url($base . '/live')) ?>" data-live-every="<?= (int) $refresh ?>">
-    <div data-part="problems"><?php extract($live); include __DIR__ . '/_problems.php'; ?></div>
-    <div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
-    <div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 </div>
 
-<?php if ($storages !== []): ?>
-    <?php /* Not a live part: the inventory changes after runs, not every few seconds. */ include __DIR__ . '/_storage.php' ?>
-<?php endif ?>
+<?php extract($state); ?>
+<div data-part="problems"><?php include __DIR__ . '/_problems.php'; ?></div>
+<div data-part="now"><?php include __DIR__ . '/_now.php'; ?></div>
+<div data-part="tasks"><?php include __DIR__ . '/_tasks.php'; ?></div>
 
+<div data-part="storage">
+<?php if ($storages !== []): ?>
+    <?php include __DIR__ . '/_storage.php' ?>
+<?php endif ?>
+</div>
+
+<div data-part="runs">
 <?php if ($runs === []): ?>
     <section class="panel panel-empty">
         <h2><?= e(t('agent.runs')) ?></h2>
@@ -179,13 +186,16 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         <p><a href="<?= e(url('/runs', ['agent' => $agent['id']])) ?>"><?= e(t('agent.runs.all')) ?></a></p>
     </section>
 <?php endif ?>
+</div>
 
+<div data-part="commands">
 <?php if ($commands !== []): ?>
     <section class="panel">
         <h2><?= e(t('commands.title')) ?></h2>
         <?php $showTask = true; $back = $base; include __DIR__ . '/_commands.php'; ?>
     </section>
 <?php endif ?>
+</div>
 
 <dialog id="agent-rename" class="modal" aria-labelledby="agent-rename-title">
     <form method="post" action="<?= e(url($base . '/rename')) ?>" class="stack">

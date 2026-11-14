@@ -68,6 +68,7 @@ $number = function (string $name, string $unit, int $min, int $max, ?string $hin
     </label>
     <?= $number('heartbeat_interval_s', 's', 10, 3600, 'settings.heartbeat_interval_s.hint') ?>
     <?= $number('offline_after_min', 'min', 1, 10080, 'settings.offline_after_min.hint') ?>
+    <?= $number('logout_after_days', 'days', 0, 365, 'settings.logout_after_days.hint') ?>
 <?= $close ?>
 
 <?= $open('settings.thresholds') ?>
