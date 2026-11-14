@@ -39,9 +39,9 @@ usage() {
     cat <<'EOF'
 Usage: bash install.sh [options]
 
-Installs CUSTOS Monitor on a clean Debian 12/13 or Ubuntu 24.04/26.04 server: nginx, MariaDB, PHP-FPM, the site
-in /var/www/custos (run by the user "custos"), its database and the cron job. With --update, updates a site
-that is already installed.
+Installs CUSTOS Monitor on a clean Debian 12/13 or Ubuntu 24.04/26.04 server, desktop editions too (a newer Debian
+or Ubuntu asks whether to go on): nginx, MariaDB, PHP-FPM, the site in /var/www/custos (run by the user "custos"),
+its database and the cron job. With --update, updates a site that is already installed.
 
 Options:
   --update             update the installed site to the newest release (files and database), keep everything else
@@ -266,11 +266,34 @@ fi
 [ -r /etc/os-release ] || die "Unknown system: /etc/os-release is missing. Supported: $SUPPORTED."
 # shellcheck disable=SC1091
 . /etc/os-release
+# True when version $1 is $2 or newer.
+version_at_least() {
+    local lowest
+    lowest=$(printf '%s\n%s\n' "$1" "$2" | sort -V)
+    [ "${lowest%%$'\n'*}" = "$2" ]
+}
+
 case "${ID:-}:${VERSION_ID:-}" in
     debian:12 | debian:13 | ubuntu:24.04 | ubuntu:26.04) ;;
-    *) die "${PRETTY_NAME:-This system} is not supported. Supported: $SUPPORTED. On other systems follow server/INSTALL.en.md." ;;
+    *)
+        # A newer Debian or Ubuntu (Debian 14, Ubuntu 28.04, Debian testing without a version) is most likely fine:
+        # the script uses only the system's own packages there. Older versions and other systems stop here.
+        newer=false
+        if [ "${ID:-}" = debian ] && { [ -z "${VERSION_ID:-}" ] || version_at_least "$VERSION_ID" 14; }; then
+            newer=true
+        elif [ "${ID:-}" = ubuntu ] && [ -n "${VERSION_ID:-}" ] && version_at_least "$VERSION_ID" 24.04; then
+            newer=true
+        fi
+        [ "$newer" = true ] \
+            || die "${PRETTY_NAME:-This system} is not supported. Supported: $SUPPORTED. On other systems follow server/INSTALL.en.md."
+        warn "${PRETTY_NAME:-This system} is newer than the systems this script is tested on ($SUPPORTED). It will most likely work; if a step fails, the script says which one."
+        if [ "$assume_yes" = false ]; then
+            read -r -p "Continue? [y/N]: " answer
+            [[ "$answer" =~ ^[YyДд] ]] || die "Stopped, nothing was changed."
+        fi
+        ;;
 esac
-ok "System: $PRETTY_NAME"
+ok "System: ${PRETTY_NAME:-$ID $VERSION_ID}"
 
 if [ -f "$dir/server/config/config.php" ]; then
     say "CUSTOS Monitor is already installed in $dir: checking and completing the installation. Settings, keys, the database and users stay. To update, use --update."
