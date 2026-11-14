@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Задание «{0}» изменено ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Задание «{0}» включено ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Задание «{0}» отключено ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Задание «{0}» удалено ({1}). Его копии не тронуты.</value>
   </data>

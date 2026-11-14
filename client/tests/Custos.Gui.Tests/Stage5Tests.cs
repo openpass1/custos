@@ -87,6 +87,37 @@ public sealed class Stage5Tests
     });
 
     [Fact]
+    public void Several_tasks_are_selected_for_the_group_actions() => Sta.Run("en-US", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var main = new MainForm(monitor) { Size = new Size(1100, 700) };
+        main.Show();
+        Sta.Pump();
+        var list = Assert.Single(Sta.Find<TaskListView>(main));
+        var toggle = Assert.Single(Sta.Find<ToolStrip>(main).SelectMany(s => s.Items.OfType<ToolStripButton>()), b => b.ToolTipText == Strings.ToolEnableHint);
+        Assert.True(list.MultiSelect);
+
+        // All of them, as after an import: one is off, so the button switches them on.
+        list.SelectAllTasks();
+        Sta.Pump();
+        Assert.Equal(3, list.SelectedTaskIds.Count);
+        Assert.Equal(Strings.ToolEnable, toggle.Text);
+
+        // A new snapshot keeps the selection, without the task that is gone.
+        monitor.SimulateSnapshot(Samples.Snapshot(2, withoutPhotos: true));
+        Sta.Pump();
+        Assert.Equal(2, list.SelectedTaskIds.Count);
+        Assert.DoesNotContain(Samples.PhotosId, list.SelectedTaskIds);
+
+        // One task picked again: the others are no longer selected, and an enabled task is switched off.
+        list.SelectTask(Samples.OfficeId);
+        Sta.Pump();
+        Assert.Equal([Samples.OfficeId], list.SelectedTaskIds);
+        Assert.Equal(Samples.OfficeId, list.SelectedTaskId);
+        Assert.Equal(Strings.ToolDisable, toggle.Text);
+    });
+
+    [Fact]
     public void The_password_windows_check_what_was_typed_before_asking_the_service() => Sta.Run("en-US", () =>
     {
         using var monitor = Samples.Monitor();

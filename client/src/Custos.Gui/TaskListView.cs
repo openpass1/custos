@@ -6,7 +6,8 @@ namespace Custos.Gui;
 
 /// <summary>
 /// The list of tasks (docs/client-ui.md, 2.2): one row per task with a state icon and all six columns, with or without
-/// the card; when they do not fit, the list scrolls sideways. Sorted by a click on a column header.
+/// the card; when they do not fit, the list scrolls sideways. Sorted by a click on a column header. Several tasks
+/// can be selected (Ctrl or Shift with a click, Ctrl+A) for the group actions; the card shows the focused one.
 /// </summary>
 internal sealed class TaskListView : ListView
 {
@@ -18,6 +19,7 @@ internal sealed class TaskListView : ListView
     private bool _sortAscending = true;
     private List<Row> _rows = [];
     private string? _selectedId;
+    private HashSet<string> _selectedIds = new(StringComparer.OrdinalIgnoreCase);
     private bool _updating;
     private bool _checkQueued;
 
@@ -25,14 +27,14 @@ internal sealed class TaskListView : ListView
     {
         View = View.Details;
         FullRowSelect = true;
-        MultiSelect = false;
+        MultiSelect = true;
         HideSelection = false;
         DoubleBuffered = true;
         ColumnClick += OnColumnClick;
         SelectedIndexChanged += (_, _) => QueueSelectionCheck();
     }
 
-    /// <summary>Raised once when another task gets selected (or none).</summary>
+    /// <summary>Raised once when another task gets selected (or none), or when the set of selected tasks changes.</summary>
     public event EventHandler? SelectedTaskChanged;
 
     public enum TaskColumn
@@ -45,7 +47,31 @@ internal sealed class TaskListView : ListView
         NextRun,
     }
 
+    /// <summary>The task of the card: the focused one of the selected tasks, or the first of them.</summary>
     public string? SelectedTaskId => _selectedId;
+
+    /// <summary>All selected tasks, in the order of the list.</summary>
+    public IReadOnlyList<string> SelectedTaskIds =>
+        [.. Items.Cast<ListViewItem>().Where(i => _selectedIds.Contains((string)i.Tag!)).Select(i => (string)i.Tag!)];
+
+    /// <summary>Selects every task (Ctrl+A).</summary>
+    public void SelectAllTasks()
+    {
+        BeginUpdate();
+        try
+        {
+            foreach (ListViewItem item in Items)
+            {
+                item.Selected = true;
+            }
+        }
+        finally
+        {
+            EndUpdate();
+        }
+
+        QueueSelectionCheck();
+    }
 
     /// <summary>Creates the columns.</summary>
     /// <param name="widths">Column widths at 100 % scale by column name; missing ones get defaults.</param>
@@ -129,8 +155,17 @@ internal sealed class TaskListView : ListView
         }
     }
 
+    /// <summary>Selects this task alone.</summary>
     public void SelectTask(string taskId)
     {
+        foreach (ListViewItem item in Items)
+        {
+            if (!string.Equals((string)item.Tag!, taskId, StringComparison.OrdinalIgnoreCase))
+            {
+                item.Selected = false;
+            }
+        }
+
         foreach (ListViewItem item in Items)
         {
             if (string.Equals((string)item.Tag!, taskId, StringComparison.OrdinalIgnoreCase))
@@ -159,9 +194,13 @@ internal sealed class TaskListView : ListView
 
                 Update(item, row);
                 Items.Add(item);
-                if (string.Equals(row.TaskId, _selectedId, StringComparison.OrdinalIgnoreCase))
+                if (_selectedIds.Contains(row.TaskId))
                 {
                     item.Selected = true;
+                }
+
+                if (string.Equals(row.TaskId, _selectedId, StringComparison.OrdinalIgnoreCase))
+                {
                     item.Focused = true;
                 }
             }
@@ -222,12 +261,30 @@ internal sealed class TaskListView : ListView
             return;
         }
 
-        string? id = SelectedItems.Count > 0 ? (string)SelectedItems[0].Tag! : null;
-        if (!string.Equals(id, _selectedId, StringComparison.OrdinalIgnoreCase))
+        var ids = new HashSet<string>(SelectedItems.Cast<ListViewItem>().Select(i => (string)i.Tag!), StringComparer.OrdinalIgnoreCase);
+        string? id = FocusedItem is { Selected: true } focused ? (string)focused.Tag!
+            : SelectedItems.Count > 0 ? (string)SelectedItems[0].Tag!
+            : null;
+        if (!string.Equals(id, _selectedId, StringComparison.OrdinalIgnoreCase) || !ids.SetEquals(_selectedIds))
         {
             _selectedId = id;
+            _selectedIds = ids;
             SelectedTaskChanged?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        // A list view selects all with Ctrl+A only when told to.
+        if (e.KeyCode == Keys.A && e.Modifiers == Keys.Control)
+        {
+            SelectAllTasks();
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
     }
 
     private void OnColumnClick(object? sender, ColumnClickEventArgs e)

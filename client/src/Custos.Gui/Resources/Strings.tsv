@@ -432,6 +432,11 @@ ThemeDark	Dark	Тёмная
 StatusTitle	CUSTOS: state of the backups	CUSTOS: состояние копий
 StatusNote	An administrator has set CUSTOS to only show the state on this computer.	Администратор настроил CUSTOS на этом компьютере так, что он только показывает состояние.
 MenuOpenStatus	State of the backups	Состояние копий
+ToolEnable	Switch on	Включить
+ToolDisable	Switch off	Отключить
+ToolEnableHint	Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A	Включить или отключить выбранные задания. Несколько — щелчок с Ctrl или Shift, все — Ctrl+A
+ConfirmDeleteMany	Delete {0} tasks?\n\nThe backups they have made stay where they are.	Удалить выбранные задания ({0})?\n\nУже сделанные копии останутся на месте.
+TasksNotChanged	Some tasks were not changed:	Некоторые задания не изменены:
 # ---- Import from Cobian Backup
 ImportTitle	Import from Cobian Backup	Импорт из Cobian Backup
 ImportFile	Task list:	Список заданий:

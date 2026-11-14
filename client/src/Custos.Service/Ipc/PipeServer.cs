@@ -65,6 +65,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.TaskSave,
         PipeProtocol.Methods.TaskDelete,
         PipeProtocol.Methods.TasksImport,
+        PipeProtocol.Methods.TasksEnable,
         PipeProtocol.Methods.CredentialSave,
         PipeProtocol.Methods.CredentialDelete,
         PipeProtocol.Methods.DestinationTest,
@@ -457,6 +458,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 Ok(id, agent.DeleteTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.TasksImport =>
                 Ok(id, agent.Import(request.GetData(json.TasksImportRequest), user, identity.Sid)),
+            PipeProtocol.Methods.TasksEnable =>
+                PipeMessage.Success(id, agent.EnableTasks(request.GetData(json.TasksEnableRequest), user), json.TasksEnableResult),
             PipeProtocol.Methods.TasksExport =>
                 PipeMessage.Success(id, agent.ExportTasks(request.GetData(json.TasksExportRequest), user), json.TasksExportResult),
             PipeProtocol.Methods.CredentialSave =>

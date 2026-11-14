@@ -23,6 +23,8 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(TaskSaveResult))]
 [JsonSerializable(typeof(CredentialInput))]
 [JsonSerializable(typeof(TasksImportRequest))]
+[JsonSerializable(typeof(TasksEnableRequest))]
+[JsonSerializable(typeof(TasksEnableResult))]
 [JsonSerializable(typeof(TasksExportRequest))]
 [JsonSerializable(typeof(TasksExportResult))]
 [JsonSerializable(typeof(CredentialSaveResult))]

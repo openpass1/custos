@@ -312,6 +312,24 @@ public sealed class TasksImportRequest
     public Cloud.CloudAppsFile? CloudApps { get; set; }
 }
 
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.TasksEnable"/>.</summary>
+public sealed class TasksEnableRequest
+{
+    public List<string> TaskIds { get; set; } = [];
+
+    /// <summary>True switches the tasks on, false off.</summary>
+    public bool Enabled { get; set; }
+}
+
+public sealed class TasksEnableResult
+{
+    /// <summary>How many tasks changed; those already on (or off) do not count.</summary>
+    public int Changed { get; set; }
+
+    /// <summary>Tasks that could not be changed, each «name: why».</summary>
+    public List<string> Problems { get; set; } = [];
+}
+
 /// <summary>Parameters of <see cref="PipeProtocol.Methods.TasksExport"/>.</summary>
 public sealed class TasksExportRequest
 {

@@ -1286,6 +1286,23 @@ Allow it?</value>
   <data name="MenuOpenStatus" xml:space="preserve">
     <value>State of the backups</value>
   </data>
+  <data name="ToolEnable" xml:space="preserve">
+    <value>Switch on</value>
+  </data>
+  <data name="ToolDisable" xml:space="preserve">
+    <value>Switch off</value>
+  </data>
+  <data name="ToolEnableHint" xml:space="preserve">
+    <value>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</value>
+  </data>
+  <data name="ConfirmDeleteMany" xml:space="preserve">
+    <value>Delete {0} tasks?
+
+The backups they have made stay where they are.</value>
+  </data>
+  <data name="TasksNotChanged" xml:space="preserve">
+    <value>Some tasks were not changed:</value>
+  </data>
   <data name="ImportTitle" xml:space="preserve">
     <value>Import from Cobian Backup</value>
   </data>

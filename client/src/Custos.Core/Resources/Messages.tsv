@@ -134,6 +134,8 @@ ConfigDamaged	{0} is damaged ({1}) and has no usable backup copy, so it starts e
 AgentStarted	CUSTOS service {0} started.	Служба CUSTOS {0} запущена.
 TaskCreatedBy	Task «{0}» created ({1}).	Задание «{0}» создано ({1}).
 TaskChangedBy	Task «{0}» changed ({1}).	Задание «{0}» изменено ({1}).
+TaskEnabledBy	Task «{0}» switched on ({1}).	Задание «{0}» включено ({1}).
+TaskDisabledBy	Task «{0}» switched off ({1}).	Задание «{0}» отключено ({1}).
 TaskDeletedBy	Task «{0}» deleted ({1}). Its backups were not touched.	Задание «{0}» удалено ({1}). Его копии не тронуты.
 TasksImportedBy	{0} tasks imported from Cobian Backup ({1}). They are off until you check and turn them on.	Импортировано заданий из Cobian Backup: {0} ({1}). Они отключены, пока вы их не проверите и не включите.
 SettingsChangedBy	Program settings changed ({0}).	Настройки программы изменены ({0}).

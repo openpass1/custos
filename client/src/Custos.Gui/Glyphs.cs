@@ -30,6 +30,7 @@ internal enum Glyph
     Help,
     Database,
     Paste,
+    Toggle,
 }
 
 /// <summary>State of a task or a run, always shown with a picture and a color (docs/client-ui.md, section 1).</summary>
@@ -136,6 +137,16 @@ internal static class Glyphs
             case Glyph.Pause:
                 g.FillRectangle(brush, 6, 5, 4, 14);
                 g.FillRectangle(brush, 14, 5, 4, 14);
+                break;
+
+            case Glyph.Toggle:
+                // A switch: on or off, the same picture.
+                using (var path = RoundedRectangle(new RectangleF(2, 7, 20, 10), 5))
+                {
+                    g.DrawPath(pen, path);
+                }
+
+                g.FillEllipse(brush, 13, 9, 6, 6);
                 break;
 
             case Glyph.Restore:

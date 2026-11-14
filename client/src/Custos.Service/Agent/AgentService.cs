@@ -308,6 +308,54 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         return change.Saved;
     }
 
+    /// <summary>
+    /// Switches several tasks on or off (the group action of the main window). Each goes through the same checks as
+    /// a save in the editor; one that fails is named in the result and the others still change. A task switched on
+    /// counts its schedule from now, so the tasks do not all catch up at once.
+    /// </summary>
+    public TasksEnableResult EnableTasks(TasksEnableRequest request, string user)
+    {
+        var result = new TasksEnableResult();
+        foreach (string taskId in request.TaskIds.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var task = _config.GetTask(taskId);
+            if (task is null || task.Enabled == request.Enabled)
+            {
+                continue;
+            }
+
+            int revision = task.Revision;
+            task.Enabled = request.Enabled;
+            TaskChange change;
+            try
+            {
+                change = _config.SaveTask(task, revision, "local:" + user, DateTimeOffset.UtcNow);
+            }
+            catch (ConfigException ex)
+            {
+                result.Problems.Add(task.Name + ": " + ex.Message);
+                continue;
+            }
+
+            if (change.ScheduleReset)
+            {
+                SetLastSlot(change.Saved.Id, DateTimeOffset.UtcNow);
+            }
+
+            Log(LogLineLevels.Info, Messages.Format(request.Enabled ? Messages.TaskEnabledBy : Messages.TaskDisabledBy, change.Saved.Name, user), change.Saved.Id);
+            NoteConfigChange(change.Saved);
+            result.Changed++;
+        }
+
+        if (result.Changed > 0)
+        {
+            PublishSnapshot();
+            _scheduleWake.Release();
+        }
+
+        return result;
+    }
+
     public OkResult DeleteTask(string taskId, string user)
     {
         lock (_lock)

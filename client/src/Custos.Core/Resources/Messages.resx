@@ -415,6 +415,12 @@
   <data name="TaskChangedBy" xml:space="preserve">
     <value>Task «{0}» changed ({1}).</value>
   </data>
+  <data name="TaskEnabledBy" xml:space="preserve">
+    <value>Task «{0}» switched on ({1}).</value>
+  </data>
+  <data name="TaskDisabledBy" xml:space="preserve">
+    <value>Task «{0}» switched off ({1}).</value>
+  </data>
   <data name="TaskDeletedBy" xml:space="preserve">
     <value>Task «{0}» deleted ({1}). Its backups were not touched.</value>
   </data>

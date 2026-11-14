@@ -31,6 +31,7 @@ internal sealed class MainForm : Form
     private readonly ToolStripButton _edit = Button<ToolStripButton>(Strings.ToolEdit);
     private readonly ToolStripButton _clone = Button<ToolStripButton>(Strings.ToolClone);
     private readonly ToolStripButton _delete = Button<ToolStripButton>(Strings.ToolDelete);
+    private readonly ToolStripButton _toggle = Button<ToolStripButton>(Strings.ToolEnable);
     private readonly ToolStripButton _run = Button<ToolStripButton>(Strings.ToolRun);
     private readonly ToolStripButton _stop = Button<ToolStripButton>(Strings.ToolStop);
     private readonly ToolStripButton _pause = Button<ToolStripButton>(Strings.ToolPause);
@@ -237,6 +238,8 @@ internal sealed class MainForm : Form
         _clone.Click += (_, _) => CloneTask();
         _delete.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolDelete, "Del");
         _delete.Click += (_, _) => DeleteTask();
+        _toggle.ToolTipText = Strings.ToolEnableHint;
+        _toggle.Click += (_, _) => SwitchTasks(SelectedTasks().Any(t => !t.Enabled));
         _run.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolRun, "F5");
         _run.Click += (_, _) => RunTask();
         _stop.ToolTipText = Strings.Format(Strings.ToolTipShortcut, Strings.ToolStop, "Shift+F5");
@@ -255,7 +258,7 @@ internal sealed class MainForm : Form
 
         _toolbar.Items.AddRange(
         [
-            _create, _edit, _clone, _delete, new ToolStripSeparator(),
+            _create, _edit, _clone, _delete, _toggle, new ToolStripSeparator(),
             _run, _stop, _pause, new ToolStripSeparator(),
             _restore,
 
@@ -271,14 +274,21 @@ internal sealed class MainForm : Form
         var edit = new ToolStripMenuItem(Strings.ToolEdit, null, (_, _) => EditTask());
         var clone = new ToolStripMenuItem(Strings.ToolClone, null, (_, _) => CloneTask());
         var delete = new ToolStripMenuItem(Strings.ToolDelete, null, (_, _) => DeleteTask());
-        _taskMenu.Items.AddRange([run, stop, new ToolStripSeparator(), edit, clone, delete]);
+        var enable = new ToolStripMenuItem(Strings.ToolEnable, null, (_, _) => SwitchTasks(true));
+        var disable = new ToolStripMenuItem(Strings.ToolDisable, null, (_, _) => SwitchTasks(false));
+        var selectAll = new ToolStripMenuItem(Strings.MenuSelectAll, null, (_, _) => _tasks.SelectAllTasks()) { ShortcutKeyDisplayString = "Ctrl+A" };
+        _taskMenu.Items.AddRange([run, stop, new ToolStripSeparator(), edit, clone, delete, new ToolStripSeparator(), enable, disable,
+            new ToolStripSeparator(), selectAll]);
         _taskMenu.Opening += (_, e) =>
         {
+            var selected = SelectedTasks();
             run.Enabled = _run.Enabled;
             stop.Enabled = _stop.Enabled;
             edit.Enabled = _edit.Enabled;
             clone.Enabled = _clone.Enabled;
             delete.Enabled = _delete.Enabled;
+            enable.Enabled = _toggle.Enabled && selected.Any(t => !t.Enabled);
+            disable.Enabled = _toggle.Enabled && selected.Any(t => t.Enabled);
             e.Cancel = _tasks.SelectedTaskId is null;
         };
     }
@@ -303,6 +313,7 @@ internal sealed class MainForm : Form
         _edit.Image = Glyphs.Draw(Glyph.Edit, size);
         _clone.Image = Glyphs.Draw(Glyph.Clone, size);
         _delete.Image = Glyphs.Draw(Glyph.Delete, size);
+        _toggle.Image = Glyphs.Draw(Glyph.Toggle, size);
         _run.Image = Glyphs.Draw(Glyph.Run, size);
         _stop.Image = Glyphs.Draw(Glyph.Stop, size);
         _pause.Image = Glyphs.Draw(Glyph.Pause, size);
@@ -327,7 +338,7 @@ internal sealed class MainForm : Form
 
     private void DisposeImages()
     {
-        foreach (var item in new ToolStripItem[] { _create, _importFile, _import, _export, _edit, _clone, _delete, _run, _stop, _pause, _restore, _card, _settings, _lock })
+        foreach (var item in new ToolStripItem[] { _create, _importFile, _import, _export, _edit, _clone, _delete, _toggle, _run, _stop, _pause, _restore, _card, _settings, _lock })
         {
             var image = item.Image;
             item.Image = null;
@@ -585,19 +596,22 @@ internal sealed class MainForm : Form
         var snapshot = _monitor.Snapshot;
         bool connected = snapshot is not null && _monitor.IsConnected;
         bool canEdit = connected && _monitor.CanEdit;
-        var task = SelectedTask();
-        var state = task is null ? null : snapshot!.States.FirstOrDefault(s => SameId(s.TaskId, task.Id));
+        // Several tasks may be selected: editing and cloning take one, the rest act on all of them.
+        var selected = SelectedTasks();
         var current = snapshot?.Current;
-        bool selectedRunning = task is not null && current is not null && SameId(current.TaskId, task.Id);
-        bool selectedQueued = state?.Queued == true;
+        bool selectedRunning = current is not null && selected.Any(t => SameId(t.Id, current.TaskId));
+        bool anyWaiting = selected.Any(t => IsWaiting(t, snapshot));
+        bool anyIdle = selected.Any(t => !IsWaiting(t, snapshot) && !(current is not null && SameId(t.Id, current.TaskId)));
 
         _create.Enabled = canEdit;
-        _edit.Enabled = canEdit && task is not null;
-        _clone.Enabled = canEdit && task is not null;
-        _delete.Enabled = canEdit && task is not null && !selectedRunning;
-        _run.Enabled = connected && task is not null && !selectedRunning && !selectedQueued;
-        _stop.Enabled = connected && (selectedRunning || selectedQueued || (task is null && current is not null));
-        _pause.Enabled = connected && current is not null && !current.Stopping && (task is null || selectedRunning);
+        _edit.Enabled = canEdit && selected.Count == 1;
+        _clone.Enabled = canEdit && selected.Count == 1;
+        _delete.Enabled = canEdit && selected.Count > 0 && !selectedRunning;
+        _toggle.Enabled = canEdit && selected.Count > 0;
+        _toggle.Text = selected.Count == 0 || selected.Any(t => !t.Enabled) ? Strings.ToolEnable : Strings.ToolDisable;
+        _run.Enabled = connected && anyIdle;
+        _stop.Enabled = connected && (selectedRunning || anyWaiting || (selected.Count == 0 && current is not null));
+        _pause.Enabled = connected && current is not null && !current.Stopping && (selected.Count == 0 || selectedRunning);
         _pause.Checked = current is not null && (_monitor.Progress?.RunId == current.RunId ? _monitor.Progress.Paused : current.Paused);
         _settings.Enabled = connected;
         bool isAdmin = connected && _monitor.Status.Hello?.IsAdmin == true;
@@ -653,6 +667,22 @@ internal sealed class MainForm : Form
     private TaskDefinition? SelectedTask() => _tasks.SelectedTaskId is { } id
         ? _monitor.Snapshot?.Tasks.FirstOrDefault(t => SameId(t.Id, id))
         : null;
+
+    /// <summary>All selected tasks, in the order of the list.</summary>
+    private List<TaskDefinition> SelectedTasks()
+    {
+        var snapshot = _monitor.Snapshot;
+        if (snapshot is null)
+        {
+            return [];
+        }
+
+        return [.. _tasks.SelectedTaskIds.Select(id => snapshot.Tasks.FirstOrDefault(t => SameId(t.Id, id))).OfType<TaskDefinition>()];
+    }
+
+    /// <summary>Whether the task waits in the queue.</summary>
+    private static bool IsWaiting(TaskDefinition task, AgentSnapshot? snapshot) =>
+        snapshot?.States.FirstOrDefault(s => SameId(s.TaskId, task.Id))?.Queued == true;
 
     private void OnTaskActivated()
     {
@@ -736,36 +766,88 @@ internal sealed class MainForm : Form
 
     private void DeleteTask()
     {
-        if (SelectedTask() is not { } task || !Ui.Confirm(this, Strings.Format(Strings.ConfirmDelete, task.Name)))
-        {
-            return;
-        }
-
-        Ui.Run(this, () => _monitor.RequestAsync(PipeProtocol.Methods.TaskDelete, new TaskRequest { TaskId = task.Id },
-            IpcJsonContext.Default.TaskRequest, IpcJsonContext.Default.OkResult));
-    }
-
-    private void RunTask()
-    {
-        if (SelectedTask() is not { } task)
+        var tasks = SelectedTasks();
+        string question = tasks.Count == 1 ? Strings.Format(Strings.ConfirmDelete, tasks[0].Name) : Strings.Format(Strings.ConfirmDeleteMany, tasks.Count);
+        if (tasks.Count == 0 || !Ui.Confirm(this, question))
         {
             return;
         }
 
         Ui.Run(this, async () =>
         {
-            var result = await _monitor.RunControlAsync(PipeProtocol.Methods.TaskRun, task.Id);
-            if (!result.Ok && result.Message is { } message)
+            foreach (var task in tasks)
             {
-                Ui.ShowInfo(this, message);
+                await _monitor.RequestAsync(PipeProtocol.Methods.TaskDelete, new TaskRequest { TaskId = task.Id },
+                    IpcJsonContext.Default.TaskRequest, IpcJsonContext.Default.OkResult);
+            }
+        });
+    }
+
+    /// <summary>Switches the selected tasks on or off with one request (the group action).</summary>
+    private void SwitchTasks(bool enabled)
+    {
+        var ids = SelectedTasks().Where(t => t.Enabled != enabled).Select(t => t.Id).ToList();
+        if (ids.Count == 0 || !_monitor.CanEdit)
+        {
+            return;
+        }
+
+        Ui.Run(this, async () =>
+        {
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.TasksEnable, new TasksEnableRequest { TaskIds = ids, Enabled = enabled },
+                IpcJsonContext.Default.TasksEnableRequest, IpcJsonContext.Default.TasksEnableResult);
+            if (result.Problems.Count > 0)
+            {
+                Ui.ShowInfo(this, Strings.TasksNotChanged + "\n\n" + string.Join("\n", result.Problems));
+            }
+        });
+    }
+
+    private void RunTask()
+    {
+        var snapshot = _monitor.Snapshot;
+        var current = snapshot?.Current;
+        var tasks = SelectedTasks().Where(t => !IsWaiting(t, snapshot) && !(current is not null && SameId(t.Id, current.TaskId))).ToList();
+        if (tasks.Count == 0)
+        {
+            return;
+        }
+
+        Ui.Run(this, async () =>
+        {
+            // One after another, in the order of the list: the service queues them.
+            var messages = new List<string>();
+            foreach (var task in tasks)
+            {
+                var result = await _monitor.RunControlAsync(PipeProtocol.Methods.TaskRun, task.Id);
+                if (!result.Ok && result.Message is { } message)
+                {
+                    messages.Add(tasks.Count == 1 ? message : task.Name + ": " + message);
+                }
+            }
+
+            if (messages.Count > 0)
+            {
+                Ui.ShowInfo(this, string.Join("\n", messages));
             }
         });
     }
 
     private void StopTask()
     {
-        string? taskId = SelectedTask()?.Id;
-        Ui.Run(this, () => _monitor.RunControlAsync(PipeProtocol.Methods.RunStop, taskId));
+        var snapshot = _monitor.Snapshot;
+        var current = snapshot?.Current;
+        var tasks = SelectedTasks();
+        List<string?> ids = tasks.Count == 0
+            ? [null]
+            : [.. tasks.Where(t => IsWaiting(t, snapshot) || (current is not null && SameId(t.Id, current.TaskId))).Select(t => (string?)t.Id)];
+        Ui.Run(this, async () =>
+        {
+            foreach (string? taskId in ids)
+            {
+                await _monitor.RunControlAsync(PipeProtocol.Methods.RunStop, taskId);
+            }
+        });
     }
 
     private void PauseTask()

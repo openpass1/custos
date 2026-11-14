@@ -1256,6 +1256,21 @@ static partial class Strings
     /// <summary>State of the backups</summary>
     public static string MenuOpenStatus => Get(nameof(MenuOpenStatus));
 
+    /// <summary>Switch on</summary>
+    public static string ToolEnable => Get(nameof(ToolEnable));
+
+    /// <summary>Switch off</summary>
+    public static string ToolDisable => Get(nameof(ToolDisable));
+
+    /// <summary>Switch the selected tasks on or off. Several tasks: click with Ctrl or Shift; all: Ctrl+A</summary>
+    public static string ToolEnableHint => Get(nameof(ToolEnableHint));
+
+    /// <summary>Delete {0} tasks?</summary>
+    public static string ConfirmDeleteMany => Get(nameof(ConfirmDeleteMany));
+
+    /// <summary>Some tasks were not changed:</summary>
+    public static string TasksNotChanged => Get(nameof(TasksNotChanged));
+
     /// <summary>Import from Cobian Backup</summary>
     public static string ImportTitle => Get(nameof(ImportTitle));
 

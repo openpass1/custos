@@ -67,6 +67,10 @@ public static class PipeProtocol
         /// <summary>Administrators. Add imported tasks with their accounts: <see cref="TasksImportRequest"/> → <see cref="OkResult"/>.</summary>
         public const string TasksImport = "tasks.import";
 
+        /// <summary>Administrators. Switch several tasks on or off at once: <see cref="TasksEnableRequest"/> →
+        /// <see cref="TasksEnableResult"/>.</summary>
+        public const string TasksEnable = "tasks.enable";
+
         /// <summary>Administrators only, always: the file of exported tasks, with the secrets of their accounts when a
         /// password is given (section 9a). <see cref="TasksExportRequest"/> → <see cref="TasksExportResult"/>.</summary>
         public const string TasksExport = "tasks.export";

@@ -407,6 +407,12 @@ static partial class Messages
     /// <summary>Task «{0}» changed ({1}).</summary>
     public static string TaskChangedBy => Get(nameof(TaskChangedBy));
 
+    /// <summary>Task «{0}» switched on ({1}).</summary>
+    public static string TaskEnabledBy => Get(nameof(TaskEnabledBy));
+
+    /// <summary>Task «{0}» switched off ({1}).</summary>
+    public static string TaskDisabledBy => Get(nameof(TaskDisabledBy));
+
     /// <summary>Task «{0}» deleted ({1}). Its backups were not touched.</summary>
     public static string TaskDeletedBy => Get(nameof(TaskDeletedBy));
 
