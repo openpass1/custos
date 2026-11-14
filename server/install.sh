@@ -10,6 +10,10 @@
 # Run as root (on Ubuntu: sudo bash install.sh). Running it again is safe: settings, keys, the database and users
 # are kept. Messages are in English, like the other server scripts.
 
+# The whole script is one block, so bash reads all of it before running any of it: an update may unpack a new copy
+# of this very file over the one that is running (server/install.sh is in the package).
+{
+
 set -euo pipefail
 shopt -s inherit_errexit
 
@@ -111,6 +115,7 @@ trap 'rm -rf "$workdir"' EXIT
 
 # A command that fails without its own message stops the script; this names it, so the stop is never silent.
 set -o errtrace
+# shellcheck disable=SC2329 # called by the ERR trap below
 on_error() {
     # Once: not again for the line that used a failed $(...), and not after die() has given the reason.
     [ "$BASH_SUBSHELL" = 0 ] && [ ! -e "$workdir/stopped" ] || return 0
@@ -560,3 +565,6 @@ EOF
 if [[ ! "$host" =~ ^[0-9.]+$ ]] && [ "$host" != localhost ]; then
     echo "The name $host must point to this server: a DNS record, or a line in the hosts file of each computer."
 fi
+
+exit 0
+}
