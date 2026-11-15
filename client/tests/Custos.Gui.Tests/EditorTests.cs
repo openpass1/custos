@@ -1,3 +1,4 @@
+using Custos.Core.Backup;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
@@ -178,19 +179,59 @@ public sealed class EditorTests
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
         editor.Show();
         Sta.Pump();
+        editor.SelectPage(editor.Pages[3]);
+        Sta.Pump();
 
         Assert.Null(editor.Collect(out string? problem));
         Assert.Equal(worm
             ? Custos.Core.Messages.Format(Custos.Core.Messages.WormNeedsSets, @"\\nas\backup\office", 7)
             : Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, "s3://office-backup/pc01"), problem);
+
+        // The first page is shown, where the type is changed; the mirror stays on there, with what is wrong with it.
+        var basic = editor.Pages[0];
+        Assert.True(basic.Visible);
+        var mirror = Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle);
+        Assert.True(mirror.Enabled);
+        Assert.True(Sta.Shows(basic, Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(destination))));
+
+        // Once another type is chosen, the mirror cannot be chosen again.
+        Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeFullTitle).Checked = true;
+        Sta.Pump();
+        Assert.False(mirror.Enabled);
+    });
+
+    [Fact]
+    public void A_mirror_is_not_offered_once_a_destination_has_worm() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var basic = editor.Pages[0];
+        var mirror = Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle);
+        Assert.True(mirror.Enabled);
+
+        // WORM is set on a destination, as the destination dialog does.
+        var withWorm = Samples.Office();
+        withWorm.Destinations[1].WormDays = 7;
+        withWorm.Destinations[1].WormLockHours = 3;
+        editor.Pages[3].LoadFrom(withWorm);
+        Sta.Pump();
+
+        Assert.False(mirror.Enabled);
+        Assert.True(Sta.Shows(basic, Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(withWorm.Destinations[1]))));
     });
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void A_destination_that_protects_its_files_keeps_a_folder_for_each_backup(bool worm) => Sta.Run("ru-RU", () =>
+    [InlineData(true, ArchiveFormats.None)]
+    [InlineData(true, ArchiveFormats.Zip)]
+    [InlineData(false, ArchiveFormats.None)]
+    [InlineData(false, ArchiveFormats.Zip)]
+    public void A_destination_that_protects_its_files_keeps_a_folder_for_each_backup(bool worm, string archive) => Sta.Run("ru-RU", () =>
     {
-        // Plain copies in one shared folder would write over the files of the last run.
+        // Plain copies in one shared folder would write over the files of the last run. With archives the box is
+        // kept on too, so that it does not change with the format.
         var task = Samples.Office();
         var destination = worm ? Samples.Office().Destinations[1] : Samples.Remote(DestinationKinds.S3);
         destination.WormDays = worm ? 7 : 0;
@@ -198,6 +239,10 @@ public sealed class EditorTests
         task.Destinations = [destination];
         task.BackupType = BackupTypes.Full;
         task.Layout.SeparateFolders = false;
+        task.Archive = new ArchiveOptions { Format = archive, Level = 5 };
+
+        // Two backups on three days a week: eight full ones cover the 7 days 4 hours of the WORM.
+        task.Retention.KeepFull = 8;
 
         using var monitor = Samples.Monitor();
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
@@ -220,6 +265,63 @@ public sealed class EditorTests
         editor.SelectPage(retention);
         Sta.Pump();
         Assert.Equal(worm, Sta.Shows(retention, Strings.Format(Strings.RetentionWormNote, 7)));
+    });
+
+    [Fact]
+    public void Retention_that_would_delete_backups_before_their_worm_is_over_is_not_saved() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Full;
+        task.Destinations[1].WormDays = 7;
+        task.Destinations[1].WormLockHours = 3;
+        task.Retention.KeepFull = 3;
+
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        Assert.Null(editor.Collect(out string? problem));
+        Assert.Equal(WormRetention.Problem(task), problem);
+        Assert.StartsWith(TaskDescriber.Destination(task.Destinations[1]), problem, StringComparison.Ordinal);
+        Assert.True(editor.Pages.OfType<RetentionPage>().Single().Visible);
+
+        // Enough full backups: saved.
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        Sta.Find<NumericUpDown>(retention).Single(n => n.Value == 3).Value = 8;
+        Assert.NotNull(editor.Collect(out problem));
+        Assert.Null(problem);
+    });
+
+    [Fact]
+    public void Retention_is_off_for_a_shared_folder_where_it_has_nothing_to_delete() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Incremental;
+        task.Layout.SeparateFolders = false;
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 5 };
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        editor.SelectPage(retention);
+        Sta.Pump();
+
+        string note = Strings.Format(Strings.RetentionSharedNote, Strings.SeparateFolders, Strings.PageDestinations, Strings.PageArchive);
+        var byAge = Sta.Find<RadioButton>(retention).Single(r => r.Text == Strings.RetentionAge);
+        Assert.True(Sta.Shows(retention, note));
+        Assert.True(byAge.Checked);
+        Assert.False(byAge.Enabled);
+        Assert.All(Sta.Find<NumericUpDown>(retention), n => Assert.False(n.Enabled));
+
+        // The rule is kept as it was, and comes back with a folder for each backup.
+        Assert.Equal(5, editor.Collect(out _)!.Retention.MaxAgeDays);
+        var destinations = editor.Pages[3];
+        Sta.Find<CheckBox>(destinations).Single(c => c.Text == Strings.SeparateFolders).Checked = true;
+        Sta.Pump();
+        Assert.True(byAge.Enabled);
+        Assert.False(Sta.Shows(retention, note));
     });
 
     [Fact]

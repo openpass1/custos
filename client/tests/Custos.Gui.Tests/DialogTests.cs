@@ -199,6 +199,32 @@ public sealed class DialogTests
     });
 
     [Fact]
+    public void The_speed_limit_is_typed_in_megabytes_and_kept_in_kilobytes() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), Samples.Remote(DestinationKinds.Sftp), isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        // 2000 KB/s shows as 2 MB/s and is kept as it was while it is not changed.
+        Assert.True(Sta.Shows(dialog, Strings.RemoteSpeedUnit));
+        var speed = Assert.Single(Sta.Find<SpeedBox>(dialog));
+        Assert.Equal(2.0m, speed.Value);
+        Assert.Equal(2000, dialog.Build().SpeedLimitKbps);
+
+        speed.Value = 1.5m;
+        Assert.Equal(1536, dialog.Build().SpeedLimitKbps);
+        speed.Value = 0;
+        Assert.Equal(0, dialog.Build().SpeedLimitKbps);
+
+        // A limit under a tenth of a megabyte does not show as "no limit".
+        speed.Kbps = 50;
+        Assert.Equal(0.1m, speed.Value);
+        Assert.Equal(50, speed.Kbps);
+    });
+
+    [Fact]
     public void A_key_of_a_server_is_trusted_for_that_server_only() => Sta.Run("en-US", () =>
     {
         using var monitor = Samples.Monitor();

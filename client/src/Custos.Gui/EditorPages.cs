@@ -29,6 +29,7 @@ internal sealed class BasicPage : EditorPage
     private readonly RadioButton _mirrorSafe = new() { Text = Strings.MirrorSafe, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
     private readonly NumericUpDown _safeDays = new() { Minimum = 1, Maximum = 3650, Value = 30, Width = 70 };
     private readonly FlowLayoutPanel _mirrorOptions = new() { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(18, 0, 0, 0) };
+    private readonly Label _mirrorLocked;
 
     public BasicPage(EditorContext context)
         : base(context, Strings.PageBasic, Glyph.Info)
@@ -59,6 +60,9 @@ internal sealed class BasicPage : EditorPage
         AddNote(Strings.TypeDifferentialHint, 18);
         AddWide(_mirror);
         AddNote(Strings.TypeMirrorHint, 18);
+        _mirrorLocked = AddNote(string.Empty, 18);
+        _mirrorLocked.ForeColor = Glyphs.WarningText;
+        _mirrorLocked.Visible = false;
         _mirrorOptions.Controls.AddRange([_mirrorExact, Inline(_mirrorSafe, _safeDays, new Label { Text = Strings.MirrorSafeDays, AutoSize = true, Margin = new Padding(4, 8, 0, 0) })]);
         AddWide(_mirrorOptions);
         AddNote(Strings.MirrorNote, 18);
@@ -88,6 +92,7 @@ internal sealed class BasicPage : EditorPage
             _safeDays.Enabled = _mirrorSafe.Checked && _mirror.Checked;
         };
         _name.TextChanged += (_, _) => Context.SetShape(taskName: _name.Text.Trim());
+        Context.ShapeChanged += (_, _) => ShowMirrorLocked();
         _forceEvery.CheckedChanged += (_, _) =>
         {
             _forceEveryRuns.Enabled = _forceEvery.Checked;
@@ -155,6 +160,13 @@ internal sealed class BasicPage : EditorPage
             return Strings.ErrorNameRequired;
         }
 
+        // A mirror replaces files, and a destination that protects them does not let it (section 6.3). The check is
+        // here and not only on the destinations page, so that the type can be changed at once.
+        if (_mirror.Checked && Context.Protecting is { } protecting)
+        {
+            return Custos.Core.Backup.BackupEngine.ProtectionNeedsSets(protecting, TaskDescriber.Destination(protecting));
+        }
+
         task.Name = name;
         task.Enabled = _enabled.Checked;
         task.BackupType = _full.Checked ? BackupTypes.Full
@@ -193,6 +205,17 @@ internal sealed class BasicPage : EditorPage
         _safeDays.Enabled = _mirror.Checked && _mirrorSafe.Checked;
         string type = _full.Checked ? BackupTypes.Full : _differential.Checked ? BackupTypes.Differential : _mirror.Checked ? BackupTypes.Mirror : BackupTypes.Incremental;
         Context.SetShape(taskName: _name.Text.Trim(), backupType: type);
+        ShowMirrorLocked();
+    }
+
+    /// <summary>A destination that protects its files takes no mirror: the choice is off, unless a task saved before
+    /// is a mirror already; then it stays on, so that it can be seen, and saving says what to change.</summary>
+    private void ShowMirrorLocked()
+    {
+        var protecting = Context.Protecting;
+        _mirror.Enabled = protecting is null || _mirror.Checked;
+        _mirrorLocked.Visible = protecting is not null;
+        _mirrorLocked.Text = protecting is null ? string.Empty : Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(protecting));
     }
 }
 
@@ -811,6 +834,7 @@ internal sealed class DestinationsPage : EditorPage
             ? TaskDescriber.Destination(stream)
             : null;
         Context.WormDays = _destinations.Select(d => WormSettings.Of(d)?.Days ?? 0).DefaultIfEmpty(0).Max();
+        Context.Protecting = _destinations.FirstOrDefault(d => d.ProtectsFiles);
         ShowCloudNote();
         UpdateLayout();
         UpdateButtons();
@@ -829,8 +853,10 @@ internal sealed class DestinationsPage : EditorPage
         _mirrorNote.Visible = mirror;
         ShowCloudNote();
 
-        // A destination that protects its files takes only sets that are never overwritten (section 6.3).
-        var protects = !mirror && Context.ArchiveFormat == ArchiveFormats.None ? _destinations.FirstOrDefault(d => d.ProtectsFiles) : null;
+        // A destination that protects its files takes only sets that are never overwritten (section 6.3). Archives
+        // would do without a folder each, but the box stays on and grey with them too, so that it does not change
+        // with the archive format.
+        var protects = mirror ? null : _destinations.FirstOrDefault(d => d.ProtectsFiles);
         if (protects is not null)
         {
             _separate.Checked = true;
@@ -841,6 +867,7 @@ internal sealed class DestinationsPage : EditorPage
         _separateForced.Text = protects is null ? string.Empty : Strings.Format(Strings.SeparateForcedNote, TaskDescriber.Destination(protects));
         _template.Enabled = UsesTemplate;
         ShowExample();
+        Context.SeparateFolders = _separate.Checked;
     }
 
     /// <summary>The name the template gives now, so that a typing slip shows before the first run.</summary>
@@ -1364,6 +1391,16 @@ internal sealed class RetentionPage : EditorPage
     private readonly NumericUpDown _monthly = new() { Minimum = 0, Maximum = 1000, Value = 12, Width = 60 };
     private readonly FlowLayoutPanel _gfsCounts = new() { AutoSize = true, WrapContents = true, Margin = new Padding(18, 0, 0, 0) };
     private readonly Label _mirrorNote = new() { Text = Strings.RetentionMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
+    private readonly Label _sharedNote = new()
+    {
+        Text = Strings.Format(Strings.RetentionSharedNote, Strings.SeparateFolders, Strings.PageDestinations, Strings.PageArchive),
+        AutoSize = true,
+        Dock = DockStyle.Fill,
+        ForeColor = Glyphs.WarningText,
+        Margin = new Padding(0, 0, 0, 6),
+        Visible = false,
+    };
+
     private readonly Label _noFullWarning;
     private readonly Label _wormNote;
 
@@ -1371,6 +1408,7 @@ internal sealed class RetentionPage : EditorPage
         : base(context, Strings.PageRetention, Glyph.Layers)
     {
         AddWide(_mirrorNote);
+        AddWide(_sharedNote);
         AddWide(_keepAll);
         AddWide(Line(_byCount, _keepFull, Strings.RetentionCountSuffix));
         AddNote(Strings.RetentionCountHint, 18);
@@ -1405,6 +1443,7 @@ internal sealed class RetentionPage : EditorPage
         }
 
         Context.ShapeChanged += (_, _) => UpdateEnabled();
+        Context.RemoteChanged += (_, _) => UpdateEnabled();
     }
 
     public override void LoadFrom(TaskDefinition task)
@@ -1441,7 +1480,10 @@ internal sealed class RetentionPage : EditorPage
         retention.Gfs.Daily = (int)_daily.Value;
         retention.Gfs.Weekly = (int)_weekly.Value;
         retention.Gfs.Monthly = (int)_monthly.Value;
-        return null;
+
+        // A rule that deletes backups before the WORM of a destination lets them go deletes nothing (section 6.6). The
+        // pages before this one have filled in the type, the destinations and the schedule.
+        return Custos.Core.Backup.WormRetention.Problem(task);
     }
 
     private static FlowLayoutPanel Line(RadioButton radio, NumericUpDown number, string suffix)
@@ -1455,20 +1497,25 @@ internal sealed class RetentionPage : EditorPage
 
     private void UpdateEnabled()
     {
+        // A mirror and a shared folder are one copy updated in place: retention has nothing to delete there (section
+        // 6.6), so its rules are off, kept as they are for when that changes. A Linux server always makes sets.
         bool mirror = Context.IsMirror;
+        bool shared = !mirror && !Context.SeparateFolders && Context.ArchiveFormat == ArchiveFormats.None && !Context.HasRemoteSource;
+        bool off = mirror || shared;
         _mirrorNote.Visible = mirror;
-        _keepAll.Enabled = _byCount.Enabled = _byAge.Enabled = _gfs.Enabled = !mirror;
-        _keepFull.Enabled = _byCount.Checked && !mirror;
-        _maxAge.Enabled = _byAge.Checked && !mirror;
-        _gfsCounts.Enabled = _gfs.Checked && !mirror;
+        _sharedNote.Visible = shared;
+        _keepAll.Enabled = _byCount.Enabled = _byAge.Enabled = _gfs.Enabled = !off;
+        _keepFull.Enabled = _byCount.Checked && !off;
+        _maxAge.Enabled = _byAge.Checked && !off;
+        _gfsCounts.Enabled = _gfs.Checked && !off;
 
         // Without a forced full backup one chain grows from the first full backup, and "by count" (with incremental or
         // differential backups) or "by age" (incremental: each needs the ones before it) can delete none of it.
         bool chain = Context.BackupType is BackupTypes.Incremental or BackupTypes.Differential && !Context.HasForcedFull;
-        _noFullWarning.Visible = chain && (_byCount.Checked || (_byAge.Checked && Context.BackupType == BackupTypes.Incremental));
+        _noFullWarning.Visible = !off && chain && (_byCount.Checked || (_byAge.Checked && Context.BackupType == BackupTypes.Incremental));
 
         // WORM keeps a backup for its days whatever the rule says (section 6.6).
-        _wormNote.Visible = Context.WormDays > 0 && !mirror && !_keepAll.Checked;
+        _wormNote.Visible = Context.WormDays > 0 && !off && !_keepAll.Checked;
         _wormNote.Text = Context.WormDays > 0 ? Strings.Format(Strings.RetentionWormNote, Context.WormDays) : string.Empty;
     }
 }

@@ -55,8 +55,8 @@ final class TaskFormTest extends TestCase
         $task = $this->task();
         $post = self::formFor($task);
         $post['destinations'][] = ['id' => '', 'kind' => 'unc', 'path' => '\\\\nas\\backup', 'credential' => 'new',
-                                   'cred_user' => 'OFFICE\\backup2', 'cred_password' => 'p@ss', 'speed_limit_kbps' => '0'];
-        $post['destinations'][] = ['id' => '', 'kind' => 'usb', 'path' => 'E:\\Backups\\PC', 'usb_label' => 'BACKUP', 'speed_limit_kbps' => ''];
+                                   'cred_user' => 'OFFICE\\backup2', 'cred_password' => 'p@ss', 'speed_limit_mbps' => '0'];
+        $post['destinations'][] = ['id' => '', 'kind' => 'usb', 'path' => 'E:\\Backups\\PC', 'usb_label' => 'BACKUP', 'speed_limit_mbps' => ''];
         $post['replace_secret'] = [self::CRED => 'new-password', 'unknown-id' => 'ignored'];
         $form = TaskForm::parse($task, $post, $this->credentials());
         $this->assertSame([], $form->errors);
@@ -133,7 +133,7 @@ final class TaskFormTest extends TestCase
         $task = $this->task();
         $post = self::formFor($task);
         $post['destinations'][] = ['id' => '', 'kind' => 'yadisk', 'path' => '/office/pc01/', 'credential' => self::CLOUD, 'part_mb' => '900',
-                                   'speed_limit_kbps' => '0'];
+                                   'speed_limit_mbps' => '0'];
         $form = TaskForm::parse($task, $post, $this->credentials());
         $this->assertSame([], $form->errors);
         $cloud = $form->task()['destinations'][1];
@@ -168,7 +168,7 @@ final class TaskFormTest extends TestCase
         $post['destinations'][0]['worm_days'] = '7';
         $post['destinations'][0]['worm_lock_hours'] = '3';
         $post['destinations'][] = ['id' => '', 'kind' => 'sftp', 'host' => 'backup.example.org', 'path' => 'pc01', 'credential' => '',
-                                   'worm_days' => '7', 'worm_lock_hours' => '3', 'speed_limit_kbps' => '0'];
+                                   'worm_days' => '7', 'worm_lock_hours' => '3', 'speed_limit_mbps' => '0'];
         $form = TaskForm::parse($task, $post, $this->credentials());
         $this->assertNotContains('task_form.error.worm_needs_sets', array_column($form->errors, 'key'));
         $destinations = $form->task()['destinations'];
@@ -196,11 +196,45 @@ final class TaskFormTest extends TestCase
         $this->assertContains('task_form.error.worm_needs_sets', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'));
     }
 
+    public function testSpeedIsTypedInMegabytesAndKeptInKilobytes(): void
+    {
+        $task = $this->task();
+        $task['destinations'][0]['speed_limit_kbps'] = 500;
+        $this->assertSame('0.5', TaskForm::speedMbps(500));
+        $this->assertSame('2', TaskForm::speedMbps(2048));
+        $this->assertSame('0.1', TaskForm::speedMbps(20), 'a small limit does not show as "no limit"');
+        $this->assertSame('0', TaskForm::speedMbps(0));
+
+        // Left as shown, the stored limit stays: 0.5 MB/s would be 512 KB/s.
+        $post = self::formFor($task);
+        $this->assertSame('0.5', $post['destinations'][0]['speed_limit_mbps']);
+        $speed = fn(array $post) => TaskForm::parse($task, $post, $this->credentials())->task()['destinations'][0]['speed_limit_kbps'];
+        $this->assertSame(500, $speed($post));
+
+        $post['destinations'][0]['speed_limit_mbps'] = '1,5';
+        $this->assertSame(1536, $speed($post));
+        $post['destinations'][0]['speed_limit_mbps'] = '0';
+        $this->assertSame(0, $speed($post));
+        $post['destinations'][0]['speed_limit_mbps'] = '';
+        $this->assertSame(0, $speed($post));
+
+        // A page opened before the update still sends KB/s.
+        unset($post['destinations'][0]['speed_limit_mbps']);
+        $post['destinations'][0]['speed_limit_kbps'] = '300';
+        $this->assertSame(300, $speed($post));
+
+        unset($post['destinations'][0]['speed_limit_kbps']);
+        foreach (['-1', 'fast', '10000'] as $bad) {
+            $post['destinations'][0]['speed_limit_mbps'] = $bad;
+            $this->assertContains('task_form.error.speed', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'), $bad);
+        }
+    }
+
     public function testCloudDriveInATemplateNamesNoAccount(): void
     {
         $task = $this->task();
         $post = self::formFor($task);
-        $post['destinations'][] = ['id' => '', 'kind' => 'gdrive', 'path' => 'office', 'credential' => '', 'part_mb' => '0', 'speed_limit_kbps' => '0'];
+        $post['destinations'][] = ['id' => '', 'kind' => 'gdrive', 'path' => 'office', 'credential' => '', 'part_mb' => '0', 'speed_limit_mbps' => '0'];
         $form = TaskForm::parse($task, $post, $this->credentials(), template: true);
         $this->assertSame([], $form->errors);
         $this->assertNull($form->task()['destinations'][1]['credential_id'], 'each machine takes its own connected account');
@@ -293,7 +327,7 @@ final class TaskFormTest extends TestCase
         }
         foreach ($task['destinations'] as $d) {
             $row = ['id' => $d['id'], 'kind' => $d['kind'], 'credential' => (string) $d['credential_id'], 'disconnect_after' => $bool($d['disconnect_after']),
-                    'speed_limit_kbps' => (string) $d['speed_limit_kbps']];
+                    'speed_limit_mbps' => TaskForm::speedMbps((int) $d['speed_limit_kbps'])];
             foreach (['path', 'usb_label', 'host', 'port', 'endpoint', 'bucket', 'region'] as $k) {
                 $row[$k] = (string) $d[$k];
             }

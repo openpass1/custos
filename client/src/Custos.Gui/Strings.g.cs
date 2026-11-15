@@ -200,6 +200,18 @@ static partial class Strings
     /// <summary>Destinations</summary>
     public static string CardDestinations => Get(nameof(CardDestinations));
 
+    /// <summary>Protection</summary>
+    public static string CardProtection => Get(nameof(CardProtection));
+
+    /// <summary>WORM {0} days: the storage locks a backup {1} h after it is written; it cannot be changed or deleted until ...</summary>
+    public static string CardWorm => Get(nameof(CardWorm));
+
+    /// <summary>S3 Object Lock {0} days ({1}): a backup cannot be changed or deleted until then</summary>
+    public static string CardObjectLock => Get(nameof(CardObjectLock));
+
+    /// <summary>{0}: {1}</summary>
+    public static string CardProtectionOf => Get(nameof(CardProtectionOf));
+
     /// <summary>Schedule</summary>
     public static string CardSchedule => Get(nameof(CardSchedule));
 
@@ -515,6 +527,9 @@ static partial class Strings
     /// <summary>The destination folder is kept the same as the sources: only new and changed files are copied. No compressi...</summary>
     public static string TypeMirrorHint => Get(nameof(TypeMirrorHint));
 
+    /// <summary>Not available: «{0}» protects written files from changes, and a mirror replaces them.</summary>
+    public static string MirrorProtectedNote => Get(nameof(MirrorProtectedNote));
+
     /// <summary>Exact: files deleted in the sources are deleted from the mirror too</summary>
     public static string MirrorExact => Get(nameof(MirrorExact));
 
@@ -802,6 +817,9 @@ static partial class Strings
 
     /// <summary>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror ke...</summary>
     public static string RetentionMirrorNote => Get(nameof(RetentionMirrorNote));
+
+    /// <summary>The backups go into one shared folder and are updated there: earlier versions are not kept, so there is not...</summary>
+    public static string RetentionSharedNote => Get(nameof(RetentionSharedNote));
 
     /// <summary>Keep all backups</summary>
     public static string RetentionNone => Get(nameof(RetentionNone));
@@ -1865,7 +1883,7 @@ static partial class Strings
     /// <summary>Speed limit:</summary>
     public static string RemoteSpeed => Get(nameof(RemoteSpeed));
 
-    /// <summary>KB/s (0 — no limit)</summary>
+    /// <summary>MB/s (0 — no limit)</summary>
     public static string RemoteSpeedUnit => Get(nameof(RemoteSpeedUnit));
 
     /// <summary>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not ...</summary>

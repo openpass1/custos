@@ -31,7 +31,7 @@ internal sealed class RemoteSourceDialog : DialogForm
     private readonly TextBox _excludes = Lines(70);
     private readonly CheckBox[] _engines = [.. Engines.Select(e => new CheckBox { Text = DbEngines.Title(e), AutoSize = true, Tag = e })];
     private readonly Label _etcWarning = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Text = Strings.RemoteEtcWarning };
-    private readonly NumericUpDown _speed = new() { Minimum = 0, Maximum = 10_000_000, Width = 110, ThousandsSeparator = true };
+    private readonly SpeedBox _speed = new() { Width = 110 };
     private readonly Label _key = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 6) };
     private readonly Button _createKey = new() { Text = Strings.RemoteCreateKey, AutoSize = true };
     private readonly TextBox _block = new()
@@ -311,7 +311,7 @@ internal sealed class RemoteSourceDialog : DialogForm
         _port.Value = Math.Clamp(source.Port ?? 22, 1, 65535);
         _user.Text = source.User ?? "custos";
         _officeIp.Text = source.OfficeIp ?? string.Empty;
-        _speed.Value = Math.Clamp(source.SpeedLimitKbps ?? 0, 0, (int)_speed.Maximum);
+        _speed.Kbps = source.SpeedLimitKbps ?? 0;
         string preset = source.Preset is { } p && Presets.Contains(p) ? p : RemotePresets.IspmanagerSites;
         _preset.SelectedIndex = Array.IndexOf(Presets, preset);
         ShowSettings(source.Helper ?? HelperSetup.Preset(preset));
@@ -568,7 +568,7 @@ internal sealed class RemoteSourceDialog : DialogForm
             HostKeySha256 = _pinned,
             Preset = PresetOf(settings),
             OfficeIp = string.IsNullOrWhiteSpace(_officeIp.Text) ? null : _officeIp.Text.Trim(),
-            SpeedLimitKbps = _speed.Value > 0 ? (int)_speed.Value : null,
+            SpeedLimitKbps = _speed.Kbps > 0 ? _speed.Kbps : null,
             Helper = settings,
             Databases = DbChoice(settings),
         };

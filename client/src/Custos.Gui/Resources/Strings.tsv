@@ -69,6 +69,10 @@ CardProgress	Progress	Прогресс
 CardProgressLeft	{0} left	осталось {0}
 CardSources	Sources	Источники
 CardDestinations	Destinations	Назначения
+CardProtection	Protection	Защита
+CardWorm	WORM {0} days: the storage locks a backup {1} h after it is written; it cannot be changed or deleted until then	WORM {0} дн.: хранилище блокирует копию через {1} ч после записи, до конца срока её нельзя изменить или удалить
+CardObjectLock	S3 Object Lock {0} days ({1}): a backup cannot be changed or deleted until then	S3 Object Lock {0} дн. ({1}): до конца срока копию нельзя изменить или удалить
+CardProtectionOf	{0}: {1}	{0}: {1}
 CardSchedule	Schedule	Расписание
 CardArchive	Compression	Сжатие
 CardArchiveLevel	{0}, level {1}	{0}, уровень {1}
@@ -178,6 +182,7 @@ TypeDifferentialTitle	Differential	Дифференциальная
 TypeDifferentialHint	The files changed since the last full backup are copied. The backup grows each time, but a restore needs only the full and the last differential backup.	Копируются файлы, изменившиеся с последней полной копии. С каждым разом копия растёт, зато для восстановления нужны только полная и последняя дифференциальная.
 TypeMirrorTitle	Mirror	Зеркало
 TypeMirrorHint	The destination folder is kept the same as the sources: only new and changed files are copied. No compression and no separate folders, the files open as they are.	Папка назначения поддерживается такой же, как источники: копируются только новые и изменённые файлы. Без сжатия и отдельных папок, файлы открываются как есть.
+MirrorProtectedNote	Not available: «{0}» protects written files from changes, and a mirror replaces them.	Недоступно: «{0}» защищает записанные файлы от изменения, а зеркало их заменяет.
 MirrorExact	Exact: files deleted in the sources are deleted from the mirror too	Точное: файлы, удалённые в источниках, удаляются и из зеркала
 MirrorSafe	Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for	Безопасное: заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся
 MirrorSafeDays	days	дней
@@ -278,6 +283,7 @@ ArchiveZip	ZIP (Deflate)	ZIP (Deflate)
 ArchiveSevenZip	7z (LZMA2)	7z (LZMA2)
 PageRetention	Retention	Хранение
 RetentionMirrorNote	A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror keeps replaced and deleted files is set on the «Basic» page.	Зеркало — одна копия, которая обновляется, поэтому удалять здесь нечего. Сколько безопасное зеркало хранит заменённые и удалённые файлы, задаётся на странице «Основное».
+RetentionSharedNote	The backups go into one shared folder and are updated there: earlier versions are not kept, so there is nothing to delete. To keep backups for a while, turn on «{0}» on the «{1}» page or choose an archive on the «{2}» page.	Копии пишутся в одну общую папку и обновляются в ней: прежние версии не хранятся, поэтому удалять нечего. Чтобы хранить копии какое-то время, включите «{0}» на странице «{1}» или выберите архив на странице «{2}».
 RetentionNone	Keep all backups	Хранить все копии
 RetentionCount	Keep the last	Хранить последние
 RetentionCountSuffix	full backups with their chains	полных копий вместе с их цепочками
@@ -647,7 +653,7 @@ RemoteDbChoice	Databases to copy:	Базы в копии:
 RemoteDbChoiceHelp	A ticked database goes into the copy. «All databases» takes every database of the server, new ones too; unticking one switches to «Selected databases». System databases are never dumped; users and rights go to _users.sql. The choice is kept in the task: the block need not be run on the server again.	Отмеченная база попадает в копию. «Все базы» — все базы сервера, и новые тоже; если снять галочку с базы, выбор переключится на «Выбранные базы». Системные базы не выгружаются; пользователи и права попадают в _users.sql. Выбор хранится в задании: блок на сервере после него выполнять заново не нужно.
 RemoteDbListEmpty	The list fills in on «Test connection» at the bottom of the window.	Список заполнится по кнопке «Проверить подключение» внизу окна.
 RemoteSpeed	Speed limit:	Ограничение скорости:
-RemoteSpeedUnit	KB/s (0 — no limit)	КБ/с (0 — без ограничения)
+RemoteSpeedUnit	MB/s (0 — no limit)	МБ/с (0 — без ограничения)
 RemoteSpeedHelp	How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not limited.	С какой скоростью custos-helper читает файлы, чтобы сайты не тормозили. Дампы баз не ограничиваются.
 RemoteKeyHeading	Key and installation	Ключ и установка
 RemoteKey	Key:	Ключ:

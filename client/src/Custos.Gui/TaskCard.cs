@@ -1,3 +1,4 @@
+using Custos.Core.Destinations;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Text;
@@ -97,6 +98,12 @@ internal sealed class TaskCard : UserControl
 
         AddDetail(Strings.CardDestinations, task.Destinations.Count == 0 ? Strings.CardNone
             : string.Join(Environment.NewLine, task.Destinations.Select(d => DescribeDestination(d, snapshot))));
+        if (DescribeProtection(task) is { } protection)
+        {
+            // Retention cannot delete such backups before their time, so it is in sight (section 6.3).
+            AddDetail(Strings.CardProtection, protection, Glyphs.Blue);
+        }
+
         AddDetail(Strings.CardArchive, DescribeArchive(task));
         AddDetail(Strings.CardRetention, TaskDescriber.Retention(task).TrimEnd('.'));
         AddDetail(Strings.CardSchedule, TaskDescriber.ScheduleWithCatchUp(task.Schedule));
@@ -205,6 +212,26 @@ internal sealed class TaskCard : UserControl
         }
 
         return string.Join(", ", parts);
+    }
+
+    /// <summary>WORM and S3 Object Lock of the destinations, a line each (named when there are several); null if none.</summary>
+    internal static string? DescribeProtection(TaskDefinition task)
+    {
+        var lines = new List<string>();
+        foreach (var destination in task.Destinations)
+        {
+            string? text = WormSettings.Of(destination) is { } worm ? Strings.Format(Strings.CardWorm, worm.Days, worm.LockHours)
+                : destination.Kind == DestinationKinds.S3 && destination.ObjectLockDays > 0
+                    ? Strings.Format(Strings.CardObjectLock, destination.ObjectLockDays,
+                        destination.ObjectLockMode == ObjectLockModes.Compliance ? "Compliance" : "Governance")
+                : null;
+            if (text is not null)
+            {
+                lines.Add(task.Destinations.Count > 1 ? Strings.Format(Strings.CardProtectionOf, TaskDescriber.Destination(destination), text) : text);
+            }
+        }
+
+        return lines.Count == 0 ? null : string.Join(Environment.NewLine, lines);
     }
 
     public static string DescribeDestination(TaskDestination destination, AgentSnapshot snapshot)

@@ -155,7 +155,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
                        <?= $pathExample('destination', $kind) ?>>
             </label>
             <label><?= e(t('task_form.speed')) ?>
-                <input type="number" name="<?= e($prefix) ?>[speed_limit_kbps]" value="<?= (int) ($item['speed_limit_kbps'] ?? 0) ?>" min="0" class="short">
+                <input type="number" name="<?= e($prefix) ?>[speed_limit_mbps]" value="<?= e(TaskForm::speedMbps((int) ($item['speed_limit_kbps'] ?? 0))) ?>" min="0" step="0.1" class="short">
             </label>
             <label data-show-if="kind=gdrive|yadisk|dropbox"><?= e(t('task_form.part_mb')) ?>
                 <input type="number" name="<?= e($prefix) ?>[part_mb]" value="<?= (int) ($item['part_mb'] ?? 0) ?>" min="0" max="1000000" class="short">

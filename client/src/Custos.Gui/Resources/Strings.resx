@@ -214,6 +214,18 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="CardDestinations" xml:space="preserve">
     <value>Destinations</value>
   </data>
+  <data name="CardProtection" xml:space="preserve">
+    <value>Protection</value>
+  </data>
+  <data name="CardWorm" xml:space="preserve">
+    <value>WORM {0} days: the storage locks a backup {1} h after it is written; it cannot be changed or deleted until then</value>
+  </data>
+  <data name="CardObjectLock" xml:space="preserve">
+    <value>S3 Object Lock {0} days ({1}): a backup cannot be changed or deleted until then</value>
+  </data>
+  <data name="CardProtectionOf" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
   <data name="CardSchedule" xml:space="preserve">
     <value>Schedule</value>
   </data>
@@ -533,6 +545,9 @@ See the Windows «Application» event log, source CUSTOS.</value>
   <data name="TypeMirrorHint" xml:space="preserve">
     <value>The destination folder is kept the same as the sources: only new and changed files are copied. No compression and no separate folders, the files open as they are.</value>
   </data>
+  <data name="MirrorProtectedNote" xml:space="preserve">
+    <value>Not available: «{0}» protects written files from changes, and a mirror replaces them.</value>
+  </data>
   <data name="MirrorExact" xml:space="preserve">
     <value>Exact: files deleted in the sources are deleted from the mirror too</value>
   </data>
@@ -827,6 +842,9 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="RetentionMirrorNote" xml:space="preserve">
     <value>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror keeps replaced and deleted files is set on the «Basic» page.</value>
+  </data>
+  <data name="RetentionSharedNote" xml:space="preserve">
+    <value>The backups go into one shared folder and are updated there: earlier versions are not kept, so there is nothing to delete. To keep backups for a while, turn on «{0}» on the «{1}» page or choose an archive on the «{2}» page.</value>
   </data>
   <data name="RetentionNone" xml:space="preserve">
     <value>Keep all backups</value>
@@ -1901,7 +1919,7 @@ Update now? The service downloads the 64-bit installer from the official 7-Zip p
     <value>Speed limit:</value>
   </data>
   <data name="RemoteSpeedUnit" xml:space="preserve">
-    <value>KB/s (0 — no limit)</value>
+    <value>MB/s (0 — no limit)</value>
   </data>
   <data name="RemoteSpeedHelp" xml:space="preserve">
     <value>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not limited.</value>

@@ -324,7 +324,7 @@ internal sealed class DestinationDialog : DialogForm
     private readonly CredentialPicker _account;
     private readonly PictureBox _accountHelp;
     private readonly Label _speedLabel = Caption(Strings.DestinationSpeed);
-    private readonly NumericUpDown _speed = new() { Minimum = 0, Maximum = 10_000_000, Increment = 100, Width = 90, Margin = new Padding(0) };
+    private readonly SpeedBox _speed = new() { Width = 90, Margin = new Padding(0) };
     private readonly FlowLayoutPanel _speedRow = new() { AutoSize = true, WrapContents = false };
     private readonly PictureBox _speedHelp;
     private readonly Label _partLabel = Caption(Strings.DestinationPartSize);
@@ -446,7 +446,7 @@ internal sealed class DestinationDialog : DialogForm
         _endpoint.Text = destination.Endpoint ?? string.Empty;
         _bucket.Text = destination.Bucket ?? string.Empty;
         _region.Text = destination.Region ?? string.Empty;
-        _speed.Value = Math.Clamp(destination.SpeedLimitKbps, 0, (int)_speed.Maximum);
+        _speed.Kbps = destination.SpeedLimitKbps;
         _part.Value = Math.Clamp(destination.PartMb, 0, (int)_part.Maximum);
         _lockDays.Value = Math.Clamp(destination.ObjectLockDays, 0, (int)_lockDays.Maximum);
         _lockMode.SelectedIndex = destination.ObjectLockMode == ObjectLockModes.Compliance ? 1 : 0;
@@ -583,7 +583,7 @@ internal sealed class DestinationDialog : DialogForm
             Bucket = s3 ? _bucket.Text.Trim() : null,
             Region = s3 && _region.Text.Trim().Length > 0 ? _region.Text.Trim() : null,
             DisconnectAfter = _original.DisconnectAfter,
-            SpeedLimitKbps = DestinationKinds.CredentialKind(kind) is null ? 0 : (int)_speed.Value,
+            SpeedLimitKbps = DestinationKinds.CredentialKind(kind) is null ? 0 : _speed.Kbps,
             ObjectLockDays = lockDays,
             ObjectLockMode = lockDays > 0 ? LockModes[Math.Max(0, _lockMode.SelectedIndex)] : null,
             WormDays = wormDays,

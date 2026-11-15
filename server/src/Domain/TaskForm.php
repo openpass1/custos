@@ -28,6 +28,10 @@ final class TaskForm
     public const MAX_WORM_LOCK_HOURS = 168;
     /** The delay a new WORM destination starts with, in hours. */
     public const DEFAULT_WORM_LOCK_HOURS = 3;
+
+    /** The highest speed limit a destination takes, in KB/s (about 9.5 GB/s). */
+    public const MAX_SPEED_KBPS = 10_000_000;
+
     public const DESTINATION_KINDS = ['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav', 'gdrive', 'yadisk', 'dropbox'];
     /** Cloud drives (client stage 4b): their accounts are connected on the machine only, in the browser (7.5). */
     public const CLOUD_KINDS = ['gdrive', 'yadisk', 'dropbox'];
@@ -332,7 +336,7 @@ final class TaskForm
                 'bucket' => null,
                 'region' => null,
                 'disconnect_after' => self::bool($row, 'disconnect_after'),
-                'speed_limit_kbps' => $this->int($row, 'speed_limit_kbps', 0, 10_000_000, 'task_form.field.speed', $n),
+                'speed_limit_kbps' => $this->speed($row, (int) ($item['speed_limit_kbps'] ?? 0), $n),
             ]);
             switch ($kind) {
                 case 'local':
@@ -675,6 +679,43 @@ final class TaskForm
             return max($min, min($max, (int) $raw));
         }
         return (int) $raw;
+    }
+
+    /**
+     * The speed limit as the editor shows it: MB/s to a tenth (1 MB = 1024 KB), "0" for none; a limit under a tenth
+     * shows as 0.1, not as "no limit".
+     */
+    public static function speedMbps(int $kbps): string
+    {
+        if ($kbps <= 0) {
+            return '0';
+        }
+        $text = number_format(max(0.1, round($kbps / 1024, 1)), 1, '.', '');
+        return str_ends_with($text, '.0') ? substr($text, 0, -2) : $text;
+    }
+
+    /**
+     * The speed limit typed in MB/s, stored in KB/s as the client keeps it. A value left as it was shown keeps the
+     * stored one, so that 500 KB/s does not turn into 512. A form opened before the update still sends KB/s.
+     */
+    private function speed(array $row, int $was, int $n): int
+    {
+        if (!array_key_exists('speed_limit_mbps', $row)) {
+            return $this->int($row, 'speed_limit_kbps', 0, self::MAX_SPEED_KBPS, 'task_form.field.speed', $n);
+        }
+        $raw = str_replace(',', '.', trim(self::str($row, 'speed_limit_mbps')));
+        if ($raw === '') {
+            return 0;
+        }
+        $max = floor(self::MAX_SPEED_KBPS / 102.4) / 10;
+        if (!preg_match('/^\d{1,6}(\.\d{1,3})?$/', $raw) || (float) $raw > $max) {
+            $this->error('task_form.error.speed', ['field' => ['key' => 'task_form.field.speed', 'params' => ['n' => $n]], 'max' => $max]);
+            return $was;
+        }
+        if ($was > 0 && abs((float) $raw - (float) self::speedMbps($was)) < 0.0001) {
+            return $was;
+        }
+        return (int) min(self::MAX_SPEED_KBPS, round((float) $raw * 1024));
     }
 
     private function monthDay(string $raw): ?int
