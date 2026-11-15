@@ -1,0 +1,10 @@
+﻿Privacy
+
+CUSTOS has no telemetry and sends nothing to its authors. Your files go only where your tasks say: folders, servers and cloud drives that you choose, and the monitoring site that you connect the program to.
+
+One thing is on by default: once a day the CUSTOS service asks GitHub (api.github.com) whether a new version of CUSTOS is out. The request carries only the name of the program; GitHub sees the IP address of this computer. A new version is installed only when an administrator presses Update.
+
+To turn the check off: Settings > Updates > clear "Check GitHub for new versions once a day". A computer connected to a monitoring site does not ask GitHub at all.
+
+The full privacy policy:
+https://github.com/openpass1/custos/blob/main/PRIVACY.md

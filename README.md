@@ -87,7 +87,17 @@ shows every computer in one place, warns when something goes wrong and lets you 
 
 Every release has `SHA256SUMS.txt`. On Windows, compare it with the output of
 `certutil -hashfile CUSTOS-Setup-<version>.exe SHA256`; on Linux run `sha256sum -c SHA256SUMS.txt` in the folder with
-the files. The Windows files are not code-signed yet; signing is planned.
+the files. The Windows files are not code-signed yet: the project has applied for free code signing by SignPath
+Foundation, see the [code signing policy](CODE_SIGNING.md).
+
+## Code signing policy and privacy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/) (applied for, releases up to 1.0.0 are not signed). What is signed, how
+and by whom: [CODE_SIGNING.md](CODE_SIGNING.md).
+
+CUSTOS has no telemetry and sends nothing to its authors. The only connection that you do not set up yourself is a
+daily question to GitHub about a new version, and it can be turned off: [PRIVACY.md](PRIVACY.md).
 
 ## Feedback and security
 

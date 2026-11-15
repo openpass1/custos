@@ -224,6 +224,7 @@ jobs:
           **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** в разделе «Обновления» сайт предложит скачать эту версию с GitHub одной кнопкой, или загрузите \`custos-$VERSION.zip\` туда как есть, не распаковывая. **Без сайта:** программа раз в день проверяет GitHub и предлагает «Обновить» в своём окне. **Облачные диски:** Google Диск работает сразу, для Яндекса Диска и Dropbox нужно своё бесплатное приложение, [по шагам](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.ru.md#приложения-custos-у-сервисов).
 
           Checksums / контрольные суммы: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet. / Файлы для Windows пока без цифровой подписи.
+          [Code signing policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/CODE_SIGNING.md) · [Privacy policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/PRIVACY.md)
           EOF
           else
             title="CUSTOS Monitor $VERSION"
@@ -233,7 +234,7 @@ jobs:
 
           **Новый сайт на Debian или Ubuntu:** всё ставит \`install.sh\`. **На CloudPanel:** [server/INSTALL.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.md). **Обновление:** сайт сам сообщит о новой версии в колокольчике, нажмите **Обновить сайт до $VERSION** в разделе «Обновления». Или по SSH: \`php bin/update.php\` в папке \`server\` (без доступа к GitHub: \`--package=custos-server-$VERSION.zip\`), для сайтов, поставленных \`install.sh\`, — \`bash install.sh --update\`. При ошибке сайт сам вернётся на прежнюю версию. Сайты старше 0.4.11: распаковать архив поверх (старую папку \`server\` не удалять) и выполнить \`bin/migrate.php\`.
 
-          Checksums / контрольные суммы: \`SHA256SUMS.txt\`.
+          Checksums / контрольные суммы: \`SHA256SUMS.txt\`. [Privacy policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/PRIVACY.md)
           EOF
           fi
           # The list of changes starts at the previous release of the same part (tags exist for published ones only).
