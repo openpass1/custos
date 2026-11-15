@@ -558,9 +558,15 @@ public sealed partial class BackupEngine
                     target.SetName = SetNaming.MakeUnique(SetNaming.TakenNames(store, target.Root), run.SetName);
                     target.SetFolder = store.Combine(target.Root, target.SetName);
 
-                    // Where a folder cannot be renamed (S3), the set is written in place: it counts when its
-                    // manifest, written last, is there.
-                    target.WriteFolder = store.RenamesFolders ? target.SetFolder + SetCatalog.PartialSuffix : target.SetFolder;
+                    // Where a folder cannot be renamed (S3, a NAS with WORM), the set is written in place: it counts
+                    // when its manifest, written last, is there.
+                    bool renames = store.CanRenameFolders(target.Root);
+                    if (store.RenamesFolders && !renames)
+                    {
+                        _log.Write(RunLogLevel.Info, Messages.Format(Messages.FolderRenameRefused, target.Label));
+                    }
+
+                    target.WriteFolder = renames ? target.SetFolder + SetCatalog.PartialSuffix : target.SetFolder;
                     target.OwnsWriteFolder = true;
                     store.CreateFolder(target.WriteFolder);
                 }

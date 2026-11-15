@@ -142,6 +142,12 @@
   <data name="ManifestReplaceRefused" xml:space="preserve">
     <value>{0}: {1} of the last run may not be replaced ({2}). A shared folder rewrites it and every changed file at each run; storage that does not let written files change (WORM or protection from deletion on a NAS) needs «A separate folder for each backup»: then files are only added, nothing is replaced.</value>
   </data>
+  <data name="FolderRenameRefused" xml:space="preserve">
+    <value>{0}: a folder with files in it cannot be renamed here (a NAS with WORM does that), so the set is written straight under its own name. It is complete once custos-set.json, written last, is in it.</value>
+  </data>
+  <data name="StoreNoFolderRename" xml:space="preserve">
+    <value>A folder with files in it cannot be renamed here (a NAS with WORM does that). Backups in separate folders are written straight under their own names; a backup is complete once custos-set.json is in its folder.</value>
+  </data>
   <data name="SetWritten" xml:space="preserve">
     <value>Set «{0}» written to {1}: {2} files, {3}.</value>
   </data>

@@ -374,6 +374,57 @@ public sealed class BackupEngineTests : IDisposable
     }
 
     [Fact]
+    public void Where_a_folder_cannot_be_renamed_a_set_is_written_under_its_own_name()
+    {
+        // A NAS with WORM writes, renames and deletes files, but refuses to rename a folder that holds files.
+        _platform.FolderRenames = false;
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Incremental, destination);
+        task.Verify.EveryRuns = 1;
+        var folders = new List<string>();
+        using (var watcher = new FileSystemWatcher(_temp.Path) { IncludeSubdirectories = true, EnableRaisingEvents = true })
+        {
+            watcher.Created += (_, e) => { lock (folders) { folders.Add(e.FullPath); } };
+            var first = Run(task, Start, "run-1");
+
+            Assert.Equal(RunStatuses.Success, first.Status);
+            Assert.Equal(BackupTypes.Full, first.BackupType);
+            Assert.Equal("alpha", File.ReadAllText(Path.Combine(destination, first.SetName!, "Data", "a.txt")));
+            Assert.Contains(_log.Lines, l => l.Message == Messages.Format(Messages.FolderRenameRefused, destination));
+        }
+
+        Assert.Single(Directory.GetDirectories(destination));
+        lock (folders)
+        {
+            Assert.DoesNotContain(folders, f => f.EndsWith(SetCatalog.PartialSuffix, StringComparison.Ordinal));
+        }
+
+        // The next run finds that set by its manifest and builds on it.
+        _temp.WriteFile("Data/a.txt", "alpha 2", Modified.AddHours(1));
+        var second = Run(task, Start.AddDays(1), "run-2");
+
+        Assert.Equal(RunStatuses.Success, second.Status);
+        Assert.Equal(BackupTypes.Incremental, second.BackupType);
+        Assert.Equal("run-1", ReadManifest(Path.Combine(destination, second.SetName!)).Header.ParentFullRunId);
+    }
+
+    [Fact]
+    public void A_set_written_under_its_own_name_is_removed_when_the_run_fails()
+    {
+        _platform.FolderRenames = false;
+        string destination = _temp.Combine("Backup");
+        var task = NewTask(BackupTypes.Full, destination);
+        task.Sources.Add(new TaskSource { Path = _temp.Combine("Missing") });
+
+        var result = Run(task, Start);
+
+        // The files of the source that is there were written, but a set without a whole source is not a backup.
+        Assert.Equal(RunStatuses.Error, result.Status);
+        Assert.Contains(_log.Lines, l => l.Level == RunLogLevel.Detail && l.Message.Contains("a.txt", StringComparison.Ordinal));
+        Assert.Empty(Directory.GetDirectories(destination));
+    }
+
+    [Fact]
     public void A_full_copy_into_a_shared_folder_leaves_alone_the_files_already_there()
     {
         // What another program (Cobian) left in the folder: the same version of a.txt, read-only so that any attempt

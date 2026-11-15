@@ -134,6 +134,12 @@ static partial class Messages
     /// <summary>{0}: {1} of the last run may not be replaced ({2}). A shared folder rewrites it and every changed file at e...</summary>
     public static string ManifestReplaceRefused => Get(nameof(ManifestReplaceRefused));
 
+    /// <summary>{0}: a folder with files in it cannot be renamed here (a NAS with WORM does that), so the set is written st...</summary>
+    public static string FolderRenameRefused => Get(nameof(FolderRenameRefused));
+
+    /// <summary>A folder with files in it cannot be renamed here (a NAS with WORM does that). Backups in separate folders a...</summary>
+    public static string StoreNoFolderRename => Get(nameof(StoreNoFolderRename));
+
     /// <summary>Set «{0}» written to {1}: {2} files, {3}.</summary>
     public static string SetWritten => Get(nameof(SetWritten));
 

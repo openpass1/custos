@@ -44,6 +44,14 @@ public abstract class DestinationStore : IDisposable
     /// complete. Where this is false (S3) a set is complete when its manifest, written last, is there.</summary>
     public virtual bool RenamesFolders => true;
 
+    /// <summary>
+    /// Whether a folder with files in it can be renamed in <paramref name="folder"/> now. <see cref="RenamesFolders"/>
+    /// says whether this kind of store can do it at all; a share may still refuse (a NAS with WORM lets files be
+    /// written, renamed and deleted, but not a folder that holds files), and then a set is written as in S3.
+    /// </summary>
+    /// <exception cref="IOException">Nothing can be written there.</exception>
+    public virtual bool CanRenameFolders(string folder) => RenamesFolders;
+
     /// <summary>Folders exist on their own (not in S3, where a folder is only a part of the names).</summary>
     public virtual bool HasFolders => true;
 

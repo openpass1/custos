@@ -19,6 +19,24 @@ public sealed class DestinationStoreTests : IDisposable
 
     public void Dispose() => _temp.Dispose();
 
+    [Fact]
+    public void A_folder_tells_whether_it_renames_folders_and_keeps_nothing_of_the_trial()
+    {
+        string root = _temp.Combine("Share");
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Path.Combine(root, "kept.txt"), "kept");
+        using var store = new LocalStore(root, DestinationKinds.Unc, _platform);
+
+        Assert.True(store.CanRenameFolders(root));
+        Assert.Empty(store.Describe());
+        Assert.Equal(["kept.txt"], Directory.GetFileSystemEntries(root).Select(Path.GetFileName));
+
+        // Where the answer is no (a NAS with WORM), «Проверить доступ» says what that means for the sets.
+        store.KnownFolderRenames = false;
+        Assert.False(store.CanRenameFolders(root));
+        Assert.Equal([Messages.StoreNoFolderRename], store.Describe());
+    }
+
     [Theory]
     [MemberData(nameof(TestDestinations.All), MemberType = typeof(TestDestinations))]
     public void A_file_appears_under_its_name_only_when_committed(string kind)
