@@ -168,6 +168,11 @@
 
 {4}</value>
   </data>
+  <data name="ObjectLockRetentionTooShort" xml:space="preserve">
+    <value>{0}: S3 Object Lock for {1} days does not let a backup be deleted sooner than {2} after it is uploaded, and this retention would delete backups after {3} already. They would stay in the bucket until their protection is over anyway, taking space, and there would be more backups than set.
+
+{4}</value>
+  </data>
   <data name="WormRetentionFixCount" xml:space="preserve">
     <value>Keep at least {0} full backups, or choose retention by age.</value>
   </data>

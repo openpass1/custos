@@ -548,6 +548,12 @@ See the Windows «Application» event log, source CUSTOS.</value>
   <data name="MirrorProtectedNote" xml:space="preserve">
     <value>Not available: «{0}» protects written files from changes, and a mirror replaces them.</value>
   </data>
+  <data name="MirrorCloudNote" xml:space="preserve">
+    <value>Not available: «{0}» is a cloud drive, and a mirror replaces and deletes single files.</value>
+  </data>
+  <data name="MirrorRemoteNote" xml:space="preserve">
+    <value>Not available: a Linux server is copied in sets only: full, incremental or differential.</value>
+  </data>
   <data name="MirrorExact" xml:space="preserve">
     <value>Exact: files deleted in the sources are deleted from the mirror too</value>
   </data>
@@ -734,6 +740,9 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="SeparateForcedNote" xml:space="preserve">
     <value>Always on here: «{0}» protects written files from deletion, and in a shared folder files are replaced.</value>
+  </data>
+  <data name="SeparateRemoteNote" xml:space="preserve">
+    <value>Always on here: backups of a Linux server always go into a folder each.</value>
   </data>
   <data name="NameTemplate" xml:space="preserve">
     <value>Folder name:</value>
@@ -1696,6 +1705,24 @@ The backups they have made stay where they are.</value>
   </data>
   <data name="PreserveAclHelp" xml:space="preserve">
     <value>For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.</value>
+  </data>
+  <data name="AdvancedVssRemote" xml:space="preserve">
+    <value>Not used: a Linux server is read by custos-helper, not from a Windows disk.</value>
+  </data>
+  <data name="AdvancedVssNoLocal" xml:space="preserve">
+    <value>Not used: no source is a folder or file on a local disk, and a shadow copy is made of local disks only.</value>
+  </data>
+  <data name="AdvancedRetriesRemote" xml:space="preserve">
+    <value>Not used for a Linux server.</value>
+  </data>
+  <data name="AdvancedAclArchive" xml:space="preserve">
+    <value>Not used: ZIP and 7z archives do not keep NTFS permissions.</value>
+  </data>
+  <data name="AdvancedAclRemote" xml:space="preserve">
+    <value>Not used: files of a Linux server have no NTFS permissions.</value>
+  </data>
+  <data name="AdvancedAclNoNtfs" xml:space="preserve">
+    <value>Not used: servers and cloud drives do not keep NTFS permissions; a folder, a network folder or a USB disk does.</value>
   </data>
   <data name="SevenZipCheckButton" xml:space="preserve">
     <value>Check for a 7-Zip update</value>

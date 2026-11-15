@@ -93,6 +93,7 @@ internal sealed class BasicPage : EditorPage
         };
         _name.TextChanged += (_, _) => Context.SetShape(taskName: _name.Text.Trim());
         Context.ShapeChanged += (_, _) => ShowMirrorLocked();
+        Context.RemoteChanged += (_, _) => ShowMirrorLocked();
         _forceEvery.CheckedChanged += (_, _) =>
         {
             _forceEveryRuns.Enabled = _forceEvery.Checked;
@@ -160,11 +161,12 @@ internal sealed class BasicPage : EditorPage
             return Strings.ErrorNameRequired;
         }
 
-        // A mirror replaces files, and a destination that protects them does not let it (section 6.3). The check is
-        // here and not only on the destinations page, so that the type can be changed at once.
-        if (_mirror.Checked && Context.Protecting is { } protecting)
+        // A mirror replaces files one by one: not where they are protected, not on a cloud drive, not from a Linux
+        // server (sections 6.3, remote pull 4.1). The check is here and not only where the cause is, so that the type
+        // can be changed at once.
+        if (_mirror.Checked && MirrorProblem() is { } problem)
         {
-            return Custos.Core.Backup.BackupEngine.ProtectionNeedsSets(protecting, TaskDescriber.Destination(protecting));
+            return problem;
         }
 
         task.Name = name;
@@ -208,14 +210,24 @@ internal sealed class BasicPage : EditorPage
         ShowMirrorLocked();
     }
 
-    /// <summary>A destination that protects its files takes no mirror: the choice is off, unless a task saved before
-    /// is a mirror already; then it stays on, so that it can be seen, and saving says what to change.</summary>
+    /// <summary>Why the task cannot be a mirror, as saving says it; null if it can.</summary>
+    private string? MirrorProblem() =>
+        Context.HasRemoteSource ? Custos.Core.Messages.RemoteNoMirror
+        : Context.Protecting is { } protecting ? Custos.Core.Backup.BackupEngine.ProtectionNeedsSets(protecting, TaskDescriber.Destination(protecting))
+        : Context.CloudDrive is { } cloud ? Custos.Core.Messages.Format(Custos.Core.Messages.CloudNoMirror, TaskDescriber.Destination(cloud))
+        : null;
+
+    /// <summary>Where a mirror cannot be made, the choice is off with the reason, unless a task saved before is a
+    /// mirror already; then it stays on, so that it can be seen, and saving says what to change.</summary>
     private void ShowMirrorLocked()
     {
-        var protecting = Context.Protecting;
-        _mirror.Enabled = protecting is null || _mirror.Checked;
-        _mirrorLocked.Visible = protecting is not null;
-        _mirrorLocked.Text = protecting is null ? string.Empty : Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(protecting));
+        string? reason = Context.HasRemoteSource ? Strings.MirrorRemoteNote
+            : Context.Protecting is { } protecting ? Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(protecting))
+            : Context.CloudDrive is { } cloud ? Strings.Format(Strings.MirrorCloudNote, TaskDescriber.Destination(cloud))
+            : null;
+        _mirror.Enabled = reason is null || _mirror.Checked;
+        _mirrorLocked.Visible = reason is not null;
+        _mirrorLocked.Text = reason ?? string.Empty;
     }
 }
 
@@ -396,6 +408,8 @@ internal sealed class SourcesPage : EditorPage
         }
 
         Context.HasRemoteSource = remote;
+        Context.Reads = (_sources.Count > 0,
+            _sources.Any(s => s.Kind is SourceKinds.Folder or SourceKinds.File && !s.Path.StartsWith(@"\\", StringComparison.Ordinal)));
     }
 
     private void AddLinuxServer()
@@ -708,6 +722,7 @@ internal sealed class DestinationsPage : EditorPage
         _separate.CheckedChanged += (_, _) => UpdateLayout();
         _template.TextChanged += (_, _) => ShowExample();
         Context.ShapeChanged += (_, _) => UpdateLayout();
+        Context.RemoteChanged += (_, _) => UpdateLayout();
         Context.CredentialsChanged += (_, _) => Fill();
     }
 
@@ -835,6 +850,8 @@ internal sealed class DestinationsPage : EditorPage
             : null;
         Context.WormDays = _destinations.Select(d => WormSettings.Of(d)?.Days ?? 0).DefaultIfEmpty(0).Max();
         Context.Protecting = _destinations.FirstOrDefault(d => d.ProtectsFiles);
+        Context.CloudDrive = _destinations.FirstOrDefault(d => DestinationKinds.IsCloudDrive(d.Kind));
+        Context.KeepsNtfs = _destinations.Count == 0 || _destinations.Any(d => DestinationKinds.IsFileSystem(d.Kind));
         ShowCloudNote();
         UpdateLayout();
         UpdateButtons();
@@ -856,15 +873,20 @@ internal sealed class DestinationsPage : EditorPage
         // A destination that protects its files takes only sets that are never overwritten (section 6.3). Archives
         // would do without a folder each, but the box stays on and grey with them too, so that it does not change
         // with the archive format.
+        // A Linux server always makes a set of its own (CUSTOS-remote-pull.md 4.1), whatever the box says.
         var protects = mirror ? null : _destinations.FirstOrDefault(d => d.ProtectsFiles);
-        if (protects is not null)
+        string? forced = mirror ? null
+            : Context.HasRemoteSource ? Strings.SeparateRemoteNote
+            : protects is not null ? Strings.Format(Strings.SeparateForcedNote, TaskDescriber.Destination(protects))
+            : null;
+        if (forced is not null)
         {
             _separate.Checked = true;
         }
 
-        _separate.Enabled = !mirror && protects is null;
-        _separateForced.Visible = protects is not null;
-        _separateForced.Text = protects is null ? string.Empty : Strings.Format(Strings.SeparateForcedNote, TaskDescriber.Destination(protects));
+        _separate.Enabled = !mirror && forced is null;
+        _separateForced.Visible = forced is not null;
+        _separateForced.Text = forced ?? string.Empty;
         _template.Enabled = UsesTemplate;
         ShowExample();
         Context.SeparateFolders = _separate.Checked;
@@ -1551,6 +1573,9 @@ internal sealed class EventsPage : EditorPage
         AddHeading(Strings.AfterHeading);
         AddWide(_after);
         AddNote(Strings.AfterNote);
+
+        // Without events before the backup there is nothing whose failure could stop it.
+        _pre.Changed += (_, _) => _abortOnPre.Enabled = _pre.Count > 0;
     }
 
     public override void LoadFrom(TaskDefinition task)
@@ -1559,6 +1584,7 @@ internal sealed class EventsPage : EditorPage
         _pre.Load(events.Pre);
         _post.Load(events.Post);
         _abortOnPre.Checked = events.AbortOnPreFailure;
+        _abortOnPre.Enabled = _pre.Count > 0;
         int index = Array.IndexOf(AfterValues, events.After);
         _unknownAfter = events.After;
         _after.SelectedIndex = Math.Max(0, index);
@@ -1642,6 +1668,11 @@ internal sealed class EventsPage : EditorPage
 
         public List<TaskEvent> Items => [.. _events];
 
+        public int Count => _events.Count;
+
+        /// <summary>Raised when an event was added, changed, moved or removed.</summary>
+        public event EventHandler? Changed;
+
         public void Load(List<TaskEvent> events)
         {
             _events.Clear();
@@ -1668,6 +1699,7 @@ internal sealed class EventsPage : EditorPage
             }
 
             UpdateButtons();
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void UpdateButtons()
@@ -1742,6 +1774,9 @@ internal sealed class AdvancedPage : EditorPage
     private readonly CheckBox _acl = new() { Text = Strings.PreserveAcl, AutoSize = true };
     private readonly ComboBox _logLevel = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly NumericUpDown _priority = new() { Minimum = -100, Maximum = 100, Value = 0, Width = 70 };
+    private readonly Label _vssNote;
+    private readonly Label _retriesNote;
+    private readonly Label _aclNote;
 
     public AdvancedPage(EditorContext context)
         : base(context, Strings.PageAdvanced, Glyph.Sliders)
@@ -1751,15 +1786,51 @@ internal sealed class AdvancedPage : EditorPage
 
         AddHeading(Strings.EditorVss);
         AddWide(_vss, Strings.VssHelp);
+        _vssNote = AddNote(string.Empty, 18);
         AddWide(_vssFailure);
         AddHeading(Strings.EditorReading);
         AddRow(Strings.ReadRetries, _retries, Strings.ReadRetriesHelp);
+        _retriesNote = AddNote(Strings.AdvancedRetriesRemote, 18);
         AddWide(_acl, Strings.PreserveAclHelp);
+        _aclNote = AddNote(string.Empty, 18);
         AddHeading(Strings.EditorLogAndQueue);
         AddRow(Strings.LogLevel, _logLevel);
         AddRow(Strings.Priority, _priority, Strings.PriorityHelp);
 
-        _vss.CheckedChanged += (_, _) => _vssFailure.Enabled = _vss.Checked;
+        _vss.CheckedChanged += (_, _) => UpdateEnabled();
+        Context.ShapeChanged += (_, _) => UpdateEnabled();
+        Context.RemoteChanged += (_, _) => UpdateEnabled();
+    }
+
+    public override void Shown() => UpdateEnabled();
+
+    /// <summary>
+    /// What does nothing for this task is off, with the reason; the values stay as they are for when that changes.
+    /// A shadow copy is made of local disks only (section 6.4); a Linux server is read by custos-helper; NTFS
+    /// permissions go only into plain copies on a folder, a network folder or a USB disk (section 6.8).
+    /// </summary>
+    private void UpdateEnabled()
+    {
+        bool remote = Context.HasRemoteSource;
+        var reads = Context.Reads;
+        string? vss = remote ? Strings.AdvancedVssRemote
+            : (reads.Any || Context.DbServerCount > 0) && !reads.Local ? Strings.AdvancedVssNoLocal
+            : null;
+        _vss.Enabled = vss is null;
+        _vssNote.Text = vss ?? string.Empty;
+        _vssNote.Visible = vss is not null;
+        _vssFailure.Enabled = _vss.Checked && vss is null;
+
+        _retries.Enabled = !remote;
+        _retriesNote.Visible = remote;
+
+        string? acl = remote ? Strings.AdvancedAclRemote
+            : Context.ArchiveFormat != ArchiveFormats.None ? Strings.AdvancedAclArchive
+            : Context.KeepsNtfs ? null
+            : Strings.AdvancedAclNoNtfs;
+        _acl.Enabled = acl is null;
+        _aclNote.Text = acl ?? string.Empty;
+        _aclNote.Visible = acl is not null;
     }
 
     public override void LoadFrom(TaskDefinition task)
@@ -1767,12 +1838,12 @@ internal sealed class AdvancedPage : EditorPage
         _vss.Checked = task.Vss.Enabled;
         _vssAbort.Checked = task.Vss.OnFailure != VssFailureActions.Continue;
         _vssContinue.Checked = task.Vss.OnFailure == VssFailureActions.Continue;
-        _vssFailure.Enabled = _vss.Checked;
         _retries.Value = Math.Clamp(task.Copy.ReadRetries, 0, 5);
         _acl.Checked = task.Copy.PreserveAcl;
         int level = Array.IndexOf(Levels, task.LogLevel);
         _logLevel.SelectedIndex = level < 0 ? 0 : level;
         _priority.Value = Math.Clamp(task.Priority, -100, 100);
+        UpdateEnabled();
     }
 
     public override string? SaveTo(TaskDefinition task)

@@ -196,6 +196,23 @@ final class TaskFormTest extends TestCase
         $this->assertContains('task_form.error.worm_needs_sets', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'));
     }
 
+    public function testRetentionShorterThanWormIsNotSaved(): void
+    {
+        $task = $this->task();
+        $task['layout']['separate_folders'] = true;
+        $task['backup_type'] = 'full';
+        $task['schedule'] = array_replace($task['schedule'], ['type' => 'daily', 'times' => ['21:00'], 'days_of_week' => [1, 2, 3, 4, 5, 6, 7]]);
+        $task['retention'] = array_replace($task['retention'], ['mode' => 'count', 'keep_full' => 3]);
+        $post = self::formFor($task);
+        $post['destinations'][0]['worm_days'] = '7';
+        $post['destinations'][0]['worm_lock_hours'] = '3';
+        $keys = fn(array $post) => array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key');
+        $this->assertContains('task_form.error.worm_retention', $keys($post));
+
+        $post['retention']['keep_full'] = '8';
+        $this->assertNotContains('task_form.error.worm_retention', $keys($post));
+    }
+
     public function testSpeedIsTypedInMegabytesAndKeptInKilobytes(): void
     {
         $task = $this->task();

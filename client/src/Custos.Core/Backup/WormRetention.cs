@@ -5,9 +5,10 @@ using Custos.Core.Text;
 namespace Custos.Core.Backup;
 
 /// <summary>
-/// Whether the retention of a task fits the WORM of its destinations (section 6.6). A rule that deletes backups
-/// before the storage lets them go does not delete them: they stay until their protection is over, and the
-/// destination holds more backups than the rule says. The editor does not save such a task and tells what to change.
+/// Whether the retention of a task fits the protection from deletion of its destinations: WORM of a NAS, S3 Object
+/// Lock (section 6.6). A rule that deletes backups before the storage lets them go does not delete them: they stay
+/// until their protection is over, and the destination holds more backups than the rule says. The editor and the site
+/// do not save such a task and tell what to change.
 /// </summary>
 /// <remarks>
 /// The times come from the schedule, as an average; a task run by hand only has no such time, and only the rules
@@ -22,7 +23,7 @@ public static class WormRetention
 
     private static readonly TimeSpan Week = TimeSpan.FromDays(7);
 
-    /// <summary>What is wrong, with what to change, in words; null if the retention fits (or the task has no WORM).</summary>
+    /// <summary>What is wrong, with what to change, in words; null if the retention fits (or nothing is protected).</summary>
     public static string? Problem(TaskDefinition task)
     {
         ArgumentNullException.ThrowIfNull(task);
@@ -31,17 +32,16 @@ public static class WormRetention
             return null;
         }
 
-        var (destination, worm) = task.Destinations
-            .Select(d => (Destination: d, Worm: WormSettings.Of(d)))
-            .Where(p => p.Worm is not null)
-            .OrderByDescending(p => p.Worm!.Protection)
+        var (destination, protection) = task.Destinations
+            .Select(d => (Destination: d, Protection: Protection(d)))
+            .Where(p => p.Protection > TimeSpan.Zero)
+            .OrderByDescending(p => p.Protection)
             .FirstOrDefault();
-        if (worm is null)
+        if (destination is null)
         {
             return null;
         }
 
-        var protection = worm.Protection;
         var interval = Interval(task.Schedule);
         TimeSpan youngest;
         string fix;
@@ -97,8 +97,22 @@ public static class WormRetention
             return null;
         }
 
-        return Messages.Format(Messages.WormRetentionTooShort, TaskDescriber.Destination(destination), worm.Days,
-            Duration(protection), Duration(youngest), fix);
+        return WormSettings.Of(destination) is { } worm
+            ? Messages.Format(Messages.WormRetentionTooShort, TaskDescriber.Destination(destination), worm.Days, Duration(protection), Duration(youngest), fix)
+            : Messages.Format(Messages.ObjectLockRetentionTooShort, TaskDescriber.Destination(destination), destination.ObjectLockDays,
+                Duration(protection), Duration(youngest), fix);
+    }
+
+    /// <summary>
+    /// How long after it is written a backup cannot be deleted there: WORM counts its lock delay and a margin
+    /// (section 6.3), S3 Object Lock its days from the upload (section 6.3, 4b); zero if nothing protects it.
+    /// </summary>
+    public static TimeSpan Protection(TaskDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return WormSettings.Of(destination) is { } worm ? worm.Protection
+            : destination.Kind == DestinationKinds.S3 && destination.ObjectLockDays > 0 ? TimeSpan.FromDays(destination.ObjectLockDays)
+            : TimeSpan.Zero;
     }
 
     /// <summary>The average time between runs of the schedule; null for a task run by hand.</summary>

@@ -168,6 +168,11 @@
 
 {4}</value>
   </data>
+  <data name="ObjectLockRetentionTooShort" xml:space="preserve">
+    <value>{0}: S3 Object Lock на {1} дн. не даёт удалить копию раньше чем через {2} после загрузки, а это хранение удаляло бы копии уже через {3}. Они всё равно оставались бы в бакете до конца защиты и занимали место, и копий было бы больше, чем задано.
+
+{4}</value>
+  </data>
   <data name="WormRetentionFixCount" xml:space="preserve">
     <value>Храните не меньше {0} полных копий или выберите хранение по возрасту.</value>
   </data>

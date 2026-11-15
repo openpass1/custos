@@ -158,6 +158,9 @@ static partial class Messages
     /// <summary>{0}: WORM for {1} days does not let a backup be deleted sooner than {2} after it is written, and this reten...</summary>
     public static string WormRetentionTooShort => Get(nameof(WormRetentionTooShort));
 
+    /// <summary>{0}: S3 Object Lock for {1} days does not let a backup be deleted sooner than {2} after it is uploaded, and...</summary>
+    public static string ObjectLockRetentionTooShort => Get(nameof(ObjectLockRetentionTooShort));
+
     /// <summary>Keep at least {0} full backups, or choose retention by age.</summary>
     public static string WormRetentionFixCount => Get(nameof(WormRetentionFixCount));
 

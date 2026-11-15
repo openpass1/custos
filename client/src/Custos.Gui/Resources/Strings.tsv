@@ -183,6 +183,8 @@ TypeDifferentialHint	The files changed since the last full backup are copied. Th
 TypeMirrorTitle	Mirror	Зеркало
 TypeMirrorHint	The destination folder is kept the same as the sources: only new and changed files are copied. No compression and no separate folders, the files open as they are.	Папка назначения поддерживается такой же, как источники: копируются только новые и изменённые файлы. Без сжатия и отдельных папок, файлы открываются как есть.
 MirrorProtectedNote	Not available: «{0}» protects written files from changes, and a mirror replaces them.	Недоступно: «{0}» защищает записанные файлы от изменения, а зеркало их заменяет.
+MirrorCloudNote	Not available: «{0}» is a cloud drive, and a mirror replaces and deletes single files.	Недоступно: «{0}» — облачный диск, а зеркало заменяет и удаляет отдельные файлы.
+MirrorRemoteNote	Not available: a Linux server is copied in sets only: full, incremental or differential.	Недоступно: Linux-сервер копируется только наборами: полной, инкрементальной или дифференциальной копией.
 MirrorExact	Exact: files deleted in the sources are deleted from the mirror too	Точное: файлы, удалённые в источниках, удаляются и из зеркала
 MirrorSafe	Safe: replaced and deleted files are moved to the folder _custos_deleted and kept for	Безопасное: заменённые и удалённые файлы переносятся в папку _custos_deleted и хранятся
 MirrorSafeDays	days	дней
@@ -245,6 +247,7 @@ EditorLayout	Layout of the backups	Размещение копий
 SeparateFolders	A separate folder for each backup	Отдельная папка для каждой копии
 SeparateFoldersHelp	On: each backup goes into its own folder, named by the template below, and old backups are deleted by the retention rules.\nOff: the files go straight into the destination folder and are updated there at each run; earlier versions are not kept.	Включено: каждая копия ложится в свою папку с именем по шаблону ниже, а старые копии удаляются по правилам хранения.\nВыключено: файлы пишутся прямо в папку назначения и обновляются там при каждом запуске; прежние версии не сохраняются.
 SeparateForcedNote	Always on here: «{0}» protects written files from deletion, and in a shared folder files are replaced.	Здесь всегда включено: «{0}» защищает записанные файлы от удаления, а в общей папке файлы заменяются.
+SeparateRemoteNote	Always on here: backups of a Linux server always go into a folder each.	Здесь всегда включено: копии Linux-сервера всегда ложатся каждая в свою папку.
 NameTemplate	Folder name:	Имя папки:
 NameTemplateHelp	The name of the folder (or archive) of each backup. Pick a variant from the list or type your own. {task} is the task name, {yyyy}-{MM}-{dd} {HH}-{mm} the date and time of the run, {type} Full, Incremental or Differential, {computer} the computer name.	Имя папки (или архива) каждой копии. Выберите вариант из списка или наберите свой. {task} — название задания, {yyyy}-{MM}-{dd} {HH}-{mm} — дата и время запуска, {type} — Full, Incremental или Differential, {computer} — имя компьютера.
 NameTemplateExample	Example: {0}	Например: {0}
@@ -576,6 +579,12 @@ PathVariablesNote	The path may hold variables: %USERPROFILE%, %APPDATA%, %LOCALA
 # ---- NTFS permissions
 PreserveAcl	Keep NTFS permissions of files and folders	Сохранять права NTFS файлов и папок
 PreserveAclHelp	For copies without compression: files and folders in the copy get the permissions and the owner of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning. FAT and exFAT disks keep no permissions.	Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.
+AdvancedVssRemote	Not used: a Linux server is read by custos-helper, not from a Windows disk.	Не действует: Linux-сервер читается через custos-helper, а не с диска Windows.
+AdvancedVssNoLocal	Not used: no source is a folder or file on a local disk, and a shadow copy is made of local disks only.	Не действует: среди источников нет папок и файлов на локальных дисках, а теневая копия делается только для них.
+AdvancedRetriesRemote	Not used for a Linux server.	Для Linux-сервера не действует.
+AdvancedAclArchive	Not used: ZIP and 7z archives do not keep NTFS permissions.	Не действует: архивы ZIP и 7z не хранят права NTFS.
+AdvancedAclRemote	Not used: files of a Linux server have no NTFS permissions.	Не действует: у файлов Linux-сервера нет прав NTFS.
+AdvancedAclNoNtfs	Not used: servers and cloud drives do not keep NTFS permissions; a folder, a network folder or a USB disk does.	Не действует: серверы и облачные диски не хранят права NTFS, их хранят только папка, сетевая папка и USB-диск.
 # ---- 7-Zip update
 SevenZipCheckButton	Check for a 7-Zip update	Проверить обновление 7-Zip
 SevenZipAdminOnly	Only administrators may update 7-Zip.	Обновлять 7-Zip могут только администраторы.

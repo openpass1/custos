@@ -147,6 +147,29 @@ public sealed class WormRetentionTests
     }
 
     [Fact]
+    public void S3_object_lock_protects_for_its_days_from_the_upload()
+    {
+        var task = Task(wormDays: 0);
+        task.Destinations.Add(new TaskDestination { Kind = DestinationKinds.S3, Bucket = "office-backup", Path = "pc01", ObjectLockDays = 30 });
+        task.Retention.Mode = RetentionModes.Count;
+        task.Retention.KeepFull = 14;
+
+        string? problem = WormRetention.Problem(task);
+
+        Assert.NotNull(problem);
+        Assert.StartsWith("s3://office-backup/pc01: ", problem, StringComparison.Ordinal);
+        Assert.Contains(Messages.Format(Messages.WormDurationDays, 30), problem, StringComparison.Ordinal);
+        Assert.EndsWith(Fix(Messages.WormRetentionFixCount, 30), problem, StringComparison.Ordinal);
+        Assert.Equal(TimeSpan.FromDays(30), WormRetention.Protection(task.Destinations[1]));
+
+        task.Retention.KeepFull = 30;
+        Assert.Null(WormRetention.Problem(task));
+        task.Retention.Mode = RetentionModes.Age;
+        task.Retention.MaxAgeDays = 30;
+        Assert.Null(WormRetention.Problem(task));
+    }
+
+    [Fact]
     public void The_interval_of_a_schedule_is_its_average()
     {
         Assert.Equal(TimeSpan.FromDays(1), WormRetention.Interval(new ScheduleOptions()));

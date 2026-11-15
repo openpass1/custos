@@ -234,6 +234,11 @@ final class TaskForm
         ]);
         $task['retention'] = $this->retention(self::sub($base, 'retention'), (array) ($post['retention'] ?? []));
         $task['schedule'] = $this->schedule(self::sub($base, 'schedule'), (array) ($post['schedule'] ?? []));
+        // A rule that deletes backups before WORM or Object Lock lets them go deletes nothing (client spec 6.6).
+        $tooShort = WormRetention::problem($task, fn(int $n) => $this->label('task_form.destination', $n));
+        if ($tooShort !== null) {
+            $this->error($tooShort['key'], $tooShort['params']);
+        }
         $vss = (array) ($post['vss'] ?? []);
         $task['vss'] = array_replace(self::sub($base, 'vss'), [
             'enabled' => self::bool($vss, 'enabled'),
