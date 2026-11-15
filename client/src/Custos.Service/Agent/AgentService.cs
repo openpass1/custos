@@ -88,6 +88,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             runner = new Thread(RunnerLoop) { Name = "CUSTOS runs", IsBackground = true };
             runner.Start();
             _ = FlushLogLoopAsync(stoppingToken);
+            _ = ProgramUpdateLoopAsync(stoppingToken);
 
             var lastCleanup = DateTimeOffset.MinValue;
             while (!stoppingToken.IsCancellationRequested)
@@ -181,6 +182,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             SevenZipProblem = _sevenZipProblem,
             Power = power,
             Server = _link?.Describe() ?? new ServerLinkInfo(),
+            ProgramUpdate = DescribeProgramUpdate(),
         };
     }
 
@@ -609,6 +611,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             settings.AllowAllUsersEdit = current.AllowAllUsersEdit;
             settings.TrayMode = current.TrayMode;
             settings.AllowRemoteEdit = current.AllowRemoteEdit;
+            settings.CheckUpdates = current.CheckUpdates;
         }
 
         try

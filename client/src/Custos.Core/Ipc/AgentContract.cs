@@ -51,6 +51,37 @@ public sealed class AgentSnapshot
 
     /// <summary>The connection to the monitoring server (section 8).</summary>
     public ServerLinkInfo Server { get; set; } = new();
+
+    /// <summary>New versions of the program on GitHub, for a computer without a monitoring site.</summary>
+    public ProgramUpdateInfo ProgramUpdate { get; set; } = new();
+}
+
+/// <summary>What the service knows about new versions of the program on GitHub.</summary>
+public sealed class ProgramUpdateInfo
+{
+    /// <summary>The service asks GitHub once a day: the setting is on and no monitoring site is connected.</summary>
+    public bool Checking { get; set; }
+
+    /// <summary>A monitoring site is connected: it decides about updates, GitHub is not asked.</summary>
+    public bool ManagedBySite { get; set; }
+
+    /// <summary>When GitHub was last asked; null if never.</summary>
+    public DateTimeOffset? CheckedAt { get; set; }
+
+    /// <summary>The newest version on GitHub; null when it is not known.</summary>
+    public string? Latest { get; set; }
+
+    /// <summary><see cref="Latest"/> is newer than this program and can be installed.</summary>
+    public bool Available { get; set; }
+
+    /// <summary>The page of the release on GitHub: what is new.</summary>
+    public string? PageUrl { get; set; }
+
+    /// <summary>Why the last check failed; null when it worked.</summary>
+    public string? Error { get; set; }
+
+    /// <summary>An update is being downloaded or installed (from GitHub or from the site).</summary>
+    public bool Installing { get; set; }
 }
 
 /// <summary>The connection to the monitoring server as the program window shows it.</summary>

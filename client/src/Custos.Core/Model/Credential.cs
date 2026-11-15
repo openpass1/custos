@@ -73,6 +73,10 @@ public sealed class AgentSettings
 
     public bool AllowRemoteEdit { get; set; } = true;
 
+    /// <summary>Ask GitHub once a day for a new version of the program. Only when no monitoring site is connected:
+    /// with a site, the site decides about updates.</summary>
+    public bool CheckUpdates { get; set; } = true;
+
     public string? ServerUrl { get; set; }
 
     public int HeartbeatIntervalS { get; set; } = 60;

@@ -165,6 +165,14 @@ public static class PipeProtocol
 
         /// <summary>Administrators only, always. <see cref="CloudAppsSaveRequest"/> → <see cref="OkResult"/>.</summary>
         public const string CloudAppsSave = "cloud.apps_save";
+
+        /// <summary>Administrators only, always: asks GitHub for a new version of the program now.
+        /// <see cref="EmptyRequest"/> → <see cref="ProgramUpdateInfo"/>.</summary>
+        public const string ProgramCheck = "program.check";
+
+        /// <summary>Administrators only, always: downloads the newest version from GitHub, checks it and hands it to
+        /// Custos.Updater, which restarts the service. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string ProgramUpdate = "program.update";
     }
 
     /// <summary>Event names.</summary>

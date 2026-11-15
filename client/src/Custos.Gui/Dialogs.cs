@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using Custos.Core;
 using Custos.Core.Backup;
 using Custos.Core.Ipc;
 using Custos.Core.Monitor;
@@ -1397,6 +1398,9 @@ internal sealed class SettingsForm : DialogForm
     private readonly Button _passwordSet = new() { AutoSize = true, MinimumSize = new Size(100, 0), Margin = new Padding(0, 0, 6, 0) };
     private readonly Button _passwordRemove = new() { Text = Strings.ProgramPasswordRemoveButton, AutoSize = true, MinimumSize = new Size(100, 0), Margin = new Padding(0) };
     private readonly ComboBox _theme = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
+    private readonly CheckBox _checkUpdates = new() { Text = Strings.CheckUpdates, AutoSize = true, Margin = new Padding(0, 6, 0, 0) };
+    private readonly Label _updatesState = new() { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 6, 0, 2) };
+    private readonly Button _updatesCheck = new() { Text = Strings.UpdatesCheckNow, AutoSize = true, Margin = new Padding(8, 0, 0, 0) };
     private readonly bool _isAdmin;
 
     public SettingsForm(ServiceMonitor monitor)
@@ -1473,6 +1477,23 @@ internal sealed class SettingsForm : DialogForm
         AddWide(lookHeading);
         AddRow(Strings.ThemeLabel, _theme, Ui.HelpIcon(_toolTip, Strings.ThemeHelp));
 
+        // New versions of the program on GitHub, for a computer without a monitoring site.
+        var updatesHeading = new Label { Text = Strings.SettingsUpdates, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+        updatesHeading.Font = heading.Font;
+        AddWide(updatesHeading);
+        var checkUpdates = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0) };
+        var checkUpdatesHelp = Ui.HelpIcon(_toolTip, Strings.Format(Strings.CheckUpdatesHelp, CustosInfo.GitHubRepository));
+        checkUpdatesHelp.Margin = new Padding(6, 8, 0, 0);
+        checkUpdates.Controls.AddRange([_checkUpdates, checkUpdatesHelp]);
+        AddWide(checkUpdates);
+        var updatesRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+        updatesRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        updatesRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        updatesRow.Controls.Add(_updatesState, 0, 0);
+        updatesRow.Controls.Add(_updatesCheck, 1, 0);
+        AddWide(updatesRow);
+        _updatesCheck.Click += (_, _) => Ui.Run(this, CheckUpdatesAsync);
+
         var archiverHeading = new Label { Text = Strings.Settings7Zip, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
         archiverHeading.Font = heading.Font;
         AddWide(archiverHeading);
@@ -1543,6 +1564,7 @@ internal sealed class SettingsForm : DialogForm
         int trayMode = Array.IndexOf(TrayModeValues, settings.TrayMode);
         _trayMode.SelectedIndex = trayMode < 0 ? 0 : trayMode;
         _allowAll.Checked = settings.AllowAllUsersEdit;
+        _checkUpdates.Checked = settings.CheckUpdates;
 
         _allowRemoteEdit.Checked = settings.AllowRemoteEdit;
         foreach (var control in new Control[] { _logLevel, _retention, _historyRetention, _priority, _language, _theme, _addAccount })
@@ -1564,6 +1586,7 @@ internal sealed class SettingsForm : DialogForm
                 _allowAll.Checked = false;
             }
         };
+        ShowUpdates();
         _passwordSet.Click += (_, _) => SetPassword();
         _passwordRemove.Click += (_, _) => Ui.Run(this, RemovePasswordAsync);
         ShowPassword();
@@ -1613,6 +1636,52 @@ internal sealed class SettingsForm : DialogForm
         }
 
         base.Dispose(disposing);
+    }
+
+    /// <summary>The daily check of GitHub: on or off, and what it last found. A computer connected to a monitoring
+    /// site gets its updates from the site, so the check is not offered there.</summary>
+    private void ShowUpdates()
+    {
+        var update = _monitor.Snapshot?.ProgramUpdate ?? new ProgramUpdateInfo();
+        bool site = update.ManagedBySite;
+        _checkUpdates.Enabled = _canEdit && _isAdmin && !site;
+        // Off (or a site decides): a check would show nowhere, so there is nothing to press.
+        _updatesCheck.Enabled = _isAdmin && _monitor.IsConnected && update.Checking;
+        _toolTip.SetToolTip(_updatesCheck, _isAdmin ? null : Strings.UpdateAdminOnly);
+        _updatesState.ForeColor = update.Error is null || site ? SystemColors.ControlText : Glyphs.WarningText;
+        if (site)
+        {
+            _updatesState.Text = Strings.UpdatesManagedBySite;
+            return;
+        }
+
+        string found = update.Error
+            ?? (update.Latest is null ? Strings.UpdatesNone
+                : update.Available ? Strings.Format(Strings.UpdatesAvailable, update.Latest)
+                : Strings.Format(Strings.UpdatesLatest, CustosInfo.Version));
+        _updatesState.Text = !update.Checking ? Strings.UpdatesOff
+            : update.CheckedAt is { } at ? Strings.Format(Strings.UpdatesLastCheck, Ui.Time(at), found)
+            : Strings.UpdatesNever;
+    }
+
+    /// <summary>«Проверить сейчас»: the service asks GitHub at once.</summary>
+    private async Task CheckUpdatesAsync()
+    {
+        _updatesCheck.Enabled = false;
+        UseWaitCursor = true;
+        try
+        {
+            await _monitor.RequestAsync(PipeProtocol.Methods.ProgramCheck, EmptyRequest.Instance,
+                IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.ProgramUpdateInfo, TimeSpan.FromMinutes(1));
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            if (!IsDisposed)
+            {
+                ShowUpdates();
+            }
+        }
     }
 
     /// <summary>The version of 7z.dll the service uses, or what is wrong with it.</summary>
@@ -1699,6 +1768,7 @@ internal sealed class SettingsForm : DialogForm
         settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.SelectedIndex)];
         settings.AllowAllUsersEdit = _allowAll.Checked;
         settings.AllowRemoteEdit = _allowRemoteEdit.Checked;
+        settings.CheckUpdates = _checkUpdates.Checked;
         SetBusy(true);
         Ui.Run(this, async () =>
         {
@@ -1720,6 +1790,7 @@ internal sealed class SettingsForm : DialogForm
         FillAccounts();
         ShowPassword();
         ShowServer();
+        ShowUpdates();
     }
 
     /// <summary>Whether a program password is set, and the buttons for it (administrators only).</summary>

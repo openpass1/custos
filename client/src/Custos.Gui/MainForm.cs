@@ -53,6 +53,21 @@ internal sealed class MainForm : Form
     private readonly ToolStripStatusLabel _serverStatus = new(Strings.ServerNotConnected) { Spring = true, TextAlign = ContentAlignment.MiddleLeft, ImageAlign = ContentAlignment.MiddleLeft };
     private readonly ToolStripStatusLabel _userStatus = new();
     private readonly ToolTip _toolTip = new();
+
+    // A new version on GitHub (computers without a monitoring site): a line under the toolbar.
+    private readonly FlowLayoutPanel _updateBar = new()
+    {
+        Dock = DockStyle.Top,
+        AutoSize = true,
+        WrapContents = false,
+        Padding = new Padding(8, 4, 8, 4),
+        Visible = false,
+        BackColor = Theme.IsDark ? Color.FromArgb(28, 44, 62) : Color.FromArgb(229, 241, 251),
+    };
+
+    private readonly Label _updateText = new() { AutoSize = true, Margin = new Padding(0, 7, 12, 0) };
+    private readonly Button _updateInstall = new() { Text = Strings.UpdateInstall, AutoSize = true, MinimumSize = new Size(100, 0) };
+    private readonly LinkLabel _updateNotes = new() { Text = Strings.UpdateWhatsNew, AutoSize = true, Margin = new Padding(12, 7, 0, 0) };
     private ImageList? _stateImages;
     private Bitmap? _greenDot;
     private Bitmap? _greyDot;
@@ -96,8 +111,13 @@ internal sealed class MainForm : Form
         var statusStrip = new StatusStrip();
         statusStrip.Items.AddRange([_serviceStatus, _serverStatus, _userStatus, versionStatus]);
 
-        // Docking goes from the last control added to the first: status bar, toolbar, then the rest.
+        _updateBar.Controls.AddRange([_updateText, _updateInstall, _updateNotes]);
+        _updateInstall.Click += (_, _) => InstallProgramUpdate();
+        _updateNotes.LinkClicked += (_, _) => OpenReleasePage();
+
+        // Docking goes from the last control added to the first: status bar, toolbar, the update line, then the rest.
         Controls.Add(_outer);
+        Controls.Add(_updateBar);
         Controls.Add(_toolbar);
         Controls.Add(statusStrip);
         ResumeLayout(performLayout: true);
@@ -549,11 +569,85 @@ internal sealed class MainForm : Form
 
         ShowSelectedTask();
         ShowServer(snapshot?.Server);
+        ShowProgramUpdate(snapshot?.ProgramUpdate);
         _progress.ShowRun(snapshot?.Current, _monitor.Progress);
         _userStatus.Text = _monitor.Status.Hello?.User is { } user && connected
             ? Strings.Format(Strings.UserWithRights, user, _monitor.CanEdit ? Strings.RightsAdmin : Strings.RightsUser)
             : _userStatus.Text;
         UpdateCommands();
+    }
+
+    /// <summary>The line «Вышла CUSTOS …» while GitHub has a newer version than this one.</summary>
+    private void ShowProgramUpdate(ProgramUpdateInfo? update)
+    {
+        bool show = update is { Available: true, Latest: not null };
+        _updateBar.Visible = show;
+        if (!show)
+        {
+            return;
+        }
+
+        bool admin = _monitor.Status.Hello?.IsAdmin == true;
+        _updateText.Text = Strings.Format(Strings.UpdateBanner, update!.Latest, CustosInfo.Version);
+        _updateInstall.Text = update.Installing ? Strings.UpdateInstalling : Strings.UpdateInstall;
+        _updateInstall.Enabled = admin && !update.Installing;
+        _toolTip.SetToolTip(_updateInstall, admin ? null : Strings.UpdateAdminOnly);
+        _updateNotes.Visible = update.PageUrl is not null;
+    }
+
+    /// <summary>«Обновить»: the service downloads the version from GitHub, checks it and installs it.</summary>
+    private void InstallProgramUpdate() => Ui.Run(this, async () =>
+    {
+        if (_monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
+            || !Ui.Confirm(this, Strings.Format(Strings.UpdateAsk, version)) || !await _monitor.EnsureUnlockedAsync())
+        {
+            return;
+        }
+
+        _updateInstall.Enabled = false;
+        _updateInstall.Text = Strings.UpdateInstalling;
+        UseWaitCursor = true;
+        try
+        {
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.ProgramUpdate, EmptyRequest.Instance,
+                IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult, TimeSpan.FromMinutes(15));
+            UseWaitCursor = false;
+            if (result.Ok)
+            {
+                Ui.ShowInfo(this, result.Message ?? Strings.UpdateInstalling);
+            }
+            else
+            {
+                Ui.ShowWarning(this, result.Message ?? Strings.ProblemNoAnswer);
+            }
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            if (!IsDisposed)
+            {
+                ShowProgramUpdate(_monitor.Snapshot?.ProgramUpdate);
+            }
+        }
+    });
+
+    /// <summary>«Что нового»: the page of the release on GitHub.</summary>
+    private void OpenReleasePage()
+    {
+        if (_monitor.Snapshot?.ProgramUpdate.PageUrl is not { } url
+            || !Uri.TryCreate(url, UriKind.Absolute, out var page) || page.Scheme != Uri.UriSchemeHttps)
+        {
+            return;
+        }
+
+        try
+        {
+            using var _ = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Ui.ShowWarning(this, ex.Message);
+        }
     }
 
     /// <summary>The connection to the monitoring server in the status bar (docs/client-ui.md).</summary>

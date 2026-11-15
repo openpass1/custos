@@ -591,6 +591,25 @@ VerifyEveryRuns	Verify the new backup every N-th run:	Проверять нов�
 VerifyEveryRunsHelp	0 = never, 1 = every run. Archives are unpacked into nowhere with their checksums checked; plain copies are read back and compared. Nothing is written to disk.	0 — никогда, 1 — каждый раз. Архивы распаковываются «в никуда» с контролем сумм, копии без сжатия читаются и сверяются. На диск ничего не пишется.
 VerifyStoredDays	Verify all stored backups every N days:	Проверять все хранящиеся копии раз в N дней:
 VerifyStoredDaysHelp	0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.	0 — выключено. Выполняется после успешного запуска, когда подошёл срок. Повреждённая копия делает запуск ошибочным.
+UpdateBanner	CUSTOS {0} is out. This computer has {1}.	Вышла CUSTOS {0}. На этом компьютере {1}.
+UpdateInstall	Update	Обновить
+UpdateInstalling	Installing…	Устанавливается…
+UpdateWhatsNew	What's new	Что нового
+UpdateAdminOnly	Only an administrator of this computer may update CUSTOS.	Обновлять CUSTOS может только администратор этого компьютера.
+UpdateAsk	Install CUSTOS {0}?\n\nThe service downloads it from GitHub, checks it and restarts for about a minute. A task in progress finishes first.	Установить CUSTOS {0}?\n\nСлужба скачает её с GitHub, проверит и перезапустится примерно на минуту. Выполняющееся задание сначала закончится.
+UpdateBalloonTitle	CUSTOS {0} is out	Вышла CUSTOS {0}
+UpdateBalloonText	Open the program window to install it.	Откройте окно программы, чтобы установить её.
+SettingsUpdates	Updates	Обновления
+CheckUpdates	Check GitHub for new versions once a day	Проверять новые версии на GitHub раз в день
+CheckUpdatesHelp	The service asks github.com/{0} once a day. A new version appears in the program window and in the tray; it is installed only when an administrator presses «Update». The package is checked against the SHA-256 of the release.	Служба раз в день спрашивает github.com/{0}. Новая версия появляется в окне программы и в трее, а устанавливается, только когда администратор нажмёт «Обновить». Пакет сверяется с SHA-256 из выпуска.
+UpdatesCheckNow	Check now	Проверить сейчас
+UpdatesNever	Not checked yet.	Ещё не проверялось.
+UpdatesLastCheck	Checked {0}: {1}	Проверено {0}: {1}
+UpdatesLatest	CUSTOS {0} is the newest version	CUSTOS {0} — последняя версия
+UpdatesAvailable	CUSTOS {0} is out	вышла CUSTOS {0}
+UpdatesNone	no release on GitHub yet	на GitHub пока нет выпусков
+UpdatesOff	The check is off.	Проверка выключена.
+UpdatesManagedBySite	This computer is connected to a monitoring site: new versions come from the site.	Компьютер подключён к сайту мониторинга: новые версии приходят с сайта.
 Settings7Zip	Archiver	Архиватор
 Settings7ZipVersion	7-Zip (7z.dll) version {0}	7-Zip (7z.dll) версии {0}
 Settings7ZipProblem	7z.dll cannot be used: {0}	7z.dll нельзя использовать: {0}

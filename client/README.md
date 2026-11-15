@@ -1,13 +1,15 @@
 # CUSTOS client for Windows
 
-C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), interface design: [`docs/client-ui.md`](../docs/client-ui.md).
+[По-русски](README.ru.md)
+
+C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), interface design: [`docs/client-ui.md`](../docs/client-ui.md) (both in Russian).
 
 | Project | Output | What it is |
 |---|---|---|
 | `src/Custos.Core` | `Custos.Core.dll` | Shared code: task model, schedule, copy engine, set manifests, Cobian import, the interface/service pipe protocol |
 | `src/Custos.Service` | `CustosService.exe` | Windows service (LocalSystem): does all the work — queue, runs, VSS, share logons, database |
 | `src/Custos.Gui` | `Custos.exe` | Tray interface, one per user session; only shows state and sends commands |
-| `src/Custos.Updater` | `Custos.Updater.exe` | Installs an update from the monitoring server: stops the service, replaces the files, starts it again, rolls back on failure |
+| `src/Custos.Updater` | `Custos.Updater.exe` | Installs an update (from the monitoring server or GitHub): stops the service, replaces the files, starts it again, rolls back on failure |
 | `tests/Custos.Core.Tests` | | xUnit tests of the core; `tests/fixtures` holds sample files for them |
 | `tests/Custos.Gui.Tests` | | Window tests: open the real windows with made-up data (run on Windows only) |
 | `installer/custos.iss` | | Inno Setup script |
@@ -56,6 +58,9 @@ For development: `dotnet build Custos.sln` and `dotnet test Custos.sln`. The sol
 The window tests open windows on the desktop for a moment; a test that waits longer than a minute (a message box
 nobody clicks) fails instead of hanging the build.
 
+Texts of the program are in `src/Custos.Core/Resources/Messages.tsv` and `src/Custos.Gui/Resources/Strings.tsv`
+(English and Russian side by side); after a change run `python3 tools/make-strings.py` in `client/`.
+
 ## Archives
 
 A task can pack each set into one 7z or ZIP archive (the "Compression and checks" page of the task). They are ordinary
@@ -64,79 +69,82 @@ archives use AES-256 and ask for the task's archive password. Each archive also 
 the set's files with their SHA-256, which restore and the checks use. A split archive is `name.7z.001`, `.002`, ...;
 open the first part.
 
-## Базы данных (MySQL, MariaDB, PostgreSQL, OSPanel)
+## Databases (MySQL, MariaDB, PostgreSQL, OSPanel)
 
-Страница задания «Базы данных» → «Добавить» → «Найти…»: CUSTOS покажет запущенные серверы (с адресом и портом,
-на которых они работают; у OSPanel 6 это адреса вида `127.127.126.x`) и найденные папки программ. Выберите сервер,
-введите пользователя (`root` для MySQL и MariaDB, `postgres` для PostgreSQL) и пароль или отметьте «Без пароля»,
-нажмите «Проверить подключение». Появится список баз, отмеченные попадают в копию. «Все базы»: отмечено всё, новые
-базы добавятся сами; если снять галочку с базы, выбор переключится на «Выбранные базы», где выгружаются только
-отмеченные.
+Task page «Databases» → «Add» → «Find…»: CUSTOS shows the running servers (with the address and port they listen on;
+OSPanel 6 uses addresses like `127.127.126.x`) and the program folders it found. Choose a server, enter the user
+(`root` for MySQL and MariaDB, `postgres` for PostgreSQL) and the password, or tick «No password», and press «Test
+connection». The list of databases appears; the ticked ones go into the backup. «All databases»: everything is ticked
+and new databases are added by themselves; unticking a database switches the choice to «Selected databases», where
+only the ticked ones are dumped.
 
-- Каждый запуск выгружает базы целиком в папку `db` копии: `db\mysql\<база>.sql` и `db\mysql\_users.sql`
-  (пользователи и права). Копировать папку данных сервера файлами не нужно.
-- Если сервер не запущен (например, OSPanel выключена) или дамп оборвался, запуск завершается ошибкой, но файлы и
-  остальные базы копируются, а старые копии не удаляются.
-- При восстановлении дампы ложатся файлами `.sql` в папку `db` вместе с `README.txt`, где написаны команды для их
-  загрузки в сервер (запускать в `cmd`, не в PowerShell). Сам CUSTOS дампы в сервер не загружает. Для восстановления
-  в исходные места укажите отдельную папку «Дампы баз в папку».
-- MS SQL и 1С выгружаются своими программами через страницу «События» (до копирования) в папку-источник.
+- Every run dumps the databases whole into the `db` folder of the backup: `db\mysql\<database>.sql` and
+  `db\mysql\_users.sql` (users and grants). There is no need to copy the server's data folder as files.
+- If the server is not running (for example, OSPanel is off) or a dump breaks off, the run ends with an error, but the
+  files and the other databases are copied and old backups are not deleted.
+- On restore the dumps are written as `.sql` files into the `db` folder together with `README.txt`, which gives the
+  commands to load them into a server (run them in `cmd`, not in PowerShell). CUSTOS does not load dumps into a server
+  itself. To restore to the original places, give a separate folder in «Database dumps to:».
+- MS SQL and 1C are dumped by their own programs from the «Events» page (before copying) into a source folder.
 
-## Linux-серверы (custos-helper по SSH)
+## Linux servers (custos-helper over SSH)
 
-Страница задания «Источники» → «Linux-сервер…». Спецификация: [`docs/CUSTOS-remote-pull.md`](../docs/CUSTOS-remote-pull.md),
-сам скрипт на сервере и его ручная установка: [`helper/README.md`](../helper/README.md).
+Task page «Sources» → «Linux server…». Specification: [`docs/CUSTOS-remote-pull.md`](../docs/CUSTOS-remote-pull.md)
+(in Russian); the script on the server and how to install it by hand: [`helper/README.md`](../helper/README.md).
 
-1. Адрес сервера, порт SSH и IP офиса (внешний адрес этого компьютера: ключ будет работать только с него).
-2. Что забирать: «ispmanager: только сайты» (по умолчанию), «ispmanager: сайты и панель» или «Обычный Linux»;
-   папки, исключения и СУБД можно поправить.
-3. «Создать ключ»: служба делает ключ ed25519, закрытая часть остаётся у неё (DPAPI) и никуда не уходит.
-4. Блок под ключом вставляется целиком в сессию root на сервере (после `sudo -i`), кнопка «Копировать» или
-   «Сохранить как файл…». Он создаёт пользователя `custos`, ставит custos-helper (сверяя SHA-256), его настройки,
-   sudo только для custos-helper и ключ. Повторный запуск безопасен; после изменений в окне его надо выполнить снова.
-5. «Проверить подключение»: CUSTOS покажет ключ сервера, его нужно сверить на сервере
-   (`for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done`) и подтвердить. Затем видны версия
-   custos-helper, базы, число файлов и объём.
-6. «Базы данных в копии»: базы сервера появляются в списке после проверки, как у баз OSPanel. «Все базы» — всё
-   отмечено, новые базы попадут в копию сами; снятая галочка переключает выбор на «Выбранные базы», где выгружаются
-   только отмеченные. Выбор хранится в задании, блок на сервере после него выполнять заново не нужно.
+1. The address of the server, the SSH port and the office IP (the external address of this computer: the key will
+   work only from it).
+2. What to take: «ispmanager: sites only» (the default), «ispmanager: sites and panel» or «Plain Linux»; the folders,
+   exclusions and database servers can be adjusted.
+3. «Create key»: the service makes an ed25519 key; the private part stays with it (DPAPI) and never leaves.
+4. The block under the key is pasted whole into a root session on the server (after `sudo -i`); use «Copy» or «Save as
+   file…». It creates the user `custos`, installs custos-helper (checking its SHA-256), its settings, sudo for
+   custos-helper only, and the key. Running it again is safe; after changes in the window, run it again.
+5. «Test connection»: CUSTOS shows the server's key; compare it on the server
+   (`for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done`) and confirm. Then the version of
+   custos-helper, the databases, the number of files and the size are shown.
+6. Databases in the backup: the server's databases appear in the list after the test, as with OSPanel. «All databases»:
+   everything is ticked and new databases go into the backup by themselves; an unticked database switches the choice
+   to «Selected databases», where only the ticked ones are dumped. The choice is kept in the task; the block on the
+   server need not be run again after it.
 
-- В задании с Linux-сервером других источников нет, зеркало недоступно, фильтры страницы не применяются.
-- Набор: `files.tar` (все файлы или изменённые), `db\<СУБД>\<база>.sql`, `_users.sql` и `custos-set.json`.
-  Tar на Windows не распаковывается никогда.
-- Ключ сервера изменился, сервер недоступен (три попытки с паузой в минуту), дамп оборвался — запуск с ошибкой.
-- Восстановление — только в папку: tar на каждую папку сервера (`var-www.tar` …), дампы и `README.txt` с командами
-  для сервера. Настройки (`/etc` и папки `etc`) распаковываются на сервере в `/root/old-etc`, не поверх системы.
-- Если сервер отдаёт данные быстрее, чем архив успевает сжимать (больше 256 МБ ждут в памяти), запуск прерывается:
-  задайте ограничение скорости в окне сервера или уменьшите степень сжатия.
+- A task with a Linux server has no other sources, no mirror, and the filters of the page do not apply.
+- The set: `files.tar` (all files or the changed ones), `db\<server>\<database>.sql`, `_users.sql` and
+  `custos-set.json`. The tar is never unpacked on Windows.
+- A changed server key, an unreachable server (three tries a minute apart) or a broken dump end the run with an error.
+- Restore goes to a folder only: a tar for each folder of the server (`var-www.tar` …), the dumps and `README.txt` with
+  the commands for the server. Settings (`/etc` and `etc` folders) are unpacked on the server into `/root/old-etc`, not
+  over the system.
+- If the server sends data faster than the archive can compress it (more than 256 MB waiting in memory), the run stops:
+  set a speed limit in the server window or lower the compression level.
 
-## Копии на серверах: SFTP, FTP, WebDAV, S3
+## Backups on servers: SFTP, FTP, WebDAV, S3
 
-Назначением задания может быть сервер: «Сервер SFTP», «Сервер FTP», «Сервер FTP с шифрованием (FTPS)», «WebDAV»
-(в том числе Nextcloud) и «Хранилище S3» (Amazon S3 и совместимые: MinIO, облачные провайдеры). На сервере работает
-всё то же, что в папке: архивы и копии без сжатия, зеркало, хранение, проверка, восстановление.
+A task's destination can be a server: «SFTP server», «FTP server», «FTP server with TLS (FTPS)», «WebDAV» (Nextcloud
+too) and «S3 storage» (Amazon S3 and compatible ones: MinIO, cloud providers). Everything that works with a folder
+works on a server: archives and backups without compression, mirror, retention, checks, restore.
 
-- **Учётные записи** серверов добавляются там же, где учётные записи сетевых папок: «Настройки» → «Учётные записи»
-  или кнопкой «Добавить…» в окне назначения. FTP и WebDAV: пользователь и пароль. S3: ключ доступа и секретный ключ.
-  SFTP: пароль или закрытый ключ в формате OpenSSH или PEM без пароля на ключе (ключ PuTTY `.ppk` сначала
-  преобразуйте: PuTTYgen → Conversions → Export OpenSSH key).
-- **Ключ сервера.** При первом «Проверить доступ» к серверу SFTP программа показывает отпечаток его ключа
-  (`SHA256:…`). Сравните его с тем, что показывает на сервере `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`, и
-  подтвердите. То же с сертификатом FTPS, WebDAV или S3, которому Windows не доверяет (самоподписанный). Если ключ
-  или сертификат потом изменится, задание остановится, ничего не отправив, и скажет об этом в журнале: подтвердите
-  новый в окне назначения, только если знаете, почему он изменился. С сайта мониторинга подтвердить ключ нельзя.
-- **7z** пишется только туда, где можно вернуться к началу файла: папка, сетевая папка, USB-диск, SFTP. Для FTP,
-  WebDAV и S3 выберите ZIP или копию без сжатия.
-- **Ограничение скорости** задаётся у назначения в КБ/с (сетевые папки и серверы), 0 — без ограничения.
-- **Зеркало на сервере** сравнивает файлы по размеру и по времени из своего списка прошлого запуска: большинство
-  серверов не хранит время файла таким, каким его прислали. Файл, который кто-то заменил прямо на сервере другим
-  того же размера, зеркало не заметит.
-- Права NTFS и время изменения файлов на серверах не хранятся; при восстановлении время берётся из списка набора.
+- **Accounts** for servers are added where the accounts of network folders are: «Settings» → «Accounts for network
+  folders, servers and cloud drives», or with «Add…» in the destination window. FTP and WebDAV: user and password.
+  S3: access key and secret key. SFTP: a password, or a private key in OpenSSH or PEM format without a passphrase
+  (convert a PuTTY `.ppk` key first: PuTTYgen → Conversions → Export OpenSSH key).
+- **The server's key.** On the first «Check access» to an SFTP server the program shows the fingerprint of its key
+  (`SHA256:…`). Compare it with what `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` shows on the server, and
+  confirm. The same goes for an FTPS, WebDAV or S3 certificate that Windows does not trust (self-signed). If the key or
+  the certificate changes later, the task stops before sending anything and says so in its log: confirm the new one in
+  the destination window only if you know why it changed. A key cannot be confirmed from the monitoring site.
+- **7z** is written only where the program can go back to the start of the file: a folder, a network folder, a USB
+  disk, SFTP. For FTP, WebDAV and S3 choose ZIP or a backup without compression.
+- **Speed limit** is set on the destination in KB/s (network folders and servers); 0 means no limit.
+- **A mirror on a server** compares files by size and by the time from its own list of the last run: most servers do
+  not keep a file's time as it was sent. A file that someone replaced on the server itself with another one of the same
+  size goes unnoticed by the mirror.
+- NTFS permissions and modification times are not kept on servers; on restore the time is taken from the set's list.
 
-### S3: права ключа и защита от удаления (Object Lock)
+### S3: rights of the key and protection from deletion (Object Lock)
 
-CUSTOS бакеты не создаёт и их настройки не меняет. Создайте бакет сами и дайте ключу CUSTOS только эти права
-(пример политики AWS; `office-backup` замените именем своего бакета):
+CUSTOS neither creates buckets nor changes their settings. Create the bucket yourself and give the CUSTOS key only
+these rights (an AWS policy; replace `office-backup` with the name of your bucket):
 
 ```json
 {
@@ -170,264 +178,297 @@ CUSTOS бакеты не создаёт и их настройки не меня
 }
 ```
 
-Чего в политике быть **не должно**: `s3:BypassGovernanceRetention` (снимает защиту в режиме Governance),
-`s3:PutBucketObjectLockConfiguration`, `s3:PutBucketVersioning`, `s3:PutLifecycleConfiguration`, `s3:DeleteBucket`
-и вообще `s3:*`. Тогда тот, кто получил ключ CUSTOS (например, шифровальщик на этом компьютере), защищённые копии
-до срока удалить не сможет.
+What the policy **must not** have: `s3:BypassGovernanceRetention` (lifts the protection in Governance mode),
+`s3:PutBucketObjectLockConfiguration`, `s3:PutBucketVersioning`, `s3:PutLifecycleConfiguration`, `s3:DeleteBucket`,
+and `s3:*` at all. Then whoever gets the CUSTOS key (for example, ransomware on this computer) cannot delete the
+protected backups before their time.
 
-- **Object Lock включают при создании бакета**, потом это сделать нельзя (у MinIO: `mc mb --with-lock`). В окне
-  назначения «Проверить доступ» пишет, есть ли он у бакета.
-- «Защита от удаления», дней: каждый файл набора нельзя удалить или заменить столько дней после записи. Режим
-  **Governance** (по умолчанию): владелец хранилища с особым правом может снять защиту, например чтобы освободить
-  место после ошибки. Режим **Compliance**: до срока защиту не снимет никто, включая владельца и провайдера; место
-  под такие копии оплачивается до конца срока.
-- Защита работает с архивами и с «отдельной папкой для каждой копии». Зеркало и общая папка заменяют файлы, поэтому
-  с защитой не сохраняются.
-- Хранение пропускает набор, срок защиты которого не вышел (в журнале: «защищён от удаления до …»), и удаляет его
-  первым запуском после срока, вместе со всеми версиями объектов. Дней защиты разумно ставить не больше срока
-  хранения.
-- Что неудачный запуск успел записать в бакет с защитой, лежит там до конца срока, как и всё остальное.
-- Добавьте в бакет правило жизненного цикла, которое удаляет незавершённые загрузки (incomplete multipart uploads)
-  старше нескольких дней: после сбоя связи или питания такие части остаются и занимают место.
+- **Object Lock is turned on when the bucket is created**; it cannot be done later (MinIO: `mc mb --with-lock`). In the
+  destination window «Check access» says whether the bucket has it.
+- «Protection from deletion», days: each file of a set cannot be deleted or replaced for this many days after it is
+  written. **Governance** mode (the default): the owner of the storage with a special right can lift the protection,
+  for example to free space after a mistake. **Compliance** mode: nobody lifts the protection before its time, not the
+  owner and not the provider; the space for such backups is paid for until the end of the term.
+- Protection works with archives and with «A separate folder for each backup». A mirror and a shared folder replace
+  files, so they do not keep the protection.
+- Retention skips a set whose protection has not run out yet (the log says «protected from deletion until …») and
+  deletes it on the first run after that date, with all versions of its objects. It makes sense to set no more days of
+  protection than the retention keeps backups.
+- Whatever a failed run managed to write into a protected bucket stays there until the end of the term, like
+  everything else.
+- Add a lifecycle rule to the bucket that deletes incomplete multipart uploads older than a few days: after a lost
+  connection or a power cut such parts stay behind and take up space.
 
-## Облачные диски: Google Drive, Яндекс Диск, Dropbox
+## Cloud drives: Google Drive, Yandex Disk, Dropbox
 
-Назначением задания может быть облачный диск: «Google Диск», «Яндекс Диск», «Dropbox». CUSTOS видит на диске
-только свою папку: у Google это папка «CUSTOS», которую создаёт сама программа (остальные файлы диска ей не
-видны), у Яндекса и Dropbox — папка приложения («Приложения/…»). Архивы, хранение по GFS, проверка и
-восстановление работают так же, как в папке.
+A task's destination can be a cloud drive: «Google Drive», «Yandex Disk», «Dropbox». CUSTOS sees only its own folder
+on the drive: on Google it is the folder «CUSTOS» that the program creates itself (the other files of the drive are
+invisible to it), on Yandex and Dropbox it is the app folder («Apps/…»). Archives, grandfather-father-son retention,
+checks and restore work as they do with a folder.
 
-- **Подключение аккаунта.** «Настройки» → «Облачные диски» → «Подключить облачный диск…» или кнопка «Подключить…» в окне
-  назначения. Нужны права администратора: аккаунт пускает службу (SYSTEM) в чужое облако. Программа открывает
-  страницу входа сервиса в браузере; после входа и согласия браузер сам возвращается в программу. Если браузер
-  открыт на другом компьютере или вернуться не смог, скопируйте код со страницы сервиса (или адрес из строки
-  браузера) в поле «Код или адрес» и нажмите «Подключить». Пароль от облака CUSTOS не видит и не хранит: хранится
-  только токен доступа, зашифрованный для этого компьютера.
-- **Аккаунт подключается на каждом компьютере отдельно.** С сайта мониторинга его не передать: на сайте в задании
-  выбирается один из аккаунтов, уже подключённых на этой машине. Шаблон аккаунта не содержит: при применении берётся
-  аккаунт того же сервиса, подключённый на машине (если их несколько, сначала задайте назначение в задании машины).
-- **Отключение.** В настройках аккаунта сервиса отзовите доступ приложения CUSTOS (Google: «Сторонние приложения и
-  сервисы», Яндекс: «Входы и устройства», Dropbox: «Подключённые приложения»). Задание скажет в журнале, что доступ
-  отозван, и запишет остальные назначения. «Подключить заново…» в настройках CUSTOS возвращает доступ тому же
-  аккаунту в программе: задания менять не нужно.
-- **Только ZIP или копия без сжатия.** 7z в облако не пишется. Зеркало в облако не поддерживается.
-- **Части архива.** «Размер части» (МБ) режет архив на файлы `.zip.001`, `.zip.002`…: 0 — одним файлом. Для Яндекс
-  Диска по умолчанию 900 МБ: бесплатный тариф принимает файлы до 1 ГБ. Восстановление собирает части само.
-- **Обрыв связи.** Google Drive и Dropbox продолжают загрузку с места обрыва. Яндекс Диск так не умеет: файл,
-  загрузка которого оборвалась, не записывается, назначение для этого запуска считается неудачным (другие
-  назначения задания пишутся), а следующий запуск начнёт файл заново. Поэтому на Яндекс Диск лучше писать частями.
-- **Восстановление на другом компьютере.** Подключите там тот же аккаунт, затем в окне восстановления «Копии на
-  сервере или в облаке» → «Указать…», выберите сервис, аккаунт и папку назначения.
-- **Ограничение скорости** задаётся так же, как у серверов, в КБ/с.
+- **Connecting an account.** «Settings» → «Cloud drives» → «Connect a cloud drive…», or «Connect…» in the destination
+  window. Administrator rights are needed: the account lets the service (SYSTEM) into somebody's cloud. The program
+  opens the sign-in page of the service in the browser; after sign-in and consent the browser returns to the program
+  by itself. If the browser is open on another computer or could not return, copy the code from the service's page
+  (or the address from the browser's address bar) into «Code or address» and press «Connect». CUSTOS never sees or
+  keeps the cloud password: only an access token is kept, encrypted for this computer.
+- **An account is connected on each computer separately.** It cannot be sent from the monitoring site: in a task on
+  the site one of the accounts already connected on that machine is chosen. A template has no account: when it is
+  applied, the account of the same service connected on the machine is used (if there are several, set the
+  destination in the machine's task first).
+- **Disconnecting.** Revoke the access of the CUSTOS application in the settings of the service's account (Google:
+  «Third-party apps & services», Yandex: «Logins and devices», Dropbox: «Connected apps»). The task says in its log
+  that the access was revoked and writes the other destinations. «Connect again…» in the settings of CUSTOS gives the
+  access back to the same account in the program: the tasks need no change.
+- **ZIP or a backup without compression only.** 7z is not written to a cloud. A mirror to a cloud is not supported.
+- **Parts of an archive.** «Part size» (MB) cuts the archive into files `.zip.001`, `.zip.002`…; 0 means one file. For
+  Yandex Disk the default is 900 MB: the free plan takes files up to 1 GB. Restore joins the parts by itself.
+- **A broken connection.** Google Drive and Dropbox resume the upload where it broke off. Yandex Disk cannot: a file
+  whose upload broke off is not written, the destination counts as failed for this run (the other destinations of the
+  task are written), and the next run starts the file again. So it is better to write to Yandex Disk in parts.
+- **Restore on another computer.** Connect the same account there, then in the restore window «Backups on a server or
+  a cloud drive» → «Choose…», and pick the service, the account and the destination folder.
+- **Speed limit** is set as for servers, in KB/s.
 
-### Приложения CUSTOS у сервисов
+### CUSTOS applications at the services
 
-Чтобы войти в облако, у сервиса должно быть зарегистрировано приложение. Выпуски CUSTOS и сборки из GitHub Actions
-несут приложение владельца проекта только для Google Drive. Для Яндекс Диска и Dropbox зарегистрируйте своё
-приложение по шагам ниже: это бесплатно и занимает несколько минут. Своё приложение можно завести и для Google, а
-также если вы собираете CUSTOS сами. Впишите его в «Настройки» → «Облачные диски» → «Свои приложения…» (только на
-этом компьютере; задания и подключённые аккаунты при этом не меняются, аккаунт подключается заново кнопкой
-«Подключить заново…»).
-Названия пунктов на сайтах сервисов со временем меняются; суть та же.
+To sign in to a cloud, the service must have an application registered. CUSTOS releases and builds from GitHub
+Actions carry the project owner's application for Google Drive only. For Yandex Disk and Dropbox register your own
+application with the steps below: it is free and takes a few minutes. You can have your own application for Google
+too, and you need one if you build CUSTOS yourself. Enter it in «Settings» → «Cloud drives» → «Own applications…»
+(on this computer only; tasks and connected accounts do not change, and an account is connected again with
+«Connect again…»).
+The names of the items on the services' sites change over time; the idea stays the same.
 
 **Google Drive** (https://console.cloud.google.com):
 
-1. Создайте проект, например «CUSTOS».
+1. Create a project, for example «CUSTOS».
 2. «APIs & Services» → «Library» → «Google Drive API» → «Enable».
-3. «Google Auth Platform» (раньше «OAuth consent screen») → «Get started»: имя приложения «CUSTOS», почта
-   поддержки, тип «External», контактная почта. Логотип не загружайте: с ним Google требует проверку бренда.
-4. «Data Access» → «Add or remove scopes» → отметьте `.../auth/drive.file` («See, edit, create, and delete only the
-   specific Google Drive files you use with this app») → «Update» → «Save». Это неконфиденциальное разрешение:
-   проверка приложения Google для него не нужна.
-5. «Clients» → «Create client» → тип «Desktop app», имя «CUSTOS» → «Create». Сохраните Client ID и Client secret.
-6. «Audience» → «Publish app» → состояние «In production». **Обязательно:** в состоянии «Testing» вход доступен
-   только тестовым пользователям, а токены перестают действовать через 7 дней, и копии остановятся.
+3. «Google Auth Platform» (formerly «OAuth consent screen») → «Get started»: app name «CUSTOS», support email, type
+   «External», contact email. Do not upload a logo: with one, Google requires a brand verification.
+4. «Data Access» → «Add or remove scopes» → tick `.../auth/drive.file` («See, edit, create, and delete only the
+   specific Google Drive files you use with this app») → «Update» → «Save». This is a non-sensitive scope: it needs no
+   app verification by Google.
+5. «Clients» → «Create client» → type «Desktop app», name «CUSTOS» → «Create». Save the Client ID and the Client
+   secret.
+6. «Audience» → «Publish app» → status «In production». **Required:** in the «Testing» status only test users can
+   sign in, and tokens stop working after 7 days, so the backups stop.
 
-**Яндекс Диск** (https://oauth.yandex.ru):
+**Yandex Disk** (https://oauth.yandex.ru):
 
-1. «Создать приложение», название «CUSTOS», платформа «Веб-сервисы».
-2. Redirect URI: `http://localhost:47901/` и отметьте «Подставить URL для отладки» (добавит
-   `https://oauth.yandex.ru/verification_code`, на ней показывается код для ввода вручную).
-3. Доступы: «Яндекс Диск REST API» → «Доступ к папке приложения на Диске» (`cloud_api:disk.app_folder`) и «Доступ к
-   информации о Диске» (`cloud_api:disk.info`). Больше ничего не отмечайте.
-4. Сохраните ClientID и Client secret.
+1. «Create app», name «CUSTOS», platform «Web services».
+2. Redirect URI: `http://localhost:47901/`, and tick «Add debug URL» (it adds
+   `https://oauth.yandex.ru/verification_code`, the page that shows a code to enter by hand).
+3. Access: «Yandex Disk REST API» → «Access to the app folder on Disk» (`cloud_api:disk.app_folder`) and «Access to
+   information about Disk» (`cloud_api:disk.info`). Tick nothing else.
+4. Save the ClientID and the Client secret.
 
 **Dropbox** (https://www.dropbox.com/developers/apps):
 
-1. «Create app» → «Scoped access» → «App folder» → имя приложения (уникальное во всём Dropbox, например
-   «CUSTOS Backup <ваша организация>»).
-2. Вкладка «Permissions»: отметьте `account_info.read`, `files.metadata.read`, `files.metadata.write`,
+1. «Create app» → «Scoped access» → «App folder» → the app name (unique in all of Dropbox, for example
+   «CUSTOS Backup <your organisation>»).
+2. Tab «Permissions»: tick `account_info.read`, `files.metadata.read`, `files.metadata.write`,
    `files.content.read`, `files.content.write` → «Submit».
-3. Вкладка «Settings»: «App folder name» — `CUSTOS` (так папка и будет называться в «Приложения»); в «Redirect
-   URIs» добавьте `http://localhost:47901/`; «Allow public clients (Implicit Grant & PKCE)» оставьте «Allow».
-   Сохраните «App key» — это Client ID. Секрет CUSTOS не нужен.
-4. В состоянии «Development» приложение подключают до 500 аккаунтов, но после 50-го подключённого аккаунта даётся
-   две недели, чтобы получить состояние «Production» («Apply for production»); иначе новые аккаунты подключить
-   нельзя, пока его не дадут. Заявку принимают от 50 аккаунтов; нужны значок приложения на вкладке «Branding» и
-   соблюдение правил Dropbox для разработчиков. Для своего приложения на несколько компьютеров это не важно.
+3. Tab «Settings»: «App folder name» — `CUSTOS` (this is what the folder in «Apps» will be called); in «Redirect
+   URIs» add `http://localhost:47901/`; leave «Allow public clients (Implicit Grant & PKCE)» at «Allow». Save the «App
+   key»: it is the Client ID. CUSTOS needs no secret.
+4. In the «Development» status up to 500 accounts can connect the app, but after the 50th connected account there are
+   two weeks to get the «Production» status («Apply for production»); otherwise no new accounts can connect until it
+   is given. Applications are accepted from 50 accounts; they need an app icon on the «Branding» tab and must follow
+   the Dropbox developer rules. For your own app on a few computers this does not matter.
 
-Порт 47901 на компьютере должен быть свободен во время подключения (Google порт не важен). Если он занят, вход всё
-равно возможен: код вводится вручную.
+Port 47901 on the computer must be free while connecting (for Google the port does not matter). If it is busy, you
+can still sign in: the code is entered by hand.
 
-**Для владельца проекта: приложения в сборках GitHub Actions.** Идентификаторы в репозитории не хранятся. В
-репозитории на GitHub: «Settings» → «Secrets and variables» → «Actions».
+**For the project owner: applications in GitHub Actions builds.** The identifiers are not kept in the repository. In
+the repository on GitHub: «Settings» → «Secrets and variables» → «Actions».
 
-- Вкладка «Variables» → «New repository variable»: `CUSTOS_GDRIVE_CLIENT_ID`, `CUSTOS_YADISK_CLIENT_ID`,
+- Tab «Variables» → «New repository variable»: `CUSTOS_GDRIVE_CLIENT_ID`, `CUSTOS_YADISK_CLIENT_ID`,
   `CUSTOS_DROPBOX_CLIENT_ID`.
-- Вкладка «Secrets» → «New repository secret»: `CUSTOS_GDRIVE_CLIENT_SECRET`, `CUSTOS_YADISK_CLIENT_SECRET`.
+- Tab «Secrets» → «New repository secret»: `CUSTOS_GDRIVE_CLIENT_SECRET`, `CUSTOS_YADISK_CLIENT_SECRET`.
 
-Следующая сборка встроит их в программу. Сервис, для которого значения не заданы, в сборке без приложения: его
-можно подключить только со своим приложением. У приложения для компьютера секрет Google и Яндекса не настоящая
-тайна (его можно достать из программы), безопасность входа держится на PKCE; в секретах GitHub он лежит, чтобы не
-попасть в открытый репозиторий.
+The next build puts them into the program. A service without these values is built without an application: it can
+be connected only with your own application. For a desktop application the Google and Yandex secret is not a real
+secret (it can be taken out of the program); the sign-in is protected by PKCE. It is kept in GitHub secrets so that it
+does not end up in the public repository.
 
-## Сервер мониторинга
+## Monitoring server
 
-Подключение необязательно: без сервера CUSTOS работает полностью. Для подключения нужна строка подключения. Её
-копируют на сайте («Настройки» → «Подключение агентов»), в ней адрес сайта, код регистрации и отпечаток ключа
-сервера: `http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14`. Строку вставляют в
-установщике (страница «Сервер мониторинга») или потом: CUSTOS → «Настройки» → «Сервер мониторинга» → поле «Строка
-подключения» → «Подключить» (нужны права администратора). Рядом с полем есть кнопка «Вставить из буфера обмена».
-Отдельных полей для адреса и кода нет. Отпечаток защищает от подмены сервера при первом подключении. После
-подключения в настройках виден адрес сервера, сама строка повторно не показывается.
+Connecting is optional: CUSTOS works fully without a server. Connecting needs the connection line. It is copied on the
+site («Settings» → «Connecting agents») and holds the site address, the registration code and the fingerprint of the
+server key: `http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14`. The line is pasted in the
+installer (page «Monitoring server») or later: CUSTOS → «Settings» → «Monitoring server» → field «Connection line» →
+«Connect» (administrator rights are needed). Next to the field there is a «Paste from the clipboard» button. There are
+no separate fields for the address and the code. The fingerprint protects against a substituted server on the first
+connection. After connecting, the settings show the server address; the line itself is not shown again.
 
-После подключения компьютер появляется на сайте в разделе «Машины» со статусом «ожидает подтверждения». Пока его не
-подтвердят, служба шлёт только heartbeat; после подтверждения — отчёты о запусках, прогресс, снимок настроек и
-инвентаризацию копий (раз в 6 часов). Если сервер недоступен, отчёты ждут в очереди (`custos.db`, до 10 000) и уходят по порядку, когда связь вернётся. Состояние связи
-видно в строке состояния главного окна и в настройках.
+After connecting, the computer appears on the site under «Machines» as «awaiting approval». Until it is approved, the
+service sends only heartbeats; after approval it sends run reports, progress, a snapshot of its settings and the
+inventory of backups (every 6 hours). If the server cannot be reached, the reports wait in a queue (`custos.db`, up to
+10,000) and go out in order when the connection is back. The state of the connection is shown in the status bar of the
+main window and in the settings.
 
-- **«Разрешить серверу изменять задания»** (в настройках, включено по умолчанию): без неё сервер может запускать,
-  останавливать задания, запрашивать журналы и ставить обновления, но не менять задания и настройки.
-- **Обновление с сервера:** пакет `custos-<версия>.zip` из сборки загружается на сайт («Обновления») и ставится на
-  выбранные компьютеры. Служба проверяет подпись сервера и SHA-256, дожидается конца текущего задания и запускает
-  `Custos.Updater.exe`: он останавливает службу, заменяет файлы (прежние сохраняются в
-  `C:\ProgramData\CUSTOS\updates\backup-<версия>`), запускает службу и при неудаче возвращает прежнюю версию.
-  Журнал — `C:\ProgramData\CUSTOS\logs\updater.log`, итог — в журнале Windows (4000 / 4001).
-- **«Сбросить привязку к серверу…»** в настройках забывает сервер, его ключ, код и очередь отчётов. Ключ самого агента
-  (`config\agent.key`) остаётся, поэтому после нового подключения сервер узнаёт машину: она возвращается с прежним
-  статусом, без повторного подтверждения. Машина, удалённая на сайте, регистрируется заново и ждёт подтверждения.
-- **Отключённая на сайте машина** работает автономно и шлёт только heartbeat с интервалом, который задаёт сервер
-  (5 минут), поэтому после включения на сайте связь возвращается в течение нескольких минут.
+- **«Allow the server to change tasks»** (in the settings, on by default): without it the server can start and stop
+  tasks, ask for logs and install updates, but cannot change tasks and settings.
+- **Update from the server:** the package `custos-<version>.zip` from a build is uploaded to the site («Updates») and
+  installed on the chosen computers. The service checks the server's signature and the SHA-256, waits for the current
+  task to end and starts `Custos.Updater.exe`: it stops the service, replaces the files (the previous ones are kept in
+  `C:\ProgramData\CUSTOS\updates\backup-<version>`), starts the service and puts the previous version back if that
+  fails. Log: `C:\ProgramData\CUSTOS\logs\updater.log`; the result goes to the Windows event log (4000 / 4001).
+- **«Reset the binding to the server…»** in the settings forgets the server, its key, the code and the queue of
+  reports. The agent's own key (`config\agent.key`) stays, so after a new connection the server recognises the
+  machine: it comes back with its previous status, without a new approval. A machine deleted on the site registers
+  anew and waits for approval.
+- **A machine switched off on the site** works on its own and sends only heartbeats, at the interval the server sets
+  (5 minutes), so after it is switched on again on the site the connection returns within a few minutes.
 
-## Перенос заданий: экспорт и импорт
+## New versions from GitHub (without a monitoring server)
 
-Нужен, когда переустанавливаете Windows или переносите задания на другой компьютер. Делают это администраторы.
+A computer without a monitoring server learns about new versions by itself: once a day the service asks the
+[releases on GitHub](https://github.com/openpass1/custos/releases) (the first time a few minutes after it starts). Only
+published releases of the program (`client-vX.Y.Z`) count; drafts and pre-releases are skipped.
 
-**Экспорт.** Главное окно → стрелка у кнопки «Создать» → «Экспорт заданий в файл…». Отметьте задания (по умолчанию
-отмечены все) и нажмите «Сохранить…». Файл `custos-tasks-<компьютер>-<дата>.json` — обычный JSON, его можно
-прочитать и поправить в блокноте.
+- When a new version is out, a tray notice «CUSTOS X.Y.Z is out» appears once (to administrators only), and the main
+  window shows a line above the task list with an **«Update»** button and a **«What's new»** link (the release page).
+- «Update» is for administrators only. The service downloads the package `custos-X.Y.Z.zip` of the same release,
+  compares its SHA-256 with the one published on GitHub (the file's digest or `SHA256SUMS.txt`) and installs it the
+  same way as an update from the site: it waits for the current task to end, starts `Custos.Updater.exe`, and puts the
+  previous version back if the new one fails. A package that does not match the sum is deleted and not installed.
+- **Settings → «Updates» → «Check GitHub for new versions once a day»** (on by default) and the «Check now» button. The
+  same place shows when the last check was and what it found. With the box unticked the service never asks GitHub.
+- **A computer connected to a monitoring server never asks GitHub**, even with the box ticked: the site installs its
+  updates.
 
-Вместе с заданиями в файл идут учётные записи, которые им нужны. Отметка «Также учётные записи из настроек, которые не
-нужны выбранным заданиям» (включена по умолчанию) добавляет и остальные учётные записи из Настроек: например, сетевую
-папку или SFTP-сервер, которые пока не используются ни в одном задании. При «Показать пароль» поле повтора пароля
-скрывается: видимый пароль второй раз вводить не нужно.
+Each check is written to the service log (`C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log`, lines `GitHub: …`); the
+state of the last check is kept in `C:\ProgramData\CUSTOS\config\program-update.json`. The result of the installation
+goes to the Windows event log (4000 / 4001), as with an update from the site.
 
-- **Без паролей** (по умолчанию). В файле задания и имена учётных записей, но нет паролей, SSH-ключей и токенов
-  облачных дисков. Такой файл можно хранить где угодно.
-- **С паролями.** Галочка «Включить в файл пароли и ключи…» и пароль экспорта (не короче 8 символов). В файл попадут
-  пароли сетевых папок, серверов (FTP, SFTP, WebDAV, S3) и баз данных, пароль архивов, SSH-ключи Linux-серверов,
-  токены облачных дисков и свои приложения облачных дисков, если токен выдан ими. Всё это зашифровано паролем экспорта
-  (PBKDF2-SHA256, 600 000 итераций, AES-256-GCM). Без пароля экспорта их не достать, в том числе CUSTOS. Храните такой
-  файл не на этом компьютере: на флешке или в сетевой папке.
-- Пароль архивов запишите отдельно в любом случае: без него уже сделанные копии не открыть.
+## Moving tasks: export and import
 
-**Импорт.** На новом компьютере установите CUSTOS → «Создать ▾» → «Импорт заданий из файла…» → «Обзор…». Если в файле
-есть пароли, окно сразу спросит пароль экспорта: введите тот, что задали при экспорте, и нажмите «Открыть». Если пароль
-не помните, нажмите «Без паролей из файла»: тогда пароли учётных записей и архивов можно ввести внизу окна импорта.
+Needed when you reinstall Windows or move the tasks to another computer. Administrators do it.
 
-- Задания сохраняют свои идентификаторы. Поэтому «Восстановить» сразу видит копии, которые они сделали до
-  переустановки, а хранение продолжает удалять старые по своим правилам. Первый запуск после импорта делает полную копию:
-  база файлов осталась на старой системе.
-- Задание, которое уже есть на компьютере (тот же идентификатор), по умолчанию не отмечено. Если отметить, задание из
-  файла его заменит.
-- Учётная запись, которая уже есть на компьютере, остаётся как есть.
-- Учётные записи из файла без заданий окно предлагает отдельной отметкой внизу («Также учётные записи из файла без
-  заданий»). Если на компьютере уже есть такая же (тот же вид и пользователь), второй не будет.
-- Паролей, которых нет в файле (или если файл не открыт), окно спросит внизу, каждый один раз. Это пароли учётных
-  записей и архивов, не пароль экспорта. Если на компьютере уже есть такая же учётная запись
-  (тот же пользователь), можно оставить «использовать сохранённый пароль».
-- Задание приходит **отключённым**, если ему чего-то не хватает: пароль оставили пустым, или в файле нет SSH-ключа либо
-  токена облачного диска. Что сделать, написано в «Что проверить» у задания:
-  - облачный диск: Настройки → список учётных записей → «Подключить заново…»;
-  - Linux-сервер: «Изменить» → «Источники» → сервер → «Создать новый ключ», затем добавьте новую строку ключа на сервер
-    (блок установки в том же окне);
-  - потом включите задание в редакторе.
-- Переменные `%USERPROFILE%` и подобные в путях берутся из профиля того, кто создал задание. Если этого профиля на
-  компьютере нет (после переустановки локальные учётные записи Windows новые), берётся профиль того, кто импортирует.
-- Если компьютер подключён к серверу мониторинга, импортированные задания уходят на сайт как обычная правка на месте.
+**Export.** Main window → the arrow next to «Create» → «Export tasks to a file…». Tick the tasks (all are ticked by
+default) and press «Save…». The file `custos-tasks-<computer>-<date>.json` is plain JSON; it can be read and edited
+in Notepad.
 
-## Переход с Cobian Backup
+The accounts the tasks need go into the file with them. «Also the accounts of the settings that the chosen tasks do
+not use» (on by default) adds the other accounts of the settings too: for example, a network folder or an SFTP server
+that no task uses yet. With «Show password» the field for repeating the password is hidden: a visible password need
+not be typed twice.
 
-Главное окно → «Импорт из Cobian Backup…» → файл `MainList.lst` (обычно
-`C:\Program Files (x86)\Cobian Backup 11\DB`). Задания добавляются отключёнными, чтобы не работать параллельно с
-Cobian: проверьте каждое в редакторе, выключите их в Cobian и включите здесь. Включить все сразу: выделите их в списке
-(Ctrl+A или щелчки с Ctrl и Shift) и нажмите «Включить» на панели или в меню по правой кнопке. Так же можно отключить,
-запустить, остановить или удалить несколько заданий.
+- **Without passwords** (the default). The file has the tasks and the names of the accounts, but no passwords, SSH
+  keys or cloud drive tokens. Such a file can be kept anywhere.
+- **With passwords.** The box «Put passwords and keys into the file, encrypted with an export password» and an export
+  password (at least 8 characters). The file then gets the passwords of network folders, servers (FTP, SFTP, WebDAV,
+  S3) and databases, the archive password, the SSH keys of Linux servers, the cloud drive tokens and the own cloud
+  applications that issued those tokens. All of it is encrypted with the export password (PBKDF2-SHA256, 600,000
+  iterations, AES-256-GCM). Without the export password nobody can get them out, CUSTOS included. Keep such a file off
+  this computer: on a USB stick or in a network folder.
+- Write down the archive password separately in any case: without it the backups already made cannot be opened.
 
-- События до и после Cobian записывает в своём формате, поэтому импорт кладёт их текстом в комментарий задания.
-  Задайте их заново на странице «События».
-- Пару заданий по одной папке «каждый день инкрементальное» + «раз в неделю полное» лучше заменить одним
-  инкрементальным заданием: «Принудительная полная копия» → «В день недели» и хранение «Дед-отец-сын» (например, 7 дней,
-  4 недели, 12 месяцев). Так копии не мешают друг другу, а старые удаляются целыми цепочками.
+**Import.** On the new computer install CUSTOS → «Create ▾» → «Import tasks from a file…» → «Browse…». If the file has
+passwords, the window asks for the export password at once: enter the one set at export and press «Open». If you do
+not remember it, press «Without passwords from the file»: then the passwords of the accounts and archives can be
+entered at the bottom of the import window.
 
-## Замена 7z.dll
+- Tasks keep their identifiers. So «Restore» sees at once the backups they made before the reinstall, and retention
+  goes on deleting old ones by its rules. The first run after the import makes a full backup: the database of files
+  stayed on the old system.
+- A task that is already on the computer (the same identifier) is not ticked by default. If you tick it, the task from
+  the file replaces it.
+- An account that is already on the computer stays as it is.
+- Accounts of the file that no task uses are offered with a separate box at the bottom («Also the accounts of the file
+  that no task uses»). If the computer already has the same one (the same kind and user), there will not be a second.
+- Passwords that the file lacks (or when the file is not opened) are asked at the bottom of the window, each once.
+  These are the passwords of accounts and archives, not the export password. If the computer already has the same
+  account (the same user), you can leave «use the stored password».
+- A task arrives **switched off** when it lacks something: a password was left empty, or the file has no SSH key or
+  cloud drive token. What to do is written in «What to check» of the task:
+  - cloud drive: Settings → the list of accounts → «Connect again…»;
+  - Linux server: «Edit» → «Sources» → the server → «Create new key», then add the new key line on the server (the
+    install block in the same window);
+  - then switch the task on in the editor.
+- Variables such as `%USERPROFILE%` in paths are taken from the profile of the one who created the task. If that
+  profile is not on the computer (after a reinstall, local Windows accounts are new), the profile of the one who
+  imports is used.
+- If the computer is connected to a monitoring server, imported tasks go to the site as an ordinary local edit.
 
-CUSTOS работает с архивами 7z через `C:\Program Files\CUSTOS\7z.dll` из 64-битной 7-Zip. Новую версию 7-Zip можно
-поставить самому, не дожидаясь новой сборки CUSTOS:
+## Moving from Cobian Backup
 
-1. Скачать и установить 64-битную 7-Zip (x64) с [7-zip.org](https://www.7-zip.org) или
-   [github.com/ip7z/7zip](https://github.com/ip7z/7zip/releases) на любой компьютер.
-2. На компьютере с CUSTOS открыть командную строку от имени администратора (в PowerShell сначала набрать `cmd`) и
-   остановить службу: `net stop CustosService`.
-3. Сохранить старый файл для отката:
+Main window → «Import from Cobian Backup…» → the file `MainList.lst` (usually
+`C:\Program Files (x86)\Cobian Backup 11\DB`). Tasks are added switched off, so that they do not run alongside Cobian:
+check each one in the editor, switch them off in Cobian and switch them on here. To switch all on at once, select them
+in the list (Ctrl+A, or clicks with Ctrl and Shift) and press «Switch on» on the toolbar or in the right-click menu.
+Several tasks can be switched off, started, stopped or deleted the same way.
+
+- Cobian keeps the events before and after in its own format, so the import puts them as text into the task's
+  comment. Set them again on the «Events» page.
+- A pair of tasks on one folder, "incremental every day" + "full once a week", is better replaced with one incremental
+  task: «Forced full backup» → «On the weekday» and «Grandfather-father-son» retention (for example, 7 days, 4 weeks,
+  12 months). Then the backups do not get in each other's way, and old ones are deleted as whole chains.
+
+## Replacing 7z.dll
+
+CUSTOS works with 7z archives through `C:\Program Files\CUSTOS\7z.dll` from 64-bit 7-Zip. A new version of 7-Zip can
+be put in by hand, without waiting for a new CUSTOS build:
+
+1. Download and install 64-bit 7-Zip (x64) from [7-zip.org](https://www.7-zip.org) or
+   [github.com/ip7z/7zip](https://github.com/ip7z/7zip/releases) on any computer.
+2. On the computer with CUSTOS open a command prompt as administrator (in PowerShell type `cmd` first) and stop the
+   service: `net stop CustosService`.
+3. Keep the old file for a rollback:
    `copy /y "C:\Program Files\CUSTOS\7z.dll" "C:\Program Files\CUSTOS\7z.dll.old"`.
-4. Скопировать новый `7z.dll` из папки 7-Zip (обычно `C:\Program Files\7-Zip\7z.dll`) в `C:\Program Files\CUSTOS\`
-   с заменой.
-5. Запустить службу: `net start CustosService`.
-6. Проверить версию: CUSTOS → «Настройки», раздел «Архиватор». Там же будет написано, если файл не подошёл (например,
-   32-битный). Версия есть и в журнале службы `C:\ProgramData\CUSTOS\logs\service-ГГГГММДД.log`.
+4. Copy the new `7z.dll` from the 7-Zip folder (usually `C:\Program Files\7-Zip\7z.dll`) into
+   `C:\Program Files\CUSTOS\`, replacing the old one.
+5. Start the service: `net start CustosService`.
+6. Check the version: CUSTOS → «Settings», section «Archiver». It also says there if the file does not fit (for
+   example, a 32-bit one). The version is in the service log `C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log` too.
 
-Откат: так же остановить службу, скопировать `7z.dll.old` обратно в `7z.dll`, запустить службу.
+Rollback: stop the service the same way, copy `7z.dll.old` back to `7z.dll`, start the service.
 
-Проще — кнопкой: CUSTOS → «Настройки» → «Архиватор» → «Проверить обновление 7-Zip» (нужны права администратора и
-интернет). Служба покажет установленную и последнюю версию и после согласия сама скачает 64-битный установщик 7-Zip с
-GitHub, сверит его SHA-256 с опубликованным, проверит новый `7z.dll` и заменит старый (он останется как `7z.dll.old`).
-Пока идёт задание или восстановление, обновление не начинается. Сама служба 7-Zip не проверяет: только по кнопке.
+Easier, with the button: CUSTOS → «Settings» → «Archiver» → «Check for a 7-Zip update» (needs administrator rights and
+internet). The service shows the installed and the latest version and, after you agree, downloads the 64-bit 7-Zip
+installer from GitHub, compares its SHA-256 with the published one, checks the new `7z.dll` and replaces the old one
+(which stays as `7z.dll.old`). While a task or a restore runs, the update does not start. The service never checks
+7-Zip by itself: only with the button.
 
-Если `7z.dll` нет или он не подходит, служба при запуске пишет об этом в журнал Windows «Приложение» (событие 3002), а
-ошибкой завершаются только задания с форматом 7z, с понятной причиной в журнале запуска. Задания с ZIP и без сжатия
-работают как обычно. Установщик CUSTOS не заменяет
-более новый `7z.dll` более старым.
+If `7z.dll` is missing or does not fit, the service writes so to the Windows «Application» event log at start (event
+3002), and only tasks with the 7z format end with an error, with a clear reason in the run log. Tasks with ZIP and
+without compression work as usual. The CUSTOS installer never replaces a newer `7z.dll` with an older one.
 
-## Права, пароль программы и тема
+## Rights, program password and theme
 
-CUSTOS → «Настройки» → «Права и защита» (менять может только администратор этого компьютера):
+CUSTOS → «Settings» → «Rights and protection» (only an administrator of this computer can change them):
 
-- **«Разрешить всем пользователям менять задания»** — по умолчанию выключено. Служба работает от имени SYSTEM, поэтому
-  это фактически даёт каждому пользователю права администратора; программа спрашивает подтверждение. Восстанавливать
-  копии и менять сами права по-прежнему могут только администраторы.
-- **«Интерфейс для пользователей»** — что видят пользователи, которые не администраторы: «Полный», «Только состояние»
-  (значок в трее и окно со списком заданий, без кнопок изменения) или «Скрыт» (значка нет; из меню «Пуск» открывается
-  окно состояния). Администраторы всегда видят полный интерфейс. Окно с отсчётом перед выключением после задания
-  появляется в любом режиме.
-- **«Пароль программы»** — «Задать…», «Сменить…», «Убрать пароль». Если пароль задан, для изменения заданий и настроек,
-  восстановления, экспорта и импорта заданий его нужно ввести, даже администратору. После ввода он не спрашивается 30 минут после последнего
-  изменения или пока главное окно не закрыто. Пароль можно задать и убрать и на сайте мониторинга (машина →
-  «Настройки агента»). Хранится только его хэш (PBKDF2-SHA256). Это защита от случайных правок и посторонних, а не от
-  администратора Windows.
+- **«Allow all users to change tasks»**: off by default. The service runs as SYSTEM, so this in effect gives every
+  user administrator rights; the program asks for confirmation. Restoring backups and changing the rights themselves
+  stay with administrators.
+- **«Interface for users»**: what users who are not administrators see: «Full», «State only» (the tray icon and a
+  window with the task list, without buttons that change anything) or «Hidden» (no icon; the Start menu opens the state
+  window). Administrators always see the full interface. The countdown window before a shutdown after a task appears
+  in every mode.
+- **«Program password»**: «Set…», «Change…», «Remove password». When a password is set, it must be entered to change
+  tasks and settings, to restore, and to export and import tasks, even by an administrator. Once entered, it is not
+  asked again for 30 minutes after the last change or until the main window is closed. The password can also be set
+  and removed on the monitoring site (machine → «Agent settings»). Only its hash is kept (PBKDF2-SHA256). This
+  protects against accidental edits and outsiders, not against a Windows administrator.
 
-**Если пароль забыт.** Проще всего убрать его на сайте мониторинга. Без сайта — на самом компьютере, с правами
-администратора:
+**If the password is forgotten.** The easiest way is to remove it on the monitoring site. Without a site, on the
+computer itself, with administrator rights:
 
-1. Открыть командную строку от имени администратора (в PowerShell сначала набрать `cmd`) и остановить службу:
+1. Open a command prompt as administrator (in PowerShell type `cmd` first) and stop the service:
    `net stop CustosService`.
-2. Открыть файл настроек в Блокноте: `notepad C:\ProgramData\CUSTOS\config\settings.json`.
-3. Найти строку `"program_password_hash": "pbkdf2-sha256$…",` и заменить значение на `null`:
-   `"program_password_hash": null,`. Сохранить файл.
-4. Запустить службу: `net start CustosService`.
+2. Open the settings file in Notepad: `notepad C:\ProgramData\CUSTOS\config\settings.json`.
+3. Find the line `"program_password_hash": "pbkdf2-sha256$…",` and replace the value with `null`:
+   `"program_password_hash": null,`. Save the file.
+4. Start the service: `net start CustosService`.
 
-**Тема** — «Настройки» → «Оформление» → «Тема»: «Как в Windows» (по умолчанию, по режиму приложений Windows),
-«Светлая» или «Тёмная». Одна на весь компьютер; открытые окна CUSTOS откроются заново в новой теме.
+**Theme**: «Settings» → «Look» → «Theme»: «As in Windows» (the default, following the colour mode of Windows apps),
+«Light» or «Dark». One for the whole computer; the open windows of CUSTOS are reopened in the new theme.
+
+**Language.** The windows follow the Windows language of the user: Russian on a Russian Windows, English on any other.
+The run logs and the messages of the service have their own setting, «Settings» → «Language of the logs» («Automatic»
+follows the language of Windows).
 
 ## Files on the computer
 
@@ -437,7 +478,8 @@ CUSTOS → «Настройки» → «Права и защита» (менят
 | `C:\ProgramData\CUSTOS\db\custos.db` | Run history (kept 365 days by default) and file states for incremental and differential backups |
 | `C:\ProgramData\CUSTOS\logs\` | Service log; `journal\` holds the journal of every day (the lines of the «Log» tab), `runs\YYYY-MM\` one log file per run. Kept 180 days by default |
 | `C:\ProgramData\CUSTOS\config\server.json`, `agent.key` | The monitoring server, its pinned key and the registration code (DPAPI); the agent's own RSA key (DPAPI) |
-| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server or GitHub and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
+| `C:\ProgramData\CUSTOS\config\program-update.json` | The last check of GitHub for a new version of the program (computers without a monitoring server) |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
 | `%APPDATA%\CUSTOS\last-known.json` | The theme and the tray mode the service gave last, so the interface starts in them before the service answers |
 | `%APPDATA%\CUSTOS\gui-errors.log` | Unexpected errors of the interface, with details |
@@ -459,8 +501,8 @@ administrator rights, after the Windows UAC prompt.
 - Windows event log "Application", source `CUSTOS`: 1000 service started, 1001 service stopped,
   2000-2005 runs, 2006-2008 shutdown or sleep after a run (done, cancelled, failed), 3002 7z.dll missing or unusable,
   3003/3004 7-Zip updated / update failed, 1100/1101 monitoring server lost for 5 minutes / back, 4000/4001 update
-  from the server installed / failed, 9000 unexpected error (details in the log file). Full list in section 6.10
-  of the specification.
+  installed / failed (from the server or GitHub), 9000 unexpected error (details in the log file). Full list in
+  section 6.10 of the specification.
 - To watch the service live, stop it and start it in an administrator console:
   `sc.exe stop CustosService`, then `& "C:\Program Files\CUSTOS\CustosService.exe"` (Ctrl+C to stop), then
   `sc.exe start CustosService`.

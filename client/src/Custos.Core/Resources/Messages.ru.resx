@@ -1645,6 +1645,57 @@
   <data name="MonitorPackageFileHash" xml:space="preserve">
     <value>SHA-256 файла {0} не совпадает с manifest.json</value>
   </data>
+  <data name="ProgramCheckFailed" xml:space="preserve">
+    <value>Не удалось узнать у GitHub о новой версии CUSTOS: {0}</value>
+  </data>
+  <data name="ProgramBadAnswer" xml:space="preserve">
+    <value>ответ не похож на список выпусков</value>
+  </data>
+  <data name="ProgramCheckLimited" xml:space="preserve">
+    <value>GitHub ограничил число запросов с этого адреса; следующая проверка завтра</value>
+  </data>
+  <data name="ProgramNoRelease" xml:space="preserve">
+    <value>На GitHub пока нет опубликованных выпусков CUSTOS.</value>
+  </data>
+  <data name="ProgramUpToDate" xml:space="preserve">
+    <value>CUSTOS {0} — последняя версия.</value>
+  </data>
+  <data name="ProgramFound" xml:space="preserve">
+    <value>Вышла CUSTOS {0} (на этом компьютере {1}). Администратор устанавливает её в окне программы кнопкой «Обновить».</value>
+  </data>
+  <data name="ProgramNoSum" xml:space="preserve">
+    <value>в SHA256SUMS.txt выпуска нет файла {0}, поэтому его нельзя проверить, и он не устанавливается</value>
+  </data>
+  <data name="ProgramDownloading" xml:space="preserve">
+    <value>Скачивание CUSTOS {0} с GitHub ({1}).</value>
+  </data>
+  <data name="ProgramDownloadFailed" xml:space="preserve">
+    <value>Не удалось скачать {0}: {1}</value>
+  </data>
+  <data name="ProgramTooBig" xml:space="preserve">
+    <value>файл больше, чем бывает пакет обновления</value>
+  </data>
+  <data name="ProgramChecksumMismatch" xml:space="preserve">
+    <value>У {0} SHA-256 {1}, а в выпуске на GitHub указан {2}. Файл удалён и не использован.</value>
+  </data>
+  <data name="ProgramVerified" xml:space="preserve">
+    <value>{0}: SHA-256 совпадает с указанным в выпуске на GitHub.</value>
+  </data>
+  <data name="ProgramUpdateBy" xml:space="preserve">
+    <value>Запущено обновление до CUSTOS {0} с GitHub ({1}).</value>
+  </data>
+  <data name="ProgramUpdateStarted" xml:space="preserve">
+    <value>Устанавливается CUSTOS {0}. Примерно через минуту служба перезапустится, окно подключится само.</value>
+  </data>
+  <data name="ProgramNotAllowed" xml:space="preserve">
+    <value>Обновлять CUSTOS могут только администраторы.</value>
+  </data>
+  <data name="ProgramManagedBySite" xml:space="preserve">
+    <value>Компьютер подключён к сайту мониторинга: новые версии CUSTOS приходят с сайта.</value>
+  </data>
+  <data name="ProgramNothingNewer" xml:space="preserve">
+    <value>На GitHub нет версии CUSTOS новее {0}.</value>
+  </data>
   <data name="StoreFileShorter" xml:space="preserve">
     <value>Файл в назначении короче, чем должен быть.</value>
   </data>

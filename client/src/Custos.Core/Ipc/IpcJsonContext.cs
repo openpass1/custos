@@ -51,6 +51,7 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(OkResult))]
 [JsonSerializable(typeof(ServerConnectRequest))]
 [JsonSerializable(typeof(SevenZipCheckResult))]
+[JsonSerializable(typeof(ProgramUpdateInfo))]
 [JsonSerializable(typeof(RestoreListRequest))]
 [JsonSerializable(typeof(RestoreListResult))]
 [JsonSerializable(typeof(RestoreStartRequest))]

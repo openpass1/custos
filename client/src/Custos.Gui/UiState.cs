@@ -92,6 +92,9 @@ internal sealed class LastKnown
     /// <summary>What this user gets: <see cref="Core.Model.TrayModes.Full"/> for an administrator, else the setting.</summary>
     public string TrayMode { get; set; } = Core.Model.TrayModes.Full;
 
+    /// <summary>The newest version on GitHub this user was already told about in the tray.</summary>
+    public string? AnnouncedUpdate { get; set; }
+
     private static string FilePath => Path.Combine(UiState.Folder, "last-known.json");
 
     public static LastKnown Load()

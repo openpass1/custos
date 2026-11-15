@@ -1718,6 +1718,63 @@ static partial class Strings
     /// <summary>0 = off. Done after a successful run when the time has come. A damaged backup makes the run an error.</summary>
     public static string VerifyStoredDaysHelp => Get(nameof(VerifyStoredDaysHelp));
 
+    /// <summary>CUSTOS {0} is out. This computer has {1}.</summary>
+    public static string UpdateBanner => Get(nameof(UpdateBanner));
+
+    /// <summary>Update</summary>
+    public static string UpdateInstall => Get(nameof(UpdateInstall));
+
+    /// <summary>Installing…</summary>
+    public static string UpdateInstalling => Get(nameof(UpdateInstalling));
+
+    /// <summary>What's new</summary>
+    public static string UpdateWhatsNew => Get(nameof(UpdateWhatsNew));
+
+    /// <summary>Only an administrator of this computer may update CUSTOS.</summary>
+    public static string UpdateAdminOnly => Get(nameof(UpdateAdminOnly));
+
+    /// <summary>Install CUSTOS {0}?</summary>
+    public static string UpdateAsk => Get(nameof(UpdateAsk));
+
+    /// <summary>CUSTOS {0} is out</summary>
+    public static string UpdateBalloonTitle => Get(nameof(UpdateBalloonTitle));
+
+    /// <summary>Open the program window to install it.</summary>
+    public static string UpdateBalloonText => Get(nameof(UpdateBalloonText));
+
+    /// <summary>Updates</summary>
+    public static string SettingsUpdates => Get(nameof(SettingsUpdates));
+
+    /// <summary>Check GitHub for new versions once a day</summary>
+    public static string CheckUpdates => Get(nameof(CheckUpdates));
+
+    /// <summary>The service asks github.com/{0} once a day. A new version appears in the program window and in the tray; it...</summary>
+    public static string CheckUpdatesHelp => Get(nameof(CheckUpdatesHelp));
+
+    /// <summary>Check now</summary>
+    public static string UpdatesCheckNow => Get(nameof(UpdatesCheckNow));
+
+    /// <summary>Not checked yet.</summary>
+    public static string UpdatesNever => Get(nameof(UpdatesNever));
+
+    /// <summary>Checked {0}: {1}</summary>
+    public static string UpdatesLastCheck => Get(nameof(UpdatesLastCheck));
+
+    /// <summary>CUSTOS {0} is the newest version</summary>
+    public static string UpdatesLatest => Get(nameof(UpdatesLatest));
+
+    /// <summary>CUSTOS {0} is out</summary>
+    public static string UpdatesAvailable => Get(nameof(UpdatesAvailable));
+
+    /// <summary>no release on GitHub yet</summary>
+    public static string UpdatesNone => Get(nameof(UpdatesNone));
+
+    /// <summary>The check is off.</summary>
+    public static string UpdatesOff => Get(nameof(UpdatesOff));
+
+    /// <summary>This computer is connected to a monitoring site: new versions come from the site.</summary>
+    public static string UpdatesManagedBySite => Get(nameof(UpdatesManagedBySite));
+
     /// <summary>Archiver</summary>
     public static string Settings7Zip => Get(nameof(Settings7Zip));
 
