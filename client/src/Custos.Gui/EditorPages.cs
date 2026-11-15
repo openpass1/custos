@@ -810,7 +810,7 @@ internal sealed class DestinationsPage : EditorPage
         Context.StreamOnlyDestination = _destinations.FirstOrDefault(d => !DestinationKinds.CanSeek(d.Kind)) is { } stream
             ? TaskDescriber.Destination(stream)
             : null;
-        Context.WormDays = _destinations.Select(WormSettings.Of).Max(worm => worm?.Days ?? 0);
+        Context.WormDays = _destinations.Select(d => WormSettings.Of(d)?.Days ?? 0).DefaultIfEmpty(0).Max();
         ShowCloudNote();
         UpdateLayout();
         UpdateButtons();
