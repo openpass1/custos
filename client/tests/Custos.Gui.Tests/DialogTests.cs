@@ -747,7 +747,7 @@ public sealed class DialogTests
         Assert.Equal(copy.Top, saveAs.Top);
         var databaseChoice = Sta.Find<RadioButton>(dialog).Single(r => r.Text == Strings.DbChoiceAll);
         Assert.True(dialog.PointToClient(databaseChoice.PointToScreen(Point.Empty)).Y < dialog.PointToClient(copy.PointToScreen(Point.Empty)).Y);
-        var speedBox = Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum > 65535);
+        var speedBox = Assert.Single(Sta.Find<SpeedBox>(dialog));
         Assert.True(dialog.PointToClient(speedBox.PointToScreen(Point.Empty)).Y > dialog.PointToClient(Sta.Find<Button>(dialog).Single(b => b.Text == Strings.ButtonTestConnection).PointToScreen(Point.Empty)).Y);
 
         // Scrolled down and then made larger, the rows keep their height: no empty space under the last line.

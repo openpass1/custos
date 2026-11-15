@@ -112,6 +112,7 @@ public sealed class MainFormTests
         // A task without it has no such row, and none for an empty comment.
         office.Destinations[1].WormDays = 0;
         office.Comment = " ";
+        snapshot.Version++;
         monitor.SimulateSnapshot(snapshot);
         Sta.Pump();
         Assert.False(Sta.Shows(card, Strings.CardProtection));
