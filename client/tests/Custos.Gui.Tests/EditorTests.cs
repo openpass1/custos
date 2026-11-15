@@ -129,6 +129,9 @@ public sealed class EditorTests
         var task = Samples.Office();
         task.Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 5 };
         task.Destinations.Add(Samples.Remote(kind));
+
+        // The S3 sample has Object Lock for 30 days: the retention must not delete sooner.
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 30 };
         using var monitor = Samples.Monitor();
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
         editor.Show();
