@@ -329,6 +329,83 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
         }
     }
 
+    /// <summary>Whether «A separate folder for each backup» is on, on the destinations page.</summary>
+    public bool SeparateFolders
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    } = true;
+
+    /// <summary>
+    /// The first destination that does not let written files be replaced or deleted for a while (WORM, S3 Object Lock);
+    /// null if none. Such a destination takes only backups that are never overwritten: no mirror, no shared folder.
+    /// </summary>
+    public TaskDestination? Protecting
+    {
+        get;
+        set
+        {
+            if (!ReferenceEquals(field, value))
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    /// <summary>The first cloud drive among the destinations; null if none. A mirror cannot go there (section 6.3).</summary>
+    public TaskDestination? CloudDrive
+    {
+        get;
+        set
+        {
+            if (!ReferenceEquals(field, value))
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    /// <summary>Whether a destination can hold NTFS permissions (a folder, a network folder, a USB disk), or none is
+    /// added yet.</summary>
+    public bool KeepsNtfs
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    } = true;
+
+    /// <summary>
+    /// Whether the task reads something, and whether a folder or file on a local disk is among it: a shadow copy is
+    /// made of local disks only (section 6.4).
+    /// </summary>
+    public (bool Any, bool Local) Reads
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
     /// <summary>Raised when a destination that wants an archive was added (a cloud drive): the archive page then
     /// turns «no compression» into ZIP.</summary>
     public event EventHandler? ZipWanted;

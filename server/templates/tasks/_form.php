@@ -155,14 +155,11 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
                        <?= $pathExample('destination', $kind) ?>>
             </label>
             <label><?= e(t('task_form.speed')) ?>
-                <input type="number" name="<?= e($prefix) ?>[speed_limit_kbps]" value="<?= (int) ($item['speed_limit_kbps'] ?? 0) ?>" min="0" class="short">
+                <input type="number" name="<?= e($prefix) ?>[speed_limit_mbps]" value="<?= e(TaskForm::speedMbps((int) ($item['speed_limit_kbps'] ?? 0))) ?>" min="0" step="0.1" class="short">
             </label>
             <label data-show-if="kind=gdrive|yadisk|dropbox"><?= e(t('task_form.part_mb')) ?>
                 <input type="number" name="<?= e($prefix) ?>[part_mb]" value="<?= (int) ($item['part_mb'] ?? 0) ?>" min="0" max="1000000" class="short">
             </label>
-            <label class="check" data-show-if="kind=unc">
-                <input type="checkbox" name="<?= e($prefix) ?>[disconnect_after]" value="1"<?= checked((bool) ($item['disconnect_after'] ?? true)) ?>>
-                <?= e(t('task_form.disconnect_after')) ?></label>
         </div>
         <div class="row-fields" data-show-if="kind=local|unc|usb">
             <label title="<?= e(t('task_form.worm_hint')) ?>"><?= e(t('task_form.worm_days')) ?>
@@ -373,7 +370,7 @@ foreach ($errors as $error) {
                 <?= $destinationRow((string) $i, $item) ?>
             <?php endforeach ?>
         </div>
-        <template data-row-template="destinations"><?= $destinationRow('__i__', ['kind' => 'local', 'disconnect_after' => true]) ?></template>
+        <template data-row-template="destinations"><?= $destinationRow('__i__', ['kind' => 'local']) ?></template>
         <button type="button" class="secondary" data-add-row="destinations"><?= e(t('task_form.add.destination')) ?></button>
         <p class="note"><?= e(t('task_form.destinations.hint')) ?></p>
 

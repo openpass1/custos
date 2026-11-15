@@ -86,6 +86,8 @@ public sealed class MainFormTests
         office.Events.Pre = [new TaskEvent { Kind = TaskEventKinds.ServiceStop, Service = "MySQL80" }];
         office.Events.Post = [new TaskEvent { Kind = TaskEventKinds.ServiceStart, Service = "MySQL80" }];
         office.Events.After = AfterActions.Shutdown;
+        office.Destinations[1].WormDays = 7;
+        office.Destinations[1].WormLockHours = 3;
         monitor.SimulateSnapshot(snapshot);
         Sta.Pump();
 
@@ -100,6 +102,21 @@ public sealed class MainFormTests
         Assert.True(Sta.Shows(card, TaskDescriber.FullBackups(office)!));
         Assert.True(Sta.Shows(card, Strings.Format(Strings.EventShowStop, "MySQL80")));
         Assert.True(Sta.Shows(card, Strings.Format(Strings.EventShowStart, "MySQL80") + Environment.NewLine + Strings.AfterShutdown));
+
+        // WORM has a row of its own, in colour, named by the destination when there are several.
+        string worm = Strings.Format(Strings.CardProtectionOf, TaskDescriber.Destination(office.Destinations[1]), Strings.Format(Strings.CardWorm, 7, 3));
+        Assert.Equal(worm, TaskCard.DescribeProtection(office));
+        Assert.Equal(Glyphs.Blue, Sta.Find<Label>(card).Single(l => l.Text == worm).ForeColor);
+        Assert.True(Sta.Shows(card, Strings.CardProtection));
+
+        // A task without it has no such row, and none for an empty comment.
+        office.Destinations[1].WormDays = 0;
+        office.Comment = " ";
+        snapshot.Version++;
+        monitor.SimulateSnapshot(snapshot);
+        Sta.Pump();
+        Assert.False(Sta.Shows(card, Strings.CardProtection));
+        Assert.False(Sta.Shows(card, Strings.CardComment));
     });
 
     [Theory]

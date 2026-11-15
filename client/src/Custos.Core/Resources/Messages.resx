@@ -163,6 +163,37 @@
   <data name="WormNeedsSets" xml:space="preserve">
     <value>{0}: with WORM a written file cannot be replaced for {1} days, so only backups that are never overwritten can go there: archives or a separate folder for each backup. A mirror and a shared folder replace files.</value>
   </data>
+  <data name="WormRetentionTooShort" xml:space="preserve">
+    <value>{0}: WORM for {1} days does not let a backup be deleted sooner than {2} after it is written, and this retention would delete backups after {3} already. They would stay until their protection is over anyway, and the destination would hold more backups than set.
+
+{4}</value>
+  </data>
+  <data name="ObjectLockRetentionTooShort" xml:space="preserve">
+    <value>{0}: S3 Object Lock for {1} days does not let a backup be deleted sooner than {2} after it is uploaded, and this retention would delete backups after {3} already. They would stay in the bucket until their protection is over anyway, taking space, and there would be more backups than set.
+
+{4}</value>
+  </data>
+  <data name="WormRetentionFixCount" xml:space="preserve">
+    <value>Keep at least {0} full backups, or choose retention by age.</value>
+  </data>
+  <data name="WormRetentionFixAge" xml:space="preserve">
+    <value>Keep backups for at least {0} days.</value>
+  </data>
+  <data name="WormRetentionFixGfs" xml:space="preserve">
+    <value>Keep daily backups for at least {0} days.</value>
+  </data>
+  <data name="WormRetentionFixGfsDay" xml:space="preserve">
+    <value>With several backups a day, GFS deletes the earlier backups of a day at the next run. Run the task once a day, make the backups incremental, or choose retention by age of at least {0} days.</value>
+  </data>
+  <data name="WormDurationHours" xml:space="preserve">
+    <value>{0} h</value>
+  </data>
+  <data name="WormDurationDays" xml:space="preserve">
+    <value>{0} days</value>
+  </data>
+  <data name="WormDurationDaysHours" xml:space="preserve">
+    <value>{0} days {1} h</value>
+  </data>
   <data name="UnfinishedSetRemoved" xml:space="preserve">
     <value>Removed the unfinished set «{0}» in {1}: its run of {2} did not finish.</value>
   </data>

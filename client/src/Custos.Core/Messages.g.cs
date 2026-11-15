@@ -155,6 +155,33 @@ static partial class Messages
     /// <summary>{0}: with WORM a written file cannot be replaced for {1} days, so only backups that are never overwritten c...</summary>
     public static string WormNeedsSets => Get(nameof(WormNeedsSets));
 
+    /// <summary>{0}: WORM for {1} days does not let a backup be deleted sooner than {2} after it is written, and this reten...</summary>
+    public static string WormRetentionTooShort => Get(nameof(WormRetentionTooShort));
+
+    /// <summary>{0}: S3 Object Lock for {1} days does not let a backup be deleted sooner than {2} after it is uploaded, and...</summary>
+    public static string ObjectLockRetentionTooShort => Get(nameof(ObjectLockRetentionTooShort));
+
+    /// <summary>Keep at least {0} full backups, or choose retention by age.</summary>
+    public static string WormRetentionFixCount => Get(nameof(WormRetentionFixCount));
+
+    /// <summary>Keep backups for at least {0} days.</summary>
+    public static string WormRetentionFixAge => Get(nameof(WormRetentionFixAge));
+
+    /// <summary>Keep daily backups for at least {0} days.</summary>
+    public static string WormRetentionFixGfs => Get(nameof(WormRetentionFixGfs));
+
+    /// <summary>With several backups a day, GFS deletes the earlier backups of a day at the next run. Run the task once a d...</summary>
+    public static string WormRetentionFixGfsDay => Get(nameof(WormRetentionFixGfsDay));
+
+    /// <summary>{0} h</summary>
+    public static string WormDurationHours => Get(nameof(WormDurationHours));
+
+    /// <summary>{0} days</summary>
+    public static string WormDurationDays => Get(nameof(WormDurationDays));
+
+    /// <summary>{0} days {1} h</summary>
+    public static string WormDurationDaysHours => Get(nameof(WormDurationDaysHours));
+
     /// <summary>Removed the unfinished set «{0}» in {1}: its run of {2} did not finish.</summary>
     public static string UnfinishedSetRemoved => Get(nameof(UnfinishedSetRemoved));
 

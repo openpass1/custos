@@ -163,6 +163,37 @@
   <data name="WormNeedsSets" xml:space="preserve">
     <value>{0}: при WORM записанный файл нельзя заменить {1} дн., поэтому сюда можно писать только копии, которые не перезаписываются: архивы или отдельная папка для каждой копии. Зеркало и общая папка заменяют файлы.</value>
   </data>
+  <data name="WormRetentionTooShort" xml:space="preserve">
+    <value>{0}: WORM на {1} дн. не даёт удалить копию раньше чем через {2} после записи, а это хранение удаляло бы копии уже через {3}. Они всё равно оставались бы до конца защиты, и копий в назначении было бы больше, чем задано.
+
+{4}</value>
+  </data>
+  <data name="ObjectLockRetentionTooShort" xml:space="preserve">
+    <value>{0}: S3 Object Lock на {1} дн. не даёт удалить копию раньше чем через {2} после загрузки, а это хранение удаляло бы копии уже через {3}. Они всё равно оставались бы в бакете до конца защиты и занимали место, и копий было бы больше, чем задано.
+
+{4}</value>
+  </data>
+  <data name="WormRetentionFixCount" xml:space="preserve">
+    <value>Храните не меньше {0} полных копий или выберите хранение по возрасту.</value>
+  </data>
+  <data name="WormRetentionFixAge" xml:space="preserve">
+    <value>Храните копии не меньше {0} дн.</value>
+  </data>
+  <data name="WormRetentionFixGfs" xml:space="preserve">
+    <value>Храните дневные копии не меньше {0} дн.</value>
+  </data>
+  <data name="WormRetentionFixGfsDay" xml:space="preserve">
+    <value>При нескольких копиях в день GFS удаляет более ранние копии дня при следующем запуске. Запускайте задание раз в день, сделайте копии инкрементными или выберите хранение по возрасту не меньше {0} дн.</value>
+  </data>
+  <data name="WormDurationHours" xml:space="preserve">
+    <value>{0} ч</value>
+  </data>
+  <data name="WormDurationDays" xml:space="preserve">
+    <value>{0} дн.</value>
+  </data>
+  <data name="WormDurationDaysHours" xml:space="preserve">
+    <value>{0} дн. {1} ч</value>
+  </data>
   <data name="UnfinishedSetRemoved" xml:space="preserve">
     <value>Удалена недописанная копия «{0}» в {1}: её запуск {2} не закончился.</value>
   </data>

@@ -200,6 +200,18 @@ static partial class Strings
     /// <summary>Destinations</summary>
     public static string CardDestinations => Get(nameof(CardDestinations));
 
+    /// <summary>Protection</summary>
+    public static string CardProtection => Get(nameof(CardProtection));
+
+    /// <summary>WORM {0} days: the storage locks a backup {1} h after it is written; it cannot be changed or deleted until ...</summary>
+    public static string CardWorm => Get(nameof(CardWorm));
+
+    /// <summary>S3 Object Lock {0} days ({1}): a backup cannot be changed or deleted until then</summary>
+    public static string CardObjectLock => Get(nameof(CardObjectLock));
+
+    /// <summary>{0}: {1}</summary>
+    public static string CardProtectionOf => Get(nameof(CardProtectionOf));
+
     /// <summary>Schedule</summary>
     public static string CardSchedule => Get(nameof(CardSchedule));
 
@@ -515,6 +527,15 @@ static partial class Strings
     /// <summary>The destination folder is kept the same as the sources: only new and changed files are copied. No compressi...</summary>
     public static string TypeMirrorHint => Get(nameof(TypeMirrorHint));
 
+    /// <summary>Not available: «{0}» protects written files from changes, and a mirror replaces them.</summary>
+    public static string MirrorProtectedNote => Get(nameof(MirrorProtectedNote));
+
+    /// <summary>Not available: «{0}» is a cloud drive, and a mirror replaces and deletes single files.</summary>
+    public static string MirrorCloudNote => Get(nameof(MirrorCloudNote));
+
+    /// <summary>Not available: a Linux server is copied in sets only: full, incremental or differential.</summary>
+    public static string MirrorRemoteNote => Get(nameof(MirrorRemoteNote));
+
     /// <summary>Exact: files deleted in the sources are deleted from the mirror too</summary>
     public static string MirrorExact => Get(nameof(MirrorExact));
 
@@ -695,6 +716,9 @@ static partial class Strings
     /// <summary>Always on here: «{0}» protects written files from deletion, and in a shared folder files are replaced.</summary>
     public static string SeparateForcedNote => Get(nameof(SeparateForcedNote));
 
+    /// <summary>Always on here: backups of a Linux server always go into a folder each.</summary>
+    public static string SeparateRemoteNote => Get(nameof(SeparateRemoteNote));
+
     /// <summary>Folder name:</summary>
     public static string NameTemplate => Get(nameof(NameTemplate));
 
@@ -802,6 +826,9 @@ static partial class Strings
 
     /// <summary>A mirror is one copy that is kept up to date, so there is nothing to delete here. How long a safe mirror ke...</summary>
     public static string RetentionMirrorNote => Get(nameof(RetentionMirrorNote));
+
+    /// <summary>The backups go into one shared folder and are updated there: earlier versions are not kept, so there is not...</summary>
+    public static string RetentionSharedNote => Get(nameof(RetentionSharedNote));
 
     /// <summary>Keep all backups</summary>
     public static string RetentionNone => Get(nameof(RetentionNone));
@@ -1646,6 +1673,24 @@ static partial class Strings
     /// <summary>For copies without compression: files and folders in the copy get the permissions and the owner of the orig...</summary>
     public static string PreserveAclHelp => Get(nameof(PreserveAclHelp));
 
+    /// <summary>Not used: a Linux server is read by custos-helper, not from a Windows disk.</summary>
+    public static string AdvancedVssRemote => Get(nameof(AdvancedVssRemote));
+
+    /// <summary>Not used: no source is a folder or file on a local disk, and a shadow copy is made of local disks only.</summary>
+    public static string AdvancedVssNoLocal => Get(nameof(AdvancedVssNoLocal));
+
+    /// <summary>Not used for a Linux server.</summary>
+    public static string AdvancedRetriesRemote => Get(nameof(AdvancedRetriesRemote));
+
+    /// <summary>Not used: ZIP and 7z archives do not keep NTFS permissions.</summary>
+    public static string AdvancedAclArchive => Get(nameof(AdvancedAclArchive));
+
+    /// <summary>Not used: files of a Linux server have no NTFS permissions.</summary>
+    public static string AdvancedAclRemote => Get(nameof(AdvancedAclRemote));
+
+    /// <summary>Not used: servers and cloud drives do not keep NTFS permissions; a folder, a network folder or a USB disk d...</summary>
+    public static string AdvancedAclNoNtfs => Get(nameof(AdvancedAclNoNtfs));
+
     /// <summary>Check for a 7-Zip update</summary>
     public static string SevenZipCheckButton => Get(nameof(SevenZipCheckButton));
 
@@ -1865,7 +1910,7 @@ static partial class Strings
     /// <summary>Speed limit:</summary>
     public static string RemoteSpeed => Get(nameof(RemoteSpeed));
 
-    /// <summary>KB/s (0 — no limit)</summary>
+    /// <summary>MB/s (0 — no limit)</summary>
     public static string RemoteSpeedUnit => Get(nameof(RemoteSpeedUnit));
 
     /// <summary>How fast custos-helper reads the files, so that the sites do not slow down. Dumps of the databases are not ...</summary>

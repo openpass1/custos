@@ -1,3 +1,4 @@
+using Custos.Core.Backup;
 using Custos.Core.Model;
 using Custos.Core.Text;
 
@@ -113,6 +114,9 @@ public sealed class EditorTests
             Samples.Remote(DestinationKinds.WebDav), Samples.Remote(DestinationKinds.S3),
         ];
 
+        // The S3 sample has Object Lock for 30 days: the retention must not delete sooner.
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 30 };
+
         Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
     });
 
@@ -125,6 +129,9 @@ public sealed class EditorTests
         var task = Samples.Office();
         task.Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 5 };
         task.Destinations.Add(Samples.Remote(kind));
+
+        // The S3 sample has Object Lock for 30 days: the retention must not delete sooner.
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 30 };
         using var monitor = Samples.Monitor();
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
         editor.Show();
@@ -178,19 +185,59 @@ public sealed class EditorTests
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
         editor.Show();
         Sta.Pump();
+        editor.SelectPage(editor.Pages[3]);
+        Sta.Pump();
 
         Assert.Null(editor.Collect(out string? problem));
         Assert.Equal(worm
             ? Custos.Core.Messages.Format(Custos.Core.Messages.WormNeedsSets, @"\\nas\backup\office", 7)
             : Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, "s3://office-backup/pc01"), problem);
+
+        // The first page is shown, where the type is changed; the mirror stays on there, with what is wrong with it.
+        var basic = editor.Pages[0];
+        Assert.True(basic.Visible);
+        var mirror = Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle);
+        Assert.True(mirror.Enabled);
+        Assert.True(Sta.Shows(basic, Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(destination))));
+
+        // Once another type is chosen, the mirror cannot be chosen again.
+        Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeFullTitle).Checked = true;
+        Sta.Pump();
+        Assert.False(mirror.Enabled);
+    });
+
+    [Fact]
+    public void A_mirror_is_not_offered_once_a_destination_has_worm() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var basic = editor.Pages[0];
+        var mirror = Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle);
+        Assert.True(mirror.Enabled);
+
+        // WORM is set on a destination, as the destination dialog does.
+        var withWorm = Samples.Office();
+        withWorm.Destinations[1].WormDays = 7;
+        withWorm.Destinations[1].WormLockHours = 3;
+        editor.Pages[3].LoadFrom(withWorm);
+        Sta.Pump();
+
+        Assert.False(mirror.Enabled);
+        Assert.True(Sta.Shows(basic, Strings.Format(Strings.MirrorProtectedNote, TaskDescriber.Destination(withWorm.Destinations[1]))));
     });
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void A_destination_that_protects_its_files_keeps_a_folder_for_each_backup(bool worm) => Sta.Run("ru-RU", () =>
+    [InlineData(true, ArchiveFormats.None)]
+    [InlineData(true, ArchiveFormats.Zip)]
+    [InlineData(false, ArchiveFormats.None)]
+    [InlineData(false, ArchiveFormats.Zip)]
+    public void A_destination_that_protects_its_files_keeps_a_folder_for_each_backup(bool worm, string archive) => Sta.Run("ru-RU", () =>
     {
-        // Plain copies in one shared folder would write over the files of the last run.
+        // Plain copies in one shared folder would write over the files of the last run. With archives the box is
+        // kept on too, so that it does not change with the format.
         var task = Samples.Office();
         var destination = worm ? Samples.Office().Destinations[1] : Samples.Remote(DestinationKinds.S3);
         destination.WormDays = worm ? 7 : 0;
@@ -198,6 +245,10 @@ public sealed class EditorTests
         task.Destinations = [destination];
         task.BackupType = BackupTypes.Full;
         task.Layout.SeparateFolders = false;
+        task.Archive = new ArchiveOptions { Format = archive, Level = 5 };
+
+        // Two backups on three days a week: 26 full ones cover the 30 days of the S3 Object Lock (and the WORM).
+        task.Retention.KeepFull = 26;
 
         using var monitor = Samples.Monitor();
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
@@ -220,6 +271,63 @@ public sealed class EditorTests
         editor.SelectPage(retention);
         Sta.Pump();
         Assert.Equal(worm, Sta.Shows(retention, Strings.Format(Strings.RetentionWormNote, 7)));
+    });
+
+    [Fact]
+    public void Retention_that_would_delete_backups_before_their_worm_is_over_is_not_saved() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Full;
+        task.Destinations[1].WormDays = 7;
+        task.Destinations[1].WormLockHours = 3;
+        task.Retention.KeepFull = 3;
+
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        Assert.Null(editor.Collect(out string? problem));
+        Assert.Equal(WormRetention.Problem(task), problem);
+        Assert.StartsWith(TaskDescriber.Destination(task.Destinations[1]), problem, StringComparison.Ordinal);
+        Assert.True(editor.Pages.OfType<RetentionPage>().Single().Visible);
+
+        // Enough full backups: saved.
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        Sta.Find<NumericUpDown>(retention).Single(n => n.Value == 3).Value = 8;
+        Assert.NotNull(editor.Collect(out problem));
+        Assert.Null(problem);
+    });
+
+    [Fact]
+    public void Retention_is_off_for_a_shared_folder_where_it_has_nothing_to_delete() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Office();
+        task.BackupType = BackupTypes.Incremental;
+        task.Layout.SeparateFolders = false;
+        task.Retention = new RetentionOptions { Mode = RetentionModes.Age, MaxAgeDays = 5 };
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        editor.SelectPage(retention);
+        Sta.Pump();
+
+        string note = Strings.Format(Strings.RetentionSharedNote, Strings.SeparateFolders, Strings.PageDestinations, Strings.PageArchive);
+        var byAge = Sta.Find<RadioButton>(retention).Single(r => r.Text == Strings.RetentionAge);
+        Assert.True(Sta.Shows(retention, note));
+        Assert.True(byAge.Checked);
+        Assert.False(byAge.Enabled);
+        Assert.All(Sta.Find<NumericUpDown>(retention), n => Assert.False(n.Enabled));
+
+        // The rule is kept as it was, and comes back with a folder for each backup.
+        Assert.Equal(5, editor.Collect(out _)!.Retention.MaxAgeDays);
+        var destinations = editor.Pages[3];
+        Sta.Find<CheckBox>(destinations).Single(c => c.Text == Strings.SeparateFolders).Checked = true;
+        Sta.Pump();
+        Assert.True(byAge.Enabled);
+        Assert.False(Sta.Shows(retention, note));
     });
 
     [Fact]
@@ -446,6 +554,94 @@ public sealed class EditorTests
         Sta.Pump();
         Assert.False(Sta.Find<Button>(databases).Single(b => b.Text == Strings.ButtonAdd).Enabled);
         Assert.True(Sta.Find<Label>(databases).Single(l => l.Text == Strings.DatabasesRemoteNote).Visible);
+    });
+
+    [Fact]
+    public void A_linux_server_takes_no_mirror_and_none_of_the_windows_reading_options() => Sta.Run("ru-RU", () =>
+    {
+        var task = Samples.Server();
+        task.Layout.SeparateFolders = false;
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        var basic = editor.Pages[0];
+        Assert.False(Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle).Enabled);
+        Assert.True(Sta.Shows(basic, Strings.MirrorRemoteNote));
+
+        // Its backups always go into a folder each, whatever the box said.
+        var destinations = editor.Pages[3];
+        editor.SelectPage(destinations);
+        Sta.Pump();
+        var separate = Sta.Find<CheckBox>(destinations).Single(c => c.Text == Strings.SeparateFolders);
+        Assert.True(separate.Checked);
+        Assert.False(separate.Enabled);
+        Assert.True(Sta.Shows(destinations, Strings.SeparateRemoteNote));
+
+        var advanced = editor.Pages.OfType<AdvancedPage>().Single();
+        editor.SelectPage(advanced);
+        Sta.Pump();
+        Assert.False(Sta.Find<CheckBox>(advanced).Single(c => c.Text == Strings.VssEnabled).Enabled);
+        Assert.False(Sta.Find<CheckBox>(advanced).Single(c => c.Text == Strings.PreserveAcl).Enabled);
+        Assert.False(Assert.Single(Sta.Find<NumericUpDown>(advanced), n => n.Maximum == 5).Enabled);
+        Assert.True(Sta.Shows(advanced, Strings.AdvancedVssRemote));
+        Assert.True(Sta.Shows(advanced, Strings.AdvancedRetriesRemote));
+        Assert.True(Sta.Shows(advanced, Strings.AdvancedAclRemote));
+
+        // The values stay as they were, for when the source changes.
+        var collected = editor.Collect(out string? problem);
+        Assert.Null(problem);
+        Assert.Equal((task.Vss.Enabled, task.Copy.ReadRetries, task.Copy.PreserveAcl), (collected!.Vss.Enabled, collected.Copy.ReadRetries, collected.Copy.PreserveAcl));
+    });
+
+    [Fact]
+    public void Options_that_do_nothing_for_the_task_are_off_with_the_reason() => Sta.Run("en-US", () =>
+    {
+        // Only network folders to read, only servers and cloud drives to write to, no events before.
+        var task = Samples.Office();
+        task.Sources = [Samples.Office().Sources[2]];
+        task.Destinations = [Samples.Remote(DestinationKinds.Sftp), Samples.Cloud(DestinationKinds.GDrive)];
+        task.Events = new TaskEvents();
+        task.Copy.PreserveAcl = true;
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+
+        var basic = editor.Pages[0];
+        Assert.False(Sta.Find<RadioButton>(basic).Single(r => r.Text == Strings.TypeMirrorTitle).Enabled);
+        Assert.True(Sta.Shows(basic, Strings.Format(Strings.MirrorCloudNote, TaskDescriber.Destination(task.Destinations[1]))));
+
+        var advanced = editor.Pages.OfType<AdvancedPage>().Single();
+        editor.SelectPage(advanced);
+        Sta.Pump();
+        var vss = Sta.Find<CheckBox>(advanced).Single(c => c.Text == Strings.VssEnabled);
+        var acl = Sta.Find<CheckBox>(advanced).Single(c => c.Text == Strings.PreserveAcl);
+        Assert.False(vss.Enabled);
+        Assert.True(Sta.Shows(advanced, Strings.AdvancedVssNoLocal));
+        Assert.False(acl.Enabled);
+        Assert.True(Sta.Shows(advanced, Strings.AdvancedAclNoNtfs));
+        Assert.True(Assert.Single(Sta.Find<NumericUpDown>(advanced), n => n.Maximum == 5).Enabled);
+
+        var events = editor.Pages.OfType<EventsPage>().Single();
+        editor.SelectPage(events);
+        Sta.Pump();
+        Assert.False(Sta.Find<CheckBox>(events).Single(c => c.Text == Strings.EventsAbortOnPre).Enabled);
+
+        // A folder on a local disk and a USB disk: both work again. An archive keeps no NTFS permissions.
+        var local = Samples.Office();
+        local.Archive = new ArchiveOptions { Format = ArchiveFormats.Zip, Level = 5 };
+        using var other = new TaskEditorForm(monitor, local, isNew: false);
+        other.Show();
+        Sta.Pump();
+        var page = other.Pages.OfType<AdvancedPage>().Single();
+        other.SelectPage(page);
+        Sta.Pump();
+        Assert.True(Sta.Find<CheckBox>(page).Single(c => c.Text == Strings.VssEnabled).Enabled);
+        Assert.False(Sta.Find<CheckBox>(page).Single(c => c.Text == Strings.PreserveAcl).Enabled);
+        Assert.True(Sta.Shows(page, Strings.AdvancedAclArchive));
+        Assert.True(Sta.Find<RadioButton>(other.Pages[0]).Single(r => r.Text == Strings.TypeMirrorTitle).Enabled);
     });
 
     [Fact]

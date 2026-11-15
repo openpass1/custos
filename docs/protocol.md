@@ -364,7 +364,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
       "worm_lock_hours": 0,            // local/unc/usb при worm_days > 0: файл блокируется через N ч после записи (0–168)
       "server_fingerprint": null,      // ftp/ftps/sftp/webdav/s3: подтверждённый ключ или сертификат сервера, см. ниже
       "credential_id": "uuid",
-      "disconnect_after": true,
+      "disconnect_after": true,        // не используется: программа всегда закрывает вход на шару после запуска; хранится как есть
       "speed_limit_kbps": 0            // 0 = без ограничения
     }
   ],

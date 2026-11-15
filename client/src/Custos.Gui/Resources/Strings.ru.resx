@@ -214,6 +214,18 @@
   <data name="CardDestinations" xml:space="preserve">
     <value>Назначения</value>
   </data>
+  <data name="CardProtection" xml:space="preserve">
+    <value>Защита</value>
+  </data>
+  <data name="CardWorm" xml:space="preserve">
+    <value>WORM {0} дн.: хранилище блокирует копию через {1} ч после записи, до конца срока её нельзя изменить или удалить</value>
+  </data>
+  <data name="CardObjectLock" xml:space="preserve">
+    <value>S3 Object Lock {0} дн. ({1}): до конца срока копию нельзя изменить или удалить</value>
+  </data>
+  <data name="CardProtectionOf" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
   <data name="CardSchedule" xml:space="preserve">
     <value>Расписание</value>
   </data>
@@ -533,6 +545,15 @@
   <data name="TypeMirrorHint" xml:space="preserve">
     <value>Папка назначения поддерживается такой же, как источники: копируются только новые и изменённые файлы. Без сжатия и отдельных папок, файлы открываются как есть.</value>
   </data>
+  <data name="MirrorProtectedNote" xml:space="preserve">
+    <value>Недоступно: «{0}» защищает записанные файлы от изменения, а зеркало их заменяет.</value>
+  </data>
+  <data name="MirrorCloudNote" xml:space="preserve">
+    <value>Недоступно: «{0}» — облачный диск, а зеркало заменяет и удаляет отдельные файлы.</value>
+  </data>
+  <data name="MirrorRemoteNote" xml:space="preserve">
+    <value>Недоступно: Linux-сервер копируется только наборами: полной, инкрементальной или дифференциальной копией.</value>
+  </data>
   <data name="MirrorExact" xml:space="preserve">
     <value>Точное: файлы, удалённые в источниках, удаляются и из зеркала</value>
   </data>
@@ -720,6 +741,9 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   <data name="SeparateForcedNote" xml:space="preserve">
     <value>Здесь всегда включено: «{0}» защищает записанные файлы от удаления, а в общей папке файлы заменяются.</value>
   </data>
+  <data name="SeparateRemoteNote" xml:space="preserve">
+    <value>Здесь всегда включено: копии Linux-сервера всегда ложатся каждая в свою папку.</value>
+  </data>
   <data name="NameTemplate" xml:space="preserve">
     <value>Имя папки:</value>
   </data>
@@ -827,6 +851,9 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   </data>
   <data name="RetentionMirrorNote" xml:space="preserve">
     <value>Зеркало — одна копия, которая обновляется, поэтому удалять здесь нечего. Сколько безопасное зеркало хранит заменённые и удалённые файлы, задаётся на странице «Основное».</value>
+  </data>
+  <data name="RetentionSharedNote" xml:space="preserve">
+    <value>Копии пишутся в одну общую папку и обновляются в ней: прежние версии не хранятся, поэтому удалять нечего. Чтобы хранить копии какое-то время, включите «{0}» на странице «{1}» или выберите архив на странице «{2}».</value>
   </data>
   <data name="RetentionNone" xml:space="preserve">
     <value>Хранить все копии</value>
@@ -1679,6 +1706,24 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   <data name="PreserveAclHelp" xml:space="preserve">
     <value>Для копий без сжатия: файлы и папки в копии получают права и владельца оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение. Диски FAT и exFAT права не хранят.</value>
   </data>
+  <data name="AdvancedVssRemote" xml:space="preserve">
+    <value>Не действует: Linux-сервер читается через custos-helper, а не с диска Windows.</value>
+  </data>
+  <data name="AdvancedVssNoLocal" xml:space="preserve">
+    <value>Не действует: среди источников нет папок и файлов на локальных дисках, а теневая копия делается только для них.</value>
+  </data>
+  <data name="AdvancedRetriesRemote" xml:space="preserve">
+    <value>Для Linux-сервера не действует.</value>
+  </data>
+  <data name="AdvancedAclArchive" xml:space="preserve">
+    <value>Не действует: архивы ZIP и 7z не хранят права NTFS.</value>
+  </data>
+  <data name="AdvancedAclRemote" xml:space="preserve">
+    <value>Не действует: у файлов Linux-сервера нет прав NTFS.</value>
+  </data>
+  <data name="AdvancedAclNoNtfs" xml:space="preserve">
+    <value>Не действует: серверы и облачные диски не хранят права NTFS, их хранят только папка, сетевая папка и USB-диск.</value>
+  </data>
   <data name="SevenZipCheckButton" xml:space="preserve">
     <value>Проверить обновление 7-Zip</value>
   </data>
@@ -1901,7 +1946,7 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
     <value>Ограничение скорости:</value>
   </data>
   <data name="RemoteSpeedUnit" xml:space="preserve">
-    <value>КБ/с (0 — без ограничения)</value>
+    <value>МБ/с (0 — без ограничения)</value>
   </data>
   <data name="RemoteSpeedHelp" xml:space="preserve">
     <value>С какой скоростью custos-helper читает файлы, чтобы сайты не тормозили. Дампы баз не ограничиваются.</value>
