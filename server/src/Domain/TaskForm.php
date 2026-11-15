@@ -22,6 +22,12 @@ final class TaskForm
     public const BACKUP_TYPES = ['full', 'incremental', 'differential', 'mirror'];
     public const MIRROR_MODES = ['exact', 'safe'];
     public const SOURCE_KINDS = ['folder', 'file', 'unc'];
+    /** Destinations that are folders of the machine, of a share or of a USB disk: only they can state WORM. */
+    public const FILE_SYSTEM_KINDS = ['local', 'unc', 'usb'];
+    /** The longest delay before WORM locks a file (Asustor: 7 days). */
+    public const MAX_WORM_LOCK_HOURS = 168;
+    /** The delay a new WORM destination starts with, in hours. */
+    public const DEFAULT_WORM_LOCK_HOURS = 3;
     public const DESTINATION_KINDS = ['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav', 'gdrive', 'yadisk', 'dropbox'];
     /** Cloud drives (client stage 4b): their accounts are connected on the machine only, in the browser (7.5). */
     public const CLOUD_KINDS = ['gdrive', 'yadisk', 'dropbox'];
@@ -216,6 +222,7 @@ final class TaskForm
         }
         $task['layout'] = $this->layout(self::sub($base, 'layout'), (array) ($post['layout'] ?? []));
         $task['archive'] = $this->archive(self::sub($base, 'archive'), (array) ($post['archive'] ?? []), $task['destinations']);
+        $this->protection($task);
         $verify = (array) ($post['verify'] ?? []);
         $task['verify'] = array_replace(self::sub($base, 'verify'), [
             'every_runs' => $this->int($verify, 'every_runs', 0, 1000, 'task_form.field.verify_every'),
@@ -373,6 +380,19 @@ final class TaskForm
             if (!in_array($kind, self::CLOUD_KINDS, true) && isset($item['part_mb'])) {
                 $item['part_mb'] = 0;
             }
+            $wormDays = in_array($kind, self::FILE_SYSTEM_KINDS, true)
+                ? $this->int($row, 'worm_days', 0, 36500, 'task_form.field.worm_days', $n)
+                : 0;
+            if ($wormDays > 0) {
+                // WORM of the NAS behind a folder, a share or a USB disk (client spec 6.3): its days and the hours
+                // before a written file is locked.
+                $item['worm_days'] = $wormDays;
+                $item['worm_lock_hours'] = $this->int($row, 'worm_lock_hours', 0, self::MAX_WORM_LOCK_HOURS, 'task_form.field.worm_lock_hours', $n);
+            } elseif (isset($item['worm_days']) || isset($item['worm_lock_hours'])) {
+                // Written only where it was there: a task without WORM keeps its fields as they were.
+                $item['worm_days'] = 0;
+                $item['worm_lock_hours'] = 0;
+            }
             $credentialKind = self::CREDENTIAL_KINDS[$kind] ?? null;
             if (in_array($kind, self::CLOUD_KINDS, true)) {
                 $item['credential_id'] = $this->cloudAccount($row, $kind, $what, $item);
@@ -385,6 +405,27 @@ final class TaskForm
             $this->error('task_form.error.no_destinations');
         }
         return $result;
+    }
+
+    /**
+     * A destination that protects written files from deletion (WORM of a NAS, S3 Object Lock) takes only backups that
+     * never replace a file: archives or a separate folder for each backup, never a mirror (client spec 6.3).
+     */
+    private function protection(array $task): void
+    {
+        $replaces = $task['backup_type'] === 'mirror'
+            || (!($task['layout']['separate_folders'] ?? false) && ($task['archive']['format'] ?? 'none') === 'none');
+        if (!$replaces) {
+            return;
+        }
+        foreach ($task['destinations'] as $n => $d) {
+            $what = $this->label('task_form.destination', $n + 1);
+            if ((int) ($d['worm_days'] ?? 0) > 0 && in_array($d['kind'] ?? '', self::FILE_SYSTEM_KINDS, true)) {
+                $this->error('task_form.error.worm_needs_sets', ['what' => $what, 'days' => (int) $d['worm_days']]);
+            } elseif (($d['kind'] ?? '') === 's3' && (int) ($d['object_lock_days'] ?? 0) > 0) {
+                $this->error('task_form.error.lock_needs_sets', ['what' => $what]);
+            }
+        }
     }
 
     private function layout(array $base, array $post): array

@@ -185,6 +185,8 @@ public sealed partial class BackupEngine
 
         Commit(run);
         ApplyRetention(run);
+        RemoveLeftovers(run);
+        CheckProtection(run);
         CleanMirrorBins(run);
         VerifyStored(run);
     }
@@ -237,13 +239,21 @@ public sealed partial class BackupEngine
                 throw new BackupException(Messages.Format(Messages.CloudNoMirror, DestinationStores.Label(destination)));
             }
 
-            if (destination.Kind == DestinationKinds.S3 && destination.ObjectLockDays > 0
-                && (task.BackupType == BackupTypes.Mirror || !(SeparateSets(task) || IsArchive(task))))
+            if (destination.ProtectsFiles && (task.BackupType == BackupTypes.Mirror || !(SeparateSets(task) || IsArchive(task))))
             {
                 // A locked file cannot be replaced, and these two ways of copying replace files (section 6.3).
-                throw new BackupException(Messages.Format(Messages.ObjectLockNeedsSets, DestinationStores.Label(destination)));
+                throw new BackupException(ProtectionNeedsSets(destination, DestinationStores.Label(destination)));
             }
         }
+    }
+
+    /// <summary>Why a destination that protects its files takes only archives and separate set folders.</summary>
+    public static string ProtectionNeedsSets(TaskDestination destination, string label)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return WormSettings.Of(destination) is { } worm
+            ? Messages.Format(Messages.WormNeedsSets, label, worm.Days)
+            : Messages.Format(Messages.ObjectLockNeedsSets, label);
     }
 
     private void PrepareTargets(RunContext run)
@@ -569,6 +579,10 @@ public sealed partial class BackupEngine
                     target.WriteFolder = renames ? target.SetFolder + SetCatalog.PartialSuffix : target.SetFolder;
                     target.OwnsWriteFolder = true;
                     store.CreateFolder(target.WriteFolder);
+
+                    // If this run never finishes the set (the computer is switched off), a later run finds it by this.
+                    UnfinishedMarker.Write(store, target.WriteFolder,
+                        new UnfinishedMarker.Info(task.Id, run.Request.RunId, UnfinishedMarker.Writing, run.Request.StartedAt));
                 }
                 else
                 {
@@ -945,6 +959,11 @@ public sealed partial class BackupEngine
                     writer.Commit();
                 }
 
+                if (SeparateSets(run.Task))
+                {
+                    UnfinishedMarker.TryRemove(store, target.WriteFolder);
+                }
+
                 if (!string.Equals(target.WriteFolder, target.SetFolder, StringComparison.Ordinal))
                 {
                     store.MoveFolder(target.WriteFolder, target.SetFolder);
@@ -1103,29 +1122,43 @@ public sealed partial class BackupEngine
                 _ => SetCatalog.PlanCountRetention(target.Kept, retention.KeepFull, run.Request.RunId),
             };
             var locked = LockedChains(run, target, plan);
-            foreach (var set in plan)
+            var removing = new UnfinishedMarker.Info(run.Task.Id, run.Request.RunId, UnfinishedMarker.Removing, DateTimeOffset.UtcNow);
+            bool worm = target.Store.Worm is not null;
+
+            // A chain goes from its newest set to its full set: one that breaks off leaves a shorter chain that
+            // still restores (section 6.6).
+            foreach (var chain in plan.GroupBy(ChainOf, StringComparer.OrdinalIgnoreCase))
             {
-                run.Cancellation.ThrowIfCancellationRequested();
-                if (locked.Contains(ChainOf(set)))
+                if (locked.Contains(chain.Key))
                 {
                     continue;
                 }
 
-                try
+                foreach (var set in chain.OrderByDescending(s => s.Header.StartedAt))
                 {
-                    SetCatalog.DeleteSet(set, target.Store);
-                    target.Kept.Remove(set);
-                    run.Result.DeletedSets++;
-                    _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetDeleted, set.Header.SetName, target.Label));
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    run.Result.Warnings++;
-                    _log.Write(RunLogLevel.Warning, Messages.Format(Messages.SetDeleteFailed, set.Header.SetName, target.Label, ex.Message));
+                    run.Cancellation.ThrowIfCancellationRequested();
+                    try
+                    {
+                        SetCatalog.DeleteSet(set, target.Store, removing);
+                        target.Kept.Remove(set);
+                        run.Result.DeletedSets++;
+                        _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetDeleted, set.Header.SetName, target.Label));
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        run.Result.Warnings++;
+                        _log.Write(RunLogLevel.Warning, Messages.Format(worm ? Messages.SetDeleteRefusedWorm : Messages.SetDeleteFailed,
+                            set.Header.SetName, target.Label, ex.Message));
+                        break;
+                    }
                 }
             }
         }
     }
+
+    /// <summary>A time for the run log, in the time zone of the run.</summary>
+    private static string LocalTime(RunContext run, DateTimeOffset time) =>
+        TimeZoneInfo.ConvertTime(time, run.Request.TimeZone).ToString("dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>The full set a set belongs to: sets are only ever deleted as whole chains (section 6.6).</summary>
     private static string ChainOf(StoredSet set) => set.Header.ParentFullRunId ?? set.Header.RunId;
@@ -1153,7 +1186,8 @@ public sealed partial class BackupEngine
             if (until is { } time)
             {
                 chains.Add(ChainOf(set));
-                _log.Write(RunLogLevel.Info, Messages.Format(Messages.SetLocked, set.Header.SetName, target.Label, TimeZoneInfo.ConvertTime(time, run.Request.TimeZone).ToString("dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)));
+                _log.Write(RunLogLevel.Info, Messages.Format(target.Store.Worm is not null ? Messages.SetLockedWorm : Messages.SetLocked,
+                    set.Header.SetName, target.Label, LocalTime(run, time)));
             }
         }
 

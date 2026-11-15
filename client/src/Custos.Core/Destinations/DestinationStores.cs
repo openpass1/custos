@@ -19,11 +19,15 @@ public static class DestinationStores
         {
             case DestinationKinds.Local:
             case DestinationKinds.Usb:
-                return new LocalStore(ResolveRoot(platform, destination), destination.Kind, platform, session);
+                return new LocalStore(ResolveRoot(platform, destination), destination.Kind, platform, session) { Worm = WormSettings.Of(destination) };
             case DestinationKinds.Unc:
                 string root = ResolveRoot(platform, destination);
                 bool owns = session is null;
-                return new LocalStore(root, destination.Kind, platform, session ?? platform.OpenSession(destination.CredentialId), owns) { Limiter = limiter };
+                return new LocalStore(root, destination.Kind, platform, session ?? platform.OpenSession(destination.CredentialId), owns)
+                {
+                    Limiter = limiter,
+                    Worm = WormSettings.Of(destination),
+                };
             case DestinationKinds.Sftp:
                 return new SftpStore(destination, account ?? Account(platform, destination) ?? throw new BackupException(Messages.StoreAccountMissing), limiter);
             case DestinationKinds.Ftp:

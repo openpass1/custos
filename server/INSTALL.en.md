@@ -510,6 +510,8 @@ Also in this version: the logout after inactivity is set on the site, Settings â
 - while the site is being updated (usually less than a minute), pages show "The site is being updated" and open by themselves, agents repeat their requests a minute later, and Zabbix and the wall screen see the site as unavailable for that time;
 - `bin/cron.php` runs an update asked for on the site instead of its usual pass.
 
+**Version 0.4.12.** No migrations. Update it with "Update the site to â€¦" or `php8.4 bin/update.php`. The task and template editors have two new fields for a folder, a network folder and a USB disk: "WORM on the NAS, days of protection" and "Locked after, h from writing" (for the program with WORM support on a NAS). With WORM a task writes only archives or a separate folder for each backup: a mirror and a shared folder without compression are not saved, and the site tells why. The site now checks the same for S3 with protection from deletion (Object Lock).
+
 ## What to keep in backups
 
 - the `custos` database;

@@ -140,6 +140,48 @@ static partial class Messages
     /// <summary>A folder with files in it cannot be renamed here (a NAS with WORM does that). Backups in separate folders a...</summary>
     public static string StoreNoFolderRename => Get(nameof(StoreNoFolderRename));
 
+    /// <summary>WORM: the storage locks a file {1} h after it is written and then does not let it be deleted for {0} days. ...</summary>
+    public static string StoreWormInfo => Get(nameof(StoreWormInfo));
+
+    /// <summary>The storage locks a file at once: a file that was just written cannot even get its name ({0}). CUSTOS canno...</summary>
+    public static string StoreWormLocksAtOnce => Get(nameof(StoreWormLocksAtOnce));
+
+    /// <summary>Set «{0}» in {1} is protected from deletion until {2} (WORM); retention will delete it after that.</summary>
+    public static string SetLockedWorm => Get(nameof(SetLockedWorm));
+
+    /// <summary>Could not delete the old set «{0}» in {1}: {2}. By the WORM days of the destination its protection is over;...</summary>
+    public static string SetDeleteRefusedWorm => Get(nameof(SetDeleteRefusedWorm));
+
+    /// <summary>{0}: with WORM a written file cannot be replaced for {1} days, so only backups that are never overwritten c...</summary>
+    public static string WormNeedsSets => Get(nameof(WormNeedsSets));
+
+    /// <summary>Removed the unfinished set «{0}» in {1}: its run of {2} did not finish.</summary>
+    public static string UnfinishedSetRemoved => Get(nameof(UnfinishedSetRemoved));
+
+    /// <summary>Finished deleting the old set «{0}» in {1}: an earlier run could not delete it to the end.</summary>
+    public static string LeftoverSetRemoved => Get(nameof(LeftoverSetRemoved));
+
+    /// <summary>The rest of the set «{0}» in {1} is still protected from deletion; a later run removes it.</summary>
+    public static string UnfinishedSetProtected => Get(nameof(UnfinishedSetProtected));
+
+    /// <summary>Could not remove the unfinished set «{0}» in {1}: {2}. The next run tries again.</summary>
+    public static string UnfinishedSetNotRemoved => Get(nameof(UnfinishedSetNotRemoved));
+
+    /// <summary>{0}: wrote the file .custos-worm-check to test the protection from deletion; the first run after {1} tries ...</summary>
+    public static string WormCheckStarted => Get(nameof(WormCheckStarted));
+
+    /// <summary>{0}: the protection from deletion works: the file .custos-worm-check written {1} could not be deleted.</summary>
+    public static string WormCheckProtected => Get(nameof(WormCheckProtected));
+
+    /// <summary>{0}: files are not protected from deletion, although the destination states WORM: the file .custos-worm-che...</summary>
+    public static string WormCheckNotProtected => Get(nameof(WormCheckNotProtected));
+
+    /// <summary>{0}: the file .custos-worm-check written {1} still cannot be deleted, although by the destination its prote...</summary>
+    public static string WormCheckLonger => Get(nameof(WormCheckLonger));
+
+    /// <summary>{0}: could not test the protection from deletion: {1}</summary>
+    public static string WormCheckFailed => Get(nameof(WormCheckFailed));
+
     /// <summary>Set «{0}» written to {1}: {2} files, {3}.</summary>
     public static string SetWritten => Get(nameof(SetWritten));
 

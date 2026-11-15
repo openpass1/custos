@@ -717,6 +717,9 @@ Google Drive, Yandex Disk, Dropbox: a folder in a cloud account, connected in th
     <value>On: each backup goes into its own folder, named by the template below, and old backups are deleted by the retention rules.
 Off: the files go straight into the destination folder and are updated there at each run; earlier versions are not kept.</value>
   </data>
+  <data name="SeparateForcedNote" xml:space="preserve">
+    <value>Always on here: «{0}» protects written files from deletion, and in a shared folder files are replaced.</value>
+  </data>
   <data name="NameTemplate" xml:space="preserve">
     <value>Folder name:</value>
   </data>
@@ -866,6 +869,9 @@ Off: the files go straight into the destination folder and are updated there at 
   </data>
   <data name="RetentionNoFullWarning" xml:space="preserve">
     <value>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete anything: the backups will only pile up. Turn on a full backup on the «Basic» page (for example every 7th run) or choose grandfather-father-son, which makes a full backup every week by itself.</value>
+  </data>
+  <data name="RetentionWormNote" xml:space="preserve">
+    <value>A destination has WORM for {0} days: a backup there is deleted no sooner than {0} days after it was written, and a chain no sooner than {0} days after its last backup, because until then the storage does not let them go. So more backups may be kept there than this rule says.</value>
   </data>
   <data name="RetentionRules" xml:space="preserve">
     <value>Rules that always apply</value>
@@ -2177,6 +2183,25 @@ Trust the new key only if you know why it changed.</value>
 Retention deletes a copy in the first run after its time, so do not set more days than the copies are kept for: the storage fills up.
 
 In the mode «Compliance» nobody can delete the files before the time, the support of the storage included. Try «Governance» first.</value>
+  </data>
+  <data name="DestinationWorm" xml:space="preserve">
+    <value>WORM on the NAS:</value>
+  </data>
+  <data name="DestinationWormUnit" xml:space="preserve">
+    <value>days of protection (0 — none)</value>
+  </data>
+  <data name="DestinationWormLock" xml:space="preserve">
+    <value>Locked after:</value>
+  </data>
+  <data name="DestinationWormLockUnit" xml:space="preserve">
+    <value>h after it is written</value>
+  </data>
+  <data name="DestinationWormHelp" xml:space="preserve">
+    <value>Fill in if the storage (a NAS) protects written files from change and deletion (WORM): how many days the protection lasts, and how many hours after it is written a file is locked; round minutes up to whole hours. Take both from the WORM settings of the shared folder on the NAS.
+
+Then backups are written straight under their own names, retention deletes an old backup only once its protection is over, and every run tests that the storage really protects the files. Only archives and «a separate folder for each backup» can go there, not a mirror.
+
+Storage that locks a file at once after it is written does not fit: «Check access» tells.</value>
   </data>
   <data name="DestinationServerKey" xml:space="preserve">
     <value>Server key:</value>

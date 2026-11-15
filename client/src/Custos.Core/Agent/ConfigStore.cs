@@ -769,6 +769,8 @@ public sealed partial class ConfigStore
                 ? destination.ObjectLockMode
                 : null;
             destination.PartMb = DestinationKinds.IsCloudDrive(destination.Kind) ? Math.Clamp(destination.PartMb, 0, 1_000_000) : 0;
+            destination.WormDays = DestinationKinds.IsFileSystem(destination.Kind) ? Math.Clamp(destination.WormDays, 0, 36500) : 0;
+            destination.WormLockHours = destination.WormDays > 0 ? Math.Clamp(destination.WormLockHours, 0, WormSettings.MaxLockHours) : 0;
         }
 
         task.DbServers ??= [];

@@ -148,6 +148,48 @@
   <data name="StoreNoFolderRename" xml:space="preserve">
     <value>Здесь нельзя переименовать папку с файлами (так делает NAS с WORM). Копии в отдельных папках будут писаться сразу под своим именем; готова та копия, в папке которой есть custos-set.json.</value>
   </data>
+  <data name="StoreWormInfo" xml:space="preserve">
+    <value>WORM: хранилище блокирует файл через {1} ч после записи и затем {0} дн. не даёт его удалить. Копии пишутся в отдельные папки сразу под своим именем; старую копию хранение удаляет, когда с неё снимется защита.</value>
+  </data>
+  <data name="StoreWormLocksAtOnce" xml:space="preserve">
+    <value>Хранилище блокирует файл сразу: только что записанному файлу нельзя даже дать имя ({0}). CUSTOS не может писать сюда копии. Поставьте в настройках WORM на NAS задержку блокировки, например 1 час или больше.</value>
+  </data>
+  <data name="SetLockedWorm" xml:space="preserve">
+    <value>Набор «{0}» в {1} защищён от удаления до {2} (WORM); хранение удалит его после этого срока.</value>
+  </data>
+  <data name="SetDeleteRefusedWorm" xml:space="preserve">
+    <value>Не удалось удалить старый набор «{0}» в {1}: {2}. По сроку WORM в назначении защита уже кончилась; если NAS защищает файлы дольше, укажите его срок в назначении. Следующий запуск попробует снова.</value>
+  </data>
+  <data name="WormNeedsSets" xml:space="preserve">
+    <value>{0}: при WORM записанный файл нельзя заменить {1} дн., поэтому сюда можно писать только копии, которые не перезаписываются: архивы или отдельная папка для каждой копии. Зеркало и общая папка заменяют файлы.</value>
+  </data>
+  <data name="UnfinishedSetRemoved" xml:space="preserve">
+    <value>Удалена недописанная копия «{0}» в {1}: её запуск {2} не закончился.</value>
+  </data>
+  <data name="LeftoverSetRemoved" xml:space="preserve">
+    <value>Доудалён старый набор «{0}» в {1}: прошлый запуск не смог удалить его до конца.</value>
+  </data>
+  <data name="UnfinishedSetProtected" xml:space="preserve">
+    <value>Остаток копии «{0}» в {1} пока защищён от удаления; его удалит один из следующих запусков.</value>
+  </data>
+  <data name="UnfinishedSetNotRemoved" xml:space="preserve">
+    <value>Не удалось удалить недописанную копию «{0}» в {1}: {2}. Следующий запуск попробует снова.</value>
+  </data>
+  <data name="WormCheckStarted" xml:space="preserve">
+    <value>{0}: записан файл .custos-worm-check для проверки защиты от удаления; первый запуск после {1} попробует его удалить.</value>
+  </data>
+  <data name="WormCheckProtected" xml:space="preserve">
+    <value>{0}: защита от удаления работает: файл .custos-worm-check, записанный {1}, удалить не удалось.</value>
+  </data>
+  <data name="WormCheckNotProtected" xml:space="preserve">
+    <value>{0}: файлы не защищены от удаления, хотя в назначении указан WORM: файл .custos-worm-check, записанный {1}, удалось удалить через {2} ч. Проверьте настройки WORM на NAS: включён ли он и не больше ли там задержка блокировки, чем указано в назначении. Если NAS считает срок от даты изменения файла, копии тоже не защищены: у их файлов даты исходных файлов.</value>
+  </data>
+  <data name="WormCheckLonger" xml:space="preserve">
+    <value>{0}: файл .custos-worm-check, записанный {1}, всё ещё нельзя удалить, хотя по настройке назначения защита кончилась. Похоже, NAS защищает файлы дольше {2} дн.: укажите его срок в назначении.</value>
+  </data>
+  <data name="WormCheckFailed" xml:space="preserve">
+    <value>{0}: не удалось проверить защиту от удаления: {1}</value>
+  </data>
   <data name="SetWritten" xml:space="preserve">
     <value>Набор «{0}» записан в {1}: файлов {2}, {3}.</value>
   </data>

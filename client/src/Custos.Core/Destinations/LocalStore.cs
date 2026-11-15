@@ -51,6 +51,9 @@ public sealed class LocalStore : DestinationStore
     /// <summary>The limit on writing to a share (section 6.3); null = none.</summary>
     public SpeedLimiter? Limiter { get; init; }
 
+    /// <summary>Storage with WORM never renames a folder that holds files: sets are written in place.</summary>
+    public override bool RenamesFolders => Worm is null;
+
     public override string Combine(string folder, string relative) => Path.Combine(folder, Local(relative));
 
     public override string? Parent(string path) => Path.GetDirectoryName(path);
@@ -139,7 +142,7 @@ public sealed class LocalStore : DestinationStore
     /// Tries it: makes a folder with a small file, renames the folder and removes it again. The same steps as
     /// «Проверить доступ» plus the rename, so it leaves nothing behind where a run can write at all.
     /// </summary>
-    public override bool CanRenameFolders(string folder) => KnownFolderRenames ?? _session.Run(() =>
+    public override bool CanRenameFolders(string folder) => Worm is null && (KnownFolderRenames ?? _session.Run(() =>
     {
         string trial = Path.Combine(folder, ProbeName());
         string current = trial;
@@ -166,13 +169,18 @@ public sealed class LocalStore : DestinationStore
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // A few bytes stay behind; the run itself does not depend on them.
+                // A few bytes stay behind; the run itself does not depend on them, and a later run removes them.
             }
         }
-    });
+    }));
 
     public override IReadOnlyList<string> Describe()
     {
+        if (Worm is { } worm)
+        {
+            return [Messages.Format(Messages.StoreWormInfo, worm.Days, worm.LockHours)];
+        }
+
         try
         {
             return CanRenameFolders(Root) ? [] : [Messages.StoreNoFolderRename];
@@ -181,6 +189,55 @@ public sealed class LocalStore : DestinationStore
         {
             return [];
         }
+    }
+
+    /// <summary>
+    /// With WORM the trial also shows whether the storage locks a file at once: then a file cannot even get its name
+    /// after it is written, and no copy can be made there.
+    /// </summary>
+    public override void Probe()
+    {
+        if (Worm is null)
+        {
+            base.Probe();
+            return;
+        }
+
+        CreateFolder(Root);
+        string path = Combine(Root, ProbeName());
+        using (var writer = BeginWrite(path, Backup.BackupEngine.TempSuffix, StoreWriteMode.Stream))
+        {
+            writer.Stream.Write("CUSTOS"u8);
+            writer.Close();
+            try
+            {
+                writer.Commit();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new StoreException(Messages.Format(Messages.StoreWormLocksAtOnce, ex.Message), ex);
+            }
+        }
+
+        DeleteFile(path);
+    }
+
+    /// <summary>With WORM: the time the file was written plus the lock delay, the days and a margin.</summary>
+    public override DateTimeOffset? LockedUntil(string path)
+    {
+        if (Worm is not { } worm)
+        {
+            return null;
+        }
+
+        var written = _session.Run(() => File.Exists(path) ? File.GetLastWriteTimeUtc(path) : (DateTime?)null);
+        if (written is not { } time)
+        {
+            return null;
+        }
+
+        var until = new DateTimeOffset(DateTime.SpecifyKind(time, DateTimeKind.Utc)) + worm.Protection;
+        return until > DateTimeOffset.UtcNow ? until : null;
     }
 
     public override Stream OpenRead(string path) => Lowered(_session.Run(() =>
@@ -202,17 +259,10 @@ public sealed class LocalStore : DestinationStore
     public override void DeleteFile(string path) => _session.Run(() =>
     {
         var file = new FileInfo(path);
-        if (!file.Exists)
+        if (file.Exists)
         {
-            return;
+            DeleteEntry(file);
         }
-
-        if (file.IsReadOnly)
-        {
-            file.IsReadOnly = false;
-        }
-
-        file.Delete();
     });
 
     public override void MoveFile(string source, string target) => _session.Run(() =>
@@ -240,7 +290,10 @@ public sealed class LocalStore : DestinationStore
     {
         File.SetCreationTimeUtc(path, createdUtc);
         File.SetLastWriteTimeUtc(path, modifiedUtc);
-        var kept = attributes & (FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System | FileAttributes.Archive);
+
+        // WORM: a read-only file could never be deleted, as clearing the attribute is a change (section 6.3).
+        var keep = FileAttributes.Hidden | FileAttributes.System | FileAttributes.Archive | (Worm is null ? FileAttributes.ReadOnly : 0);
+        var kept = attributes & keep;
         if (kept != 0 && kept != FileAttributes.Archive)
         {
             File.SetAttributes(path, kept);
@@ -315,27 +368,40 @@ public sealed class LocalStore : DestinationStore
                 continue;
             }
 
-            if ((entry.Attributes & FileAttributes.ReadOnly) != 0)
-            {
-                entry.Attributes &= ~FileAttributes.ReadOnly;
-            }
+            DeleteEntry(entry);
+        }
 
-            if (entry is DirectoryInfo link)
+        DeleteEntry(directory);
+    }
+
+    /// <summary>
+    /// Deletes a file, a link or an empty folder. The read-only attribute is cleared only when it is in the way:
+    /// storage with WORM lets a file whose protection is over be deleted, but not changed (section 6.3).
+    /// </summary>
+    private static void DeleteEntry(FileSystemInfo entry)
+    {
+        try
+        {
+            Delete(entry);
+        }
+        catch (UnauthorizedAccessException) when ((entry.Attributes & FileAttributes.ReadOnly) != 0)
+        {
+            entry.Attributes &= ~FileAttributes.ReadOnly;
+            Delete(entry);
+        }
+
+        static void Delete(FileSystemInfo entry)
+        {
+            if (entry is DirectoryInfo folder)
             {
-                link.Delete(recursive: false);
+                // A folder here is empty by now, or a link: never followed.
+                folder.Delete(recursive: false);
             }
             else
             {
                 entry.Delete();
             }
         }
-
-        if ((directory.Attributes & FileAttributes.ReadOnly) != 0)
-        {
-            directory.Attributes &= ~FileAttributes.ReadOnly;
-        }
-
-        directory.Delete(recursive: false);
     }
 
     private sealed class Writer : RenamingWriter

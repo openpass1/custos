@@ -289,6 +289,9 @@ internal sealed class DestinationDialog : DialogForm
     /// of up to 1 GB.</summary>
     internal const int YandexPartMb = 900;
 
+    /// <summary>The delay before the lock a new WORM destination starts with, in hours.</summary>
+    internal const int DefaultWormLockHours = 3;
+
     private static readonly string[] LockModes = [ObjectLockModes.Governance, ObjectLockModes.Compliance];
 
     private readonly EditorContext _context;
@@ -336,6 +339,14 @@ internal sealed class DestinationDialog : DialogForm
     private readonly Label _lockModeLabel = Caption(Strings.DestinationLockMode);
     private readonly ComboBox _lockMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 380 };
     private readonly Label _lockModeGap = new() { AutoSize = true };
+    private readonly Label _wormLabel = Caption(Strings.DestinationWorm);
+    private readonly NumericUpDown _wormDays = new() { Minimum = 0, Maximum = 36500, Width = 90, Margin = new Padding(0) };
+    private readonly FlowLayoutPanel _wormRow = new() { AutoSize = true, WrapContents = false };
+    private readonly PictureBox _wormHelp;
+    private readonly Label _wormLockLabel = Caption(Strings.DestinationWormLock);
+    private readonly NumericUpDown _wormHours = new() { Minimum = 0, Maximum = WormSettings.MaxLockHours, Width = 90, Margin = new Padding(0) };
+    private readonly FlowLayoutPanel _wormLockRow = new() { AutoSize = true, WrapContents = false };
+    private readonly Label _wormLockGap = new() { AutoSize = true };
     private readonly Label _keyLabel = Caption(Strings.DestinationServerKey);
     private readonly Label _key = new() { AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 0, 6) };
     private readonly Button _forgetKey = new() { Text = Strings.ButtonForgetKey, AutoSize = true };
@@ -364,6 +375,7 @@ internal sealed class DestinationDialog : DialogForm
         _speedHelp = Ui.HelpIcon(Tips, Strings.DestinationSpeedHelp);
         _partHelp = Ui.HelpIcon(Tips, Strings.DestinationPartHelp);
         _lockHelp = Ui.HelpIcon(Tips, Strings.DestinationLockHelp);
+        _wormHelp = Ui.HelpIcon(Tips, Strings.DestinationWormHelp);
         foreach (string kind in Kinds)
         {
             _kind.Items.Add(DestinationsPage.KindText(kind));
@@ -389,6 +401,10 @@ internal sealed class DestinationDialog : DialogForm
         _partRow.Controls.Add(new Label { Text = Strings.DestinationPartUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
         _lockRow.Controls.Add(_lockDays);
         _lockRow.Controls.Add(new Label { Text = Strings.DestinationLockUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
+        _wormRow.Controls.Add(_wormDays);
+        _wormRow.Controls.Add(new Label { Text = Strings.DestinationWormUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
+        _wormLockRow.Controls.Add(_wormHours);
+        _wormLockRow.Controls.Add(new Label { Text = Strings.DestinationWormLockUnit, AutoSize = true, Margin = new Padding(6, 3, 0, 0) });
         var pathExtra = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
         pathExtra.Controls.Add(_browse);
         pathExtra.Controls.Add(_pathHelp);
@@ -405,6 +421,8 @@ internal sealed class DestinationDialog : DialogForm
         AddGridRow(_partLabel, _partRow, _partHelp);
         AddGridRow(_lockLabel, _lockRow, _lockHelp);
         AddGridRow(_lockModeLabel, _lockMode, _lockModeGap);
+        AddGridRow(_wormLabel, _wormRow, _wormHelp);
+        AddGridRow(_wormLockLabel, _wormLockRow, _wormLockGap);
         AddGridRow(_keyLabel, _key, _forgetKey);
         AddWide(_unsupported);
         AddWide(_cloudWarning);
@@ -432,6 +450,10 @@ internal sealed class DestinationDialog : DialogForm
         _part.Value = Math.Clamp(destination.PartMb, 0, (int)_part.Maximum);
         _lockDays.Value = Math.Clamp(destination.ObjectLockDays, 0, (int)_lockDays.Maximum);
         _lockMode.SelectedIndex = destination.ObjectLockMode == ObjectLockModes.Compliance ? 1 : 0;
+        _wormDays.Value = Math.Clamp(destination.WormDays, 0, (int)_wormDays.Maximum);
+
+        // A new WORM starts with the delay many NAS have; a lower one than the storage has would make the check fail.
+        _wormHours.Value = destination.WormDays > 0 ? Math.Clamp(destination.WormLockHours, 0, WormSettings.MaxLockHours) : DefaultWormLockHours;
         _account.SelectedId = destination.CredentialId;
         _fingerprint = string.IsNullOrWhiteSpace(destination.ServerFingerprint) ? null : destination.ServerFingerprint;
 
@@ -453,6 +475,7 @@ internal sealed class DestinationDialog : DialogForm
         _port.TextChanged += (_, _) => ServerChanged();
         _endpoint.TextChanged += (_, _) => ServerChanged();
         _lockDays.ValueChanged += (_, _) => UpdateLock();
+        _wormDays.ValueChanged += (_, _) => UpdateLock();
         _forgetKey.Click += (_, _) =>
         {
             _fingerprint = null;
@@ -543,6 +566,7 @@ internal sealed class DestinationDialog : DialogForm
         bool cloud = DestinationKinds.IsCloudDrive(kind);
         string path = _path.Text.Trim().Trim('"');
         int lockDays = s3 ? (int)_lockDays.Value : 0;
+        int wormDays = DestinationKinds.IsFileSystem(kind) ? (int)_wormDays.Value : 0;
         return new TaskDestination
         {
             Id = _original.Id,
@@ -562,6 +586,8 @@ internal sealed class DestinationDialog : DialogForm
             SpeedLimitKbps = DestinationKinds.CredentialKind(kind) is null ? 0 : (int)_speed.Value,
             ObjectLockDays = lockDays,
             ObjectLockMode = lockDays > 0 ? LockModes[Math.Max(0, _lockMode.SelectedIndex)] : null,
+            WormDays = wormDays,
+            WormLockHours = wormDays > 0 ? (int)_wormHours.Value : 0,
             ServerFingerprint = DestinationKinds.IsFileSystem(kind) || cloud ? null : _fingerprint,
             PartMb = cloud ? (int)_part.Value : 0,
             ExtensionData = _original.ExtensionData,
@@ -627,6 +653,7 @@ internal sealed class DestinationDialog : DialogForm
 
         _speedLabel.Visible = _speedRow.Visible = _speedHelp.Visible = accountKind is not null;
         _lockLabel.Visible = _lockRow.Visible = _lockHelp.Visible = s3;
+        _wormLabel.Visible = _wormRow.Visible = _wormHelp.Visible = DestinationKinds.IsFileSystem(kind) && _supported;
         _partLabel.Visible = _partRow.Visible = _partHelp.Visible = cloud && _supported;
         _cloudWarning.Visible = cloud && _supported;
         if (kind == DestinationKinds.YaDisk && _original.Kind != DestinationKinds.YaDisk && _part.Value == 0)
@@ -646,6 +673,9 @@ internal sealed class DestinationDialog : DialogForm
     {
         bool shown = Kind == DestinationKinds.S3 && _lockDays.Value > 0;
         _lockModeLabel.Visible = _lockMode.Visible = _lockModeGap.Visible = shown;
+        bool worm = DestinationKinds.IsFileSystem(Kind) && _supported && _wormDays.Value > 0;
+        _wormLockLabel.Visible = _wormLockRow.Visible = _wormLockGap.Visible = worm;
+        _testResult.Text = string.Empty;
     }
 
     /// <summary>What the trusted key belongs to: the kind of the destination and its server.</summary>

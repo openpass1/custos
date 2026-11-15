@@ -231,7 +231,8 @@ public sealed class DialogTests
 
         Assert.True(Sta.Shows(dialog, Strings.DestinationLock));
         Assert.False(Sta.Shows(dialog, Strings.DestinationLockMode));
-        Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum == 36500).Value = 14;
+        Assert.False(Sta.Shows(dialog, Strings.DestinationWorm));
+        Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum == 36500 && n.Visible).Value = 14;
         Sta.Pump();
 
         Assert.True(Sta.Shows(dialog, Strings.DestinationLockMode));
@@ -240,6 +241,36 @@ public sealed class DialogTests
 
         // GOVERNANCE unless the administrator chose the mode nobody can lift.
         Assert.Equal((14, ObjectLockModes.Governance), (dialog.Destination.ObjectLockDays, dialog.Destination.ObjectLockMode));
+    });
+
+    [Theory]
+    [InlineData("en-US")]
+    [InlineData("ru-RU")]
+    public void The_worm_of_a_nas_is_offered_for_a_share_with_its_delay_before_the_lock(string culture) => Sta.Run(culture, () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var toolTip = new ToolTip();
+        var destination = Samples.Office().Destinations[1];
+        using var dialog = new DestinationDialog(new EditorContext(monitor, toolTip), destination, isNew: false);
+        dialog.Show();
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Strings.DestinationWorm));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationWormLock));
+        Assert.False(Sta.Shows(dialog, Strings.DestinationLock));
+        Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum == 36500 && n.Visible).Value = 7;
+        Sta.Pump();
+
+        Assert.True(Sta.Shows(dialog, Strings.DestinationWormLock));
+        var hours = Sta.Find<NumericUpDown>(dialog).Single(n => n.Maximum == WormSettings.MaxLockHours);
+        Assert.Equal(DestinationDialog.DefaultWormLockHours, (int)hours.Value);
+        hours.Value = 2;
+        ((Button)dialog.AcceptButton!).PerformClick();
+        Sta.Pump();
+
+        Assert.Equal(DialogResult.OK, dialog.DialogResult);
+        Assert.Equal((7, 2), (dialog.Destination.WormDays, dialog.Destination.WormLockHours));
+        Assert.Equal(destination.CredentialId, dialog.Destination.CredentialId);
     });
 
     [Fact]

@@ -159,21 +159,20 @@ public sealed class EditorTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void The_protection_from_deletion_is_not_accepted_where_files_are_replaced(bool mirror) => Sta.Run("en-US", () =>
+    public void The_protection_from_deletion_is_not_accepted_where_files_are_replaced(bool worm) => Sta.Run("en-US", () =>
     {
-        // A mirror, or plain copies in one shared folder: both write over the files of the last run.
+        // A mirror writes over the files of the last run.
         var task = Samples.Office();
-        task.Destinations = [Samples.Remote(DestinationKinds.S3)];
-        if (mirror)
+        var destination = worm ? Samples.Office().Destinations[1] : Samples.Remote(DestinationKinds.S3);
+        if (worm)
         {
-            task.BackupType = BackupTypes.Mirror;
-            task.MirrorMode = MirrorModes.Exact;
+            destination.WormDays = 7;
+            destination.WormLockHours = 3;
         }
-        else
-        {
-            task.BackupType = BackupTypes.Full;
-            task.Layout.SeparateFolders = false;
-        }
+
+        task.Destinations = [destination];
+        task.BackupType = BackupTypes.Mirror;
+        task.MirrorMode = MirrorModes.Exact;
 
         using var monitor = Samples.Monitor();
         using var editor = new TaskEditorForm(monitor, task, isNew: false);
@@ -181,7 +180,46 @@ public sealed class EditorTests
         Sta.Pump();
 
         Assert.Null(editor.Collect(out string? problem));
-        Assert.Equal(Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, "s3://office-backup/pc01"), problem);
+        Assert.Equal(worm
+            ? Custos.Core.Messages.Format(Custos.Core.Messages.WormNeedsSets, @"\\nas\backup\office", 7)
+            : Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, "s3://office-backup/pc01"), problem);
+    });
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void A_destination_that_protects_its_files_keeps_a_folder_for_each_backup(bool worm) => Sta.Run("ru-RU", () =>
+    {
+        // Plain copies in one shared folder would write over the files of the last run.
+        var task = Samples.Office();
+        var destination = worm ? Samples.Office().Destinations[1] : Samples.Remote(DestinationKinds.S3);
+        destination.WormDays = worm ? 7 : 0;
+        destination.WormLockHours = worm ? 3 : 0;
+        task.Destinations = [destination];
+        task.BackupType = BackupTypes.Full;
+        task.Layout.SeparateFolders = false;
+
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var page = Assert.IsType<DestinationsPage>(editor.Pages[3]);
+        editor.SelectPage(page);
+        Sta.Pump();
+
+        var separate = Sta.Find<CheckBox>(page).Single(c => c.Text == Strings.SeparateFolders);
+        Assert.True(separate.Checked);
+        Assert.False(separate.Enabled);
+        Assert.True(Sta.Shows(page, Strings.Format(Strings.SeparateForcedNote, TaskDescriber.Destination(destination))));
+        var collected = editor.Collect(out string? problem);
+        Assert.Null(problem);
+        Assert.True(collected!.Layout.SeparateFolders);
+
+        // Retention tells that WORM keeps a backup for its days whatever the rule.
+        var retention = editor.Pages.OfType<RetentionPage>().Single();
+        editor.SelectPage(retention);
+        Sta.Pump();
+        Assert.Equal(worm, Sta.Shows(retention, Strings.Format(Strings.RetentionWormNote, 7)));
     });
 
     [Fact]

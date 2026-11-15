@@ -360,6 +360,8 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
       "endpoint": null, "bucket": null, "region": null,   // s3; endpoint = null для Amazon S3
       "object_lock_days": 0,           // s3: запрет удаления на N дней после записи (Object Lock); 0 = выключено
       "object_lock_mode": null,        // s3: governance | compliance; null = governance
+      "worm_days": 0,                  // local/unc/usb: хранилище (NAS) с WORM защищает файл N дней; 0 = нет WORM
+      "worm_lock_hours": 0,            // local/unc/usb при worm_days > 0: файл блокируется через N ч после записи (0–168)
       "server_fingerprint": null,      // ftp/ftps/sftp/webdav/s3: подтверждённый ключ или сертификат сервера, см. ниже
       "credential_id": "uuid",
       "disconnect_after": true,
@@ -582,3 +584,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
 - A.9. У назначения `s3` необязательное поле `object_lock_mode` (`governance` или `compliance`; нет поля или `null` = `governance`).
 - A.9. У назначений `ftp`, `ftps`, `sftp`, `webdav`, `s3` необязательное поле `server_fingerprint`: ключ или сертификат сервера, подтверждённый на агенте. Меняется только на агенте.
 - A.9. Уточнено: у `webdav` адрес целиком стоит в `host`; `path` у назначений на серверах — папка на сервере.
+
+**15.11.2026 — протокол 1, до первого выпуска.** WORM на NAS (раздел 6.3 клиента). Правки только добавляющие: старая сторона новые поля пропускает и сохраняет.
+
+- A.9. У назначений `local`, `unc`, `usb` необязательные поля `worm_days` и `worm_lock_hours`: хранилище защищает каждый записанный файл от изменения и удаления на `worm_days` дней, блокируя его через `worm_lock_hours` часов после записи. Нет поля или 0 — WORM нет. С WORM задание пишет только архивы или отдельные папки копий, не зеркало.

@@ -315,6 +315,20 @@ internal sealed class EditorContext(ServiceMonitor monitor, ToolTip toolTip)
         }
     }
 
+    /// <summary>The longest WORM of the destinations, in days (section 6.3); 0 if none has it.</summary>
+    public int WormDays
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                ShapeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
     /// <summary>Raised when a destination that wants an archive was added (a cloud drive): the archive page then
     /// turns «no compression» into ZIP.</summary>
     public event EventHandler? ZipWanted;
