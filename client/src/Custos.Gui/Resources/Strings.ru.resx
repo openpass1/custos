@@ -1676,6 +1676,65 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   <data name="VerifyStoredDaysHelp" xml:space="preserve">
     <value>0 — выключено. Выполняется после успешного запуска, когда подошёл срок. Повреждённая копия делает запуск ошибочным.</value>
   </data>
+  <data name="UpdateBanner" xml:space="preserve">
+    <value>Вышла CUSTOS {0}. На этом компьютере {1}.</value>
+  </data>
+  <data name="UpdateInstall" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>Устанавливается…</value>
+  </data>
+  <data name="UpdateWhatsNew" xml:space="preserve">
+    <value>Что нового</value>
+  </data>
+  <data name="UpdateAdminOnly" xml:space="preserve">
+    <value>Обновлять CUSTOS может только администратор этого компьютера.</value>
+  </data>
+  <data name="UpdateAsk" xml:space="preserve">
+    <value>Установить CUSTOS {0}?
+
+Служба скачает её с GitHub, проверит и перезапустится примерно на минуту. Выполняющееся задание сначала закончится.</value>
+  </data>
+  <data name="UpdateBalloonTitle" xml:space="preserve">
+    <value>Вышла CUSTOS {0}</value>
+  </data>
+  <data name="UpdateBalloonText" xml:space="preserve">
+    <value>Откройте окно программы, чтобы установить её.</value>
+  </data>
+  <data name="SettingsUpdates" xml:space="preserve">
+    <value>Обновления</value>
+  </data>
+  <data name="CheckUpdates" xml:space="preserve">
+    <value>Проверять новые версии на GitHub раз в день</value>
+  </data>
+  <data name="CheckUpdatesHelp" xml:space="preserve">
+    <value>Служба раз в день спрашивает github.com/{0}. Новая версия появляется в окне программы и в трее, а устанавливается, только когда администратор нажмёт «Обновить». Пакет сверяется с SHA-256 из выпуска.</value>
+  </data>
+  <data name="UpdatesCheckNow" xml:space="preserve">
+    <value>Проверить сейчас</value>
+  </data>
+  <data name="UpdatesNever" xml:space="preserve">
+    <value>Ещё не проверялось.</value>
+  </data>
+  <data name="UpdatesLastCheck" xml:space="preserve">
+    <value>Проверено {0}: {1}</value>
+  </data>
+  <data name="UpdatesLatest" xml:space="preserve">
+    <value>CUSTOS {0} — последняя версия</value>
+  </data>
+  <data name="UpdatesAvailable" xml:space="preserve">
+    <value>вышла CUSTOS {0}</value>
+  </data>
+  <data name="UpdatesNone" xml:space="preserve">
+    <value>на GitHub пока нет выпусков</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>Проверка выключена.</value>
+  </data>
+  <data name="UpdatesManagedBySite" xml:space="preserve">
+    <value>Компьютер подключён к сайту мониторинга: новые версии приходят с сайта.</value>
+  </data>
   <data name="Settings7Zip" xml:space="preserve">
     <value>Архиватор</value>
   </data>

@@ -14,6 +14,10 @@ public static class CustosInfo
     /// <summary>How long log files are kept unless the settings say otherwise (section 6.10).</summary>
     public const int DefaultLogRetentionDays = 180;
 
+    /// <summary>The repository on GitHub whose releases (tags <c>client-vX.Y.Z</c>) bring new versions of the program
+    /// to computers without a monitoring site. A fork that releases its own builds changes it.</summary>
+    public const string GitHubRepository = "openpass1/custos";
+
     /// <summary>Product version, for example "0.1.0". Every CUSTOS assembly is built with the same version.</summary>
     public static string Version { get; } = ReadVersion();
 

@@ -14,8 +14,9 @@ package=$(realpath "$2")
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 name="custos-install-test-$$"
 password='Test-password-1'
+work=$(mktemp -d)
 
-cleanup() { docker rm -f "$name" > /dev/null 2>&1 || true; }
+cleanup() { docker rm -f "$name" > /dev/null 2>&1 || true; rm -rf "$work"; }
 trap cleanup EXIT
 
 step() { printf '\n### %s\n' "$*"; }
@@ -67,15 +68,35 @@ grep -q 'Users already exist' /tmp/"$name"-again.txt || fail "The second run did
 grep -q 'Server key pair already exists' /tmp/"$name"-again.txt || fail "The second run did not keep the key."
 grep -qF "$connection" /tmp/"$name"-again.txt || fail "The connection string changed after the second run."
 
-step "Update to the same version: nothing to do; with --force: unpacked and migrated"
+step "Update to the same version: nothing to do; with --force: installed again by bin/update.php"
 docker exec "$name" bash /opt/install.sh --update --package=/opt/custos-server.zip | tee /tmp/"$name"-update.txt
 grep -q 'is already installed' /tmp/"$name"-update.txt || fail "--update did not see that the version is installed."
-# The copy inside the site: the update unpacks a new install.sh over the one that is running.
+# The copy inside the site: the update replaces the install.sh that is running.
 docker exec "$name" bash /var/www/custos/server/install.sh --update --force --package=/opt/custos-server.zip \
     | tee /tmp/"$name"-force.txt
-grep -q 'Database schema is up to date' /tmp/"$name"-force.txt || fail "--update --force did not run migrate.php."
+grep -q 'Updating with bin/update.php' /tmp/"$name"-force.txt || fail "--update --force did not use bin/update.php."
+grep -q 'The site is updated' /tmp/"$name"-force.txt || fail "bin/update.php did not install the package again."
 grep -q '^==> Done: CUSTOS Monitor' /tmp/"$name"-force.txt || fail "--update --force did not finish."
 health=$(in_box 'curl -s http://localhost/api/health')
 [[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok after the update: $health"
+
+step "Update to a newer version, then an older package is refused"
+# The same package with the version X.Y.Z.1, zipped the way the Release workflow zips it.
+old=$(unzip -p "$package" server/src/App.php | sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p")
+[ -n "$old" ] || fail "No version in the package."
+newer="$old.1"
+(cd "$work" && unzip -q "$package" \
+    && sed -i "s/const VERSION = '[^']*'/const VERSION = '$newer'/" server/src/App.php \
+    && zip -q -r -X "custos-server-$newer.zip" server)
+docker cp "$work/custos-server-$newer.zip" "$name:/opt/custos-server-$newer.zip"
+docker exec "$name" bash /opt/install.sh --update --package="/opt/custos-server-$newer.zip" | tee /tmp/"$name"-newer.txt
+grep -qF "The site is updated: $old -> $newer" /tmp/"$name"-newer.txt || fail "The site was not updated to $newer."
+grep -qF "==> Done: CUSTOS Monitor $old -> $newer" /tmp/"$name"-newer.txt || fail "--update to $newer did not finish."
+[ "$(in_box "sed -nE \"s/.*const VERSION = '([^']+)'.*/\\1/p\" /var/www/custos/server/src/App.php")" = "$newer" ] \
+    || fail "The files of the site are not $newer."
+health=$(in_box 'curl -s http://localhost/api/health')
+[[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok after the update to $newer: $health"
+docker exec "$name" bash /opt/install.sh --update --package=/opt/custos-server.zip | tee /tmp/"$name"-older.txt
+grep -q 'is older than the installed version' /tmp/"$name"-older.txt || fail "An older package was not refused."
 
 printf '\n[PASS] %s\n' "$base"

@@ -104,7 +104,9 @@ internal sealed class TrayContext : ApplicationContext
             ApplySettings();
             UpdateTray();
             UpdatePower();
+            AnnounceUpdate();
         };
+        _trayIcon.BalloonTipClicked += (_, _) => ShowWindow();
         _monitor.ProgressChanged += (_, _) => UpdateTray();
         Application.Idle += OnIdle;
         ShowMode();
@@ -294,6 +296,22 @@ internal sealed class TrayContext : ApplicationContext
     }
 
     /// <summary>Shows the countdown to a shutdown or sleep after a run while the service counts, and hides it after.</summary>
+    /// <summary>
+    /// A new version on GitHub is told once per version in the tray, to administrators only: only they can install it.
+    /// </summary>
+    private void AnnounceUpdate()
+    {
+        if (_monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
+            || _monitor.Status.Hello?.IsAdmin != true || !_trayIcon.Visible || version == _lastKnown.AnnouncedUpdate)
+        {
+            return;
+        }
+
+        _lastKnown.AnnouncedUpdate = version;
+        _lastKnown.Save();
+        _trayIcon.ShowBalloonTip(10_000, Strings.Format(Strings.UpdateBalloonTitle, version), Strings.UpdateBalloonText, ToolTipIcon.Info);
+    }
+
     private void UpdatePower()
     {
         var power = _monitor.IsConnected ? _monitor.Snapshot?.Power : null;

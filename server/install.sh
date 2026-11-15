@@ -48,7 +48,9 @@ or Ubuntu asks whether to go on): nginx, MariaDB, PHP-FPM, the site in /var/www/
 its database and the cron job. With --update, updates a site that is already installed.
 
 Options:
-  --update             update the installed site to the newest release (files and database), keep everything else
+  --update             update the installed site to the newest release (files and database), keep everything else;
+                       from 0.4.11 on this goes through bin/update.php, which puts the old version back by itself
+                       when anything fails
   --package=FILE       use this custos-server zip instead of downloading the newest release from GitHub
   --url=URL            address of the site as people and agents open it, for example http://custos.lan or
                        http://192.0.2.10 (asked if not given)
@@ -63,7 +65,7 @@ Options:
   --user=NAME          user that runs the site (default custos; with --update: the owner of the folder)
   --php=VERSION        PHP version to use with --update, for example 8.4 (default: the one chosen at install,
                        otherwise the newest installed)
-  --force              with --update: unpack even if the same version is installed
+  --force              with --update: install even if the same version is installed (a repair)
   --yes                ask nothing: needs --url, and --admin with CUSTOS_ADMIN_PASSWORD on a new site
   --help               this text
 
@@ -248,16 +250,34 @@ if [ "$mode" = update ]; then
     new=$(package_version "$zip")
     echo "Installed: ${old:-unknown}, package: ${new:-unknown}"
     if [ -n "$old" ] && [ "$old" = "$new" ] && [ "$force" = false ]; then
-        ok "Version $old is already installed. Nothing to do (--force unpacks it again)."
+        ok "Version $old is already installed. Nothing to do (--force installs it again)."
+        exit 0
+    fi
+    if [ -n "$old" ] && [ -n "$new" ] && [ "$old" != "$new" ] \
+        && [ "$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)" = "$old" ]; then
+        # An older package over a newer database is never unpacked: the tables may not fit the old code.
+        ok "The package ($new) is older than the installed version $old. Nothing to do. To return to the version before the last update: cd $dir/server && runuser -u $site_user -- php$php_version bin/update.php --rollback"
         exit 0
     fi
 
-    say "Unpacking over $dir (settings, keys and var/ are not in the package and stay)"
-    runuser -u "$site_user" -- unzip -o -q "$zip" -d "$dir"
-    ok "Files of $new are in $dir/server"
+    if [ -f "$dir/server/bin/update.php" ]; then
+        # 0.4.11 and newer: the same update as the button of the site. It checks the package, PHP and free space,
+        # shows the "being updated" page, keeps the old files and the tables it changes, tests the new version and
+        # puts the old one back by itself when anything fails.
+        say "Updating with bin/update.php (settings, keys and var/ stay; the old version comes back if anything fails)"
+        update_args=(--package="$zip" --yes)
+        [ "$force" = false ] || update_args+=(--force)
+        as_site_user "$php_bin" bin/update.php "${update_args[@]}" \
+            || die "The update did not go through: bin/update.php says above what failed and which version the site is on now."
+    else
+        # Older sites have no bin/update.php: the package is unpacked over them and the database updated.
+        say "Unpacking over $dir (settings, keys and var/ are not in the package and stay)"
+        runuser -u "$site_user" -- unzip -o -q "$zip" -d "$dir"
+        ok "Files of $new are in $dir/server"
 
-    say "Updating the database"
-    as_site_user "$php_bin" bin/migrate.php
+        say "Updating the database"
+        as_site_user "$php_bin" bin/migrate.php
+    fi
     if [ -f "$STATE_FILE" ] && [ -d "/etc/php/$php_version/fpm" ]; then
         service_reload "php$php_version-fpm" || true
     fi

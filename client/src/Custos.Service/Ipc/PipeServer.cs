@@ -58,6 +58,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
 
         // The passwords stored here leave the service only this way, encrypted with a password of the person's choice.
         PipeProtocol.Methods.TasksExport,
+
+        // A new version of the program runs as SYSTEM.
+        PipeProtocol.Methods.ProgramCheck,
+        PipeProtocol.Methods.ProgramUpdate,
     ];
 
     private static readonly HashSet<string> AdminMethods =
@@ -87,6 +91,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         PipeProtocol.Methods.RestoreStop,
         PipeProtocol.Methods.SevenZipCheck,
         PipeProtocol.Methods.CloudAppsGet,
+        PipeProtocol.Methods.ProgramCheck,
     ];
 
     /// <summary>A wrong program password costs this long, so that guessing it over the pipe is slow.</summary>
@@ -372,6 +377,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                     : method.StartsWith("cloud.", StringComparison.Ordinal) ? Messages.CloudNotAllowed
                     : method is PipeProtocol.Methods.PasswordSet ? Messages.PasswordNotAllowed
                     : method is PipeProtocol.Methods.TasksExport ? Messages.ExportNotAllowed
+                    : method is PipeProtocol.Methods.ProgramCheck or PipeProtocol.Methods.ProgramUpdate ? Messages.ProgramNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
@@ -389,6 +395,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                         await agent.CheckSevenZipAsync(connection.Closing).ConfigureAwait(false), IpcJsonContext.Default.SevenZipCheckResult),
                     PipeProtocol.Methods.SevenZipUpdate => Ok(requestId,
                         await agent.UpdateSevenZipAsync(identity.User, connection.Closing).ConfigureAwait(false)),
+                    PipeProtocol.Methods.ProgramCheck => PipeMessage.Success(requestId,
+                        await agent.CheckProgramAsync(connection.Closing).ConfigureAwait(false), IpcJsonContext.Default.ProgramUpdateInfo),
+                    PipeProtocol.Methods.ProgramUpdate => Ok(requestId,
+                        await agent.UpdateProgramAsync(identity.User, connection.Closing).ConfigureAwait(false)),
                     PipeProtocol.Methods.PasswordUnlock => await UnlockAsync(connection, identity, requestId, request).ConfigureAwait(false),
                     PipeProtocol.Methods.PasswordState => PipeMessage.Success(requestId, new PasswordStateResult
                     {

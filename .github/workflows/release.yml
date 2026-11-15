@@ -217,11 +217,11 @@ jobs:
             title="CUSTOS for Windows $VERSION"
             cat > ../notes.md <<EOF
           **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place, tasks and settings stay.
-          **Update through the monitoring site:** upload \`custos-$VERSION.zip\` on the site under Updates, as it is, without unpacking.
+          **Update through the monitoring site:** under Updates the site offers this version from GitHub with a download button; or upload \`custos-$VERSION.zip\` there as it is, without unpacking. **Without a site:** the program checks GitHub once a day and offers **Update** in its window.
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/helper/README.md).
-          **Cloud drives:** Google Drive works as it is. Yandex Disk and Dropbox need a free application of your own, registered with the service: [steps](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.md#приложения-custos-у-сервисов) (in Russian).
+          **Cloud drives:** Google Drive works as it is. Yandex Disk and Dropbox need a free application of your own, registered with the service: [steps](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.md#custos-applications-at-the-services).
 
-          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** загрузите \`custos-$VERSION.zip\` на сайт в разделе «Обновления» как есть, не распаковывая. **Облачные диски:** Google Диск работает сразу, для Яндекс Диска и Dropbox нужно своё бесплатное приложение, см. ссылку выше.
+          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** в разделе «Обновления» сайт предложит скачать эту версию с GitHub одной кнопкой, или загрузите \`custos-$VERSION.zip\` туда как есть, не распаковывая. **Без сайта:** программа раз в день проверяет GitHub и предлагает «Обновить» в своём окне. **Облачные диски:** Google Диск работает сразу, для Яндекса Диска и Dropbox нужно своё бесплатное приложение, [по шагам](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.ru.md#приложения-custos-у-сервисов).
 
           Checksums / контрольные суммы: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet. / Файлы для Windows пока без цифровой подписи.
           EOF
@@ -229,9 +229,9 @@ jobs:
             title="CUSTOS Monitor $VERSION"
             cat > ../notes.md <<EOF
           **New site on Debian or Ubuntu:** \`install.sh\` installs everything, see the [README](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/README.md#quick-start). **On CloudPanel:** [server/INSTALL.en.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.en.md).
-          **Update:** \`bash install.sh --update\`, or unpack \`custos-server-$VERSION.zip\` over the installed site (keep the old \`server\` folder, it holds the settings and keys) and run \`bin/migrate.php\`.
+          **Update:** the site shows the new version in the bell; press **Update the site to $VERSION** under Updates. Or over SSH: \`bash install.sh --update\` (sites made by install.sh) or \`php bin/update.php\` in the \`server\` folder; without access to GitHub, \`php bin/update.php --package=custos-server-$VERSION.zip\`. A failed update puts the old version back by itself. Sites older than 0.4.11: unpack \`custos-server-$VERSION.zip\` over the site (keep the old \`server\` folder, it holds the settings and keys) and run \`bin/migrate.php\`.
 
-          **Новый сайт на Debian или Ubuntu:** всё ставит \`install.sh\`. **На CloudPanel:** [server/INSTALL.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.md). **Обновление:** \`bash install.sh --update\` или распаковать \`custos-server-$VERSION.zip\` поверх установленного сайта (старую папку \`server\` не удалять) и выполнить \`bin/migrate.php\`.
+          **Новый сайт на Debian или Ubuntu:** всё ставит \`install.sh\`. **На CloudPanel:** [server/INSTALL.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.md). **Обновление:** сайт сам сообщит о новой версии в колокольчике, нажмите **Обновить сайт до $VERSION** в разделе «Обновления». Или по SSH: \`php bin/update.php\` в папке \`server\` (без доступа к GitHub: \`--package=custos-server-$VERSION.zip\`), для сайтов, поставленных \`install.sh\`, — \`bash install.sh --update\`. При ошибке сайт сам вернётся на прежнюю версию. Сайты старше 0.4.11: распаковать архив поверх (старую папку \`server\` не удалять) и выполнить \`bin/migrate.php\`.
 
           Checksums / контрольные суммы: \`SHA256SUMS.txt\`.
           EOF

@@ -200,4 +200,10 @@ internal static partial class ServiceLog
     [LoggerMessage(EventId = 4002, Level = LogLevel.Information,
         Message = "Installing the update of CUSTOS to {Version}: the service stops and Custos.Updater replaces the program files")]
     public static partial void UpdateStarting(ILogger logger, string version);
+
+    [LoggerMessage(EventId = 4003, Level = LogLevel.Information, Message = "GitHub: {Text}")]
+    public static partial void ProgramCheck(ILogger logger, string text);
+
+    [LoggerMessage(EventId = 4004, Level = LogLevel.Error, Message = "The daily check of GitHub for a new version failed")]
+    public static partial void ProgramCheckCrashed(ILogger logger, Exception exception);
 }
