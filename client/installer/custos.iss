@@ -51,8 +51,10 @@ CloseApplications=no
 SetupLogging=yes
 
 [Languages]
-Name: "en"; MessagesFile: "compiler:Default.isl"
-Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
+; InfoBeforeFile: what the program sends over the network, shown before installing (PRIVACY.md, the code signing
+; terms of SignPath Foundation ask for it).
+Name: "en"; MessagesFile: "compiler:Default.isl"; InfoBeforeFile: "privacy.en.txt"
+Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"; InfoBeforeFile: "privacy.ru.txt"
 
 [CustomMessages]
 en.LaunchGui=Start the CUSTOS interface

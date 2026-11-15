@@ -343,6 +343,9 @@ Each check is written to the service log (`C:\ProgramData\CUSTOS\logs\service-YY
 state of the last check is kept in `C:\ProgramData\CUSTOS\config\program-update.json`. The result of the installation
 goes to the Windows event log (4000 / 4001), as with an update from the site.
 
+The request carries only the name of the program, nothing about the computer or its tasks; the installer says so
+before installing. Everything the program sends over the network is listed in the [privacy policy](../PRIVACY.md).
+
 ## Moving tasks: export and import
 
 Needed when you reinstall Windows or move the tasks to another computer. Administrators do it.
