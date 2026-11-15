@@ -61,31 +61,32 @@ final class SiteUpdaterTest extends TestCase
         $this->app->settings()->set('server_name', 'Before the update');
         mkdir("$this->root/public/.well-known/acme-challenge", 0755, true);
         file_put_contents("$this->root/public/.well-known/acme-challenge/token", 'certificate check');
-        $package = $this->package('0.9.1', [
+        $new = self::newer(1);
+        $package = $this->package($new, [
             'migrations/900_update_test.sql' => "CREATE TABLE update_test (id INT NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;\n"
                 . "INSERT INTO update_test (id) VALUES (1);\nALTER TABLE settings ADD COLUMN update_test INT NULL;\n"
                 . "UPDATE settings SET value = 'After the update' WHERE name = 'server_name';\n",
-            'NEW-IN-0.9.1.txt' => "a file the old version does not have\n",
+            "NEW-IN-$new.txt" => "a file the old version does not have\n",
         ]);
 
         $this->assertTrue($this->updater()->installFile($package, 'test'), $this->explain());
-        $this->assertSame('0.9.1', $this->version());
-        $this->assertFileExists("$this->root/NEW-IN-0.9.1.txt");
+        $this->assertSame($new, $this->version());
+        $this->assertFileExists("$this->root/NEW-IN-$new.txt");
         $this->assertSame('certificate check', file_get_contents("$this->root/public/.well-known/acme-challenge/token"),
             'files of public/ that are not ours stay');
         $this->assertSame(1, (int) $db->value('SELECT COUNT(*) FROM update_test'));
         $this->assertSame('After the update', $db->value("SELECT value FROM settings WHERE name = 'server_name'"));
         $state = Updater::readState($this->var);
         $this->assertSame('done', $state['status']);
-        $this->assertSame([App::VERSION, '0.9.1'], [$state['from'], $state['to']]);
+        $this->assertSame([App::VERSION, $new], [$state['from'], $state['to']]);
         $this->assertSame(['checks', 'unpack', 'maintenance', 'backup', 'files', 'database', 'selftest'], array_column($state['steps'], 'step'));
         $this->assertStringContainsString('Applied migration 900_update_test.sql', $state['output']);
-        $this->assertStringContainsString('Self-test of version 0.9.1 passed', $state['output']);
+        $this->assertStringContainsString("Self-test of version $new passed", $state['output']);
         $this->assertFileDoesNotExist(Updater::maintenanceFile($this->var));
         $this->assertFileExists(Updater::opcacheFile($this->var), 'index.php is told to drop the compiled old files');
         $this->assertDirectoryDoesNotExist("$this->var/update/stage");
         $backup = $this->updater()->backupInfo();
-        $this->assertSame([App::VERSION, '0.9.1'], [$backup['version'], $backup['to']]);
+        $this->assertSame([App::VERSION, $new], [$backup['version'], $backup['to']]);
         $this->assertEqualsCanonicalizing(['settings', 'schema_migrations'], $backup['dump']['tables'],
             'the tables the migration changes (update_test does not exist yet) and the list of migrations');
         $this->assertNotContains('update_test', $backup['dump']['tables_before']);
@@ -95,7 +96,7 @@ final class SiteUpdaterTest extends TestCase
         // Back to the version before: files, the settings example, the tables; the new table goes away.
         $this->assertTrue($this->updater()->rollback('test'), $this->explain());
         $this->assertSame(App::VERSION, $this->version());
-        $this->assertFileDoesNotExist("$this->root/NEW-IN-0.9.1.txt");
+        $this->assertFileDoesNotExist("$this->root/NEW-IN-$new.txt");
         $this->assertSame([], $db->column("SHOW TABLES LIKE 'update_test'"));
         $this->assertSame([], $db->column("SHOW COLUMNS FROM settings LIKE 'update_test'"));
         $this->assertSame('Before the update', $db->value("SELECT value FROM settings WHERE name = 'server_name'"));
@@ -111,7 +112,7 @@ final class SiteUpdaterTest extends TestCase
     public function testFailedMigrationPutsFilesAndTablesBack(): void
     {
         $db = $this->app->db();
-        $package = $this->package('0.9.2', [
+        $package = $this->package(self::newer(2), [
             'migrations/900_broken.sql' => "ALTER TABLE settings ADD COLUMN update_broken INT NULL;\nTHIS IS NOT SQL;\n",
         ]);
 
@@ -135,7 +136,7 @@ final class SiteUpdaterTest extends TestCase
 
     public function testNewVersionThatDoesNotStartIsTakenBack(): void
     {
-        $package = $this->package('0.9.3', ['templates/broken.php' => "<?php if (true) { ?>\n<p>never closed\n"]);
+        $package = $this->package(self::newer(3), ['templates/broken.php' => "<?php if (true) { ?>\n<p>never closed\n"]);
 
         $this->assertFalse($this->updater()->installFile($package, 'test'));
         $state = Updater::readState($this->var);
@@ -148,9 +149,10 @@ final class SiteUpdaterTest extends TestCase
     public function testQueuedOnTheSiteAndRunByCron(): void
     {
         $site = new App(Config::fromArray(require $this->config, $this->root));
-        $package = $this->package('0.9.4');
+        $new = self::newer(4);
+        $package = $this->package($new);
         $state = $site->siteUpdate()->upload($package, 'admin');
-        $this->assertSame(['queued', 'file', '0.9.4'], [$state['status'], $state['source'], $state['to']]);
+        $this->assertSame(['queued', 'file', $new], [$state['status'], $state['source'], $state['to']]);
         try {
             $site->siteUpdate()->upload($package, 'admin', $params);
             $this->fail('one update at a time');
@@ -162,7 +164,7 @@ final class SiteUpdaterTest extends TestCase
         [$code, $output] = $this->php(['bin/cron.php', '--verbose']);
         $this->assertSame(0, $code, $output);
         $this->assertStringContainsString('site.step.selftest', $output);
-        $this->assertSame('0.9.4', $this->version());
+        $this->assertSame($new, $this->version());
         $state = Updater::readState($this->var);
         $this->assertSame(['done', 'admin'], [$state['status'], $state['by']]);
         $this->assertDirectoryDoesNotExist("$this->var/update/upload", 'the uploaded file is deleted');
@@ -176,7 +178,8 @@ final class SiteUpdaterTest extends TestCase
     public function testInterruptedRunIsPutBack(): void
     {
         $db = $this->app->db();
-        $package = $this->package('0.9.5', ['migrations/900_interrupted.sql' => "CREATE TABLE update_interrupted (id INT NOT NULL) ENGINE=InnoDB;\n"]);
+        $new = self::newer(5);
+        $package = $this->package($new, ['migrations/900_interrupted.sql' => "CREATE TABLE update_interrupted (id INT NOT NULL) ENGINE=InnoDB;\n"]);
         // Keep the state as it was right before the self-test, as if the process had been killed there.
         $saved = null;
         $updater = $this->updater(function (string $key) use (&$saved): void {
@@ -186,7 +189,7 @@ final class SiteUpdaterTest extends TestCase
         });
         $this->assertTrue($updater->installFile($package, 'test'), $this->explain());
         rename("$this->var/update/backup", "$this->var/update/backup.new");
-        file_put_contents(Updater::maintenanceFile($this->var), '{"version":"0.9.5"}');
+        file_put_contents(Updater::maintenanceFile($this->var), json_encode(['version' => $new]));
         file_put_contents("$this->var/update/state.json", $saved);
 
         $updater = $this->updater();
@@ -224,7 +227,7 @@ final class SiteUpdaterTest extends TestCase
             return; // root may change anything
         }
         chmod("$this->root/src/Domain", 0555);
-        $this->assertFalse($this->updater()->installFile($this->package('0.9.6'), 'test'));
+        $this->assertFalse($this->updater()->installFile($this->package(self::newer(6)), 'test'));
         $error = Updater::readState($this->var)['error'];
         $this->assertSame('site.error.owner', $error['key']);
         $this->assertSame("$this->root/src/Domain", $error['params']['path']);
@@ -234,7 +237,7 @@ final class SiteUpdaterTest extends TestCase
     public function testDevelopmentCopyIsNeverUpdated(): void
     {
         touch("$this->root/phpunit.xml.dist");
-        $this->assertFalse($this->updater()->installFile($this->package('0.9.7'), 'test'));
+        $this->assertFalse($this->updater()->installFile($this->package(self::newer(7)), 'test'));
         $this->assertSame('site.error.dev_copy', Updater::readState($this->var)['error']['key']);
         $this->assertSame(App::VERSION, $this->version());
     }
@@ -247,6 +250,12 @@ final class SiteUpdaterTest extends TestCase
             $say ?? function (string $key, array $params): void {
                 $this->said[] = [$key, $params];
             }, PHP_BINARY, 0);
+    }
+
+    /** A version newer than this site's, whatever the site's version is: 1.0.0 gives 1.0.0.1, 1.0.0.2 … */
+    private static function newer(int $n): string
+    {
+        return App::VERSION . '.' . $n;
     }
 
     /** A package of the site copy with another version and extra or replaced files. */
