@@ -132,6 +132,57 @@ public sealed class LocalStore : DestinationStore
 
     public override void MoveFolder(string source, string target) => _session.Run(() => Directory.Move(source, target));
 
+    /// <summary>The answer of <see cref="CanRenameFolders"/> without trying (a test); null = try.</summary>
+    internal bool? KnownFolderRenames { get; set; }
+
+    /// <summary>
+    /// Tries it: makes a folder with a small file, renames the folder and removes it again. The same steps as
+    /// «Проверить доступ» plus the rename, so it leaves nothing behind where a run can write at all.
+    /// </summary>
+    public override bool CanRenameFolders(string folder) => KnownFolderRenames ?? _session.Run(() =>
+    {
+        string trial = Path.Combine(folder, ProbeName());
+        string current = trial;
+        Directory.CreateDirectory(trial);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(trial, "custos.tmp"), "CUSTOS"u8.ToArray());
+            try
+            {
+                Directory.Move(trial, trial + ".renamed");
+                current = trial + ".renamed";
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+        finally
+        {
+            try
+            {
+                DeleteTree(new DirectoryInfo(current));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A few bytes stay behind; the run itself does not depend on them.
+            }
+        }
+    });
+
+    public override IReadOnlyList<string> Describe()
+    {
+        try
+        {
+            return CanRenameFolders(Root) ? [] : [Messages.StoreNoFolderRename];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
     public override Stream OpenRead(string path) => Lowered(_session.Run(() =>
         new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
 

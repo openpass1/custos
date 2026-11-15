@@ -76,6 +76,21 @@ internal sealed class TestPlatform : LocalBackupPlatform
 
     public override string? FindVolumeByLabel(string label) => Volumes.TryGetValue(label, out string? root) ? root : null;
 
+    /// <summary>What folders and shares answer to <see cref="Destinations.DestinationStore.CanRenameFolders"/> (false: a NAS
+    /// with WORM); null = they try.</summary>
+    public bool? FolderRenames { get; set; }
+
+    public override Destinations.DestinationStore OpenStore(TaskDestination destination, INetworkSession? session = null)
+    {
+        var store = base.OpenStore(destination, session);
+        if (store is Destinations.LocalStore local)
+        {
+            local.KnownFolderRenames = FolderRenames;
+        }
+
+        return store;
+    }
+
     public override long? GetFreeSpace(string path) => FreeSpace;
 
     /// <summary>Files the engine asked to read and write with low I/O priority.</summary>
