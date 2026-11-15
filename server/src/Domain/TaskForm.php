@@ -340,7 +340,8 @@ final class TaskForm
                 'endpoint' => null,
                 'bucket' => null,
                 'region' => null,
-                'disconnect_after' => self::bool($row, 'disconnect_after'),
+                // Not in the editor: the program always ends its logon to the share after a run (client spec 6.3).
+                'disconnect_after' => (bool) ($item['disconnect_after'] ?? true),
                 'speed_limit_kbps' => $this->speed($row, (int) ($item['speed_limit_kbps'] ?? 0), $n),
             ]);
             switch ($kind) {

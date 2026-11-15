@@ -297,7 +297,7 @@ public sealed class TaskDestination
 
     public string? CredentialId { get; set; }
 
-    /// <summary>Close the connection to the share right after the run (section 6.3).</summary>
+    /// <summary>Not used: the logon to a share always ends with the run (section 6.3). Kept as it comes, protocol A.9.</summary>
     public bool DisconnectAfter { get; set; } = true;
 
     /// <summary>0 = no limit.</summary>

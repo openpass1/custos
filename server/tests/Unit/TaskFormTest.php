@@ -247,6 +247,20 @@ final class TaskFormTest extends TestCase
         }
     }
 
+    public function testDisconnectAfterIsNotInTheEditorAndStaysAsItWas(): void
+    {
+        $task = $this->task();
+        $task['destinations'][0]['disconnect_after'] = false;
+        $post = self::formFor($task);
+        $post['destinations'][] = ['id' => '', 'kind' => 'local', 'path' => 'D:\\Backup', 'credential' => '', 'speed_limit_mbps' => '0'];
+
+        $form = TaskForm::parse($task, $post, $this->credentials());
+
+        $this->assertSame([], $form->errors);
+        $this->assertFalse($form->task()['destinations'][0]['disconnect_after'], 'an old value is kept, the box is gone');
+        $this->assertTrue($form->task()['destinations'][1]['disconnect_after'], 'a new destination gets the default');
+    }
+
     public function testCloudDriveInATemplateNamesNoAccount(): void
     {
         $task = $this->task();
@@ -343,7 +357,7 @@ final class TaskFormTest extends TestCase
                                   'credential' => (string) ($s['credential_id'] ?? '')];
         }
         foreach ($task['destinations'] as $d) {
-            $row = ['id' => $d['id'], 'kind' => $d['kind'], 'credential' => (string) $d['credential_id'], 'disconnect_after' => $bool($d['disconnect_after']),
+            $row = ['id' => $d['id'], 'kind' => $d['kind'], 'credential' => (string) $d['credential_id'],
                     'speed_limit_mbps' => TaskForm::speedMbps((int) $d['speed_limit_kbps'])];
             foreach (['path', 'usb_label', 'host', 'port', 'endpoint', 'bucket', 'region'] as $k) {
                 $row[$k] = (string) $d[$k];

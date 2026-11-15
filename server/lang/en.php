@@ -548,7 +548,6 @@ return [
     'task_form.worm_hint' => 'If the storage (a NAS) protects written files from change and deletion (WORM): the days of protection and the delay before the lock, from the WORM settings of the shared folder; round minutes up to an hour. Backups are then written straight under their own names, old ones are deleted once their protection is over, and every run tests the protection.',
     'task_form.cloud.note' => 'The account of a cloud drive is connected only in CUSTOS on the machine itself, in the browser (the «Connect…» button in the properties of a destination). Here you can choose an account already connected there. Yandex Disk without a subscription takes files of up to 1 GB: write the archive in parts of 900 MB.',
     'task_form.cloud.note_template' => 'When the template is applied, each machine gets the account of this service connected on it. A machine without one is reported: connect the account in CUSTOS on that computer.',
-    'task_form.disconnect_after' => 'disconnect the network folder after copying',
     'task_form.destinations.hint' => 'Data is read once and written to all destinations. A USB drive is found by its volume label; the path on it has no drive letter.',
     'task_form.credential' => 'Account',
     'task_form.credential.none' => 'none',
