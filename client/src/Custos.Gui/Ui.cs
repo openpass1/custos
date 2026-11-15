@@ -58,6 +58,24 @@ internal static class Ui
         }
     }
 
+    /// <summary>Opens an https page in the default browser; any other address is ignored.</summary>
+    public static void OpenWebPage(IWin32Window? owner, string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var page) || page.Scheme != Uri.UriSchemeHttps)
+        {
+            return;
+        }
+
+        try
+        {
+            using var _ = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            ShowWarning(owner, ex.Message);
+        }
+    }
+
     /// <summary>"04.11.2026 16:41", or "—".</summary>
     public static string Time(DateTimeOffset? time) =>
         time is { } value ? value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) : "—";

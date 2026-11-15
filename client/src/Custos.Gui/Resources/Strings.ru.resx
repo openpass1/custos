@@ -184,6 +184,12 @@
 
 Копирование продолжается: служба от окна не зависит. Подробности записаны в {1}. Если ошибка повторяется, закройте интерфейс через меню в трее и откройте снова.</value>
   </data>
+  <data name="StatusDonate" xml:space="preserve">
+    <value>Поддержать проект</value>
+  </data>
+  <data name="StatusDonateTip" xml:space="preserve">
+    <value>Как поддержать CUSTOS: DONATE.md на GitHub</value>
+  </data>
   <data name="Yes" xml:space="preserve">
     <value>да</value>
   </data>

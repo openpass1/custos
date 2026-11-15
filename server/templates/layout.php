@@ -112,6 +112,8 @@ $check = fn(bool $on): string => $on ? '<span class="menu-check">' . icon('check
     <?= $content ?>
 </main>
 <footer data-version="<?= e(\Custos\App::VERSION) ?>">CUSTOS Monitor <?= e(\Custos\App::VERSION) ?>
+    <?php /* A quiet link to the ways of supporting the project (DONATE.md of the repository). */ ?>
+    <span class="footer-donate"><a href="https://github.com/<?= e(\Custos\Domain\Releases::DEFAULT_REPO) ?>/blob/main/DONATE.md" target="_blank" rel="noopener"><?= e(t('footer.donate')) ?></a></span>
     <?php /* app.js shows it when the system asks for less motion (Windows: animation effects off). */ ?>
     <span class="motion-note" data-motion-note hidden title="<?= e(t('motion.off.hint')) ?>"
           data-windows="<?= e(t('motion.off.windows')) ?>" data-windows-hint="<?= e(t('motion.off.hint.windows')) ?>"><?= e(t('motion.off')) ?></span>

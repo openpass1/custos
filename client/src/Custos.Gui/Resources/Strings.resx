@@ -184,6 +184,12 @@ The backups it has made stay where they are.</value>
 
 Backups go on: the service does not depend on the window. The details are written to {1}. If this repeats, close the interface from the tray menu and open it again.</value>
   </data>
+  <data name="StatusDonate" xml:space="preserve">
+    <value>Support the project</value>
+  </data>
+  <data name="StatusDonateTip" xml:space="preserve">
+    <value>How to support CUSTOS: DONATE.md on GitHub</value>
+  </data>
   <data name="Yes" xml:space="preserve">
     <value>yes</value>
   </data>
