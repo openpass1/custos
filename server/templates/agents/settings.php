@@ -68,6 +68,13 @@ $action = $values['password_action'] ?? 'keep';
                 <input type="number" name="log_retention_days" value="<?= e((string) $values['log_retention_days']) ?>" min="1" max="3650" class="short">
             </label>
             <?= $error('log_retention_days') ?>
+            <label><?= e(t('agent_settings.history_retention_days')) ?>
+                <input type="number" name="history_retention_days" value="<?= e((string) $values['history_retention_days']) ?>" min="1" max="3650" class="short">
+            </label>
+            <?= $error('history_retention_days') ?>
+            <?php if ($reported !== [] && !array_key_exists('history_retention_days', $reported)): ?>
+                <p class="note"><?= e(t('agent_settings.history_retention_days.old')) ?></p>
+            <?php endif ?>
             <label><?= e(t('agent_settings.default_log_level')) ?>
                 <select name="default_log_level">
                     <?php foreach (['summary', 'files'] as $k): ?>

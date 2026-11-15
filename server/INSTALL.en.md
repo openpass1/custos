@@ -514,6 +514,8 @@ Also in this version: the logout after inactivity is set on the site, Settings �
 
 **Version 0.4.13.** No migrations. Update it with "Update the site to …" or `php8.4 bin/update.php`. The speed limit of a destination in the task and template editors is now typed in MB/s (tenths allowed: 1.5), as in the program. Limits already set do not change: 500 KB/s shows as 0.5 MB/s and stays 500 KB/s unless it is changed. A task with WORM on a NAS or S3 Object Lock is not saved if its retention would delete backups before their protection is over: the site says what to set, as the program does. The "disconnect the network folder after copying" box is gone: the program always ends its logon to the share after a run anyway.
 
+**Version 0.4.14.** No migrations. Update it with "Update the site to …" or `php8.4 bin/update.php`. The agent settings have a new field "Keep run history on the machine, days" (365 by default). The program keeps its run history apart from the logs from the version with this field on; an older one keeps it as long as the logs, and the site says so under the field.
+
 ## What to keep in backups
 
 - the `custos` database;

@@ -442,7 +442,12 @@ final class WebTest extends TestCase
         // Agent settings and a command for the task go along with the next heartbeat.
         [$status, $settings] = $this->http('GET', "$agentUrl/settings");
         $this->assertSame(200, $status);
-        $fields = self::withValues(self::formFields($settings, "$agentUrl/settings"), ['log_retention_days' => '45']);
+        $this->assertMatchesRegularExpression('/name="history_retention_days"[^>]*value="365"/', $settings);
+        $this->assertStringNotContainsString('старше версии с отдельным сроком', $settings, 'this agent knows the setting');
+        [$status, $refused] = $this->http('POST', "$agentUrl/settings", self::encode(self::withValues(self::formFields($settings, "$agentUrl/settings"), ['history_retention_days' => '0'])));
+        $this->assertSame(422, $status, 'the history is kept 1 to 3650 days, as in the program');
+        $this->assertStringContainsString('field-error', $refused);
+        $fields = self::withValues(self::formFields($settings, "$agentUrl/settings"), ['log_retention_days' => '45', 'history_retention_days' => '400']);
         [$status, , $headers] = $this->http('POST', "$agentUrl/settings", self::encode($fields));
         $this->assertSame(303, $status);
         $this->assertStringContainsString('Настройки отправлены агенту.', $this->http('GET', parse_url($headers['location'], PHP_URL_PATH))[1]);
@@ -463,6 +468,7 @@ final class WebTest extends TestCase
             'the difference with the version before');
         [, $settings] = $this->http('GET', "$agentUrl/settings");
         $this->assertMatchesRegularExpression('/name="log_retention_days"[^>]*value="45"/', $settings);
+        $this->assertMatchesRegularExpression('/name="history_retention_days"[^>]*value="400"/', $settings);
 
         // A template from the task, applied to the machine: a second task appears there.
         [$status, $editor] = $this->http('GET', '/templates/new?agent=' . basename($agentUrl) . '&task=' . basename($taskUrl));

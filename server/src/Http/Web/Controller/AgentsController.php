@@ -241,14 +241,17 @@ final class AgentsController extends Controller
             'tray_mode' => in_array($this->post('tray_mode'), self::TRAY_MODES, true) ? $this->post('tray_mode') : 'full',
             'allow_all_users_edit' => $this->post('allow_all_users_edit') === '1',
             'log_retention_days' => trim($this->post('log_retention_days')),
+            'history_retention_days' => trim($this->post('history_retention_days')),
             'default_log_level' => in_array($this->post('default_log_level'), ['summary', 'files'], true) ? $this->post('default_log_level') : 'summary',
             'process_priority' => in_array($this->post('process_priority'), ['low', 'normal'], true) ? $this->post('process_priority') : 'low',
         ];
         $errors = [];
-        if (!ctype_digit($values['log_retention_days']) || (int) $values['log_retention_days'] < 1 || (int) $values['log_retention_days'] > 3650) {
-            $errors['log_retention_days'] = $this->t('settings.error.range', ['min' => 1, 'max' => 3650]);
-        } else {
-            $values['log_retention_days'] = (int) $values['log_retention_days'];
+        foreach (['log_retention_days', 'history_retention_days'] as $days) {
+            if (!ctype_digit($values[$days]) || (int) $values[$days] < 1 || (int) $values[$days] > 3650) {
+                $errors[$days] = $this->t('settings.error.range', ['min' => 1, 'max' => 3650]);
+            } else {
+                $values[$days] = (int) $values[$days];
+            }
         }
         $password = $this->post('password_action');
         $new = $this->post('program_password');
@@ -298,6 +301,7 @@ final class AgentsController extends Controller
             'tray_mode' => (string) ($settings['tray_mode'] ?? 'full'),
             'allow_all_users_edit' => (bool) ($settings['allow_all_users_edit'] ?? false),
             'log_retention_days' => (int) ($settings['log_retention_days'] ?? 180),
+            'history_retention_days' => (int) ($settings['history_retention_days'] ?? 365),
             'default_log_level' => (string) ($settings['default_log_level'] ?? 'summary'),
             'process_priority' => (string) ($settings['process_priority'] ?? 'low'),
         ];

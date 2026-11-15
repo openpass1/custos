@@ -750,6 +750,8 @@ return [
     'agent_settings.allow_all_users_edit' => 'let all users of the machine change tasks',
     'agent_settings.allow_all_users_edit.hint' => 'When off, only administrators of the machine change tasks.',
     'agent_settings.log_retention_days' => 'Keep logs on the machine, days',
+    'agent_settings.history_retention_days' => 'Keep run history on the machine, days',
+    'agent_settings.history_retention_days.old' => 'The program on this machine is older than the version with its own period for the history: there the run history is kept as long as the logs. The value takes effect once the program is updated.',
     'agent_settings.default_log_level' => 'Default run log',
     'agent_settings.process_priority' => 'Copy priority',
     'agent_settings.process_priority.low' => 'low (give way to the user)',

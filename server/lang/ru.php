@@ -751,6 +751,8 @@ return [
     'agent_settings.allow_all_users_edit' => 'разрешить всем пользователям машины менять задания',
     'agent_settings.allow_all_users_edit.hint' => 'Выключено: задания меняют только администраторы машины.',
     'agent_settings.log_retention_days' => 'Хранить журналы на машине, дней',
+    'agent_settings.history_retention_days' => 'Хранить историю запусков на машине, дней',
+    'agent_settings.history_retention_days.old' => 'Программа на этой машине старше версии с отдельным сроком для истории: там история запусков хранится столько же, сколько журналы. Значение начнёт действовать после обновления программы.',
     'agent_settings.default_log_level' => 'Журнал запуска по умолчанию',
     'agent_settings.process_priority' => 'Приоритет копирования',
     'agent_settings.process_priority.low' => 'низкий (уступать пользователю)',
