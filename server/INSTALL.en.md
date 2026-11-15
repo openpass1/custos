@@ -516,6 +516,8 @@ Also in this version: the logout after inactivity is set on the site, Settings �
 
 **Version 0.4.14.** No migrations. Update it with "Update the site to …" or `php8.4 bin/update.php`. The agent settings have a new field "Keep run history on the machine, days" (365 by default). The program keeps its run history apart from the logs from the version with this field on; an older one keeps it as long as the logs, and the site says so under the field.
 
+**Version 1.0.0.** The first public release: the same code as 0.4.14, no migrations. Update it with "Update the site to 1.0.0": the site finds the release on GitHub by itself and tells about it in the bell. From now on new versions of the site and the program come out on the [Releases](https://github.com/openpass1/custos/releases) page (tags `server-v…` and `client-v…`).
+
 ## What to keep in backups
 
 - the `custos` database;
