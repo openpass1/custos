@@ -35,6 +35,15 @@ internal sealed class UiState
 
     public Dictionary<string, int> LogColumns { get; set; } = [];
 
+    /// <summary>Which messages the "Log" tab shows: one of <see cref="Core.Agent.LogFilterLevels"/>.</summary>
+    public string JournalLevel { get; set; } = Core.Agent.LogFilterLevels.All;
+
+    /// <summary>The "Log" tab shows only the tasks selected in the list.</summary>
+    public bool JournalSelectedOnly { get; set; }
+
+    /// <summary>The run history shows only runs with warnings and errors.</summary>
+    public bool HistoryProblemsOnly { get; set; }
+
     public Dictionary<string, int> HistoryColumns { get; set; } = [];
 
     /// <summary>Where ui.json is kept; the interface tests use a folder of their own.</summary>

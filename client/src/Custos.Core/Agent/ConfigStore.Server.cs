@@ -279,6 +279,11 @@ public sealed partial class ConfigStore
                 throw new ConfigException(Messages.Format(Messages.ConfigBadRetentionDays, 1, 3650));
             }
 
+            if (settings.HistoryRetentionDays is < 1 or > 3650)
+            {
+                throw new ConfigException(Messages.Format(Messages.ConfigBadHistoryDays, 1, 3650));
+            }
+
             if (settings.DefaultLogLevel is not (LogLevels.Summary or LogLevels.Files))
             {
                 throw new ConfigException(Messages.Format(Messages.MonitorSettingBad, "default_log_level", settings.DefaultLogLevel));

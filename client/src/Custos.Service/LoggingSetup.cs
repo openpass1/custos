@@ -8,11 +8,14 @@ using Serilog.Sinks.EventLog;
 namespace Custos.Service;
 
 /// <summary>
-/// Service logging: a daily file in C:\ProgramData\CUSTOS\logs (kept 180 days) and the Windows Application event
-/// log under the source "CUSTOS" (section 6.10).
+/// Service logging: a daily file in C:\ProgramData\CUSTOS\logs (deleted by the service after the retention period of
+/// the settings) and the Windows Application event log under the source "CUSTOS" (section 6.10).
 /// </summary>
 internal static class LoggingSetup
 {
+    /// <summary>The files of the service log: <c>service-20261115.log</c>.</summary>
+    public const string ServiceLogPattern = "service-*.log";
+
     private const string FileTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
     public static Logger CreateLogger(bool writeToConsole)
@@ -26,8 +29,7 @@ internal static class LoggingSetup
                 outputTemplate: FileTemplate,
                 formatProvider: CultureInfo.InvariantCulture,
                 rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: null,
-                retainedFileTimeLimit: TimeSpan.FromDays(CustosInfo.DefaultLogRetentionDays))
+                retainedFileCountLimit: null)
             .WriteTo.Logger(eventLog => eventLog
                 .Filter.ByIncludingOnly(EventLogIds.ShouldWrite)
                 .WriteTo.EventLog(

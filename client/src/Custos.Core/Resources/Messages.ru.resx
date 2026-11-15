@@ -443,6 +443,9 @@
   <data name="ConfigBadRetentionDays" xml:space="preserve">
     <value>Журналы можно хранить от {0} до {1} дней.</value>
   </data>
+  <data name="ConfigBadHistoryDays" xml:space="preserve">
+    <value>Историю запусков можно хранить от {0} до {1} дней.</value>
+  </data>
   <data name="ConfigCredentialInUse" xml:space="preserve">
     <value>Учётная запись {0} используется в заданиях: {1}.</value>
   </data>

@@ -443,6 +443,9 @@
   <data name="ConfigBadRetentionDays" xml:space="preserve">
     <value>Logs can be kept from {0} to {1} days.</value>
   </data>
+  <data name="ConfigBadHistoryDays" xml:space="preserve">
+    <value>The run history can be kept from {0} to {1} days.</value>
+  </data>
   <data name="ConfigCredentialInUse" xml:space="preserve">
     <value>The account {0} is used by the tasks: {1}.</value>
   </data>

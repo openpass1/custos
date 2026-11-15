@@ -40,6 +40,9 @@ public static class PipeProtocol
         /// <summary><see cref="HistoryRequest"/> → <see cref="HistoryResult"/>.</summary>
         public const string HistoryGet = "history.get";
 
+        /// <summary>The log file of one run: <see cref="RunLogRequest"/> → <see cref="RunLogResult"/>.</summary>
+        public const string RunLog = "runs.log";
+
         /// <summary>Queue a task: <see cref="TaskRequest"/> → <see cref="OkResult"/>.</summary>
         public const string TaskRun = "tasks.run";
 

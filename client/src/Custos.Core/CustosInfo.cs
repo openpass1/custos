@@ -14,6 +14,9 @@ public static class CustosInfo
     /// <summary>How long log files are kept unless the settings say otherwise (section 6.10).</summary>
     public const int DefaultLogRetentionDays = 180;
 
+    /// <summary>How long the run history is kept unless the settings say otherwise (section 6.10).</summary>
+    public const int DefaultHistoryRetentionDays = 365;
+
     /// <summary>The repository on GitHub whose releases (tags <c>client-vX.Y.Z</c>) bring new versions of the program
     /// to computers without a monitoring site. A fork that releases its own builds changes it.</summary>
     public const string GitHubRepository = "openpass1/custos";
@@ -27,6 +30,9 @@ public static class CustosInfo
 
     /// <summary><c>C:\ProgramData\CUSTOS\logs</c>.</summary>
     public static string LogsDirectory { get; } = Path.Combine(DataDirectory, "logs");
+
+    /// <summary><c>C:\ProgramData\CUSTOS\logs\journal</c>: the journal of each day (section 6.10).</summary>
+    public static string JournalDirectory { get; } = Path.Combine(LogsDirectory, "journal");
 
     private static string ReadVersion()
     {

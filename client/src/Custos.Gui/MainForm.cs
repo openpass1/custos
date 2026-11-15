@@ -45,7 +45,7 @@ internal sealed class MainForm : Form
     private readonly Label _noConnection = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = SystemColors.GrayText, Padding = new Padding(24) };
     private readonly TaskCard _cardView = new() { Dock = DockStyle.Fill };
     private readonly TabControl _tabs = new() { Dock = DockStyle.Fill };
-    private readonly LogView _log = new() { Dock = DockStyle.Fill };
+    private readonly JournalView _journal = new() { Dock = DockStyle.Fill };
     private readonly HistoryView _history = new() { Dock = DockStyle.Fill };
     private readonly ProgressView _progress = new() { Dock = DockStyle.Fill };
     private readonly ContextMenuStrip _taskMenu = new();
@@ -74,6 +74,7 @@ internal sealed class MainForm : Form
     private Bitmap? _amberDot;
     private Bitmap? _emptyDot;
     private string? _historyKey;
+    private string? _historyTaskId;
     private string? _selectWhenShown;
     private bool _layoutRestored;
 
@@ -99,7 +100,7 @@ internal sealed class MainForm : Form
         _inner.Panel2.Controls.Add(_cardView);
         _inner.Paint += PaintGrip;
 
-        AddTab(Strings.TabLog, _log);
+        AddTab(Strings.TabLog, _journal);
         AddTab(Strings.TabHistory, _history);
         AddTab(Strings.TabProgress, _progress);
         _outer.Panel1.Controls.Add(_inner);
@@ -130,6 +131,16 @@ internal sealed class MainForm : Form
             _tabs.SelectedIndex = _uiState.BottomTab;
         }
 
+        _journal.Level = _uiState.JournalLevel;
+        _journal.SelectedOnly = _uiState.JournalSelectedOnly;
+        _history.ProblemsOnly = _uiState.HistoryProblemsOnly;
+        _history.ProblemsOnlyChanged += (_, _) =>
+        {
+            _historyKey = null;
+            LoadHistory();
+        };
+        _history.MoreRequested += (_, _) => LoadMoreHistory();
+        _history.OpenLogRequested += (_, e) => OpenRunLog(e.Run);
         _tasks.SelectedTaskChanged += (_, _) => OnSelectionChanged();
         _tasks.ItemActivate += (_, _) => OnTaskActivated();
         _tasks.KeyDown += OnTaskListKeyDown;
@@ -140,7 +151,7 @@ internal sealed class MainForm : Form
         _monitor.LogAdded += OnLogAdded;
         _monitor.LogReset += OnLogReset;
 
-        _log.Reset(_monitor.Log);
+        _journal.Reset(_monitor.Log);
         ShowStatus();
         ShowSnapshot();
     }
@@ -345,7 +356,7 @@ internal sealed class MainForm : Form
         int stateSize = LogicalToDeviceUnits(StateIconSize);
         _stateImages = Glyphs.StateImages(stateSize);
         _tasks.SmallImageList = _stateImages;
-        _log.SmallImageList = _stateImages;
+        _journal.Log.SmallImageList = _stateImages;
         _history.List.SmallImageList = _stateImages;
 
         _greenDot = CreateDot(Color.FromArgb(46, 160, 67), filled: true);
@@ -468,6 +479,9 @@ internal sealed class MainForm : Form
 
         _uiState.TaskColumns = _tasks.GetColumnWidths();
         _uiState.BottomTab = _tabs.SelectedIndex;
+        _uiState.JournalLevel = _journal.Level;
+        _uiState.JournalSelectedOnly = _journal.SelectedOnly;
+        _uiState.HistoryProblemsOnly = _history.ProblemsOnly;
         _uiState.Save();
     }
 
@@ -503,9 +517,9 @@ internal sealed class MainForm : Form
 
     private void OnSnapshotChanged(object? sender, EventArgs e) => ShowSnapshot();
 
-    private void OnLogAdded(object? sender, LogLinesEventArgs e) => _log.Append(e.Lines);
+    private void OnLogAdded(object? sender, LogLinesEventArgs e) => _journal.Append(e.Lines);
 
-    private void OnLogReset(object? sender, EventArgs e) => _log.Reset(_monitor.Log);
+    private void OnLogReset(object? sender, EventArgs e) => _journal.Reset(_monitor.Log);
 
     private void OnProgressChanged(object? sender, EventArgs e)
     {
@@ -669,6 +683,7 @@ internal sealed class MainForm : Form
 
     private void OnSelectionChanged()
     {
+        _journal.SetSelectedTasks(_tasks.SelectedTaskIds);
         ShowSelectedTask();
         UpdateCommands();
     }
@@ -721,28 +736,33 @@ internal sealed class MainForm : Form
         if (snapshot is null || task is null)
         {
             _historyKey = null;
+            _historyTaskId = null;
             _history.ShowMessage(snapshot is null ? string.Empty : Strings.HistorySelectTask);
             return;
         }
 
-        // Loaded again only when the last run of the task changed.
+        // Loaded again only when the last run of the task changed, and then as many runs as were shown.
         var last = snapshot.States.FirstOrDefault(s => SameId(s.TaskId, task.Id))?.LastRun;
-        string key = $"{task.Id}|{last?.RunId}|{last?.Status}";
+        bool problemsOnly = _history.ProblemsOnly;
+        string key = $"{task.Id}|{last?.RunId}|{last?.Status}|{problemsOnly}";
         if (key == _historyKey)
         {
             return;
         }
 
+        int limit = SameId(_historyTaskId, task.Id) ? Math.Max(HistoryRequest.Page, _history.Count) : HistoryRequest.Page;
         _historyKey = key;
+        _historyTaskId = task.Id;
         Ui.Run(this, async () =>
         {
             try
             {
-                var result = await _monitor.RequestAsync(PipeProtocol.Methods.HistoryGet, new HistoryRequest { TaskId = task.Id },
+                var result = await _monitor.RequestAsync(PipeProtocol.Methods.HistoryGet,
+                    new HistoryRequest { TaskId = task.Id, Limit = limit, ProblemsOnly = problemsOnly },
                     IpcJsonContext.Default.HistoryRequest, IpcJsonContext.Default.HistoryResult);
                 if (_historyKey == key)
                 {
-                    _history.ShowRuns(result.Runs);
+                    _history.ShowRuns(result.Runs, result.More, append: false, HistoryRetentionDays());
                 }
             }
             catch (ServiceUnavailableException ex)
@@ -754,6 +774,37 @@ internal sealed class MainForm : Form
                 }
             }
         });
+    }
+
+    /// <summary>"Show more": the next page of runs, older than those shown.</summary>
+    private void LoadMoreHistory()
+    {
+        string? key = _historyKey;
+        var task = SelectedTask();
+        if (key is null || task is null || _history.Oldest is not { } oldest)
+        {
+            return;
+        }
+
+        bool problemsOnly = _history.ProblemsOnly;
+        Ui.Run(this, async () =>
+        {
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.HistoryGet,
+                new HistoryRequest { TaskId = task.Id, Before = oldest, ProblemsOnly = problemsOnly },
+                IpcJsonContext.Default.HistoryRequest, IpcJsonContext.Default.HistoryResult);
+            if (_historyKey == key)
+            {
+                _history.ShowRuns(result.Runs, result.More, append: true, HistoryRetentionDays());
+            }
+        });
+    }
+
+    private int HistoryRetentionDays() => _monitor.Snapshot?.Settings.HistoryRetentionDays ?? CustosInfo.DefaultHistoryRetentionDays;
+
+    private void OpenRunLog(RunRecord run)
+    {
+        using var form = new RunLogForm(_monitor, run);
+        form.ShowDialog(this);
     }
 
     // ---- Commands -----------------------------------------------------------------------------------------------

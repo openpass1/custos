@@ -39,6 +39,25 @@ internal static class Ui
         }
     }
 
+    /// <summary>
+    /// Opens a folder in Explorer; with <paramref name="file"/>, the folder of that file with the file selected. The
+    /// folders of the logs can be read by every user.
+    /// </summary>
+    public static void OpenFolder(IWin32Window? owner, string folder, string? file = null)
+    {
+        try
+        {
+            var start = file is null
+                ? new System.Diagnostics.ProcessStartInfo("explorer.exe") { ArgumentList = { folder } }
+                : new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select,\"" + file + "\"");
+            using var _ = System.Diagnostics.Process.Start(start);
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or FileNotFoundException)
+        {
+            ShowError(owner, ex.Message);
+        }
+    }
+
     /// <summary>"04.11.2026 16:41", or "—".</summary>
     public static string Time(DateTimeOffset? time) =>
         time is { } value ? value.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) : "—";

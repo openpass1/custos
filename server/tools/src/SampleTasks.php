@@ -65,6 +65,7 @@ final class SampleTasks
             'allow_all_users_edit' => false,
             'program_password_hash' => null,
             'log_retention_days' => 180,
+            'history_retention_days' => 365,
             'default_log_level' => 'summary',
             'process_priority' => 'low',
             'allow_remote_edit' => true,

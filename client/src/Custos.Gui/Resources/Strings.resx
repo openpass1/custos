@@ -349,6 +349,72 @@ Backups go on: the service does not depend on the window. The details are writte
   <data name="HistoryVerifyFailed" xml:space="preserve">
     <value>failed: {0}</value>
   </data>
+  <data name="JournalSelectedOnly" xml:space="preserve">
+    <value>Only selected tasks</value>
+  </data>
+  <data name="JournalShow" xml:space="preserve">
+    <value>Show:</value>
+  </data>
+  <data name="LogShowAll" xml:space="preserve">
+    <value>All messages</value>
+  </data>
+  <data name="LogShowProblems" xml:space="preserve">
+    <value>Warnings and errors</value>
+  </data>
+  <data name="LogShowErrors" xml:space="preserve">
+    <value>Errors only</value>
+  </data>
+  <data name="LogSearch" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="LogFolder" xml:space="preserve">
+    <value>Log folder</value>
+  </data>
+  <data name="JournalCount" xml:space="preserve">
+    <value>Lines: {0} of {1}</value>
+  </data>
+  <data name="JournalHelp" xml:space="preserve">
+    <value>The window keeps the last {0} lines of all tasks, also after a restart. Every day has its own journal file in {1}; the full log of every run (with the list of files at «Every file» detail) opens from the «Run history» tab.</value>
+  </data>
+  <data name="HistoryProblemsOnly" xml:space="preserve">
+    <value>Only warnings and errors</value>
+  </data>
+  <data name="HistoryMore" xml:space="preserve">
+    <value>Show more</value>
+  </data>
+  <data name="HistoryShown" xml:space="preserve">
+    <value>Runs shown: {0}, since {1}.</value>
+  </data>
+  <data name="HistoryShownAll" xml:space="preserve">
+    <value>All runs: {0}, since {1}. The history is kept {2} days.</value>
+  </data>
+  <data name="HistoryNoProblems" xml:space="preserve">
+    <value>No runs with warnings or errors.</value>
+  </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Open run log</value>
+  </data>
+  <data name="HistoryOpenLogHint" xml:space="preserve">
+    <value>Double-click a run to open its log.</value>
+  </data>
+  <data name="RunLogTitle" xml:space="preserve">
+    <value>Run log: {0}, {1}</value>
+  </data>
+  <data name="RunLogGone" xml:space="preserve">
+    <value>This run has no log any more: logs are deleted after {0} days (Settings → Logs and copying).</value>
+  </data>
+  <data name="RunLogCount" xml:space="preserve">
+    <value>Lines in the log: {0}, shown: {1}.</value>
+  </data>
+  <data name="RunLogTruncated" xml:space="preserve">
+    <value>Lines in the log: {0}, matching: {1}; the last {2} are shown. The whole log is in the file.</value>
+  </data>
+  <data name="RunLogShowFile" xml:space="preserve">
+    <value>Show in folder</value>
+  </data>
+  <data name="RunLogRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
   <data name="ProgressIdle" xml:space="preserve">
     <value>No task is running now.</value>
   </data>
@@ -1156,10 +1222,19 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Log detail:</value>
   </data>
   <data name="DefaultLogLevelHelp" xml:space="preserve">
-    <value>«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files; handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.</value>
+    <value>«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files in the log of the run (it does not go to the window: open the run on the «Run history» tab); handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.</value>
   </data>
   <data name="LogRetention" xml:space="preserve">
     <value>Keep logs, days:</value>
+  </data>
+  <data name="LogRetentionHelp" xml:space="preserve">
+    <value>The log files in C:\ProgramData\CUSTOS\logs: the journal of every day, the log of every run and the service log.</value>
+  </data>
+  <data name="HistoryRetention" xml:space="preserve">
+    <value>Keep run history, days:</value>
+  </data>
+  <data name="HistoryRetentionHelp" xml:space="preserve">
+    <value>The «Run history» tab. A run takes little room there, so the history may be kept longer than the logs; a run whose log is gone still shows its result.</value>
   </data>
   <data name="CopyPriority" xml:space="preserve">
     <value>Copy priority:</value>

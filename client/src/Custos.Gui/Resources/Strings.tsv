@@ -115,6 +115,28 @@ HistoryWarnings	Warnings: {0}	Предупреждений: {0}
 HistoryVerifyOkNew	passed (new copy)	пройдена (новая копия)
 HistoryVerifyOkStored	passed (sets: {0})	пройдена (наборов: {0})
 HistoryVerifyFailed	failed: {0}	не пройдена: {0}
+JournalSelectedOnly	Only selected tasks	Только выбранные задания
+JournalShow	Show:	Показывать:
+LogShowAll	All messages	Все сообщения
+LogShowProblems	Warnings and errors	Предупреждения и ошибки
+LogShowErrors	Errors only	Только ошибки
+LogSearch	Search	Поиск
+LogFolder	Log folder	Папка журналов
+JournalCount	Lines: {0} of {1}	Строк: {0} из {1}
+JournalHelp	The window keeps the last {0} lines of all tasks, also after a restart. Every day has its own journal file in {1}; the full log of every run (with the list of files at «Every file» detail) opens from the «Run history» tab.	В окне — последние {0} строк по всем заданиям, они сохраняются и после перезапуска. Журнал каждого дня лежит в файле в папке {1}, полный журнал запуска (со списком файлов при детальности «Каждый файл») открывается на вкладке «История запусков».
+HistoryProblemsOnly	Only warnings and errors	Только ошибки и предупреждения
+HistoryMore	Show more	Показать ещё
+HistoryShown	Runs shown: {0}, since {1}.	Показано запусков: {0}, с {1}.
+HistoryShownAll	All runs: {0}, since {1}. The history is kept {2} days.	Все запуски: {0}, с {1}. История хранится {2} дн.
+HistoryNoProblems	No runs with warnings or errors.	Запусков с ошибками и предупреждениями нет.
+HistoryOpenLog	Open run log	Открыть журнал запуска
+HistoryOpenLogHint	Double-click a run to open its log.	Двойной щелчок по запуску открывает его журнал.
+RunLogTitle	Run log: {0}, {1}	Журнал запуска: {0}, {1}
+RunLogGone	This run has no log any more: logs are deleted after {0} days (Settings → Logs and copying).	Журнала этого запуска уже нет: журналы удаляются через {0} дн. (Настройки → Журналы и копирование).
+RunLogCount	Lines in the log: {0}, shown: {1}.	Строк в журнале: {0}, показано: {1}.
+RunLogTruncated	Lines in the log: {0}, matching: {1}; the last {2} are shown. The whole log is in the file.	Строк в журнале: {0}, подходящих: {1}, показаны последние {2}. Весь журнал есть в файле.
+RunLogShowFile	Show in folder	Показать в папке
+RunLogRefresh	Refresh	Обновить
 ProgressIdle	No task is running now.	Сейчас ничего не выполняется.
 ProgressTask	Task	Задание
 ProgressTrigger	Started	Запуск
@@ -388,8 +410,11 @@ ConfirmDeleteAccount	Remove the account {0}?	Удалить учётную за�
 SettingsTitle	CUSTOS settings	Настройки CUSTOS
 SettingsLogs	Logs and copying	Журналы и копирование
 DefaultLogLevel	Log detail:	Детальность журнала:
-DefaultLogLevelHelp	«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files; handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.	«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов: удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.
+DefaultLogLevelHelp	«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files in the log of the run (it does not go to the window: open the run on the «Run history» tab); handy to find out what went into a backup, but the logs grow large. A task can choose its own detail.	«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов в журнале запуска (в окно он не выводится, откройте запуск на вкладке «История запусков»): удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.
 LogRetention	Keep logs, days:	Хранить журналы, дней:
+LogRetentionHelp	The log files in C:\ProgramData\CUSTOS\logs: the journal of every day, the log of every run and the service log.	Файлы журналов в C:\ProgramData\CUSTOS\logs: журнал каждого дня, журнал каждого запуска и журнал службы.
+HistoryRetention	Keep run history, days:	Хранить историю запусков, дней:
+HistoryRetentionHelp	The «Run history» tab. A run takes little room there, so the history may be kept longer than the logs; a run whose log is gone still shows its result.	Вкладка «История запусков». Запуск занимает в ней мало места, поэтому историю можно хранить дольше журналов: у запуска, журнал которого уже удалён, результат всё равно виден.
 CopyPriority	Copy priority:	Приоритет копирования:
 CopyPriorityHelp	Low: copying gives way to the user and to other programs, so the computer does not slow down; while the disk and the processor are free, they are used fully. Normal: faster on a busy computer, but more noticeable.	Низкий: копирование уступает пользователю и другим программам, и компьютер не тормозит; пока диск и процессор свободны, они используются полностью. Обычный: быстрее на загруженном компьютере, но работать мешает заметнее.
 PriorityLow	Low (recommended)	Низкий (рекомендуется)

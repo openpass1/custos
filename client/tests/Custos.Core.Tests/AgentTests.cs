@@ -189,12 +189,17 @@ public sealed class ConfigStoreTests : IDisposable
     public void Settings_are_checked_and_kept()
     {
         Assert.Throws<ConfigException>(() => _store.SaveSettings(new AgentSettings { LogRetentionDays = 0 }));
+        Assert.Throws<ConfigException>(() => _store.SaveSettings(new AgentSettings { HistoryRetentionDays = 0 }));
+        Assert.Throws<ConfigException>(() => _store.SaveSettings(new AgentSettings { HistoryRetentionDays = 3651 }));
+        Assert.Equal(180, _store.GetSettings().LogRetentionDays);
+        Assert.Equal(365, _store.GetSettings().HistoryRetentionDays);
 
-        _store.SaveSettings(new AgentSettings { LogRetentionDays = 30, DefaultLogLevel = LogLevels.Files });
+        _store.SaveSettings(new AgentSettings { LogRetentionDays = 30, HistoryRetentionDays = 730, DefaultLogLevel = LogLevels.Files });
 
         var reloaded = new ConfigStore(_temp.Combine("config"), new ReversingProtector());
         reloaded.Load();
         Assert.Equal(30, reloaded.GetSettings().LogRetentionDays);
+        Assert.Equal(730, reloaded.GetSettings().HistoryRetentionDays);
         Assert.Equal(LogLevels.Files, reloaded.GetSettings().DefaultLogLevel);
     }
 
@@ -458,5 +463,31 @@ public sealed class LiveLogTests
 
         Assert.Equal([1, 2, 3, 4, 5], seen);
         Assert.Equal(["line 2", "line 3", "line 4"], log.Recent().Select(l => l.Text));
+    }
+
+    [Fact]
+    public void Lines_from_before_a_restart_come_first_and_are_numbered_again()
+    {
+        var log = new LiveLog(capacity: 4);
+        var seen = new List<string>();
+        log.Added += line => seen.Add(line.Text);
+        log.Add(LogLineLevels.Info, "started", taskName: null);
+
+        log.Restore(
+        [
+            new LogLine { Text = "old 1" },
+            new LogLine { Text = "old 2", TaskId = "t", TaskName = "Docs" },
+            new LogLine { Text = "old 3", Level = LogLineLevels.Error },
+            new LogLine { Text = "old 4" },
+        ]);
+
+        // Only the newest four stay; the line of this start is among them. Restored lines raise nothing.
+        Assert.Equal(["old 2", "old 3", "old 4", "started"], log.Recent().Select(l => l.Text));
+        Assert.Equal([2, 3, 4, 5], log.Recent().Select(l => l.Seq));
+        Assert.Equal(["started"], seen);
+
+        var next = log.Add(LogLineLevels.Warning, "new", "t", taskName: "Docs");
+        Assert.Equal(6, next.Seq);
+        Assert.Equal("Docs", next.TaskName);
     }
 }

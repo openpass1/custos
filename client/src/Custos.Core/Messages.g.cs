@@ -431,6 +431,9 @@ static partial class Messages
     /// <summary>Logs can be kept from {0} to {1} days.</summary>
     public static string ConfigBadRetentionDays => Get(nameof(ConfigBadRetentionDays));
 
+    /// <summary>The run history can be kept from {0} to {1} days.</summary>
+    public static string ConfigBadHistoryDays => Get(nameof(ConfigBadHistoryDays));
+
     /// <summary>The account {0} is used by the tasks: {1}.</summary>
     public static string ConfigCredentialInUse => Get(nameof(ConfigCredentialInUse));
 

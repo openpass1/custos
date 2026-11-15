@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using Custos.Core;
+using Custos.Core.Agent;
 using Custos.Core.Archives;
 using Custos.Core.Backup;
 using Custos.Core.Destinations;
@@ -128,7 +129,7 @@ internal sealed partial class AgentService
         }
 
         ServiceLog.RestoreStarted(logger, set.Header.SetName, job.Target, user);
-        var log = new RunLog(this, file, set.Header.TaskId, runId);
+        var log = new RunLog(this, file, set.Header.TaskId, _config.GetTaskName(set.Header.TaskId), runId);
         var restoreRequest = new RestoreRequest
         {
             Sets = found.Sets,

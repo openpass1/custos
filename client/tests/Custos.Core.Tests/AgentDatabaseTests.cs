@@ -87,6 +87,27 @@ public sealed class AgentDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void History_comes_a_page_at_a_time_and_can_show_only_problems()
+    {
+        _database.SaveRun(Record("run-1", "task", Start, RunStatuses.Success));
+        _database.SaveRun(Record("run-2", "task", Start.AddHours(1), RunStatuses.Warning));
+        _database.SaveRun(Record("run-3", "task", Start.AddHours(2), RunStatuses.Success));
+        _database.SaveRun(Record("run-4", "task", Start.AddHours(3), RunStatuses.Error));
+        _database.SaveRun(Record("run-5", "task", Start.AddHours(4), RunStatuses.Aborted));
+        _database.SaveRun(Record("run-6", "task", Start.AddHours(5), null));
+
+        var first = _database.GetHistory("task", 2);
+        Assert.Equal(["run-6", "run-5"], first.Select(r => r.RunId));
+        var next = _database.GetHistory("task", 2, first[^1].StartedAt);
+        Assert.Equal(["run-4", "run-3"], next.Select(r => r.RunId));
+        Assert.Equal(["run-1"], _database.GetHistory("task", 2, Start.AddHours(1)).Select(r => r.RunId));
+
+        // The run in progress has no result yet: it is not a problem.
+        Assert.Equal(["run-5", "run-4", "run-2"], _database.GetHistory("task", 10, problemsOnly: true).Select(r => r.RunId));
+        Assert.Equal(["run-2"], _database.GetHistory("task", 10, Start.AddHours(3), problemsOnly: true).Select(r => r.RunId));
+    }
+
+    [Fact]
     public void Runs_left_open_by_a_crash_are_closed_as_aborted()
     {
         _database.SaveRun(Record("run-1", "task", Start, null));
