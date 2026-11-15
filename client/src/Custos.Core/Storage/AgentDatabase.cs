@@ -231,13 +231,24 @@ public sealed class AgentDatabase : IFileStateStore
         command.ExecuteNonQuery();
     }
 
-    /// <summary>Runs of a task, newest first.</summary>
-    public List<RunRecord> GetHistory(string taskId, int limit)
+    /// <summary>
+    /// Runs of a task, newest first: those started before <paramref name="before"/> when it is given (the next page),
+    /// and only those with warnings, errors or stopped when <paramref name="problemsOnly"/> is set.
+    /// </summary>
+    public List<RunRecord> GetHistory(string taskId, int limit, DateTimeOffset? before = null, bool problemsOnly = false)
     {
         using var connection = Open();
-        using var command = Command(connection, RunColumns + " WHERE task_id = $task ORDER BY started_at DESC LIMIT $limit");
+        string where = " WHERE task_id = $task"
+            + (before is null ? string.Empty : " AND started_at < $before")
+            + (problemsOnly ? " AND status IN ('warning', 'error', 'aborted')" : string.Empty);
+        using var command = Command(connection, RunColumns + where + " ORDER BY started_at DESC LIMIT $limit");
         command.Parameters.AddWithValue("$task", taskId);
         command.Parameters.AddWithValue("$limit", limit);
+        if (before is { } time)
+        {
+            command.Parameters.AddWithValue("$before", UtcTimeConverter.ToText(time));
+        }
+
         return ReadRuns(command);
     }
 

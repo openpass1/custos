@@ -59,7 +59,11 @@ public sealed class AgentSettings
 
     public string? ProgramPasswordHash { get; set; }
 
+    /// <summary>Days the log files are kept: the journal of each day, the log of each run, the service log.</summary>
     public int LogRetentionDays { get; set; } = CustosInfo.DefaultLogRetentionDays;
+
+    /// <summary>Days the run history is kept.</summary>
+    public int HistoryRetentionDays { get; set; } = CustosInfo.DefaultHistoryRetentionDays;
 
     /// <summary><see cref="LogLevels.Summary"/> or <see cref="LogLevels.Files"/>.</summary>
     public string DefaultLogLevel { get; set; } = LogLevels.Summary;

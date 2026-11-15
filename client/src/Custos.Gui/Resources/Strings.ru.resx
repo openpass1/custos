@@ -349,6 +349,72 @@
   <data name="HistoryVerifyFailed" xml:space="preserve">
     <value>не пройдена: {0}</value>
   </data>
+  <data name="JournalSelectedOnly" xml:space="preserve">
+    <value>Только выбранные задания</value>
+  </data>
+  <data name="JournalShow" xml:space="preserve">
+    <value>Показывать:</value>
+  </data>
+  <data name="LogShowAll" xml:space="preserve">
+    <value>Все сообщения</value>
+  </data>
+  <data name="LogShowProblems" xml:space="preserve">
+    <value>Предупреждения и ошибки</value>
+  </data>
+  <data name="LogShowErrors" xml:space="preserve">
+    <value>Только ошибки</value>
+  </data>
+  <data name="LogSearch" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="LogFolder" xml:space="preserve">
+    <value>Папка журналов</value>
+  </data>
+  <data name="JournalCount" xml:space="preserve">
+    <value>Строк: {0} из {1}</value>
+  </data>
+  <data name="JournalHelp" xml:space="preserve">
+    <value>В окне — последние {0} строк по всем заданиям, они сохраняются и после перезапуска. Журнал каждого дня лежит в файле в папке {1}, полный журнал запуска (со списком файлов при детальности «Каждый файл») открывается на вкладке «История запусков».</value>
+  </data>
+  <data name="HistoryProblemsOnly" xml:space="preserve">
+    <value>Только ошибки и предупреждения</value>
+  </data>
+  <data name="HistoryMore" xml:space="preserve">
+    <value>Показать ещё</value>
+  </data>
+  <data name="HistoryShown" xml:space="preserve">
+    <value>Показано запусков: {0}, с {1}.</value>
+  </data>
+  <data name="HistoryShownAll" xml:space="preserve">
+    <value>Все запуски: {0}, с {1}. История хранится {2} дн.</value>
+  </data>
+  <data name="HistoryNoProblems" xml:space="preserve">
+    <value>Запусков с ошибками и предупреждениями нет.</value>
+  </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Открыть журнал запуска</value>
+  </data>
+  <data name="HistoryOpenLogHint" xml:space="preserve">
+    <value>Двойной щелчок по запуску открывает его журнал.</value>
+  </data>
+  <data name="RunLogTitle" xml:space="preserve">
+    <value>Журнал запуска: {0}, {1}</value>
+  </data>
+  <data name="RunLogGone" xml:space="preserve">
+    <value>Журнала этого запуска уже нет: журналы удаляются через {0} дн. (Настройки → Журналы и копирование).</value>
+  </data>
+  <data name="RunLogCount" xml:space="preserve">
+    <value>Строк в журнале: {0}, показано: {1}.</value>
+  </data>
+  <data name="RunLogTruncated" xml:space="preserve">
+    <value>Строк в журнале: {0}, подходящих: {1}, показаны последние {2}. Весь журнал есть в файле.</value>
+  </data>
+  <data name="RunLogShowFile" xml:space="preserve">
+    <value>Показать в папке</value>
+  </data>
+  <data name="RunLogRefresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
   <data name="ProgressIdle" xml:space="preserve">
     <value>Сейчас ничего не выполняется.</value>
   </data>
@@ -1156,10 +1222,19 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
     <value>Детальность журнала:</value>
   </data>
   <data name="DefaultLogLevelHelp" xml:space="preserve">
-    <value>«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов: удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.</value>
+    <value>«Итоги и ошибки» — что сделал каждый запуск и все проблемы. «Каждый файл» — ещё и список скопированных файлов в журнале запуска (в окно он не выводится, откройте запуск на вкладке «История запусков»): удобно, чтобы выяснить, что попало в копию, но журналы становятся большими. В задании можно выбрать свою детальность.</value>
   </data>
   <data name="LogRetention" xml:space="preserve">
     <value>Хранить журналы, дней:</value>
+  </data>
+  <data name="LogRetentionHelp" xml:space="preserve">
+    <value>Файлы журналов в C:\ProgramData\CUSTOS\logs: журнал каждого дня, журнал каждого запуска и журнал службы.</value>
+  </data>
+  <data name="HistoryRetention" xml:space="preserve">
+    <value>Хранить историю запусков, дней:</value>
+  </data>
+  <data name="HistoryRetentionHelp" xml:space="preserve">
+    <value>Вкладка «История запусков». Запуск занимает в ней мало места, поэтому историю можно хранить дольше журналов: у запуска, журнал которого уже удалён, результат всё равно виден.</value>
   </data>
   <data name="CopyPriority" xml:space="preserve">
     <value>Приоритет копирования:</value>

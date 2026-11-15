@@ -472,7 +472,8 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "tray_mode": "full",                 // full | status | hidden
   "allow_all_users_edit": false,
   "program_password_hash": null,       // формат A.2; null = пароль не задан
-  "log_retention_days": 180,
+  "log_retention_days": 180,           // файлы журналов: дня, запусков, службы
+  "history_retention_days": 365,       // история запусков; агент старее клиента 0.5 поля не знает и хранит её как журналы
   "default_log_level": "summary",      // summary | files
   "process_priority": "low",           // low | normal
   "allow_remote_edit": true,           // ЛОКАЛЬНАЯ: сервер изменить не может

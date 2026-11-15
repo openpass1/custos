@@ -138,6 +138,24 @@ public sealed partial class ConfigStore
         }
     }
 
+    /// <summary>The name of a task without a copy of it (for the lines of the log), or null when there is none.</summary>
+    public string? GetTaskName(string taskId)
+    {
+        lock (_lock)
+        {
+            return Find(taskId)?.Name;
+        }
+    }
+
+    /// <summary>The id of the first task with this name, or null.</summary>
+    public string? FindTaskId(string name)
+    {
+        lock (_lock)
+        {
+            return _tasks.Tasks.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.Ordinal))?.Id;
+        }
+    }
+
     /// <summary>Creates or replaces a task.</summary>
     /// <param name="baseRevision">The revision the editor started from; null for a new task.</param>
     /// <param name="updatedBy"><c>local:DOMAIN\user</c> (A.9).</param>
@@ -303,6 +321,11 @@ public sealed partial class ConfigStore
             if (copy.LogRetentionDays is < 1 or > 3650)
             {
                 throw new ConfigException(Messages.Format(Messages.ConfigBadRetentionDays, 1, 3650));
+            }
+
+            if (copy.HistoryRetentionDays is < 1 or > 3650)
+            {
+                throw new ConfigException(Messages.Format(Messages.ConfigBadHistoryDays, 1, 3650));
             }
 
             if (copy.DefaultLogLevel is not (LogLevels.Summary or LogLevels.Files))

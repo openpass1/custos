@@ -14,6 +14,9 @@ public static class CustosInfo
     /// <summary>How long log files are kept unless the settings say otherwise (section 6.10).</summary>
     public const int DefaultLogRetentionDays = 180;
 
+    /// <summary>How long the run history is kept unless the settings say otherwise (section 6.10).</summary>
+    public const int DefaultHistoryRetentionDays = 365;
+
     /// <summary>Product version, for example "0.1.0". Every CUSTOS assembly is built with the same version.</summary>
     public static string Version { get; } = ReadVersion();
 
@@ -23,6 +26,9 @@ public static class CustosInfo
 
     /// <summary><c>C:\ProgramData\CUSTOS\logs</c>.</summary>
     public static string LogsDirectory { get; } = Path.Combine(DataDirectory, "logs");
+
+    /// <summary><c>C:\ProgramData\CUSTOS\logs\journal</c>: the journal of each day (section 6.10).</summary>
+    public static string JournalDirectory { get; } = Path.Combine(LogsDirectory, "journal");
 
     private static string ReadVersion()
     {

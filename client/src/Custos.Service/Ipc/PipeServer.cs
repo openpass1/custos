@@ -439,7 +439,10 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.GetSnapshot(), json.AgentSnapshot),
             PipeProtocol.Methods.LogRecent =>
                 PipeMessage.Success(id, new LogResult { Lines = agent.GetRecentLog() }, json.LogResult),
-            PipeProtocol.Methods.HistoryGet => History(id, request.GetData(json.HistoryRequest)),
+            PipeProtocol.Methods.HistoryGet =>
+                PipeMessage.Success(id, agent.GetHistory(request.GetData(json.HistoryRequest)), json.HistoryResult),
+            PipeProtocol.Methods.RunLog =>
+                PipeMessage.Success(id, agent.ReadRunLog(request.GetData(json.RunLogRequest)), json.RunLogResult),
             PipeProtocol.Methods.TaskRun =>
                 Ok(id, agent.RunTask(request.GetData(json.TaskRequest).TaskId, user)),
             PipeProtocol.Methods.RunAll =>
@@ -535,9 +538,6 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
         await Task.Delay(WrongPasswordDelay, connection.Closing).ConfigureAwait(false);
         return PipeMessage.Failure(requestId, PipeProtocol.Errors.Invalid, Messages.PasswordWrong);
     }
-
-    private PipeMessage History(long id, HistoryRequest request) =>
-        PipeMessage.Success(id, new HistoryResult { Runs = agent.GetHistory(request.TaskId, request.Limit) }, IpcJsonContext.Default.HistoryResult);
 
     private PipeMessage ServerConnect(long id, ServerConnectRequest request, string user) =>
         Ok(id, agent.ConnectServer(request.ServerUrl, request.Code, user));

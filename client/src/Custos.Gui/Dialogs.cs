@@ -1356,6 +1356,7 @@ internal sealed class SettingsForm : DialogForm
     private readonly ServiceMonitor _monitor;
     private readonly ComboBox _logLevel = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly NumericUpDown _retention = new() { Minimum = 1, Maximum = 3650, Width = 80 };
+    private readonly NumericUpDown _historyRetention = new() { Minimum = 1, Maximum = 3650, Width = 80 };
     private readonly ComboBox _priority = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly ComboBox _language = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly ListView _accounts = new()
@@ -1462,7 +1463,8 @@ internal sealed class SettingsForm : DialogForm
 
         AddWide(heading);
         AddRow(Strings.DefaultLogLevel, _logLevel, Ui.HelpIcon(_toolTip, Strings.DefaultLogLevelHelp));
-        AddRow(Strings.LogRetention, _retention);
+        AddRow(Strings.LogRetention, _retention, Ui.HelpIcon(_toolTip, Strings.LogRetentionHelp));
+        AddRow(Strings.HistoryRetention, _historyRetention, Ui.HelpIcon(_toolTip, Strings.HistoryRetentionHelp));
         AddRow(Strings.CopyPriority, _priority, Ui.HelpIcon(_toolTip, Strings.CopyPriorityHelp));
         AddRow(Strings.ServiceLanguage, _language, Ui.HelpIcon(_toolTip, Strings.ServiceLanguageHelp));
 
@@ -1531,6 +1533,7 @@ internal sealed class SettingsForm : DialogForm
         var settings = monitor.Snapshot?.Settings ?? new AgentSettings();
         _logLevel.SelectedIndex = settings.DefaultLogLevel == LogLevels.Files ? 1 : 0;
         _retention.Value = Math.Clamp(settings.LogRetentionDays, 1, 3650);
+        _historyRetention.Value = Math.Clamp(settings.HistoryRetentionDays, 1, 3650);
         _priority.SelectedIndex = settings.ProcessPriority == "normal" ? 1 : 0;
         int language = Array.IndexOf(Languages, settings.Language);
         _language.SelectedIndex = language < 0 ? 0 : language;
@@ -1542,7 +1545,7 @@ internal sealed class SettingsForm : DialogForm
         _allowAll.Checked = settings.AllowAllUsersEdit;
 
         _allowRemoteEdit.Checked = settings.AllowRemoteEdit;
-        foreach (var control in new Control[] { _logLevel, _retention, _priority, _language, _theme, _addAccount })
+        foreach (var control in new Control[] { _logLevel, _retention, _historyRetention, _priority, _language, _theme, _addAccount })
         {
             control.Enabled = _canEdit;
         }
@@ -1689,6 +1692,7 @@ internal sealed class SettingsForm : DialogForm
 
         settings.DefaultLogLevel = _logLevel.SelectedIndex == 1 ? LogLevels.Files : LogLevels.Summary;
         settings.LogRetentionDays = (int)_retention.Value;
+        settings.HistoryRetentionDays = (int)_historyRetention.Value;
         settings.ProcessPriority = _priority.SelectedIndex == 1 ? "normal" : "low";
         settings.Language = Languages[Math.Max(0, _language.SelectedIndex)];
         settings.Theme = ThemeValues[Math.Max(0, _theme.SelectedIndex)];

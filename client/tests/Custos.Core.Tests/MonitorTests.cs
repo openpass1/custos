@@ -423,14 +423,19 @@ public sealed class ServerConfigTests : IDisposable
         var changes = JsonSerializer.SerializeToElement(new JsonObject
         {
             ["log_retention_days"] = 30,
+            ["history_retention_days"] = 400,
             ["server_url"] = "https://evil.example.lan",
             ["allow_remote_edit"] = false,
         }, TestJson.Default.JsonNode);
 
         var changed = _store.UpdateSettingsFromServer(changes);
 
-        Assert.Equal(["log_retention_days"], changed);
+        Assert.Equal(["log_retention_days", "history_retention_days"], changed);
         Assert.Equal(30, _store.GetSettings().LogRetentionDays);
+        Assert.Equal(400, _store.GetSettings().HistoryRetentionDays);
+        var badDays = JsonSerializer.SerializeToElement(new JsonObject { ["history_retention_days"] = 0 }, TestJson.Default.JsonNode);
+        Assert.Throws<ConfigException>(() => _store.UpdateSettingsFromServer(badDays));
+        Assert.Equal(400, _store.GetSettings().HistoryRetentionDays);
         Assert.Equal("https://custos.example.lan", _store.GetSettings().ServerUrl);
         Assert.True(_store.GetSettings().AllowRemoteEdit);
         Assert.True(_store.ConfigRevision > revision);

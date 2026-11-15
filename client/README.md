@@ -434,8 +434,8 @@ CUSTOS → «Настройки» → «Права и защита» (менят
 | Where | What |
 |---|---|
 | `C:\ProgramData\CUSTOS\config\tasks.json`, `settings.json`, `credentials.json` | Tasks, settings, accounts (passwords encrypted with DPAPI). Only SYSTEM and Administrators may read the folder |
-| `C:\ProgramData\CUSTOS\db\custos.db` | Run history and file states for incremental and differential backups |
-| `C:\ProgramData\CUSTOS\logs\` | Service log; `runs\` holds one log file per run |
+| `C:\ProgramData\CUSTOS\db\custos.db` | Run history (kept 365 days by default) and file states for incremental and differential backups |
+| `C:\ProgramData\CUSTOS\logs\` | Service log; `journal\` holds the journal of every day (the lines of the «Log» tab), `runs\YYYY-MM\` one log file per run. Kept 180 days by default |
 | `C:\ProgramData\CUSTOS\config\server.json`, `agent.key` | The monitoring server, its pinned key and the registration code (DPAPI); the agent's own RSA key (DPAPI) |
 | `C:\ProgramData\CUSTOS\updates\` | The 7-Zip installer downloaded by the update button and the new `7z.dll` until the service restarts; update packages from the server and the backup of the previous version. Only SYSTEM and Administrators may read the folder |
 | `%APPDATA%\CUSTOS\ui.json` | Window size, card, columns of this Windows user |
@@ -451,7 +451,11 @@ administrator rights, after the Windows UAC prompt.
 
 ## Diagnostics
 
-- Service log: `C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log`, kept 180 days.
+- Service log: `C:\ProgramData\CUSTOS\logs\service-YYYYMMDD.log`, kept as long as the other logs (Settings →
+  «Keep logs, days», 180 by default).
+- The «Log» tab shows the last 2000 lines of all tasks and filters them by level, by the selected tasks and by text; the
+  same lines go to `logs\journal\YYYY-MM-DD.log`. The full log of a run (with every file at «Every file» detail) opens
+  with a double click on the run in «Run history».
 - Windows event log "Application", source `CUSTOS`: 1000 service started, 1001 service stopped,
   2000-2005 runs, 2006-2008 shutdown or sleep after a run (done, cancelled, failed), 3002 7z.dll missing or unusable,
   3003/3004 7-Zip updated / update failed, 1100/1101 monitoring server lost for 5 minutes / back, 4000/4001 update

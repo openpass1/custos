@@ -33,7 +33,7 @@ internal sealed class AgentRequestException(string code, string message) : Excep
 [SupportedOSPlatform("windows")]
 internal sealed partial class AgentService(ServiceInfo info, AgentEvents events, ILogger<AgentService> logger) : BackgroundService
 {
-    private const int HistoryLimit = 1000;
+    private const int HistoryLimit = 5000;
     private const int SqliteCorrupt = 11;
     private const int SqliteNotADatabase = 26;
     private static readonly TimeSpan MaxSleep = TimeSpan.FromSeconds(30);
@@ -44,6 +44,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     private readonly ConfigStore _config = new(DataFolders.Config, new DpapiProtector());
     private readonly PendingRuns _queue = new();
     private readonly LiveLog _liveLog = new();
+    private readonly JournalFile _journal = new(DataFolders.Journal);
     private readonly SemaphoreSlim _scheduleWake = new(0);
     private readonly SemaphoreSlim _queueSignal = new(0);
     private readonly Lock _lock = new();
@@ -119,6 +120,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             _ready.TrySetResult();
             StopRuns(runner);
             await _linkLoop.WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            _journal.Dispose();
         }
     }
 
@@ -184,7 +186,53 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
     public List<LogLine> GetRecentLog() => _liveLog.Recent();
 
-    public List<RunRecord> GetHistory(string taskId, int limit) => Database.GetHistory(taskId, Math.Clamp(limit, 1, HistoryLimit));
+    public HistoryResult GetHistory(HistoryRequest request)
+    {
+        int limit = Math.Clamp(request.Limit, 1, HistoryLimit);
+        var runs = Database.GetHistory(request.TaskId, limit + 1, request.Before, request.ProblemsOnly);
+        bool more = runs.Count > limit;
+        if (more)
+        {
+            runs.RemoveAt(runs.Count - 1);
+        }
+
+        return new HistoryResult { Runs = runs, More = more };
+    }
+
+    /// <summary>The log file of a run, the lines that match (section 6.10). Open to every user, like the history.</summary>
+    public RunLogResult ReadRunLog(RunLogRequest request)
+    {
+        int retention = _config.GetSettings().LogRetentionDays;
+        if (!Guid.TryParse(request.RunId, out _))
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.MonitorPayloadMissing, "run_id"));
+        }
+
+        string? path = RunLogFile.Find(DataFolders.RunLogs, request.RunId);
+        if (path is null)
+        {
+            return new RunLogResult { RetentionDays = retention };
+        }
+
+        var filter = new LogFilter(LogFilterLevels.IsKnown(request.Level) ? request.Level : LogFilterLevels.All, request.Search);
+        try
+        {
+            var excerpt = LogText.Read(path, filter.Matches, RunLogResult.MaxLines);
+            return new RunLogResult
+            {
+                Found = true,
+                Path = path,
+                Lines = excerpt.Lines,
+                Total = excerpt.Total,
+                Matched = excerpt.Matched,
+                RetentionDays = retention,
+            };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Internal, ex.Message);
+        }
+    }
 
     public OkResult RunTask(string taskId, string user)
     {
@@ -785,8 +833,12 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             }
         }
 
+        // The run logs of versions before 0.5 lay in one folder; the journal of the last days comes back into the window.
+        RunLogFile.MoveToMonthFolders(DataFolders.RunLogs);
+        _liveLog.Restore(JournalFile.ReadRecent(DataFolders.Journal, _liveLog.Capacity, _config.FindTaskId));
         _liveLog.Added += line =>
         {
+            _journal.Write(line);
             lock (_pendingLines)
             {
                 _pendingLines.Add(line);
@@ -869,13 +921,45 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
     private void Cleanup(DateTimeOffset now)
     {
-        var before = now.AddDays(-_config.GetSettings().LogRetentionDays);
-        int files = RunLogFile.DeleteOld(DataFolders.RunLogs, before);
-        int runs = TryDatabase(db => db.DeleteRunsBefore(before));
+        var settings = _config.GetSettings();
+        var logsBefore = now.AddDays(-Math.Clamp(settings.LogRetentionDays, 1, 3650));
+        var historyBefore = now.AddDays(-Math.Clamp(settings.HistoryRetentionDays, 1, 3650));
+        int files = RunLogFile.DeleteOld(DataFolders.RunLogs, logsBefore)
+            + JournalFile.DeleteOld(DataFolders.Journal, logsBefore)
+            + DeleteOldServiceLogs(logsBefore);
+        int runs = TryDatabase(db => db.DeleteRunsBefore(historyBefore));
         if (files + runs > 0)
         {
             ServiceLog.OldLogsDeleted(logger, files, runs);
         }
+    }
+
+    /// <summary>The service log of each day (<see cref="LoggingSetup"/>) is kept as long as the other logs.</summary>
+    private static int DeleteOldServiceLogs(DateTimeOffset before)
+    {
+        int deleted = 0;
+        try
+        {
+            foreach (var file in new DirectoryInfo(CustosInfo.LogsDirectory).EnumerateFiles(LoggingSetup.ServiceLogPattern))
+            {
+                try
+                {
+                    if (file.LastWriteTimeUtc < before.UtcDateTime)
+                    {
+                        file.Delete();
+                        deleted++;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+
+        return deleted;
     }
 
     // ---- Schedule and queue ------------------------------------------------------------------------------------
@@ -1084,7 +1168,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
         PublishSnapshot();
         ServiceLog.TaskStarted(logger, task.Name, queued.Trigger, file.Path);
-        var log = new RunLog(this, file, task.Id, runId);
+        var log = new RunLog(this, file, task.Id, task.Name, runId);
         bool low = settings.ProcessPriority != "normal";
         SetPriority(low);
 
@@ -1265,7 +1349,8 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         }
     }
 
-    private void Log(string level, string text, string? taskId = null, string? runId = null) => _liveLog.Add(level, text, taskId, runId);
+    private void Log(string level, string text, string? taskId = null, string? runId = null) =>
+        _liveLog.Add(level, text, taskId, runId, taskId is null ? null : _config.GetTaskName(taskId));
 
     private void SetLastSlot(string taskId, DateTimeOffset slot)
     {
@@ -1360,12 +1445,19 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     }
 
     /// <summary>Where the engine's lines go: the run's file and the live log.</summary>
-    private sealed class RunLog(AgentService agent, RunLogFile file, string taskId, string runId) : IRunLog
+    /// <summary>
+    /// The log of a run: every line goes to its file; the window and the journal of the day get all but the details
+    /// (a line for every file, retries), so that one run with "every file" does not push the rest out.
+    /// </summary>
+    private sealed class RunLog(AgentService agent, RunLogFile file, string? taskId, string? taskName, string runId) : IRunLog
     {
         public void Write(RunLogLevel level, string message)
         {
             file.Write(level, message);
-            agent.Log(LogLineLevels.From(level), message, taskId, runId);
+            if (level != RunLogLevel.Detail)
+            {
+                agent._liveLog.Add(LogLineLevels.From(level), message, taskId, runId, taskName);
+            }
         }
     }
 }

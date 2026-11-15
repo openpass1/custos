@@ -17,6 +17,9 @@ internal static class DataFolders
 
     public static string RunLogs { get; } = Path.Combine(CustosInfo.LogsDirectory, "runs");
 
+    /// <summary>The journal of each day (<see cref="JournalFile"/>).</summary>
+    public static string Journal => CustosInfo.JournalDirectory;
+
     /// <summary>Downloaded 7-Zip installers and the 7z.dll unpacked from them: the service loads a DLL from here, so
     /// it is closed like <c>config</c>.</summary>
     public static string Updates { get; } = Path.Combine(CustosInfo.DataDirectory, "updates");
@@ -38,6 +41,7 @@ internal static class DataFolders
         var problems = new List<string>();
         Directory.CreateDirectory(CustosInfo.LogsDirectory);
         Directory.CreateDirectory(RunLogs);
+        Directory.CreateDirectory(Journal);
         foreach (string folder in new[] { Config, Database, Updates })
         {
             Directory.CreateDirectory(folder);

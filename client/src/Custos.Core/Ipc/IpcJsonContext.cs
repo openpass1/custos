@@ -19,6 +19,8 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(HistoryRequest))]
 [JsonSerializable(typeof(HistoryResult))]
 [JsonSerializable(typeof(LogResult))]
+[JsonSerializable(typeof(RunLogRequest))]
+[JsonSerializable(typeof(RunLogResult))]
 [JsonSerializable(typeof(TaskSaveRequest))]
 [JsonSerializable(typeof(TaskSaveResult))]
 [JsonSerializable(typeof(CredentialInput))]

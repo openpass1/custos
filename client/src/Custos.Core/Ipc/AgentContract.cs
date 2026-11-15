@@ -218,6 +218,9 @@ public sealed class LogLine
 
     public string? TaskId { get; set; }
 
+    /// <summary>The name of the task when the line was written, for the "Task" column.</summary>
+    public string? TaskName { get; set; }
+
     public string? RunId { get; set; }
 
     public string Text { get; set; } = string.Empty;
@@ -255,14 +258,59 @@ public sealed class TaskRequest
 /// <summary>Parameters of <see cref="PipeProtocol.Methods.HistoryGet"/>.</summary>
 public sealed class HistoryRequest
 {
+    public const int Page = 200;
+
     public required string TaskId { get; set; }
 
-    public int Limit { get; set; } = 200;
+    public int Limit { get; set; } = Page;
+
+    /// <summary>Only runs started before this time: the next page after the oldest run shown.</summary>
+    public DateTimeOffset? Before { get; set; }
+
+    /// <summary>Only runs with warnings, errors or stopped.</summary>
+    public bool ProblemsOnly { get; set; }
 }
 
 public sealed class HistoryResult
 {
     public List<RunRecord> Runs { get; set; } = [];
+
+    /// <summary>There are older runs than these.</summary>
+    public bool More { get; set; }
+}
+
+/// <summary>Parameters of <see cref="PipeProtocol.Methods.RunLog"/>.</summary>
+public sealed class RunLogRequest
+{
+    public required string RunId { get; set; }
+
+    /// <summary>One of <see cref="Agent.LogFilterLevels"/>.</summary>
+    public string Level { get; set; } = Agent.LogFilterLevels.All;
+
+    /// <summary>Only lines with this text.</summary>
+    public string? Search { get; set; }
+}
+
+/// <summary>The log file of a run: the lines that match, the last <see cref="MaxLines"/> of them.</summary>
+public sealed class RunLogResult
+{
+    public const int MaxLines = 10000;
+
+    /// <summary>False when the file is gone: deleted after the retention period, or never written.</summary>
+    public bool Found { get; set; }
+
+    public string? Path { get; set; }
+
+    public List<LogLine> Lines { get; set; } = [];
+
+    /// <summary>Lines in the file.</summary>
+    public int Total { get; set; }
+
+    /// <summary>Lines that match the filter; more than <see cref="Lines"/> holds when there were too many.</summary>
+    public int Matched { get; set; }
+
+    /// <summary>How many days logs are kept, to tell why a file is gone.</summary>
+    public int RetentionDays { get; set; }
 }
 
 public sealed class LogResult

@@ -335,6 +335,72 @@ static partial class Strings
     /// <summary>failed: {0}</summary>
     public static string HistoryVerifyFailed => Get(nameof(HistoryVerifyFailed));
 
+    /// <summary>Only selected tasks</summary>
+    public static string JournalSelectedOnly => Get(nameof(JournalSelectedOnly));
+
+    /// <summary>Show:</summary>
+    public static string JournalShow => Get(nameof(JournalShow));
+
+    /// <summary>All messages</summary>
+    public static string LogShowAll => Get(nameof(LogShowAll));
+
+    /// <summary>Warnings and errors</summary>
+    public static string LogShowProblems => Get(nameof(LogShowProblems));
+
+    /// <summary>Errors only</summary>
+    public static string LogShowErrors => Get(nameof(LogShowErrors));
+
+    /// <summary>Search</summary>
+    public static string LogSearch => Get(nameof(LogSearch));
+
+    /// <summary>Log folder</summary>
+    public static string LogFolder => Get(nameof(LogFolder));
+
+    /// <summary>Lines: {0} of {1}</summary>
+    public static string JournalCount => Get(nameof(JournalCount));
+
+    /// <summary>The window keeps the last {0} lines of all tasks, also after a restart. Every day has its own journal file ...</summary>
+    public static string JournalHelp => Get(nameof(JournalHelp));
+
+    /// <summary>Only warnings and errors</summary>
+    public static string HistoryProblemsOnly => Get(nameof(HistoryProblemsOnly));
+
+    /// <summary>Show more</summary>
+    public static string HistoryMore => Get(nameof(HistoryMore));
+
+    /// <summary>Runs shown: {0}, since {1}.</summary>
+    public static string HistoryShown => Get(nameof(HistoryShown));
+
+    /// <summary>All runs: {0}, since {1}. The history is kept {2} days.</summary>
+    public static string HistoryShownAll => Get(nameof(HistoryShownAll));
+
+    /// <summary>No runs with warnings or errors.</summary>
+    public static string HistoryNoProblems => Get(nameof(HistoryNoProblems));
+
+    /// <summary>Open run log</summary>
+    public static string HistoryOpenLog => Get(nameof(HistoryOpenLog));
+
+    /// <summary>Double-click a run to open its log.</summary>
+    public static string HistoryOpenLogHint => Get(nameof(HistoryOpenLogHint));
+
+    /// <summary>Run log: {0}, {1}</summary>
+    public static string RunLogTitle => Get(nameof(RunLogTitle));
+
+    /// <summary>This run has no log any more: logs are deleted after {0} days (Settings → Logs and copying).</summary>
+    public static string RunLogGone => Get(nameof(RunLogGone));
+
+    /// <summary>Lines in the log: {0}, shown: {1}.</summary>
+    public static string RunLogCount => Get(nameof(RunLogCount));
+
+    /// <summary>Lines in the log: {0}, matching: {1}; the last {2} are shown. The whole log is in the file.</summary>
+    public static string RunLogTruncated => Get(nameof(RunLogTruncated));
+
+    /// <summary>Show in folder</summary>
+    public static string RunLogShowFile => Get(nameof(RunLogShowFile));
+
+    /// <summary>Refresh</summary>
+    public static string RunLogRefresh => Get(nameof(RunLogRefresh));
+
     /// <summary>No task is running now.</summary>
     public static string ProgressIdle => Get(nameof(ProgressIdle));
 
@@ -1127,11 +1193,20 @@ static partial class Strings
     /// <summary>Log detail:</summary>
     public static string DefaultLogLevel => Get(nameof(DefaultLogLevel));
 
-    /// <summary>«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files; han...</summary>
+    /// <summary>«Totals and errors»: what each run did, and every problem. «Every file»: also the list of copied files in t...</summary>
     public static string DefaultLogLevelHelp => Get(nameof(DefaultLogLevelHelp));
 
     /// <summary>Keep logs, days:</summary>
     public static string LogRetention => Get(nameof(LogRetention));
+
+    /// <summary>The log files in C:\ProgramData\CUSTOS\logs: the journal of every day, the log of every run and the service...</summary>
+    public static string LogRetentionHelp => Get(nameof(LogRetentionHelp));
+
+    /// <summary>Keep run history, days:</summary>
+    public static string HistoryRetention => Get(nameof(HistoryRetention));
+
+    /// <summary>The «Run history» tab. A run takes little room there, so the history may be kept longer than the logs; a ru...</summary>
+    public static string HistoryRetentionHelp => Get(nameof(HistoryRetentionHelp));
 
     /// <summary>Copy priority:</summary>
     public static string CopyPriority => Get(nameof(CopyPriority));
