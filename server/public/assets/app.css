@@ -717,7 +717,7 @@ li.problem.arrived, .progress-item.arrived { animation: slide-in .3s ease-out, g
 header.top { view-transition-name: top-bar; }
 
 .motion-note { cursor: help; }
-.motion-note::before { content: "·"; margin: 0 .5rem; }
+.motion-note::before, .footer-donate::before { content: "·"; margin: 0 .5rem; }
 
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }

@@ -21,6 +21,9 @@ internal sealed class MainForm : Form
     private const int DefaultCardWidth = 400;
     private const int DefaultTabsHeight = 210;
 
+    /// <summary>A link colour that reads well on the dark status bar.</summary>
+    private static readonly Color DarkLinkColor = Color.FromArgb(120, 175, 255);
+
     private readonly ServiceMonitor _monitor;
     private readonly UiState _uiState = UiState.Load();
     private readonly ToolStrip _toolbar = new() { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(4, 2, 4, 2) };
@@ -108,8 +111,22 @@ internal sealed class MainForm : Form
         _outer.Paint += PaintGrip;
 
         var versionStatus = new ToolStripStatusLabel(CustosInfo.Version);
-        var statusStrip = new StatusStrip();
-        statusStrip.Items.AddRange([_serviceStatus, _serverStatus, _userStatus, versionStatus]);
+
+        // A quiet link after the version: the ways of supporting the project (DONATE.md on GitHub).
+        var donateStatus = new ToolStripStatusLabel(Strings.StatusDonate)
+        {
+            IsLink = true,
+            LinkBehavior = LinkBehavior.HoverUnderline,
+            ToolTipText = Strings.StatusDonateTip,
+        };
+        if (Theme.IsDark)
+        {
+            donateStatus.LinkColor = donateStatus.ActiveLinkColor = DarkLinkColor;
+        }
+
+        donateStatus.Click += (_, _) => Ui.OpenWebPage(this, CustosInfo.DonatePage);
+        var statusStrip = new StatusStrip { ShowItemToolTips = true };
+        statusStrip.Items.AddRange([_serviceStatus, _serverStatus, _userStatus, versionStatus, donateStatus]);
 
         _updateBar.Controls.AddRange([_updateText, _updateInstall, _updateNotes]);
         _updateInstall.Click += (_, _) => InstallProgramUpdate();
@@ -634,19 +651,9 @@ internal sealed class MainForm : Form
     /// <summary>«Что нового»: the page of the release on GitHub.</summary>
     private void OpenReleasePage()
     {
-        if (_monitor.Snapshot?.ProgramUpdate.PageUrl is not { } url
-            || !Uri.TryCreate(url, UriKind.Absolute, out var page) || page.Scheme != Uri.UriSchemeHttps)
+        if (_monitor.Snapshot?.ProgramUpdate.PageUrl is { } url)
         {
-            return;
-        }
-
-        try
-        {
-            using var _ = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(page.AbsoluteUri) { UseShellExecute = true });
-        }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-        {
-            Ui.ShowWarning(this, ex.Message);
+            Ui.OpenWebPage(this, url);
         }
     }
 

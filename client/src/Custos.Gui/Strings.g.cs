@@ -170,6 +170,12 @@ static partial class Strings
     /// <summary>Something went wrong in the CUSTOS window: {0}</summary>
     public static string ProblemUnexpected => Get(nameof(ProblemUnexpected));
 
+    /// <summary>Support the project</summary>
+    public static string StatusDonate => Get(nameof(StatusDonate));
+
+    /// <summary>How to support CUSTOS: DONATE.md on GitHub</summary>
+    public static string StatusDonateTip => Get(nameof(StatusDonateTip));
+
     /// <summary>yes</summary>
     public static string Yes => Get(nameof(Yes));
 

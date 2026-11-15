@@ -21,6 +21,9 @@ public static class CustosInfo
     /// to computers without a monitoring site. A fork that releases its own builds changes it.</summary>
     public const string GitHubRepository = "openpass1/custos";
 
+    /// <summary>The page with the ways of supporting the project, linked from the status bar of the main window.</summary>
+    public const string DonatePage = "https://github.com/" + GitHubRepository + "/blob/main/DONATE.md";
+
     /// <summary>Product version, for example "0.1.0". Every CUSTOS assembly is built with the same version.</summary>
     public static string Version { get; } = ReadVersion();
 

@@ -94,6 +94,11 @@ the files. The Windows files are not code-signed yet; signing is planned.
 Bugs and ideas: [Issues](https://github.com/openpass1/custos/issues), in English or Russian. Please report security
 problems privately, as described in [SECURITY.md](SECURITY.md).
 
+## Support the project
+
+CUSTOS is free. If it is useful to you, you can support its development with a donation in cryptocurrency:
+the wallets, their networks and QR codes are in [DONATE.md](DONATE.md).
+
 ## License
 
 CUSTOS is free software under the [GNU General Public License v3.0](LICENSE). It ships with third-party components

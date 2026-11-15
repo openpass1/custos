@@ -57,6 +57,7 @@ return [
     'motion.off.windows' => 'Animations are off in Windows settings',
     'motion.off.hint' => 'The site follows the "Reduce motion" setting of the system or the browser and shows everything without animation.',
     'motion.off.hint.windows' => 'To turn them on: Settings → Accessibility → Visual effects → "Animation effects" (Windows 10: Ease of Access → Display → "Show animations in Windows"), or "Animate controls and elements inside windows" in Performance Options.',
+    'footer.donate' => 'Support the project',
 
     'status.success' => 'success',
     'status.warning' => 'with warnings',

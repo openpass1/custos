@@ -209,6 +209,21 @@ public sealed class MainFormTests
         Assert.False(CardButton(again).Checked);
     });
 
+    [Fact]
+    public void The_status_bar_has_a_link_to_the_ways_of_supporting_the_project() => Sta.Run("ru-RU", () =>
+    {
+        using var monitor = Samples.Monitor();
+        using var form = new MainForm(monitor);
+        form.Show();
+        Sta.Pump();
+
+        var status = Assert.Single(Sta.Find<StatusStrip>(form));
+        var link = status.Items.OfType<ToolStripStatusLabel>().Single(l => l.IsLink);
+        Assert.Equal("Поддержать проект", link.Text);
+        Assert.Same(link, status.Items[^1]);
+        Assert.Equal("https://github.com/openpass1/custos/blob/main/DONATE.md", Core.CustosInfo.DonatePage);
+    });
+
     private static ListViewItem Row(TaskListView list, string taskId) =>
         list.Items.Cast<ListViewItem>().Single(i => string.Equals((string)i.Tag!, taskId, StringComparison.Ordinal));
 

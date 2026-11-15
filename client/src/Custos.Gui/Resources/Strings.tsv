@@ -58,6 +58,8 @@ ProblemNoConnection	No connection to the CUSTOS service.	Нет связи со 
 ProblemNoAnswer	The service did not answer in time.	Служба не ответила вовремя.
 ProblemRequestFailed	The service could not do it: {0}	Служба не смогла выполнить запрос: {0}
 ProblemUnexpected	Something went wrong in the CUSTOS window: {0}\n\nBackups go on: the service does not depend on the window. The details are written to {1}. If this repeats, close the interface from the tray menu and open it again.	В окне CUSTOS произошла ошибка: {0}\n\nКопирование продолжается: служба от окна не зависит. Подробности записаны в {1}. Если ошибка повторяется, закройте интерфейс через меню в трее и откройте снова.
+StatusDonate	Support the project	Поддержать проект
+StatusDonateTip	How to support CUSTOS: DONATE.md on GitHub	Как поддержать CUSTOS: DONATE.md на GitHub
 Yes	yes	да
 No	no	нет
 # ---- Task card
