@@ -597,9 +597,9 @@ public sealed class BackupEngineTests : IDisposable
 
         Assert.Equal(RunStatuses.Success, low.Status);
 
-        // Two sources read, two copies written, two copies read back by the check; and the manifests: that of the
-        // first set read, that of the new one written.
-        Assert.Equal(8, _platform.LoweredFiles);
+        // Two sources read, two copies written, two copies read back by the check; the manifests: that of the first
+        // set read, that of the new one written; and the marker the new set has while it is written.
+        Assert.Equal(9, _platform.LoweredFiles);
     }
 
     private BackupResult Run(TaskDefinition task, DateTimeOffset startedAt, string? runId = null) =>

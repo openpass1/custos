@@ -310,6 +310,20 @@ public sealed class TaskDestination
     /// <summary>S3: one of <see cref="ObjectLockModes"/>; null = <see cref="ObjectLockModes.Governance"/>.</summary>
     public string? ObjectLockMode { get; set; }
 
+    /// <summary>
+    /// A folder, a share or a USB disk where the storage itself protects files from deletion (WORM on a NAS, section
+    /// 6.3): for this many days after it locks a file nobody can change, rename or delete it; 0 = no WORM. The program
+    /// cannot learn it from the storage and takes it from here.
+    /// </summary>
+    public int WormDays { get; set; }
+
+    /// <summary>WORM: how many hours after a file is written the storage locks it; 0 = within the first hour.</summary>
+    public int WormLockHours { get; set; }
+
+    /// <summary>The storage refuses to delete or replace files for a time: S3 Object Lock or WORM.</summary>
+    [JsonIgnore]
+    public bool ProtectsFiles => (Kind == DestinationKinds.S3 && ObjectLockDays > 0) || WormSettings.Of(this) is not null;
+
     /// <summary>Cloud drives: an archive is written in parts of this many MB (<c>name.zip.001</c>, <c>.002</c> …), for
     /// services that limit the size of one file (section 6.3); 0 = one file.</summary>
     public int PartMb { get; set; }

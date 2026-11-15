@@ -160,6 +160,42 @@ final class TaskFormTest extends TestCase
         $this->assertContains('task_form.error.cloud_mirror', $keys);
     }
 
+    public function testWormOfANasTakesOnlySetsThatAreNeverOverwritten(): void
+    {
+        $task = $this->task();
+        $task['layout']['separate_folders'] = true;
+        $post = self::formFor($task);
+        $post['destinations'][0]['worm_days'] = '7';
+        $post['destinations'][0]['worm_lock_hours'] = '3';
+        $post['destinations'][] = ['id' => '', 'kind' => 'sftp', 'host' => 'backup.example.org', 'path' => 'pc01', 'credential' => '',
+                                   'worm_days' => '7', 'worm_lock_hours' => '3', 'speed_limit_kbps' => '0'];
+        $form = TaskForm::parse($task, $post, $this->credentials());
+        $this->assertNotContains('task_form.error.worm_needs_sets', array_column($form->errors, 'key'));
+        $destinations = $form->task()['destinations'];
+        $this->assertSame([7, 3], [$destinations[0]['worm_days'], $destinations[0]['worm_lock_hours']]);
+        $this->assertArrayNotHasKey('worm_days', $destinations[1], 'only folders, shares and USB disks state WORM');
+
+        // Saved without WORM again: the fields stay, set to nothing.
+        $post['destinations'][0]['worm_days'] = '0';
+        $again = TaskForm::parse($form->task(), $post, $this->credentials())->task()['destinations'][0];
+        $this->assertSame([0, 0], [$again['worm_days'], $again['worm_lock_hours']]);
+
+        // A shared folder and a mirror replace files; archives do not.
+        $post['destinations'][0]['worm_days'] = '7';
+        $post['layout']['separate_folders'] = '';
+        $error = array_values(array_filter(TaskForm::parse($task, $post, $this->credentials())->errors,
+            fn($e) => $e['key'] === 'task_form.error.worm_needs_sets'));
+        $this->assertCount(1, $error);
+        $this->assertSame(['what' => ['key' => 'task_form.destination', 'params' => ['n' => 1]], 'days' => 7], $error[0]['params']);
+        $post['archive']['format'] = 'zip';
+        $this->assertNotContains('task_form.error.worm_needs_sets', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'));
+        $post['archive']['format'] = 'none';
+        $post['layout']['separate_folders'] = '1';
+        $post['backup_type'] = 'mirror';
+        $post['mirror_mode'] = 'exact';
+        $this->assertContains('task_form.error.worm_needs_sets', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'));
+    }
+
     public function testCloudDriveInATemplateNamesNoAccount(): void
     {
         $task = $this->task();
@@ -261,6 +297,8 @@ final class TaskFormTest extends TestCase
             foreach (['path', 'usb_label', 'host', 'port', 'endpoint', 'bucket', 'region'] as $k) {
                 $row[$k] = (string) $d[$k];
             }
+            $row['worm_days'] = (string) ($d['worm_days'] ?? 0);
+            $row['worm_lock_hours'] = (string) (($d['worm_days'] ?? 0) > 0 ? $d['worm_lock_hours'] : TaskForm::DEFAULT_WORM_LOCK_HOURS);
             $post['destinations'][] = $row;
         }
         foreach (['pre', 'post'] as $when) {

@@ -229,6 +229,35 @@ public static class ObjectLockModes
     public static bool IsKnown(string? mode) => mode is null or Governance or Compliance;
 }
 
+/// <summary>
+/// WORM of a folder, a share or a USB disk as its destination states it (section 6.3): the storage locks a file
+/// <see cref="LockHours"/> hours after it is written, and then nobody can change, rename or delete it for
+/// <see cref="Days"/> days. After that it can be deleted (Asustor: only deleted, never changed).
+/// </summary>
+public sealed record WormSettings(int Days, int LockHours)
+{
+    /// <summary>The longest delay before the lock (Asustor: 7 days).</summary>
+    public const int MaxLockHours = 168;
+
+    /// <summary>Added to every time worked out here: the clocks of the storage and of this computer may differ.</summary>
+    public static readonly TimeSpan Margin = TimeSpan.FromHours(1);
+
+    /// <summary>The WORM of a destination; null where it has none.</summary>
+    public static WormSettings? Of(TaskDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return DestinationKinds.IsFileSystem(destination.Kind) && destination.WormDays > 0
+            ? new WormSettings(destination.WormDays, Math.Clamp(destination.WormLockHours, 0, MaxLockHours))
+            : null;
+    }
+
+    /// <summary>How long after it is written a file is surely locked (a deletion tried later proves the lock).</summary>
+    public TimeSpan LockedAfter => TimeSpan.FromHours(LockHours) + Margin;
+
+    /// <summary>How long after it is written a file can surely be deleted again.</summary>
+    public TimeSpan Protection => TimeSpan.FromHours(LockHours) + TimeSpan.FromDays(Days) + Margin;
+}
+
 /// <summary>Values of <see cref="Credential.Kind"/>.</summary>
 public static class CredentialKinds
 {

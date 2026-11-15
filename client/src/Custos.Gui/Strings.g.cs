@@ -692,6 +692,9 @@ static partial class Strings
     /// <summary>On: each backup goes into its own folder, named by the template below, and old backups are deleted by the r...</summary>
     public static string SeparateFoldersHelp => Get(nameof(SeparateFoldersHelp));
 
+    /// <summary>Always on here: «{0}» protects written files from deletion, and in a shared folder files are replaced.</summary>
+    public static string SeparateForcedNote => Get(nameof(SeparateForcedNote));
+
     /// <summary>Folder name:</summary>
     public static string NameTemplate => Get(nameof(NameTemplate));
 
@@ -841,6 +844,9 @@ static partial class Strings
 
     /// <summary>This task makes a full backup only the first time, so every backup builds on it and this rule cannot delete...</summary>
     public static string RetentionNoFullWarning => Get(nameof(RetentionNoFullWarning));
+
+    /// <summary>A destination has WORM for {0} days: a backup there is deleted no sooner than {0} days after it was written...</summary>
+    public static string RetentionWormNote => Get(nameof(RetentionWormNote));
 
     /// <summary>Rules that always apply</summary>
     public static string RetentionRules => Get(nameof(RetentionRules));
@@ -2128,6 +2134,21 @@ static partial class Strings
 
     /// <summary>Object Lock: for this many days after it is written, a file of a copy cannot be deleted or replaced, not ev...</summary>
     public static string DestinationLockHelp => Get(nameof(DestinationLockHelp));
+
+    /// <summary>WORM on the NAS:</summary>
+    public static string DestinationWorm => Get(nameof(DestinationWorm));
+
+    /// <summary>days of protection (0 — none)</summary>
+    public static string DestinationWormUnit => Get(nameof(DestinationWormUnit));
+
+    /// <summary>Locked after:</summary>
+    public static string DestinationWormLock => Get(nameof(DestinationWormLock));
+
+    /// <summary>h after it is written</summary>
+    public static string DestinationWormLockUnit => Get(nameof(DestinationWormLockUnit));
+
+    /// <summary>Fill in if the storage (a NAS) protects written files from change and deletion (WORM): how many days the pr...</summary>
+    public static string DestinationWormHelp => Get(nameof(DestinationWormHelp));
 
     /// <summary>Server key:</summary>
     public static string DestinationServerKey => Get(nameof(DestinationServerKey));

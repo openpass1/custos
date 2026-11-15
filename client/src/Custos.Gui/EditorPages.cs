@@ -646,6 +646,7 @@ internal sealed class DestinationsPage : EditorPage
     private readonly Label _mirrorNote = new() { Text = Strings.LayoutMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly Label _cloudNote = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly CheckBox _separate = new() { Text = Strings.SeparateFolders, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
+    private readonly Label _separateForced = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(18, 0, 0, 6), Visible = false };
     private readonly ComboBox _template = new() { DropDownStyle = ComboBoxStyle.DropDown, Dock = DockStyle.Fill };
     private readonly Label _example = new() { AutoSize = true, Dock = DockStyle.Fill, ForeColor = SystemColors.GrayText, Margin = new Padding(0, 0, 0, 6) };
     private readonly List<TaskDestination> _destinations = [];
@@ -672,6 +673,7 @@ internal sealed class DestinationsPage : EditorPage
         AddHeading(Strings.EditorLayout);
         AddWide(_mirrorNote);
         AddWide(_separate, Strings.SeparateFoldersHelp);
+        AddWide(_separateForced);
         AddRow(Strings.NameTemplate, _template, Strings.NameTemplateHelp);
         AddWide(_example);
 
@@ -739,11 +741,11 @@ internal sealed class DestinationsPage : EditorPage
 
         // A locked file cannot be replaced, and a mirror and a shared folder replace files (section 6.3).
         bool replaces = Context.IsMirror || (!_separate.Checked && Context.ArchiveFormat == ArchiveFormats.None);
-        int locked = _destinations.FindIndex(d => d.Kind == DestinationKinds.S3 && d.ObjectLockDays > 0);
+        int locked = _destinations.FindIndex(d => d.ProtectsFiles);
         if (replaces && locked >= 0)
         {
             _list.Items[locked].Selected = true;
-            return Custos.Core.Messages.Format(Custos.Core.Messages.ObjectLockNeedsSets, TaskDescriber.Destination(_destinations[locked]));
+            return Custos.Core.Backup.BackupEngine.ProtectionNeedsSets(_destinations[locked], TaskDescriber.Destination(_destinations[locked]));
         }
 
         // A mirror needs to look at and replace single files: not on a cloud drive (section 6.3).
@@ -808,7 +810,9 @@ internal sealed class DestinationsPage : EditorPage
         Context.StreamOnlyDestination = _destinations.FirstOrDefault(d => !DestinationKinds.CanSeek(d.Kind)) is { } stream
             ? TaskDescriber.Destination(stream)
             : null;
+        Context.WormDays = _destinations.Select(d => WormSettings.Of(d)?.Days ?? 0).DefaultIfEmpty(0).Max();
         ShowCloudNote();
+        UpdateLayout();
         UpdateButtons();
     }
 
@@ -824,7 +828,17 @@ internal sealed class DestinationsPage : EditorPage
         bool mirror = Context.IsMirror;
         _mirrorNote.Visible = mirror;
         ShowCloudNote();
-        _separate.Enabled = !mirror;
+
+        // A destination that protects its files takes only sets that are never overwritten (section 6.3).
+        var protects = !mirror && Context.ArchiveFormat == ArchiveFormats.None ? _destinations.FirstOrDefault(d => d.ProtectsFiles) : null;
+        if (protects is not null)
+        {
+            _separate.Checked = true;
+        }
+
+        _separate.Enabled = !mirror && protects is null;
+        _separateForced.Visible = protects is not null;
+        _separateForced.Text = protects is null ? string.Empty : Strings.Format(Strings.SeparateForcedNote, TaskDescriber.Destination(protects));
         _template.Enabled = UsesTemplate;
         ShowExample();
     }
@@ -1351,6 +1365,7 @@ internal sealed class RetentionPage : EditorPage
     private readonly FlowLayoutPanel _gfsCounts = new() { AutoSize = true, WrapContents = true, Margin = new Padding(18, 0, 0, 0) };
     private readonly Label _mirrorNote = new() { Text = Strings.RetentionMirrorNote, AutoSize = true, Dock = DockStyle.Fill, ForeColor = Glyphs.WarningText, Margin = new Padding(0, 0, 0, 6), Visible = false };
     private readonly Label _noFullWarning;
+    private readonly Label _wormNote;
 
     public RetentionPage(EditorContext context)
         : base(context, Strings.PageRetention, Glyph.Layers)
@@ -1367,6 +1382,7 @@ internal sealed class RetentionPage : EditorPage
         AddNote(Strings.RetentionGfsHint, 18);
         _noFullWarning = AddNote(Strings.RetentionNoFullWarning);
         _noFullWarning.ForeColor = Glyphs.WarningText;
+        _wormNote = AddNote(string.Empty);
         AddHeading(Strings.RetentionRules);
         AddNote(Strings.RetentionRulesText);
 
@@ -1450,6 +1466,10 @@ internal sealed class RetentionPage : EditorPage
         // differential backups) or "by age" (incremental: each needs the ones before it) can delete none of it.
         bool chain = Context.BackupType is BackupTypes.Incremental or BackupTypes.Differential && !Context.HasForcedFull;
         _noFullWarning.Visible = chain && (_byCount.Checked || (_byAge.Checked && Context.BackupType == BackupTypes.Incremental));
+
+        // WORM keeps a backup for its days whatever the rule says (section 6.6).
+        _wormNote.Visible = Context.WormDays > 0 && !mirror && !_keepAll.Checked;
+        _wormNote.Text = Context.WormDays > 0 ? Strings.Format(Strings.RetentionWormNote, Context.WormDays) : string.Empty;
     }
 }
 

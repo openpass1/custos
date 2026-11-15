@@ -164,6 +164,14 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
                 <input type="checkbox" name="<?= e($prefix) ?>[disconnect_after]" value="1"<?= checked((bool) ($item['disconnect_after'] ?? true)) ?>>
                 <?= e(t('task_form.disconnect_after')) ?></label>
         </div>
+        <div class="row-fields" data-show-if="kind=local|unc|usb">
+            <label title="<?= e(t('task_form.worm_hint')) ?>"><?= e(t('task_form.worm_days')) ?>
+                <input type="number" name="<?= e($prefix) ?>[worm_days]" value="<?= (int) ($item['worm_days'] ?? 0) ?>" min="0" max="36500" class="short">
+            </label>
+            <label title="<?= e(t('task_form.worm_hint')) ?>" data-show-if="worm_days!=0|"><?= e(t('task_form.worm_lock_hours')) ?>
+                <input type="number" name="<?= e($prefix) ?>[worm_lock_hours]" value="<?= (int) (($item['worm_days'] ?? 0) > 0 ? ($item['worm_lock_hours'] ?? 0) : TaskForm::DEFAULT_WORM_LOCK_HOURS) ?>" min="0" max="<?= TaskForm::MAX_WORM_LOCK_HOURS ?>" class="short">
+            </label>
+        </div>
         <?= $credentialField($prefix, $item) ?>
         <button type="button" class="link remove" data-remove-row><?= e(t('task_form.remove')) ?></button>
     </div>

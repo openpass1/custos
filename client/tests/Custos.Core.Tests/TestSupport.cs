@@ -80,6 +80,9 @@ internal sealed class TestPlatform : LocalBackupPlatform
     /// with WORM); null = they try.</summary>
     public bool? FolderRenames { get; set; }
 
+    /// <summary>Puts every store the engine opens into another one (<see cref="GuardedStore"/>); null = as it is.</summary>
+    public Func<Destinations.DestinationStore, Destinations.DestinationStore>? WrapStore { get; set; }
+
     public override Destinations.DestinationStore OpenStore(TaskDestination destination, INetworkSession? session = null)
     {
         var store = base.OpenStore(destination, session);
@@ -88,7 +91,7 @@ internal sealed class TestPlatform : LocalBackupPlatform
             local.KnownFolderRenames = FolderRenames;
         }
 
-        return store;
+        return WrapStore is null ? store : WrapStore(store);
     }
 
     public override long? GetFreeSpace(string path) => FreeSpace;

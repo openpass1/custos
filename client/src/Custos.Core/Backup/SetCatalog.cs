@@ -500,15 +500,35 @@ public static partial class SetCatalog
         return chain;
     }
 
-    /// <summary>Deletes a set: its folder, or all files of its archive.</summary>
+    /// <summary>
+    /// Deletes a set: its folder, or all files of its archive. A folder loses its manifest first, so that a set the
+    /// destination will not let go yet (WORM, Object Lock: the manifest is written last and freed last) stays whole,
+    /// and one that is deleted only in part is no longer offered for restore (section 6.6).
+    /// </summary>
     /// <param name="store">Where the set lies; null = on this computer.</param>
-    public static void DeleteSet(StoredSet set, DestinationStore? store = null)
+    /// <param name="removing">Left in the folder once the manifest is gone, so that a later run of the task finishes a
+    /// deletion that broke off; null = no marker.</param>
+    public static void DeleteSet(StoredSet set, DestinationStore? store = null, UnfinishedMarker.Info? removing = null)
     {
         ArgumentNullException.ThrowIfNull(set);
         store ??= LocalStore.Default;
         if (set.Storage == SetStorage.Folder)
         {
-            store.DeleteFolder(set.Location);
+            store.DeleteFile(store.Combine(set.Location, SetManifest.FileName));
+            if (removing is null)
+            {
+                store.DeleteFolder(set.Location);
+                return;
+            }
+
+            // A marker that is there (a long run could not remove its own under WORM) does as well, and one that is
+            // locked could not be replaced anyway.
+            if (UnfinishedMarker.TryRead(store, set.Location) is null)
+            {
+                UnfinishedMarker.Write(store, set.Location, removing);
+            }
+
+            DeleteMarkedFolder(store, set.Location);
             return;
         }
 
@@ -527,6 +547,29 @@ public static partial class SetCatalog
         ArgumentNullException.ThrowIfNull(set);
         ArgumentNullException.ThrowIfNull(store);
         return set.Storage == SetStorage.Folder ? store.Combine(set.Location, SetManifest.FileName) : set.Parts[^1];
+    }
+
+    /// <summary>
+    /// Deletes a set folder that has an <see cref="UnfinishedMarker"/>, the marker last: a deletion that breaks off
+    /// (the storage refuses a file, the connection is lost) leaves it, and a later run of the task goes on with it.
+    /// </summary>
+    public static void DeleteMarkedFolder(DestinationStore store, string folder)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        foreach (var entry in store.List(folder))
+        {
+            store.Cancellation.ThrowIfCancellationRequested();
+            if (entry.IsFolder)
+            {
+                store.DeleteFolder(entry.Path);
+            }
+            else if (!string.Equals(entry.Name, UnfinishedMarker.FileName, StringComparison.OrdinalIgnoreCase))
+            {
+                store.DeleteFile(entry.Path);
+            }
+        }
+
+        store.DeleteFolder(folder);
     }
 
     /// <summary>Deletes a folder of this computer. Read-only files are deleted too; links inside are removed, never followed.</summary>

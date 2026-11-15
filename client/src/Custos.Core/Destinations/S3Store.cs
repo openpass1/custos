@@ -109,6 +109,8 @@ public sealed class S3Store : RemoteStore
 
     public override bool HasFolders => false;
 
+    public override bool ProtectsFiles => HasObjectLock == true;
+
     /// <summary>The bucket has Object Lock; null if the server does not tell.</summary>
     public bool? HasObjectLock
     {

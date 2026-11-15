@@ -73,6 +73,16 @@ public abstract class DestinationStore : IDisposable
     /// <summary>Files are opened with low I/O priority (section 6.5); only local stores have such a thing.</summary>
     public bool LowPriority { get; set; }
 
+    /// <summary>
+    /// The WORM the destination states (section 6.3): a folder, a share or a USB disk whose storage protects every
+    /// file from deletion for some days. Null = none, and always null for the other kinds.
+    /// </summary>
+    public Model.WormSettings? Worm { get; init; }
+
+    /// <summary>The storage may refuse to delete a file for a time (WORM, S3 Object Lock): a refusal is then expected,
+    /// and what was left behind is tried again by later runs.</summary>
+    public virtual bool ProtectsFiles => Worm is not null;
+
     // ---- Paths -------------------------------------------------------------------------------------------------
 
     /// <summary><paramref name="relative"/> (with "\" or "/" between its parts) below <paramref name="folder"/>.</summary>
@@ -217,8 +227,11 @@ public abstract class DestinationStore : IDisposable
         }
     }
 
+    /// <summary>The start of the names of trial files and folders; a run removes the ones left behind a day later.</summary>
+    public const string ProbePrefix = ".custos-test-";
+
     /// <summary>A name for the trial file of <see cref="Probe"/>.</summary>
-    protected static string ProbeName() => ".custos-test-" + Guid.NewGuid().ToString("N")[..8] + ".tmp";
+    protected static string ProbeName() => ProbePrefix + Guid.NewGuid().ToString("N")[..8] + ".tmp";
 
     public void Dispose()
     {
