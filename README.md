@@ -99,3 +99,7 @@ problems privately, as described in [SECURITY.md](SECURITY.md).
 CUSTOS is free software under the [GNU General Public License v3.0](LICENSE). It ships with third-party components
 under their own licenses: [client/THIRD-PARTY-NOTICES.txt](client/THIRD-PARTY-NOTICES.txt),
 [server/THIRD-PARTY-NOTICES.txt](server/THIRD-PARTY-NOTICES.txt). 7-Zip (`7z.dll`) is licensed under the GNU LGPL.
+
+CUSTOS comes **without any warranty**, to the extent permitted by law: it is provided "as is", and its authors are not
+liable for any damage from using it, including lost data (sections 15 and 16 of the license). Check your backups by
+restoring them now and then.

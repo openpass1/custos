@@ -38,6 +38,8 @@ PrivilegesRequired=admin
 OutputDir={#OutputDir}
 OutputBaseFilename=CUSTOS-Setup-{#AppVersion}
 SetupIconFile=..\src\Custos.Gui\Resources\custos.ico
+; The GPL is shown and must be accepted: CUSTOS comes without any warranty (sections 15 and 16).
+LicenseFile=..\..\LICENSE
 UninstallDisplayIcon={app}\Custos.exe
 UninstallDisplayName=CUSTOS
 Compression=lzma2/max
