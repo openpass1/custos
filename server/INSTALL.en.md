@@ -518,6 +518,12 @@ Also in this version: the logout after inactivity is set on the site, Settings �
 
 **Version 1.0.0.** The first public release: the same code as 0.4.14, no migrations. Update it with "Update the site to 1.0.0": the site finds the release on GitHub by itself and tells about it in the bell. From now on new versions of the site and the program come out on the [Releases](https://github.com/openpass1/custos/releases) page (tags `server-v…` and `client-v…`).
 
+**Version 1.0.1.** No migrations. Update it with "Update the site to 1.0.1" or `php8.4 bin/update.php`. Each tile at the top of the dashboard opens its own page:
+- "Machines": the machine list, as before;
+- "Tasks": the new "Tasks" page with all tasks of all machines in one list, errors and missed runs first, then warnings, running, other, OK and disabled. The buttons above the list are the parts of the tile ("Errors and missed", "With warnings", "Running", "Other", "OK", plus "Disabled"), with a search by task or machine. The "Machines" page links to it with "All tasks";
+- "Least free space": the page of that machine, scrolled to "Storages", with that destination outlined;
+- "Written in a day": "Runs" for the last 24 hours. The run list now also says how much its runs wrote in all: opened from this tile, the same figure as on the tile.
+
 ## What to keep in backups
 
 - the `custos` database;

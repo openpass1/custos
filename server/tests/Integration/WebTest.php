@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Custos\Tests\Integration;
 
 use Custos\Http\Web\Controller\AgentsController;
+use Custos\Http\Web\Controller\TasksController;
 use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
@@ -292,6 +293,40 @@ final class WebTest extends TestCase
         preg_match('#href="/agents/([0-9a-f-]{36})/tasks/([0-9a-f-]{36})">\s*<strong>WEB-PC-01</strong> · Documents#', $home, $m);
         [, $agentId, $taskId] = $m;
 
+        // Each tile of the summary opens its own page: the machines, all tasks, the runs of the same 24 hours.
+        $this->assertSame(1, preg_match('#<a class="tile" href="/agents">\s*<span class="tile-label">Машины#', $home));
+        $this->assertSame(1, preg_match('#<a class="tile" href="/tasks">\s*<span class="tile-label">Задания#', $home));
+        $this->assertSame(1, preg_match('#<a class="tile" href="/runs\?hours=24">\s*<span class="tile-label">Записано за сутки#', $home));
+
+        [$status, $tasks] = $this->http('GET', '/tasks');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('<h1>Задания</h1>', $tasks);
+        $this->assertStringContainsString('aria-current="page">Машины', $tasks, 'the task list belongs to the machines in the menu');
+        $this->assertMatchesRegularExpression('#<tr data-flags="bad" data-search="documents web-pc-01[^"]*"#', $tasks, 'the failed task is in "errors and missed"');
+        $this->assertMatchesRegularExpression('#data-filter="bad"[^>]*>\s*<i class="dot dot-bad"></i>Ошибки и пропуски <b>1</b>#', $tasks);
+        $this->assertStringContainsString('href="/agents/' . $agentId . '/tasks/' . $taskId . '"', $tasks);
+        $this->assertStringContainsString('href="/agents/' . $agentId . '"', $tasks);
+        // The list goes as the tile: errors and missed runs first.
+        preg_match_all('#<tr data-flags="([a-z]+)"#', $tasks, $groups);
+        $order = array_flip(TasksController::LIST_GROUPS);
+        $ranks = array_map(fn($g) => $order[$g], $groups[1]);
+        $sorted = $ranks;
+        sort($sorted);
+        $this->assertSame($sorted, $ranks);
+        [, $agents] = $this->http('GET', '/agents');
+        $this->assertStringContainsString('href="/tasks"', $agents, 'the machine list links to all tasks');
+
+        [$status, $day] = $this->http('GET', '/runs?hours=24');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('Запуски · за последние 24 ч', $day);
+        $this->assertStringContainsString('<input type="hidden" name="hours" value="24">', $day, 'other filters keep the 24 hours');
+        $this->assertMatchesRegularExpression('#Найдено: [1-9]\d* · записано #', $day);
+        $this->assertSame(preg_match_all('#href="/runs/[0-9a-f-]{36}"#', $this->http('GET', '/runs')[1]),
+            preg_match_all('#href="/runs/[0-9a-f-]{36}"#', $day), 'every run of the test is from the last 24 hours');
+        $this->assertStringContainsString('Запусков пока нет.', $this->http('GET', '/runs?hours=24&to=2000-01-01')[1]);
+        [, $wrong] = $this->http('GET', '/runs?hours=24x');
+        $this->assertStringNotContainsString('за последние', $wrong, 'a wrong number of hours is no filter');
+
         [$status, $json, $headers] = $this->http('GET', '/dashboard/live');
         $this->assertSame(200, $status);
         $this->assertStringStartsWith('application/json', $headers['content-type']);
@@ -318,7 +353,7 @@ final class WebTest extends TestCase
         [, $machine] = $this->http('GET', "/agents/$agentId");
         $this->assertStringContainsString('class="toasts"', $machine, 'the message waits for the page the person opens');
         foreach (['/agents' => ['pending', 'chips', 'list'], "/agents/$agentId/tasks/$taskId" => ['head', 'state', 'problems', 'slots', 'runs', 'commands'],
-                  '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['site', 'machines'],
+                  '/tasks' => ['chips', 'list'], '/runs' => ['list'], '/problems' => ['open', 'closed'], '/notices' => ['head', 'list'], '/updates' => ['site', 'machines'],
                   "/agents/$agentId/settings" => ['state', 'form']] as $path => $parts) {
             [$status, $page] = $this->http('GET', $path, null, ['X-Custos-Live: 1']);
             $this->assertSame(200, $status, $path);
@@ -642,6 +677,9 @@ final class WebTest extends TestCase
         [, $agent] = $this->http('GET', '/agents/' . $task['agent_id']);
         $this->assertStringContainsString('Хранилища', $agent, 'the fake agent sends an inventory after each run');
         $this->assertStringContainsString('class="storage', $agent);
+        // The tile "Least free space" opens the machine page at that destination.
+        $this->assertSame(1, preg_match('#<a class="tile" href="/agents/([0-9a-f-]{36})\#(storage-[0-9a-f-]{36}-[0-9a-f-]{36})">#', $home, $tile));
+        $this->assertStringContainsString('id="' . $tile[2] . '"', $this->http('GET', '/agents/' . $tile[1])[1]);
 
         [$status, $csv, $headers] = $this->http('GET', '/runs/export?agent=' . $task['agent_id']);
         $this->assertSame(200, $status);

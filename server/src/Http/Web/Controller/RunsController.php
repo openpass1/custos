@@ -8,6 +8,7 @@ use Custos\Domain\Agents;
 use Custos\Domain\Reports;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
+use Custos\Infra\Time;
 
 /** Run history, run page and run logs (section 7.4). */
 final class RunsController extends Controller
@@ -19,13 +20,16 @@ final class RunsController extends Controller
     public const LOG_VIEW_BYTES = 16 * 1024 * 1024;
     /** The run list and a run page that can still change refresh their live parts this often (seconds). */
     public const REFRESH_S = 15;
+    /** The "last N hours" filter goes back at most a year. */
+    public const MAX_HOURS = 8760;
 
     public function index(): Response
     {
         [$filter, $where, $params] = $this->filter();
         $sqlWhere = $where === [] ? '' : 'WHERE ' . implode(' AND ', $where);
         $db = $this->app->db();
-        $total = (int) $db->value("SELECT COUNT(*) FROM runs r $sqlWhere", $params);
+        $sums = $db->one("SELECT COUNT(*) AS n, COALESCE(SUM(r.bytes_written), 0) AS written FROM runs r $sqlWhere", $params);
+        $total = (int) $sums['n'];
         $page = $this->page();
         $runs = $db->all(
             "SELECT r.*, t.name AS task_name, a.hostname, a.display_name
@@ -49,6 +53,7 @@ final class RunsController extends Controller
             'page' => $page,
             'pages' => max(1, (int) ceil($total / self::PER_PAGE)),
             'total' => $total,
+            'written' => (int) $sums['written'],
             'live' => self::REFRESH_S,
         ], $this->t('runs.title'));
     }
@@ -140,6 +145,7 @@ final class RunsController extends Controller
             'status' => $this->query('status'),
             'from' => $this->query('from'),
             'to' => $this->query('to'),
+            'hours' => $this->query('hours'),
         ];
         $where = [];
         $params = [];
@@ -162,6 +168,16 @@ final class RunsController extends Controller
         if (($to = $this->dateToUtc($filter['to'], true)) !== null) {
             $where[] = 'r.started_at < ?';
             $params[] = $to;
+        }
+        // The last N hours (the dashboard tile "Written in a day" opens ?hours=24): runs that finished in that time,
+        // the same ones the tile sums up, and runs that started in it and still go on.
+        $hours = ctype_digit($filter['hours']) ? (int) $filter['hours'] : 0;
+        if ($hours >= 1 && $hours <= self::MAX_HOURS) {
+            $since = Time::db(time() - $hours * 3600);
+            $where[] = '(r.finished_at >= ? OR (r.finished_at IS NULL AND r.started_at >= ?))';
+            array_push($params, $since, $since);
+        } else {
+            $filter['hours'] = '';
         }
         return [$filter, $where, $params];
     }

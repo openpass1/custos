@@ -49,6 +49,7 @@ final class Web
         ['POST', '#^/login$#', AuthController::class, 'login', 'public'],
         ['POST', '#^/logout$#', AuthController::class, 'logout', 'user'],
         ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
+        ['GET', '#^/tasks$#', TasksController::class, 'index', 'user'],
         ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', 'user'],
         ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group|inventory|update|sevenzip)$#', AgentsController::class, 'action', 'user'],
         ['POST', '#^/agents/' . self::ID . '/commands/' . self::ID . '/cancel$#', AgentsController::class, 'cancel', 'user'],

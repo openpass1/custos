@@ -1,7 +1,7 @@
 <?php
 /** @var list<array> $storages destinations of the machine (Storage::forAgent) */
 ?>
-<section class="panel">
+<section class="panel" id="storage">
     <h2><?= e(t('storage.title')) ?></h2>
     <p class="hint"><?= e(t('storage.hint')) ?></p>
     <div class="storages">
@@ -12,7 +12,7 @@
         $used = $total !== null && $free !== null && $total > 0 ? (int) round(100 * ($total - $free) / $total) : null;
         $soon = $s['soon'];
         ?>
-        <div class="storage<?= $s['bad_sets'] > 0 ? ' storage-bad' : '' ?>">
+        <div class="storage<?= $s['bad_sets'] > 0 ? ' storage-bad' : '' ?>" id="<?= e(storage_anchor($s)) ?>">
             <div class="storage-head">
                 <strong class="mono"><?= e($s['path'] ?? $s['kind']) ?></strong>
                 <span class="note"><?= e(t('storage.of_task', ['task' => $s['task_name'], 'kind' => $s['kind']])) ?></span>

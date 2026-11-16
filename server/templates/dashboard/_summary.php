@@ -8,7 +8,7 @@
         <span class="tile-note"><?= e(t('dashboard.machines.online')) ?><?php if ($summary['pending'] > 0): ?>
             · <span class="info-text"><?= e(t('dashboard.machines.pending', ['n' => $summary['pending']])) ?></span><?php endif ?></span>
     </a>
-    <a class="tile" href="<?= e(url('/agents')) ?>">
+    <a class="tile" href="<?= e(url('/tasks')) ?>">
         <span class="tile-label"><?= e(t('dashboard.tasks')) ?></span>
         <?php
         // A bar of the task states with its legend (the colours say nothing without words). Widths are SVG
@@ -45,7 +45,8 @@
         </span>
     </a>
     <?php $least = $storage['least']; $soonest = $storage['soonest']; ?>
-    <a class="tile" href="<?= e(url($least === null ? '/agents' : '/agents/' . $least['agent_id'])) ?>">
+    <?php // The machine page with that destination in view (its storage block, _storage.php, gives each one an id). ?>
+    <a class="tile" href="<?= e($least === null ? url('/agents') : url('/agents/' . $least['agent_id']) . '#' . storage_anchor($least)) ?>">
         <span class="tile-label"><?= e(t('dashboard.storage')) ?></span>
         <?php if ($least === null): ?>
             <span class="tile-value">—</span>
@@ -64,7 +65,8 @@
             <?php endif ?>
         <?php endif ?>
     </a>
-    <a class="tile" href="<?= e(url('/runs')) ?>">
+    <?php // The runs of the same 24 hours; the run list sums up what they wrote. ?>
+    <a class="tile" href="<?= e(url('/runs', ['hours' => 24])) ?>">
         <span class="tile-label"><?= e(t('dashboard.written')) ?></span>
         <span class="tile-value"><?= e(fmt_bytes($written)) ?></span>
         <span class="tile-note"><?= e(t('dashboard.written.note')) ?></span>
