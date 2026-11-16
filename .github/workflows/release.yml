@@ -1,11 +1,12 @@
 name: Release
 
 # Makes a DRAFT release of one part from the commit it runs on: Actions → Release → Run workflow, choose the part and
-# type the version. The draft gets the files, SHA256SUMS.txt and the list of changes since the previous release of the
-# same part. Only people who can write to the repository see a draft; it becomes public when it is published by hand
-# on the Releases page, and the tag (client-v<version> or server-v<version>) is created at that moment.
+# type the version. The draft gets the files, SHA256SUMS.txt and its text: the changes from the part's CHANGELOG.md
+# (client/ or server/, made by .github/release-notes.sh) and how to install and update, in English. Only people who can
+# write to the repository see a draft; it becomes public when it is published by hand on the Releases page, and the tag
+# (client-v<version> or server-v<version>) is created at that moment.
 #
-# A pull request that changes this file builds both parts with a test version and publishes nothing.
+# A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
 on:
   workflow_dispatch:
     inputs:
@@ -21,6 +22,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/release.yml'
+      - '.github/release-notes.sh'
 
 permissions:
   contents: read
@@ -60,6 +62,9 @@ jobs:
               echo "tag="
             } >> "$GITHUB_OUTPUT"
             echo "Test run: both parts are built, nothing is published." >> "$GITHUB_STEP_SUMMARY"
+            # The changelogs still give a release text, and the site's starts with its version.
+            .github/release-notes.sh client top > /dev/null
+            .github/release-notes.sh server "$site_version" > /dev/null
             exit 0
           fi
           fail() { echo "::error::$1"; echo "**Not released:** $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
@@ -75,6 +80,10 @@ jobs:
           fi
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             fail "A release $tag already exists, probably a draft: delete it on the Releases page first. / Выпуск $tag уже есть, скорее всего черновик: сначала удалите его на странице Releases."
+          fi
+          # The release text comes from the part's CHANGELOG.md: it must start with this version.
+          if ! message=$(.github/release-notes.sh "$PART" "$VERSION" 2>&1 > /dev/null); then
+            fail "$message / В $PART/CHANGELOG.md нет раздела «## $VERSION» с изменениями этой версии: его нужно добавить."
           fi
           {
             echo "client=$([ "$PART" = client ] && echo true || echo false)"
@@ -213,42 +222,41 @@ jobs:
           cd out
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          # The changes since the previous release of the same part (tags exist for published ones only), then how to
+          # install and update. English only: the guides have the Russian.
+          previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
+          ../.github/release-notes.sh "$PART" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
+          printf '\n---\n\n' >> ../notes.md
+          blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           if [ "$PART" = client ]; then
             title="CUSTOS for Windows $VERSION"
-            cat > ../notes.md <<EOF
-          **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place, tasks and settings stay.
-          **Update through the monitoring site:** under Updates the site offers this version from GitHub with a download button; or upload \`custos-$VERSION.zip\` there as it is, without unpacking. **Without a site:** the program checks GitHub once a day and offers **Update** in its window.
-          **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/helper/README.md).
-          **Cloud drives:** Google Drive works as it is. Yandex Disk and Dropbox need a free application of your own, registered with the service: [steps](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.md#custos-applications-at-the-services).
+            cat >> ../notes.md <<EOF
+          **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place; tasks and settings stay.
 
-          **Установка:** запустите \`CUSTOS-Setup-$VERSION.exe\`. Уже установленная программа обновится, задания и настройки сохранятся. **Обновление через сайт мониторинга:** в разделе «Обновления» сайт предложит скачать эту версию с GitHub одной кнопкой, или загрузите \`custos-$VERSION.zip\` туда как есть, не распаковывая. **Без сайта:** программа раз в день проверяет GitHub и предлагает «Обновить» в своём окне. **Облачные диски:** Google Диск работает сразу, для Яндекса Диска и Dropbox нужно своё бесплатное приложение, [по шагам](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/client/README.ru.md#приложения-custos-у-сервисов).
+          **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
 
-          Checksums / контрольные суммы: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet. / Файлы для Windows пока без цифровой подписи.
-          [Code signing policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/CODE_SIGNING.md) · [Privacy policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/PRIVACY.md)
+          **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
+
+          Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
           EOF
           else
             title="CUSTOS Monitor $VERSION"
-            cat > ../notes.md <<EOF
-          **New site on Debian or Ubuntu:** \`install.sh\` installs everything, see the [README](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/README.md#quick-start). **On CloudPanel:** [server/INSTALL.en.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.en.md).
-          **Update:** the site shows the new version in the bell; press **Update the site to $VERSION** under Updates. Or over SSH: \`bash install.sh --update\` (sites made by install.sh) or \`php bin/update.php\` in the \`server\` folder; without access to GitHub, \`php bin/update.php --package=custos-server-$VERSION.zip\`. A failed update puts the old version back by itself. Sites older than 0.4.11: unpack \`custos-server-$VERSION.zip\` over the site (keep the old \`server\` folder, it holds the settings and keys) and run \`bin/migrate.php\`.
+            cat >> ../notes.md <<EOF
+          **Update:** the site shows the new version in the bell; press **Update the site to $VERSION** under Updates. Over SSH: \`php bin/update.php\` in the \`server\` folder, or \`bash install.sh --update\` for sites made by install.sh; without access to GitHub add \`--package=custos-server-$VERSION.zip\`. A failed update puts the old version back by itself.
 
-          **Новый сайт на Debian или Ubuntu:** всё ставит \`install.sh\`. **На CloudPanel:** [server/INSTALL.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/server/INSTALL.md). **Обновление:** сайт сам сообщит о новой версии в колокольчике, нажмите **Обновить сайт до $VERSION** в разделе «Обновления». Или по SSH: \`php bin/update.php\` в папке \`server\` (без доступа к GitHub: \`--package=custos-server-$VERSION.zip\`), для сайтов, поставленных \`install.sh\`, — \`bash install.sh --update\`. При ошибке сайт сам вернётся на прежнюю версию. Сайты старше 0.4.11: распаковать архив поверх (старую папку \`server\` не удалять) и выполнить \`bin/migrate.php\`.
+          **New site:** on Debian or Ubuntu \`install.sh\` installs everything, see the [README]($blob/README.md#quick-start); on CloudPanel follow [server/INSTALL.en.md]($blob/server/INSTALL.en.md).
 
-          Checksums / контрольные суммы: \`SHA256SUMS.txt\`. [Privacy policy](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/PRIVACY.md)
+          Checksums: \`SHA256SUMS.txt\`. [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/server/CHANGELOG.md)
           EOF
           fi
-          # The list of changes starts at the previous release of the same part (tags exist for published ones only).
-          previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
-          args=(--draft --target "$GITHUB_SHA" --title "$title" --notes-file ../notes.md --generate-notes)
-          if [ -n "$previous" ]; then
-            args+=(--notes-start-tag "$previous")
-          fi
+          cat ../notes.md
+          args=(--draft --target "$GITHUB_SHA" --title "$title" --notes-file ../notes.md)
           gh release create "$TAG" "${args[@]}" -- *
           url=$(gh release view "$TAG" --json url --jq .url)
           {
             echo "### Draft $title is ready"
             echo
-            echo "Open [Releases]($url), check the text and the files, then press **Publish release**. Until then only you see it."
+            echo "Open [Releases]($url), check the text and the files, then press **Publish release**. Until then only you see it. The text is already complete: do not press **Generate release notes**, it adds every pull request of the repository, of both parts."
             echo
-            echo "Черновик готов: откройте страницу Releases, проверьте текст и файлы и нажмите **Publish release**. До этого его видите только вы."
+            echo "Черновик готов: откройте страницу Releases, проверьте текст и файлы и нажмите **Publish release**. До этого его видите только вы. Текст уже готов: кнопку **Generate release notes** не нажимайте, она добавляет все PR репозитория, обеих частей."
           } >> "$GITHUB_STEP_SUMMARY"
