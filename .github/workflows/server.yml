@@ -51,6 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The release text comes from server/CHANGELOG.md (.github/release-notes.sh): every new version gets its section.
+      - name: The changelog has this version
+        run: ../.github/release-notes.sh server "$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" src/App.php)" > /dev/null
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
