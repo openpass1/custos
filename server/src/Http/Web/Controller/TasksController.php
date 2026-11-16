@@ -14,8 +14,8 @@ use Custos\Http\Web\Controller;
 use Custos\Infra\Time;
 
 /**
- * The task page (7.4), commands for a task, the task editor (7.5) and the version history with differences and
- * "return this version" (7.4).
+ * The list of all tasks, the task page (7.4), commands for a task, the task editor (7.5) and the version history with
+ * differences and "return this version" (7.4).
  */
 final class TasksController extends Controller
 {
@@ -23,9 +23,60 @@ final class TasksController extends Controller
     /** The task page refreshes its live parts this often (seconds). */
     public const REFRESH_S = 10;
 
+    /** Groups of the task list, in the order of the list; the first five are the parts of the dashboard tile. */
+    public const LIST_GROUPS = ['bad', 'warning', 'running', 'other', 'ok', 'disabled'];
+
     /** Commands of the task page and what they need: an edit is refused by an agent that does not allow remote edits. */
     private const COMMANDS = ['run' => 'task.run', 'stop' => 'task.stop', 'pause' => 'task.pause', 'resume' => 'task.resume',
                               'enable' => 'task.enable', 'disable' => 'task.disable', 'delete' => 'task.delete'];
+
+    /**
+     * All tasks of all machines in one list (the "Tasks" tile of the dashboard), in the same groups as the tile: errors
+     * and missed runs first, then warnings, running, others, fine, and the disabled ones last. Machines that wait for
+     * approval are left out, as on the machine list.
+     */
+    public function index(): Response
+    {
+        $board = $this->app->board();
+        $rank = array_flip(self::LIST_GROUPS);
+        $rows = [];
+        $counts = array_fill_keys(['', ...self::LIST_GROUPS], 0);
+        foreach ($board->tasks as $task) {
+            $agent = $board->agents[$task['agent_id']];
+            if ($agent['status'] === 'pending') {
+                continue;
+            }
+            $task['group'] = self::listGroup($task, $agent);
+            $task['agent'] = $agent;
+            $rows[] = $task;
+            $counts['']++;
+            $counts[$task['group']]++;
+        }
+        usort($rows, fn($a, $b) => [$rank[$a['group']], mb_strtolower($a['agent']['name']), mb_strtolower($a['name'])]
+            <=> [$rank[$b['group']], mb_strtolower($b['agent']['name']), mb_strtolower($b['name'])]);
+        return $this->render('tasks/index', [
+            'section' => 'agents',
+            'tasks' => $rows,
+            'counts' => $counts,
+            'hasAgents' => $board->agents !== [],
+            'live' => AgentsController::REFRESH_LIST_S,
+        ], $this->t('tasks.list.title'));
+    }
+
+    /** The group of a task in the list, by the same rule as the dashboard tile (Board::summary). */
+    public static function listGroup(array $task, array $agent): string
+    {
+        if ($agent['status'] !== 'approved' || $task['status'] === 'disabled') {
+            return 'disabled';
+        }
+        return match ($task['status']) {
+            'ok' => 'ok',
+            'warning', 'anomaly' => 'warning',
+            'error', 'missed' => 'bad',
+            'running', 'paused' => 'running',
+            default => 'other',
+        };
+    }
 
     public function show(string $agentId, string $taskId): Response
     {

@@ -302,6 +302,15 @@ function forecast_text(?array $f): string
     };
 }
 
+/**
+ * The id of one destination in the storage block of the machine page, so a link can bring it into view: the dashboard
+ * tile "Least free space" ends its link with it.
+ */
+function storage_anchor(array $storage): string
+{
+    return 'storage-' . $storage['task_id'] . '-' . $storage['destination_id'];
+}
+
 /** Database servers of a task (A.9 db_servers, client stage 2b) in a few words: "MySQL 127.0.0.1 (все базы)". */
 function db_servers_label(array $task): string
 {

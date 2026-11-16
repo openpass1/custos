@@ -128,6 +128,7 @@ use Custos\Domain\Agents;
                 </label>
                 <noscript><button type="submit" class="secondary"><?= e(t('common.apply')) ?></button></noscript>
             </form>
+            <a href="<?= e(url('/tasks')) ?>"><?= e(t('tasks.list.link')) ?></a>
             <a href="<?= e(url('/groups')) ?>"><?= e(t('groups.manage')) ?></a>
         </div>
     </div>

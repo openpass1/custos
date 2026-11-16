@@ -452,6 +452,8 @@ a.heat:hover { outline: 2px solid var(--text); outline-offset: 1px; }
 .storage { border: 1px solid var(--border); border-radius: var(--radius); padding: .7rem .9rem; min-width: 0; }
 .storage:has(details[open]) { grid-column: 1 / -1; }
 .storage-bad { border-color: var(--bad-border); }
+/* Opened from the dashboard tile "Least free space" (#storage-…): the destination it names stands out. */
+.storage:target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .storage-bad .storage-head strong { color: var(--bad); }
 .storage-head { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; }
 .storage-space { display: flex; flex-wrap: wrap; gap: .25rem .6rem; align-items: center; margin: .3rem 0 .1rem; }
