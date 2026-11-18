@@ -18,6 +18,12 @@ a version that was never released by itself is not lost.
 - The installer shows a short privacy note before installing: what the program sends over the network and how to turn it off.
 - A quiet **Support the project** link in the status bar of the main window.
 
+### Changed
+- The manual install block of custos-helper (helper/README.md) asks for the public key and the office IP itself, with `any` for a dynamic IP, instead of carrying an example address to edit; its README tells how to change the address later.
+
+### Fixed
+- Running the server block of a Linux server task again after changing **Office IP** replaces the address of the agent's key on the server; before, the old address stayed allowed in a second line.
+
 ## 1.0.0
 
 First public release.

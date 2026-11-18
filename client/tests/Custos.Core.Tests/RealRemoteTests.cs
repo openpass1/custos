@@ -69,8 +69,14 @@ public sealed class RealRemoteTests : IDisposable
             DbEngines = [.. server.Engines],
             DbDefaultsFile = server.DefaultsFile,
         };
-        string block = HelperSetup.InstallBlock(settings, RemotePresets.Custom, SshKeys.PublicKeyLine(seed, "custos-test"), null);
+        string publicKey = SshKeys.PublicKeyLine(seed, "custos-test");
+
+        // Installed first with an office address, then again without one: the line of the key is replaced, not added.
+        Root(server, HelperSetup.InstallBlock(settings, RemotePresets.Custom, publicKey, "203.0.113.10"));
+        string block = HelperSetup.InstallBlock(settings, RemotePresets.Custom, publicKey, null);
         Assert.Contains("OK: custos-helper installed", Root(server, block), StringComparison.Ordinal);
+        string blob = HelperSetup.KeyBlob(publicKey);
+        Assert.Equal("1 0", Root(server, $"echo $(grep -cF '{blob}' ~custos/.ssh/authorized_keys) $(grep -F '{blob}' ~custos/.ssh/authorized_keys | grep -c from=)").Trim());
 
         // The first connection shows the key of the server; it is pinned from then on.
         var unknown = Assert.Throws<SshHostKeyException>(() => SshNetConnector.Instance.Connect(
