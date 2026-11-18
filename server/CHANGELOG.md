@@ -16,6 +16,7 @@ a version that was never released by itself is not lost.
 ### Changed
 - The menu and the tabs of a page work as before Material: no circle on a press, the press deepens the colour and the mark moves smoothly to the section pressed.
 - The press circle of a button or link that opens a page (for example **Show** of a filter or a saved form) is no longer cut off: it goes on, from where it was, on the page that opens when that page has the same button or link.
+- The press circle of buttons, chips and tiles is twice as slow: it grows for about a second and fades slowly after the button is let go.
 
 ## 1.1.2
 

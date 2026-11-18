@@ -1236,17 +1236,18 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // Ripple (Material 3): pressing a button, a menu item, a chip or a tile spreads a soft-edged circle from the pointer:
-// it shows within 0.1 s, grows for 0.45 s and, once the press has ended (but not sooner than 0.225 s after it began),
-// fades for 0.375 s. The menu of the site (rail, bottom bar, "More") and the tabs of a page have none, as before
-// Material: the mark moves to the section pressed (app.css) and the page changes. A press that opens a page (a link,
-// a button that sends its form) would cut the circle off half-way: the press is handed to the new page
-// (sessionStorage) and the circle goes on there, from where it was, on the same button or link if the page has it.
+// it shows within 0.2 s, grows for 0.9 s and, once the press has ended (but not sooner than 0.45 s after it began),
+// fades for 0.75 s: twice the Material 3 times, which felt too quick. The menu of the site (rail, bottom bar, "More")
+// and the tabs of a page have none, as before Material: the mark moves to the section pressed (app.css) and the page
+// changes. A press that opens a page (a link, a button that sends its form) would cut the circle off half-way: the
+// press is handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same button
+// or link if the page has it.
 // Nothing of it with less motion asked for.
 (() => {
     const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .editor-toc a, a.tile, .sr-item';
-    const GROW_MS = 450;
-    const PRESS_MS = 225;
-    const FADE_MS = 375;
+    const GROW_MS = 900;
+    const PRESS_MS = 450;
+    const FADE_MS = 750;
     const CARRY = 'custos.ripple';
     // A circle on the element around the point (x, y) of it, as it is `age` ms after the press began.
     const spread = (host, x, y, age) => {

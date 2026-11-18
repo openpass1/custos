@@ -567,11 +567,11 @@ button.busy::after { content: ""; width: 14px; height: 14px; border: 2px solid c
     animation: spin .8s linear infinite; }
 
 /* The ripple: a circle with a soft edge that spreads from the pointer (app.js adds it on press and makes it grow).
-   It shows quickly while pressed and fades slowly after, as Material 3 has it. The menu and tabs have none. */
+   It shows quickly while pressed and fades slowly after, as Material 3 has it but at half its speed. The menu and tabs have none. */
 .ripple { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity .375s linear;
+.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity .75s linear;
     background: radial-gradient(closest-side, currentColor max(calc(100% - 70px), 65%), transparent 100%); }
-.ripple.pressed > i { opacity: .12; transition-duration: .105s; }
+.ripple.pressed > i { opacity: .12; transition-duration: .21s; }
 
 /* Filter chips (machine list, task list): outlined; the chosen one is tonal. */
 button.chip {
