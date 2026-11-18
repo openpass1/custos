@@ -225,7 +225,7 @@ function GetProcAddress(Module: THandle; ProcName: AnsiString): THandle;
 
 { What .NET 6 needs from Windows (https://learn.microsoft.com/dotnet/core/install/windows): Windows 8.1 rather than 8,
   on Windows 7 the update KB3063858 (it brings AddDllDirectory, which .NET loads its files with), and the Universal C
-  Runtime (ucrtbase.dll; Setup is 32-bit, so {sys} is the 32-bit system folder the program will use). Asked before
+  Runtime (ucrtbase.dll; Setup is 32-bit, so the system folder it sees is the 32-bit one the program will use). Asked before
   anything else, so that nothing is installed on a Windows where CUSTOS could not start. }
 function InitializeSetup: Boolean;
 var
