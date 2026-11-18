@@ -1,3 +1,4 @@
+using System.Globalization;
 using Custos.Core.Backup;
 using Custos.Core.Model;
 using Custos.Core.Text;
@@ -37,6 +38,62 @@ public sealed class EditorTests
         };
 
         Assert.Equal(Samples.Json(task), Samples.Json(OpenAndCollect(task)));
+    });
+
+    [Fact]
+    public void Days_of_the_month_are_ticked_in_a_calendar_next_to_the_time() => Sta.Run("ru-RU", () =>
+    {
+        // The 31st is the last day of every month (a month without a chosen day runs on its last day), so it is shown
+        // and saved as «last day of the month»; the 29th stays.
+        var task = Samples.Office();
+        task.Schedule = new ScheduleOptions { Type = ScheduleTypes.Monthly, Times = ["23:00"], DaysOfMonth = [29, 31] };
+        task.ForceFull = new ForceFullOptions { MonthDay = 31 };
+        using var monitor = Samples.Monitor();
+        using var editor = new TaskEditorForm(monitor, task, isNew: false);
+        editor.Show();
+        Sta.Pump();
+        var page = editor.Pages.OfType<SchedulePage>().Single();
+        editor.SelectPage(page);
+        Sta.Pump();
+
+        var days = Assert.Single(Sta.Find<MonthDaysBox>(page));
+        var time = Sta.Find<TextBox>(page).Single(t => t.Text == "23:00");
+        Assert.Same(days.Parent, time.Parent);
+        Assert.Equal([29, -1], days.Days);
+        Assert.Equal("29, " + Strings.LastDayShort, days.Text);
+        Assert.True(Sta.Shows(page, Strings.ScheduleMonthDays));
+
+        days.OpenCalendar();
+        var calendar = Assert.IsType<ToolStripDropDown>(days.Calendar);
+        var boxes = Sta.Find<CheckBox>(calendar);
+        Assert.Equal([.. Enumerable.Range(1, 30).Select(d => d.ToString(CultureInfo.CurrentCulture)), Strings.LastDayOfMonth], boxes.Select(b => b.Text));
+        Assert.Equal(["29", Strings.LastDayOfMonth], boxes.Where(b => b.Checked).Select(b => b.Text));
+
+        boxes.Single(b => b.Text == "1").Checked = true;
+        boxes.Single(b => b.Text == Strings.LastDayOfMonth).Checked = false;
+        Assert.Equal([1, 29], days.Days);
+        Assert.Equal("1, 29", days.Text);
+        Assert.True(Sta.ShowsPart(page, "Каждый месяц 1-го и 29-го в 23:00 (в феврале — в последний день)"));
+
+        calendar.Close();
+        Sta.Pump();
+        Assert.Null(days.Calendar);
+
+        // Nothing ticked: the page says what is missing.
+        days.Days = [1];
+        days.OpenCalendar();
+        var again = Assert.IsType<ToolStripDropDown>(days.Calendar);
+        Sta.Find<CheckBox>(again).Single(b => b.Text == "1").Checked = false;
+        again.Close();
+        Sta.Pump();
+        Assert.Empty(days.Days);
+        Assert.True(Sta.Shows(page, Strings.ErrorNoMonthDays));
+        days.Days = [1, 29];
+
+        var collected = editor.Collect(out string? problem);
+        Assert.Null(problem);
+        Assert.Equal([1, 29], collected!.Schedule.DaysOfMonth);
+        Assert.Equal(-1, collected.ForceFull.MonthDay);
     });
 
     [Theory]

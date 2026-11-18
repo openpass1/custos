@@ -327,7 +327,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
   "priority": 0,                       // больше = раньше в очереди
   "backup_type": "incremental",        // full | incremental | differential | mirror
   "mirror_mode": null,                 // exact | safe, только для mirror
-  "force_full": { "every_runs": 0, "weekday": null, "month_day": null },  // weekday 1–7 (ISO, 1 = пн), month_day 1–31 или -1 = последний день
+  "force_full": { "every_runs": 0, "weekday": null, "month_day": null },  // weekday 1–7 (ISO, 1 = пн), month_day 1–31 или -1 = последний день; числа нет в месяце — его последний день
   "sources": [
     { "id": "uuid", "kind": "folder", "path": "D:\\Data", "credential_id": null, "recursive": true }
   ],                                   // kind: folder | file | unc | ssh (Linux-сервер, см. ниже)
@@ -397,7 +397,7 @@ X-Custos-Registration-Mac: <HMAC той же строки на ключе рег
     "type": "daily",                   // daily | weekly | monthly | interval | manual
     "times": ["00:00"],                // локальное время агента, ЧЧ:ММ
     "days_of_week": [1, 2, 3, 4, 5, 6, 7],  // ISO, 1 = пн; для daily фильтр, для weekly обязателен
-    "days_of_month": [],               // для monthly; -1 = последний день месяца
+    "days_of_month": [],               // для monthly; -1 = последний день месяца; число, которого в месяце нет (29–31), = его последний день (с агента 1.0.1)
     "interval_minutes": 0,             // для interval
     "catch_up": true                   // выполнить пропущенный запуск при включении
   },

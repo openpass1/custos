@@ -659,6 +659,9 @@ See the Windows «Application» event log, source CUSTOS.</value>
   <data name="LastDayOfMonth" xml:space="preserve">
     <value>last day of the month</value>
   </data>
+  <data name="LastDayShort" xml:space="preserve">
+    <value>last day</value>
+  </data>
   <data name="EditorComment" xml:space="preserve">
     <value>Comment</value>
   </data>
@@ -874,7 +877,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Days of the month:</value>
   </data>
   <data name="ScheduleMonthDaysHelp" xml:space="preserve">
-    <value>Numbers from 1 to 31 separated by commas, for example 1, 15. A month without that day (31 in April) has no run: for the end of every month tick «last day of the month».</value>
+    <value>Click the box and tick one or more days. A month without the chosen day (30 February) runs on its last day, so no month is skipped. «Last day of the month» is the 28th, 29th, 30th or 31st, as the month has.</value>
   </data>
   <data name="ScheduleInterval" xml:space="preserve">
     <value>Every:</value>
@@ -900,9 +903,6 @@ Off: the files go straight into the destination folder and are updated there at 
   <data name="ErrorBadTime" xml:space="preserve">
     <value>«{0}» is not a time. Use HH:MM, for example 21:30.</value>
   </data>
-  <data name="ErrorBadMonthDay" xml:space="preserve">
-    <value>«{0}» is not a day of the month (1 to 31).</value>
-  </data>
   <data name="ErrorNoTimes" xml:space="preserve">
     <value>Enter at least one time.</value>
   </data>
@@ -910,7 +910,7 @@ Off: the files go straight into the destination folder and are updated there at 
     <value>Tick at least one day of the week.</value>
   </data>
   <data name="ErrorNoMonthDays" xml:space="preserve">
-    <value>Enter at least one day of the month, or tick «last day of the month».</value>
+    <value>Choose at least one day of the month.</value>
   </data>
   <data name="ArchiveZip" xml:space="preserve">
     <value>ZIP (Deflate)</value>

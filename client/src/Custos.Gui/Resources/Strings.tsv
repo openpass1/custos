@@ -220,6 +220,7 @@ ForceWeekday	On the weekday	В день недели
 ForceMonthDay	On the day of the month	В день месяца
 ForceFullNote	Only for incremental and differential tasks. The first backup is always full, and so is a backup whose full one is missing in the destination.	Только для инкрементальных и дифференциальных заданий. Первая копия всегда полная, как и копия, для которой в назначении нет полной.
 LastDayOfMonth	last day of the month	последний день месяца
+LastDayShort	last day	последний день
 EditorComment	Comment	Комментарий
 ErrorNameRequired	Enter the task name.	Введите название задания.
 # ---- Task editor: Sources
@@ -292,7 +293,7 @@ ScheduleTimes	Time:	Время:
 ScheduleTimesHelp	One or more times separated by commas, for example 12:30, 21:00.	Одно или несколько времён через запятую, например 12:30, 21:00.
 ScheduleWeekdays	Days:	Дни недели:
 ScheduleMonthDays	Days of the month:	Числа месяца:
-ScheduleMonthDaysHelp	Numbers from 1 to 31 separated by commas, for example 1, 15. A month without that day (31 in April) has no run: for the end of every month tick «last day of the month».	Числа от 1 до 31 через запятую, например 1, 15. В месяце без такого числа (31 апреля) запуска не будет: для конца каждого месяца отметьте «последний день месяца».
+ScheduleMonthDaysHelp	Click the box and tick one or more days. A month without the chosen day (30 February) runs on its last day, so no month is skipped. «Last day of the month» is the 28th, 29th, 30th or 31st, as the month has.	Нажмите на поле и отметьте одно или несколько чисел. Если в месяце нет выбранного числа (30 февраля), запуск будет в последний день месяца, так что ни один месяц не пропускается. «Последний день месяца» — 28-е, 29-е, 30-е или 31-е, смотря по месяцу.
 ScheduleInterval	Every:	Каждые:
 Minutes	minutes	мин
 ScheduleCatchUp	Catch up a missed run	Догонять пропущенный запуск
@@ -301,10 +302,9 @@ SchedulePreview	In plain words	Простыми словами
 ScheduleUpcoming	Next runs: {0}	Ближайшие запуски: {0}
 ScheduleTimeZoneNote	Times are the local time of this computer.	Время — местное время этого компьютера.
 ErrorBadTime	«{0}» is not a time. Use HH:MM, for example 21:30.	«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.
-ErrorBadMonthDay	«{0}» is not a day of the month (1 to 31).	«{0}» — не число месяца (от 1 до 31).
 ErrorNoTimes	Enter at least one time.	Укажите хотя бы одно время запуска.
 ErrorNoWeekdays	Tick at least one day of the week.	Отметьте хотя бы один день недели.
-ErrorNoMonthDays	Enter at least one day of the month, or tick «last day of the month».	Укажите хотя бы одно число месяца или отметьте «последний день месяца».
+ErrorNoMonthDays	Choose at least one day of the month.	Выберите хотя бы одно число месяца.
 # ---- Task editor: Archive, Retention, Filters, Events, Advanced
 ArchiveZip	ZIP (Deflate)	ZIP (Deflate)
 ArchiveSevenZip	7z (LZMA2)	7z (LZMA2)

@@ -80,8 +80,11 @@ final class Schedule
         return match ($type) {
             'daily' => $weekdays === [] || in_array($weekday, $weekdays, true),
             'weekly' => in_array($weekday, $weekdays, true),
-            'monthly' => in_array((int) $day->format('j'), $monthDays, true)
-                || (in_array(-1, $monthDays, true) && $day->format('j') === $day->format('t')),
+            // A month without the chosen day runs on its last day, as on the Windows agent.
+            'monthly' => in_array((int) $day->format('j'), array_map(
+                fn(int $d) => $d === -1 ? (int) $day->format('t') : min($d, (int) $day->format('t')),
+                $monthDays
+            ), true),
         };
     }
 }

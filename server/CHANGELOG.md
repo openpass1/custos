@@ -11,6 +11,14 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.0.2
+
+### Changed
+- Task editor: the days of a monthly schedule are a small calendar of 1–30 and **last day of the month**. The 31st is gone: a task saved with it shows **last day of the month**, which it always meant.
+
+### Fixed
+- A monthly schedule on the 29th or 30th no longer skips February: a month without the chosen day runs on its last day, as the program 1.0.1 does. Expected runs and missed-run alerts follow the same rule.
+
 ## 1.0.1
 
 ### Added

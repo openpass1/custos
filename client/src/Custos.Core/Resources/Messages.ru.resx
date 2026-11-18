@@ -563,6 +563,9 @@
   <data name="DescLastDay" xml:space="preserve">
     <value>в последний день</value>
   </data>
+  <data name="DescMonthlyFebruary" xml:space="preserve">
+    <value>(в феврале — в последний день)</value>
+  </data>
   <data name="DescInterval" xml:space="preserve">
     <value>каждые {0} мин</value>
   </data>

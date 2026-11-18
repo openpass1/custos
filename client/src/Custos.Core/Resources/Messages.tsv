@@ -182,6 +182,7 @@ DescWeekdaysPlural	On Mondays,;On Tuesdays,;On Wednesdays,;On Thursdays,;On Frid
 DescMonthly	every month on {0} at {1}	каждый месяц {0} в {1}
 DescMonthDay	the {0}{1}	{0}-го
 DescLastDay	the last day	в последний день
+DescMonthlyFebruary	(on the last day in February)	(в феврале — в последний день)
 DescInterval	every {0} min	каждые {0} мин
 DescManual	on request	по запросу
 DescScheduleNever	never (the schedule has no times)	никогда (в расписании нет времени запуска)

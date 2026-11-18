@@ -40,7 +40,9 @@ internal sealed class BasicPage : EditorPage
             _weekday.Items.Add(dayNames[day % 7]);
         }
 
-        for (int day = 1; day <= 31; day++)
+        // 1–30 and the last day: the 31st is the last day of every month that has one, and a month without the chosen
+        // day takes its last day (ScheduleCalculator.IsMonthDay).
+        for (int day = 1; day <= MonthDaysBox.LastNumber; day++)
         {
             _monthDay.Items.Add(day.ToString(CultureInfo.CurrentCulture));
         }
@@ -142,8 +144,8 @@ internal sealed class BasicPage : EditorPage
         _forceMonthDay.Checked = force.MonthDay is (>= 1 and <= 31) or (-1);
         _monthDay.SelectedIndex = force.MonthDay switch
         {
-            -1 => 31,
-            >= 1 and <= 31 => force.MonthDay.Value - 1,
+            -1 or 31 => MonthDaysBox.LastNumber,
+            >= 1 and <= MonthDaysBox.LastNumber => force.MonthDay.Value - 1,
             _ => 0,
         };
         _comment.Text = task.Comment;
@@ -183,7 +185,7 @@ internal sealed class BasicPage : EditorPage
 
         task.ForceFull.EveryRuns = _forceEvery.Checked ? (int)_forceEveryRuns.Value : 0;
         task.ForceFull.Weekday = _forceWeekday.Checked ? _weekday.SelectedIndex + 1 : null;
-        task.ForceFull.MonthDay = _forceMonthDay.Checked ? (_monthDay.SelectedIndex == 31 ? -1 : _monthDay.SelectedIndex + 1) : null;
+        task.ForceFull.MonthDay = _forceMonthDay.Checked ? (_monthDay.SelectedIndex == MonthDaysBox.LastNumber ? -1 : _monthDay.SelectedIndex + 1) : null;
         task.Comment = _comment.Text.Trim();
         return null;
     }
@@ -975,13 +977,13 @@ internal sealed class SchedulePage : EditorPage
 
     private readonly ComboBox _type = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 220 };
     private readonly Label _timesLabel = Caption(Strings.ScheduleTimes);
-    private readonly TextBox _times = new() { Width = 220 };
+    private readonly TextBox _times = new() { Width = 130 };
     private readonly Label _daysLabel = Caption(Strings.ScheduleWeekdays);
     private readonly FlowLayoutPanel _days = new() { AutoSize = true, WrapContents = true, Dock = DockStyle.Fill, Margin = new Padding(0) };
     private readonly CheckBox[] _dayBoxes = new CheckBox[7];
-    private readonly Label _monthDaysLabel = Caption(Strings.ScheduleMonthDays);
-    private readonly TextBox _monthDays = new() { Width = 220 };
-    private readonly CheckBox _lastDay = new() { Text = Strings.LastDayOfMonth, AutoSize = true };
+    private readonly MonthDaysBox _monthDays = new() { Width = 170 };
+    private readonly Label _monthTimesLabel = new() { Text = Strings.ScheduleTimes, AutoSize = true, Margin = new Padding(16, 6, 6, 0) };
+    private readonly PictureBox _monthDaysHelp;
     private readonly Label _intervalLabel = Caption(Strings.ScheduleInterval);
     private readonly NumericUpDown _interval = new() { Minimum = 1, Maximum = 1440, Value = 60, Width = 80 };
     private readonly CheckBox _catchUp = new() { Text = Strings.ScheduleCatchUp, AutoSize = true, Margin = new Padding(0, 8, 0, 0) };
@@ -1007,10 +1009,11 @@ internal sealed class SchedulePage : EditorPage
 
         _grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        // Monthly: the days and the time share one row, «Days of the month: [1, 15 ▾] (?)  Time: [23:00] (?)».
+        _monthDaysHelp = Ui.HelpIcon(ToolTip, Strings.ScheduleMonthDaysHelp);
         AddGridRow(Caption(Strings.ScheduleType), _type);
-        AddGridRow(_timesLabel, Inline(_times, Ui.HelpIcon(ToolTip, Strings.ScheduleTimesHelp)));
+        AddGridRow(_timesLabel, Inline(_monthDays, _monthDaysHelp, _monthTimesLabel, _times, Ui.HelpIcon(ToolTip, Strings.ScheduleTimesHelp)));
         AddGridRow(_daysLabel, _days);
-        AddGridRow(_monthDaysLabel, Inline(_monthDays, _lastDay, Ui.HelpIcon(ToolTip, Strings.ScheduleMonthDaysHelp)));
         AddGridRow(_intervalLabel, Inline(_interval, new Label { Text = Strings.Minutes, AutoSize = true, Margin = new Padding(4, 6, 0, 0) }));
 
         AddWide(_grid);
@@ -1026,8 +1029,7 @@ internal sealed class SchedulePage : EditorPage
             ShowPreview();
         };
         _times.TextChanged += (_, _) => ShowPreview();
-        _monthDays.TextChanged += (_, _) => ShowPreview();
-        _lastDay.CheckedChanged += (_, _) => ShowPreview();
+        _monthDays.DaysChanged += (_, _) => ShowPreview();
         _interval.ValueChanged += (_, _) => ShowPreview();
         _catchUp.CheckedChanged += (_, _) => ShowPreview();
     }
@@ -1044,8 +1046,7 @@ internal sealed class SchedulePage : EditorPage
             _dayBoxes[i].Checked = schedule.DaysOfWeek.Count == 0 || schedule.DaysOfWeek.Contains(i + 1);
         }
 
-        _monthDays.Text = string.Join(", ", schedule.DaysOfMonth.Where(d => d is >= 1 and <= 31));
-        _lastDay.Checked = schedule.DaysOfMonth.Contains(-1);
+        _monthDays.Days = schedule.DaysOfMonth;
         _loadedInterval = schedule.IntervalMinutes;
         _interval.Value = Math.Clamp(schedule.IntervalMinutes > 0 ? schedule.IntervalMinutes : 60, 1, 1440);
         _catchUp.Checked = schedule.CatchUp;
@@ -1091,12 +1092,15 @@ internal sealed class SchedulePage : EditorPage
         string type = SelectedType;
         bool times = type is ScheduleTypes.Daily or ScheduleTypes.Weekly or ScheduleTypes.Monthly;
         bool weekdays = type is ScheduleTypes.Daily or ScheduleTypes.Weekly or ScheduleTypes.Interval;
+        bool monthly = type == ScheduleTypes.Monthly;
         _timesLabel.Visible = times;
+        _timesLabel.Text = monthly ? Strings.ScheduleMonthDays : Strings.ScheduleTimes;
         _times.Parent!.Visible = times;
+        _monthDays.Visible = monthly;
+        _monthDaysHelp.Visible = monthly;
+        _monthTimesLabel.Visible = monthly;
         _daysLabel.Visible = weekdays;
         _days.Visible = weekdays;
-        _monthDaysLabel.Visible = type == ScheduleTypes.Monthly;
-        _monthDays.Parent!.Visible = type == ScheduleTypes.Monthly;
         _intervalLabel.Visible = type == ScheduleTypes.Interval;
         _interval.Parent!.Visible = type == ScheduleTypes.Interval;
         _catchUp.Visible = type != ScheduleTypes.Manual;
@@ -1129,25 +1133,7 @@ internal sealed class SchedulePage : EditorPage
 
         schedule.Times.Sort(StringComparer.Ordinal);
         schedule.DaysOfWeek = [.. Enumerable.Range(1, 7).Where(d => _dayBoxes[d - 1].Checked)];
-        schedule.DaysOfMonth = [];
-        foreach (string part in Split(_monthDays.Text))
-        {
-            if (!int.TryParse(part, NumberStyles.Integer, CultureInfo.CurrentCulture, out int day) || day is < 1 or > 31)
-            {
-                return (null, Strings.Format(Strings.ErrorBadMonthDay, part));
-            }
-
-            if (!schedule.DaysOfMonth.Contains(day))
-            {
-                schedule.DaysOfMonth.Add(day);
-            }
-        }
-
-        schedule.DaysOfMonth.Sort();
-        if (_lastDay.Checked)
-        {
-            schedule.DaysOfMonth.Add(-1);
-        }
+        schedule.DaysOfMonth = [.. _monthDays.Days];
 
         switch (schedule.Type)
         {

@@ -527,8 +527,12 @@ final class TaskForm
         sort($times);
         $weekdays = array_values(array_unique(array_filter(array_map('intval', (array) ($post['days_of_week'] ?? [])), fn($d) => $d >= 1 && $d <= 7)));
         sort($weekdays);
-        $monthDays = array_values(array_unique(array_filter(array_map('intval', (array) ($post['days_of_month'] ?? [])),
-            fn($d) => $d === -1 || ($d >= 1 && $d <= 31))));
+        // The 31st is the last day of every month (a month without the chosen day runs on its last day), so the form
+        // offers 1–30 and "last day" and keeps a 31 from an older version as "last day".
+        $monthDays = array_values(array_unique(array_map(fn(int $d) => $d === 31 ? -1 : $d, array_filter(
+            array_map('intval', (array) ($post['days_of_month'] ?? [])),
+            fn($d) => $d === -1 || ($d >= 1 && $d <= 31)
+        ))));
         sort($monthDays);
         if ($monthDays !== [] && $monthDays[0] === -1) {
             // "Last day" goes after the numbered days.
@@ -731,7 +735,8 @@ final class TaskForm
             $this->error('task_form.error.range', ['field' => ['key' => 'task_form.field.force_month_day', 'params' => []], 'min' => 1, 'max' => 31]);
             return null;
         }
-        return $value;
+        // The 31st is the last day of every month, as in the schedule.
+        return $value === 31 ? -1 : $value;
     }
 
     /** @param list<string> $allowed the first one is the fallback */

@@ -89,14 +89,17 @@ public static class TaskDescriber
                     return Messages.DescScheduleNever;
                 }
 
-                var days = schedule.DaysOfMonth.Where(d => d is >= 1 and <= 31).Distinct().Order()
-                    .Select(d => Messages.Format(Messages.DescMonthDay, d, Ordinal(d))).ToList();
-                if (schedule.DaysOfMonth.Contains(-1))
+                // The 31st is always the last day of its month (ScheduleCalculator.IsMonthDay), so it is said so.
+                var monthDays = schedule.DaysOfMonth.Where(d => d is (>= 1 and <= 31) or (-1)).Select(d => d == 31 ? -1 : d).Distinct().ToList();
+                var days = monthDays.Where(d => d > 0).Order().Select(d => Messages.Format(Messages.DescMonthDay, d, Ordinal(d))).ToList();
+                bool lastDay = monthDays.Contains(-1);
+                if (lastDay)
                 {
                     days.Add(Messages.DescLastDay);
                 }
 
-                return Messages.Format(Messages.DescMonthly, JoinWords(days), at);
+                string text = Messages.Format(Messages.DescMonthly, JoinWords(days), at);
+                return !lastDay && monthDays.Any(d => d >= 29) ? text + " " + Messages.DescMonthlyFebruary : text;
             }
 
             case ScheduleTypes.Interval:
@@ -231,11 +234,11 @@ public static class TaskDescriber
             parts.Add(Messages.DescFullListWeekdays.Split(';')[force.Weekday.Value - 1].Trim());
         }
 
-        if (force.MonthDay == -1)
+        if (force.MonthDay is -1 or 31)
         {
             parts.Add(Messages.DescFullListLastDay);
         }
-        else if (force.MonthDay is >= 1 and <= 31)
+        else if (force.MonthDay is >= 1 and <= 30)
         {
             parts.Add(Messages.Format(Messages.DescFullListMonthDay, force.MonthDay.Value, Ordinal(force.MonthDay.Value)));
         }
@@ -261,11 +264,11 @@ public static class TaskDescriber
             parts.Add(Messages.Format(Messages.DescFullWeekday, Messages.DescWeekdaysPlural.Split(';')[force.Weekday.Value - 1].Trim()));
         }
 
-        if (force.MonthDay == -1)
+        if (force.MonthDay is -1 or 31)
         {
             parts.Add(Messages.DescFullLastDay);
         }
-        else if (force.MonthDay is >= 1 and <= 31)
+        else if (force.MonthDay is >= 1 and <= 30)
         {
             parts.Add(Messages.Format(Messages.DescFullMonthDay, force.MonthDay.Value, Ordinal(force.MonthDay.Value)));
         }
