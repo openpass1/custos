@@ -303,6 +303,16 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('<h1>Задания</h1>', $tasks);
         $this->assertMatchesRegularExpression('#aria-current="page">(?:(?!</a>).)*<span class="nav-label">Машины</span>#', $tasks,
             'the task list belongs to the machines in the menu');
+        // What the menu needs to answer a click at once (app.js): the name of each section, both forms of its icon,
+        // the script before the first frame, the fonts of the page in its head (the addresses app.css names).
+        $this->assertMatchesRegularExpression('#<a href="/agents" data-nav="agents" class="nav-item active" aria-current="page">'
+            . '<span class="nav-icon"><svg class="icon icon-fill"[^>]*><use href="[^"]*\#i-nav-agents-fill"/></svg>'
+            . '<svg class="icon icon-line"[^>]*><use href="[^"]*\#i-nav-agents"/></svg>#', $tasks);
+        $this->assertMatchesRegularExpression('#<script src="/assets/app\.js\?v=\d+" defer blocking="render"></script>#', $tasks);
+        foreach (['latin-400', 'latin-500', 'cyrillic-400', 'cyrillic-500'] as $font) {
+            $this->assertStringContainsString('<link rel="preload" href="/assets/fonts/roboto-' . $font . '-normal.woff2" as="font" type="font/woff2" crossorigin>', $tasks);
+            $this->assertStringContainsString('url(fonts/roboto-' . $font . '-normal.woff2)', (string) file_get_contents(dirname(__DIR__, 2) . '/public/assets/app.css'));
+        }
         $this->assertMatchesRegularExpression('#<tr data-flags="bad" data-search="documents web-pc-01[^"]*"#', $tasks, 'the failed task is in "errors and missed"');
         $this->assertMatchesRegularExpression('#data-filter="bad"[^>]*>\s*<i class="dot dot-bad"></i>Ошибки и пропуски <b>1</b>#', $tasks);
         $this->assertStringContainsString('href="/agents/' . $agentId . '/tasks/' . $taskId . '"', $tasks);

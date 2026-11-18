@@ -11,6 +11,16 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.1
+
+### Changed
+- Moving between sections is smooth: a click in the menu marks the section at once, the old content fades out and the new one comes in. The old and the new page no longer show through each other for a moment.
+- Between the tabs of **Settings** the heading and the tabs stand still, only the content changes. A filter, the next page of a list or a saved form shows at once, without any movement.
+
+### Fixed
+- The letters of a page no longer change their shape a moment after it opens: the fonts come together with the page.
+- New installs by `install.sh` and the nginx example of the install guide let the browser keep styles, fonts and icons for 30 days (`location /assets/`). An existing install made by `install.sh` gets it by running `bash install.sh` again.
+
 ## 1.1.0
 
 ### Added

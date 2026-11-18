@@ -50,6 +50,9 @@ code=$(in_box 'curl -s -o /dev/null -w "%{http_code}" http://localhost/login')
 # Outputs go into variables before grep -q: with pipefail, grep -q that stops reading early can fail the writer.
 login=$(in_box 'curl -s http://localhost/login')
 [[ "$login" == *CUSTOS* ]] || fail "The login page does not mention CUSTOS."
+# Styles, fonts and icons are kept by the browser (location /assets/ of the nginx site).
+assets=$(in_box 'curl -s -o /dev/null -D - http://localhost/assets/app.css')
+[[ "${assets,,}" == *'cache-control: max-age=2592000'* ]] || fail "/assets/app.css comes without Cache-Control: max-age=2592000: $assets"
 health=$(in_box 'curl -s http://localhost/api/health')
 echo "$health"
 [[ "$health" == *'"status":"ok"'* ]] || fail "/api/health is not ok: $health"

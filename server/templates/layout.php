@@ -24,10 +24,19 @@ $navLink = function (string $key, string $class) use ($nav, $section, $counts, $
     // A counter is always there (hidden at 0), so that a live page can show it when a machine or a problem appears.
     $count = isset($counts[$key]) ? '<span class="count' . ($key === 'problems' ? ' count-bad' : '') . '" data-nav-count="' . e($key) . '"'
         . ($counts[$key] === 0 ? ' hidden' : '') . '>' . $counts[$key] . '</span>' : '';
-    $iconName = 'nav-' . $key . ($active && in_array($key, $filled, true) ? '-fill' : '');
-    return '<a href="' . e(url($nav[$key])) . '" class="' . e($class . ($active ? ' active' : '')) . '"' . ($active ? ' aria-current="page"' : '') . '>'
-        . '<span class="nav-icon">' . icon($iconName) . $count . '</span><span class="nav-label">' . e(t('nav.' . $key)) . '</span></a>';
+    // Both forms of the icon are in the page and app.css shows the one that fits: a click on a section marks it open
+    // at once (app.js), before the answer of the server comes.
+    $icons = (in_array($key, $filled, true) ? icon('nav-' . $key . '-fill', 'icon-fill') : '') . icon('nav-' . $key, 'icon-line');
+    return '<a href="' . e(url($nav[$key])) . '" data-nav="' . e($key) . '" class="' . e($class . ($active ? ' active' : '')) . '"'
+        . ($active ? ' aria-current="page"' : '') . '>'
+        . '<span class="nav-icon">' . $icons . $count . '</span><span class="nav-label">' . e(t('nav.' . $key)) . '</span></a>';
 };
+// The fonts every page needs come with the page, not after its styles: the first frame already has its letters. The
+// addresses are the ones app.css names (no version: a font file never changes under its name).
+$fonts = ['roboto-latin-400-normal', 'roboto-latin-500-normal'];
+if ($app->lang()->code === 'ru') {
+    array_push($fonts, 'roboto-cyrillic-400-normal', 'roboto-cyrillic-500-normal');
+}
 // The user menu and the theme switch send their choice and come back to this page.
 $query = (string) parse_url($view->request->uri, PHP_URL_QUERY);
 $back = $view->request->path() . ($query === '' ? '' : '?' . $query);
@@ -43,9 +52,13 @@ $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login']
     <meta name="color-scheme" content="<?= $theme === 'auto' ? 'light dark' : e($theme) ?>">
     <title><?= e($title) ?> · <?= e($serverName) ?></title>
     <?php include __DIR__ . '/_icons.php' ?>
-    <link rel="preload" href="<?= e(asset('fonts/roboto-latin-400-normal.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+    <?php foreach ($fonts as $font): ?>
+        <link rel="preload" href="<?= e(url('/assets/fonts/' . $font . '.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+    <?php endforeach ?>
     <link rel="stylesheet" href="<?= e(asset('app.css')) ?>">
-    <script src="<?= e(asset('app.js')) ?>" defer></script>
+    <?php /* blocking="render": the first frame waits for app.js, so that labels are already in their frames and the
+             content of a new section comes in with its movement (app.css, "From page to page"). */ ?>
+    <script src="<?= e(asset('app.js')) ?>" defer blocking="render"></script>
     <?php foreach ($scripts as $script): ?>
         <script src="<?= e(asset($script)) ?>" defer></script>
     <?php endforeach ?>
