@@ -6,11 +6,16 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
-// From page to page (app.css, "From page to page"). This file runs before the first frame of a page (layout.php:
-// blocking="render"; a browser that does not know it may have drawn the page already, then nothing moves), so the
-// content of a page opened from another page of the site comes in with its movement: html.page-in, and tab-in when
-// the other page is a tab of this one. The same page again (a filter, a saved form, F5, Back) just shows. The marks
-// are taken off after the movement: a live part put in place later must not come in again.
+// From page to page (app.css, "From page to page"). Where the browser can, the old page dissolves into the new one
+// (a view transition between documents): the menu and the content change together, nothing is drawn in afterwards.
+// The dissolve needs no motion asked to be less (app.css turns it off then).
+const dissolves = 'CSSViewTransitionRule' in window && !still();
+
+// Elsewhere this file runs before the first frame of a page (layout.php: blocking="render"; a browser that does not
+// know it may have drawn the page already, then nothing moves), so the content of a page opened from another page of
+// the site comes in with its movement: html.page-in, and tab-in when the other page is a tab of this one. The same
+// page again (a filter, a saved form, F5, Back) just shows. The marks are taken off after the movement: a live part
+// put in place later must not come in again. A page that the browser dissolved in has no movement of its own.
 (() => {
     const entry = performance.getEntriesByType('navigation')[0];
     let from = null;
@@ -23,19 +28,32 @@ const still = () => stillQuery.matches;
         || from.pathname === window.location.pathname || performance.getEntriesByType('paint').length > 0) {
         return;
     }
-    const root = document.documentElement;
-    root.classList.add('page-in');
-    if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
-        root.classList.add('tab-in');
+    const comeIn = () => {
+        const root = document.documentElement;
+        root.classList.add('page-in');
+        if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
+            root.classList.add('tab-in');
+        }
+        setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
+    };
+    if (dissolves && 'onpagereveal' in window) {
+        window.addEventListener('pagereveal', (event) => {
+            if (!event.viewTransition) {
+                comeIn();
+            }
+        }, { once: true });
+    } else if (!dissolves) {
+        comeIn();
     }
-    setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
 })();
 
-// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav): the
-// section is marked open and the old content goes at once, without waiting for the server; the page comes when it
-// answers. A tab of a page (.tabs) is marked the same way. Ctrl+click and the like open a browser tab and change
-// nothing here. Back to this page from the browser history: the menu and the tabs show this page again. No answer
-// for a few seconds: the content is shown again.
+// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav). Where
+// the page dissolves into the next one, only the mark of the section clicked lights up (.going): its icon, the old
+// mark and the content change in the dissolve. Elsewhere the section is marked open and the old content goes at
+// once, without waiting for the server; the page comes when it answers. A tab of a page (.tabs) is marked the same
+// way, or left to the dissolve. Ctrl+click and the like open a browser tab and change nothing here. Back to this page
+// from the browser history: the menu and the tabs show this page again. No answer for a few seconds: the content is
+// shown again.
 (() => {
     const main = document.querySelector('main.sheet');
     let before = null;
@@ -66,6 +84,15 @@ const still = () => stillQuery.matches;
         if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) {
             return;
         }
+        if (dissolves) {
+            if (link.hasAttribute('data-nav') && !link.classList.contains('active')) {
+                for (const other of document.querySelectorAll('a[data-nav].going')) {
+                    other.classList.remove('going');
+                }
+                link.classList.add('going');
+            }
+            return;
+        }
         if (!link.hasAttribute('data-nav')) {
             const tabs = link.closest('.tabs');
             if (tabBefore === null) {
@@ -88,6 +115,9 @@ const still = () => stillQuery.matches;
     window.addEventListener('pageshow', (event) => {
         if (!event.persisted) {
             return;
+        }
+        for (const link of document.querySelectorAll('a[data-nav].going')) {
+            link.classList.remove('going');
         }
         if (tabBefore !== null) {
             markTab(tabBefore[0], tabBefore[1]);
