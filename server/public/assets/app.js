@@ -1235,24 +1235,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 })();
 
-// Ripple (Material 3): pressing a button, a menu item, a chip, a tab or a section of the menu spreads a soft-edged
-// circle from the pointer: it shows within 0.1 s, grows for 0.45 s and, once the press has ended (but not sooner than
-// 0.225 s after it began), fades for 0.375 s. In the narrow rail and the phone's bottom bar it fills the pill around
-// the icon. A section of the menu and a tab of a page open another page, which would cut the circle off half-way:
-// the press is handed to that page (sessionStorage) and the circle goes on there, on the same section or tab, from
-// where it was. Nothing of it with less motion asked for.
+// Ripple (Material 3): pressing a button, a menu item, a chip or a tile spreads a soft-edged circle from the pointer:
+// it shows within 0.2 s, grows for 0.9 s and, once the press has ended (but not sooner than 0.45 s after it began),
+// fades for 0.75 s: twice the Material 3 times, which felt too quick. The menu of the site (rail, bottom bar, "More")
+// and the tabs of a page have none, as before Material: the mark moves to the section pressed (app.css) and the page
+// changes. A press that opens a page (a link, a button that sends its form) would cut the circle off half-way: the
+// press is handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same button
+// or link if the page has it.
+// Nothing of it with less motion asked for.
 (() => {
-    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .tabs a, .editor-toc a, a.tile, .sr-item';
-    const GROW_MS = 450;
-    const PRESS_MS = 225;
-    const FADE_MS = 375;
+    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .editor-toc a, a.tile, .sr-item';
+    const GROW_MS = 900;
+    const PRESS_MS = 450;
+    const FADE_MS = 750;
     const CARRY = 'custos.ripple';
-    // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
-    const hostOf = (el) => {
-        const pill = el.querySelector(':scope > .nav-icon');
-        return pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
-    };
-    // A circle on its host around the point (x, y) of it, as it is `age` ms after the press began.
+    // A circle on the element around the point (x, y) of it, as it is `age` ms after the press began.
     const spread = (host, x, y, age) => {
         const box = host.getBoundingClientRect();
         if (box.width === 0) {
@@ -1283,17 +1280,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => wave.remove(), FADE_MS + 50);
         }, Math.max(0, PRESS_MS - age));
     };
-    // A section of the menu or a tab, named so that the next page finds its own copy of it.
-    const nameOf = (el) => {
-        if (el.matches('a[data-nav]') && !el.classList.contains('menu-item')) {
-            return { kind: el.closest('.bottom-nav') ? 'bar' : 'rail', key: el.getAttribute('data-nav') };
-        }
-        return el.matches('.tabs a[href]') ? { kind: 'tab', key: el.pathname } : null;
+    // What the element is, where it leads (a link) or sends to (a button) and its text: the next page finds its own
+    // copy of it by these.
+    const signature = (el) => {
+        const form = el.form || null;
+        return [el.tagName, el.getAttribute('href') || '', form ? (form.getAttribute('action') || '') + ' ' + (el.name || '') + '=' + (el.value || '') : '',
+            (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80)].join('|');
     };
-    const find = (name) => {
-        const all = name.kind === 'tab' ? '.tabs a[href]' : (name.kind === 'bar' ? '.bottom-nav' : '.rail') + ' a[data-nav]';
-        return [...document.querySelectorAll(all)].find((el) => (name.kind === 'tab' ? el.pathname : el.getAttribute('data-nav')) === name.key) || null;
-    };
+    const usable = (el) => el && !el.disabled && !el.classList.contains('link') && !el.matches('[data-nav], .bar-item') && !el.closest('.month-days');
 
     // The press that opened this page goes on. This runs before the first frame (layout.php: blocking="render").
     let carried = null;
@@ -1303,11 +1297,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
         carried = null;
     }
-    if (carried && !still() && ['rail', 'bar', 'tab'].includes(carried.kind) && typeof carried.key === 'string'
-        && [carried.x, carried.y, carried.at].every(Number.isFinite)) {
+    if (carried && !still() && typeof carried.key === 'string' && [carried.x, carried.y, carried.at].every(Number.isFinite)) {
         const age = Date.now() - carried.at;
-        const el = age >= 0 && age < PRESS_MS + GROW_MS ? find(carried) : null;
-        const wave = el ? spread(hostOf(el), carried.x, carried.y, age) : null;
+        const el = age >= 0 && age < PRESS_MS + GROW_MS
+            ? [...document.querySelectorAll(hosts)].find((one) => usable(one) && signature(one) === carried.key && one.getClientRects().length > 0) : null;
+        const wave = el ? spread(el, carried.x, carried.y, age) : null;
         if (wave) {
             // It was already showing on the page before: it shows at once here, without fading in again.
             const dot = wave.firstChild;
@@ -1326,14 +1320,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const el = event.target.closest(hosts);
-        if (!el || el.disabled || el.classList.contains('link') || el.closest('.month-days')) {
+        if (!usable(el)) {
             return;
         }
-        const host = hostOf(el);
-        const box = host.getBoundingClientRect();
+        const box = el.getBoundingClientRect();
         const x = event.clientX - box.left;
         const y = event.clientY - box.top;
-        const wave = spread(host, x, y, 0);
+        const wave = spread(el, x, y, 0);
         if (!wave) {
             return;
         }
@@ -1341,10 +1334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         void wave.offsetWidth;
         wave.classList.add('pressed');
         const born = performance.now();
-        const name = nameOf(el);
-        if (name) {
-            pressed = { el, at: Date.now(), x, y, ...name };
-        }
+        pressed = { el, at: Date.now(), x, y, clicked: false };
         const end = () => {
             document.removeEventListener('pointerup', end);
             document.removeEventListener('pointercancel', end);
@@ -1353,16 +1343,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointerup', end);
         document.addEventListener('pointercancel', end);
     });
-    // The click that follows the press and opens the page in this browser tab hands the circle over.
+    // A plain click that follows the press may open a page in this browser tab (Ctrl+click and the like open another
+    // one and leave this page as it is). The keyboard ends what the pointer started.
     document.addEventListener('click', (event) => {
+        if (pressed && pressed.el.contains(event.target) && event.button === 0
+            && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || pressed.el.target)) {
+            pressed.clicked = true;
+        } else {
+            pressed = null;
+        }
+    });
+    document.addEventListener('keydown', () => {
+        pressed = null;
+    });
+    // This page goes while its circle is still on: the circle goes on on the next page.
+    window.addEventListener('pagehide', () => {
         const press = pressed;
         pressed = null;
-        if (!press || event.target.closest('a') !== press.el || event.defaultPrevented || event.button !== 0
-            || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || press.el.target) {
+        if (!press || !press.clicked || Date.now() - press.at >= PRESS_MS + GROW_MS) {
             return;
         }
         try {
-            window.sessionStorage.setItem(CARRY, JSON.stringify({ kind: press.kind, key: press.key, x: press.x, y: press.y, at: press.at }));
+            window.sessionStorage.setItem(CARRY, JSON.stringify({ key: signature(press.el), x: press.x, y: press.y, at: press.at }));
         } catch (error) {
             // No storage (a private window of an old browser): the circle ends with the page, as before.
         }
