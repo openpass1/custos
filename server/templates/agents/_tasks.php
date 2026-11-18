@@ -2,12 +2,20 @@
 /**
  * @var array $agent from the board @var list<array> $tasks tasks from the board
  * @var array<string, array{status: string, name: string}> $edits edits from the site not confirmed yet, by task id
+ * @var list<array> $running runs in progress (Board::running)
  *
  * One row per task: the name with its description on one line, the state, the schedule, the last and the next run.
+ * While a task runs, its last-run cell says "now" with a ring of how far it has got (app.js lets the ring glide).
  * A row has one button (run, or stop while it runs) and the rest under "⋯".
  */
 $approved = $agent['status'] === 'approved';
 $created = array_diff_key($edits, array_column($tasks, null, 'id'));
+$progressOf = [];
+foreach ($running as $item) {
+    if ($item['task'] !== null && $item['progress'] !== null && $item['agent']['id'] === $agent['id']) {
+        $progressOf[$item['task']['id']] = min(100.0, (float) $item['progress']['percent']);
+    }
+}
 $taskBase = fn(array $task): string => '/agents/' . $agent['id'] . '/tasks/' . $task['id'];
 $button = function (array $task, string $action, string $class, string $iconName) use ($taskBase): string {
     $confirm = match ($action) {
@@ -40,7 +48,7 @@ $button = function (array $task, string $action, string $class, string $iconName
                 </thead>
                 <tbody>
                 <?php foreach ($tasks as $task): ?>
-                    <?php $summary = task_summary($task['def']); $running = in_array($task['status'], ['running', 'paused'], true); ?>
+                    <?php $summary = task_summary($task['def']); $busy = in_array($task['status'], ['running', 'paused'], true); ?>
                     <tr data-key="t<?= e($task['id']) ?>" data-sig="<?= e(implode('|', [$task['status'], implode(',', $task['flags']), (string) $task['last_run_id'], $task['queued'] ? 'q' : '', $edits[$task['id']]['status'] ?? ''])) ?>">
                         <td><a href="<?= e(url($taskBase($task))) ?>"><strong><?= e($task['name']) ?></strong></a>
                             <div class="note task-desc" title="<?= e($summary) ?>"><?= e($summary) ?></div></td>
@@ -54,9 +62,12 @@ $button = function (array $task, string $action, string $class, string $iconName
                         </td>
                         <td data-label="<?= e(t('tasks.col.schedule')) ?>"><?= e(schedule_label($task['schedule'])) ?></td>
                         <td class="nowrap" data-label="<?= e(t('tasks.col.last_run')) ?>">
-                            <?php if ($task['last_run_id'] !== null): ?>
+                            <?php if ($busy): ?>
+                                <span class="now-run"><?= e(t('tasks.now')) ?><?php if (isset($progressOf[$task['id']])): ?>
+                                    <?= ring($progressOf[$task['id']]) ?><span class="percent"><?= (int) floor($progressOf[$task['id']]) ?>%</span><?php endif ?></span>
+                            <?php elseif ($task['last_run_id'] !== null): ?>
                                 <a href="<?= e(url('/runs/' . $task['last_run_id'])) ?>"><?= e(fmt_time($task['last_run_at'])) ?></a>
-                                <?php if ($task['last_run_status'] !== $task['status'] && !$running): ?><?= badge($task['last_run_status']) ?><?php endif ?>
+                                <?php if ($task['last_run_status'] !== $task['status']): ?><?= badge($task['last_run_status']) ?><?php endif ?>
                                 <?php if ($task['last_run_status'] !== 'success' && $task['last_success_at'] !== null): ?>
                                     <div class="note"><?= e(t('tasks.last_success_note', ['time' => fmt_time($task['last_success_at'])])) ?></div>
                                 <?php endif ?>
@@ -67,7 +78,7 @@ $button = function (array $task, string $action, string $class, string $iconName
                         <td class="nowrap" data-label="<?= e(t('tasks.col.next')) ?>"><?= e(fmt_unix($task['next_at'])) ?></td>
                         <?php if ($approved): ?>
                             <td class="row-actions card-side">
-                                <?= $running ? $button($task, 'stop', 'small danger', 'stop') : $button($task, 'run', 'small secondary', 'play') ?>
+                                <?= $busy ? $button($task, 'stop', 'small danger', 'stop') : $button($task, 'run', 'small secondary', 'play') ?>
                                 <details class="dropdown">
                                     <summary class="dots" title="<?= e(t('common.more')) ?>"><?= icon('dots') ?><span class="visually-hidden"><?= e(t('tasks.more_for', ['name' => $task['name']])) ?></span></summary>
                                     <div class="dropdown-menu">

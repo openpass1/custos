@@ -14,12 +14,16 @@ $hasSoft = $soft['offline'] !== [] || $soft['stale'] !== [] || $soft['anomaly'] 
     <?php else: ?>
         <ul class="problems">
             <?php foreach ($board->problems as $p): ?>
+                <?php // A list item: the kind as an icon, the machine and task, what happened, since when. ?>
                 <li class="problem problem-<?= e($p['kind']) ?>" data-key="p<?= (int) $p['id'] ?>">
-                    <?= badge($p['kind']) ?>
-                    <a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>">
-                        <strong><?= e($p['agent']['name']) ?></strong> · <?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a>
-                    <div class="problem-text"><?= e(problem_text($p)) ?></div>
-                    <div class="note"><?= e(t('problem.since', ['time' => fmt_time($p['opened_at']), 'ago' => fmt_ago($p['opened_at'])])) ?></div>
+                    <span class="lead lead-<?= $p['kind'] === 'space' ? 'warn' : 'bad' ?>"><?= icon(['missed' => 'event-busy', 'space' => 'hdd'][$p['kind']] ?? 'error-fill') ?></span>
+                    <div class="problem-body">
+                        <div class="problem-head"><a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>">
+                            <strong><?= e($p['agent']['name']) ?></strong> · <?= e($p['task_name'] ?? t('runs.unknown_task')) ?></a>
+                            <?= badge($p['kind']) ?></div>
+                        <div class="problem-text"><?= e(problem_text($p)) ?></div>
+                    </div>
+                    <div class="problem-since"><span><?= e(t('problem.since_time', ['time' => fmt_time($p['opened_at'])])) ?></span><span><?= e(fmt_ago($p['opened_at'])) ?></span></div>
                 </li>
             <?php endforeach ?>
         </ul>

@@ -301,7 +301,8 @@ final class WebTest extends TestCase
         [$status, $tasks] = $this->http('GET', '/tasks');
         $this->assertSame(200, $status);
         $this->assertStringContainsString('<h1>Задания</h1>', $tasks);
-        $this->assertStringContainsString('aria-current="page">Машины', $tasks, 'the task list belongs to the machines in the menu');
+        $this->assertMatchesRegularExpression('#aria-current="page">(?:(?!</a>).)*<span class="nav-label">Машины</span>#', $tasks,
+            'the task list belongs to the machines in the menu');
         $this->assertMatchesRegularExpression('#<tr data-flags="bad" data-search="documents web-pc-01[^"]*"#', $tasks, 'the failed task is in "errors and missed"');
         $this->assertMatchesRegularExpression('#data-filter="bad"[^>]*>\s*<i class="dot dot-bad"></i>Ошибки и пропуски <b>1</b>#', $tasks);
         $this->assertStringContainsString('href="/agents/' . $agentId . '/tasks/' . $taskId . '"', $tasks);
@@ -339,7 +340,7 @@ final class WebTest extends TestCase
         // action is left for the page the person opens next.
         [$status, $machine] = $this->http('GET', "/agents/$agentId");
         $this->assertSame(200, $status);
-        $this->assertStringContainsString('<main data-live-page="' . AgentsController::REFRESH_S . '">', $machine);
+        $this->assertStringContainsString('<main class="sheet" data-live-page="' . AgentsController::REFRESH_S . '">', $machine);
         foreach (['head', 'facts', 'problems', 'now', 'tasks', 'storage', 'runs', 'commands'] as $part) {
             $this->assertStringContainsString('data-part="' . $part . '"', $machine);
         }
@@ -357,7 +358,7 @@ final class WebTest extends TestCase
                   "/agents/$agentId/settings" => ['state', 'form']] as $path => $parts) {
             [$status, $page] = $this->http('GET', $path, null, ['X-Custos-Live: 1']);
             $this->assertSame(200, $status, $path);
-            $this->assertStringContainsString('<main data-live-page=', $page, $path);
+            $this->assertStringContainsString('<main class="sheet" data-live-page=', $page, $path);
             foreach ($parts as $part) {
                 $this->assertStringContainsString('data-part="' . $part . '"', $page, "$path: $part");
             }
