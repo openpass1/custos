@@ -1,8 +1,10 @@
 {
-  "about": "The 7-Zip build whose 7z.dll goes into CUSTOS. build.ps1 downloads these exact files and refuses them if a SHA-256 differs. To move to a new 7-Zip: change all five values (the checksums are the 'digest' of each asset on https://github.com/ip7z/7zip/releases).",
+  "about": "The 7-Zip build whose 7z.dll goes into CUSTOS: the x64 installer for the standard edition, the 32-bit one (installer32) for the legacy edition (build.ps1 -Legacy). build.ps1 downloads these exact files and refuses them if a SHA-256 differs. To move to a new 7-Zip: change all seven values (the checksums are the 'digest' of each asset on https://github.com/ip7z/7zip/releases).",
   "version": "26.06",
   "installerUrl": "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-x64.exe",
   "installerSha256": "9b697f65ecc2d9b0152f5ee96d72dde522a7827690349d9307935dacf40f42ec",
+  "installer32Url": "https://github.com/ip7z/7zip/releases/download/26.06/7z2606.exe",
+  "installer32Sha256": "5e38f80c3752de43887e7a99ad10668c14bf64dcc929a636510b54616ea7dec7",
   "extractorUrl": "https://github.com/ip7z/7zip/releases/download/26.06/7zr.exe",
   "extractorSha256": "e80db2dad715a6c5adabe292d31ed54e11f4e9b99ca349827b50573b175891bc"
 }

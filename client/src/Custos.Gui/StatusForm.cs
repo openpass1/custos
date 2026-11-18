@@ -47,7 +47,7 @@ internal sealed class StatusForm : Form
         body.Controls.Add(_noConnection);
         var statusStrip = new StatusStrip();
         statusStrip.Items.Add(_serviceStatus);
-        statusStrip.Items.Add(new ToolStripStatusLabel(Core.CustosInfo.Version));
+        statusStrip.Items.Add(new ToolStripStatusLabel(Core.CustosEdition.IsLegacy ? $"{Core.CustosInfo.Version} {Strings.EditionLegacy}" : Core.CustosInfo.Version));
 
         Controls.Add(body);
         Controls.Add(_summary);

@@ -79,7 +79,7 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         <?php if ($groupName !== null): ?><span><?= e($groupName) ?></span><?php endif ?>
         <?php if ((string) $agent['os'] !== ''): ?><span><?= e($agent['os']) ?></span><?php endif ?>
         <?php if ((string) ($agent['last_ip'] ?? '') !== ''): ?><span><?= e($agent['last_ip']) ?></span><?php endif ?>
-        <?php if ((string) $agent['agent_version'] !== ''): ?><span>CUSTOS <?= e($agent['agent_version']) ?></span><?php endif ?>
+        <?php if ((string) $agent['agent_version'] !== ''): ?><span>CUSTOS <?= e($agent['agent_version']) ?><?= Agents::isLegacy($agent) ? ' ' . e(t('agent.edition.legacy_paren')) : '' ?></span><?php endif ?>
         <?php if ($agent['sevenzip_version'] !== null): ?><span>7-Zip <?= e($agent['sevenzip_version']) ?></span><?php endif ?>
         <?php if ($pending): ?>
             <span><?= e(t('agent.meta.first_seen', ['time' => fmt_time($agent['first_seen_at'])])) ?></span>
@@ -124,7 +124,8 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         <dt><?= e(t('agent.group')) ?></dt><dd><?= e($groupName ?? t('groups.none')) ?></dd>
         <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
         <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
-        <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?></dd>
+        <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?><?= edition_badge($agent) ?>
+            <?php if (Agents::isLegacy($agent)): ?><div class="note"><?= e(t('agent.edition.legacy_hint')) ?></div><?php endif ?></dd>
         <dt><?= e(t('agent.sevenzip')) ?></dt><dd><?= e($agent['sevenzip_version'] ?? t('agent.sevenzip.unknown')) ?></dd>
         <dt><?= e(t('agent.time_zone')) ?></dt><dd><?= e($agent['time_zone']) ?></dd>
         <dt><?= e(t('agent.first_seen')) ?></dt><dd><?= e(fmt_time($agent['first_seen_at'])) ?></dd>

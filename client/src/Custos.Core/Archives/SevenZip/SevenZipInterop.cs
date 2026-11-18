@@ -261,10 +261,14 @@ internal static class SevenZipConst
 }
 
 /// <summary>
-/// A PROPVARIANT as 7-Zip uses it (24 bytes on x64): the type, three reserved words and the value. Only the types
-/// 7-Zip exchanges with an archive handler are needed here.
+/// A PROPVARIANT as 7-Zip uses it (24 bytes on x64, 16 on x86, where the legacy edition runs): the type, three
+/// reserved words and the value. Only the types 7-Zip exchanges with an archive handler are needed here.
 /// </summary>
+#if CUSTOS_LEGACY
+[StructLayout(LayoutKind.Explicit, Size = 16)]
+#else
 [StructLayout(LayoutKind.Explicit, Size = 24)]
+#endif
 internal struct PropVariant
 {
     public const ushort VtEmpty = 0;

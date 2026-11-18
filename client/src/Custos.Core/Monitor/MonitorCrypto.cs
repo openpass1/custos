@@ -173,7 +173,7 @@ public static class MonitorCrypto
             var cipher = raw.AsSpan(WrappedKeyBytes + NonceBytes, raw.Length - WrappedKeyBytes - NonceBytes - TagBytes);
             var tag = raw.AsSpan(raw.Length - TagBytes);
             byte[] plain = new byte[cipher.Length];
-            using var gcm = new AesGcm(aesKey, TagBytes);
+            using var gcm = NewAesGcm(aesKey);
             gcm.Decrypt(nonce, cipher, tag, plain);
             return Encoding.UTF8.GetString(plain);
         }
@@ -192,7 +192,7 @@ public static class MonitorCrypto
         byte[] plain = Encoding.UTF8.GetBytes(plaintext);
         byte[] cipher = new byte[plain.Length];
         byte[] tag = new byte[TagBytes];
-        using (var gcm = new AesGcm(aesKey, TagBytes))
+        using (var gcm = NewAesGcm(aesKey))
         {
             gcm.Encrypt(nonce, plain, cipher, tag);
         }
@@ -200,6 +200,14 @@ public static class MonitorCrypto
         byte[] wrapped = agentPublicKey.Encrypt(aesKey, RSAEncryptionPadding.OaepSHA1);
         return Convert.ToBase64String([.. wrapped, .. nonce, .. cipher, .. tag]);
     }
+
+    /// <summary>AES-GCM with a 16-byte tag. .NET 6 (the legacy edition) has only the constructor without the tag size.</summary>
+    private static AesGcm NewAesGcm(byte[] key) =>
+#if CUSTOS_LEGACY
+        new(key);
+#else
+        new(key, TagBytes);
+#endif
 }
 
 /// <summary>

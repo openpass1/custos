@@ -118,7 +118,7 @@ public sealed class MonitorClient : IDisposable
             AutomaticDecompression = DecompressionMethods.All,
             ConnectTimeout = TimeSpan.FromSeconds(15),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-        };
+        }.WithTls();
         _http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("CUSTOS/" + CustosInfo.Version);
         RequestTimeout = timeout ?? TimeSpan.FromSeconds(60);

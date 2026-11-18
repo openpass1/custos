@@ -117,6 +117,97 @@ jobs:
           | ``custos-${v}.1-test.zip`` | Пробное обновление: те же программы с версией ${v}.1. Нужно только для проверки обновления с сайта на машине, где уже стоит ${v}. Загружается на сайт как есть, без распаковки. |
           "@ >> $env:GITHUB_STEP_SUMMARY
 
+  # The edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy: .NET 6, 32-bit). The runner has a newer Windows, so the
+  # job checks what can be checked here: the build, the setup installing the bundled 32-bit .NET 6 and the service
+  # starting under WOW64 with its libraries, database and pipe. Windows 7 and 8.1 themselves are checked on virtual
+  # machines by hand. Its tests are those of the standard edition (the code is the same).
+  legacy:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (Test-Path $iscc) { Write-Host "Inno Setup is already installed: $iscc"; exit 0 }
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build the edition for Windows 7 and 8.1
+        shell: powershell
+        working-directory: client
+        run: .\build.ps1 -Configuration Release -Legacy -Version 0.5.${{ github.run_number }}
+
+      # A silent setup answers "install anyway" to its question about Windows 10 and later.
+      - name: Install it and start the service
+        shell: pwsh
+        run: |
+          $setup = "client/artifacts-legacy/installer/CUSTOS-Legacy-Setup-0.5.${{ github.run_number }}.exe"
+          $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=$PWD\legacy-setup.log" -Wait -PassThru
+          $dir = Join-Path ${env:ProgramFiles(x86)} 'CUSTOS'
+          $logs = Join-Path $env:ProgramData 'CUSTOS\logs'
+          $show = {
+            if (Test-Path legacy-setup.log) { Get-Content legacy-setup.log -Tail 40 }
+            if (Test-Path $logs) { Get-ChildItem $logs -File -Recurse | ForEach-Object { "--- $($_.FullName)"; Get-Content $_.FullName -Tail 60 } }
+          }
+          if ($process.ExitCode -ne 0) { & $show; throw "The setup exited with code $($process.ExitCode)." }
+          $runtime = Get-ChildItem (Join-Path ${env:ProgramFiles(x86)} 'dotnet\shared\Microsoft.WindowsDesktop.App') -Directory -Filter '6.*' -ErrorAction SilentlyContinue
+          if (-not $runtime) { & $show; throw 'The 32-bit .NET 6 Desktop Runtime is not installed.' }
+          Write-Host ".NET Desktop Runtime (x86): $($runtime.Name -join ', ')"
+          foreach ($name in 'CustosService.exe', 'Custos.exe', '7z.dll', 'e_sqlite3.dll') {
+            $bytes = [IO.File]::ReadAllBytes((Join-Path $dir $name))
+            $machine = [BitConverter]::ToUInt16($bytes, [BitConverter]::ToInt32($bytes, 0x3C) + 4)
+            if ($machine -ne 0x014C) { throw "$name is not a 32-bit file (machine 0x$('{0:X4}' -f $machine))." }
+          }
+          $service = $null
+          for ($i = 0; $i -lt 30; $i++) {
+            $service = Get-Service CustosService -ErrorAction SilentlyContinue
+            if ($service -and $service.Status -eq 'Running') { break }
+            Start-Sleep -Seconds 2
+          }
+          Start-Sleep -Seconds 10
+          $service = Get-Service CustosService -ErrorAction SilentlyContinue
+          if (-not $service -or $service.Status -ne 'Running') { & $show; throw "The service is not running: $($service.Status)." }
+          $process = Get-CimInstance Win32_Process -Filter "Name = 'CustosService.exe'"
+          Write-Host "CustosService.exe runs as process $($process.ProcessId): $($process.ExecutablePath)"
+          if (-not (Test-Path '\\.\pipe\custos')) { Get-ChildItem '\\.\pipe\' | Where-Object Name -like '*ustos*' | Format-Table Name }
+          & $show
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v6
+        with:
+          name: CUSTOS-Legacy-Setup
+          path: client/artifacts-legacy/installer/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload the update package
+        uses: actions/upload-artifact@v7
+        with:
+          path: client/artifacts-legacy/update/custos-legacy-0.5.${{ github.run_number }}.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Say what the files are for
+        shell: pwsh
+        run: |
+          $v = '0.5.${{ github.run_number }}'
+          @"
+          ### CUSTOS ${v} для Windows 7 и 8.1
+
+          | Файл | Что это |
+          |---|---|
+          | ``CUSTOS-Legacy-Setup`` | Установщик версии для Windows 7 SP1 и 8.1 (zip, внутри ``CUSTOS-Legacy-Setup-${v}.exe``, 32 бита, .NET 6 внутри). |
+          | ``custos-legacy-${v}.zip`` | Пакет обновления ${v} для машин с версией для Windows 7 и 8.1, для сайта 1.2.0 и новее, раздел «Обновления». Загружается на сайт как есть. |
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
   # Dumps from real MySQL, MariaDB and PostgreSQL servers (section 6.2 of CUSTOS-client.md). Linux is enough: the
   # dumps are made by the servers' own programs, which run inside the containers (client/tools/ci-databases.sh).
   databases:

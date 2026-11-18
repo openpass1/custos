@@ -1867,4 +1867,22 @@ static partial class Messages
 
     /// <summary>Only administrators of this computer may export tasks.</summary>
     public static string ExportNotAllowed => Get(nameof(ExportNotAllowed));
+
+    /// <summary>Destinations of type «{0}» are not available in CUSTOS for Windows 7 and 8.1.</summary>
+    public static string DestinationKindNotInLegacy => Get(nameof(DestinationKindNotInLegacy));
+
+    /// <summary>This package is for Windows 10 and later; CUSTOS for Windows 7 and 8.1 installs only its own packages (cust...</summary>
+    public static string MonitorPackageNotLegacy => Get(nameof(MonitorPackageNotLegacy));
+
+    /// <summary>This package is CUSTOS for Windows 7 and 8.1; this computer runs the edition for Windows 10 and later.</summary>
+    public static string MonitorPackageLegacy => Get(nameof(MonitorPackageLegacy));
+
+    /// <summary>CUSTOS for Windows 7 and 8.1 does not take 7-Zip from the site (the site keeps the 64-bit 7-Zip). Update 7z...</summary>
+    public static string SevenZipRemoteNotInLegacy => Get(nameof(SevenZipRemoteNotInLegacy));
+
+    /// <summary>{0} is not a 32-bit 7z.dll. CUSTOS for Windows 7 and 8.1 needs 7z.dll from the 32-bit 7-Zip (7zXXXX.exe, wi...</summary>
+    public static string SevenZipNot32Bit => Get(nameof(SevenZipNot32Bit));
+
+    /// <summary>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 32-bit 7-Zip there.</summary>
+    public static string SevenZipMissingLegacy => Get(nameof(SevenZipMissingLegacy));
 }

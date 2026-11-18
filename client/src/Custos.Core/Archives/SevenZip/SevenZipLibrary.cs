@@ -16,6 +16,7 @@ public sealed unsafe class SevenZipLibrary
     public const string FileName = "7z.dll";
 
     private const ushort MachineAmd64 = 0x8664;
+    private const ushort MachineI386 = 0x014C;
 
     private static readonly Lock CacheLock = new();
     private static readonly Dictionary<string, SevenZipLibrary> Cache = new(StringComparer.OrdinalIgnoreCase);
@@ -53,13 +54,14 @@ public sealed unsafe class SevenZipLibrary
 
             if (!File.Exists(full))
             {
-                throw new ArchiveException(Messages.Format(Messages.SevenZipMissing, full));
+                throw new ArchiveException(Messages.Format(Environment.Is64BitProcess ? Messages.SevenZipMissing : Messages.SevenZipMissingLegacy, full));
             }
 
+            // The 32-bit legacy edition loads the 32-bit 7z.dll, the standard one the 64-bit 7z.dll.
             ushort machine = ReadMachine(full);
-            if (machine != MachineAmd64)
+            if (machine != (Environment.Is64BitProcess ? MachineAmd64 : MachineI386))
             {
-                throw new ArchiveException(Messages.Format(Messages.SevenZipNot64Bit, full));
+                throw new ArchiveException(Messages.Format(Environment.Is64BitProcess ? Messages.SevenZipNot64Bit : Messages.SevenZipNot32Bit, full));
             }
 
             IntPtr handle;

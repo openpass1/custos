@@ -11,6 +11,13 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.2.0
+
+### Added
+- Machines with CUSTOS for Windows 7 and 8.1 (the legacy edition of the program) are marked **Windows 7, 8.1** in the machine list, on the machine page, under **Updates** and on the dashboard.
+- Such a machine is offered only what its program can do: no cloud drives in its task editor (a task or template with one is refused for it), no 7-Zip update, and no update packages of the standard program.
+- **Updates** take packages of the edition for Windows 7 and 8.1 (`custos-legacy-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has such a machine or package. The site also finds `client-legacy-v…` releases on GitHub and downloads them like the standard program.
+
 ## 1.1.5
 
 ### Changed

@@ -2842,4 +2842,21 @@ Keep the export password: without it the passwords in the file cannot be read.</
   <data name="RemoteCreateNewKey" xml:space="preserve">
     <value>Create new key</value>
   </data>
+  <data name="EditionLegacy" xml:space="preserve">
+    <value>for Windows 7 and 8.1</value>
+  </data>
+  <data name="KindNotInLegacy" xml:space="preserve">
+    <value>{0} (not in the edition for Windows 7)</value>
+  </data>
+  <data name="DestinationNotInLegacy" xml:space="preserve">
+    <value>CUSTOS for Windows 7 and 8.1 cannot write to cloud drives. The task writes nothing there and reports an error for it.</value>
+  </data>
+  <data name="Settings7ZipNoteLegacy" xml:space="preserve">
+    <value>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agree. By hand: stop the CUSTOS service, replace 7z.dll in the CUSTOS program folder with the one from the 32-bit 7-Zip (7zXXXX.exe, without -x64), start the service.</value>
+  </data>
+  <data name="SevenZipAskUpdateLegacy" xml:space="preserve">
+    <value>You have 7-Zip {0}; the newest is {1}.
+
+Update now? The service downloads the 32-bit installer from the official 7-Zip page on GitHub, checks its SHA-256, takes 7z.dll from it, tests it and only then replaces the old file (kept as 7z.dll.old). Tasks wait meanwhile; it takes about a minute.</value>
+  </data>
 </root>

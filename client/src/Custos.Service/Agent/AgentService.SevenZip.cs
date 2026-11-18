@@ -225,7 +225,7 @@ internal sealed partial class AgentService
 
     private static HttpClient CreateHttp()
     {
-        var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+        var http = new HttpClient(new SocketsHttpHandler().WithTls()) { Timeout = TimeSpan.FromMinutes(10) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("CUSTOS");
         return http;
     }

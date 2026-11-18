@@ -16,7 +16,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
 | | CUSTOS for Windows | CUSTOS Monitor |
 |---|---|---|
 | What it is | Backup program: a Windows service and a tray app | Web site: dashboard, alerts, remote management |
-| Runs on | Windows 10 and 11, Windows Server 2019, 2022 and 2025 (x64) | Linux with nginx, PHP 8.3+, MariaDB 10.11+ or MySQL 8.0+ |
+| Runs on | Windows 10 and 11, Windows Server 2019, 2022 and 2025 (x64); a separate 32-bit edition for Windows 7 SP1 and 8.1 ([details](client/README.md#edition-for-windows-7-and-81)) | Linux with nginx, PHP 8.3+, MariaDB 10.11+ or MySQL 8.0+ |
 | Download | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<version>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<version>.zip` |
 | Guide | [client/README.md](client/README.md) | [server/INSTALL.en.md](server/INSTALL.en.md) |
 

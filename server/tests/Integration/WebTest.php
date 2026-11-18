@@ -791,6 +791,59 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('connection-string', $settings);
     }
 
+    /**
+     * A machine with the edition for Windows 7 and 8.1 (A.3, A.4, A.10): marked as such, no cloud drives in its task
+     * editor, no 7-Zip from the site, and only the update packages of its edition. Last, as it adds a machine.
+     */
+    #[Depends('testManagementFromTheSite')]
+    public function testMachineWithTheEditionForWindows7(): void
+    {
+        [$exit, $output] = $this->fakeAgent(['--name=WIN7-PC', '--legacy', '--connect=' . $this->connectionString(), '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        [, $agents] = $this->http('GET', '/agents');
+        $this->assertSame(1, preg_match('#/agents/([0-9a-f-]{36})/approve#', $agents, $id));
+        $agentUrl = "/agents/{$id[1]}";
+        $this->post("$agentUrl/approve", ['back' => 'list']);
+        [$exit, $output] = $this->fakeAgent(['--name=WIN7-PC', '--legacy', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertStringContainsString('CUSTOS 1.0.0 для Windows 7 и 8.1', $page);
+        $this->assertStringContainsString('Windows 7, 8.1', $page);
+        $this->assertStringNotContainsString('Доступен 7-Zip', $page, 'the site keeps 7-Zip 24.10, but not for this machine');
+        [$status, $editor] = $this->http('GET', "$agentUrl/tasks/new");
+        $this->assertSame(200, $status);
+        $this->assertStringNotContainsString('value="gdrive"', $editor, 'no cloud drives offered');
+        $this->assertStringContainsString('value="sftp"', $editor);
+        [, $standard] = $this->http('GET', '/agents');
+        $this->assertSame(1, preg_match('#href="(/agents/[0-9a-f-]{36})"[^>]*>WEB-PC-01<#', $standard, $other), $standard);
+        $this->assertStringContainsString('value="gdrive"', $this->http('GET', "$other[1]/tasks/new")[1], 'the standard machine has them');
+
+        // A legacy package goes to its own section and only to this machine; 7-Zip is not sent to it.
+        $package = TestEnv::dir() . '/custos-legacy-1.0.1.zip';
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=legacy', '--out=' . $package]);
+        $this->assertSame(0, $code, $output);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('CUSTOS для Windows 7 и 8.1', $updates);
+        preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
+        [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-legacy-1.0.1.zip')]);
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Пакет 1.0.1 для Windows 7 и 8.1 загружен.', $this->http('GET', '/updates')[1]);
+        [$status] = $this->post('/updates/legacy/1.0.1/current', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновить CUSTOS для Windows 7 и 8.1 до 1.0.1', $updates);
+        $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => '7zip']);
+        $this->http('POST', '/updates/install', self::encode($fields));
+        $this->assertStringContainsString('Ни одной выбранной машине нельзя отправить 7-Zip', $this->http('GET', '/updates')[1]);
+        $fields = self::withValues(self::formFields($this->http('GET', '/updates')[1], '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => 'legacy']);
+        $this->http('POST', '/updates/install', self::encode($fields));
+        $this->assertStringContainsString('Обновление до 1.0.1 отправлено машинам: 1.', $this->http('GET', '/updates')[1]);
+        [$exit, $output] = $this->fakeAgent(['--name=WIN7-PC', '--legacy', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        $this->assertStringContainsString('CUSTOS 1.0.1 installed', $output);
+    }
+
     // ---- helpers ----
 
     private function settings(array $overrides): array

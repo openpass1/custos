@@ -141,9 +141,11 @@ public sealed partial class PathVariables
         return problem is null ? result : throw new BackupException(problem);
     }
 
-    [GeneratedRegex(@"%([^%\\/:*?""<>|\r\n]+)%", RegexOptions.CultureInvariant)]
-    private static partial Regex EnvironmentVariable();
+    private static readonly Regex EnvironmentVariableRegex = new(@"%([^%\\/:*?""<>|\r\n]+)%", RegexOptions.CultureInvariant);
 
-    [GeneratedRegex(@"^%[^%\\/:*?""<>|\r\n]+%([\\/]|$)", RegexOptions.CultureInvariant)]
-    private static partial Regex LeadingVariable();
+    private static Regex EnvironmentVariable() => EnvironmentVariableRegex;
+
+    private static readonly Regex LeadingVariableRegex = new(@"^%[^%\\/:*?""<>|\r\n]+%([\\/]|$)", RegexOptions.CultureInvariant);
+
+    private static Regex LeadingVariable() => LeadingVariableRegex;
 }

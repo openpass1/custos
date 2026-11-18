@@ -57,8 +57,8 @@ public sealed class ReleaseCheckException(string message, Exception? inner = nul
 /// </summary>
 public static class ProgramReleases
 {
-    /// <summary>Tags of the program; the site has its own (<c>server-v</c>).</summary>
-    public const string TagPrefix = "client-v";
+    /// <summary>Tags of the program (<c>client-v</c>, or <c>client-legacy-v</c> for the legacy edition); the site has its own (<c>server-v</c>).</summary>
+    public static string TagPrefix => CustosEdition.ReleaseTagPrefix;
 
     /// <summary>The update package never is bigger; a bigger answer is not saved.</summary>
     public const long MaxPackageBytes = 500L * 1024 * 1024;
@@ -266,7 +266,7 @@ public static class ProgramReleases
             return null;
         }
 
-        string packageName = $"custos-{version}.zip";
+        string packageName = CustosEdition.PackageName(version);
         string downloads = ReleasesPrefix + "download/";
         JsonElement? package = null;
         Uri? sums = null;

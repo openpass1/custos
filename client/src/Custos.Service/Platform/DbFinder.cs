@@ -105,14 +105,18 @@ internal static class DbFinder
 
     private static string? ProgramFolder(Process process)
     {
+        string? path;
         try
         {
-            return process.MainModule?.FileName is { } path ? Path.GetDirectoryName(path) : null;
+            path = process.MainModule?.FileName;
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
         {
-            return null;
+            // A 32-bit program (the legacy edition) cannot see the modules of a 64-bit server: Windows still names its file.
+            path = NativeMethods.ProcessImagePath(process.Id);
         }
+
+        return path is null ? null : Path.GetDirectoryName(path);
     }
 
     /// <summary>"0.0.0.0" and "::" accept connections on 127.0.0.1 too; any other address is used as it is.</summary>
@@ -145,7 +149,7 @@ internal static class DbFinder
     private static void ReadTable(int family, int rowSize, List<(int, IPEndPoint)> list, Func<IntPtr, (int, IPEndPoint)> read)
     {
         int size = 0;
-        NativeMethods.GetExtendedTcpTable(IntPtr.Zero, ref size, false, family, NativeMethods.TCP_TABLE_OWNER_PID_LISTENER, 0);
+        _ = NativeMethods.GetExtendedTcpTable(IntPtr.Zero, ref size, false, family, NativeMethods.TCP_TABLE_OWNER_PID_LISTENER, 0);
         for (int attempt = 0; attempt < 3 && size > 0; attempt++)
         {
             IntPtr buffer = Marshal.AllocHGlobal(size);

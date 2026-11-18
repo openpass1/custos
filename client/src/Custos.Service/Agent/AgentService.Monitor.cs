@@ -697,6 +697,12 @@ internal sealed partial class AgentService : IMonitorHost
         string? version = Text(command.Payload, "version");
         string? sha256 = Text(command.Payload, "sha256")?.ToLowerInvariant();
         string? signature = Text(command.Payload, "signature");
+        if (CustosEdition.IsLegacy)
+        {
+            // The site keeps the 64-bit installer of 7-Zip; the 32-bit program updates 7z.dll with its own button.
+            return CommandOutcome.Rejected(Messages.SevenZipRemoteNotInLegacy);
+        }
+
         if (version is null || sha256 is null || !IsSha256(sha256) || !SevenZipVersionPattern().IsMatch(version))
         {
             return CommandOutcome.Rejected(Messages.MonitorPackageBadCommand);
@@ -748,6 +754,7 @@ internal sealed partial class AgentService : IMonitorHost
         return Convert.ToHexStringLower(SHA256.HashData(stream));
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"^\d{1,3}\.\d{1,3}$")]
-    private static partial System.Text.RegularExpressions.Regex SevenZipVersionPattern();
+    private static readonly System.Text.RegularExpressions.Regex SevenZipVersionPatternRegex = new(@"^\d{1,3}\.\d{1,3}$");
+
+    private static System.Text.RegularExpressions.Regex SevenZipVersionPattern() => SevenZipVersionPatternRegex;
 }

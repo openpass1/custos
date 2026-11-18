@@ -23,27 +23,50 @@ internal static partial class NativeMethods
         public IntPtr SimpleReasonString;
     }
 
-    [LibraryImport("advapi32.dll", EntryPoint = "LogonUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    /// <summary>The full path of a process's program, whatever its bitness; null when Windows does not give it.</summary>
+    public static string? ProcessImagePath(int processId)
+    {
+        using var process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
+        if (process.IsInvalid)
+        {
+            return null;
+        }
+
+        char[] buffer = new char[32768];
+        int size = buffer.Length;
+        return QueryFullProcessImageName(process, 0, buffer, ref size) ? new string(buffer, 0, size) : null;
+    }
+
+    private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool LogonUser(string userName, string? domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle token);
+    private static extern bool QueryFullProcessImageName(SafeProcessHandle process, int flags, [Out] char[] name, ref int size);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    public static partial IntPtr PowerCreateRequest(ref ReasonContext context);
-
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", EntryPoint = "LogonUserW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool PowerSetRequest(IntPtr request, int requestType);
+    public static extern bool LogonUser(string userName, string? domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle token);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr PowerCreateRequest(ref ReasonContext context);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool PowerClearRequest(IntPtr request, int requestType);
+    public static extern bool PowerSetRequest(IntPtr request, int requestType);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool CloseHandle(IntPtr handle);
+    public static extern bool PowerClearRequest(IntPtr request, int requestType);
 
-    [LibraryImport("kernel32.dll")]
-    public static partial uint GetOEMCP();
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetOEMCP();
 
     public const int AF_INET = 2;
     public const int AF_INET6 = 23;
@@ -53,8 +76,8 @@ internal static partial class NativeMethods
 
     public const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
-    [LibraryImport("iphlpapi.dll")]
-    public static partial uint GetExtendedTcpTable(IntPtr table, ref int size, [MarshalAs(UnmanagedType.Bool)] bool order, int addressFamily, int tableClass, uint reserved);
+    [DllImport("iphlpapi.dll")]
+    public static extern uint GetExtendedTcpTable(IntPtr table, ref int size, [MarshalAs(UnmanagedType.Bool)] bool order, int addressFamily, int tableClass, uint reserved);
 
     public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
     public const uint TOKEN_QUERY = 0x0008;
@@ -69,32 +92,32 @@ internal static partial class NativeMethods
         public uint Attributes;
     }
 
-    [LibraryImport("kernel32.dll")]
-    public static partial IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool OpenProcessToken(IntPtr process, uint desiredAccess, out SafeAccessTokenHandle token);
+    public static extern bool OpenProcessToken(IntPtr process, uint desiredAccess, out SafeAccessTokenHandle token);
 
-    [LibraryImport("advapi32.dll", EntryPoint = "LookupPrivilegeValueW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("advapi32.dll", EntryPoint = "LookupPrivilegeValueW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool LookupPrivilegeValue(string? systemName, string name, out long luid);
+    public static extern bool LookupPrivilegeValue(string? systemName, string name, out long luid);
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool AdjustTokenPrivileges(SafeAccessTokenHandle token, [MarshalAs(UnmanagedType.Bool)] bool disableAll, ref TokenPrivilege newState, uint bufferLength, IntPtr previousState, IntPtr returnLength);
+    public static extern bool AdjustTokenPrivileges(SafeAccessTokenHandle token, [MarshalAs(UnmanagedType.Bool)] bool disableAll, ref TokenPrivilege newState, uint bufferLength, IntPtr previousState, IntPtr returnLength);
 
-    [LibraryImport("powrprof.dll", SetLastError = true)]
+    [DllImport("powrprof.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.U1)]
-    public static partial bool SetSuspendState([MarshalAs(UnmanagedType.U1)] bool hibernate, [MarshalAs(UnmanagedType.U1)] bool force, [MarshalAs(UnmanagedType.U1)] bool wakeupEventsDisabled);
+    public static extern bool SetSuspendState([MarshalAs(UnmanagedType.U1)] bool hibernate, [MarshalAs(UnmanagedType.U1)] bool force, [MarshalAs(UnmanagedType.U1)] bool wakeupEventsDisabled);
 
-    [LibraryImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool GetDiskFreeSpaceEx(string directoryName, out ulong freeBytesAvailable, out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes);
+    public static extern bool GetDiskFreeSpaceEx(string directoryName, out ulong freeBytesAvailable, out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes);
 
-    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumePathNameW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("kernel32.dll", EntryPoint = "GetVolumePathNameW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool GetVolumePathName(string fileName, [Out] char[] volumePathName, int bufferLength);
+    public static extern bool GetVolumePathName(string fileName, [Out] char[] volumePathName, int bufferLength);
 
     /// <summary>FILE_INFO_BY_HANDLE_CLASS.FileIoPriorityHintInfo.</summary>
     public const int FileIoPriorityHintInfo = 12;
@@ -102,19 +125,19 @@ internal static partial class NativeMethods
     /// <summary>PRIORITY_HINT.IoPriorityHintLow.</summary>
     public const int IoPriorityHintLow = 1;
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool SetFileInformationByHandle(SafeFileHandle file, int fileInformationClass, ref int fileInformation, int bufferSize);
+    public static extern bool SetFileInformationByHandle(SafeFileHandle file, int fileInformationClass, ref int fileInformation, int bufferSize);
 
     /// <summary>The file system keeps permissions (NTFS, ReFS; not FAT or exFAT).</summary>
     public const uint FILE_PERSISTENT_ACLS = 0x8;
 
-    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("kernel32.dll", EntryPoint = "GetVolumeInformationW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool GetVolumeInformation(string rootPathName, IntPtr volumeNameBuffer, int volumeNameSize, out uint volumeSerialNumber,
+    public static extern bool GetVolumeInformation(string rootPathName, IntPtr volumeNameBuffer, int volumeNameSize, out uint volumeSerialNumber,
         out uint maximumComponentLength, out uint fileSystemFlags, IntPtr fileSystemNameBuffer, int fileSystemNameSize);
 
-    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool GetVolumeNameForVolumeMountPoint(string volumeMountPoint, [Out] char[] volumeName, int bufferLength);
+    public static extern bool GetVolumeNameForVolumeMountPoint(string volumeMountPoint, [Out] char[] volumeName, int bufferLength);
 }
