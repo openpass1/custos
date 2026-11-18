@@ -1265,22 +1265,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 })();
 
-// Ripple (Material 3): pressing a button, a menu item, a chip or a tile spreads a soft-edged circle from the pointer:
-// it shows within 0.2 s, grows for 0.9 s and, once the press has ended (but not sooner than 0.45 s after it began),
-// fades for 0.75 s: twice the Material 3 times, which felt too quick. The menu of the site (rail, bottom bar, "More")
-// and the tabs of a page have none, as before Material: the mark moves to the section pressed (app.css) and the page
-// changes. A press that opens a page (a link, a button that sends its form) would cut the circle off half-way: the
-// press is handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same button
-// or link if the page has it.
-// Nothing of it with less motion asked for.
+// Ripple (Material 3): pressing a button, a menu item, a chip, a tile or a section of the menu spreads a soft-edged
+// circle from the pointer. On buttons and the like it shows within 0.2 s, grows for 0.9 s and, once the press has ended
+// (but not sooner than 0.45 s after it began), fades for 0.75 s: twice the Material 3 times, which felt too quick. On
+// the sections of the menu (rail, bottom bar, "More") it keeps the Material 3 times of 1.1.2 (0.1 / 0.45 / 0.225 /
+// 0.375 s); in the narrow rail and the phone's bottom bar it fills the pill around the icon. Tabs have none. A press
+// that opens a page (a section, a link, a button that sends its form) would cut the circle off half-way: the press is
+// handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same section, button
+// or link if the page has it. Nothing of it with less motion asked for.
 (() => {
-    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .editor-toc a, a.tile, .sr-item';
-    const GROW_MS = 900;
-    const PRESS_MS = 450;
-    const FADE_MS = 750;
+    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .editor-toc a, a.tile, .sr-item';
+    const SLOW = { grow: 900, press: 450, fade: 750 };
+    const MENU = { grow: 450, press: 225, fade: 375 };
+    const timesOf = (el) => (el.hasAttribute('data-nav') ? MENU : SLOW);
     const CARRY = 'custos.ripple';
-    // A circle on the element around the point (x, y) of it, as it is `age` ms after the press began.
-    const spread = (host, x, y, age) => {
+    // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
+    const hostOf = (el) => {
+        const pill = el.querySelector(':scope > .nav-icon');
+        return pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+    };
+    // A circle on its host around the point (x, y) of it, as it is `age` ms after the press began.
+    const spread = (host, x, y, age, times) => {
         const box = host.getBoundingClientRect();
         if (box.width === 0) {
             return null;
@@ -1289,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // The edge of the circle is soft (app.css), so it is drawn that much wider than the farthest corner needs.
         const size = 2 * (Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + Math.max(0.35 * longest, 75));
         const wave = document.createElement('span');
-        wave.className = 'ripple';
+        wave.className = times === MENU ? 'ripple quick' : 'ripple';
         const dot = document.createElement('i');
         dot.style.width = dot.style.height = size + 'px';
         dot.style.left = (x - size / 2) + 'px';
@@ -1298,26 +1303,29 @@ document.addEventListener('DOMContentLoaded', () => {
         host.append(wave);
         if (dot.animate) {
             const grow = dot.animate([{ transform: 'scale(' + (0.2 * longest / size) + ')' }, { transform: 'scale(1)' }],
-                { duration: GROW_MS, easing: 'cubic-bezier(.2, 0, 0, 1)', fill: 'forwards' });
-            grow.currentTime = Math.min(Math.max(age, 0), GROW_MS);
+                { duration: times.grow, easing: 'cubic-bezier(.2, 0, 0, 1)', fill: 'forwards' });
+            grow.currentTime = Math.min(Math.max(age, 0), times.grow);
         }
         return wave;
     };
     // The press has ended: the circle stays for the rest of its shortest time, then fades and goes.
-    const release = (wave, age) => {
+    const release = (wave, age, times) => {
         setTimeout(() => {
             wave.classList.remove('pressed');
-            setTimeout(() => wave.remove(), FADE_MS + 50);
-        }, Math.max(0, PRESS_MS - age));
+            setTimeout(() => wave.remove(), times.fade + 50);
+        }, Math.max(0, times.press - age));
     };
-    // What the element is, where it leads (a link) or sends to (a button) and its text: the next page finds its own
-    // copy of it by these.
+    // What the element is: a section of the menu by its name and place, else where it leads (a link) or sends to (a
+    // button) and its text. The next page finds its own copy of it by these.
     const signature = (el) => {
+        if (el.hasAttribute('data-nav')) {
+            return 'nav|' + el.getAttribute('data-nav') + '|' + (el.closest('.bottom-nav') ? 'bar' : 'rail');
+        }
         const form = el.form || null;
         return [el.tagName, el.getAttribute('href') || '', form ? (form.getAttribute('action') || '') + ' ' + (el.name || '') + '=' + (el.value || '') : '',
             (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80)].join('|');
     };
-    const usable = (el) => el && !el.disabled && !el.classList.contains('link') && !el.matches('[data-nav], .bar-item') && !el.closest('.month-days');
+    const usable = (el) => el && !el.disabled && !el.classList.contains('link') && !el.closest('.month-days');
 
     // The press that opened this page goes on. This runs before the first frame (layout.php: blocking="render").
     let carried = null;
@@ -1329,9 +1337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (carried && !still() && typeof carried.key === 'string' && [carried.x, carried.y, carried.at].every(Number.isFinite)) {
         const age = Date.now() - carried.at;
-        const el = age >= 0 && age < PRESS_MS + GROW_MS
+        const el = age >= 0
             ? [...document.querySelectorAll(hosts)].find((one) => usable(one) && signature(one) === carried.key && one.getClientRects().length > 0) : null;
-        const wave = el ? spread(el, carried.x, carried.y, age) : null;
+        const times = el ? timesOf(el) : null;
+        const wave = el && age < times.press + times.grow ? spread(hostOf(el), carried.x, carried.y, age, times) : null;
         if (wave) {
             // It was already showing on the page before: it shows at once here, without fading in again.
             const dot = wave.firstChild;
@@ -1339,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             wave.classList.add('pressed');
             void dot.offsetWidth;
             dot.style.transition = '';
-            release(wave, age);
+            release(wave, age, times);
         }
     }
 
@@ -1353,10 +1362,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!usable(el)) {
             return;
         }
-        const box = el.getBoundingClientRect();
+        const times = timesOf(el);
+        const host = hostOf(el);
+        const box = host.getBoundingClientRect();
         const x = event.clientX - box.left;
         const y = event.clientY - box.top;
-        const wave = spread(el, x, y, 0);
+        const wave = spread(host, x, y, 0, times);
         if (!wave) {
             return;
         }
@@ -1364,11 +1375,11 @@ document.addEventListener('DOMContentLoaded', () => {
         void wave.offsetWidth;
         wave.classList.add('pressed');
         const born = performance.now();
-        pressed = { el, at: Date.now(), x, y, clicked: false };
+        pressed = { el, at: Date.now(), x, y, times, clicked: false };
         const end = () => {
             document.removeEventListener('pointerup', end);
             document.removeEventListener('pointercancel', end);
-            release(wave, performance.now() - born);
+            release(wave, performance.now() - born, times);
         };
         document.addEventListener('pointerup', end);
         document.addEventListener('pointercancel', end);
@@ -1390,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('pagehide', () => {
         const press = pressed;
         pressed = null;
-        if (!press || !press.clicked || Date.now() - press.at >= PRESS_MS + GROW_MS) {
+        if (!press || !press.clicked || Date.now() - press.at >= press.times.press + press.times.grow) {
             return;
         }
         try {

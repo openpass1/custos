@@ -11,6 +11,12 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.5
+
+### Changed
+- The sections of the menu have the soft press circle of 1.1.2 again, at its speed: it fills the section from the pointer and goes on, on the page that opens.
+- The old page dissolves into the new one a quarter faster (0.225 s instead of 0.3 s).
+
 ## 1.1.4
 
 ### Changed
