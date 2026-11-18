@@ -625,6 +625,12 @@ server {
         try_files $uri /index.php?$query_string;
     }
 
+    # Стили, скрипты, шрифты и значки остаются в браузере: страницы открываются, не запрашивая их заново.
+    # Изменившийся файл получает от сайта новый адрес, так что после обновления старое не покажется.
+    location /assets/ {
+        expires 30d;
+    }
+
     location = /index.php {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;

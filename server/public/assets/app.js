@@ -6,6 +6,104 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
+// From page to page (app.css, "From page to page"). This file runs before the first frame of a page (layout.php:
+// blocking="render"; a browser that does not know it may have drawn the page already, then nothing moves), so the
+// content of a page opened from another page of the site comes in with its movement: html.page-in, and tab-in when
+// the other page is a tab of this one. The same page again (a filter, a saved form, F5, Back) just shows. The marks
+// are taken off after the movement: a live part put in place later must not come in again.
+(() => {
+    const entry = performance.getEntriesByType('navigation')[0];
+    let from = null;
+    try {
+        from = document.referrer ? new URL(document.referrer) : null;
+    } catch (error) {
+        from = null;
+    }
+    if (still() || !entry || entry.type !== 'navigate' || !from || from.origin !== window.location.origin
+        || from.pathname === window.location.pathname || performance.getEntriesByType('paint').length > 0) {
+        return;
+    }
+    const root = document.documentElement;
+    root.classList.add('page-in');
+    if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
+        root.classList.add('tab-in');
+    }
+    setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
+})();
+
+// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav): the
+// section is marked open and the old content goes at once, without waiting for the server; the page comes when it
+// answers. A tab of a page (.tabs) is marked the same way. Ctrl+click and the like open a browser tab and change
+// nothing here. Back to this page from the browser history: the menu and the tabs show this page again. No answer
+// for a few seconds: the content is shown again.
+(() => {
+    const main = document.querySelector('main.sheet');
+    let before = null;
+    let tabBefore = null;
+    let timer = 0;
+    const markTab = (tabs, tab) => {
+        for (const other of tabs.querySelectorAll('a')) {
+            other.classList.toggle('active', other === tab);
+        }
+    };
+    const mark = (key) => {
+        for (const link of document.querySelectorAll('a[data-nav]')) {
+            const on = link.getAttribute('data-nav') === key;
+            link.classList.toggle('active', on);
+            if (on) {
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        }
+        const more = document.querySelector('.bar-more');
+        if (more) {
+            more.classList.toggle('active', [...more.querySelectorAll('a[data-nav]')].some((link) => link.getAttribute('data-nav') === key));
+        }
+    };
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[data-nav], .tabs a[href]');
+        if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) {
+            return;
+        }
+        if (!link.hasAttribute('data-nav')) {
+            const tabs = link.closest('.tabs');
+            if (tabBefore === null) {
+                tabBefore = [tabs, tabs.querySelector('a.active')];
+            }
+            markTab(tabs, link);
+            return;
+        }
+        if (before === null) {
+            const open = document.querySelector('a[data-nav].active');
+            before = open ? open.getAttribute('data-nav') : '';
+        }
+        mark(link.getAttribute('data-nav'));
+        if (main && !still() && link.pathname !== window.location.pathname) {
+            main.classList.add('leaving');
+            clearTimeout(timer);
+            timer = setTimeout(() => main.classList.remove('leaving'), 4000);
+        }
+    });
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) {
+            return;
+        }
+        if (tabBefore !== null) {
+            markTab(tabBefore[0], tabBefore[1]);
+            tabBefore = null;
+        }
+        if (before !== null) {
+            mark(before);
+            before = null;
+            clearTimeout(timer);
+            if (main) {
+                main.classList.remove('leaving');
+            }
+        }
+    });
+})();
+
 // The site's icons are symbols of one file (layout.php: <body data-icons>); scripts draw them the way icon() does.
 const iconSvg = (name) => '<svg class="icon" aria-hidden="true" focusable="false"><use href="'
     + (document.body.getAttribute('data-icons') || '/assets/icons.svg') + '#i-' + name + '"/></svg>';

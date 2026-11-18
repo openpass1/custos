@@ -513,6 +513,12 @@ $listen_v6
         try_files \$uri /index.php?\$query_string;
     }
 
+    # Styles, scripts, fonts and icons stay in the browser: pages open without asking for them again.
+    # A file that changed gets a new address from the site, so nothing old is shown after an update.
+    location /assets/ {
+        expires 30d;
+    }
+
     location = /index.php {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
