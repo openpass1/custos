@@ -432,7 +432,6 @@ public sealed class FtpStore : RemoteStore
             Noop = true,
             EncryptionMode = !_tls ? FtpEncryptionMode.None : _port == ImplicitTlsPort ? FtpEncryptionMode.Implicit : FtpEncryptionMode.Explicit,
             DataConnectionEncryption = _tls,
-            SslProtocols = CustosEdition.TlsProtocols,
             ValidateAnyCertificate = false,
             RetryAttempts = 1,
 

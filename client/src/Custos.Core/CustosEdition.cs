@@ -58,7 +58,8 @@ public static class CustosEdition
     /// <summary>
     /// Connections over TLS: Windows 7 offers only TLS 1.0 unless a program asks for TLS 1.2 itself, and neither
     /// Windows 7 nor 8.1 knows TLS 1.3. The legacy edition therefore asks for TLS 1.2; the standard one leaves the choice
-    /// to Windows.
+    /// to Windows. FTPS is not touched in either edition: FluentFTP asks for TLS 1.2 by itself (with TLS 1.3, vsftpd
+    /// refuses data connections that cannot reuse the TLS session of the command connection).
     /// </summary>
     public static SslProtocols TlsProtocols => IsLegacy ? SslProtocols.Tls12 : SslProtocols.None;
 
