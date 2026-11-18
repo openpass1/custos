@@ -11,6 +11,12 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.3
+
+### Changed
+- The menu and the tabs of a page work as before Material: no circle on a press, the press deepens the colour and the mark moves smoothly to the section pressed.
+- The press circle of a button or link that opens a page (for example **Show** of a filter or a saved form) is no longer cut off: it goes on, from where it was, on the page that opens when that page has the same button or link.
+
 ## 1.1.2
 
 ### Changed
