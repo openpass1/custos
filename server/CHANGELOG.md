@@ -11,6 +11,11 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.2
+
+### Changed
+- The press effect follows Material 3 timing: the circle has a soft edge, grows for about half a second and fades slowly after the button is let go. A press on a section of the menu or on a tab goes on, from where it was, on the page that opens, instead of being cut off half-way.
+
 ## 1.1.1
 
 ### Changed

@@ -1235,28 +1235,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 })();
 
-// Ripple (Material 3): pressing a button, a menu item, a chip, a tab or a section of the menu spreads a circle from
-// the pointer that fades when the press ends. In the narrow rail and the phone's bottom bar it fills the pill around
-// the icon. Nothing of it with less motion asked for.
+// Ripple (Material 3): pressing a button, a menu item, a chip, a tab or a section of the menu spreads a soft-edged
+// circle from the pointer: it shows within 0.1 s, grows for 0.45 s and, once the press has ended (but not sooner than
+// 0.225 s after it began), fades for 0.375 s. In the narrow rail and the phone's bottom bar it fills the pill around
+// the icon. A section of the menu and a tab of a page open another page, which would cut the circle off half-way:
+// the press is handed to that page (sessionStorage) and the circle goes on there, on the same section or tab, from
+// where it was. Nothing of it with less motion asked for.
 (() => {
     const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .tabs a, .editor-toc a, a.tile, .sr-item';
-    document.addEventListener('pointerdown', (event) => {
-        if (still() || event.button !== 0) {
-            return;
-        }
-        const el = event.target.closest(hosts);
-        if (!el || el.disabled || el.classList.contains('link') || el.closest('.month-days')) {
-            return;
-        }
+    const GROW_MS = 450;
+    const PRESS_MS = 225;
+    const FADE_MS = 375;
+    const CARRY = 'custos.ripple';
+    // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
+    const hostOf = (el) => {
         const pill = el.querySelector(':scope > .nav-icon');
-        const host = pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+        return pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+    };
+    // A circle on its host around the point (x, y) of it, as it is `age` ms after the press began.
+    const spread = (host, x, y, age) => {
         const box = host.getBoundingClientRect();
         if (box.width === 0) {
-            return;
+            return null;
         }
-        const x = event.clientX - box.left;
-        const y = event.clientY - box.top;
-        const size = 2 * Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y));
+        const longest = Math.max(box.width, box.height);
+        // The edge of the circle is soft (app.css), so it is drawn that much wider than the farthest corner needs.
+        const size = 2 * (Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + Math.max(0.35 * longest, 75));
         const wave = document.createElement('span');
         wave.className = 'ripple';
         const dot = document.createElement('i');
@@ -1265,18 +1269,103 @@ document.addEventListener('DOMContentLoaded', () => {
         dot.style.top = (y - size / 2) + 'px';
         wave.append(dot);
         host.append(wave);
+        if (dot.animate) {
+            const grow = dot.animate([{ transform: 'scale(' + (0.2 * longest / size) + ')' }, { transform: 'scale(1)' }],
+                { duration: GROW_MS, easing: 'cubic-bezier(.2, 0, 0, 1)', fill: 'forwards' });
+            grow.currentTime = Math.min(Math.max(age, 0), GROW_MS);
+        }
+        return wave;
+    };
+    // The press has ended: the circle stays for the rest of its shortest time, then fades and goes.
+    const release = (wave, age) => {
+        setTimeout(() => {
+            wave.classList.remove('pressed');
+            setTimeout(() => wave.remove(), FADE_MS + 50);
+        }, Math.max(0, PRESS_MS - age));
+    };
+    // A section of the menu or a tab, named so that the next page finds its own copy of it.
+    const nameOf = (el) => {
+        if (el.matches('a[data-nav]') && !el.classList.contains('menu-item')) {
+            return { kind: el.closest('.bottom-nav') ? 'bar' : 'rail', key: el.getAttribute('data-nav') };
+        }
+        return el.matches('.tabs a[href]') ? { kind: 'tab', key: el.pathname } : null;
+    };
+    const find = (name) => {
+        const all = name.kind === 'tab' ? '.tabs a[href]' : (name.kind === 'bar' ? '.bottom-nav' : '.rail') + ' a[data-nav]';
+        return [...document.querySelectorAll(all)].find((el) => (name.kind === 'tab' ? el.pathname : el.getAttribute('data-nav')) === name.key) || null;
+    };
+
+    // The press that opened this page goes on. This runs before the first frame (layout.php: blocking="render").
+    let carried = null;
+    try {
+        carried = JSON.parse(window.sessionStorage.getItem(CARRY) || 'null');
+        window.sessionStorage.removeItem(CARRY);
+    } catch (error) {
+        carried = null;
+    }
+    if (carried && !still() && ['rail', 'bar', 'tab'].includes(carried.kind) && typeof carried.key === 'string'
+        && [carried.x, carried.y, carried.at].every(Number.isFinite)) {
+        const age = Date.now() - carried.at;
+        const el = age >= 0 && age < PRESS_MS + GROW_MS ? find(carried) : null;
+        const wave = el ? spread(hostOf(el), carried.x, carried.y, age) : null;
+        if (wave) {
+            // It was already showing on the page before: it shows at once here, without fading in again.
+            const dot = wave.firstChild;
+            dot.style.transition = 'none';
+            wave.classList.add('pressed');
+            void dot.offsetWidth;
+            dot.style.transition = '';
+            release(wave, age);
+        }
+    }
+
+    let pressed = null;
+    document.addEventListener('pointerdown', (event) => {
+        pressed = null;
+        if (still() || event.button !== 0) {
+            return;
+        }
+        const el = event.target.closest(hosts);
+        if (!el || el.disabled || el.classList.contains('link') || el.closest('.month-days')) {
+            return;
+        }
+        const host = hostOf(el);
+        const box = host.getBoundingClientRect();
+        const x = event.clientX - box.left;
+        const y = event.clientY - box.top;
+        const wave = spread(host, x, y, 0);
+        if (!wave) {
+            return;
+        }
+        // The style without "pressed" has to be in force first, or the circle would not fade in.
+        void wave.offsetWidth;
+        wave.classList.add('pressed');
         const born = performance.now();
+        const name = nameOf(el);
+        if (name) {
+            pressed = { el, at: Date.now(), x, y, ...name };
+        }
         const end = () => {
             document.removeEventListener('pointerup', end);
             document.removeEventListener('pointercancel', end);
-            // The circle grows to its full size before it fades, however short the press.
-            setTimeout(() => {
-                wave.classList.add('fading');
-                setTimeout(() => wave.remove(), 350);
-            }, Math.max(0, 220 - (performance.now() - born)));
+            release(wave, performance.now() - born);
         };
         document.addEventListener('pointerup', end);
         document.addEventListener('pointercancel', end);
+    });
+    // The click that follows the press and opens the page in this browser tab hands the circle over.
+    document.addEventListener('click', (event) => {
+        const press = pressed;
+        pressed = null;
+        if (!press || event.target.closest('a') !== press.el || event.defaultPrevented || event.button !== 0
+            || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || press.el.target) {
+            return;
+        }
+        try {
+            window.sessionStorage.setItem(CARRY, JSON.stringify({ kind: press.kind, key: press.key, x: press.x, y: press.y, at: press.at }));
+        } catch (error) {
+            // No storage (a private window of an old browser): the circle ends with the page, as before.
+        }
     });
 })();
 
