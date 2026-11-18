@@ -81,6 +81,7 @@ jobs:
           files=$(find out/CustosPreview -type f | wc -l)
           mb=$(awk "BEGIN { printf \"%.1f\", $size / 1048576 }")
           zip_mb=$(cd out && zip -qr -9 preview.zip CustosPreview && awk "BEGIN { printf \"%.1f\", $(stat -c %s preview.zip) / 1048576 }")
+          echo "::notice title=Size::${mb} MB in the folder (${files} files), ${zip_mb} MB zipped"
           {
             echo "### CustosPreview 0.1.${{ github.run_number }}: пробное окно Material 3"
             echo
@@ -130,6 +131,7 @@ jobs:
           Stop-Process -Id $p.Id -Force
 
           $os = (Get-CimInstance Win32_OperatingSystem).Caption
+          Write-Host "::notice title=Memory after 20 s::working set $ws MB, private $private MB, peak working set $peak MB ($os)"
           @"
           ### Запуск на Windows (без видеокарты)
 
