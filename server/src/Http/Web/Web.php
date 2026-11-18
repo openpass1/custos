@@ -18,6 +18,7 @@ use Custos\Http\Web\Controller\NotificationsController;
 use Custos\Http\Web\Controller\ProblemsController;
 use Custos\Http\Web\Controller\ProfileController;
 use Custos\Http\Web\Controller\RunsController;
+use Custos\Http\Web\Controller\SearchController;
 use Custos\Http\Web\Controller\SettingsController;
 use Custos\Http\Web\Controller\TasksController;
 use Custos\Http\Web\Controller\TemplatesController;
@@ -50,6 +51,8 @@ final class Web
         ['POST', '#^/logout$#', AuthController::class, 'logout', 'user'],
         ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
         ['GET', '#^/tasks$#', TasksController::class, 'index', 'user'],
+        ['GET', '#^/search$#', SearchController::class, 'index', 'user'],
+        ['GET', '#^/search/suggest$#', SearchController::class, 'suggest', 'live'],
         ['GET', '#^/agents/' . self::ID . '$#', AgentsController::class, 'show', 'user'],
         ['POST', '#^/agents/' . self::ID . '/(approve|replace|disable|enable|delete|rename|group|inventory|update|sevenzip)$#', AgentsController::class, 'action', 'user'],
         ['POST', '#^/agents/' . self::ID . '/commands/' . self::ID . '/cancel$#', AgentsController::class, 'cancel', 'user'],

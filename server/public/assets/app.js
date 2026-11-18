@@ -6,6 +6,32 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
+// The site's icons are symbols of one file (layout.php: <body data-icons>); scripts draw them the way icon() does.
+const iconSvg = (name) => '<svg class="icon" aria-hidden="true" focusable="false"><use href="'
+    + (document.body.getAttribute('data-icons') || '/assets/icons.svg') + '#i-' + name + '"/></svg>';
+
+// The ring of a run in progress (helpers.php ring() and ring_dashes(), the same numbers): two circles with
+// pathLength 100, the done part and the rest, a gap between them; a round cap adds half the stroke at each end.
+const ringDashes = (p) => {
+    const circumference = 2 * Math.PI * 9.5;
+    const cap = 1.5 / circumference * 100;
+    const gap = 2.5 / circumference * 100;
+    return [Math.max(0.01, p - 2 * cap), cap, 100 - p - 2 * gap - 2 * cap, p + gap + cap];
+};
+const drawRing = (ring, p) => {
+    const [valueLength, valueStart, trackLength, trackStart] = ringDashes(Math.max(0, Math.min(100, p)));
+    const set = (circle, length, start, shown) => {
+        if (!circle) {
+            return;
+        }
+        circle.setAttribute('stroke-dasharray', length.toFixed(2) + ' 100');
+        circle.setAttribute('stroke-dashoffset', (-start).toFixed(2));
+        circle.setAttribute('visibility', shown ? 'visible' : 'hidden');
+    };
+    set(ring.querySelector('.ring-track'), trackLength, trackStart, trackLength > 0.5);
+    set(ring.querySelector('.ring-value'), valueLength, valueStart, p > 0);
+};
+
 // A quiet note at the bottom of the page says why the site is so still, and on Windows where to switch effects on.
 (() => {
     const note = document.querySelector('[data-motion-note]');
@@ -167,7 +193,7 @@ const still = () => stillQuery.matches;
         x.className = 'toast-close';
         x.title = label;
         x.setAttribute('aria-label', label);
-        x.innerHTML = '<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>';
+        x.innerHTML = iconSvg('x');
         x.addEventListener('click', () => close(toast));
         toast.append(x);
         if (error) {
@@ -390,6 +416,7 @@ document.addEventListener('change', (event) => {
             map.set(el.getAttribute('data-key'), {
                 sig: el.getAttribute('data-sig'),
                 values: [...el.querySelectorAll('progress')].map((bar) => bar.value),
+                rings: [...el.querySelectorAll('[data-ring]')].map((ring) => parseFloat(ring.getAttribute('data-ring')) || 0),
             });
         }
         return map;
@@ -410,6 +437,23 @@ document.addEventListener('change', (event) => {
         };
         window.requestAnimationFrame(step);
     };
+    // A ring glides the same way.
+    const glideRing = (ring, from) => {
+        const to = parseFloat(ring.getAttribute('data-ring')) || 0;
+        if (still() || !(to > from)) {
+            return;
+        }
+        const start = performance.now();
+        const step = (now) => {
+            const k = Math.min(1, (now - start) / 900);
+            drawRing(ring, from + (to - from) * (1 - Math.pow(1 - k, 3)));
+            if (k < 1 && ring.isConnected) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        drawRing(ring, from);
+        window.requestAnimationFrame(step);
+    };
     const mark = (part, before) => {
         for (const el of part.querySelectorAll('[data-key]')) {
             const old = before.get(el.getAttribute('data-key'));
@@ -423,6 +467,11 @@ document.addEventListener('change', (event) => {
             el.querySelectorAll('progress').forEach((bar, i) => {
                 if (old.values[i] !== undefined) {
                     glide(bar, old.values[i]);
+                }
+            });
+            el.querySelectorAll('[data-ring]').forEach((ring, i) => {
+                if (old.rings[i] !== undefined) {
+                    glideRing(ring, old.rings[i]);
                 }
             });
         }
@@ -1086,4 +1135,300 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('pageshow', apply);
         document.addEventListener('custos:parts', apply);
     }
+})();
+
+// Ripple (Material 3): pressing a button, a menu item, a chip, a tab or a section of the menu spreads a circle from
+// the pointer that fades when the press ends. In the narrow rail and the phone's bottom bar it fills the pill around
+// the icon. Nothing of it with less motion asked for.
+(() => {
+    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .tabs a, .editor-toc a, a.tile, .sr-item';
+    document.addEventListener('pointerdown', (event) => {
+        if (still() || event.button !== 0) {
+            return;
+        }
+        const el = event.target.closest(hosts);
+        if (!el || el.disabled || el.classList.contains('link') || el.closest('.month-days')) {
+            return;
+        }
+        const pill = el.querySelector(':scope > .nav-icon');
+        const host = pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+        const box = host.getBoundingClientRect();
+        if (box.width === 0) {
+            return;
+        }
+        const x = event.clientX - box.left;
+        const y = event.clientY - box.top;
+        const size = 2 * Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y));
+        const wave = document.createElement('span');
+        wave.className = 'ripple';
+        const dot = document.createElement('i');
+        dot.style.width = dot.style.height = size + 'px';
+        dot.style.left = (x - size / 2) + 'px';
+        dot.style.top = (y - size / 2) + 'px';
+        wave.append(dot);
+        host.append(wave);
+        const born = performance.now();
+        const end = () => {
+            document.removeEventListener('pointerup', end);
+            document.removeEventListener('pointercancel', end);
+            // The circle grows to its full size before it fades, however short the press.
+            setTimeout(() => {
+                wave.classList.add('fading');
+                setTimeout(() => wave.remove(), 350);
+            }, Math.max(0, 220 - (performance.now() - born)));
+        };
+        document.addEventListener('pointerup', end);
+        document.addEventListener('pointercancel', end);
+    });
+})();
+
+// Fields (Material 3 outlined): the text of a short label moves into a notch of the field's frame. It works on labels
+// written as <label>Text <input ...></label> (also select, textarea and a field with its unit; the text may be in
+// spans, as when it follows the kind of a destination); a label whose text is longer than its field, or with
+// something else before the field, stays above it as before. A field that is hidden
+// (a folded section, a part shown for one kind of destination, a closed dialog) is measured again once it shows.
+(() => {
+    const fieldOf = (label) => {
+        if (label.matches('.check, .choice, .day, .search-field') || label.closest('.month-days')) {
+            return null;
+        }
+        let text = '';
+        for (const node of label.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                text += node.textContent;
+                continue;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                continue;
+            }
+            if (node.matches('span:not(.unit-input):not(.note), b')) {
+                text += node.textContent;
+                continue;
+            }
+            const field = node.matches('select, textarea, .unit-input')
+                || (node.matches('input') && !/^(checkbox|radio|hidden|file|range|color|submit|button)$/.test(node.type));
+            return field && text.trim() !== '' ? node : null;
+        }
+        return null;
+    };
+    const prepare = (label) => {
+        label.setAttribute('data-fl', '');
+        const field = fieldOf(label);
+        if (!field) {
+            return;
+        }
+        const span = document.createElement('span');
+        span.className = 'fl';
+        for (const node of [...label.childNodes]) {
+            if (node === field) {
+                break;
+            }
+            span.append(node);
+        }
+        label.insertBefore(span, field);
+    };
+    const measure = (label) => {
+        const span = label.querySelector(':scope > .fl');
+        const field = span && span.nextElementSibling;
+        if (!field) {
+            return;
+        }
+        const width = field.offsetWidth;
+        if (width === 0) {
+            return; // hidden now: measured again when it shows
+        }
+        label.classList.add('fl-on');
+        span.style.maxWidth = Math.max(0, width - 22) + 'px';
+        const fits = span.scrollWidth <= span.clientWidth + 1;
+        label.classList.toggle('fl-on', fits);
+        if (!fits) {
+            span.style.maxWidth = '';
+        }
+    };
+    let queued = false;
+    const run = () => {
+        queued = false;
+        for (const label of document.querySelectorAll('label:not([data-fl])')) {
+            prepare(label);
+        }
+        for (const label of document.querySelectorAll('label[data-fl]')) {
+            measure(label);
+        }
+        // Fields side by side keep their frames on one line: when one label of a row has to stay above its field,
+        // the others of the row stand above theirs too.
+        for (const row of document.querySelectorAll('.field-grid, .row-fields, form.filters')) {
+            const labels = [...row.querySelectorAll('label[data-fl]')].filter((label) => label.querySelector(':scope > .fl'));
+            if (labels.some((label) => !label.classList.contains('fl-on') && label.offsetWidth > 0)) {
+                labels.forEach((label) => label.classList.remove('fl-on'));
+            }
+        }
+    };
+    const later = () => {
+        if (!queued) {
+            queued = true;
+            window.requestAnimationFrame(run);
+        }
+    };
+    run();
+    for (const name of ['change', 'click', 'custos:parts']) {
+        document.addEventListener(name, later);
+    }
+    document.addEventListener('toggle', later, true);
+    let resizing = 0;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizing);
+        resizing = setTimeout(later, 150);
+    });
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(later);
+    }
+})();
+
+// Search of machines and tasks (top bar): matches show under the field as one types; the arrows choose one, Enter
+// opens it (or, with none chosen, the page with all matches), Esc closes the list. "/" anywhere outside a field puts
+// the cursor in the search. On a phone the field hides behind a button of the top bar.
+(() => {
+    const form = document.querySelector('form.search[data-search]');
+    if (!form) {
+        return;
+    }
+    const input = form.querySelector('input[name="q"]');
+    const box = form.querySelector('.search-results');
+    const source = form.getAttribute('data-search');
+    let timer = 0;
+    let asked = 0;
+    let items = [];
+    let active = -1;
+    let lastQuery = null;
+
+    const show = (on) => {
+        box.hidden = !on;
+        input.setAttribute('aria-expanded', on ? 'true' : 'false');
+    };
+    const choose = (i) => {
+        active = i;
+        items.forEach((item, k) => item.setAttribute('aria-selected', k === i ? 'true' : 'false'));
+        if (items[i]) {
+            input.setAttribute('aria-activedescendant', items[i].id);
+            items[i].scrollIntoView({ block: 'nearest' });
+        } else {
+            input.removeAttribute('aria-activedescendant');
+        }
+    };
+    const ask = async () => {
+        const q = input.value.trim();
+        if (q === lastQuery) {
+            show(q !== '' && box.innerHTML.trim() !== '');
+            return;
+        }
+        lastQuery = q;
+        if (q === '') {
+            box.innerHTML = '';
+            items = [];
+            show(false);
+            return;
+        }
+        const mine = ++asked;
+        let html;
+        try {
+            const response = await fetch(source + (source.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(q), {
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+            if (response.status === 401) {
+                window.location.reload();
+                return;
+            }
+            if (!response.ok) {
+                lastQuery = null;
+                return;
+            }
+            html = await response.text();
+        } catch {
+            lastQuery = null;
+            return;
+        }
+        if (mine !== asked) {
+            return; // a newer question is on its way
+        }
+        box.innerHTML = html;
+        items = [...box.querySelectorAll('.sr-item')];
+        choose(-1);
+        show(document.activeElement === input && html.trim() !== '');
+    };
+    const close = () => {
+        show(false);
+        choose(-1);
+    };
+    const open = () => {
+        document.body.classList.add('searching');
+        input.focus();
+        input.select();
+    };
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(ask, 140);
+    });
+    input.addEventListener('focus', () => {
+        if (input.value.trim() !== '') {
+            ask();
+        }
+    });
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            if (box.hidden || items.length === 0) {
+                return;
+            }
+            event.preventDefault();
+            // Down from the last match and up from the first one come back to the field.
+            let next = active + (event.key === 'ArrowDown' ? 1 : -1);
+            if (next >= items.length) {
+                next = -1;
+            } else if (next < -1) {
+                next = items.length - 1;
+            }
+            choose(next);
+        } else if (event.key === 'Enter' && !box.hidden && items[active]) {
+            event.preventDefault();
+            window.location.href = items[active].href;
+        } else if (event.key === 'Escape') {
+            if (!box.hidden) {
+                close();
+            } else {
+                input.blur();
+            }
+        }
+    });
+    // A click on a match must not take the focus from the field first (the list would close under the pointer).
+    box.addEventListener('mousedown', (event) => event.preventDefault());
+    form.addEventListener('submit', (event) => {
+        if (input.value.trim() === '') {
+            event.preventDefault();
+        }
+    });
+    form.addEventListener('focusout', () => {
+        setTimeout(() => {
+            if (!form.contains(document.activeElement)) {
+                close();
+                document.body.classList.remove('searching');
+            }
+        }, 0);
+    });
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-search-open]')) {
+            open();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) {
+            return;
+        }
+        const target = event.target;
+        if (target instanceof Element && target.closest('input, textarea, select, [contenteditable], dialog[open]')) {
+            return;
+        }
+        event.preventDefault();
+        open();
+    });
 })();

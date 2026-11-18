@@ -22,7 +22,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
 
 <img src="docs/screenshots/ru/client-main-window.png" alt="CUSTOS for Windows: the main window with the task list and the card of the selected task (Russian interface)">
 
-<img src="docs/screenshots/en/site-dashboard.png" alt="CUSTOS Monitor: dashboard with seven computers, an open problem and the results of the last 30 days">
+<img src="docs/screenshots/en/site-dashboard.png" alt="CUSTOS Monitor: dashboard with seven computers, an open problem, two copies in progress and the results of the last 30 days">
 
 ## CUSTOS for Windows
 
@@ -56,7 +56,7 @@ shows every computer in one place, warns when something goes wrong and lets you 
 - Alerts in Telegram and by e-mail, a Zabbix template, a wall screen for a TV.
 - Remote control: run and stop tasks, edit them, apply templates to groups of computers, update the program and 7-Zip.
 - A computer is approved on the site by its key fingerprint; every request and answer is signed.
-- Russian and English, light and dark theme, works on a phone.
+- Search of machines and tasks; Russian and English, light and dark theme, works on a phone.
 
 ## Quick start
 

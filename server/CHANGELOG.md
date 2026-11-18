@@ -11,6 +11,19 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.0
+
+### Added
+- Search of machines and tasks in the top bar: matches show while you type, the arrows and **Enter** open one, **Enter** alone opens a page with every match, the **/** key jumps to the field.
+- A light/dark switch in the top bar, next to the bell.
+- Phones get a bottom navigation bar with the main sections and **More** for the rest.
+- The task list of a machine shows a running task as **now** with a small progress circle and its percent.
+
+### Changed
+- New look in the style of Material Design 3: a navigation rail on the left (narrow on mid-size screens), rounded cards, Roboto font, Material Symbols icons, status badges with icons, filled and tonal buttons, fields with floating labels, ripple and hover effects. The old look is gone.
+- Progress bars are 8 px thick, with a gap and an end dot, a moving sheen while a copy runs and smooth movement between updates.
+- Animations follow the system setting to reduce motion.
+
 ## 1.0.2
 
 ### Changed

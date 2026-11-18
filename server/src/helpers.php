@@ -116,9 +116,58 @@ function badge(string $status, ?string $label = null): string
     $class = status_class($status);
     $lang = View::$current?->app->lang();
     $label ??= $lang !== null && $lang->has('status.' . $status) ? $lang->get('status.' . $status) : $status;
-    // A run in progress gets a pulsing dot (app.css), so a page that shows one says it is alive.
+    // An icon says the state before the word is read; a run in progress gets a turning one (app.css), so a page that
+    // shows one says it is alive.
+    $iconName = match ($status) {
+        'running' => 'running',
+        'paused' => 'pause',
+        'missed' => 'event-busy',
+        'space' => 'hdd',
+        'offline' => 'cloud-off',
+        'disabled' => 'power-off',
+        'queued', 'delivered' => 'pending',
+        default => match ($class) {
+            'ok' => 'ok-fill',
+            'warn' => 'alert-fill',
+            'bad' => 'error-fill',
+            'info' => 'pending',
+            default => null,
+        },
+    };
     $live = $status === 'running' ? ' badge-live' : '';
-    return '<span class="badge badge-' . $class . $live . '">' . e($label) . '</span>';
+    return '<span class="badge badge-' . $class . $live . '">' . ($iconName === null ? '' : icon($iconName)) . e($label) . '</span>';
+}
+
+/**
+ * A small ring that shows how far a run has got (the task list of a machine): the done part, a gap, the rest. The
+ * parts are dashes of two circles with pathLength 100; app.js draws them with the same numbers (ringDashes) when the
+ * value glides to a new one.
+ */
+function ring(float $percent): string
+{
+    $p = max(0.0, min(100.0, $percent));
+    [$valueLength, $valueStart, $trackLength, $trackStart] = ring_dashes($p);
+    $circle = fn(string $class, float $length, float $start, bool $shown): string => '<circle class="' . $class . '" cx="12" cy="12" r="9.5" pathLength="100"'
+        . ' stroke-dasharray="' . round($length, 2) . ' 100" stroke-dashoffset="' . round(-$start, 2) . '"' . ($shown ? '' : ' visibility="hidden"') . '/>';
+    return '<span class="ring" data-ring="' . round($p, 1) . '" aria-hidden="true"><svg viewBox="0 0 24 24">'
+        . '<g transform="rotate(-90 12 12)" fill="none" stroke-width="3" stroke-linecap="round">'
+        . $circle('ring-track', $trackLength, $trackStart, $trackLength > 0.5)
+        . $circle('ring-value', $valueLength, $valueStart, $p > 0)
+        . '</g></svg></span>';
+}
+
+/**
+ * Dashes of ring(): [value length, value start, rest length, rest start] in hundredths of the circle. A round cap
+ * adds half the stroke at each end of a dash, so a dash is shorter than the part it draws by one stroke width.
+ *
+ * @return array{float, float, float, float}
+ */
+function ring_dashes(float $p): array
+{
+    $circumference = 2 * M_PI * 9.5;
+    $cap = 1.5 / $circumference * 100;   // half of the 3 px stroke
+    $gap = 2.5 / $circumference * 100;   // the gap between the done part and the rest
+    return [max(0.01, $p - 2 * $cap), $cap, 100 - $p - 2 * $gap - 2 * $cap, $p + $gap + $cap];
 }
 
 /** Short schedule text: "ежедневно 00:00", "еженедельно: вс 01:00", "каждые 15 мин". */
@@ -379,8 +428,13 @@ function selected(mixed $value, mixed $current): string
     return (string) $value === (string) $current ? ' selected' : '';
 }
 
-/** One of the site's icons (templates/_sprite.php). It is decoration: the word next to it says what it means. */
-function icon(string $name): string
+/**
+ * One of the site's icons: Material Symbols Rounded in public/assets/icons.svg (tools/make-icons.py), a file the browser
+ * keeps. It is decoration: the word next to it says what it means. "name-fill" is the filled form where there is one.
+ */
+function icon(string $name, string $class = ''): string
 {
-    return '<svg class="icon" aria-hidden="true" focusable="false"><use href="#i-' . e($name) . '"/></svg>';
+    $sprite = View::$current !== null ? asset('icons.svg') : '/assets/icons.svg';
+    return '<svg class="icon' . ($class === '' ? '' : ' ' . e($class)) . '" aria-hidden="true" focusable="false"><use href="'
+        . e($sprite) . '#i-' . e($name) . '"/></svg>';
 }

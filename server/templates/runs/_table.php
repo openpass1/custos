@@ -20,7 +20,7 @@ use Custos\Domain\Agents;
         <tbody>
         <?php foreach ($runs as $r): ?>
             <tr>
-                <td><a href="<?= e(url('/runs/' . $r['id'])) ?>"><?= e(fmt_time($r['started_at'])) ?></a></td>
+                <td class="nowrap"><a href="<?= e(url('/runs/' . $r['id'])) ?>"><?= e(fmt_time($r['started_at'])) ?></a></td>
                 <?php if ($showAgent): ?>
                     <td data-label="<?= e(t('runs.col.agent')) ?>"><a href="<?= e(url('/agents/' . $r['agent_id'])) ?>"><?= e(Agents::name($r)) ?></a></td>
                 <?php endif ?>

@@ -206,7 +206,7 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         </label>
         <p class="note"><?= e(t('agent.rename.hint', ['hostname' => $machine['hostname']])) ?></p>
         <div class="dialog-buttons">
-            <button type="button" class="secondary" data-dialog-close><?= e(t('common.cancel')) ?></button>
+            <button type="button" class="quiet" data-dialog-close><?= e(t('common.cancel')) ?></button>
             <button type="submit"><?= e(t('common.save')) ?></button>
         </div>
     </form>
@@ -226,7 +226,7 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         </label>
         <p class="note"><a href="<?= e(url('/groups')) ?>"><?= e(t($groups === [] ? 'agent.group.create' : 'agent.group.manage')) ?></a></p>
         <div class="dialog-buttons">
-            <button type="button" class="secondary" data-dialog-close><?= e(t('common.cancel')) ?></button>
+            <button type="button" class="quiet" data-dialog-close><?= e(t('common.cancel')) ?></button>
             <button type="submit"><?= e(t('common.save')) ?></button>
         </div>
     </form>
