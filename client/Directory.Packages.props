@@ -31,6 +31,11 @@
     <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
     <!-- WMI, for the shadow copies (VSS): MIT -->
     <PackageVersion Include="System.Management" Version="10.0.14" />
+    <!-- Trial window in Material 3 (src/Custos.Preview): MIT -->
+    <PackageVersion Include="Avalonia" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.6" />
     <!-- Tests only, not shipped -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
