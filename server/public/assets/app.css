@@ -247,6 +247,9 @@ body.no-user .frame { grid-column: auto; }
 .nav-item.active:hover { background-color: color-mix(in srgb, var(--md-on-secondary-container) 8%, var(--md-secondary-container)); }
 /* No ripple in the menu (app.js): a press only deepens the state layer, then the mark moves to the section. */
 .nav-item:active:not(.active) { background-color: color-mix(in srgb, var(--md-on-surface) 12%, transparent); }
+/* The section clicked while the page dissolves into the next one (app.js, "From page to page"): its mark lights up
+   at once; the icon, the old mark and the content change together as the next page comes. */
+.nav-item.going { background-color: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .nav-icon .icon { width: 24px; height: 24px; }
 /* The open section has the filled form of its icon; both forms are in the page (layout.php), so that a click can
    mark the section at once. */
@@ -346,13 +349,13 @@ footer { padding: 16px 16px 20px 0; color: var(--md-on-surface-variant); font-si
     .rail .brand-name { display: none; }
     .rail .nav-item { flex-direction: column; justify-content: center; gap: 4px; width: 88px; min-height: 64px; padding: 4px 2px 8px; border-radius: 0;
         background: none; font-size: 12px; line-height: 16px; letter-spacing: .02em; text-align: center; }
-    .rail .nav-item:hover, .rail .nav-item.active, .rail .nav-item.active:hover { background: none; }
-    .rail .nav-item.active { color: var(--md-on-surface); }
+    .rail .nav-item:hover, .rail .nav-item.active, .rail .nav-item.active:hover, .rail .nav-item.going { background: none; }
+    .rail .nav-item:is(.active, .going) { color: var(--md-on-surface); }
     .rail .nav-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 56px; height: 32px; border-radius: 16px;
         transition: background-color .2s var(--ease); }
     .rail .nav-item:hover .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .rail .nav-item:active:not(.active) .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 12%, transparent); }
-    .rail .nav-item.active .nav-icon { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+    .rail .nav-item.active .nav-icon, .rail .nav-item.going .nav-icon { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .rail .nav-label { flex: none; max-width: 84px; }
     .rail .count { position: absolute; top: -2px; left: 30px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; margin: 0;
         background: var(--md-primary); color: var(--md-on-primary); font-size: 11px; line-height: 18px; text-align: center; }
@@ -391,7 +394,7 @@ footer { padding: 16px 16px 20px 0; color: var(--md-on-surface-variant); font-si
     .bar-item:hover .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .bar-item:active:not(.active) .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 12%, transparent); }
     .bar-item.active, .bar-more.active > .bar-item, .bar-more[open] > .bar-item { color: var(--md-on-surface); }
-    .bar-item.active .nav-icon, .bar-more.active > .bar-item .nav-icon, .bar-more[open] > .bar-item .nav-icon {
+    .bar-item.active .nav-icon, .bar-item.going .nav-icon, .bar-more.active > .bar-item .nav-icon, .bar-more[open] > .bar-item .nav-icon {
         background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .bar-item .nav-label { max-width: 100%; }
     .bar-item .count { position: absolute; top: -2px; left: 36px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
@@ -687,7 +690,7 @@ details.dropdown[open] > .dropdown-menu { animation: menu-in .22s var(--ease-in)
 .menu-item > .icon { width: 20px; height: 20px; margin: 0; color: var(--md-on-surface-variant); }
 .menu-item.danger { --btn-fg: var(--md-error); border: 0; padding: 0 16px 0 12px; }
 .menu-item.danger > .icon { color: var(--md-error); }
-.menu-item.active { --btn-bg: var(--md-secondary-container); --btn-fg: var(--md-on-secondary-container); font-weight: 500; }
+.menu-item:is(.active, .going) { --btn-bg: var(--md-secondary-container); --btn-fg: var(--md-on-secondary-container); font-weight: 500; }
 .menu-item.active > .nav-icon .icon, .menu-item.active > .icon { color: inherit; }
 .menu-item > .nav-icon { display: contents; }
 .menu-item .nav-icon .icon { width: 20px; height: 20px; color: var(--md-on-surface-variant); }
@@ -1126,11 +1129,15 @@ body.wall { --bg-here: var(--md-surface); min-height: 100vh; padding: 16px 24px;
    Settings → Accessibility → Visual effects → Animation effects off) nothing moves and nothing fades; a changed row
    keeps its colour for a moment, a busy button gets "…".
 
-   From page to page (Material "fade through"): the menu and the top bar stand still, only the content changes. A
-   click on a section marks it in the menu and lets the old content go at once (app.js: main.leaving); the content of
-   another page comes in from slightly below (html.page-in, set by app.js before the first frame). The same page
-   again (a filter, the next page of a list, a saved form) just shows; between the tabs of one page the heading and
-   the tabs stay (html.tab-in). The two pages are never on screen together, so nothing shows through.
+   From page to page, where the browser can (Chrome, Edge, Safari 18.2+): the old page dissolves into the new one in
+   0.3 s, the menu and the content together, as the site did before Material (1.0.2). A click on a section only
+   lights up its mark (app.js: .going); the rest changes within the dissolve. Marking the section at once and drawing
+   the content in after the page came was abrupt: the server often answers within a tenth of a second, and the new
+   page cut every change off at its start. What does not move stands still in the dissolve.
+   Elsewhere (Firefox): a click on a section marks it and lets the old content go at once (app.js: main.leaving); the
+   content of another page comes in from slightly below (html.page-in, set by app.js before the first frame). The same
+   page again (a filter, the next page of a list, a saved form) just shows; between the tabs of one page the heading
+   and the tabs stay (html.tab-in).
    ------------------------------------------------------------------------------------------------------------------ */
 tr.changed > td, tr.arrived > td { animation: glow 1.4s var(--ease); }
 li.problem.arrived, .progress-item.arrived { animation: slide-in .35s var(--ease-in), glow 1.4s var(--ease); }
@@ -1147,6 +1154,8 @@ li.problem.arrived, .progress-item.arrived { animation: slide-in .35s var(--ease
     details.at-once::details-content { transition: none; }
 }
 
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
 main.sheet.leaving > :not(.toasts) { opacity: 0; transition: opacity .09s var(--ease-out); }
 .page-in main.sheet > :not(.toasts) { animation: page-in .25s var(--ease-in) backwards; }
 .page-in.tab-in main.sheet > :is(h1, .page-head, .tabs) { animation: none; }
@@ -1166,6 +1175,7 @@ main.sheet.leaving > :not(.toasts) { opacity: 0; transition: opacity .09s var(--
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
         transition-duration: 1ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+    @view-transition { navigation: none; }
     .ripple { display: none; }
     tr.changed > td, tr.arrived > td, li.problem.arrived, .progress-item.arrived, .wall-problem.arrived { background-color: var(--md-primary-container); }
     button.busy::after { content: "…"; width: auto; height: auto; border: 0; }

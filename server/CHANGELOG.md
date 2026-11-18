@@ -11,6 +11,11 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.1.4
+
+### Changed
+- Moving between sections is smooth again, as before Material: the old page dissolves into the new one in 0.3 s, the menu and the content together, instead of the content being drawn in after the new page came. A click lights up the mark of the section at once. In Firefox the content still fades out and in.
+
 ## 1.1.3
 
 ### Changed
