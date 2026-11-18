@@ -200,6 +200,14 @@ public static partial class HelperSetup
         return options + " " + publicKey.Trim();
     }
 
+    /// <summary>The key itself in "ssh-ed25519 AAAA… comment": what tells its authorized_keys line from the others.</summary>
+    public static string KeyBlob(string publicKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(publicKey);
+        string[] parts = publicKey.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 1 ? parts[1] : string.Empty;
+    }
+
     /// <summary>Whether a text can go into <c>from=</c>: addresses, networks and patterns of OpenSSH, comma-separated.</summary>
     public static bool IsValidFrom(string? text) => string.IsNullOrWhiteSpace(text) || FromPattern().IsMatch(text.Trim());
 
@@ -215,8 +223,9 @@ public static partial class HelperSetup
         string script = HelperScript.Text;
         string config = Config(settings, preset);
         string keyLine = KeyLine(publicKey, officeIp);
+        string blob = KeyBlob(publicKey);
         if (script.Contains("\nCUSTOS_HELPER_EOF\n", StringComparison.Ordinal) || config.Split('\n').Any(l => l.StartsWith("CUSTOS_", StringComparison.Ordinal))
-            || keyLine.Contains('\'', StringComparison.Ordinal) || keyLine.Contains('\n', StringComparison.Ordinal))
+            || keyLine.Contains('\'', StringComparison.Ordinal) || keyLine.Contains('\n', StringComparison.Ordinal) || !Base64Pattern().IsMatch(blob))
         {
             throw new InvalidOperationException("The install block cannot hold this text.");
         }
@@ -253,12 +262,15 @@ public static partial class HelperSetup
         text.Append("chmod 0440 /etc/sudoers.d/custos.new\n");
         text.Append("visudo -cf /etc/sudoers.d/custos.new\n");
         text.Append("mv /etc/sudoers.d/custos.new /etc/sudoers.d/custos\n\n");
-        text.Append("# 4. The key of this CUSTOS agent: custos-helper only, no terminal, no forwarding\n");
+        text.Append("# 4. The key of this CUSTOS agent: custos-helper only, no terminal, no forwarding, from the office address if\n");
+        text.Append("#    there is one. An older line of the same key (with another office address) is replaced, not kept\n");
         text.Append("KEY_LINE='").Append(keyLine).Append("'\n");
+        text.Append("AK=~custos/.ssh/authorized_keys\n");
         text.Append("install -d -m 0700 ~custos/.ssh\n");
-        text.Append("touch ~custos/.ssh/authorized_keys\n");
-        text.Append("grep -qxF \"$KEY_LINE\" ~custos/.ssh/authorized_keys || echo \"$KEY_LINE\" >> ~custos/.ssh/authorized_keys\n");
-        text.Append("chmod 0600 ~custos/.ssh/authorized_keys\n");
+        text.Append("touch \"$AK\"\n");
+        text.Append("{ grep -vF -- ' ").Append(blob).Append("' \"$AK\" || [ $? -eq 1 ]; echo \"$KEY_LINE\"; } > \"$AK.new\"\n");
+        text.Append("chmod 0600 \"$AK.new\"\n");
+        text.Append("mv \"$AK.new\" \"$AK\"\n");
         text.Append("chown -R custos: ~custos/.ssh\n\n");
         text.Append("/usr/local/sbin/custos-helper info\n");
         text.Append("echo 'OK: custos-helper installed'\n");
@@ -279,4 +291,7 @@ public static partial class HelperSetup
 
     [GeneratedRegex(@"^[0-9A-Za-z.:/*?!\-]+(,[0-9A-Za-z.:/*?!\-]+)*$", RegexOptions.CultureInvariant)]
     private static partial Regex FromPattern();
+
+    [GeneratedRegex(@"^[A-Za-z0-9+/]{16,}=*$", RegexOptions.CultureInvariant)]
+    private static partial Regex Base64Pattern();
 }

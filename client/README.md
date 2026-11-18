@@ -93,7 +93,9 @@ Task page «Sources» → «Linux server…». Specification: [`docs/CUSTOS-remo
 (in Russian); the script on the server and how to install it by hand: [`helper/README.md`](../helper/README.md).
 
 1. The address of the server, the SSH port and the office IP (the external address of this computer: the key will
-   work only from it).
+   work only from it; several addresses or networks with commas). Leave it empty for a dynamic IP: the key then works
+   from any address, and the window warns about it. To change the address later, edit the field and run the block
+   below again: the line of the key on the server is replaced.
 2. What to take: «ispmanager: sites only» (the default), «ispmanager: sites and panel» or «Plain Linux»; the folders,
    exclusions and database servers can be adjusted.
 3. «Create key»: the service makes an ed25519 key; the private part stays with it (DPAPI) and never leaves.

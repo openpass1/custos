@@ -398,12 +398,14 @@ chmod 0440 /etc/sudoers.d/custos.new
 visudo -cf /etc/sudoers.d/custos.new
 mv /etc/sudoers.d/custos.new /etc/sudoers.d/custos
 
-# 4. Ключ агента
+# 4. Ключ агента. Прежняя строка этого же ключа (например, с другим IP офиса) заменяется
 KEY_LINE='command="sudo -n /usr/local/sbin/custos-helper",restrict,from="203.0.113.10" ssh-ed25519 AAAA... custos'
+AK=~custos/.ssh/authorized_keys
 install -d -m 0700 ~custos/.ssh
-touch ~custos/.ssh/authorized_keys
-grep -qxF "$KEY_LINE" ~custos/.ssh/authorized_keys || echo "$KEY_LINE" >> ~custos/.ssh/authorized_keys
-chmod 0600 ~custos/.ssh/authorized_keys
+touch "$AK"
+{ grep -vF -- ' AAAA...' "$AK" || [ $? -eq 1 ]; echo "$KEY_LINE"; } > "$AK.new"
+chmod 0600 "$AK.new"
+mv "$AK.new" "$AK"
 chown -R custos: ~custos/.ssh
 
 echo 'OK: custos-helper установлен'

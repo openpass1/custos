@@ -145,27 +145,65 @@ SQL
 
 # --- Install ---------------------------------------------------------------------------
 
-install_block() { # install_block <key file> <from>: the README block with KEY and FROM filled in
-  awk '/^<!-- install-block/ {f = 1; next} f && /^```bash$/ {b = 1; next} b && /^```$/ {exit} b' "$H/README.md" |
-    sed -e "s|^KEY=.*|KEY='$(cat "$1")'|" -e "s|^FROM=.*|FROM='$2'|" > "$T/install.sh"
-  bash "$T/install.sh"
+# The README block in $T/install.sh. It asks for the key and the office address, or takes them
+# from CUSTOS_KEY and CUSTOS_FROM.
+extract_block() {
+  awk '/^<!-- install-block/ {f = 1; next} f && /^```bash$/ {b = 1; next} b && /^```$/ {exit} b' "$H/README.md" > "$T/install.sh"
 }
+install_block() { CUSTOS_KEY=$(cat "$1") CUSTOS_FROM=$2 bash "$T/install.sh"; }   # install_block <key file> <from>
+
+# on_tty <typed text> <command...>: runs the command in a terminal of its own and types the text into it.
+on_tty() {
+  python3 -I -c '
+import os, pty, sys
+pid, fd = pty.fork()
+if pid == 0:
+    os.execvp(sys.argv[2], sys.argv[2:])
+os.write(fd, sys.argv[1].encode())
+while True:
+    try:
+        chunk = os.read(fd, 4096)
+    except OSError:
+        break
+    if not chunk:
+        break
+    sys.stdout.buffer.write(chunk)
+sys.exit(os.WEXITSTATUS(os.waitpid(pid, 0)[1]))
+' "$@"
+}
+
+keys() { grep -c . ~custos/.ssh/authorized_keys; }
 
 test_install() {
   ssh-keygen -q -t ed25519 -N '' -C test-key-1 -f /root/.ssh/k1
   ssh-keygen -q -t ed25519 -N '' -C test-key-2 -f /root/.ssh/k2
+  ssh-keygen -q -t ed25519 -N '' -C test-key-3 -f /root/.ssh/k3
   cp "$H/custos-helper" /tmp/custos-helper
-  awk '/^<!-- install-block/ {f = 1; next} f && /^```bash$/ {b = 1; next} b && /^```$/ {exit} b' "$H/README.md" > "$T/install.sh"
-  code 1 "install: the block refuses the placeholder key" bash "$T/install.sh"
+  extract_block
+  code 1 "install: with no terminal and no CUSTOS_KEY the block stops" bash "$T/install.sh"
+  check "install: ... and says how to answer without a terminal" has CUSTOS_KEY "$T/err"
+  code 1 "install: the placeholder key is refused" env CUSTOS_KEY='ssh-ed25519 AAAA... custos-test' CUSTOS_FROM=any bash "$T/install.sh"
+  code 1 "install: an address with a quote is refused" env CUSTOS_KEY="$(cat /root/.ssh/k1.pub)" CUSTOS_FROM='127.0.0.1" x' bash "$T/install.sh"
+  check "install: nothing is installed before the answers are right" test ! -e /usr/local/sbin/custos-helper
   code 0 "install: the block installs custos-helper" install_block /root/.ssh/k1.pub 127.0.0.1
-  check "install: the block ends with OK" has 'OK: custos-helper' "$T/out"
+  check "install: the block ends with OK and the address" has 'OK: custos-helper установлен, ключ работает только с 127.0.0.1' "$T/out"
   check "install: the preset config is valid (info prints JSON)" json <(grep '^{' "$T/out") 'd["protocol"]' > /dev/null
   code 0 "install: running the block again is safe" install_block /root/.ssh/k1.pub 127.0.0.1
   code 0 "install: a second key, limited to another IP" install_block /root/.ssh/k2.pub 203.0.113.10
-  check "install: one line per key in authorized_keys" want "$(wc -l < ~custos/.ssh/authorized_keys)" 2
-  check "install: modes of script, config, sudoers" want \
-    "$(stat -c '%a %U' /usr/local/sbin/custos-helper /etc/custos/helper.conf /etc/sudoers.d/custos | tr '\n' ' ')" \
-    "755 root 600 root 440 root "
+  check "install: one line per key in authorized_keys" want "$(keys)" 2
+  # Typed answers: an empty key, a wrong one, the key; an empty address, a wrong one, any.
+  code 0 "install: the block asks in the terminal" on_tty \
+    $'\n''not a key'$'\n'"$(cat /root/.ssh/k3.pub)"$'\n\n''127.0.0.1"'$'\nany\n' bash "$T/install.sh"
+  check "install: ... for the key" has 'Ключ: ' "$T/out"
+  check "install: ... again after a wrong key" has 'Это не открытый ключ SSH' "$T/out"
+  check "install: ... again after a wrong address" has 'Нужен IP-адрес' "$T/out"
+  check "install: ... warns about any address" has 'ВНИМАНИЕ: ключ будет работать с любого адреса' "$T/out"
+  check "install: ... and the key has no from=" bash -c "grep -F '$(cut -d ' ' -f 2 /root/.ssh/k3.pub)' ~custos/.ssh/authorized_keys | grep -qv from="
+  code 0 "install: the key of any address works" ssh -i /root/.ssh/k3 "${SSH_OPTS[@]}" custos@127.0.0.1 info
+  check "install: three keys, three lines" want "$(keys)" 3
+  check "install: modes of script, config, sudoers, keys" want \
+    "$(stat -c '%a %U' /usr/local/sbin/custos-helper /etc/custos/helper.conf /etc/sudoers.d/custos ~custos/.ssh/authorized_keys | tr '\n' ' ')" \
+    "755 root 600 root 440 root 600 custos "
   code 1 "install: custos cannot read the config" runuser -u custos -- cat /etc/custos/helper.conf
   code 1 "install: custos cannot sudo anything else" runuser -u custos -- sudo -n /bin/true
 }
@@ -409,9 +447,29 @@ PY
   printf '%s\n' "$good" > /etc/custos/helper.conf; chmod 0600 /etc/custos/helper.conf
 }
 
+k() { ssh -i "/root/.ssh/$1" "${SSH_OPTS[@]}" custos@127.0.0.1 info; }   # k <key>: info with that key
+
 test_ssh_limits() {
-  code 255 "ssh: the key limited to 203.0.113.10 is refused" \
-    ssh -i /root/.ssh/k2 "${SSH_OPTS[@]}" custos@127.0.0.1 info
+  code 255 "ssh: the key limited to 203.0.113.10 is refused" k k2
+  # The commands of the README section «Сменить адрес офиса», as they are: a new address, then any.
+  local -a cmds
+  mapfile -t cmds < <(sed -n '/^## Сменить адрес офиса/,/^## /p' "$H/README.md" | grep '^sed -i ')
+  check "change address: the README has both commands" want "${#cmds[@]}" 2
+  code 0 "change address: any address" bash -c "${cmds[1]}"
+  check "change address: ... no from= is left" want "$(grep -c 'from=' ~custos/.ssh/authorized_keys)" 0
+  code 0 "change address: ... the key of 203.0.113.10 works from anywhere" k k2
+  code 0 "change address: new address 203.0.113.20" bash -c "${cmds[0]}"
+  code 255 "change address: ... the old address is refused" k k1
+  check "change address: ... set in every key line" want "$(grep -c 'from="203.0.113.20" ssh-' ~custos/.ssh/authorized_keys)" 3
+  code 0 "change address: two addresses" bash -c "${cmds[0]//203.0.113.20/127.0.0.1,203.0.113.20}"
+  code 0 "change address: ... both keys work again" k k1
+  code 0 "change address: ... (second key)" k k2
+  check "change address: ... still one line per key, mode and owner kept" want \
+    "$(keys) $(stat -c '%a %U' ~custos/.ssh/authorized_keys)" "3 600 custos"
+  code 0 "change address: the install block again, with another address for one key" install_block /root/.ssh/k2.pub 203.0.113.10
+  code 255 "change address: ... that key is refused" k k2
+  code 0 "change address: ... the other keys keep their address" k k1
+  check "change address: ... its old line is replaced, not kept" want "$(keys)" 3
   code 255 "ssh: remote port forwarding is refused" \
     ssh -i /root/.ssh/k1 "${SSH_OPTS[@]}" -o ExitOnForwardFailure=yes -R 127.0.0.1:2222:127.0.0.1:22 custos@127.0.0.1 info
   check "ssh: sftp does not work" bash -c \
