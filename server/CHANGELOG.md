@@ -11,7 +11,7 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
-## 1.1.5
+## 1.1.6
 
 ### Added
 - Search of machines and tasks in the top bar: matches show while you type, the arrows and **Enter** open one, **Enter** alone opens a page with every match, the **/** key jumps to the field.

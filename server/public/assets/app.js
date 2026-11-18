@@ -47,6 +47,75 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
     }
 })();
 
+// While a page dissolves in, the browser shows a picture of the two pages over it and gives every press to <html>:
+// a quick click on the menu right after the page came (within 0.225 s) did nothing. A press then ends the dissolve at
+// once and goes, with its click, to what is under the pointer, as if the page had been there all along (the circle
+// of the press too).
+(() => {
+    if (!dissolves || !('onpagereveal' in window)) {
+        return;
+    }
+    const root = document.documentElement;
+    let dissolving = null;
+    let target = null;
+    window.addEventListener('pagereveal', (event) => {
+        dissolving = event.viewTransition || null;
+        if (dissolving) {
+            dissolving.finished.finally(() => {
+                dissolving = null;
+            });
+        }
+    }, { once: true });
+    const under = (event) => {
+        const el = document.elementFromPoint(event.clientX, event.clientY);
+        return el && el !== root ? el : null;
+    };
+    document.addEventListener('pointerdown', (event) => {
+        if (!event.isTrusted) {
+            return;
+        }
+        target = null;
+        if (!dissolving || event.target !== root) {
+            return;
+        }
+        dissolving.skipTransition();
+        dissolving = null;
+        const el = under(event);
+        if (!el) {
+            return;
+        }
+        event.stopImmediatePropagation();
+        target = el;
+        el.dispatchEvent(new PointerEvent('pointerdown', {
+            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
+            screenY: event.screenY, button: event.button, buttons: event.buttons, pointerId: event.pointerId,
+            pointerType: event.pointerType, isPrimary: event.isPrimary, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
+            altKey: event.altKey, metaKey: event.metaKey,
+        }));
+    }, true);
+    document.addEventListener('click', (event) => {
+        if (!event.isTrusted) {
+            return;
+        }
+        const from = target;
+        target = null;
+        if (!from || event.target !== root) {
+            return;
+        }
+        const el = under(event);
+        const link = (node) => (node.closest ? node.closest('a[href], button, summary, label') : null);
+        if (!el || (link(el) || el) !== (link(from) || from)) {
+            return;
+        }
+        event.stopImmediatePropagation();
+        el.dispatchEvent(new MouseEvent('click', {
+            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
+            screenY: event.screenY, button: event.button, buttons: event.buttons, detail: event.detail, ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey,
+        }));
+    }, true);
+})();
+
 // A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav). Where
 // the page dissolves into the next one, only the mark of the section clicked lights up (.going): its icon, the old
 // mark and the content change in the dissolve. Elsewhere the section is marked open and the old content goes at
