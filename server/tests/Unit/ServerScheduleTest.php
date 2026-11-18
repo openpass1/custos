@@ -67,6 +67,7 @@ final class ServerScheduleTest extends TestCase
             ['type' => 'weekly', 'times' => ['01:00', '02:30'], 'days_of_week' => [6, 7]],
             ['type' => 'monthly', 'times' => ['03:00'], 'days_of_month' => [1, 15, -1]],
             ['type' => 'monthly', 'times' => ['22:00'], 'days_of_month' => [31]],
+            ['type' => 'monthly', 'times' => ['04:00'], 'days_of_month' => [29, 30, -1]],
             ['type' => 'daily', 'times' => ['00:00', '00:30', '01:00', '02:00', '02:15', '02:30', '03:00']],
         ];
         $zones = ['UTC', 'Europe/Moscow', 'Europe/Berlin', 'America/New_York', 'Asia/Kolkata', 'Australia/Lord_Howe', 'America/Santiago'];

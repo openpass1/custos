@@ -563,6 +563,9 @@
   <data name="DescLastDay" xml:space="preserve">
     <value>the last day</value>
   </data>
+  <data name="DescMonthlyFebruary" xml:space="preserve">
+    <value>(on the last day in February)</value>
+  </data>
   <data name="DescInterval" xml:space="preserve">
     <value>every {0} min</value>
   </data>

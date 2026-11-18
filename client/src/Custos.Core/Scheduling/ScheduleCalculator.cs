@@ -10,7 +10,7 @@ namespace Custos.Core.Scheduling;
 /// </summary>
 public static class ScheduleCalculator
 {
-    /// <summary>How far ahead and back slots are searched. A monthly schedule on the 31st still finds one.</summary>
+    /// <summary>How far ahead and back slots are searched: more than a year, with room to spare.</summary>
     private const int HorizonDays = 400;
 
     private const int MinutesPerDay = 24 * 60;
@@ -123,6 +123,22 @@ public static class ScheduleCalculator
         return new TimeSpan(hours, minutes, 0);
     }
 
+    /// <summary>
+    /// True when <paramref name="date"/> is the day <paramref name="monthDay"/> of its month (1–31, -1 = the last day).
+    /// A month without that day takes its last day instead, so the 30th runs on 28 or 29 February and 31 is the same
+    /// as the last day: a monthly task never skips a month.
+    /// </summary>
+    public static bool IsMonthDay(int monthDay, DateTime date)
+    {
+        int last = DateTime.DaysInMonth(date.Year, date.Month);
+        return monthDay switch
+        {
+            -1 => date.Day == last,
+            >= 1 and <= 31 => date.Day == Math.Min(monthDay, last),
+            _ => false,
+        };
+    }
+
     /// <summary>ISO weekday of a date: 1 = Monday … 7 = Sunday.</summary>
     public static int IsoWeekday(DateTime date) => ((int)date.DayOfWeek + 6) % 7 + 1;
 
@@ -208,11 +224,7 @@ public static class ScheduleCalculator
         return days.Count == 0 && schedule.Type != ScheduleTypes.Weekly ? [1, 2, 3, 4, 5, 6, 7] : days;
     }
 
-    private static bool MatchesMonthDay(List<int> daysOfMonth, DateTime day)
-    {
-        int last = DateTime.DaysInMonth(day.Year, day.Month);
-        return daysOfMonth.Any(d => d == day.Day || (d == -1 && day.Day == last));
-    }
+    private static bool MatchesMonthDay(List<int> daysOfMonth, DateTime day) => daysOfMonth.Any(d => IsMonthDay(d, day));
 
     private static bool IsWeekday(int day) => day is >= 1 and <= 7;
 

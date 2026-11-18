@@ -269,7 +269,9 @@ public static partial class CobianImporter
                 break;
             case 3:
                 schedule.Type = ScheduleTypes.Monthly;
-                schedule.DaysOfMonth = ReadNumbers(block.Get("Day of the month")).Where(d => (d >= 1 && d <= 31) || d == -1).Distinct().Order().ToList();
+                // The 31st runs on the last day of every month anyway (ScheduleCalculator.IsMonthDay): stored as such.
+                schedule.DaysOfMonth = ReadNumbers(block.Get("Day of the month")).Where(d => d is (>= 1 and <= 31) or (-1))
+                    .Select(d => d == 31 ? -1 : d).Distinct().OrderBy(d => d == -1 ? 32 : d).ToList();
                 if (schedule.DaysOfMonth.Count == 0)
                 {
                     schedule.DaysOfMonth = [1];

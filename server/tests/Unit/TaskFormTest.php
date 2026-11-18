@@ -247,6 +247,25 @@ final class TaskFormTest extends TestCase
         }
     }
 
+    public function testTheThirtyFirstIsTheLastDayOfTheMonth(): void
+    {
+        // A month without the chosen day runs on its last day, so 31 and "last day" are one choice.
+        $task = $this->task();
+        $post = self::formFor($task);
+        $post['schedule']['type'] = 'monthly';
+        $post['schedule']['days_of_month'] = ['31', '15', '-1', '29', '32', '0'];
+        $post['force_full']['month_day'] = '31';
+
+        $form = TaskForm::parse($task, $post, $this->credentials());
+
+        $this->assertSame([], $form->errors);
+        $this->assertSame([15, 29, -1], $form->task()['schedule']['days_of_month']);
+        $this->assertSame(-1, $form->task()['force_full']['month_day']);
+
+        $post['schedule']['days_of_month'] = [];
+        $this->assertContains('task_form.error.no_month_days', array_column(TaskForm::parse($task, $post, $this->credentials())->errors, 'key'));
+    }
+
     public function testDisconnectAfterIsNotInTheEditorAndStaysAsItWas(): void
     {
         $task = $this->task();

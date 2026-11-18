@@ -414,6 +414,9 @@ public sealed class TaskDescriberTests : IDisposable
     [InlineData(ScheduleTypes.Daily, new[] { 1, 2, 3, 4, 5 }, new int[0], 0, "по будням в 02:00 и 14:00")]
     [InlineData(ScheduleTypes.Weekly, new[] { 1, 5 }, new int[0], 0, "по пн и пт в 02:00 и 14:00")]
     [InlineData(ScheduleTypes.Monthly, new int[0], new[] { 1, -1 }, 0, "каждый месяц 1-го и в последний день в 02:00 и 14:00")]
+    [InlineData(ScheduleTypes.Monthly, new int[0], new[] { 30 }, 0, "каждый месяц 30-го в 02:00 и 14:00 (в феврале — в последний день)")]
+    [InlineData(ScheduleTypes.Monthly, new int[0], new[] { 31 }, 0, "каждый месяц в последний день в 02:00 и 14:00")]
+    [InlineData(ScheduleTypes.Monthly, new int[0], new[] { 29, 31 }, 0, "каждый месяц 29-го и в последний день в 02:00 и 14:00")]
     [InlineData(ScheduleTypes.Interval, new[] { 6, 7 }, new int[0], 30, "каждые 30 мин по выходным")]
     [InlineData(ScheduleTypes.Manual, new int[0], new int[0], 0, "по запросу")]
     public void Schedules_are_described(string type, int[] weekdays, int[] monthDays, int interval, string expected)

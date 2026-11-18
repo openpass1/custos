@@ -641,6 +641,9 @@ static partial class Strings
     /// <summary>last day of the month</summary>
     public static string LastDayOfMonth => Get(nameof(LastDayOfMonth));
 
+    /// <summary>last day</summary>
+    public static string LastDayShort => Get(nameof(LastDayShort));
+
     /// <summary>Comment</summary>
     public static string EditorComment => Get(nameof(EditorComment));
 
@@ -848,7 +851,7 @@ static partial class Strings
     /// <summary>Days of the month:</summary>
     public static string ScheduleMonthDays => Get(nameof(ScheduleMonthDays));
 
-    /// <summary>Numbers from 1 to 31 separated by commas, for example 1, 15. A month without that day (31 in April) has no ...</summary>
+    /// <summary>Click the box and tick one or more days. A month without the chosen day (30 February) runs on its last day,...</summary>
     public static string ScheduleMonthDaysHelp => Get(nameof(ScheduleMonthDaysHelp));
 
     /// <summary>Every:</summary>
@@ -875,16 +878,13 @@ static partial class Strings
     /// <summary>«{0}» is not a time. Use HH:MM, for example 21:30.</summary>
     public static string ErrorBadTime => Get(nameof(ErrorBadTime));
 
-    /// <summary>«{0}» is not a day of the month (1 to 31).</summary>
-    public static string ErrorBadMonthDay => Get(nameof(ErrorBadMonthDay));
-
     /// <summary>Enter at least one time.</summary>
     public static string ErrorNoTimes => Get(nameof(ErrorNoTimes));
 
     /// <summary>Tick at least one day of the week.</summary>
     public static string ErrorNoWeekdays => Get(nameof(ErrorNoWeekdays));
 
-    /// <summary>Enter at least one day of the month, or tick «last day of the month».</summary>
+    /// <summary>Choose at least one day of the month.</summary>
     public static string ErrorNoMonthDays => Get(nameof(ErrorNoMonthDays));
 
     /// <summary>ZIP (Deflate)</summary>

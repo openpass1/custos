@@ -551,6 +551,9 @@ static partial class Messages
     /// <summary>the last day</summary>
     public static string DescLastDay => Get(nameof(DescLastDay));
 
+    /// <summary>(on the last day in February)</summary>
+    public static string DescMonthlyFebruary => Get(nameof(DescMonthlyFebruary));
+
     /// <summary>every {0} min</summary>
     public static string DescInterval => Get(nameof(DescInterval));
 

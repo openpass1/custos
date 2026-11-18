@@ -138,10 +138,11 @@ function schedule_label(mixed $schedule): string
         case 'weekly':
             return t('schedule.weekly', ['days' => $days, 'times' => $times]);
         case 'monthly':
-            $monthDays = array_map(
-                fn($d) => $d === -1 ? t('schedule.last_day') : (string) $d,
+            // The 31st is the last day of every month (a month without the chosen day runs on its last day).
+            $monthDays = array_values(array_unique(array_map(
+                fn($d) => $d === -1 || $d === 31 ? t('schedule.last_day') : (string) $d,
                 (array) ($schedule['days_of_month'] ?? [])
-            );
+            )));
             return t('schedule.monthly', ['days' => implode(', ', $monthDays), 'times' => $times]);
         case 'interval':
             return t('schedule.interval', ['minutes' => (int) ($schedule['interval_minutes'] ?? 0)]);

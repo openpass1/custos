@@ -394,7 +394,16 @@ fieldset[disabled] .remove, fieldset[disabled] [data-add-row] { display: none; }
 .row-fields label { font-size: .85rem; color: var(--muted); }
 .row-fields label input, .row-fields label select, .row-fields label textarea { color: var(--text); font-size: .95rem; }
 .row-fields .grow { flex: 1 1 260px; }
-.row-fields.days label.check { min-width: 3.2rem; margin-right: 0; }
+/* Days of a monthly schedule: 1–30 like a calendar page, "last day of the month" across the last row. */
+fieldset.editor .month-days { display: grid; grid-template-columns: repeat(7, 2.5rem); gap: .3rem; margin: .25rem 0 .4rem; }
+fieldset.editor .month-days label.day { position: relative; display: block; margin: 0; }
+fieldset.editor .month-days label.day.last { grid-column: 1 / -1; }
+fieldset.editor .month-days input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+fieldset.editor .month-days span { display: flex; align-items: center; justify-content: center; height: 2.2rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--input-bg); color: var(--text); font-size: .95rem; user-select: none; }
+fieldset.editor .month-days label.day:hover input:not(:checked) + span { border-color: var(--accent); background: var(--hover); }
+fieldset.editor .month-days input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+fieldset.editor .month-days input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+fieldset[disabled] .month-days span { opacity: .6; }
 input.short { width: 8rem; }
 .label-text { display: block; font-size: .85rem; color: var(--muted); margin: .25rem 0; }
 .form-row { position: relative; border: 1px solid var(--border); border-radius: var(--radius); padding: .6rem 4.5rem .2rem .75rem; margin-bottom: .6rem; background: var(--panel-soft); }

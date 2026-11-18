@@ -524,6 +524,8 @@ Also in this version: the logout after inactivity is set on the site, Settings â
 - "Least free space": the page of that machine, scrolled to "Storages", with that destination outlined;
 - "Written in a day": "Runs" for the last 24 hours. The run list now also says how much its runs wrote in all: opened from this tile, the same figure as on the tile.
 
+**Version 1.0.2.** No migrations. Update it with "Update the site to 1.0.2" or `php8.4 bin/update.php`. The days of a monthly schedule in the task and template editors are picked in a small calendar: 1â€“30 and "last day of the month". The 31st is gone; a task with it shows "last day of the month". A month without the chosen day (30 February) runs on its last day: so counts the program from version 1.0.1 on, and so the site expects runs and reports missed ones. A program older than 1.0.1 skips such a month.
+
 ## What to keep in backups
 
 - the `custos` database;

@@ -659,6 +659,9 @@
   <data name="LastDayOfMonth" xml:space="preserve">
     <value>последний день месяца</value>
   </data>
+  <data name="LastDayShort" xml:space="preserve">
+    <value>последний день</value>
+  </data>
   <data name="EditorComment" xml:space="preserve">
     <value>Комментарий</value>
   </data>
@@ -874,7 +877,7 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
     <value>Числа месяца:</value>
   </data>
   <data name="ScheduleMonthDaysHelp" xml:space="preserve">
-    <value>Числа от 1 до 31 через запятую, например 1, 15. В месяце без такого числа (31 апреля) запуска не будет: для конца каждого месяца отметьте «последний день месяца».</value>
+    <value>Нажмите на поле и отметьте одно или несколько чисел. Если в месяце нет выбранного числа (30 февраля), запуск будет в последний день месяца, так что ни один месяц не пропускается. «Последний день месяца» — 28-е, 29-е, 30-е или 31-е, смотря по месяцу.</value>
   </data>
   <data name="ScheduleInterval" xml:space="preserve">
     <value>Каждые:</value>
@@ -900,9 +903,6 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
   <data name="ErrorBadTime" xml:space="preserve">
     <value>«{0}» — не время. Пишите ЧЧ:ММ, например 21:30.</value>
   </data>
-  <data name="ErrorBadMonthDay" xml:space="preserve">
-    <value>«{0}» — не число месяца (от 1 до 31).</value>
-  </data>
   <data name="ErrorNoTimes" xml:space="preserve">
     <value>Укажите хотя бы одно время запуска.</value>
   </data>
@@ -910,7 +910,7 @@ Google Диск, Яндекс Диск, Dropbox — папка в облачно
     <value>Отметьте хотя бы один день недели.</value>
   </data>
   <data name="ErrorNoMonthDays" xml:space="preserve">
-    <value>Укажите хотя бы одно число месяца или отметьте «последний день месяца».</value>
+    <value>Выберите хотя бы одно число месяца.</value>
   </data>
   <data name="ArchiveZip" xml:space="preserve">
     <value>ZIP (Deflate)</value>

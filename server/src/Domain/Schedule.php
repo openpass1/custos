@@ -150,9 +150,24 @@ final class Schedule
         return match ($type) {
             'daily' => $weekdays === [] || in_array($weekday, $weekdays, true),
             'weekly' => in_array($weekday, $weekdays, true),
-            'monthly' => in_array((int) $day->format('j'), $monthDays, true)
-                || (in_array(-1, $monthDays, true) && $day->format('j') === $day->format('t')),
+            'monthly' => self::isMonthDay($monthDays, $day),
             default => false,
         };
+    }
+
+    /**
+     * $day is one of $monthDays (1–31, -1 = the last day), as the agent counts it: a month without the chosen day
+     * runs on its last day, so the 30th runs on 28 or 29 February and the 31st is the last day of every month.
+     */
+    public static function isMonthDay(array $monthDays, DateTimeImmutable $day): bool
+    {
+        $date = (int) $day->format('j');
+        $last = (int) $day->format('t');
+        foreach ($monthDays as $d) {
+            if ($d === -1 ? $date === $last : (is_int($d) && $d >= 1 && $d <= 31 && $date === min($d, $last))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -54,8 +54,52 @@ public sealed class ScheduleCalculatorTests
         var on31 = new ScheduleOptions { Type = ScheduleTypes.Monthly, Times = ["23:00"], DaysOfMonth = [31] };
 
         Assert.Equal(At(2026, 2, 28, 23, 0), ScheduleCalculator.Next(last, At(2026, 2, 10, 0, 0), Utc));
-        Assert.Equal(At(2026, 5, 31, 23, 0), ScheduleCalculator.Next(on31, At(2026, 4, 1, 0, 0), Utc));
+
+        // A month without the day runs on its last day: the 31st is the last day of every month.
+        Assert.Equal(At(2026, 4, 30, 23, 0), ScheduleCalculator.Next(on31, At(2026, 4, 1, 0, 0), Utc));
+        Assert.Equal(At(2026, 5, 31, 23, 0), ScheduleCalculator.Next(on31, At(2026, 4, 30, 23, 0), Utc));
     }
+
+    [Theory]
+    [InlineData(29, 2027, 28)]
+    [InlineData(29, 2028, 29)]
+    [InlineData(30, 2027, 28)]
+    [InlineData(30, 2028, 29)]
+    public void Monthly_on_the_29th_or_30th_does_not_skip_February(int day, int year, int februaryDay)
+    {
+        var schedule = new ScheduleOptions { Type = ScheduleTypes.Monthly, Times = ["02:00"], DaysOfMonth = [day] };
+
+        var runs = ScheduleCalculator.Upcoming(schedule, At(year, 1, 1, 0, 0), Utc, 12);
+
+        Assert.Equal(Enumerable.Range(1, 12), runs.Select(r => r.Month));
+        Assert.Equal(At(year, 1, day, 2, 0), runs[0]);
+        Assert.Equal(At(year, 2, februaryDay, 2, 0), runs[1]);
+        Assert.Equal(At(year, 3, day, 2, 0), runs[2]);
+    }
+
+    [Fact]
+    public void Monthly_runs_once_on_a_day_chosen_twice()
+    {
+        // 30 and the last day: one run on 28 February and on 30 April, two runs in March.
+        var schedule = new ScheduleOptions { Type = ScheduleTypes.Monthly, Times = ["02:00"], DaysOfMonth = [30, -1] };
+
+        var runs = ScheduleCalculator.Upcoming(schedule, At(2027, 2, 1, 0, 0), Utc, 4);
+
+        Assert.Equal([At(2027, 2, 28, 2, 0), At(2027, 3, 30, 2, 0), At(2027, 3, 31, 2, 0), At(2027, 4, 30, 2, 0)], runs);
+    }
+
+    [Theory]
+    [InlineData(15, 2027, 2, 15, true)]
+    [InlineData(15, 2027, 2, 16, false)]
+    [InlineData(31, 2027, 4, 30, true)]
+    [InlineData(31, 2027, 5, 30, false)]
+    [InlineData(30, 2027, 2, 28, true)]
+    [InlineData(29, 2028, 2, 28, false)]
+    [InlineData(-1, 2028, 2, 29, true)]
+    [InlineData(0, 2027, 2, 1, false)]
+    [InlineData(32, 2027, 1, 31, false)]
+    public void A_day_of_the_month_falls_on_the_last_day_of_a_shorter_month(int monthDay, int year, int month, int day, bool expected) =>
+        Assert.Equal(expected, ScheduleCalculator.IsMonthDay(monthDay, new DateTime(year, month, day)));
 
     [Fact]
     public void Interval_counts_from_local_midnight()

@@ -343,8 +343,7 @@ public sealed partial class BackupEngine
         {
             reason = Messages.FullBecauseWeekday;
         }
-        else if (task.ForceFull.MonthDay is { } monthDay && !fullToday
-            && (local.Day == monthDay || (monthDay == -1 && local.Day == DateTime.DaysInMonth(local.Year, local.Month))))
+        else if (task.ForceFull.MonthDay is { } monthDay && !fullToday && Scheduling.ScheduleCalculator.IsMonthDay(monthDay, local))
         {
             reason = Messages.FullBecauseMonthDay;
         }

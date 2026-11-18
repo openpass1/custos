@@ -25,6 +25,13 @@ final class ScheduleTest extends TestCase
         $monthly = ['type' => 'monthly', 'times' => ['02:00'], 'days_of_month' => [-1]];
         $this->assertSame('2026-10-31T02:00:00Z', gmdate('Y-m-d\TH:i:s\Z', Schedule::next($monthly, 'UTC', $after)));
 
+        // A month without the chosen day runs on its last day: no month is skipped.
+        $on30 = ['type' => 'monthly', 'times' => ['02:00'], 'days_of_month' => [30]];
+        $this->assertSame('2027-02-28T02:00:00Z', gmdate('Y-m-d\TH:i:s\Z', Schedule::next($on30, 'UTC', strtotime('2027-02-01T00:00:00Z'))));
+        $this->assertSame('2028-02-29T02:00:00Z', gmdate('Y-m-d\TH:i:s\Z', Schedule::next($on30, 'UTC', strtotime('2028-02-01T00:00:00Z'))));
+        $on31 = ['type' => 'monthly', 'times' => ['02:00'], 'days_of_month' => [31]];
+        $this->assertSame('2026-11-30T02:00:00Z', gmdate('Y-m-d\TH:i:s\Z', Schedule::next($on31, 'UTC', strtotime('2026-11-01T00:00:00Z'))));
+
         $this->assertNull(Schedule::next(['type' => 'manual'], 'UTC', $after));
     }
 

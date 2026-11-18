@@ -321,10 +321,11 @@ foreach ($errors as $error) {
                 <label><?= e(t('task_form.force_full.month_day')) ?>
                     <select name="force_full[month_day]">
                         <option value=""><?= e(t('task_form.not_set')) ?></option>
-                        <?php for ($d = 1; $d <= 31; $d++): ?>
-                            <option value="<?= $d ?>"<?= selected($d, $force['month_day'] ?? '') ?>><?= $d ?></option>
+                        <?php $forceDay = (string) ($force['month_day'] ?? '') === '31' ? -1 : ($force['month_day'] ?? ''); ?>
+                        <?php for ($d = 1; $d <= 30; $d++): ?>
+                            <option value="<?= $d ?>"<?= selected($d, $forceDay) ?>><?= $d ?></option>
                         <?php endfor ?>
-                        <option value="-1"<?= selected(-1, $force['month_day'] ?? '') ?>><?= e(t('schedule.last_day')) ?></option>
+                        <option value="-1"<?= selected(-1, $forceDay) ?>><?= e(t('schedule.last_day_of_month')) ?></option>
                     </select>
                 </label>
             </div>
@@ -492,12 +493,14 @@ foreach ($errors as $error) {
         </div>
         <div data-show-if="schedule[type]=monthly">
             <span class="label-text"><?= e(t('task_form.schedule.days_of_month')) ?></span>
-            <div class="row-fields days">
-                <?php $monthDays = array_map('intval', (array) ($schedule['days_of_month'] ?? [])); ?>
-                <?php foreach ([...range(1, 31), -1] as $d): ?>
-                    <label class="check"><input type="checkbox" name="schedule[days_of_month][]" value="<?= $d ?>"<?= checked(in_array($d, $monthDays, true)) ?>> <?= $d === -1 ? e(t('schedule.last_day')) : $d ?></label>
+            <?php /* 1–30 like a calendar page, then "last day of the month": a 31 saved by an older version is the last day. */ ?>
+            <div class="month-days">
+                <?php $monthDays = array_map(fn($d) => (int) $d === 31 ? -1 : (int) $d, (array) ($schedule['days_of_month'] ?? [])); ?>
+                <?php foreach ([...range(1, 30), -1] as $d): ?>
+                    <label class="day<?= $d === -1 ? ' last' : '' ?>"><input type="checkbox" name="schedule[days_of_month][]" value="<?= $d ?>"<?= checked(in_array($d, $monthDays, true)) ?>><span><?= $d === -1 ? e(t('schedule.last_day_of_month')) : $d ?></span></label>
                 <?php endforeach ?>
             </div>
+            <p class="note"><?= e(t('task_form.schedule.days_of_month_hint')) ?></p>
         </div>
         <label class="check" data-show-if="schedule[type]!=manual"><input type="checkbox" name="schedule[catch_up]" value="1"<?= checked((bool) ($schedule['catch_up'] ?? true)) ?>> <?= e(t('task_form.schedule.catch_up')) ?></label>
         <p class="note"><?= e(t('task_form.schedule.hint')) ?></p>

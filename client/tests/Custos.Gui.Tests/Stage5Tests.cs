@@ -205,6 +205,21 @@ public sealed class Stage5Tests
             Sta.Pump();
             Save(editor, $"task-editor-destinations-{theme}");
 
+            // A monthly schedule with the calendar of days open under its box.
+            var monthly = Samples.Office();
+            monthly.Schedule = new ScheduleOptions { Type = ScheduleTypes.Monthly, Times = ["23:00"], DaysOfMonth = [1, 15, -1] };
+            using var monthlyEditor = new TaskEditorForm(monitor, monthly, isNew: false);
+            monthlyEditor.Show();
+            Sta.Pump();
+            var schedule = monthlyEditor.Pages.OfType<SchedulePage>().Single();
+            monthlyEditor.SelectPage(schedule);
+            Sta.Pump();
+            var days = Assert.Single(Sta.Find<MonthDaysBox>(schedule));
+            days.OpenCalendar();
+            Save(monthlyEditor, $"task-editor-monthly-{theme}", days.Calendar);
+            days.Calendar?.Close();
+            Sta.Pump();
+
             using var status = new StatusForm(monitor);
             status.Show();
             Sta.Pump();
@@ -221,8 +236,11 @@ public sealed class Stage5Tests
         }
     });
 
-    /// <summary>A picture of the window into CUSTOS_SCREENSHOTS, when it is set.</summary>
-    private static void Save(Form form, string name)
+    /// <summary>
+    /// A picture of the window into CUSTOS_SCREENSHOTS, when it is set; with a drop-down of it (its own window) drawn
+    /// where it is on the screen.
+    /// </summary>
+    private static void Save(Form form, string name, ToolStripDropDown? dropDown = null)
     {
         string? folder = Environment.GetEnvironmentVariable("CUSTOS_SCREENSHOTS");
         if (string.IsNullOrEmpty(folder))
@@ -231,8 +249,21 @@ public sealed class Stage5Tests
         }
 
         Directory.CreateDirectory(folder);
-        using var bitmap = new Bitmap(form.Width, form.Height);
+        var whole = new Rectangle(Point.Empty, form.Size);
+        Rectangle? popup = null;
+        if (dropDown is { Visible: true })
+        {
+            popup = new Rectangle(dropDown.Bounds.X - form.Bounds.X, dropDown.Bounds.Y - form.Bounds.Y, dropDown.Width, dropDown.Height);
+            whole = Rectangle.Union(whole, popup.Value);
+        }
+
+        using var bitmap = new Bitmap(whole.Right, whole.Bottom);
         form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size));
+        if (popup is { } at)
+        {
+            dropDown!.DrawToBitmap(bitmap, at);
+        }
+
         bitmap.Save(Path.Combine(folder, name + ".png"), ImageFormat.Png);
     }
 }
