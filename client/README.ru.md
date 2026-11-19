@@ -96,7 +96,8 @@ Windows 7, 8.1 и .NET 6 Microsoft больше не исправляет, по�
 
 ## macOS
 
-CUSTOS для macOS работает на Mac с процессором Apple (M1 и новее) и macOS 15 Sequoia или новее. Он делает то же, что
+CUSTOS для macOS работает на Mac с процессором Apple (M1 и новее) и на Mac с процессором Intel, с macOS 15 Sequoia
+или новее. Установщик один на оба: он ставит программу, собранную для процессора этого Mac. Он делает то же, что
 на Windows: служба делает копии по расписанию, даже когда никто не вошёл, а окно со значком в строке меню только
 показывает и передаёт команды. Задания, назначения, сайт мониторинга и файл экспорта те же, так что задание можно
 перенести между Windows и Mac.
@@ -149,7 +150,7 @@ sudo /Applications/Custos.app/Contents/Resources/uninstall.sh --all    # и за
 | `/var/run/custos.sock` | Связь окна со службой |
 | `~/Library/Application Support/CUSTOS/` | Размер окна, карточка и столбцы этого пользователя |
 
-**Сборка** (на Mac с процессором Apple, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) и инструментами
+**Сборка** (на Mac с процессором Apple или Intel, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) и инструментами
 командной строки Xcode: `xcode-select --install`):
 
 ```sh

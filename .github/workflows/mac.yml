@@ -1,9 +1,11 @@
 name: macOS client
 
-# Builds and tests CUSTOS for macOS on a Mac of GitHub (Apple silicon): 7z.so from the pinned 7-Zip sources, the
-# tests of the core with it, the tests of the Mac program (as a user and as root, which also covers the keychain and
-# the APFS snapshots), pictures of every window, the installer and the update package. Then the installer is
-# installed on that Mac: the service must start and answer, the window must open, and the uninstaller must remove it.
+# Builds and tests CUSTOS for macOS on two Macs of GitHub, one with Apple silicon and one with Intel: 7z.so from the
+# pinned 7-Zip sources, the tests of the core with it, the tests of the Mac program (as a user and as root, which also
+# covers the keychain and the APFS snapshots), pictures of every window, the installer (one for both kinds of Mac)
+# and the update package. Then the installer is installed on that Mac: it must put the program of this processor,
+# the service must start and answer, the window must open, and the uninstaller must remove it. The files to download
+# come from the Apple silicon Mac; the Intel Mac only adds its pictures.
 on:
   push:
     branches: [main]
@@ -25,8 +27,21 @@ concurrency:
 
 jobs:
   mac:
-    runs-on: macos-15
-    timeout-minutes: 75
+    name: mac (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Apple silicon
+            runner: macos-15
+            arch: arm64
+            files: true
+          - name: Intel
+            runner: macos-15-intel
+            arch: x86_64
+            files: false
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     env:
       VERSION: 0.6.${{ github.run_number }}
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
@@ -88,6 +103,13 @@ jobs:
           test -S /var/run/custos.sock
           codesign --verify --strict --verbose=2 /Applications/Custos.app
           /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' /Applications/Custos.app/Contents/Info.plist | grep -qx "$VERSION"
+          # The installer chose the part of this processor, and only that one.
+          [ "$(uname -m)" = "${{ matrix.arch }}" ] || { echo "This Mac is $(uname -m), not ${{ matrix.arch }}"; exit 1; }
+          echo "The installed program: $(lipo -archs /Applications/Custos.app/Contents/MacOS/Custos)"
+          [ "$(lipo -archs /Applications/Custos.app/Contents/MacOS/Custos)" = "${{ matrix.arch }}" ]
+          pkgutil --pkgs | grep '^org\.custos\.' | tee receipts.txt
+          grep -qx "org.custos.pkg.${{ matrix.arch }}" receipts.txt
+          [ "$(wc -l < receipts.txt | tr -d ' ')" = 1 ]
 
       - name: The installed service answers the window
         working-directory: client
@@ -125,9 +147,10 @@ jobs:
             sleep 1
           done
           if pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos'; then echo "CUSTOS still runs"; exit 1; fi
+          if pkgutil --pkgs | grep '^org\.custos\.'; then echo "The receipt of the installer is still there"; exit 1; fi
 
       - name: Upload the installer
-        if: always()
+        if: always() && matrix.files
         uses: actions/upload-artifact@v6
         with:
           name: CUSTOS-macOS
@@ -136,7 +159,7 @@ jobs:
           retention-days: 14
 
       - name: Upload the update package
-        if: always()
+        if: always() && matrix.files
         uses: actions/upload-artifact@v6
         with:
           name: custos-macos-update
@@ -148,7 +171,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: mac-screenshots
+          name: ${{ matrix.files && 'mac-screenshots' || 'mac-screenshots-intel' }}
           path: mac-shots/
           if-no-files-found: ignore
           retention-days: 14

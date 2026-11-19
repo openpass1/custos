@@ -12,7 +12,7 @@ namespace Custos.Core;
 /// is and updated only in emergencies, so what may not work on those Windows is switched off here instead of being
 /// left half-working: cloud drives (their sign-in needs a current browser), the dark theme (Windows 7 has none),
 /// the 7-Zip update from the site (the site keeps the 64-bit 7-Zip).</item>
-/// <item>macos: the same Custos.Core with the service of src/Custos.Mac, Apple silicon, macOS 15 and later. It is
+/// <item>macos: the same Custos.Core with the service of src/Custos.Mac, Apple silicon and Intel, macOS 15 and later. It is
 /// released together with the standard edition (the same <c>client-v</c> releases, its own package
 /// <c>custos-macos-X.Y.Z.zip</c>); 7-Zip comes inside the program.</item>
 /// </list>

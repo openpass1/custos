@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- CUSTOS for macOS (Apple silicon, macOS 15 and newer): one program in Custos.app with two roles. Started by
+  <!-- CUSTOS for macOS (Apple silicon and Intel, macOS 15 and newer): one program in Custos.app with two roles. Started by
        launchd with "agent" it is the service (root) that does all the work, the same code as CustosService.exe on
        Windows (compiled from src/Custos.Service with its own platform classes in Platform/). Started from the Finder
-       it is the window and the icon in the menu bar, like Custos.exe. Built for osx-arm64 by mac/build-mac.sh; the
+       it is the window and the icon in the menu bar, like Custos.exe. Built for osx-arm64 and osx-x64 by mac/build-mac.sh; the
        tests also build and run it on Linux. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>

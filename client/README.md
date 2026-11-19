@@ -97,7 +97,8 @@ Windows 7 and 8.1 and .NET 6 get no more fixes from Microsoft, so use it only wh
 
 ## macOS
 
-CUSTOS for macOS runs on Macs with Apple silicon (M1 and newer) with macOS 15 Sequoia or newer. It does the same
+CUSTOS for macOS runs on Macs with Apple silicon (M1 and newer) and on Macs with Intel, with macOS 15 Sequoia or
+newer. One installer serves both: it puts on the Mac the program built for its processor. It does the same
 work as on Windows: the service makes the copies on schedule, also when nobody is logged in, and the window with the
 icon in the menu bar only shows and sends commands. The tasks, the destinations, the monitoring site and the export
 file are the same, so a task can move between Windows and a Mac.
@@ -151,7 +152,7 @@ The copies already made are never touched.
 | `/var/run/custos.sock` | The connection between the window and the service |
 | `~/Library/Application Support/CUSTOS/` | Window size, card and columns of this user |
 
-**Build** (on a Mac with Apple silicon, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and the
+**Build** (on a Mac with Apple silicon or Intel, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and the
 command line tools of Xcode: `xcode-select --install`):
 
 ```sh

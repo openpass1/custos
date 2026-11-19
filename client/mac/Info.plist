@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- Custos.app: the window and the menu bar icon; launchd also starts the same program as the service ("agent").
-     mac/build-mac.sh puts the version in place of __VERSION__. -->
+     mac/build-mac.sh puts the version in place of __VERSION__ and the processor of the build (arm64 for Apple silicon,
+     x86_64 for Intel) in place of __ARCH__. -->
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
@@ -33,7 +34,7 @@
   <string>15.0</string>
   <key>LSArchitecturePriority</key>
   <array>
-    <string>arm64</string>
+    <string>__ARCH__</string>
   </array>
   <key>LSApplicationCategoryType</key>
   <string>public.app-category.utilities</string>

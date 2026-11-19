@@ -1,7 +1,8 @@
 #!/bin/bash
 # Builds 7z.so, the 7-Zip library of CUSTOS for macOS, from the sources pinned in mac/7-zip-source.json (the same
 # version as the 7z.dll of Windows, installer/7-zip.json). The download is refused if its SHA-256 differs.
-# On a Mac it builds for Apple silicon (cmpl_mac_arm64.mak); on Linux for the machine itself, for the tests.
+# On a Mac it builds one universal library for Apple silicon and Intel (cmpl_mac_arm64.mak and cmpl_mac_x64.mak, joined
+# by lipo); on Linux for the machine itself, for the tests.
 #
 #   bash client/mac/build-7z.sh <output folder>          the result is <output folder>/7z.so
 set -euo pipefail
@@ -37,8 +38,12 @@ tar -xJf "$work/src.tar.xz" -C "$work/src"
 cd "$work/src/CPP/7zip/Bundles/Format7zF"
 jobs=$( (command -v nproc > /dev/null && nproc) || sysctl -n hw.ncpu)
 if [ "$(uname -s)" = Darwin ]; then
-  make -j"$jobs" -f ../../cmpl_mac_arm64.mak > "$work/build.log" 2>&1 || { tail -n 40 "$work/build.log"; exit 1; }
-  built=b/m_arm64/7z.so
+  for arch in arm64 x64; do
+    make -j"$jobs" -f "../../cmpl_mac_$arch.mak" > "$work/build-$arch.log" 2>&1 || { tail -n 40 "$work/build-$arch.log"; exit 1; }
+  done
+  lipo -create -output "$work/7z.so" b/m_arm64/7z.so b/m_x64/7z.so
+  lipo -verify_arch arm64 x86_64 "$work/7z.so"
+  built="$work/7z.so"
 else
   make -j"$jobs" -f ../../cmpl_gcc.mak > "$work/build.log" 2>&1 || { tail -n 40 "$work/build.log"; exit 1; }
   built=b/g/7z.so

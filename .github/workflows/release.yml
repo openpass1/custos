@@ -203,7 +203,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # CUSTOS for macOS (Apple silicon, macOS 15 and newer): the installer and the update package. The "macOS client"
+  # CUSTOS for macOS (Apple silicon and Intel, macOS 15 and newer): one installer for both and the update package. The "macOS client"
   # workflow tests the same files, installs them on its Mac and removes them again.
   macos:
     needs: check
@@ -324,7 +324,7 @@ jobs:
 
           **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
 
-          **macOS:** \`Custos-$VERSION.pkg\` for Macs with Apple silicon (M1 and newer), macOS 15 or newer. It is not signed by Apple yet: the first time, open it with right click → **Open**. After installing, give **Custos** Full Disk Access in System Settings → Privacy & Security, see the [guide]($blob/client/README.md#macos). Updates: from GitHub the same way, or from a monitoring site 1.3.0 or newer (\`custos-macos-$VERSION.zip\`).
+          **macOS:** \`Custos-$VERSION.pkg\`, one installer for Macs with Apple silicon (M1 and newer) and with Intel, macOS 15 or newer. It is not signed by Apple yet: the first time, open it with right click → **Open**. After installing, give **Custos** Full Disk Access in System Settings → Privacy & Security, see the [guide]($blob/client/README.md#macos). Updates: from GitHub the same way, or from a monitoring site 1.3.0 or newer (\`custos-macos-$VERSION.zip\`).
 
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
 

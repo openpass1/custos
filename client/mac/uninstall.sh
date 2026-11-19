@@ -20,7 +20,10 @@ done
 
 /bin/rm -f "/Library/LaunchDaemons/$label.plist" /Library/LaunchAgents/org.custos.menu.plist /var/run/custos.sock
 /bin/rm -rf /Applications/Custos.app
-/usr/sbin/pkgutil --forget org.custos.pkg > /dev/null 2>&1
+# The receipt of the part this Mac got (org.custos.pkg.arm64 or org.custos.pkg.x86_64); org.custos.pkg = the first builds.
+for receipt in org.custos.pkg.arm64 org.custos.pkg.x86_64 org.custos.pkg; do
+  /usr/sbin/pkgutil --forget "$receipt" > /dev/null 2>&1
+done
 
 if [ "${1:-}" = --all ]; then
   /bin/rm -rf "/Library/Application Support/CUSTOS"
