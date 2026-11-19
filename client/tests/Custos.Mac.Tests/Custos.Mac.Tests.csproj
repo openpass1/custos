@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests of CUSTOS for macOS (src/Custos.Mac): its platform classes, the state of the menu bar icon, and the service
+    itself, started inside the test process with its data in a folder of its own and its socket in /tmp. They run on
+    macOS (.github/workflows/mac.yml) and on Linux. What needs root or a Mac is skipped elsewhere.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Custos.Mac.Tests</RootNamespace>
+    <!-- Test names describe behaviour with underscores; async tests need no ConfigureAwait. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Custos.Mac\Custos.Mac.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

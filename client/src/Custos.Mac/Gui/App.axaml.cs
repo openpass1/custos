@@ -104,18 +104,18 @@ internal sealed partial class App : Application, IDisposable
     }
 
     /// <summary>The state of the icon and the text of the first line of its menu (the tooltip of the tray icon of Windows).</summary>
-    internal static (MenuBarState State, string Text) Describe(ServiceMonitor monitor)
+    internal static (MenuBarState State, string Text) Describe(ServiceMonitor monitor) =>
+        Describe(monitor.Status.State, monitor.Snapshot, monitor.Progress);
+
+    internal static (MenuBarState State, string Text) Describe(ServiceState service, AgentSnapshot? snapshot, RunProgressEvent? progress)
     {
-        var status = monitor.Status;
-        var snapshot = monitor.Snapshot;
-        if (status.State != ServiceState.Running || snapshot is null)
+        if (service != ServiceState.Running || snapshot is null)
         {
-            return (MenuBarState.Down, ServiceMonitor.Describe(status.State));
+            return (MenuBarState.Down, ServiceMonitor.Describe(service));
         }
 
         if (snapshot.Current is { } current)
         {
-            var progress = monitor.Progress;
             double percent = progress?.RunId == current.RunId ? progress.Progress.Percent : current.Progress?.Percent ?? 0;
             return (MenuBarState.Running, Strings.Format(Strings.TrayRunning, current.TaskName, (int)Math.Floor(percent)));
         }

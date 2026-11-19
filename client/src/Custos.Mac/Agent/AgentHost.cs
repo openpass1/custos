@@ -16,7 +16,8 @@ namespace Custos.Service;
 /// </summary>
 internal static class AgentHost
 {
-    public static async Task<int> RunAsync(string[] args)
+    /// <param name="stop">Stops the service as SIGTERM does; for the tests, which run it inside their own process.</param>
+    public static async Task<int> RunAsync(string[] args, CancellationToken stop = default)
     {
         var runMode = args.Contains("--launchd", StringComparer.Ordinal) ? RunMode.Service : RunMode.Console;
         Log.Logger = LoggingSetup.CreateLogger(writeToConsole: runMode == RunMode.Console);
@@ -45,7 +46,7 @@ internal static class AgentHost
 
             using var host = builder.Build();
             var agent = host.Services.GetRequiredService<AgentService>();
-            await host.RunAsync().ConfigureAwait(false);
+            await host.RunAsync(stop).ConfigureAwait(false);
 
             // The agent could not start (the error is in the log): launchd starts the job again (KeepAlive).
             return agent.ExecuteTask is { IsFaulted: true } ? 1 : 0;
