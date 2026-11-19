@@ -81,13 +81,13 @@ jobs:
             [ -S /var/run/custos.sock ] && break
             sleep 1
           done
-          sudo launchctl print system/org.custos.agent | head -n 25
+          sudo launchctl print system/org.custos.agent > launchd-agent.txt 2>&1 || true
+          head -n 25 launchd-agent.txt
+          sudo ls -la "/Library/Application Support/CUSTOS" "/Library/Application Support/CUSTOS/logs" || true
+          sudo cat "/Library/Application Support/CUSTOS/logs/launchd.log" || true
           test -S /var/run/custos.sock
           codesign --verify --strict --verbose=2 /Applications/Custos.app
           /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' /Applications/Custos.app/Contents/Info.plist | grep -qx "$VERSION"
-          sleep 5
-          sudo cat "/Library/Application Support/CUSTOS/logs/launchd.log" || true
-          sudo ls -la "/Library/Application Support/CUSTOS" "/Library/Application Support/CUSTOS/logs"
 
       - name: The installed service answers the window
         working-directory: client
@@ -100,12 +100,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p mac-shots
+          # The installer already started the menu bar icon for the user at the screen; open brings up its window
+          # (or starts the program if the icon is not there). The service is the process with "agent".
+          window() { ps -axo args= | grep '^/Applications/Custos.app/Contents/MacOS/Custos' | grep -v ' agent' || true; }
           open -a /Applications/Custos.app
           sleep 12
-          pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos' || { echo "The window did not start"; exit 1; }
+          ps -axo pid,user,args | grep '[C]ustos.app/Contents/MacOS/Custos' || true
+          [ -n "$(window)" ] || { echo "The window did not start"; exit 1; }
           screencapture -x mac-shots/real-mac-screen.png || echo "No screen picture (the runner has no screen access)."
           # The program must still run after its window and menu bar icon came up.
-          pgrep -f '/Applications/Custos.app/Contents/MacOS/Custos$' > /dev/null || { echo "The window closed by itself"; exit 1; }
+          sleep 3
+          [ -n "$(window)" ] || { echo "The window closed by itself"; exit 1; }
 
       - name: Remove it with the uninstaller
         run: |
@@ -113,13 +118,13 @@ jobs:
           sudo /Applications/Custos.app/Contents/Resources/uninstall.sh --all
           test ! -e /Applications/Custos.app
           test ! -e /Library/LaunchDaemons/org.custos.agent.plist
-          ! sudo launchctl print system/org.custos.agent > /dev/null 2>&1
+          if sudo launchctl print system/org.custos.agent > /dev/null 2>&1; then echo "The service is still loaded"; exit 1; fi
           # The programs were asked to quit; give them a few seconds.
           for i in $(seq 1 15); do
             pgrep -f '/Applications/Custos.app/Contents/MacOS/Custos' > /dev/null || break
             sleep 1
           done
-          ! pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos'
+          if pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos'; then echo "CUSTOS still runs"; exit 1; fi
 
       - name: Upload the installer
         if: always()

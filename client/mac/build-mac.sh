@@ -35,8 +35,10 @@ fi
 file "$out/7z/7z.so"
 
 step "The program $version"
+# One file: Contents/MacOS of a signed bundle may hold only code (Mach-O). The .NET assemblies go inside the
+# program, the native libraries (Avalonia, Skia, SQLite) stay next to it.
 dotnet publish "$client/src/Custos.Mac/Custos.Mac.csproj" -c Release -r osx-arm64 --self-contained true \
-  -p:Version="$version" -p:UseAppHost=true -o "$work/publish" -nologo
+  -p:Version="$version" -p:UseAppHost=true -p:PublishSingleFile=true -p:DebugType=none -o "$work/publish" -nologo
 
 step "Custos.app"
 root="$work/root"
@@ -56,11 +58,15 @@ cp "$here/org.custos.menu.plist" "$root/Library/LaunchAgents/org.custos.menu.pli
 plutil -lint "$root/Library/LaunchDaemons/org.custos.agent.plist" "$root/Library/LaunchAgents/org.custos.menu.plist"
 
 step "Ad-hoc signature"
-# Every Mach-O file first (the program, the libraries of .NET, Avalonia and 7-Zip), then the bundle.
-find "$app/Contents/MacOS" -type f | while read -r f; do
-  if file -b "$f" | grep -q 'Mach-O'; then
-    codesign --force --sign - --timestamp=none "$f"
-  fi
+others=$(find "$app/Contents/MacOS" -type f | while read -r f; do file -b "$f" | grep -q 'Mach-O' || echo "$f"; done)
+if [ -n "$others" ]; then
+  echo "Contents/MacOS may hold only programs and libraries; these are not:" >&2
+  echo "$others" >&2
+  exit 1
+fi
+# The libraries first (Avalonia, Skia, SQLite, 7-Zip), then the bundle, which signs the program itself with them.
+find "$app/Contents/MacOS" -type f ! -path "$app/Contents/MacOS/Custos" | while read -r f; do
+  codesign --force --sign - --timestamp=none "$f"
 done
 codesign --force --sign - --timestamp=none "$app"
 codesign --verify --strict --verbose=2 "$app"
