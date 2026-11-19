@@ -70,9 +70,37 @@ final class TaskForm
     /**
      * @param array<string, array> $credentials accounts the task may use, by id: {id, kind, user, domain, has_secret}
      * @param bool $template a template: accounts get no passwords
+     * @param bool $legacy a task of a machine with the edition for Windows 7 and 8.1: no cloud drives
      */
-    private function __construct(private readonly array $credentials, private readonly bool $template)
+    private function __construct(private readonly array $credentials, private readonly bool $template, private readonly bool $legacy = false)
     {
+    }
+
+    /**
+     * The kinds of destinations a machine can write to: the edition for Windows 7 and 8.1 has no cloud drives.
+     *
+     * @return list<string>
+     */
+    public static function destinationKinds(bool $legacy): array
+    {
+        return $legacy ? array_values(array_diff(self::DESTINATION_KINDS, self::CLOUD_KINDS)) : self::DESTINATION_KINDS;
+    }
+
+    /**
+     * The cloud drive kinds a task writes to.
+     *
+     * @return list<string>
+     */
+    public static function cloudKinds(array $task): array
+    {
+        $kinds = [];
+        foreach ((array) ($task['destinations'] ?? []) as $d) {
+            $kind = is_array($d) ? (string) ($d['kind'] ?? '') : '';
+            if (in_array($kind, self::CLOUD_KINDS, true)) {
+                $kinds[] = $kind;
+            }
+        }
+        return array_values(array_unique($kinds));
     }
 
     /** A new task with the defaults of A.9. */
@@ -136,9 +164,9 @@ final class TaskForm
      *
      * @param array<string, array> $credentials accounts by id
      */
-    public static function parse(array $base, array $post, array $credentials, bool $template = false): self
+    public static function parse(array $base, array $post, array $credentials, bool $template = false, bool $legacy = false): self
     {
-        $form = new self($credentials, $template);
+        $form = new self($credentials, $template, $legacy);
         $form->view = $form->read($base, $post);
         return $form;
     }
@@ -330,6 +358,9 @@ final class TaskForm
             $item = $known[$id] ?? ['id' => Crypto::uuid4()];
             $kind = $this->choice($row, 'kind', self::DESTINATION_KINDS);
             $what = $this->label('task_form.destination', $n);
+            if ($this->legacy && in_array($kind, self::CLOUD_KINDS, true)) {
+                $this->error('task_form.error.cloud_legacy', ['what' => $what]);
+            }
             $path = trim(self::str($row, 'path'));
             $item = array_replace($item, [
                 'kind' => $kind,

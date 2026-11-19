@@ -7,8 +7,13 @@
  * @var bool $templateMode a template: accounts get no passwords here
  * @var bool $readOnly
  * @var list<array{key: string, params: array}> $errors
+ * @var ?array $agent the machine of the task (not for templates)
  */
+use Custos\Domain\Agents;
 use Custos\Domain\TaskForm;
+
+// The edition for Windows 7 and 8.1 has no cloud drives: they are not offered for its machines.
+$legacy = !$templateMode && isset($agent) && is_array($agent) && Agents::isLegacy($agent);
 
 $sub = function (string $key) use ($task): array {
     $value = $task[$key] ?? [];
@@ -115,7 +120,7 @@ $sourceRow = function (string $i, array $item) use ($credentialField, $pathExamp
     <?php return (string) ob_get_clean();
 };
 
-$destinationRow = function (string $i, array $item) use ($credentialField, $pathExample): string {
+$destinationRow = function (string $i, array $item) use ($credentialField, $pathExample, $legacy): string {
     $prefix = "destinations[$i]";
     $kind = (string) ($item['kind'] ?? 'local');
     $field = fn(string $name) => e((string) ($item[$name] ?? ''));
@@ -126,6 +131,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
             <label><?= e(t('task_form.kind')) ?>
                 <select name="<?= e($prefix) ?>[kind]" data-destination-kind>
                     <?php foreach (TaskForm::DESTINATION_KINDS as $k): ?>
+                        <?php if (!in_array($k, TaskForm::destinationKinds($legacy), true) && $k !== $kind) { continue; } ?>
                         <option value="<?= e($k) ?>"<?= selected($k, $kind) ?>><?= e(t('task_form.destination.kind.' . $k)) ?></option>
                     <?php endforeach ?>
                 </select>

@@ -1,5 +1,9 @@
 ﻿; CUSTOS installer. Built by build.ps1, which passes the defines below.
 ; Section 10.1 of docs/CUSTOS-client.md.
+;
+; Legacy (build.ps1 -Legacy): the edition for Windows 7 SP1 and 8.1 (CustosEdition.cs). A 32-bit program for .NET 6,
+; so Setup runs in 32-bit mode everywhere and installs into Program Files (x86) on 64-bit Windows; the 32-bit .NET 6
+; Desktop Runtime goes inside instead of .NET 10. The same AppId and service: one CUSTOS per computer.
 
 #if VER < EncodeVer(6, 3, 0)
   #error Inno Setup 6.3 or newer is required
@@ -18,6 +22,14 @@
   #define OutputDir "..\artifacts\installer"
 #endif
 
+#ifdef Legacy
+  #define RuntimeName ".NET 6 Desktop Runtime"
+  #define SetupBaseName "CUSTOS-Legacy-Setup-"
+#else
+  #define RuntimeName ".NET 10 Desktop Runtime"
+  #define SetupBaseName "CUSTOS-Setup-"
+#endif
+
 #define ServiceName "CustosService"
 #define EventSource "CUSTOS"
 
@@ -25,18 +37,27 @@
 AppId={{E3419532-55F2-4A91-A19E-0E603322B4C9}
 AppName=CUSTOS
 AppVersion={#AppVersion}
+#ifdef Legacy
+AppVerName=CUSTOS {#AppVersion} (Windows 7, 8.1)
+#else
 AppVerName=CUSTOS {#AppVersion}
+#endif
 AppPublisher=CUSTOS contributors
 VersionInfoVersion={#FileVersion}
 DefaultDirName={autopf}\CUSTOS
 DisableDirPage=yes
 DisableProgramGroupPage=yes
+#ifdef Legacy
+; Windows 7 SP1, Server 2008 R2 SP1 and later; Windows 8 (not 8.1) is refused in InitializeSetup.
+MinVersion=6.1sp1
+#else
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
+#endif
 PrivilegesRequired=admin
 OutputDir={#OutputDir}
-OutputBaseFilename=CUSTOS-Setup-{#AppVersion}
+OutputBaseFilename={#SetupBaseName}{#AppVersion}
 SetupIconFile=..\src\Custos.Gui\Resources\custos.ico
 ; The GPL is shown and must be accepted: CUSTOS comes without any warranty (sections 15 and 16).
 LicenseFile=..\..\LICENSE
@@ -59,8 +80,18 @@ Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"; InfoBeforeFile: "pri
 [CustomMessages]
 en.LaunchGui=Start the CUSTOS interface
 ru.LaunchGui=Запустить интерфейс CUSTOS
-en.RuntimeFailed=Installing the .NET 10 Desktop Runtime failed (code %1). CUSTOS cannot run without it.
-ru.RuntimeFailed=Не удалось установить .NET 10 Desktop Runtime (код %1). Без него CUSTOS не работает.
+en.RuntimeFailed=Installing the {#RuntimeName} failed (code %1). CUSTOS cannot run without it.
+ru.RuntimeFailed=Не удалось установить {#RuntimeName} (код %1). Без него CUSTOS не работает.
+#ifdef Legacy
+en.NeedsWindows81=This CUSTOS does not run on Windows 8: .NET 6 needs Windows 8.1. Update Windows 8 to 8.1 (a free update from Microsoft) and run the setup again.
+ru.NeedsWindows81=Эта версия CUSTOS не работает в Windows 8: для .NET 6 нужна Windows 8.1. Обновите Windows 8 до 8.1 (бесплатное обновление от Microsoft) и запустите установку снова.
+en.NeedsKb3063858=Windows 7 lacks the update KB3063858 that .NET 6 needs. Install it (https://support.microsoft.com/help/3063858) or all the Windows updates, restart the computer and run the setup again.
+ru.NeedsKb3063858=В Windows 7 нет обновления KB3063858, без которого .NET 6 не работает. Установите его (https://support.microsoft.com/help/3063858) или все обновления Windows, перезагрузите компьютер и запустите установку снова.
+en.NeedsUcrt=Windows lacks the Universal C Runtime that .NET 6 needs. Install the update KB2999226 (https://support.microsoft.com/help/2999226) or the Microsoft Visual C++ 2015-2019 Redistributable x86, restart the computer and run the setup again.
+ru.NeedsUcrt=В Windows нет универсальной библиотеки C (Universal C Runtime), без которой .NET 6 не работает. Установите обновление KB2999226 (https://support.microsoft.com/help/2999226) или Microsoft Visual C++ 2015-2019 Redistributable x86, перезагрузите компьютер и запустите установку снова.
+en.StandardIsBetter=This is CUSTOS for Windows 7 and 8.1: 32-bit, on .NET 6, without cloud drives. On this Windows the standard CUSTOS works better: 64-bit, on a supported .NET, with every feature.%n%nInstall the edition for Windows 7 and 8.1 anyway?
+ru.StandardIsBetter=Это CUSTOS для Windows 7 и 8.1: 32-битный, на .NET 6, без облачных дисков. В этой Windows лучше работает обычный CUSTOS: 64-битный, на поддерживаемой .NET, со всеми возможностями.%n%nВсё равно установить версию для Windows 7 и 8.1?
+#endif
 en.ServiceFailed=The CUSTOS service did not start (code %1).%n%nSee the log files in %2 and the Windows "Application" event log, source CUSTOS.
 ru.ServiceFailed=Служба CUSTOS не запустилась (код %1).%n%nПодробности в журналах в папке %2 и в журнале Windows «Приложение», источник CUSTOS.
 en.ServerTitle=Monitoring server
@@ -154,12 +185,17 @@ function IsDesktopRuntimeInstalled: Boolean;
 var
   FindRec: TFindRec;
 begin
+#ifdef Legacy
+  { The 32-bit runtime: Program Files (x86)\dotnet on 64-bit Windows, Program Files\dotnet on 32-bit Windows. }
+  Result := FindFirst(ExpandConstant('{commonpf32}\dotnet\shared\Microsoft.WindowsDesktop.App\6.*'), FindRec);
+#else
   Result := FindFirst(ExpandConstant('{commonpf64}\dotnet\shared\Microsoft.WindowsDesktop.App\10.*'), FindRec);
+#endif
   if Result then
     FindClose(FindRec);
 end;
 
-{ Installs the .NET 10 Desktop Runtime bundled into setup.exe, so no internet is needed. Returns an error text or ''. }
+{ Installs the {#RuntimeName} bundled into setup.exe, so no internet is needed. Returns an error text or ''. }
 function InstallDesktopRuntime: String;
 var
   FileName, Params: String;
@@ -178,6 +214,45 @@ begin
   { 3010 and 1641 mean "installed, restart recommended": the runtime works without a restart. }
   if (ResultCode <> 0) and (ResultCode <> 3010) and (ResultCode <> 1641) then
     Result := FmtMessage(CustomMessage('RuntimeFailed'), [IntToStr(ResultCode)]);
+end;
+#endif
+
+#ifdef Legacy
+function GetModuleHandle(ModuleName: String): THandle;
+  external 'GetModuleHandleW@kernel32.dll stdcall';
+function GetProcAddress(Module: THandle; ProcName: AnsiString): THandle;
+  external 'GetProcAddress@kernel32.dll stdcall';
+
+{ What .NET 6 needs from Windows (https://learn.microsoft.com/dotnet/core/install/windows): Windows 8.1 rather than 8,
+  on Windows 7 the update KB3063858 (it brings AddDllDirectory, which .NET loads its files with), and the Universal C
+  Runtime (ucrtbase.dll; Setup is 32-bit, so the system folder it sees is the 32-bit one the program will use). Asked before
+  anything else, so that nothing is installed on a Windows where CUSTOS could not start. }
+function InitializeSetup: Boolean;
+var
+  Version: TWindowsVersion;
+  Text: String;
+begin
+  Result := True;
+  Text := '';
+  GetWindowsVersionEx(Version);
+  if (Version.Major = 6) and (Version.Minor = 2) and (Version.ProductType = VER_NT_WORKSTATION) then
+    Text := CustomMessage('NeedsWindows81')
+  else if (Version.Major = 6) and (Version.Minor = 1) and (GetProcAddress(GetModuleHandle('kernel32.dll'), 'AddDllDirectory') = 0) then
+    Text := CustomMessage('NeedsKb3063858')
+  else if not FileExists(ExpandConstant('{sys}\ucrtbase.dll')) then
+    Text := CustomMessage('NeedsUcrt');
+  if Text <> '' then
+  begin
+    Log(Text);
+    SuppressibleMsgBox(Text, mbCriticalError, MB_OK, IDOK);
+    Result := False;
+    Exit;
+  end;
+
+  { Windows 10 and later: the standard edition fits better, unless Windows is 32-bit (the standard edition is 64-bit
+    only). A silent setup goes on. }
+  if (Version.Major >= 10) and IsWin64 then
+    Result := SuppressibleMsgBox(CustomMessage('StandardIsBetter'), mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDYES) = IDYES;
 end;
 #endif
 

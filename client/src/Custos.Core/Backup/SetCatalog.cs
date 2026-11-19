@@ -579,6 +579,7 @@ public static partial class SetCatalog
         LocalStore.Default.DeleteFolder(folder);
     }
 
-    [GeneratedRegex(@"^(.+\.(?:7z|zip))\.(\d{3,})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex VolumeName();
+    private static readonly Regex VolumeNameRegex = new(@"^(.+\.(?:7z|zip))\.(\d{3,})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    private static Regex VolumeName() => VolumeNameRegex;
 }

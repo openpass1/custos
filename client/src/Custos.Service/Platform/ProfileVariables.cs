@@ -20,7 +20,7 @@ internal static class ProfileVariables
         var values = sid is null ? [] : Read(sid);
         return name => values.TryGetValue(name, out string? value) ? value
             : PathVariables.ProfileNames.Contains(name) ? null
-            : Environment.GetEnvironmentVariable(name);
+            : Wow64Paths.Variable(name);
     }
 
     /// <summary>Whether this computer has a profile for the SID (a task from another computer may name one it lacks).</summary>
@@ -28,7 +28,7 @@ internal static class ProfileVariables
     {
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(Path.Combine(ProfileList, sid));
+            using var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(Path.Combine(ProfileList, sid));
             return key?.GetValue("ProfileImagePath") is string { Length: > 0 };
         }
         catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException or ArgumentException)
@@ -43,7 +43,7 @@ internal static class ProfileVariables
         string? profile;
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(Path.Combine(ProfileList, sid));
+            using var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(Path.Combine(ProfileList, sid));
             profile = key?.GetValue("ProfileImagePath") as string;
         }
         catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)
@@ -117,7 +117,7 @@ internal static class ProfileVariables
                     continue;
                 }
 
-                values[name] = PathVariables.ExpandEnvironment(value, n => values.TryGetValue(n, out string? v) ? v : Environment.GetEnvironmentVariable(n));
+                values[name] = PathVariables.ExpandEnvironment(value, n => values.TryGetValue(n, out string? v) ? v : Wow64Paths.Variable(n));
             }
         }
         catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)

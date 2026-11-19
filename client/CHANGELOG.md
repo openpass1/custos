@@ -17,6 +17,8 @@ a version that was never released by itself is not lost.
 ### Added
 - The installer shows a short privacy note before installing: what the program sends over the network and how to turn it off.
 - A quiet **Support the project** link in the status bar of the main window.
+- An edition for Windows 7 SP1 and 8.1 (32 and 64-bit, Windows Server 2008 R2 SP1 and 2012 / 2012 R2 too): `CUSTOS-Legacy-Setup-<version>.exe`, a 32-bit program with the .NET 6 Desktop Runtime inside its setup, released as is as `client-legacy-v…`. It has no cloud drives, no dark theme and no 7-Zip update from the site; with a monitoring site 1.2.0 or newer, the site hides those for such a machine and gives it only update packages of its own (`custos-legacy-<version>.zip`).
+- On 64-bit Windows the edition for Windows 7 and 8.1 reads System32 and the 64-bit registry, takes `%ProgramFiles%` as the 64-bit folder, runs task scripts in the 64-bit cmd and PowerShell, and makes shadow copies through the 64-bit provider, so tasks behave as in the standard edition.
 
 ### Changed
 - Task editor, **Schedule**: the days of a monthly schedule are picked in a drop-down calendar of 1–30 and **last day of the month**, on one line with the time, instead of a text field and a separate box. The 31st is gone: a task with it shows **last day of the month**, which it always meant. The day of a forced full backup on **Basic** offers the same days.

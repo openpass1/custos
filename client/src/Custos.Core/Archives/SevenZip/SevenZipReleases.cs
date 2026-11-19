@@ -20,6 +20,10 @@ public static class SevenZipReleases
 
     private const string DownloadPrefix = "https://github.com/ip7z/7zip/releases/download/";
 
+    /// <summary>The installer that matches this program: <c>7z2606-x64.exe</c> for the 64-bit program, <c>7z2606.exe</c>
+    /// for the 32-bit legacy edition.</summary>
+    internal static string InstallerSuffix => Environment.Is64BitProcess ? "-x64" : string.Empty;
+
     /// <summary>The newest stable release in an answer of <see cref="ApiUrl"/>.</summary>
     /// <exception cref="ArchiveException">There is none, or its x64 installer has no SHA-256 to check it with.</exception>
     public static SevenZipRelease Newest(Stream json)
@@ -65,7 +69,7 @@ public static class SevenZipReleases
             }
 
             string versionText = chosen.GetProperty("tag_name").GetString()!;
-            string installer = string.Create(CultureInfo.InvariantCulture, $"7z{versionText.Replace(".", string.Empty, StringComparison.Ordinal)}-x64.exe");
+            string installer = string.Create(CultureInfo.InvariantCulture, $"7z{versionText.Replace(".", string.Empty, StringComparison.Ordinal)}{InstallerSuffix}.exe");
             if (chosen.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
             {
                 foreach (var asset in assets.EnumerateArray())

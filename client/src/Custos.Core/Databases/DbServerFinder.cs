@@ -169,9 +169,11 @@ public static partial class DbServerFinder
         }
     }
 
-    [GeneratedRegex(@"(?:^|[^0-9.])(\d{1,2}(?:\.\d{1,3}){0,2})(?:[^0-9.]|$)", RegexOptions.CultureInvariant)]
-    private static partial Regex VersionInName();
+    private static readonly Regex VersionInNameRegex = new(@"(?:^|[^0-9.])(\d{1,2}(?:\.\d{1,3}){0,2})(?:[^0-9.]|$)", RegexOptions.CultureInvariant);
 
-    [GeneratedRegex(@"^(ospanel|open ?server|openserver|osp|laragon|xampp|wamp|mysql|mariadb|postgres|postgresql|pgsql)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
-    private static partial Regex InterestingName();
+    private static Regex VersionInName() => VersionInNameRegex;
+
+    private static readonly Regex InterestingNameRegex = new(@"^(ospanel|open ?server|openserver|osp|laragon|xampp|wamp|mysql|mariadb|postgres|postgresql|pgsql)", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+    private static Regex InterestingName() => InterestingNameRegex;
 }

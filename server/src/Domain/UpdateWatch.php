@@ -8,8 +8,8 @@ use Custos\Infra\Time;
 
 /**
  * Keeps an eye on versions (7.1, 7.7, section 8):
- *   - machines with an agent older than the current version: one notice when their number grows or the current
- *     version changes;
+ *   - machines with an agent older than the current version of their edition: one notice when their number grows or
+ *     the current version changes (agent.outdated, legacy.outdated for the edition for Windows 7 and 8.1);
  *   - 7-Zip: once a day the newest release is read from GitHub (ip7z/7zip); when machines have an older 7z.dll, one
  *     notice per new 7-Zip version. The installer is downloaded only when an administrator asks for it.
  *
@@ -39,7 +39,7 @@ final class UpdateWatch
     /** One cron pass. */
     public function pass(int $now): array
     {
-        $stats = ['agents_outdated' => $this->agentNotice()];
+        $stats = ['agents_outdated' => $this->agentNotice('agent'), 'legacy_outdated' => $this->agentNotice('legacy')];
         if ($this->settings->get('sevenzip_check') !== '0') {
             $last = $this->settings->get('sevenzip_checked_at');
             if ($last === '' || Time::unix($last) <= $now - self::CHECK_EVERY_S) {
@@ -145,24 +145,28 @@ final class UpdateWatch
         }
     }
 
-    /** Notice "N machines run an older agent" when the number grows or the current version changes. */
-    private function agentNotice(): int
+    /**
+     * Notice "N machines run an older agent" when the number grows or the current version changes; $kind is the
+     * edition (agent or legacy), each with its own current version and notice.
+     */
+    private function agentNotice(string $kind): int
     {
-        $current = $this->packages->current();
+        $current = $this->packages->current($kind);
         if ($current === null) {
             return 0;
         }
-        $outdated = Packages::outdated($this->agents(), $current['version']);
+        $outdated = Packages::outdated(Packages::fitting($kind, $this->agents()), $current['version']);
         $count = count($outdated);
-        [$version, $notified] = array_pad(explode('|', $this->settings->get('agent_outdated_notified')), 2, '0');
+        $setting = $kind === 'legacy' ? 'legacy_outdated_notified' : 'agent_outdated_notified';
+        [$version, $notified] = array_pad(explode('|', $this->settings->get($setting)), 2, '0');
         if ($version !== $current['version'] || $count < (int) $notified) {
             $notified = '0';
         }
         if ($count > (int) $notified) {
-            $this->notices->add('agent.outdated', count($outdated) === 1 ? $outdated[0]['id'] : null, null,
+            $this->notices->add($kind === 'legacy' ? 'legacy.outdated' : 'agent.outdated', count($outdated) === 1 ? $outdated[0]['id'] : null, null,
                 ['version' => $current['version'], 'n' => $count, 'name' => count($outdated) === 1 ? Agents::name($outdated[0]) : '']);
         }
-        $this->settings->set('agent_outdated_notified', $current['version'] . '|' . $count);
+        $this->settings->set($setting, $current['version'] . '|' . $count);
         return $count;
     }
 
@@ -173,7 +177,7 @@ final class UpdateWatch
         if ($latest === null) {
             return 0;
         }
-        $count = count(Packages::outdated($this->agents(), $latest['version'], 'sevenzip_version'));
+        $count = count(Packages::outdated(Packages::fitting('7zip', $this->agents()), $latest['version'], 'sevenzip_version'));
         if ($count > 0 && $this->settings->get('sevenzip_notified') !== $latest['version']) {
             $this->notices->add('sevenzip.outdated', null, null, ['version' => $latest['version'], 'n' => $count]);
             $this->settings->set('sevenzip_notified', $latest['version']);
@@ -183,6 +187,6 @@ final class UpdateWatch
 
     private function agents(): array
     {
-        return $this->db->all("SELECT id, hostname, display_name, status, agent_version, sevenzip_version FROM agents WHERE status = 'approved'");
+        return $this->db->all("SELECT id, hostname, display_name, status, agent_version, edition, sevenzip_version FROM agents WHERE status = 'approved'");
     }
 }

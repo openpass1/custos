@@ -110,6 +110,12 @@ function status_class(string $status): string
     };
 }
 
+/** The mark of a machine with the edition for Windows 7 and 8.1 (Agents::isLegacy), or nothing for the standard one. */
+function edition_badge(array $agent): string
+{
+    return \Custos\Domain\Agents::isLegacy($agent) ? ' ' . badge('legacy', t('agent.edition.legacy')) : '';
+}
+
 /** A coloured status label. Colours follow section 6.6. */
 function badge(string $status, ?string $label = null): string
 {

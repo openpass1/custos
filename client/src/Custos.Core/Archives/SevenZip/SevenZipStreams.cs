@@ -226,6 +226,6 @@ internal static unsafe partial class Props
         }
     }
 
-    [LibraryImport("ole32.dll")]
-    private static partial int PropVariantClear(PropVariant* value);
+    [DllImport("ole32.dll")]
+    private static extern int PropVariantClear(PropVariant* value);
 }

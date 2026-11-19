@@ -41,6 +41,14 @@ final class ReleasesTest extends TestCase
         $client = Releases::pick($releases, 'client');
         $this->assertSame(['2.0.0', 'custos-2.0.0.zip', null], [$client['version'], $client['zip_name'], $client['sums_url']]);
         $this->assertNull(Releases::pick([], 'server'));
+
+        // The edition for Windows 7 and 8.1: tags client-legacy-v*, never taken for the standard program and back.
+        $releases[] = ['tag_name' => 'client-legacy-v2.1.0', 'assets' => [$asset('custos-legacy-2.1.0.zip')]];
+        $releases[] = ['tag_name' => 'client-legacy-v1.0.0', 'assets' => [$asset('custos-legacy-1.0.0.zip')]];
+        $releases[] = ['tag_name' => 'client-legacy-v3.0.0', 'assets' => [$asset('custos-3.0.0.zip')]];
+        $this->assertSame('2.0.0', Releases::pick($releases, 'client')['version']);
+        $legacy = Releases::pick($releases, 'legacy');
+        $this->assertSame(['2.1.0', 'client-legacy-v2.1.0', 'custos-legacy-2.1.0.zip'], [$legacy['version'], $legacy['tag'], $legacy['zip_name']]);
     }
 
     public function testTablesThatMigrationsChange(): void

@@ -811,7 +811,11 @@ internal sealed class DestinationsPage : EditorPage
     /// <summary>The name template is used: a folder per copy, or archives (always named by date); never a mirror.</summary>
     private bool UsesTemplate => !Context.IsMirror && (_separate.Checked || Context.ArchiveFormat != ArchiveFormats.None);
 
-    internal static string KindText(string kind) => kind switch
+    /// <summary>The name of a destination kind; a cloud drive is marked as missing in the legacy edition.</summary>
+    internal static string KindText(string kind) =>
+        Core.CustosEdition.IsLegacy && DestinationKinds.IsCloudDrive(kind) ? Strings.Format(Strings.KindNotInLegacy, KindName(kind)) : KindName(kind);
+
+    private static string KindName(string kind) => kind switch
     {
         DestinationKinds.Local => Strings.KindLocal,
         DestinationKinds.Unc => Strings.KindUnc,

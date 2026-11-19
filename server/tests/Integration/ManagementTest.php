@@ -260,6 +260,59 @@ final class ManagementTest extends TestCase
             "SELECT status FROM commands WHERE kind = 'update.install' AND payload LIKE '%\"1.0.3\"%'"), 'the command for a deleted package is withdrawn');
     }
 
+    public function testEditionForWindows7TakesOnlyItsOwnPackages(): void
+    {
+        $agent = $this->approvedAgent(['legacy' => true]);
+        $this->assertSame('legacy', $agent['edition'], 'the registration and the heartbeat bring the edition');
+        $packages = $this->app->packages();
+
+        // The same version for both editions: two packages, each with its own file, signature and current mark.
+        $standard = $packages->addAgent($this->package('1.0.1'), 'admin');
+        $legacy = $packages->addAgent($this->package('1.0.1', 1, 'legacy'), 'admin');
+        $this->assertSame(['agent', 'custos-1.0.1.zip'], [$standard['kind'], $standard['file_name']]);
+        $this->assertSame(['legacy', 'custos-legacy-1.0.1.zip'], [$legacy['kind'], $legacy['file_name']]);
+        $this->assertNotSame($standard['signature'], $legacy['signature']);
+        try {
+            $packages->addAgent($this->package('1.0.2', 1, 'future'), 'admin');
+            $this->fail('an unknown edition is refused');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertSame('updates.error.edition', $e->getMessage());
+        }
+        $packages->setCurrent('1.0.1');
+        $this->assertNull($packages->current('legacy'), 'each edition has its own current version');
+        $packages->setCurrent('1.0.1', 'legacy');
+        $this->assertSame('1.0.1', $packages->current('agent')['version']);
+        $this->assertTrue($packages->legacyInUse());
+
+        $this->assertSame(['queued' => [], 'skipped' => [$agent]], $packages->install('agent', '1.0.1', [$agent], self::USER), 'not the standard package');
+        $installer = TestEnv::dir() . '/7z-' . uniqid() . '.exe';
+        file_put_contents($installer, "MZ fake 7-Zip installer\n" . random_bytes(1024));
+        $packages->addSevenZip($installer, '24.09', null, 'upload', 'admin');
+        $this->assertSame([], $packages->install('7zip', '24.09', [$agent], self::USER)['queued'], 'no 7-Zip from the site');
+        $this->assertCount(1, $packages->install('legacy', '1.0.1', [$agent], self::USER)['queued']);
+
+        // The agent checks the "legacy" signature and downloads the legacy file by the same address.
+        $this->agentPass(['legacy' => true]);
+        $agent = $this->app->agents()->find($agent['id']);
+        $this->assertSame('1.0.1', $agent['agent_version']);
+        $this->assertSame('done', $this->app->db()->value("SELECT status FROM commands WHERE kind = 'update.install'"));
+        $this->assertSame((string) file_get_contents($this->app->packages()->file('legacy', '1.0.1')),
+            $this->client()->download('agent/updates/1.0.1')['body']);
+
+        // Deleting the standard package leaves the legacy machine's queued update alone.
+        $packages->addAgent($this->package('1.0.3', 1, 'legacy'), 'admin');
+        $packages->addAgent($this->package('1.0.3'), 'admin');
+        $this->assertCount(1, $packages->install('legacy', '1.0.3', [$agent], self::USER)['queued']);
+        $packages->delete('agent', '1.0.3');
+        $this->assertSame('queued', $this->app->db()->value(
+            "SELECT status FROM commands WHERE kind = 'update.install' AND payload LIKE '%\"1.0.3\"%'"));
+
+        // A template with a cloud drive is not applied to this machine (the task editor refuses it too: TaskFormTest).
+        $template = ['id' => 0, 'revision' => 1, 'credential_list' => [], 'task' => ['destinations' => [['kind' => 'gdrive', 'path' => 'office']]]];
+        $result = $this->app->templates()->apply($template, [$agent], [], self::USER);
+        $this->assertSame('templates.apply.cloud_legacy', $result[0]['error']['key'] ?? null);
+    }
+
     public function testSevenZipReleasesOnGitHub(): void
     {
         $agent = $this->approvedAgent(['sevenzip' => '23.01']);
@@ -386,11 +439,12 @@ final class ManagementTest extends TestCase
     }
 
     /** A test update package made by tools/make-update-package.php. */
-    private function package(string $version, int $protocol = 1): string
+    private function package(string $version, int $protocol = 1, ?string $edition = null): string
     {
         $file = TestEnv::dir() . "/custos-$version-" . uniqid() . '.zip';
         exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/tools/make-update-package.php')
-            . " --version=$version --min-protocol=$protocol --out=" . escapeshellarg($file), $output, $code);
+            . " --version=$version --min-protocol=$protocol" . ($edition === null ? '' : " --edition=$edition")
+            . ' --out=' . escapeshellarg($file), $output, $code);
         $this->assertSame(0, $code, implode("\n", $output));
         return $file;
     }

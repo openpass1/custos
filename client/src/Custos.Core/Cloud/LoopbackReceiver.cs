@@ -52,7 +52,7 @@ public sealed class LoopbackReceiver : IDisposable
                 catch (SocketException)
                 {
                     // No IPv6 on this computer, or the port is taken there: 127.0.0.1 alone will do.
-                    second.Dispose();
+                    second.Stop();
                 }
             }
 
@@ -62,7 +62,7 @@ public sealed class LoopbackReceiver : IDisposable
         {
             foreach (var listener in listeners)
             {
-                listener.Dispose();
+                listener.Stop();
             }
 
             return null;
@@ -112,7 +112,7 @@ public sealed class LoopbackReceiver : IDisposable
         _stop.Cancel();
         foreach (var listener in _listeners)
         {
-            listener.Dispose();
+            listener.Stop();
         }
 
         _stop.Dispose();

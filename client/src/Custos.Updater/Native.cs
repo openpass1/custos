@@ -47,11 +47,11 @@ internal static partial class ServiceManager
             try
             {
                 using var process = Process.GetProcessById(processId);
-                if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
+                if (!process.WaitForExit(30_000))
                 {
                     log.Write($"The service process {processId} did not end: killing it");
                     process.Kill();
-                    process.WaitForExit(TimeSpan.FromSeconds(30));
+                    process.WaitForExit(30_000);
                 }
             }
             catch (ArgumentException)
@@ -131,27 +131,27 @@ internal static partial class ServiceManager
         return status;
     }
 
-    [LibraryImport("advapi32.dll", EntryPoint = "OpenSCManagerW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    private static partial IntPtr OpenSCManager(string? machineName, string? databaseName, uint desiredAccess);
+    [DllImport("advapi32.dll", EntryPoint = "OpenSCManagerW", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr OpenSCManager(string? machineName, string? databaseName, uint desiredAccess);
 
-    [LibraryImport("advapi32.dll", EntryPoint = "OpenServiceW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    private static partial IntPtr OpenService(IntPtr manager, string serviceName, uint desiredAccess);
+    [DllImport("advapi32.dll", EntryPoint = "OpenServiceW", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr OpenService(IntPtr manager, string serviceName, uint desiredAccess);
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool CloseServiceHandle(IntPtr handle);
+    private static extern bool CloseServiceHandle(IntPtr handle);
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool ControlService(IntPtr service, uint control, out ServiceStatus status);
+    private static extern bool ControlService(IntPtr service, uint control, out ServiceStatus status);
 
-    [LibraryImport("advapi32.dll", EntryPoint = "StartServiceW", SetLastError = true)]
+    [DllImport("advapi32.dll", EntryPoint = "StartServiceW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool StartService(IntPtr service, int argumentCount, IntPtr arguments);
+    private static extern bool StartService(IntPtr service, int argumentCount, IntPtr arguments);
 
-    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool QueryServiceStatusEx(IntPtr service, int infoLevel, out ServiceStatusProcess buffer, int bufferSize, out int bytesNeeded);
+    private static extern bool QueryServiceStatusEx(IntPtr service, int infoLevel, out ServiceStatusProcess buffer, int bufferSize, out int bytesNeeded);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct ServiceStatus
@@ -234,26 +234,26 @@ internal static unsafe partial class Sessions
         }
     }
 
-    [LibraryImport("wtsapi32.dll", SetLastError = true)]
+    [DllImport("wtsapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool WTSQueryUserToken(uint sessionId, out IntPtr token);
+    private static extern bool WTSQueryUserToken(uint sessionId, out IntPtr token);
 
-    [LibraryImport("userenv.dll", SetLastError = true)]
+    [DllImport("userenv.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool CreateEnvironmentBlock(out IntPtr environment, IntPtr token, [MarshalAs(UnmanagedType.Bool)] bool inherit);
+    private static extern bool CreateEnvironmentBlock(out IntPtr environment, IntPtr token, [MarshalAs(UnmanagedType.Bool)] bool inherit);
 
-    [LibraryImport("userenv.dll", SetLastError = true)]
+    [DllImport("userenv.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool DestroyEnvironmentBlock(IntPtr environment);
+    private static extern bool DestroyEnvironmentBlock(IntPtr environment);
 
-    [LibraryImport("advapi32.dll", EntryPoint = "CreateProcessAsUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DllImport("advapi32.dll", EntryPoint = "CreateProcessAsUserW", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool CreateProcessAsUser(IntPtr token, string applicationName, char* commandLine, IntPtr processAttributes, IntPtr threadAttributes,
+    private static extern bool CreateProcessAsUser(IntPtr token, string applicationName, char* commandLine, IntPtr processAttributes, IntPtr threadAttributes,
         [MarshalAs(UnmanagedType.Bool)] bool inheritHandles, uint creationFlags, IntPtr environment, string currentDirectory, in StartupInfo startupInfo, out ProcessInformation processInformation);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool CloseHandle(IntPtr handle);
+    private static extern bool CloseHandle(IntPtr handle);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct StartupInfo
