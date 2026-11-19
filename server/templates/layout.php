@@ -58,7 +58,7 @@ $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login']
     <?php endforeach ?>
     <link rel="stylesheet" href="<?= e(asset('app.css')) ?>">
     <?php /* blocking="render": the first frame waits for app.js, so that labels are already in their frames and the
-             content of a new section comes in with its movement (app.css, "From page to page"). */ ?>
+             circle of the press that opened this page goes on from its first frame (app.js, "Ripple"). */ ?>
     <script src="<?= e(asset('app.js')) ?>" defer blocking="render"></script>
     <?php foreach ($scripts as $script): ?>
         <script src="<?= e(asset($script)) ?>" defer></script>

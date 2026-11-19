@@ -6,128 +6,14 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
-// From page to page (app.css, "From page to page"). Where the browser can, the old page dissolves into the new one
-// (a view transition between documents): the menu and the content change together, nothing is drawn in afterwards.
-// The dissolve needs no motion asked to be less (app.css turns it off then).
-const dissolves = 'CSSViewTransitionRule' in window && !still();
-
-// Elsewhere this file runs before the first frame of a page (layout.php: blocking="render"; a browser that does not
-// know it may have drawn the page already, then nothing moves), so the content of a page opened from another page of
-// the site comes in with its movement: html.page-in, and tab-in when the other page is a tab of this one. The same
-// page again (a filter, a saved form, F5, Back) just shows. The marks are taken off after the movement: a live part
-// put in place later must not come in again. A page that the browser dissolved in has no movement of its own.
+// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav) marks
+// it open at once, without waiting for the server; the page comes when it answers, at once, with nothing moving or
+// fading (app.css, "From page to page"). A tab of a page (.tabs) is marked the same way. Ctrl+click and the like open
+// a browser tab and change nothing here. Back to this page from the browser history: the menu and the tabs show this
+// page again.
 (() => {
-    const entry = performance.getEntriesByType('navigation')[0];
-    let from = null;
-    try {
-        from = document.referrer ? new URL(document.referrer) : null;
-    } catch (error) {
-        from = null;
-    }
-    if (still() || !entry || entry.type !== 'navigate' || !from || from.origin !== window.location.origin
-        || from.pathname === window.location.pathname || performance.getEntriesByType('paint').length > 0) {
-        return;
-    }
-    const comeIn = () => {
-        const root = document.documentElement;
-        root.classList.add('page-in');
-        if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
-            root.classList.add('tab-in');
-        }
-        setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
-    };
-    if (dissolves && 'onpagereveal' in window) {
-        window.addEventListener('pagereveal', (event) => {
-            if (!event.viewTransition) {
-                comeIn();
-            }
-        }, { once: true });
-    } else if (!dissolves) {
-        comeIn();
-    }
-})();
-
-// While a page dissolves in, the browser shows a picture of the two pages over it and gives every press to <html>:
-// a quick click on the menu right after the page came (within 0.225 s) did nothing. A press then ends the dissolve at
-// once and goes, with its click, to what is under the pointer, as if the page had been there all along (the circle
-// of the press too).
-(() => {
-    if (!dissolves || !('onpagereveal' in window)) {
-        return;
-    }
-    const root = document.documentElement;
-    let dissolving = null;
-    let target = null;
-    window.addEventListener('pagereveal', (event) => {
-        dissolving = event.viewTransition || null;
-        if (dissolving) {
-            dissolving.finished.finally(() => {
-                dissolving = null;
-            });
-        }
-    }, { once: true });
-    const under = (event) => {
-        const el = document.elementFromPoint(event.clientX, event.clientY);
-        return el && el !== root ? el : null;
-    };
-    document.addEventListener('pointerdown', (event) => {
-        if (!event.isTrusted) {
-            return;
-        }
-        target = null;
-        if (!dissolving || event.target !== root) {
-            return;
-        }
-        dissolving.skipTransition();
-        dissolving = null;
-        const el = under(event);
-        if (!el) {
-            return;
-        }
-        event.stopImmediatePropagation();
-        target = el;
-        el.dispatchEvent(new PointerEvent('pointerdown', {
-            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
-            screenY: event.screenY, button: event.button, buttons: event.buttons, pointerId: event.pointerId,
-            pointerType: event.pointerType, isPrimary: event.isPrimary, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
-            altKey: event.altKey, metaKey: event.metaKey,
-        }));
-    }, true);
-    document.addEventListener('click', (event) => {
-        if (!event.isTrusted) {
-            return;
-        }
-        const from = target;
-        target = null;
-        if (!from || event.target !== root) {
-            return;
-        }
-        const el = under(event);
-        const link = (node) => (node.closest ? node.closest('a[href], button, summary, label') : null);
-        if (!el || (link(el) || el) !== (link(from) || from)) {
-            return;
-        }
-        event.stopImmediatePropagation();
-        el.dispatchEvent(new MouseEvent('click', {
-            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
-            screenY: event.screenY, button: event.button, buttons: event.buttons, detail: event.detail, ctrlKey: event.ctrlKey,
-            shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey,
-        }));
-    }, true);
-})();
-
-// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav). Where
-// the page dissolves into the next one, only the mark of the section clicked lights up (.going): its icon, the old
-// mark and the content change in the dissolve. Elsewhere the section is marked open and the old content goes at
-// once, without waiting for the server; the page comes when it answers. A tab of a page (.tabs) is marked the same
-// way, or left to the dissolve. Ctrl+click and the like open a browser tab and change nothing here. Back to this page
-// from the browser history: the menu and the tabs show this page again. No answer for a few seconds: the content is
-// shown again.
-(() => {
-    const main = document.querySelector('main.sheet');
     let before = null;
     let tabBefore = null;
-    let timer = 0;
     const markTab = (tabs, tab) => {
         for (const other of tabs.querySelectorAll('a')) {
             other.classList.toggle('active', other === tab);
@@ -153,15 +39,6 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) {
             return;
         }
-        if (dissolves) {
-            if (link.hasAttribute('data-nav') && !link.classList.contains('active')) {
-                for (const other of document.querySelectorAll('a[data-nav].going')) {
-                    other.classList.remove('going');
-                }
-                link.classList.add('going');
-            }
-            return;
-        }
         if (!link.hasAttribute('data-nav')) {
             const tabs = link.closest('.tabs');
             if (tabBefore === null) {
@@ -175,18 +52,10 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
             before = open ? open.getAttribute('data-nav') : '';
         }
         mark(link.getAttribute('data-nav'));
-        if (main && !still() && link.pathname !== window.location.pathname) {
-            main.classList.add('leaving');
-            clearTimeout(timer);
-            timer = setTimeout(() => main.classList.remove('leaving'), 4000);
-        }
     });
     window.addEventListener('pageshow', (event) => {
         if (!event.persisted) {
             return;
-        }
-        for (const link of document.querySelectorAll('a[data-nav].going')) {
-            link.classList.remove('going');
         }
         if (tabBefore !== null) {
             markTab(tabBefore[0], tabBefore[1]);
@@ -195,10 +64,6 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         if (before !== null) {
             mark(before);
             before = null;
-            clearTimeout(timer);
-            if (main) {
-                main.classList.remove('leaving');
-            }
         }
     });
 })();
@@ -457,6 +322,65 @@ document.addEventListener('click', async (event) => {
     }, 1600);
 });
 
+// Links and pictures of the site are not dragged. A press on a link that moves 4 pixels or more before it ends (a quick
+// hand on the mouse) started dragging the link, and the click was lost: the menu or a tile did not open. app.css says
+// the same for Chrome and Safari (-webkit-user-drag); this is for Firefox.
+document.addEventListener('dragstart', (event) => {
+    const el = event.target instanceof Element ? event.target : event.target.parentElement;
+    if (el && el.closest('a[href], img')) {
+        event.preventDefault();
+    }
+});
+
+// A press whose release never reached the page. Now and then the browser gives a page the press of the mouse button
+// but not its release, and nothing comes of the click: a click log (a test build of 1.2.1) caught it in Chrome on
+// Windows on about one quick click in ten (links of the menu, rows of a table, the user menu alike), each time about
+// 1.5 s after a page had dissolved in; the press itself was on time. The dissolve is gone, this stays as a safety net:
+// the next move of the mouse shows the button already let go, and if the pointer is still on what was pressed, the
+// site ends the press and clicks it, as the browser would have. Fields, presses with Ctrl and the like, and presses
+// that ended in any other way are left alone.
+(() => {
+    const acts = 'a[href], button, summary, label, [role="button"], [data-dialog], table.row-links tbody tr';
+    let press = null;
+    document.addEventListener('pointerdown', (event) => {
+        press = null;
+        const el = event.target instanceof Element ? event.target : null;
+        if (!event.isTrusted || event.pointerType !== 'mouse' || event.button !== 0 || event.ctrlKey || event.metaKey
+            || event.shiftKey || event.altKey || !el || !el.closest(acts) || el.closest('input, select, textarea, [contenteditable]')) {
+            return;
+        }
+        press = {
+            el, act: el.closest(acts), at: performance.now(), id: event.pointerId,
+            x: event.clientX, y: event.clientY, sx: event.screenX, sy: event.screenY,
+        };
+    }, true);
+    const over = () => {
+        press = null;
+    };
+    for (const name of ['pointerup', 'pointercancel', 'dragstart', 'click', 'contextmenu', 'keydown']) {
+        document.addEventListener(name, over, true);
+    }
+    window.addEventListener('pagehide', over);
+    document.addEventListener('pointermove', (event) => {
+        if (!press || !event.isTrusted || event.pointerType !== 'mouse' || (event.buttons & 1) !== 0) {
+            return;
+        }
+        const p = press;
+        press = null;
+        const age = performance.now() - p.at;
+        const under = document.elementFromPoint(event.clientX, event.clientY);
+        if (age >= 2000 || !p.el.isConnected || !under || under.closest(acts) !== p.act) {
+            return;
+        }
+        const at = {
+            bubbles: true, cancelable: true, composed: true, view: window,
+            clientX: p.x, clientY: p.y, screenX: p.sx, screenY: p.sy, button: 0, buttons: 0,
+        };
+        p.el.dispatchEvent(new PointerEvent('pointerup', { ...at, pointerId: p.id, pointerType: 'mouse', isPrimary: true }));
+        p.el.dispatchEvent(new MouseEvent('click', { ...at, detail: 1 }));
+    }, { capture: true, passive: true });
+})();
+
 // "More" menus (details.dropdown): one open at a time, closed by a click elsewhere or Esc. A menu inside a table that
 // scrolls sideways is placed over the page (position: fixed), so that the edge of the table does not cut it off; it
 // opens upwards when there is no room below. Any menu opens rightwards when there is no room on the left (phones).
@@ -583,9 +507,9 @@ document.addEventListener('change', (event) => {
 // - <main data-live-page="10"> (layout.php, 'live' => 10 in the controller): the page asks for itself again (header
 //   X-Custos-Live) and takes the parts with the same names from the answer, and the counters of the menu and the bell.
 // - [data-live="url"] with data-live-every (dashboard, wall screen): the URL answers {parts: {name: html}, bell, counts}.
-// A part is left as it is for a round while it is in use: a field of it has the focus or was changed (a form being
-// filled in keeps what was typed until it is sent), text in it is selected, a menu of it is open, a form of it is on
-// its way, or a dialog is open over the page. A folded block (details) stays open or closed as the user left it.
+// A part is left as it is for a round while it is in use: it is being pressed (or was a moment ago), a field of it has
+// the focus or was changed (a form being filled in keeps what was typed until it is sent), text in it is selected, a
+// menu of it is open, a form of it is on its way, or a dialog is open over the page. A folded block (details) stays open or closed as the user left it.
 // The requests do not keep the session alive; a page whose session has ended is reloaded so that the login appears.
 // After a round that changed something, "custos:parts" goes to the document for the helpers below.
 (() => {
@@ -687,9 +611,27 @@ document.addEventListener('change', (event) => {
     document.addEventListener('input', touch);
     document.addEventListener('change', touch);
 
+    // A press on a part: the part stays until the press has ended and its click has had time to open what it opens.
+    // Put in place under the pointer, a new copy of the button or tile would not get the end of the press, so the
+    // click would be lost.
+    let pressedOn = null;
+    let pressTimer = 0;
+    document.addEventListener('pointerdown', (event) => {
+        clearTimeout(pressTimer);
+        pressedOn = event.target instanceof Element ? event.target : null;
+    }, true);
+    const pressEnded = () => {
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(() => {
+            pressedOn = null;
+        }, 1000);
+    };
+    document.addEventListener('pointerup', pressEnded, true);
+    document.addEventListener('pointercancel', pressEnded, true);
+
     const inUse = (part) => {
         const focus = document.activeElement;
-        if (part.hasAttribute('data-touched')
+        if ((pressedOn && part.contains(pressedOn)) || part.hasAttribute('data-touched')
             || (focus && part.contains(focus) && focus.matches('input, select, textarea, [contenteditable]'))
             || part.querySelector('details.dropdown[open], form[data-sending]')) {
             return true;
@@ -1335,18 +1277,16 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // Ripple (Material 3): pressing a button, a menu item, a chip, a tile or a section of the menu spreads a soft-edged
-// circle from the pointer. On buttons and the like it shows within 0.4 s, grows for 1.8 s and, once the press has ended
-// (but not sooner than 0.9 s after it began), fades for 1.5 s: four times the Material 3 times, which felt too quick. On
-// the sections of the menu (rail, bottom bar, "More") it keeps the Material 3 times of 1.1.2 (0.1 / 0.45 / 0.225 /
-// 0.375 s); in the narrow rail and the phone's bottom bar it fills the pill around the icon. Tabs have none. A press
-// that opens a page (a section, a link, a button that sends its form) would cut the circle off half-way: the press is
-// handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same section, button
-// or link if the page has it. Nothing of it with less motion asked for.
+// circle from the pointer, with the times of Material 3 (its web ripple): it shows within 0.105 s, grows for 0.45 s
+// and, once the press has ended (but not sooner than 0.225 s after it began), fades for 0.375 s. Slower times were
+// tried in 1.1.3-1.2.0 and made the site feel slow. In the narrow rail and the phone's bottom bar the circle fills the
+// pill around the icon. Tabs have none. A press that opens a page (a section, a link, a button that sends its
+// form) would cut the circle off half-way: the press is handed to the new page (sessionStorage) and the circle goes on
+// there, from where it was, on the same section, button or link if the page has it. Nothing of it with less motion
+// asked for.
 (() => {
     const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .editor-toc a, a.tile, .sr-item';
-    const SLOW = { grow: 1800, press: 900, fade: 1500 };
-    const MENU = { grow: 450, press: 225, fade: 375 };
-    const timesOf = (el) => (el.hasAttribute('data-nav') ? MENU : SLOW);
+    const TIMES = { grow: 450, press: 225, fade: 375 };
     const CARRY = 'custos.ripple';
     // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
     const hostOf = (el) => {
@@ -1363,7 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // The edge of the circle is soft (app.css), so it is drawn that much wider than the farthest corner needs.
         const size = 2 * (Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + Math.max(0.35 * longest, 75));
         const wave = document.createElement('span');
-        wave.className = times === MENU ? 'ripple quick' : 'ripple';
+        wave.className = 'ripple';
         const dot = document.createElement('i');
         dot.style.width = dot.style.height = size + 'px';
         dot.style.left = (x - size / 2) + 'px';
@@ -1408,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const age = Date.now() - carried.at;
         const el = age >= 0
             ? [...document.querySelectorAll(hosts)].find((one) => usable(one) && signature(one) === carried.key && one.getClientRects().length > 0) : null;
-        const times = el ? timesOf(el) : null;
+        const times = TIMES;
         const wave = el && age < times.press + times.grow ? spread(hostOf(el), carried.x, carried.y, age, times) : null;
         if (wave) {
             // It was already showing on the page before: it shows at once here, without fading in again.
@@ -1431,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!usable(el)) {
             return;
         }
-        const times = timesOf(el);
+        const times = TIMES;
         const host = hostOf(el);
         const box = host.getBoundingClientRect();
         const x = event.clientX - box.left;
