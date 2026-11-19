@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Opens every window of CUSTOS for macOS (src/Custos.Mac) with the made-up tasks on Avalonia's headless platform and
+    draws them into PNG pictures: no screen and no Mac needed. A window that fails to open, or an icon that is missing,
+    makes it end with an error. Run by .github/workflows/mac.yml with the folder for the pictures as its only argument.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CustosMacShots</AssemblyName>
+    <RootNamespace>Custos.Mac.Shots</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Custos.Mac\Custos.Mac.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" />
+  </ItemGroup>
+
+</Project>

@@ -33,7 +33,6 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.Controls.DataGrid" />
   </ItemGroup>
 
   <!-- The service: the agent of Windows as it is. -->
@@ -51,11 +50,23 @@
     <Compile Include="..\Custos.Gui\ServiceMonitor.cs" Link="Gui\Shared\ServiceMonitor.cs" />
     <Compile Include="..\Custos.Gui\UiState.cs" Link="Gui\Shared\UiState.cs" />
     <EmbeddedResource Include="..\Custos.Gui\Resources\Strings.resx" Link="Gui\Shared\Strings.resx" LogicalName="Custos.Gui.Resources.Strings.resources" />
-    <EmbeddedResource Include="..\Custos.Gui\Resources\Strings.ru.resx" Link="Gui\Shared\Strings.ru.resx" LogicalName="Custos.Gui.Resources.Strings.ru.resources" />
+    <EmbeddedResource Include="..\Custos.Gui\Resources\Strings.ru.resx" Link="Gui\Shared\Strings.ru.resx" LogicalName="Custos.Gui.Resources.Strings.ru.resources" WithCulture="true" Culture="ru" />
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\**\*.txt" />
+  </ItemGroup>
+
+  <!-- Debug symbols are of no use in the package; those of Skia and HarfBuzz alone are 100 MB. -->
+  <Target Name="DropSymbolsFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Custos.Mac.Tests" />
+    <InternalsVisibleTo Include="CustosMacShots" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,288 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="using:Custos.Mac.Gui">
+
+  <!-- Type scale, panes, status labels and other pieces of Material 3 used by the window. -->
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainer}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="FontFamily" Value="avares://Custos/Assets/Fonts#Roboto" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.headline">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="LineHeight" Value="28" />
+  </Style>
+  <Style Selector="TextBlock.var">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="TextBlock.small">
+    <Setter Property="FontSize" Value="12.5" />
+  </Style>
+  <Style Selector="TextBlock.key">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0.4" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="TextBlock.cell">
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="Margin" Value="12,0" />
+  </Style>
+  <Style Selector="TextBlock.num">
+    <Setter Property="FontFeatures" Value="+tnum" />
+  </Style>
+
+  <!-- Panes: rounded surfaces on the darker frame, like the site's content pane. -->
+  <Style Selector="Border.pane">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.divider">
+    <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.vsep">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Margin" Value="8,0" />
+    <Setter Property="Background" Value="{DynamicResource OutlineVariant}" />
+  </Style>
+
+  <!-- Extended FAB «Создать». -->
+  <!-- The shadow is a layer of its own under the button: a Border with BoxShadow did not draw its content in pictures. -->
+  <Style Selector="Border.fab">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Height" Value="56" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.fabshadow">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Height" Value="56" />
+    <Setter Property="BoxShadow" Value="0 1 3 0 #40000000" />
+  </Style>
+
+  <Style Selector="Border.countpill">
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="MinWidth" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Padding" Value="8,0" />
+  </Style>
+  <Style Selector="Border.countpill TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- State icons: colour always goes with a shape (docs/client-ui.md, section 1). -->
+  <Style Selector="p|Icon.state">
+    <Setter Property="Filled" Value="True" />
+    <Setter Property="Size" Value="22" />
+    <Setter Property="Foreground" Value="{DynamicResource Outline}" />
+  </Style>
+  <Style Selector="p|Icon.state.ok">
+    <Setter Property="Foreground" Value="{DynamicResource Ok}" />
+  </Style>
+  <Style Selector="p|Icon.state.warn">
+    <Setter Property="Foreground" Value="{DynamicResource Warn}" />
+  </Style>
+  <Style Selector="p|Icon.state.bad">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+  <Style Selector="p|Icon.state.run">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="p|Icon.state.none">
+    <Setter Property="Filled" Value="False" />
+  </Style>
+
+  <!-- Result labels in the lists. -->
+  <Style Selector="Border.st">
+    <Setter Property="Height" Value="26" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,0,10,0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHighest}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="Border.st TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.st p|Icon">
+    <Setter Property="Size" Value="16" />
+    <Setter Property="Filled" Value="True" />
+  </Style>
+  <Style Selector="Border.st.ok">
+    <Setter Property="Background" Value="{DynamicResource OkContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnOkContainer}" />
+  </Style>
+  <Style Selector="Border.st.warn">
+    <Setter Property="Background" Value="{DynamicResource WarnContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnWarnContainer}" />
+  </Style>
+  <Style Selector="Border.st.bad">
+    <Setter Property="Background" Value="{DynamicResource ErrorContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnErrorContainer}" />
+  </Style>
+  <Style Selector="Border.st.run">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+    <Setter Property="Padding" Value="6,0,10,0" />
+  </Style>
+  <Style Selector="Border.st.none">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="Border.st.none TextBlock">
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+  <Style Selector="p|Ring">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Fill" Value="{DynamicResource OnPrimaryContainer}" />
+    <Setter Property="Track" Value="{DynamicResource Shade}" />
+  </Style>
+
+  <!-- Task card. -->
+  <Style Selector="Border.lead">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerHighest}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="Border.lead.ok">
+    <Setter Property="Background" Value="{DynamicResource OkContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnOkContainer}" />
+  </Style>
+  <Style Selector="Border.lead.warn">
+    <Setter Property="Background" Value="{DynamicResource WarnContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnWarnContainer}" />
+  </Style>
+  <Style Selector="Border.lead.bad">
+    <Setter Property="Background" Value="{DynamicResource ErrorContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnErrorContainer}" />
+  </Style>
+  <Style Selector="Border.lead.run">
+    <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnPrimaryContainer}" />
+  </Style>
+  <Style Selector="Border.progblock">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14,14,14,12" />
+    <Setter Property="Margin" Value="0,14,0,2" />
+  </Style>
+  <Style Selector="p|ProgressLine">
+    <Setter Property="Fill" Value="{DynamicResource Primary}" />
+    <Setter Property="Track" Value="{DynamicResource SecondaryContainer}" />
+  </Style>
+  <Style Selector="Border.errbox">
+    <Setter Property="Background" Value="{DynamicResource ErrorContainer}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource OnErrorContainer}" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Margin" Value="0,14,0,2" />
+  </Style>
+  <Style Selector="TextBlock.value">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Margin" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="TextBlock.value.accent">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+
+  <!-- Log. -->
+  <Style Selector="p|Icon.level">
+    <Setter Property="Size" Value="18" />
+    <Setter Property="Filled" Value="True" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="p|Icon.level.info">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+  </Style>
+  <Style Selector="p|Icon.level.warn">
+    <Setter Property="Foreground" Value="{DynamicResource Warn}" />
+  </Style>
+  <Style Selector="p|Icon.level.bad">
+    <Setter Property="Foreground" Value="{DynamicResource Error}" />
+  </Style>
+  <Style Selector="p|Icon.level.ok">
+    <Setter Property="Foreground" Value="{DynamicResource Ok}" />
+  </Style>
+
+  <!-- The open tab's icon takes the primary colour and is filled. -->
+  <Style Selector="RadioButton:checked p|Icon">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="Filled" Value="True" />
+  </Style>
+
+  <!-- Status bar. -->
+  <Style Selector="Ellipse.dot">
+    <Setter Property="Width" Value="8" />
+    <Setter Property="Height" Value="8" />
+    <Setter Property="Fill" Value="{DynamicResource Outline}" />
+  </Style>
+  <Style Selector="Ellipse.dot.ok">
+    <Setter Property="Fill" Value="{DynamicResource Ok}" />
+  </Style>
+  <Style Selector="Ellipse.dot.warn">
+    <Setter Property="Fill" Value="{DynamicResource Warn}" />
+  </Style>
+
+  <!-- Menus in flyouts, tooltips, snackbar. -->
+  <Style Selector="FlyoutPresenter.menu">
+    <Setter Property="Background" Value="{DynamicResource SurfaceContainer}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="0,8" />
+    <Setter Property="MinWidth" Value="280" />
+  </Style>
+  <Style Selector="FlyoutPresenter.menu TextBlock.menuhead">
+    <Setter Property="Margin" Value="16,8,16,6" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource InverseSurface}" />
+    <Setter Property="Foreground" Value="{DynamicResource InverseOnSurface}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Border.snack">
+    <Setter Property="Background" Value="{DynamicResource InverseSurface}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="16,6,8,6" />
+    <Setter Property="MinHeight" Value="48" />
+  </Style>
+  <Style Selector="Border.snackshadow">
+    <Setter Property="Background" Value="{DynamicResource InverseSurface}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="BoxShadow" Value="0 3 8 2 #40000000" />
+  </Style>
+  <Style Selector="Border.snack TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InverseOnSurface}" />
+  </Style>
+  <Style Selector="Border.snack Button">
+    <Setter Property="Foreground" Value="{DynamicResource InversePrimary}" />
+  </Style>
+</Styles>

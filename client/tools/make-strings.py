@@ -20,6 +20,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 TABLES = [
     ("src/Custos.Core/Resources/Messages.tsv", "Custos.Core", "Messages", "src/Custos.Core/Messages.g.cs"),
     ("src/Custos.Gui/Resources/Strings.tsv", "Custos.Gui", "Strings", "src/Custos.Gui/Strings.g.cs"),
+    ("src/Custos.Mac/Resources/MacStrings.tsv", "Custos.Mac.Gui", "MacStrings", "src/Custos.Mac/Gui/MacStrings.g.cs"),
 ]
 
 RESX_HEADER = """<?xml version="1.0" encoding="utf-8"?>

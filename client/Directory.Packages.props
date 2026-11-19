@@ -32,12 +32,11 @@
     <!-- WMI, for the shadow copies (VSS): MIT -->
     <PackageVersion Include="System.Management" Version="10.0.14" />
     <!-- The window of the macOS client: MIT -->
-    <PackageVersion Include="Avalonia" Version="11.3.23" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.23" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.23" />
-    <PackageVersion Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
+    <PackageVersion Include="Avalonia" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />
     <!-- Tests only, not shipped -->
-    <PackageVersion Include="Avalonia.Headless" Version="11.3.23" />
+    <PackageVersion Include="Avalonia.Headless" Version="12.1.6" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
