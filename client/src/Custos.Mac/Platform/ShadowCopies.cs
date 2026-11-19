@@ -35,7 +35,7 @@ internal sealed partial class ShadowCopies(string pendingFile)
         var match = CreatedLine().Match(output);
         if (code != 0 || !match.Success)
         {
-            throw new BackupException(Messages.Format(Messages.MacSnapshotFailed, output.Length > 0 ? output : $"tmutil: {code}"));
+            throw new BackupException(Reason(output, "tmutil", code));
         }
 
         string date = match.Groups[1].Value;
@@ -44,11 +44,11 @@ internal sealed partial class ShadowCopies(string pendingFile)
         try
         {
             Directory.CreateDirectory(mountPoint);
-            string device = DataDevice() ?? throw new BackupException(Messages.Format(Messages.MacSnapshotFailed, "no device of " + DataVolume));
+            string device = DataDevice() ?? throw new BackupException("no device of " + DataVolume);
             var (mounted, mountOutput) = Tool.Run("/sbin/mount_apfs", ["-o", "nobrowse", "-o", "rdonly", "-s", SnapshotName(date), device, mountPoint], TimeSpan.FromMinutes(1));
             if (mounted != 0)
             {
-                throw new BackupException(Messages.Format(Messages.MacSnapshotFailed, mountOutput.Length > 0 ? mountOutput : $"mount_apfs: {mounted}"));
+                throw new BackupException(Reason(mountOutput, "mount_apfs", mounted));
             }
         }
         catch
@@ -58,6 +58,18 @@ internal sealed partial class ShadowCopies(string pendingFile)
         }
 
         return new Set(this, date, mountPoint);
+    }
+
+    /// <summary>
+    /// What a tool said, for the run log (the engine puts «APFS snapshot failed» in front): without the note tmutil
+    /// always prints about purgeable snapshots, on one line.
+    /// </summary>
+    internal static string Reason(string output, string tool, int code)
+    {
+        string said = string.Join(" ", output.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0 && !l.StartsWith("NOTE:", StringComparison.Ordinal)));
+        return said.Length > 0 ? said.TrimEnd('.') : $"{tool}: {code}";
     }
 
     /// <summary>Deletes the snapshots a crashed run left behind.</summary>

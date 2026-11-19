@@ -100,24 +100,72 @@ public sealed class ServiceTests(ServiceFixture service)
         await RestoreAndCompareAsync(task.Id, ArchiveFormats.SevenZip);
     }
 
-    /// <summary>«Читать файлы из снимка APFS» needs root on a Mac: the run of CI with sudo covers it.</summary>
+    /// <summary>
+    /// «Читать файлы из снимка APFS» needs root on a Mac: the run of CI with sudo covers it. A Mac where tmutil itself
+    /// cannot make local snapshots (some virtual Macs, among them the runners of GitHub) checks instead what a task
+    /// does then: it stops with the reason, or, set to go on, copies the files without the snapshot with a warning.
+    /// </summary>
     [Fact]
     public async Task Files_are_read_from_an_APFS_snapshot()
     {
         Assert.SkipUnless(OperatingSystem.IsMacOS() && Native.IsRoot, "APFS snapshots need macOS and root.");
+        string? refused = SnapshotsRefused();
         var (source, destination) = Folders("snapshot");
         var definition = NewTask("Mac snapshot", source, destination);
         definition.Vss.Enabled = true;
+        definition.Vss.OnFailure = VssFailureActions.Abort;
         var task = await service.SaveAsync(definition);
 
         var run = await service.RunAsync(task.Id);
+        var log = await RunLogAsync(run.RunId);
 
-        Assert.True(run.Status == RunStatuses.Success, run.ErrorMessage);
-        var log = await service.RequestAsync(PipeProtocol.Methods.RunLog, new RunLogRequest { RunId = run.RunId },
+        Assert.False(Directory.Exists(DataFolders.Snapshots) && Directory.GetDirectories(DataFolders.Snapshots).Length > 0, "A snapshot is still mounted.");
+        if (refused is null)
+        {
+            Assert.True(run.Status == RunStatuses.Success, run.ErrorMessage);
+            Assert.Contains(log, l => l.Contains("APFS", StringComparison.Ordinal));
+            Assert.Single(Directory.GetFiles(destination, "a.txt", SearchOption.AllDirectories));
+            return;
+        }
+
+        TestContext.Current.SendDiagnosticMessage($"This Mac makes no local snapshots ({refused}): checking what a task does then.");
+        Assert.Equal(RunStatuses.Error, run.Status);
+        Assert.Contains("APFS", run.ErrorMessage ?? string.Empty, StringComparison.Ordinal);
+        Assert.Empty(Directory.GetFiles(destination, "a.txt", SearchOption.AllDirectories));
+
+        task.Vss.OnFailure = VssFailureActions.Continue;
+        task = await service.SaveAsync(task);
+        run = await service.RunAsync(task.Id);
+        log = await RunLogAsync(run.RunId);
+
+        Assert.Equal(RunStatuses.Warning, run.Status);
+        Assert.Contains(log, l => l.Contains("APFS", StringComparison.Ordinal));
+        foreach (string name in Files)
+        {
+            string copied = Assert.Single(Directory.GetFiles(destination, Path.GetFileName(name), SearchOption.AllDirectories));
+            Assert.Equal(Content(name), await File.ReadAllTextAsync(copied, TestContext.Current.CancellationToken));
+        }
+    }
+
+    /// <summary>Null when tmutil can make a local snapshot on this Mac (the one made is deleted again); else what it said.</summary>
+    private static string? SnapshotsRefused()
+    {
+        var (code, output) = Tool.Run("/usr/bin/tmutil", ["localsnapshot"], TimeSpan.FromMinutes(2));
+        var made = System.Text.RegularExpressions.Regex.Match(output, @"\d{4}-\d{2}-\d{2}-\d{6}");
+        if (code == 0 && made.Success)
+        {
+            Tool.Run("/usr/bin/tmutil", ["deletelocalsnapshots", made.Value], TimeSpan.FromMinutes(2));
+            return null;
+        }
+
+        return ShadowCopies.Reason(output, "tmutil", code);
+    }
+
+    private async Task<List<string>> RunLogAsync(string runId)
+    {
+        var log = await service.RequestAsync(PipeProtocol.Methods.RunLog, new RunLogRequest { RunId = runId },
             IpcJsonContext.Default.RunLogRequest, IpcJsonContext.Default.RunLogResult);
-        Assert.Contains(log.Lines, l => l.Text.Contains("APFS", StringComparison.OrdinalIgnoreCase) || l.Text.Contains("snapshot", StringComparison.OrdinalIgnoreCase)
-            || l.Text.Contains("снимок", StringComparison.OrdinalIgnoreCase));
-        Assert.Empty(Directory.GetDirectories(DataFolders.Snapshots));
+        return [.. log.Lines.Select(l => l.Text)];
     }
 
     internal static TaskDefinition NewTask(string name, string source, string destination) => new()

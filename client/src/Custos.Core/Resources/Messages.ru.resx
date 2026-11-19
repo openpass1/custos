@@ -1888,8 +1888,14 @@
   <data name="ExportNotAllowed" xml:space="preserve">
     <value>Выгружать задания могут только администраторы этого компьютера.</value>
   </data>
-  <data name="MacSnapshotFailed" xml:space="preserve">
-    <value>Не удалось сделать снимок APFS: {0}</value>
+  <data name="MacSnapshotCreated" xml:space="preserve">
+    <value>Снимок APFS диска сделан: файлы читаются из него.</value>
+  </data>
+  <data name="MacSnapshotFailedContinue" xml:space="preserve">
+    <value>Не удалось сделать снимок APFS: {0}. Копирую без него: файлы, которые меняются во время копирования, могут попасть в копию недописанными.</value>
+  </data>
+  <data name="MacSnapshotFailedAbort" xml:space="preserve">
+    <value>Не удалось сделать снимок APFS: {0}. По настройке задания копирование отменено.</value>
   </data>
   <data name="MacShareFailed" xml:space="preserve">
     <value>Не удалось подключить сетевую папку {0}: {1}</value>

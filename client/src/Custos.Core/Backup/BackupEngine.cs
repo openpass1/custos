@@ -408,7 +408,8 @@ public sealed partial class BackupEngine
         try
         {
             run.Snapshots = _platform.CreateSnapshots(local);
-            _log.Write(RunLogLevel.Info, Messages.VssCreated);
+            // macOS makes an APFS snapshot instead of a shadow copy (VSS), and says so.
+            _log.Write(RunLogLevel.Info, OperatingSystem.IsMacOS() ? Messages.MacSnapshotCreated : Messages.VssCreated);
         }
         catch (BackupException ex)
         {
@@ -416,11 +417,11 @@ public sealed partial class BackupEngine
             if (run.Task.Vss.OnFailure == VssFailureActions.Continue)
             {
                 run.Result.Warnings++;
-                _log.Write(RunLogLevel.Warning, Messages.Format(Messages.VssFailedContinue, ex.Message));
+                _log.Write(RunLogLevel.Warning, Messages.Format(OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedContinue : Messages.VssFailedContinue, ex.Message));
             }
             else
             {
-                throw new BackupException(Messages.Format(Messages.VssFailedAbort, ex.Message), ex);
+                throw new BackupException(Messages.Format(OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedAbort : Messages.VssFailedAbort, ex.Message), ex);
             }
         }
     }

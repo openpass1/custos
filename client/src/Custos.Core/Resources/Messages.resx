@@ -1888,8 +1888,14 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="ExportNotAllowed" xml:space="preserve">
     <value>Only administrators of this computer may export tasks.</value>
   </data>
-  <data name="MacSnapshotFailed" xml:space="preserve">
-    <value>APFS snapshot failed: {0}</value>
+  <data name="MacSnapshotCreated" xml:space="preserve">
+    <value>APFS snapshot of the disk made: the files are read from it.</value>
+  </data>
+  <data name="MacSnapshotFailedContinue" xml:space="preserve">
+    <value>APFS snapshot failed: {0}. Copying without it: files that change during the copy may be copied half-written.</value>
+  </data>
+  <data name="MacSnapshotFailedAbort" xml:space="preserve">
+    <value>APFS snapshot failed: {0}. The task is set to stop in that case.</value>
   </data>
   <data name="MacShareFailed" xml:space="preserve">
     <value>Network folder {0} could not be connected: {1}</value>

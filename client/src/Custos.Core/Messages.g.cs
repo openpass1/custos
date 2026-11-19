@@ -1868,8 +1868,14 @@ static partial class Messages
     /// <summary>Only administrators of this computer may export tasks.</summary>
     public static string ExportNotAllowed => Get(nameof(ExportNotAllowed));
 
-    /// <summary>APFS snapshot failed: {0}</summary>
-    public static string MacSnapshotFailed => Get(nameof(MacSnapshotFailed));
+    /// <summary>APFS snapshot of the disk made: the files are read from it.</summary>
+    public static string MacSnapshotCreated => Get(nameof(MacSnapshotCreated));
+
+    /// <summary>APFS snapshot failed: {0}. Copying without it: files that change during the copy may be copied half-written.</summary>
+    public static string MacSnapshotFailedContinue => Get(nameof(MacSnapshotFailedContinue));
+
+    /// <summary>APFS snapshot failed: {0}. The task is set to stop in that case.</summary>
+    public static string MacSnapshotFailedAbort => Get(nameof(MacSnapshotFailedAbort));
 
     /// <summary>Network folder {0} could not be connected: {1}</summary>
     public static string MacShareFailed => Get(nameof(MacShareFailed));
