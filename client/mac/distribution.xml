@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The installer of CUSTOS for macOS (productbuild): Apple silicon, macOS 15 and newer, installed for the whole Mac.
+     mac/build-mac.sh puts the version in place of __VERSION__; the texts are in resources/<language>.lproj. -->
+<installer-gui-script minSpecVersion="2">
+  <title>CUSTOS</title>
+  <license file="License.txt" mime-type="text/plain" />
+  <conclusion file="conclusion.html" mime-type="text/html" />
+  <options customize="never" require-scripts="true" hostArchitectures="arm64" rootVolumeOnly="true" />
+  <domains enable_localSystem="true" enable_anywhere="false" enable_currentUserHome="false" />
+  <volume-check>
+    <allowed-os-versions>
+      <os-version min="15.0" />
+    </allowed-os-versions>
+  </volume-check>
+  <choices-outline>
+    <line choice="org.custos.pkg" />
+  </choices-outline>
+  <choice id="org.custos.pkg" visible="false" title="CUSTOS">
+    <pkg-ref id="org.custos.pkg" />
+  </choice>
+  <pkg-ref id="org.custos.pkg" version="__VERSION__" onConclusion="none">Custos-component.pkg</pkg-ref>
+</installer-gui-script>

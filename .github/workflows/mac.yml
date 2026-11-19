@@ -1,0 +1,149 @@
+name: macOS client
+
+# Builds and tests CUSTOS for macOS on a Mac of GitHub (Apple silicon): 7z.so from the pinned 7-Zip sources, the
+# tests of the core with it, the tests of the Mac program (as a user and as root, which also covers the keychain and
+# the APFS snapshots), pictures of every window, the installer and the update package. Then the installer is
+# installed on that Mac: the service must start and answer, the window must open, and the uninstaller must remove it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/mac.yml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/mac.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mac-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mac:
+    runs-on: macos-15
+    timeout-minutes: 75
+    env:
+      VERSION: 0.6.${{ github.run_number }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build 7z.so from the pinned 7-Zip sources
+        run: |
+          bash client/mac/build-7z.sh client/artifacts-mac/7z
+          file client/artifacts-mac/7z/7z.so
+
+      - name: Test the core with 7z.so
+        working-directory: client
+        env:
+          CUSTOS_7Z_DLL: ${{ github.workspace }}/client/artifacts-mac/7z/7z.so
+          CUSTOS_REQUIRE_7Z: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release
+
+      - name: Test the Mac program as a user
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+        run: |
+          dotnet build tests/Custos.Mac.Tests -c Release
+          cp artifacts-mac/7z/7z.so tests/Custos.Mac.Tests/bin/Release/net10.0/
+          dotnet test tests/Custos.Mac.Tests -c Release --no-build
+
+      # As root the service uses the System keychain and makes APFS snapshots, as it does when launchd starts it.
+      - name: Test the Mac program as root
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+        run: sudo -E env "PATH=$PATH" "DOTNET_ROOT=${DOTNET_ROOT:-}" dotnet test tests/Custos.Mac.Tests -c Release --no-build
+
+      - name: Draw the windows
+        working-directory: client
+        run: dotnet run --project tests/Custos.Mac.Shots -c Release -- "${{ github.workspace }}/mac-shots"
+
+      - name: Build the installer and the update package
+        run: bash client/mac/build-mac.sh "$VERSION" client/artifacts-mac
+
+      - name: Install it on this Mac
+        run: |
+          set -euo pipefail
+          sudo installer -pkg "client/artifacts-mac/Custos-$VERSION.pkg" -target /
+          for i in $(seq 1 60); do
+            [ -S /var/run/custos.sock ] && break
+            sleep 1
+          done
+          sudo launchctl print system/org.custos.agent | head -n 25
+          test -S /var/run/custos.sock
+          codesign --verify --strict --verbose=2 /Applications/Custos.app
+          /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' /Applications/Custos.app/Contents/Info.plist | grep -qx "$VERSION"
+          sleep 5
+          sudo cat "/Library/Application Support/CUSTOS/logs/launchd.log" || true
+          sudo ls -la "/Library/Application Support/CUSTOS" "/Library/Application Support/CUSTOS/logs"
+
+      - name: The installed service answers the window
+        working-directory: client
+        run: |
+          set -euo pipefail
+          # The tests of the Mac program against the installed service instead of one of their own.
+          CUSTOS_INSTALLED_SERVICE=1 CUSTOS_EXPECTED_VERSION="$VERSION" dotnet test tests/Custos.Mac.Tests -c Release --no-build --filter "FullyQualifiedName~InstalledServiceTests"
+
+      - name: Open the window on the screen of this Mac
+        run: |
+          set -euo pipefail
+          mkdir -p mac-shots
+          open -a /Applications/Custos.app
+          sleep 12
+          pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos' || { echo "The window did not start"; exit 1; }
+          screencapture -x mac-shots/real-mac-screen.png || echo "No screen picture (the runner has no screen access)."
+          # The program must still run after its window and menu bar icon came up.
+          pgrep -f '/Applications/Custos.app/Contents/MacOS/Custos$' > /dev/null || { echo "The window closed by itself"; exit 1; }
+
+      - name: Remove it with the uninstaller
+        run: |
+          set -euo pipefail
+          sudo /Applications/Custos.app/Contents/Resources/uninstall.sh --all
+          test ! -e /Applications/Custos.app
+          test ! -e /Library/LaunchDaemons/org.custos.agent.plist
+          ! sudo launchctl print system/org.custos.agent > /dev/null 2>&1
+          # The programs were asked to quit; give them a few seconds.
+          for i in $(seq 1 15); do
+            pgrep -f '/Applications/Custos.app/Contents/MacOS/Custos' > /dev/null || break
+            sleep 1
+          done
+          ! pgrep -fl '/Applications/Custos.app/Contents/MacOS/Custos'
+
+      - name: Upload the installer
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: CUSTOS-macOS
+          path: client/artifacts-mac/Custos-*.pkg
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload the update package
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-macos-update
+          path: client/artifacts-mac/custos-macos-*.zip
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload the pictures of the windows
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mac-screenshots
+          path: mac-shots/
+          if-no-files-found: ignore
+          retention-days: 14

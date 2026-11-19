@@ -1,4 +1,4 @@
-# Changelog: CUSTOS for Windows
+# Changelog: CUSTOS for Windows and macOS
 
 Changes of the program (and of custos-helper, which is released with it), newest first. Each version is a
 `client-v…` release on the [Releases](https://github.com/openpass1/custos/releases) page; its release text comes
@@ -17,11 +17,13 @@ a version that was never released by itself is not lost.
 ### Added
 - The installer shows a short privacy note before installing: what the program sends over the network and how to turn it off.
 - A quiet **Support the project** link in the status bar of the main window.
+- CUSTOS for macOS (Macs with Apple silicon, macOS 15 or newer): `Custos-<version>.pkg` installs the program, its service (started by the system, as on Windows) and an icon in the menu bar. The same tasks as on Windows: folders and files, mirror, zip and 7z archives with encryption, schedules, network folders (SMB), USB disks, SFTP, FTP, WebDAV, S3 with Object Lock, retention, WORM, restore, run logs, the monitoring site, updates from GitHub (`custos-macos-<version>.zip`). Files are read from an APFS snapshot instead of a shadow copy; passwords are kept in the System keychain. The window of the Mac does not set up database servers, Linux servers and cloud drives yet: tasks imported from Windows or made on the monitoring site keep them. The program is not signed by Apple yet: the installer opens with right click → **Open**, and the program needs Full Disk Access (System Settings → Privacy & Security).
 
 ### Changed
 - Task editor, **Schedule**: the days of a monthly schedule are picked in a drop-down calendar of 1–30 and **last day of the month**, on one line with the time, instead of a text field and a separate box. The 31st is gone: a task with it shows **last day of the month**, which it always meant. The day of a forced full backup on **Basic** offers the same days.
 
 ### Fixed
+- The service no longer logs «CUSTOS service terminated unexpectedly» and ends with an error code each time it is stopped normally.
 - A monthly task on the 29th, 30th or 31st no longer skips the months without that day: it runs on the last day of such a month (28 or 29 February, 30 April). The same goes for a full backup forced on a day of the month.
 
 ### Changed

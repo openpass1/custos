@@ -8,7 +8,7 @@ namespace Custos.Service;
 
 /// <summary>
 /// Service logging on macOS: a daily file in /Library/Application Support/CUSTOS/logs (deleted by the service after
-/// the retention period of the settings). launchd keeps what the process prints in service-console.log.
+/// the retention period of the settings). launchd keeps what the process prints in launchd.log.
 /// </summary>
 internal static class LoggingSetup
 {

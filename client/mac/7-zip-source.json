@@ -1,0 +1,6 @@
+{
+  "about": "The sources of 7-Zip from which mac/build-7z.sh builds 7z.so for CUSTOS for macOS. The version must be the one of installer/7-zip.json (the build refuses otherwise): change both together. The checksum is the 'digest' of the asset 7zXXXX-src.tar.xz on https://github.com/ip7z/7zip/releases.",
+  "version": "26.06",
+  "sourceUrl": "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-src.tar.xz",
+  "sourceSha256": "a4e374c8f864f51df48c2cfd0e1413ec3b2ea030deae852d6a655402ebb61ac4"
+}

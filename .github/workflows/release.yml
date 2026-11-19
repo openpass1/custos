@@ -6,6 +6,9 @@ name: Release
 # write to the repository see a draft; it becomes public when it is published by hand on the Releases page, and the tag
 # (client-v<version> or server-v<version>) is created at that moment.
 #
+# A client release holds the program for Windows and for macOS (built on a Mac of GitHub by client/mac/build-mac.sh),
+# with the same version: each program looks for its own update package in the client-v releases.
+#
 # A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
 on:
   workflow_dispatch:
@@ -146,6 +149,37 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # CUSTOS for macOS (Apple silicon, macOS 15 and newer): the installer and the update package. The "macOS client"
+  # workflow tests the same files, installs them on its Mac and removes them again.
+  macos:
+    needs: check
+    if: needs.check.outputs.client == 'true'
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the installer and the update package
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/mac/build-mac.sh "$VERSION" client/artifacts-mac
+          mkdir -p out
+          cp "client/artifacts-mac/Custos-$VERSION.pkg" "client/artifacts-mac/custos-macos-$VERSION.zip" out/
+          ls -l out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-macos
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
   server:
     needs: check
     if: needs.check.outputs.server == 'true'
@@ -191,11 +225,11 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [check, client, server]
+    needs: [check, client, macos, server]
     if: >-
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
       (needs.client.result == 'success' || needs.server.result == 'success') &&
-      needs.client.result != 'failure' && needs.server.result != 'failure'
+      needs.client.result != 'failure' && needs.macos.result != 'failure' && needs.server.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -229,15 +263,17 @@ jobs:
           printf '\n---\n\n' >> ../notes.md
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           if [ "$PART" = client ]; then
-            title="CUSTOS for Windows $VERSION"
+            title="CUSTOS for Windows and macOS $VERSION"
             cat >> ../notes.md <<EOF
           **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place; tasks and settings stay.
 
           **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
 
+          **macOS:** \`Custos-$VERSION.pkg\` for Macs with Apple silicon (M1 and newer), macOS 15 or newer. It is not signed by Apple yet: the first time, open it with right click → **Open**. After installing, give **Custos** Full Disk Access in System Settings → Privacy & Security, see the [guide]($blob/client/README.md#macos). Updates: the program checks GitHub the same way and installs \`custos-macos-$VERSION.zip\`.
+
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
 
-          Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
+          Checksums: \`SHA256SUMS.txt\`. The Windows and macOS files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
           EOF
           else
             title="CUSTOS Monitor $VERSION"

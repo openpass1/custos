@@ -1,0 +1,17 @@
+#!/bin/sh
+# CUSTOS for macOS, before the files are replaced: stops the service and closes the windows and menu bar icons of
+# the users (they come back after the installation). Also run when an update installs itself: the update script
+# is not stopped with the service (AbandonProcessGroup in org.custos.agent.plist).
+label=org.custos.agent
+if /bin/launchctl print "system/$label" > /dev/null 2>&1; then
+  /bin/launchctl bootout "system/$label" 2> /dev/null || /bin/launchctl bootout system "/Library/LaunchDaemons/$label.plist" 2> /dev/null
+fi
+
+# The programs of the users: everything run from Custos.app that is not the service (root).
+for uid in $(/bin/ps -axo uid=,args= | /usr/bin/awk '$2 == "/Applications/Custos.app/Contents/MacOS/Custos" && $1 != 0 { print $1 }' | /usr/bin/sort -u); do
+  /bin/launchctl bootout "gui/$uid/org.custos.menu" 2> /dev/null
+done
+for pid in $(/bin/ps -axo pid=,uid=,args= | /usr/bin/awk '$3 == "/Applications/Custos.app/Contents/MacOS/Custos" && $2 != 0 { print $1 }'); do
+  /bin/kill "$pid" 2> /dev/null
+done
+exit 0

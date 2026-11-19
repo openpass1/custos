@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Custos.Gui;
 
 namespace Custos.Mac.Gui;
 
@@ -12,6 +13,12 @@ internal static class GuiProgram
     {
         App.Demo = args.Contains("--demo", StringComparer.Ordinal);
         App.StartHidden = args.Contains("--tray", StringComparer.Ordinal);
+        if (OperatingSystem.IsMacOS())
+        {
+            // The window size and the columns of this user, where Mac programs keep theirs (not ~/.config).
+            UiState.Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "CUSTOS");
+        }
+
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, Avalonia.Controls.ShutdownMode.OnExplicitShutdown);
     }
 

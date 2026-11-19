@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Custos.app: the window and the menu bar icon; launchd also starts the same program as the service ("agent").
+     mac/build-mac.sh puts the version in place of __VERSION__. -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>org.custos.app</string>
+  <key>CFBundleName</key>
+  <string>CUSTOS</string>
+  <key>CFBundleDisplayName</key>
+  <string>CUSTOS</string>
+  <key>CFBundleExecutable</key>
+  <string>Custos</string>
+  <key>CFBundleIconFile</key>
+  <string>custos.icns</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>__VERSION__</string>
+  <key>CFBundleVersion</key>
+  <string>__VERSION__</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>ru</string>
+  </array>
+  <key>LSMinimumSystemVersion</key>
+  <string>15.0</string>
+  <key>LSArchitecturePriority</key>
+  <array>
+    <string>arm64</string>
+  </array>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.utilities</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSSupportsAutomaticGraphicsSwitching</key>
+  <true/>
+  <key>NSHumanReadableCopyright</key>
+  <string>CUSTOS, GNU General Public License v3.0</string>
+</dict>
+</plist>

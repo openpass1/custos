@@ -15,12 +15,22 @@ internal static class TestPlace
 
     public static string Socket => Path.Combine(Root, "c.sock");
 
+    /// <summary>
+    /// CUSTOS_INSTALLED_SERVICE=1: the tests talk to the service that the installer put on this Mac (its socket is
+    /// /var/run/custos.sock) instead of starting one of their own (<see cref="InstalledServiceTests"/>).
+    /// </summary>
+    public static bool Installed { get; } = Environment.GetEnvironmentVariable("CUSTOS_INSTALLED_SERVICE") == "1";
+
     [ModuleInitializer]
     internal static void Set()
     {
         Directory.CreateDirectory(Root);
-        Environment.SetEnvironmentVariable("CUSTOS_DATA_DIR", Data);
-        Environment.SetEnvironmentVariable("CUSTOS_SOCKET", Socket);
+        if (!Installed)
+        {
+            Environment.SetEnvironmentVariable("CUSTOS_DATA_DIR", Data);
+            Environment.SetEnvironmentVariable("CUSTOS_SOCKET", Socket);
+        }
+
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             try

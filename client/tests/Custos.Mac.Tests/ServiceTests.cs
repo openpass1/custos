@@ -17,7 +17,7 @@ namespace Custos.Mac.Tests;
 [Collection(ServiceGroup.Name)]
 public sealed class ServiceTests(ServiceFixture service)
 {
-    private static readonly string[] Files = ["a.txt", "sub/b.txt", "отчёт за ноябрь.txt"];
+    internal static readonly string[] Files = ["a.txt", "sub/b.txt", "отчёт за ноябрь.txt"];
 
     [Fact]
     public void Hello_answers_with_the_version_and_the_user()
@@ -120,7 +120,7 @@ public sealed class ServiceTests(ServiceFixture service)
         Assert.Empty(Directory.GetDirectories(DataFolders.Snapshots));
     }
 
-    private static TaskDefinition NewTask(string name, string source, string destination) => new()
+    internal static TaskDefinition NewTask(string name, string source, string destination) => new()
     {
         Name = name + " " + Guid.NewGuid().ToString("N")[..4],
         BackupType = BackupTypes.Full,
@@ -130,7 +130,7 @@ public sealed class ServiceTests(ServiceFixture service)
         Vss = new VssOptions { Enabled = false },
     };
 
-    private static (string Source, string Destination) Folders(string name)
+    internal static (string Source, string Destination) Folders(string name)
     {
         string source = TestPlace.NewFolder(name + "-src");
         foreach (string file in Files)
@@ -143,7 +143,7 @@ public sealed class ServiceTests(ServiceFixture service)
         return (source, TestPlace.NewFolder(name + "-dst"));
     }
 
-    private static string Content(string name) => $"CUSTOS {name}\nстрока по-русски\n";
+    internal static string Content(string name) => $"CUSTOS {name}\nстрока по-русски\n";
 
     /// <summary>The newest copy of the task, into a folder of its own; every file comes back as it was.</summary>
     private async Task RestoreAndCompareAsync(string taskId, string storage)
@@ -183,7 +183,10 @@ public sealed class ServiceGroup : ICollectionFixture<ServiceFixture>
     public const string Name = "service";
 }
 
-/// <summary>The service of macOS inside the test process, and one connection to it as the window has.</summary>
+/// <summary>
+/// The service of macOS inside the test process, and one connection to it as the window has. With
+/// CUSTOS_INSTALLED_SERVICE=1 the connection goes to the installed service instead, and none is started.
+/// </summary>
 public sealed class ServiceFixture : IAsyncLifetime
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
@@ -195,7 +198,11 @@ public sealed class ServiceFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _service = Task.Run(() => AgentHost.RunAsync([], _stop.Token));
+        if (!TestPlace.Installed)
+        {
+            _service = Task.Run(() => AgentHost.RunAsync([], _stop.Token));
+        }
+
         _client = await ServiceClient.ConnectAsync(null, Timeout, CancellationToken.None);
         Hello = await RequestAsync(PipeProtocol.Methods.Hello, new HelloRequest { Protocol = PipeProtocol.Version, ClientVersion = CustosInfo.Version },
             IpcJsonContext.Default.HelloRequest, IpcJsonContext.Default.HelloResult);
