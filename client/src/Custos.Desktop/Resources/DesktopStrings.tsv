@@ -1,0 +1,35 @@
+# Texts of the new windows only (src/Custos.Desktop); the others come from src/Custos.Gui/Resources/Strings.tsv.
+# Columns: key, English, Russian (TAB-separated). After a change run: python tools/make-strings.py
+# ---- Main window
+Tasks	Tasks	Задания
+Now	now	сейчас
+HistoryCount	{0}: {1} runs	{0}: запусков {1}
+NotYet	The new window does not have this yet: it comes in one of the next versions. Until then use the usual CUSTOS window (Custos.exe).	В новом окне этого пока нет: появится в одной из следующих версий. А пока — в обычном окне CUSTOS (Custos.exe).
+SettingsAll	All settings…	Все настройки…
+ThemeHeading	Theme	Тема
+ThemeForAll	For all users of this computer	Для всех пользователей компьютера
+ThemeAdminsOnly	The theme is the same for all users of this computer: an administrator changes it.	Тема общая для всех пользователей компьютера: её меняет администратор.
+Color	Colour	Цвет
+ColorForYou	Only for you	Только для вас
+ColorNeutral	Neutral grey	Нейтральный серый
+ColorGraphite	Graphite	Графит
+ColorBlue	Blue	Синий
+ColorWarm	Warm	Тёплый
+ColorSepia	Sepia	Сепия
+Resume	Resume	Продолжить
+DeleteRunning	«{0}» is running now. Stop it first, then delete it.	Задание «{0}» сейчас выполняется. Сначала остановите его, потом удаляйте.
+# ---- Task editor
+Save	Save	Сохранить
+EditorNotSaved	The new window cannot save tasks yet: that is the next step of its work. The task stays as it was; change it in the usual CUSTOS window for now.	Новое окно пока не сохраняет задания: это следующий этап работы над ним. Задание осталось как было; пока меняйте его в обычном окне CUSTOS.
+EditorNotYet	This button works from the next version of the new window on.	Эта кнопка заработает в следующей версии нового окна.
+LinuxServer	Linux server	Linux-сервер
+EveryMinutes	minutes	минут
+WormTag	WORM {0} days	WORM {0} дн.
+ObjectLockTag	Object Lock {0} days	Object Lock {0} дн.
+# ---- Made-up tasks of «--demo» and of the pictures
+DemoComment	The department's documents: a USB disk, the NAS with protection from deletion, and a copy outside the office.	Документы отдела: диск USB, NAS с защитой от удаления и копия вне офиса.
+DemoUsb	The disk BACKUP-USB is not connected.	Диск BACKUP-USB не подключён.
+DemoStarted	started by the schedule	запуск по расписанию
+DemoDone	success — {0} files, {1}, {2}	успешно — файлов {0}, {1}, {2}
+DemoScan	looking for files: 12 640	поиск файлов: 12 640
+DemoLocked	the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx	файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx

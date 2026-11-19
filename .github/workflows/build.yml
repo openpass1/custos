@@ -1,22 +1,24 @@
 name: Client build
 
 # Builds and tests the Windows client and makes the installer. Runs only when the client, custos-helper (which the
-# client puts into the install block) or this file changes; the trial window in Material 3 has its own preview.yml.
+# client puts into the install block) or this file changes; the new window on Avalonia has its own desktop.yml.
 on:
   push:
     branches: [main]
     paths:
       - 'client/**'
-      - '!client/src/Custos.Preview/**'
-      - '!client/tests/Custos.Preview.Shots/**'
+      - '!client/src/Custos.Desktop/**'
+      - '!client/src/Custos.Windows/**'
+      - '!client/tests/Custos.Desktop.Shots/**'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
       - 'client/**'
-      - '!client/src/Custos.Preview/**'
-      - '!client/tests/Custos.Preview.Shots/**'
+      - '!client/src/Custos.Desktop/**'
+      - '!client/src/Custos.Windows/**'
+      - '!client/tests/Custos.Desktop.Shots/**'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'

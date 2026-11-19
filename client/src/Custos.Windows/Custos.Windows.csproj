@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    CustosNew.exe: the new CUSTOS interface for Windows, the windows of src/Custos.Desktop with the tray icon, the
+    control of the service and the rest that only Windows has. It runs next to Custos.exe while it is being built
+    (thread «Перевести клиент на Avalonia»); when it does everything Custos.exe does, it takes its name and place in the
+    installer. Not in the installer yet; CI makes a zip of it (.github/workflows/desktop.yml).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CustosNew</AssemblyName>
+    <RootNamespace>Custos.Windows</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Custos.Gui\Resources\custos.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Custos.Desktop\Custos.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tray icons of Custos.exe, one for each state. -->
+    <AvaloniaResource Include="..\Custos.Gui\Resources\tray-*.ico" Link="Assets\%(Filename)%(Extension)" />
+    <!-- The licences go next to the program in the zip. -->
+    <None Include="..\..\..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="THIRD-PARTY-NOTICES-AVALONIA.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\Custos.Desktop\Assets\Fonts\Roboto-LICENSE.txt" Link="Roboto-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Debug symbols are of no use on the test machine; those of Skia and HarfBuzz alone are 100 MB. -->
+  <Target Name="DropSymbolsFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

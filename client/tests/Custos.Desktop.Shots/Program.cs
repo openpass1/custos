@@ -1,0 +1,287 @@
+using System.Globalization;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Headless;
+using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Styling;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Custos.Gui;
+
+namespace Custos.Desktop.Shots;
+
+/// <summary>
+/// Pictures of the new window with the made-up tasks, in Russian, at twice the size (as on a 200 % screen), and checks
+/// of what its menus and buttons do. The time and the light on the progress bar are fixed, so the pictures are the same
+/// on every run.
+/// </summary>
+internal static class Program
+{
+    private const double Scale = 2;
+
+    /// <summary><c>CustosDesktopShots [folder]</c>: the pictures and the checks with made-up tasks.
+    /// <c>CustosDesktopShots --service [folder]</c>: the buttons against the CUSTOS service running on this computer.</summary>
+    public static int Main(string[] args)
+    {
+        bool service = args.Length > 0 && args[0] == "--service";
+        args = service ? args[1..] : args;
+        string folder = Path.GetFullPath(args.Length > 0 ? args[0] : "shots");
+        Directory.CreateDirectory(folder);
+
+        var russian = CultureInfo.GetCultureInfo("ru-RU");
+        CultureInfo.DefaultThreadCurrentCulture = russian;
+        CultureInfo.DefaultThreadCurrentUICulture = russian;
+        CultureInfo.CurrentCulture = russian;
+        CultureInfo.CurrentUICulture = russian;
+        ProgressLine.FixedPhase = 0.55;
+        ProgressModel.FixedNow = DemoData.Now.AddMinutes(4).AddSeconds(31);
+        Describe.FixedToday = DemoData.Now.LocalDateTime.Date;
+        // ui.json of a user of its own: the pictures neither read nor change the one of the computer they are made on.
+        UiState.Folder = Path.Combine(Path.GetTempPath(), "custos-shots-" + Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+
+        AppBuilder.Configure<App>()
+            .UseSkia()
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
+            .With(new FontManagerOptions { DefaultFamilyName = Fonts.Roboto })
+            .SetupWithoutStarting();
+
+        if (service)
+        {
+            return ServiceCheck.Run(folder, Save);
+        }
+
+        Console.WriteLine($"Icons: {IconData.CheckAll()} parse.");
+
+        Shot(folder, "1-glavnoe-okno-svetloe", "light", "Photos", Tab.Log, card: true);
+        Shot(folder, "2-glavnoe-okno-tyomnoe", "dark", "Desktop", Tab.Progress, card: true);
+        Shot(folder, "3-istoriya-bez-kartochki-svetloe", "light", "Accounting", Tab.History, card: false, note: true);
+        Shot(folder, "4-kartochka-zashchita-tyomnoe", "dark", "Documents", Tab.History, card: true);
+
+        // The task editor, page by page.
+        EditorShot(folder, "5-zadanie-osnovnoe-svetloe", "light", "Documents", Strings.PageBasic, height: 900);
+        EditorShot(folder, "6-zadanie-naznacheniya-tyomnoe", "dark", "Documents", Strings.PageDestinations);
+        EditorShot(folder, "7-zadanie-raspisanie-svetloe", "light", "Accounting", Strings.PageSchedule);
+        EditorShot(folder, "8-zadanie-istochniki-tyomnoe", "dark", "Documents", Strings.PageSources, height: 900);
+        EditorShot(folder, "9-zadanie-hranenie-svetloe", "light", "Accounting", Strings.PageRetention, height: 900);
+        EditorShot(folder, "10-zadanie-sobytiya-tyomnoe", "dark", "Accounting", Strings.PageEvents);
+        EditorShot(folder, "11-zadanie-szhatie-svetloe", "light", "Accounting", Strings.PageArchive);
+
+        // Every colour scheme of the «Настройки» menu, light and dark.
+        string colors = Path.Combine(folder, "colors");
+        Directory.CreateDirectory(colors);
+        foreach (string id in Palettes.Ids)
+        {
+            foreach (string theme in (string[])["light", "dark"])
+            {
+                Shot(colors, $"{id}-{theme}", theme, "Documents", Tab.Log, card: true, color: id);
+                EditorShot(colors, $"{id}-{theme}-zadanie", theme, "Documents", Strings.PageDestinations, color: id);
+            }
+        }
+
+        if (!MenuWorks() | !EditorWorks() | !SelectionWorks())
+        {
+            return 1;
+        }
+
+        if (IconData.Missing.Count > 0)
+        {
+            Console.Error.WriteLine("Icons missing from IconData.g.cs (add them to tools/make-icons.py): " + string.Join(", ", IconData.Missing));
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private enum Tab
+    {
+        Log,
+        History,
+        Progress,
+    }
+
+    private static void Shot(string folder, string name, string theme, string task, Tab tab, bool card, bool note = false, string color = Palettes.Default)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        vm.SetDemoTheme(theme);
+        vm.ColorChoice = color;
+        window.Show();
+        vm.Start();
+        Pump();
+
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == task);
+        vm.IsLogTab = tab == Tab.Log;
+        vm.IsHistoryTab = tab == Tab.History;
+        vm.IsProgressTab = tab == Tab.Progress;
+        vm.ShowCard = card;
+        if (note)
+        {
+            vm.Snack(DesktopStrings.NotYet);
+        }
+
+        Pump();
+
+        string path = Path.Combine(folder, name + ".png");
+        Save(window, path);
+        Console.WriteLine(path);
+        Close(window);
+    }
+
+    private static void EditorShot(string folder, string name, string theme, string task, string page, double height = 0, string color = Palettes.Default)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        vm.SetDemoTheme(theme);
+        vm.ColorChoice = color;
+        window.Show();
+        vm.Start();
+        Pump();
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == task);
+        var model = new EditorModel(vm.SelectedDefinition!, vm.Monitor.Snapshot, isNew: false);
+        model.Open(page);
+        var editor = new EditorWindow(model);
+        if (height > 0)
+        {
+            editor.Height = height;
+        }
+
+        editor.Show(window);
+        Pump();
+
+        string path = Path.Combine(folder, name + ".png");
+        Save(editor, path);
+        Console.WriteLine(path);
+        editor.Close();
+        Close(window);
+    }
+
+    /// <summary>
+    /// «Изменить» opens the editor; a button on a page says that it works from the next version; «Сохранить» closes the
+    /// editor and the main window says that nothing was kept yet.
+    /// </summary>
+    private static bool EditorWorks()
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        window.Show();
+        vm.Start();
+        Pump();
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == "Documents");
+        Pump();
+        var edit = window.GetVisualDescendants().OfType<ToolButton>().First(b => b.IconKind == "edit");
+        edit.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        if (window.OwnedWindows.OfType<EditorWindow>().FirstOrDefault() is not { } editor)
+        {
+            Console.WriteLine("Editor: «Изменить» did not open it.");
+            Close(window);
+            return false;
+        }
+
+        bool rightTask = editor.Model.Title.Contains("Documents", StringComparison.Ordinal) && editor.Model.Pages.Count == 8;
+        editor.Model.Open(Strings.PageDestinations);
+        Pump();
+        var add = editor.GetVisualDescendants().OfType<Button>().First(b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == Strings.DestinationAddTitle));
+        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        bool snack = editor.FindControl<Panel>("Snack")!.IsVisible;
+        var save = editor.GetVisualDescendants().OfType<Button>().First(b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == DesktopStrings.Save));
+        save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        bool closed = !editor.IsVisible && window.OwnedWindows.Count == 0;
+        bool told = vm.SnackVisible && vm.SnackText == DesktopStrings.EditorNotSaved;
+        bool ok = rightTask && snack && closed && told;
+        Console.WriteLine(ok ? "Editor: opens with the task, page buttons only say so, «Сохранить» closes it and keeps nothing."
+            : $"Editor: task={rightTask}, page button note={snack}, closed={closed}, main window note={told}.");
+        Close(window);
+        return ok;
+    }
+
+    /// <summary>A click on an item of the «Настройки» menu does what it says and closes the menu.</summary>
+    private static bool MenuWorks()
+    {
+        var window = App.CreateMainWindow(demo: true);
+        window.Show();
+        window.ViewModel.Start();
+        Pump();
+        var settings = window.GetVisualDescendants().OfType<ToolButton>().First(b => b.IconKind == "settings");
+        var flyout = (Flyout)settings.Flyout!;
+        flyout.ShowAt(settings);
+        Pump();
+        var dark = window.FindControl<StackPanel>("ThemeMenu")!.Children.OfType<RadioButton>().ElementAt(2);
+        dark.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        bool ok = !flyout.IsOpen && window.ViewModel.ThemeNow == "dark" && window.ActualThemeVariant == ThemeVariant.Dark;
+        Console.WriteLine(ok ? "Menu: the item works and the menu closes." : $"Menu: open={flyout.IsOpen}, theme={window.ViewModel.ThemeNow}, variant={window.ActualThemeVariant}.");
+
+        // A colour of the menu puts its scheme in place at once.
+        flyout.ShowAt(settings);
+        Pump();
+        var sepia = window.FindControl<StackPanel>("ColorMenu")!.Children.OfType<RadioButton>().ElementAt(Palettes.Ids.ToList().IndexOf("sepia"));
+        sepia.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        var primary = window.FindResource(ThemeVariant.Dark, "Primary") as ISolidColorBrush;
+        bool painted = !flyout.IsOpen && window.ViewModel.ColorChoice == "sepia" && primary?.Color == Palettes.Sample("sepia", dark: true).Primary;
+        Console.WriteLine(painted ? "Menu: a colour puts its scheme in place." : $"Menu: colour={window.ViewModel.ColorChoice}, primary={primary?.Color}, open={flyout.IsOpen}.");
+        ok &= painted;
+        Close(window);
+        return ok;
+    }
+
+    /// <summary>
+    /// Several tasks selected with Ctrl: one task to edit is no longer there, the switch says «Включить» while one of
+    /// them is off, and the selection stays when the list is sorted anew.
+    /// </summary>
+    private static bool SelectionWorks()
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        window.Show();
+        vm.Start();
+        Pump();
+        var list = window.FindControl<ListBox>("TaskList")!;
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == "Accounting");
+        Pump();
+        bool one = vm.Selection.Count == 1 && list.SelectedItems?.Count == 1 && vm.CanEditOne && vm.ToggleText == Strings.ToolDisable;
+        list.Selection.Select(vm.Tasks.IndexOf(vm.Tasks.First(t => t.Name == "Old archive")));
+        Pump();
+        bool two = vm.Selection.Count == 2 && !vm.CanEditOne && vm.CanToggle && vm.CanDelete && vm.ToggleText == Strings.ToolEnable;
+        vm.SortBy(3);
+        Pump();
+        bool kept = vm.Selection.Count == 2 && list.SelectedItems?.Count == 2;
+        bool ok = one && two && kept;
+        Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted."
+            : $"Selection: one={one}, two={two}, kept after sorting={kept}.");
+        Close(window);
+        return ok;
+    }
+
+    /// <summary>The window closes for real (the program quits) and its connection goes with it.</summary>
+    private static void Close(MainWindow window)
+    {
+        window.Quitting = true;
+        window.Close();
+        window.ViewModel.Dispose();
+        Pump();
+    }
+
+    private static void Pump()
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+    }
+
+    private static void Save(Window window, string path)
+    {
+        var size = new PixelSize((int)Math.Round(window.Bounds.Width * Scale), (int)Math.Round(window.Bounds.Height * Scale));
+        using var bitmap = new RenderTargetBitmap(size, new Vector(96 * Scale, 96 * Scale));
+        bitmap.Render(window);
+        bitmap.Save(path, PngBitmapEncoderOptions.Default);
+    }
+}
