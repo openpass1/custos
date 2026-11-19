@@ -1,10 +1,11 @@
 /* CUSTOS Monitor in Material Design 3.
    Colours: the M3 "tonal spot" scheme of the site's blue (#2457c5) with neutral grey surfaces (its neutral palettes at
    chroma 0 and 2, without the blue-violet tint), the same "neutral grey" as the trial Windows window; green and amber
-   are harmonised to the blue for "ok" and "warning". The profile chooses auto, light or dark: the dark palette is
-   written twice, once for "auto" with a dark system theme and once for "dark". Type: Roboto and Roboto Mono (fonts/,
-   SIL OFL). Icons: Material Symbols Rounded (icons.svg, built by tools/make-icons.py). Motion: M3 easing, short; with
-   less motion asked for nothing moves. */
+   are harmonised to the blue for "ok" and "warning". Four more schemes of the program window (graphite, blue, warm,
+   sepia) are made by tools/make-colors.mjs and put over it. The profile chooses auto, light or dark: the dark palette
+   is written twice, once for "auto" with a dark system theme and once for "dark". Type: Roboto and Roboto Mono
+   (fonts/, SIL OFL). Icons: Material Symbols Rounded (icons.svg, built by tools/make-icons.py). Motion: M3 easing,
+   short; with less motion asked for nothing moves. */
 
 @font-face { font-family: Roboto; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/roboto-cyrillic-400-normal.woff2) format("woff2");
     unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
@@ -190,6 +191,185 @@
     color-scheme: dark;
 }
 
+/* The other colour schemes a user may choose in the user menu (layout.php: <html data-color="...">) put their colours
+   over the palette above: the same Material scheme with other accents or other surfaces, as in the program window. */
+/* Colour schemes (made by tools/make-colors.mjs, do not edit by hand) */
+/* graphite */
+:root[data-color="graphite"] {
+    --md-primary: #000000; --md-on-primary: #e2e2e2; --md-primary-container: #3b3b3b;
+    --md-on-primary-container: #ffffff; --md-secondary: #5e5e5e; --md-secondary-container: #d4d4d4;
+    --md-on-secondary-container: #1b1b1b; --md-tertiary-container: #747474; --md-on-tertiary-container: #ffffff;
+    --md-surface: #f9f9f9; --md-surface-bright: #ffffff; --md-on-surface: #1b1b1b; --md-on-surface-variant: #474747;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #f3f3f3; --md-surface-container: #eeeeee;
+    --md-surface-container-high: #e8e8e8; --md-surface-container-highest: #e2e2e2; --md-outline: #777777;
+    --md-outline-variant: #c6c6c6; --md-inverse-surface: #303030; --md-inverse-on-surface: #f1f1f1;
+    --md-inverse-primary: #c6c6c6; --item-bg: #ffffff; --log-bg: #303030; --log-text: #f1f1f1; --heat-none: #e2e2e2;
+    --heat-missed_offline: #ababab;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23474747' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="graphite"]:not([data-theme="light"]) {
+        --md-primary: #ffffff; --md-on-primary: #1b1b1b; --md-primary-container: #d4d4d4;
+        --md-on-primary-container: #000000; --md-secondary: #c6c6c6; --md-secondary-container: #474747;
+        --md-on-secondary-container: #e2e2e2; --md-tertiary-container: #919191; --md-on-tertiary-container: #000000;
+        --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c6c6c6;
+        --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+        --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #919191;
+        --md-outline-variant: #474747; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+        --md-inverse-primary: #5e5e5e; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+        --heat-missed_offline: #5e5e5e;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c6c6c6' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="graphite"][data-theme="dark"] {
+    --md-primary: #ffffff; --md-on-primary: #1b1b1b; --md-primary-container: #d4d4d4;
+    --md-on-primary-container: #000000; --md-secondary: #c6c6c6; --md-secondary-container: #474747;
+    --md-on-secondary-container: #e2e2e2; --md-tertiary-container: #919191; --md-on-tertiary-container: #000000;
+    --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c6c6c6;
+    --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+    --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #919191;
+    --md-outline-variant: #474747; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+    --md-inverse-primary: #5e5e5e; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+    --heat-missed_offline: #5e5e5e;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c6c6c6' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* blue */
+:root[data-color="blue"] {
+    --md-primary: #004f96; --md-on-primary: #ffffff; --md-primary-container: #0067c0;
+    --md-on-primary-container: #dbe7ff; --md-secondary: #485f83; --md-secondary-container: #bed6ff;
+    --md-on-secondary-container: #465c80; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+    --md-surface: #f9f9f9; --md-surface-bright: #ffffff; --md-on-surface: #1b1b1b; --md-on-surface-variant: #474648;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #f3f3f3; --md-surface-container: #eeeeee;
+    --md-surface-container-high: #e8e8e8; --md-surface-container-highest: #e2e2e2; --md-outline: #787678;
+    --md-outline-variant: #c8c6c7; --md-inverse-surface: #303030; --md-inverse-on-surface: #f1f1f1;
+    --md-inverse-primary: #a6c8ff; --item-bg: #ffffff; --log-bg: #303030; --log-text: #f1f1f1; --heat-none: #e2e2e2;
+    --heat-missed_offline: #adabad;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23474648' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="blue"]:not([data-theme="light"]) {
+        --md-primary: #a6c8ff; --md-on-primary: #003060; --md-primary-container: #0067c0;
+        --md-on-primary-container: #dbe7ff; --md-secondary: #b0c8f0; --md-secondary-container: #30476a;
+        --md-on-secondary-container: #9fb6de; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+        --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c8c6c7;
+        --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+        --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #929092;
+        --md-outline-variant: #474648; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+        --md-inverse-primary: #005eb1; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+        --heat-missed_offline: #5f5e60;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="blue"][data-theme="dark"] {
+    --md-primary: #a6c8ff; --md-on-primary: #003060; --md-primary-container: #0067c0;
+    --md-on-primary-container: #dbe7ff; --md-secondary: #b0c8f0; --md-secondary-container: #30476a;
+    --md-on-secondary-container: #9fb6de; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+    --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c8c6c7;
+    --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+    --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #929092;
+    --md-outline-variant: #474648; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+    --md-inverse-primary: #005eb1; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+    --heat-missed_offline: #5f5e60;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* warm */
+:root[data-color="warm"] {
+    --md-primary: #4a5c92; --md-on-primary: #ffffff; --md-primary-container: #dbe1ff;
+    --md-on-primary-container: #314578; --md-secondary: #585e71; --md-secondary-container: #dde2f9;
+    --md-on-secondary-container: #414659; --md-tertiary-container: #ffd6f9; --md-on-tertiary-container: #5a3d58;
+    --md-surface: #fff8f4; --md-surface-bright: #ffffff; --md-on-surface: #201b15; --md-on-surface-variant: #504539;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #fef1e8; --md-surface-container: #f8ece2;
+    --md-surface-container-high: #f2e6dc; --md-surface-container-highest: #ece0d7; --md-outline: #827568;
+    --md-outline-variant: #d4c4b5; --md-inverse-surface: #362f29; --md-inverse-on-surface: #fbefe5;
+    --md-inverse-primary: #b3c5ff; --item-bg: #ffffff; --log-bg: #362f29; --log-text: #fbefe5; --heat-none: #ece0d7;
+    --heat-missed_offline: #b8a99b;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23504539' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="warm"]:not([data-theme="light"]) {
+        --md-primary: #b3c5ff; --md-on-primary: #192e60; --md-primary-container: #314578;
+        --md-on-primary-container: #dbe1ff; --md-secondary: #c1c6dd; --md-secondary-container: #414659;
+        --md-on-secondary-container: #dde2f9; --md-tertiary-container: #5a3d58; --md-on-tertiary-container: #ffd6f9;
+        --md-surface: #18120d; --md-surface-bright: #3f3831; --md-on-surface: #ece0d7; --md-on-surface-variant: #d4c4b5;
+        --md-surface-container-lowest: #120d08; --md-surface-container-low: #201b15; --md-surface-container: #241f19;
+        --md-surface-container-high: #2f2923; --md-surface-container-highest: #3a342d; --md-outline: #9c8e81;
+        --md-outline-variant: #504539; --md-inverse-surface: #ece0d7; --md-inverse-on-surface: #362f29;
+        --md-inverse-primary: #4a5c92; --item-bg: #2a241e; --log-bg: #120d08; --log-text: #ece0d7; --heat-none: #3a342d;
+        --heat-missed_offline: #685c50;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4b5' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="warm"][data-theme="dark"] {
+    --md-primary: #b3c5ff; --md-on-primary: #192e60; --md-primary-container: #314578;
+    --md-on-primary-container: #dbe1ff; --md-secondary: #c1c6dd; --md-secondary-container: #414659;
+    --md-on-secondary-container: #dde2f9; --md-tertiary-container: #5a3d58; --md-on-tertiary-container: #ffd6f9;
+    --md-surface: #18120d; --md-surface-bright: #3f3831; --md-on-surface: #ece0d7; --md-on-surface-variant: #d4c4b5;
+    --md-surface-container-lowest: #120d08; --md-surface-container-low: #201b15; --md-surface-container: #241f19;
+    --md-surface-container-high: #2f2923; --md-surface-container-highest: #3a342d; --md-outline: #9c8e81;
+    --md-outline-variant: #504539; --md-inverse-surface: #ece0d7; --md-inverse-on-surface: #362f29;
+    --md-inverse-primary: #4a5c92; --item-bg: #2a241e; --log-bg: #120d08; --log-text: #ece0d7; --heat-none: #3a342d;
+    --heat-missed_offline: #685c50;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4b5' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* sepia */
+:root[data-color="sepia"] {
+    --md-primary: #7c5635; --md-on-primary: #ffffff; --md-primary-container: #f4dfcb;
+    --md-on-primary-container: #524436; --md-secondary: #6b5c4c; --md-secondary-container: #f0e0cf;
+    --md-on-secondary-container: #4f4539; --md-tertiary-container: #f0e2bb; --md-on-tertiary-container: #4f462a;
+    --md-surface: #fff8f3; --md-surface-bright: #ffffff; --md-on-surface: #201b13; --md-on-surface-variant: #504535;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #fef2e5; --md-surface-container: #f8ecdf;
+    --md-surface-container-high: #f2e6d9; --md-surface-container-highest: #ece1d4; --md-outline: #827563;
+    --md-outline-variant: #d4c4af; --md-inverse-surface: #352f27; --md-inverse-on-surface: #fbefe2;
+    --md-inverse-primary: #efbd94; --item-bg: #ffffff; --log-bg: #352f27; --log-text: #fbefe2; --heat-none: #ece1d4;
+    --heat-missed_offline: #b8aa95;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23504535' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="sepia"]:not([data-theme="light"]) {
+        --md-primary: #efbd94; --md-on-primary: #48290b; --md-primary-container: #524436;
+        --md-on-primary-container: #f4dfcb; --md-secondary: #d7c3b0; --md-secondary-container: #4f4539;
+        --md-on-secondary-container: #f0e0cf; --md-tertiary-container: #4f462a; --md-on-tertiary-container: #f0e2bb;
+        --md-surface: #17130b; --md-surface-bright: #3f382f; --md-on-surface: #ece1d4; --md-on-surface-variant: #d4c4af;
+        --md-surface-container-lowest: #120d07; --md-surface-container-low: #201b13; --md-surface-container: #241f17;
+        --md-surface-container-high: #2f2921; --md-surface-container-highest: #3a342b; --md-outline: #9c8f7b;
+        --md-outline-variant: #504535; --md-inverse-surface: #ece1d4; --md-inverse-on-surface: #352f27;
+        --md-inverse-primary: #7c5635; --item-bg: #2a241c; --log-bg: #120d07; --log-text: #ece1d4; --heat-none: #3a342b;
+        --heat-missed_offline: #685d4c;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4af' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="sepia"][data-theme="dark"] {
+    --md-primary: #efbd94; --md-on-primary: #48290b; --md-primary-container: #524436;
+    --md-on-primary-container: #f4dfcb; --md-secondary: #d7c3b0; --md-secondary-container: #4f4539;
+    --md-on-secondary-container: #f0e0cf; --md-tertiary-container: #4f462a; --md-on-tertiary-container: #f0e2bb;
+    --md-surface: #17130b; --md-surface-bright: #3f382f; --md-on-surface: #ece1d4; --md-on-surface-variant: #d4c4af;
+    --md-surface-container-lowest: #120d07; --md-surface-container-low: #201b13; --md-surface-container: #241f17;
+    --md-surface-container-high: #2f2921; --md-surface-container-highest: #3a342b; --md-outline: #9c8f7b;
+    --md-outline-variant: #504535; --md-inverse-surface: #ece1d4; --md-inverse-on-surface: #352f27;
+    --md-inverse-primary: #7c5635; --item-bg: #2a241c; --log-bg: #120d07; --log-text: #ece1d4; --heat-none: #3a342b;
+    --heat-missed_offline: #685d4c;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4af' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* The samples in the user menu */
+.swatch-neutral { --swatch-fg: #4a5c92; --swatch-bg: #eeeeee; }
+.swatch-graphite { --swatch-fg: #000000; --swatch-bg: #eeeeee; }
+.swatch-blue { --swatch-fg: #004f96; --swatch-bg: #eeeeee; }
+.swatch-warm { --swatch-fg: #4a5c92; --swatch-bg: #f8ece2; }
+.swatch-sepia { --swatch-fg: #7c5635; --swatch-bg: #f8ecdf; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .swatch-neutral { --swatch-fg: #b3c5ff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-graphite { --swatch-fg: #ffffff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-blue { --swatch-fg: #a6c8ff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-warm { --swatch-fg: #b3c5ff; --swatch-bg: #241f19; }
+    :root:not([data-theme="light"]) .swatch-sepia { --swatch-fg: #efbd94; --swatch-bg: #241f17; }
+}
+:root[data-theme="dark"] .swatch-neutral { --swatch-fg: #b3c5ff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-graphite { --swatch-fg: #ffffff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-blue { --swatch-fg: #a6c8ff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-warm { --swatch-fg: #b3c5ff; --swatch-bg: #241f19; }
+:root[data-theme="dark"] .swatch-sepia { --swatch-fg: #efbd94; --swatch-bg: #241f17; }
+/* End of the colour schemes */
+
 /* ---------------------------------------------------------------------------------------------------------------------
    Base
    ------------------------------------------------------------------------------------------------------------------ */
@@ -329,7 +509,7 @@ header.top details.user-menu > summary {
 .avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: var(--md-tertiary-container);
     color: var(--md-on-tertiary-container); font-size: 16px; font-weight: 500; }
 .user-menu > summary > .icon { color: var(--md-on-surface-variant); }
-.user-menu .dropdown-menu { min-width: 260px; }
+.user-menu .dropdown-menu { min-width: 260px; max-height: calc(100dvh - 80px); overflow-y: auto; overscroll-behavior: contain; }
 
 main.sheet {
     --bg-here: var(--md-surface); flex: 1 0 auto; min-width: 0; margin: 0 16px 0 0; padding: 28px 32px 40px; border-radius: 28px;
@@ -568,12 +748,12 @@ button.busy::after { content: ""; width: 14px; height: 14px; border: 2px solid c
     animation: spin .8s linear infinite; }
 
 /* The ripple: a circle with a soft edge that spreads from the pointer (app.js adds it on press and makes it grow).
-   It shows quickly while pressed and fades slowly after, as Material 3 has it but at half its speed; on the sections
-   of the menu (.quick) at the speed of Material 3. Tabs have none. */
+   It shows quickly while pressed and fades slowly after, as Material 3 has it but at a quarter of its speed; on the
+   sections of the menu (.quick) at the speed of Material 3. Tabs have none. */
 .ripple { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity .75s linear;
+.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity 1.5s linear;
     background: radial-gradient(closest-side, currentColor max(calc(100% - 70px), 65%), transparent 100%); }
-.ripple.pressed > i { opacity: .12; transition-duration: .21s; }
+.ripple.pressed > i { opacity: .12; transition-duration: .42s; }
 .ripple.quick > i { transition-duration: .375s; }
 .ripple.quick.pressed > i { transition-duration: .105s; }
 
@@ -700,6 +880,9 @@ details.dropdown[open] > .dropdown-menu { animation: menu-in .22s var(--ease-in)
 .menu-check { display: inline-flex; margin-left: auto; padding-left: 20px; color: var(--md-primary); }
 .menu-check .icon { width: 20px; height: 20px; }
 .menu-code { display: inline-flex; justify-content: center; flex: none; width: 20px; color: var(--md-on-surface-variant); font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+/* A colour scheme in the user menu: its main colour on its background (--swatch-*: "Colour schemes" above). */
+.swatch { flex: none; position: relative; width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-bg); box-shadow: inset 0 0 0 1px var(--md-outline-variant); }
+.swatch::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--swatch-fg); }
 .menu-label { padding: 12px 16px 4px; color: var(--md-on-surface-variant); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: .04em; }
 .menu-label:first-child { padding-top: 4px; }
 .menu-sep { height: 1px; margin: 8px 0; background: var(--md-outline-variant); }

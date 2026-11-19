@@ -1335,8 +1335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // Ripple (Material 3): pressing a button, a menu item, a chip, a tile or a section of the menu spreads a soft-edged
-// circle from the pointer. On buttons and the like it shows within 0.2 s, grows for 0.9 s and, once the press has ended
-// (but not sooner than 0.45 s after it began), fades for 0.75 s: twice the Material 3 times, which felt too quick. On
+// circle from the pointer. On buttons and the like it shows within 0.4 s, grows for 1.8 s and, once the press has ended
+// (but not sooner than 0.9 s after it began), fades for 1.5 s: four times the Material 3 times, which felt too quick. On
 // the sections of the menu (rail, bottom bar, "More") it keeps the Material 3 times of 1.1.2 (0.1 / 0.45 / 0.225 /
 // 0.375 s); in the narrow rail and the phone's bottom bar it fills the pill around the icon. Tabs have none. A press
 // that opens a page (a section, a link, a button that sends its form) would cut the circle off half-way: the press is
@@ -1344,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // or link if the page has it. Nothing of it with less motion asked for.
 (() => {
     const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .editor-toc a, a.tile, .sr-item';
-    const SLOW = { grow: 900, press: 450, fade: 750 };
+    const SLOW = { grow: 1800, press: 900, fade: 1500 };
     const MENU = { grow: 450, press: 225, fade: 375 };
     const timesOf = (el) => (el.hasAttribute('data-nav') ? MENU : SLOW);
     const CARRY = 'custos.ripple';

@@ -726,6 +726,16 @@ final class WebTest extends TestCase
         $this->assertSame('en', $headers['content-language']);
         $this->assertStringContainsString('Results for 30 days', $home);
         $this->assertMatchesRegularExpression('/name="theme" value="dark" aria-pressed="true"/', $home);
+        // The colour scheme: a form sends only it, the theme and language stay; an unknown one is the base scheme.
+        $this->assertMatchesRegularExpression('/name="color" value="neutral" aria-pressed="true"/', $home);
+        $this->post('/profile', ['color' => 'sepia', 'back' => '/']);
+        [, $home] = $this->http('GET', '/');
+        $this->assertStringContainsString('<html lang="en" data-theme="dark" data-color="sepia">', $home);
+        $this->assertMatchesRegularExpression('/name="color" value="sepia" aria-pressed="true"/', $home);
+        $this->post('/profile', ['theme' => 'light']);
+        $this->assertStringContainsString('<html lang="en" data-theme="light" data-color="sepia">', $this->http('GET', '/')[1]);
+        $this->post('/profile', ['color' => 'pink']);
+        $this->assertStringContainsString('<html lang="en" data-theme="light">', $this->http('GET', '/')[1]);
         // Another host is never a way back.
         [, , $headers] = $this->post('/profile', ['language' => 'en', 'theme' => 'dark', 'back' => '//evil.example/']);
         $this->assertStringNotContainsString('evil', $headers['location']);
