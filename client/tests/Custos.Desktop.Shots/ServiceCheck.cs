@@ -32,10 +32,6 @@ internal static class ServiceCheck
 
         Directory.CreateDirectory(source);
         Directory.CreateDirectory(destination);
-        // 16 MB at 512 KB/s: the run lasts about half a minute, long enough to pause and stop it.
-        var bytes = new byte[16 * 1024 * 1024];
-        Random.Shared.NextBytes(bytes);
-        File.WriteAllBytes(Path.Combine(source, "big.bin"), bytes);
         File.WriteAllText(Path.Combine(source, "note.txt"), "CUSTOS");
 
         var window = App.CreateMainWindow(demo: false);
@@ -64,6 +60,10 @@ internal static class ServiceCheck
             Step("connected as an administrator", vm.CanEdit && vm.CanRestore);
 
             // The task to work with: saved straight through the pipe, since the editor of this version does not save.
+            // A copy to a local folder takes no time and has no speed limit, so the run is made long by the commands
+            // before it: 15 pings of two seconds each, about half a minute, long enough to pause and stop it. The
+            // service waits between them while paused and ends the one running when stopped.
+            string ping = Path.Combine(Environment.SystemDirectory, "PING.EXE");
             var task = new TaskDefinition
             {
                 Name = "Desktop check",
@@ -71,13 +71,17 @@ internal static class ServiceCheck
                 Schedule = new ScheduleOptions { Type = ScheduleTypes.Manual },
                 Vss = new VssOptions { Enabled = false },
                 Sources = [new TaskSource { Kind = SourceKinds.Folder, Path = source }],
-                Destinations = [new TaskDestination { Kind = DestinationKinds.Local, Path = destination, SpeedLimitKbps = 512 }],
+                Destinations = [new TaskDestination { Kind = DestinationKinds.Local, Path = destination }],
+                Events = new TaskEvents
+                {
+                    Pre = [.. Enumerable.Range(0, 15).Select(_ => new TaskEvent { Kind = TaskEventKinds.Run, Command = ping, Args = "-n 3 127.0.0.1", TimeoutS = 60 })],
+                },
             };
             var saved = Await(vm.Monitor.RequestAsync(PipeProtocol.Methods.TaskSave, new TaskSaveRequest { Task = task },
                 IpcJsonContext.Default.TaskSaveRequest, IpcJsonContext.Default.TaskSaveResult)).Task;
             Step("the task is in the list", WaitFor(() => Row(vm, saved.Id) is not null));
-            vm.SelectedTask = Row(vm, saved.Id);
-            Pump();
+            var list = window.FindControl<ListBox>("TaskList")!;
+            Click(list, vm, saved.Id);
 
             // «Клонировать»: a copy, switched off, selected.
             Press(window, "CloneButton");
@@ -92,7 +96,6 @@ internal static class ServiceCheck
             Step("«Включить» switches the copy on", WaitFor(() => Definition(vm, cloneId)?.Enabled == true));
 
             // Both selected with Ctrl: «Отключить» switches both off with one request.
-            var list = window.FindControl<ListBox>("TaskList")!;
             list.Selection.Select(vm.Tasks.IndexOf(Row(vm, saved.Id)!));
             Pump();
             Step("two tasks selected, «Изменить» is off", vm.Selection.Count == 2 && !window.FindControl<Button>("EditButton")!.IsEnabled);
@@ -100,13 +103,14 @@ internal static class ServiceCheck
             Press(window, "ToggleButton");
             Step("«Отключить» switches both off", WaitFor(() => Definition(vm, saved.Id)?.Enabled == false && Definition(vm, cloneId)?.Enabled == false));
 
-            // The task alone again, on, and run.
-            vm.SelectedTask = Row(vm, saved.Id);
-            Pump();
+            // The task alone again (a click without Ctrl), on, and run: only it, the copy stays as it is.
+            Click(list, vm, saved.Id);
+            Step("a click selects the task alone", vm.Selection.Count == 1 && vm.SelectedTask?.TaskId == saved.Id);
             Press(window, "ToggleButton");
             Step("the task is on again", WaitFor(() => Definition(vm, saved.Id)?.Enabled == true));
             Press(window, "RunButton");
-            Step("«Запустить» starts the run", WaitFor(() => vm.Monitor.Snapshot?.Current?.TaskId == saved.Id && vm.CanPause));
+            Step("«Запустить» starts the run of the task alone", WaitFor(() => vm.Monitor.Snapshot?.Current?.TaskId == saved.Id && vm.CanPause)
+                && vm.Monitor.Snapshot?.Queue.Count is null or 0);
 
             Press(window, "PauseButton");
             Step("«Пауза» pauses it and the button says «Продолжить»", WaitFor(() => vm.IsPaused && vm.PauseText == DesktopStrings.Resume));
@@ -153,6 +157,13 @@ internal static class ServiceCheck
     }
 
     private static TaskRow? Row(MainViewModel vm, string id) => vm.Tasks.FirstOrDefault(r => r.TaskId == id);
+
+    /// <summary>A click on a row of the list without Ctrl: that task alone is selected.</summary>
+    private static void Click(ListBox list, MainViewModel vm, string id)
+    {
+        list.SelectedIndex = vm.Tasks.IndexOf(Row(vm, id)!);
+        Pump();
+    }
 
     private static TaskDefinition? Definition(MainViewModel vm, string id) => vm.Monitor.Snapshot?.Tasks.FirstOrDefault(t => t.Id == id);
 

@@ -252,9 +252,13 @@ internal static class Program
         vm.SortBy(3);
         Pump();
         bool kept = vm.Selection.Count == 2 && list.SelectedItems?.Count == 2;
-        bool ok = one && two && kept;
-        Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted."
-            : $"Selection: one={one}, two={two}, kept after sorting={kept}.");
+        // A click without Ctrl selects that task alone again.
+        list.SelectedIndex = vm.Tasks.IndexOf(vm.Tasks.First(t => t.Name == "Accounting"));
+        Pump();
+        bool alone = vm.Selection.Count == 1 && list.SelectedItems?.Count == 1 && vm.SelectedTask?.Name == "Accounting" && vm.CanEditOne;
+        bool ok = one && two && kept && alone;
+        Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted, a click selects one again."
+            : $"Selection: one={one}, two={two}, kept after sorting={kept}, one again after a click={alone}.");
         Close(window);
         return ok;
     }
