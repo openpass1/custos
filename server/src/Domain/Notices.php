@@ -20,10 +20,11 @@ use Custos\Infra\Time;
  *   task.conflict      {name, revision, by} an edit from the site overwrote this version on the machine (A.4)
  *   command.failed     {kind, status, message} a command was rejected or failed
  *   agent.outdated, sevenzip.outdated        older CUSTOS or 7z.dll on machines (UpdateWatch)
- *   legacy.outdated                          older CUSTOS for Windows 7 and 8.1 on machines of that edition
+ *   legacy.outdated, macos.outdated          the same for CUSTOS for Windows 7 and 8.1 and for macOS
  *   site.update        {version, current}   a newer site release on GitHub (Releases)
  *   client.release     {version}            a program release newer than every agent package on the server
  *   legacy.release     {version}            the same for the edition for Windows 7 and 8.1, while the site has any of it
+ *   macos.release      {version}            the same for CUSTOS for macOS, while the site has any of it
  *   site.updated       {from, to}           the site updated itself (Infra\Updater)
  *   site.update_failed {to}                 a site update failed and was taken back
  */

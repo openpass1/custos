@@ -6,6 +6,7 @@ namespace Custos\Http\Web\Controller;
 
 use Custos\Domain\Agents;
 use Custos\Domain\Packages;
+use Custos\Domain\Releases;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 
@@ -13,8 +14,9 @@ use Custos\Http\Web\Controller;
  * Updates (section 8): the site itself (the newest release on GitHub or an uploaded package, run by cron), agent
  * update packages (upload or download of the newest program release, current version, update machines) and 7-Zip
  * (the daily check of the newest release, download or upload of the installer, update of 7z.dll on machines).
- * The edition for Windows 7 and 8.1 has packages of its own (kind legacy) and its own current version; its section
- * shows only while the site has any of it, and its machines are never offered the other edition or 7-Zip.
+ * The editions for Windows 7 and 8.1 and for macOS have packages of their own (kind legacy, macos) and their own
+ * current versions; the section of each shows only while the site has any of it, and their machines are never offered
+ * another edition or 7-Zip.
  */
 final class UpdatesController extends Controller
 {
@@ -27,10 +29,24 @@ final class UpdatesController extends Controller
         $watch = $this->app->updateWatch();
         $agents = array_values(array_filter($this->app->agents()->all(), fn($a) => $a['status'] !== 'pending'));
         $current = $packages->current();
-        $legacyCurrent = $packages->current('legacy');
         $latestSevenZip = $watch->latestSevenZip();
         $settings = $this->app->settings();
         $releases = $this->app->releases();
+        // The editions other than the standard one, each with its section, packages, current version and machines.
+        $editions = [];
+        foreach (Agents::EDITIONS as $kind) {
+            $editionCurrent = $packages->current($kind);
+            $machines = Packages::fitting($kind, $agents);
+            $editions[$kind] = [
+                'on' => $packages->inUse($kind),
+                'latest' => $releases->latest($kind),
+                'newer' => $releases->newerClient($kind),
+                'packages' => $packages->all($kind),
+                'current' => $editionCurrent,
+                'machines' => $machines !== [],
+                'outdated' => array_column(Packages::outdated($machines, $editionCurrent['version'] ?? null), null, 'id'),
+            ];
+        }
         return $this->render('updates/index', [
             'repo' => $releases->repo,
             'releasesOn' => $releases->checkOn(),
@@ -42,11 +58,7 @@ final class UpdatesController extends Controller
             'cronLastRun' => $settings->get('cron_last_run'),
             'clientLatest' => $releases->latest('client'),
             'clientNewer' => $releases->newerClient(),
-            'legacyOn' => $packages->legacyInUse(),
-            'legacyLatest' => $releases->latest('legacy'),
-            'legacyNewer' => $releases->newerClient('legacy'),
-            'legacyPackages' => $packages->all('legacy'),
-            'legacyCurrent' => $legacyCurrent,
+            'editions' => $editions,
             'section' => 'updates',
             'agentPackages' => $packages->all('agent'),
             'sevenZipPackages' => $packages->all('7zip'),
@@ -54,7 +66,6 @@ final class UpdatesController extends Controller
             'agents' => $agents,
             'groups' => $this->app->groups()->all(),
             'outdated' => array_column(Packages::outdated(Packages::fitting('agent', $agents), $current['version'] ?? null), null, 'id'),
-            'legacyOutdated' => array_column(Packages::outdated(Packages::fitting('legacy', $agents), $legacyCurrent['version'] ?? null), null, 'id'),
             'latestSevenZip' => $latestSevenZip,
             'sevenZipOutdated' => array_column(Packages::outdated(Packages::fitting('7zip', $agents), $latestSevenZip['version'] ?? null, 'sevenzip_version'), null, 'id'),
             'github' => json_decode($settings->get('sevenzip_latest'), true),
@@ -82,13 +93,13 @@ final class UpdatesController extends Controller
             return $this->redirect('/updates');
         }
         $this->audit('update.upload', 'update', $package['version'], ['version' => $package['version'], 'edition' => self::edition($package['kind']), 'sha256' => $package['sha256']]);
-        $this->session->flash('info', $this->t($package['kind'] === 'legacy' ? 'updates.flash.uploaded_legacy' : 'updates.flash.uploaded', ['version' => $package['version']]));
+        $this->session->flash('info', $this->t($package['kind'] === 'agent' ? 'updates.flash.uploaded' : 'updates.flash.uploaded_' . $package['kind'], ['version' => $package['version']]));
         return $this->redirect('/updates');
     }
 
     public function current(string $kind, string $version): Response
     {
-        $kind = $kind === 'legacy' ? 'legacy' : 'agent';
+        $kind = in_array($kind, Packages::PROGRAM_KINDS, true) ? $kind : 'agent';
         if ($this->app->packages()->find($kind, $version) === null) {
             return $this->notFound();
         }
@@ -100,25 +111,25 @@ final class UpdatesController extends Controller
 
     public function delete(string $kind, string $version): Response
     {
-        $kind = in_array($kind, ['7zip', 'legacy'], true) ? $kind : 'agent';
+        $kind = in_array($kind, ['7zip', ...Packages::PROGRAM_KINDS], true) ? $kind : 'agent';
         if ($this->app->packages()->find($kind, $version) === null) {
             return $this->notFound();
         }
         $this->app->packages()->delete($kind, $version);
         $this->audit($kind === '7zip' ? 'sevenzip.delete' : 'update.delete', 'update', $version,
-            $kind === 'legacy' ? ['version' => $version, 'edition' => self::edition($kind)] : ['version' => $version]);
+            in_array($kind, Agents::EDITIONS, true) ? ['version' => $version, 'edition' => self::edition($kind)] : ['version' => $version]);
         $this->session->flash('info', $this->t('updates.flash.deleted', ['version' => $version]));
         return $this->redirect('/updates');
     }
 
     /**
-     * Updates machines: kind agent or legacy (the current version of that edition) or 7zip (the newest installer on
+     * Updates machines: kind agent, legacy or macos (the current version of that edition) or 7zip (the newest installer on
      * the server); target "selected" (agent_ids[]), "outdated" or "group" (group_id). Only the machines the package
      * is for are taken (Packages::fits): the other edition's are left out without a word.
      */
     public function install(): Response
     {
-        $kind = in_array($this->post('kind'), ['7zip', 'legacy'], true) ? $this->post('kind') : 'agent';
+        $kind = in_array($this->post('kind'), ['7zip', ...Packages::PROGRAM_KINDS], true) ? $this->post('kind') : 'agent';
         $packages = $this->app->packages();
         $package = $kind === '7zip' ? $packages->latestSevenZip() : $packages->current($kind);
         if ($package === null) {
@@ -140,7 +151,7 @@ final class UpdatesController extends Controller
         if ($result['queued'] !== []) {
             $this->audit($kind === '7zip' ? 'sevenzip.install' : 'update.install', 'update', $package['version'], [
                 'version' => $package['version'],
-                ...($kind === 'legacy' ? ['edition' => self::edition($kind)] : []),
+                ...(in_array($kind, Agents::EDITIONS, true) ? ['edition' => self::edition($kind)] : []),
                 'machines' => implode(', ', array_map(fn($a) => Agents::name($a), $result['queued'])),
             ]);
         }
@@ -237,19 +248,20 @@ final class UpdatesController extends Controller
 
     /**
      * Downloads the newest program release from GitHub as an agent update package (checked and signed): $part client
-     * for the standard edition, legacy for the edition for Windows 7 and 8.1.
+     * for the standard edition, legacy for the edition for Windows 7 and 8.1, macos for CUSTOS for macOS.
      */
     public function clientDownload(string $part): Response
     {
         @set_time_limit(300);
         try {
-            $package = $this->app->releases()->downloadClient($this->user()['login'], $params, $part === 'legacy' ? 'legacy' : 'client');
+            $package = $this->app->releases()->downloadClient($this->user()['login'], $params,
+                in_array($part, Releases::PROGRAM_PARTS, true) ? $part : 'client');
         } catch (\InvalidArgumentException $e) {
             $this->session->flash('error', $this->t($e->getMessage(), $params ?? []));
             return $this->redirect('/updates');
         }
         $this->audit('update.download', 'update', $package['version'], ['version' => $package['version'], 'edition' => self::edition($package['kind']), 'sha256' => $package['sha256']]);
-        $this->session->flash('info', $this->t($package['kind'] === 'legacy' ? 'releases.flash.legacy_stored' : 'releases.flash.client_stored', ['version' => $package['version']]));
+        $this->session->flash('info', $this->t($package['kind'] === 'agent' ? 'releases.flash.client_stored' : "releases.flash.{$package['kind']}_stored", ['version' => $package['version']]));
         return $this->redirect('/updates');
     }
 
@@ -303,7 +315,11 @@ final class UpdatesController extends Controller
     /** The edition of a package kind as the journal shows it. */
     private static function edition(string $kind): string
     {
-        return $kind === 'legacy' ? 'Windows 7, 8.1' : 'standard';
+        return match ($kind) {
+            'legacy' => 'Windows 7, 8.1',
+            'macos' => 'macOS',
+            default => 'standard',
+        };
     }
 
     /** Path of an uploaded file, or null with a message in the flash. */

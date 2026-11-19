@@ -110,10 +110,11 @@ function status_class(string $status): string
     };
 }
 
-/** The mark of a machine with the edition for Windows 7 and 8.1 (Agents::isLegacy), or nothing for the standard one. */
+/** The mark of a machine with another edition (Windows 7 and 8.1, macOS), or nothing for the standard one. */
 function edition_badge(array $agent): string
 {
-    return \Custos\Domain\Agents::isLegacy($agent) ? ' ' . badge('legacy', t('agent.edition.legacy')) : '';
+    $edition = \Custos\Domain\Agents::edition((string) ($agent['edition'] ?? ''));
+    return $edition === '' ? '' : ' ' . badge($edition, t('agent.edition.' . $edition));
 }
 
 /** A coloured status label. Colours follow section 6.6. */

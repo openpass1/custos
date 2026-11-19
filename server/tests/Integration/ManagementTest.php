@@ -282,7 +282,8 @@ final class ManagementTest extends TestCase
         $this->assertNull($packages->current('legacy'), 'each edition has its own current version');
         $packages->setCurrent('1.0.1', 'legacy');
         $this->assertSame('1.0.1', $packages->current('agent')['version']);
-        $this->assertTrue($packages->legacyInUse());
+        $this->assertTrue($packages->inUse('legacy'));
+        $this->assertFalse($packages->inUse('macos'));
 
         $this->assertSame(['queued' => [], 'skipped' => [$agent]], $packages->install('agent', '1.0.1', [$agent], self::USER), 'not the standard package');
         $installer = TestEnv::dir() . '/7z-' . uniqid() . '.exe';
@@ -311,6 +312,51 @@ final class ManagementTest extends TestCase
         $template = ['id' => 0, 'revision' => 1, 'credential_list' => [], 'task' => ['destinations' => [['kind' => 'gdrive', 'path' => 'office']]]];
         $result = $this->app->templates()->apply($template, [$agent], [], self::USER);
         $this->assertSame('templates.apply.cloud_legacy', $result[0]['error']['key'] ?? null);
+    }
+
+    public function testCustosForMacTakesOnlyItsOwnPackages(): void
+    {
+        $agent = $this->approvedAgent(['mac' => true]);
+        $this->assertSame('macos', $agent['edition'], 'the registration and the heartbeat bring the edition');
+        $this->assertStringStartsWith('macOS', $agent['os']);
+        $packages = $this->app->packages();
+        $this->assertTrue($packages->inUse('macos'), 'a Mac is enough for the section of its edition');
+
+        // The same version for Windows and for macOS: two packages, each with its own file, signature and current mark.
+        $standard = $packages->addAgent($this->package('1.0.1'), 'admin');
+        $mac = $packages->addAgent($this->package('1.0.1', 1, 'macos'), 'admin');
+        $this->assertSame(['macos', 'custos-macos-1.0.1.zip'], [$mac['kind'], $mac['file_name']]);
+        $this->assertNotSame($standard['signature'], $mac['signature']);
+        try {
+            $packages->addAgent($this->package('1.0.1', 1, 'macos'), 'admin');
+            $this->fail('the same Mac version twice is refused');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertSame('updates.error.exists_macos', $e->getMessage());
+        }
+        $packages->setCurrent('1.0.1');
+        $this->assertNull($packages->current('macos'), 'each edition has its own current version');
+        $packages->setCurrent('1.0.1', 'macos');
+
+        $this->assertSame([], $packages->install('agent', '1.0.1', [$agent], self::USER)['queued'], 'not the package for Windows');
+        $installer = TestEnv::dir() . '/7z-' . uniqid() . '.exe';
+        file_put_contents($installer, "MZ fake 7-Zip installer\n" . random_bytes(1024));
+        $packages->addSevenZip($installer, '24.09', null, 'upload', 'admin');
+        $this->assertSame([], $packages->install('7zip', '24.09', [$agent], self::USER)['queued'], 'no 7-Zip from the site');
+        $this->assertCount(1, $packages->install('macos', '1.0.1', [$agent], self::USER)['queued']);
+
+        // The agent checks the "macos" signature and downloads the Mac file by the same address.
+        $this->agentPass(['mac' => true]);
+        $agent = $this->app->agents()->find($agent['id']);
+        $this->assertSame('1.0.1', $agent['agent_version']);
+        $this->assertSame('done', $this->app->db()->value("SELECT status FROM commands WHERE kind = 'update.install'"));
+        $this->assertSame((string) file_get_contents($packages->file('macos', '1.0.1')), $this->client()->download('agent/updates/1.0.1')['body']);
+
+        // The outdated notice counts Macs against the current Mac version only.
+        $packages->addAgent($this->package('1.0.2', 1, 'macos'), 'admin');
+        $packages->setCurrent('1.0.2', 'macos');
+        $stats = $this->app->updateWatch()->pass(time());
+        $this->assertSame([0, 1], [$stats['agents_outdated'], $stats['macos_outdated']]);
+        $this->assertSame(1, (int) $this->app->db()->value("SELECT COUNT(*) FROM notices WHERE kind = 'macos.outdated'"));
     }
 
     public function testSevenZipReleasesOnGitHub(): void

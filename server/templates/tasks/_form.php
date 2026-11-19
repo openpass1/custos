@@ -14,6 +14,9 @@ use Custos\Domain\TaskForm;
 
 // The edition for Windows 7 and 8.1 has no cloud drives: they are not offered for its machines.
 $legacy = !$templateMode && isset($agent) && is_array($agent) && Agents::isLegacy($agent);
+// CUSTOS for macOS: Mac paths in the examples, and an APFS snapshot where Windows takes a VSS shadow copy.
+$mac = !$templateMode && isset($agent) && is_array($agent) && Agents::isMac($agent);
+$vssText = fn(string $key): string => t($mac ? $key . '_mac' : $key);
 
 $sub = function (string $key) use ($task): array {
     $value = $task[$key] ?? [];
@@ -84,6 +87,11 @@ $pathExamples = [
                       'ftps' => '/backup', 'sftp' => '/backup', 's3' => 'backup', 'webdav' => '/backup',
                       'gdrive' => 'office/pc01', 'yadisk' => 'office/pc01', 'dropbox' => 'office/pc01'],
 ];
+if ($mac) {
+    $pathExamples['source']['folder'] = '/Users/Shared/Data';
+    $pathExamples['source']['file'] = '/Users/Shared/Data/report.xlsx';
+    $pathExamples['destination']['local'] = '/Volumes/Backup';
+}
 $pathExample = fn(string $side, string $kind): string =>
     ' placeholder="' . e($pathExamples[$side][$kind] ?? '') . '" data-placeholders="' . e(json_encode($pathExamples[$side], JSON_UNESCAPED_SLASHES)) . '"';
 
@@ -181,7 +189,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
     <?php return (string) ob_get_clean();
 };
 
-$eventRow = function (string $when, string $i, array $item): string {
+$eventRow = function (string $when, string $i, array $item) use ($mac): string {
     $prefix = "events[$when][$i]";
     $kind = (string) ($item['kind'] ?? 'run');
     ob_start(); ?>
@@ -196,7 +204,7 @@ $eventRow = function (string $when, string $i, array $item): string {
             </label>
             <label class="grow" data-show-if="kind=run"><?= e(t('task_form.event.command')) ?>
                 <input type="text" name="<?= e($prefix) ?>[command]" value="<?= e((string) ($item['command'] ?? '')) ?>" class="mono"
-                       placeholder="C:\scripts\dump.cmd" maxlength="1000">
+                       placeholder="<?= $mac ? '/usr/local/bin/dump.sh' : 'C:\scripts\dump.cmd' ?>" maxlength="1000">
             </label>
             <label data-show-if="kind=run"><?= e(t('task_form.event.args')) ?>
                 <input type="text" name="<?= e($prefix) ?>[args]" value="<?= e((string) ($item['args'] ?? '')) ?>" class="mono" maxlength="1000">
@@ -231,7 +239,7 @@ if ($format !== 'none') {
 $archiveSummary[] = (int) ($verify['every_runs'] ?? 0) > 0 || (int) ($verify['stored_every_days'] ?? 0) > 0
     ? t('task_form.fold.verify') : t('task_form.fold.no_verify');
 $reliabilitySummary = [
-    t(!empty($vss['enabled'] ?? true) ? 'task_form.fold.vss' : 'task_form.fold.no_vss'),
+    $vssText(!empty($vss['enabled'] ?? true) ? 'task_form.fold.vss' : 'task_form.fold.no_vss'),
     t(!empty($copy['preserve_acl'] ?? true) ? 'task_form.fold.acl' : 'task_form.fold.no_acl'),
     t('task_form.fold.log', ['level' => t('task_form.log_level.' . (string) ($task['log_level'] ?? 'inherit'))]),
 ];
@@ -515,11 +523,11 @@ foreach ($errors as $error) {
     <details class="panel facts fold" id="task-reliability"<?= $foldOpen() ?>>
         <summary><?= icon('chevron') ?><h2><?= e(t('task_form.section.reliability')) ?></h2> <small class="fold-summary" data-fold-summary="<?= e(t('task_form.fold.changed')) ?>"><?= e(implode(', ', $reliabilitySummary)) ?></small></summary>
         <div class="row-fields">
-            <label class="check"><input type="checkbox" name="vss[enabled]" value="1"<?= checked((bool) ($vss['enabled'] ?? true)) ?>> <?= e(t('task_form.vss')) ?></label>
-            <label data-show-if="vss[enabled]=1"><?= e(t('task_form.vss.on_failure')) ?>
+            <label class="check"><input type="checkbox" name="vss[enabled]" value="1"<?= checked((bool) ($vss['enabled'] ?? true)) ?>> <?= e($vssText('task_form.vss')) ?></label>
+            <label data-show-if="vss[enabled]=1"><?= e($vssText('task_form.vss.on_failure')) ?>
                 <select name="vss[on_failure]">
                     <?php foreach (TaskForm::VSS_FAILURE as $k): ?>
-                        <option value="<?= e($k) ?>"<?= selected($k, $vss['on_failure'] ?? 'abort') ?>><?= e(t('task_form.vss.on_failure.' . $k)) ?></option>
+                        <option value="<?= e($k) ?>"<?= selected($k, $vss['on_failure'] ?? 'abort') ?>><?= e($vssText('task_form.vss.on_failure.' . $k)) ?></option>
                     <?php endforeach ?>
                 </select>
             </label>

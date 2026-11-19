@@ -15,6 +15,9 @@ public sealed class ProgramReleaseTests : IDisposable
     private static readonly byte[] Package = Encoding.ASCII.GetBytes("PK pretend update package of CUSTOS 1.2.0");
     private static readonly string PackageSha = Convert.ToHexStringLower(SHA256.HashData(Package));
 
+    /// <summary>The package of this edition: custos-1.2.0.zip, or custos-macos-1.2.0.zip when the tests run on a Mac.</summary>
+    private static string Zip(string version) => CustosEdition.PackageName(version);
+
     private readonly TempFolder _temp = new();
 
     public void Dispose() => _temp.Dispose();
@@ -26,8 +29,8 @@ public sealed class ProgramReleaseTests : IDisposable
 
         Assert.NotNull(release);
         Assert.Equal("1.2.0", release.Version);
-        Assert.Equal("custos-1.2.0.zip", release.PackageName);
-        Assert.Equal(new Uri(Downloads + "client-v1.2.0/custos-1.2.0.zip"), release.PackageUrl);
+        Assert.Equal(Zip("1.2.0"), release.PackageName);
+        Assert.Equal(new Uri(Downloads + "client-v1.2.0/" + Zip("1.2.0")), release.PackageUrl);
         Assert.Equal(PackageSha, release.Sha256);
         Assert.Equal(Package.Length, release.Size);
         Assert.Equal(new Uri($"https://github.com/{CustosInfo.GitHubRepository}/releases/tag/client-v1.2.0"), release.PageUrl);
@@ -57,7 +60,7 @@ public sealed class ProgramReleaseTests : IDisposable
     [Fact]
     public void A_package_from_anywhere_else_is_not_taken()
     {
-        string json = Releases($"\"sha256:{PackageSha}\"").Replace(Downloads + "client-v1.2.0/custos-1.2.0.zip", "https://example.org/custos-1.2.0.zip", StringComparison.Ordinal);
+        string json = Releases($"\"sha256:{PackageSha}\"").Replace(Downloads + "client-v1.2.0/" + Zip("1.2.0"), "https://example.org/" + Zip("1.2.0"), StringComparison.Ordinal);
 
         var release = ProgramReleases.Newest(Json(json));
 
@@ -107,7 +110,7 @@ public sealed class ProgramReleaseTests : IDisposable
         using (var http = new HttpClient(new Answer(Package)))
         {
             string path = await ProgramReleases.DownloadAsync(http, release, PackageSha, folder, TestContext.Current.CancellationToken);
-            Assert.Equal(Path.Combine(folder, "custos-1.2.0.zip"), path);
+            Assert.Equal(Path.Combine(folder, Zip("1.2.0")), path);
             Assert.Equal(Package, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
         }
 
@@ -150,9 +153,13 @@ public sealed class ProgramReleaseTests : IDisposable
 
     private static MemoryStream Json(string text) => new(Encoding.UTF8.GetBytes(text));
 
+    /// <summary>The package of the edition that shares the releases with this one: Windows next to macOS.</summary>
+    private static string OtherZip(string version) => CustosEdition.IsMac ? $"custos-{version}.zip" : $"custos-{CustosEdition.MacName}-{version}.zip";
+
     /// <summary>
     /// Shaped like the answer of api.github.com/repos/…/releases (fields that are not used left out): releases of the
-    /// site, a newer pre-release, a draft and an older release of the program must not win over client-v1.2.0.
+    /// site, a newer pre-release, a draft and an older release of the program must not win over client-v1.2.0, and the
+    /// package of the other edition in the same release (Windows or macOS) is never taken.
     /// </summary>
     private static string Releases(string digest) => $$"""
         [
@@ -160,20 +167,22 @@ public sealed class ProgramReleaseTests : IDisposable
             {"name": "custos-server-1.5.0.zip", "size": 900000, "digest": "sha256:{{new string('c', 64)}}",
              "browser_download_url": "{{Downloads}}server-v1.5.0/custos-server-1.5.0.zip"}]},
           {"tag_name": "client-v1.3.0", "draft": false, "prerelease": true, "assets": [
-            {"name": "custos-1.3.0.zip", "size": 1000, "digest": "sha256:{{new string('d', 64)}}",
-             "browser_download_url": "{{Downloads}}client-v1.3.0/custos-1.3.0.zip"}]},
+            {"name": "{{Zip("1.3.0")}}", "size": 1000, "digest": "sha256:{{new string('d', 64)}}",
+             "browser_download_url": "{{Downloads}}client-v1.3.0/{{Zip("1.3.0")}}"}]},
           {"tag_name": "client-v1.4.0", "draft": true, "prerelease": false, "assets": []},
           {"tag_name": "client-v1.2.0", "draft": false, "prerelease": false,
            "html_url": "https://github.com/{{CustosInfo.GitHubRepository}}/releases/tag/client-v1.2.0", "assets": [
             {"name": "CUSTOS-Setup-1.2.0.exe", "size": 50000000, "digest": "sha256:{{new string('e', 64)}}",
              "browser_download_url": "{{Downloads}}client-v1.2.0/CUSTOS-Setup-1.2.0.exe"},
-            {"name": "custos-1.2.0.zip", "size": {{Package.Length}}, "digest": {{digest}},
-             "browser_download_url": "{{Downloads}}client-v1.2.0/custos-1.2.0.zip"},
+            {"name": "{{Zip("1.2.0")}}", "size": {{Package.Length}}, "digest": {{digest}},
+             "browser_download_url": "{{Downloads}}client-v1.2.0/{{Zip("1.2.0")}}"},
+            {"name": "{{OtherZip("1.2.0")}}", "size": 1000, "digest": "sha256:{{new string('9', 64)}}",
+             "browser_download_url": "{{Downloads}}client-v1.2.0/{{OtherZip("1.2.0")}}"},
             {"name": "SHA256SUMS.txt", "size": 300, "digest": null,
              "browser_download_url": "{{Downloads}}client-v1.2.0/SHA256SUMS.txt"}]},
           {"tag_name": "client-v1.1.0", "draft": false, "prerelease": false, "assets": [
-            {"name": "custos-1.1.0.zip", "size": 1000, "digest": "sha256:{{new string('f', 64)}}",
-             "browser_download_url": "{{Downloads}}client-v1.1.0/custos-1.1.0.zip"}]}
+            {"name": "{{Zip("1.1.0")}}", "size": 1000, "digest": "sha256:{{new string('f', 64)}}",
+             "browser_download_url": "{{Downloads}}client-v1.1.0/{{Zip("1.1.0")}}"}]}
         ]
         """;
 

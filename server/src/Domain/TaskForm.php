@@ -812,8 +812,10 @@ final class TaskForm
 
     private static function isUnc(string $path): bool
     {
-        // Variables are expanded on the machine, so a path that starts with one is left to the agent.
-        return str_starts_with($path, '\\\\') || str_starts_with($path, '%') || str_starts_with($path, '{');
+        // Variables are expanded on the machine, so a path that starts with one is left to the agent. //server/share
+        // is the same share written the way of macOS (the program takes both).
+        return str_starts_with($path, '\\\\') || (str_starts_with($path, '//') && !str_starts_with($path, '///'))
+            || str_starts_with($path, '%') || str_starts_with($path, '{');
     }
 
     /** @return array<string, array> */

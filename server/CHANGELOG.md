@@ -11,6 +11,17 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.3.0
+
+### Added
+- Machines with CUSTOS for macOS are marked **macOS** in the machine list, on the machine page, under **Updates** and on the dashboard.
+- **Updates** take packages of CUSTOS for macOS (`custos-macos-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has a Mac or such a package. The site also finds them in the `client-v…` releases on GitHub and downloads them like the program for Windows.
+- A Mac gets only the update packages of CUSTOS for macOS and is never offered 7-Zip from the site (7-Zip is inside the program there).
+- The task editor of a Mac shows Mac path examples and calls the snapshot of open files an **APFS snapshot** instead of VSS.
+
+### Changed
+- A network folder may also be written as `//server/share`, the way macOS writes it.
+
 ## 1.2.0
 
 ### Added

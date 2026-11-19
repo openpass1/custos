@@ -703,6 +703,12 @@ internal sealed partial class AgentService : IMonitorHost
             return CommandOutcome.Rejected(Messages.SevenZipRemoteNotInLegacy);
         }
 
+        if (!OperatingSystem.IsWindows())
+        {
+            // The 7z.so of macOS comes with CUSTOS: nothing to download (the site 1.3.0 and newer sends no such command).
+            return CommandOutcome.Rejected(Messages.SevenZipMacBundled);
+        }
+
         if (version is null || sha256 is null || !IsSha256(sha256) || !SevenZipVersionPattern().IsMatch(version))
         {
             return CommandOutcome.Rejected(Messages.MonitorPackageBadCommand);

@@ -6,10 +6,11 @@
  * @var array<string, array> $waitingSevenZip @var int $uploadLimit
  * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
  * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
- * @var bool $legacyOn @var ?array $legacyLatest @var ?array $legacyNewer @var list<array> $legacyPackages @var ?array $legacyCurrent
- * @var array<string, array> $legacyOutdated
+ * @var array<string, array{on: bool, latest: ?array, newer: ?array, packages: list<array>, current: ?array, machines: bool,
+ *     outdated: array<string, array>}> $editions the editions for Windows 7 and 8.1 (legacy) and for macOS (macos)
  */
 use Custos\Domain\Agents;
+use Custos\Domain\Packages;
 
 $storedSevenZip = $sevenZipPackages[0] ?? null;
 $canDownload = is_array($github) && isset($github['version'])
@@ -24,8 +25,11 @@ $stateError = function (?array $error): string {
     return $error === null ? '' : t((string) ($error['key'] ?? 'site.error.unexpected'), (array) ($error['params'] ?? []));
 };
 $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . ' UTC');
-$hasLegacyMachines = array_filter($agents, fn($a) => Agents::isLegacy($a)) !== [];
-// The packages of one edition, with "current" and "delete"; $kind is agent or legacy.
+$editionOutdated = [];
+foreach ($editions as $ed) {
+    $editionOutdated += $ed['outdated'];
+}
+// The packages of one edition, with "current" and "delete"; $kind is agent, legacy or macos.
 $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <div class="table-wrap gap-top">
             <table>
@@ -45,7 +49,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
                                 </form>
                             <?php endif ?>
                             <form method="post" action="<?= e(url('/updates/' . $kind . '/' . $p['version'] . '/delete')) ?>"
-                                  data-confirm="<?= e(t($kind === 'legacy' ? 'updates.confirm.delete_legacy' : 'updates.confirm.delete', ['version' => $p['version']])) ?>">
+                                  data-confirm="<?= e(t($kind === 'agent' ? 'updates.confirm.delete' : 'updates.confirm.delete_' . $kind, ['version' => $p['version']])) ?>">
                                 <?= csrf_field() ?><button type="submit" class="link danger-link"><?= e(t('updates.action.delete')) ?></button>
                             </form>
                         </td>
@@ -259,29 +263,31 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 </section>
 </div>
 
-<?php if ($legacyOn): ?>
-<?php /* Only while the site has a machine or a package of the edition for Windows 7 and 8.1. */ ?>
+<?php foreach ($editions as $kind => $ed): ?>
+<?php if ($ed['on']): ?>
+<?php /* Only while the site has a machine or a package of the edition (Windows 7 and 8.1, macOS). */ ?>
 <section class="panel">
-    <h2><?= e(t('updates.legacy')) ?></h2>
-    <p class="hint"><?= e(t('updates.legacy.hint')) ?></p>
-    <p><?= $legacyCurrent === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $legacyCurrent['version']])) ?></p>
+    <h2><?= e(t('updates.' . $kind)) ?></h2>
+    <p class="hint"><?= e(t('updates.' . $kind . '.hint')) ?></p>
+    <p><?= $ed['current'] === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $ed['current']['version']])) ?></p>
     <dl class="props">
         <dt><?= e(t('client.github')) ?></dt>
-        <dd><?php if ($legacyLatest !== null): ?>
-                <strong><?= e($legacyLatest['version']) ?></strong>
-                <span class="note"><?= e($published($legacyLatest)) ?></span>
-                <?php if (($legacyLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($legacyLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
-                <?php if ($legacyNewer === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
+        <dd><?php if ($ed['latest'] !== null): ?>
+                <strong><?= e($ed['latest']['version']) ?></strong>
+                <span class="note"><?= e($published($ed['latest'])) ?></span>
+                <?php if (($ed['latest']['url'] ?? '') !== ''): ?> · <a href="<?= e($ed['latest']['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
+                <?php if ($ed['newer'] === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
             <?php else: ?><?= e(t('client.github.none')) ?><?php endif ?></dd>
     </dl>
-    <?php if ($legacyNewer !== null): ?>
-        <form method="post" action="<?= e(url('/updates/releases/legacy')) ?>" class="gap-top">
-            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $legacyNewer['version']])) ?></button>
+    <?php if ($ed['newer'] !== null): ?>
+        <form method="post" action="<?= e(url('/updates/releases/' . $kind)) ?>" class="gap-top">
+            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $ed['newer']['version']])) ?></button>
         </form>
     <?php endif ?>
-    <?php if ($legacyPackages !== []): ?><?php $packageTable($legacyPackages, 'legacy') ?><?php endif ?>
+    <?php if ($ed['packages'] !== []): ?><?php $packageTable($ed['packages'], $kind) ?><?php endif ?>
 </section>
 <?php endif ?>
+<?php endforeach ?>
 
 <?php /* Live part: versions and updates on their way change by themselves (app.js) until a machine is ticked here. */ ?>
 <div data-part="machines">
@@ -304,10 +310,10 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
                             <?= edition_badge($a) ?>
                             <?php if ($a['status'] !== 'approved'): ?><?= badge($a['status']) ?><?php endif ?></td>
                         <td><?= e($a['agent_version'] === '' ? '—' : $a['agent_version']) ?>
-                            <?php if (isset($outdated[$a['id']]) || isset($legacyOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
+                            <?php if (isset($outdated[$a['id']]) || isset($editionOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
                             <?php if (isset($waitingAgent[$a['id']])): ?><div class="note"><?= e(t('updates.waiting', ['version' => (string) ($waitingAgent[$a['id']]['data']['version'] ?? '')])) ?> <?= badge($waitingAgent[$a['id']]['status']) ?></div><?php endif ?></td>
                         <td><?= e($a['sevenzip_version'] ?? '—') ?>
-                            <?php if (Agents::isLegacy($a)): ?><div class="note"><?= e(t('updates.sevenzip.legacy')) ?></div><?php endif ?>
+                            <?php if (Packages::agentKind($a) !== 'agent'): ?><div class="note"><?= e(t('updates.sevenzip.' . Packages::agentKind($a))) ?></div><?php endif ?>
                             <?php if (isset($sevenZipOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
                             <?php if (isset($waitingSevenZip[$a['id']])): ?><div class="note"><?= e(t('updates.waiting', ['version' => (string) ($waitingSevenZip[$a['id']]['data']['version'] ?? '')])) ?> <?= badge($waitingSevenZip[$a['id']]['status']) ?></div><?php endif ?></td>
                     </tr>
@@ -317,7 +323,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         </div>
         <div class="choices">
             <label class="choice"><input type="radio" name="target" value="selected" checked> <span><?= e(t('updates.target.selected')) ?></span></label>
-            <label class="choice"><input type="radio" name="target" value="outdated"> <span><?= e(t('updates.target.outdated', ['agent' => count($outdated) + count($legacyOutdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
+            <label class="choice"><input type="radio" name="target" value="outdated"> <span><?= e(t('updates.target.outdated', ['agent' => count($outdated) + count($editionOutdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
             <?php if ($groups !== []): ?>
                 <label class="choice"><input type="radio" name="target" value="group"> <span><?= e(t('updates.target.group')) ?></span></label>
             <?php endif ?>
@@ -333,13 +339,15 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
             <?php if ($current !== null): ?>
                 <button type="submit" name="kind" value="agent"><?= e(t('updates.install.agent', ['version' => $current['version']])) ?></button>
             <?php endif ?>
-            <?php if ($legacyCurrent !== null && $hasLegacyMachines): ?>
-                <button type="submit" name="kind" value="legacy"><?= e(t('updates.install.legacy', ['version' => $legacyCurrent['version']])) ?></button>
-            <?php endif ?>
+            <?php foreach ($editions as $kind => $ed): ?>
+                <?php if ($ed['current'] !== null && $ed['machines']): ?>
+                    <button type="submit" name="kind" value="<?= e($kind) ?>"><?= e(t('updates.install.' . $kind, ['version' => $ed['current']['version']])) ?></button>
+                <?php endif ?>
+            <?php endforeach ?>
             <?php if ($storedSevenZip !== null): ?>
                 <button type="submit" name="kind" value="7zip"><?= e(t('updates.install.sevenzip', ['version' => $storedSevenZip['version']])) ?></button>
             <?php endif ?>
-            <?php if ($current === null && $storedSevenZip === null && ($legacyCurrent === null || !$hasLegacyMachines)): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
+            <?php if ($current === null && $storedSevenZip === null && array_filter($editions, fn($ed) => $ed['current'] !== null && $ed['machines']) === []): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
         </div>
         <p class="note"><?= e(t('updates.install.hint')) ?></p>
     </form>

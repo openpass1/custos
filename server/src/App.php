@@ -45,7 +45,7 @@ use Custos\Infra\Updater;
  */
 final class App
 {
-    public const VERSION = '1.2.0';
+    public const VERSION = '1.3.0';
     /** Interface languages: lang/<code>.php. */
     public const LANGUAGES = ['ru', 'en'];
     public const DEFAULT_LANGUAGE = 'ru';

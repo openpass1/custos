@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Custos\Http\Web\Controller;
 
+use Custos\Domain\Agents;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 use Custos\Infra\Time;
@@ -63,11 +64,11 @@ final class DashboardController extends Controller
             )),
             'sevenZipVersions' => self::distribution($db->all(
                 "SELECT sevenzip_version AS version, COUNT(*) AS n FROM agents
-                 WHERE status = 'approved' AND sevenzip_version IS NOT NULL AND edition <> 'legacy'
+                 WHERE status = 'approved' AND sevenzip_version IS NOT NULL AND edition = ''
                  GROUP BY sevenzip_version"
             )),
             'currentVersion' => $app->packages()->current()['version'] ?? null,
-            'legacyVersion' => $app->packages()->current('legacy')['version'] ?? null,
+            'editionVersions' => array_combine(Agents::EDITIONS, array_map(fn($kind) => $app->packages()->current($kind)['version'] ?? null, Agents::EDITIONS)),
             'latestSevenZip' => $app->updateWatch()->latestSevenZip()['version'] ?? null,
             'unread' => $app->notices()->unreadCount(),
         ];
