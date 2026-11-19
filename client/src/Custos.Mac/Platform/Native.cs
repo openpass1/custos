@@ -39,6 +39,13 @@ internal static unsafe partial class Native
     [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
     private static partial int lstat(string path, byte* buffer);
 
+    // On an Intel Mac the plain "lstat" is the old call with 32-bit inode numbers and another layout of struct stat;
+    // the one with the layout read below is "lstat$INODE64". Apple silicon has only that one, under the plain name.
+    [LibraryImport(LibC, EntryPoint = "lstat$INODE64", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+    private static partial int lstatInode64(string path, byte* buffer);
+
+    private static readonly bool IntelMac = OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.X64;
+
     /// <summary>Whether the process runs as root.</summary>
     public static bool IsRoot => geteuid() == 0;
 
@@ -104,12 +111,12 @@ internal static unsafe partial class Native
     public static (uint Uid, uint Gid, uint Mode)? Stat(string path)
     {
         byte* buffer = stackalloc byte[512];
-        if (lstat(path, buffer) != 0)
+        if ((IntelMac ? lstatInode64(path, buffer) : lstat(path, buffer)) != 0)
         {
             return null;
         }
 
-        // macOS (64-bit inodes): st_dev int32, st_mode uint16, st_nlink uint16, st_ino uint64, st_uid, st_gid.
+        // macOS (64-bit inodes, Apple silicon and Intel): st_dev int32, st_mode uint16, st_nlink uint16, st_ino uint64, st_uid, st_gid.
         // Linux x64: st_dev uint64, st_ino uint64, st_nlink uint64, st_mode uint32, st_uid, st_gid.
         return OperatingSystem.IsMacOS()
             ? (*(uint*)(buffer + 16), *(uint*)(buffer + 20), *(ushort*)(buffer + 4))
