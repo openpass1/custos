@@ -61,6 +61,9 @@
   <data name="Resume" xml:space="preserve">
     <value>Resume</value>
   </data>
+  <data name="More" xml:space="preserve">
+    <value>More</value>
+  </data>
   <data name="DeleteRunning" xml:space="preserve">
     <value>«{0}» is running now. Stop it first, then delete it.</value>
   </data>

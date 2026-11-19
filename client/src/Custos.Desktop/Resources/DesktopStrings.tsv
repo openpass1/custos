@@ -17,6 +17,7 @@ ColorBlue	Blue	Синий
 ColorWarm	Warm	Тёплый
 ColorSepia	Sepia	Сепия
 Resume	Resume	Продолжить
+More	More	Ещё
 DeleteRunning	«{0}» is running now. Stop it first, then delete it.	Задание «{0}» сейчас выполняется. Сначала остановите его, потом удаляйте.
 # ---- Task editor
 Save	Save	Сохранить

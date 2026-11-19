@@ -61,6 +61,9 @@
   <data name="Resume" xml:space="preserve">
     <value>Продолжить</value>
   </data>
+  <data name="More" xml:space="preserve">
+    <value>Ещё</value>
+  </data>
   <data name="DeleteRunning" xml:space="preserve">
     <value>Задание «{0}» сейчас выполняется. Сначала остановите его, потом удаляйте.</value>
   </data>

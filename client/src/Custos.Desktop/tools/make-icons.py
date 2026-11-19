@@ -18,7 +18,7 @@ ICONS = [
     'add', 'arrow_drop_down', 'arrow_drop_up', 'edit', 'content_copy', 'delete', 'toggle_off', 'toggle_on', 'play_arrow+',
     'stop+', 'pause', 'settings_backup_restore', 'view_sidebar+', 'settings', 'lock', 'upload_file', 'input', 'download',
     'brightness_auto', 'light_mode', 'dark_mode', 'check', 'close', 'arrow_upward', 'arrow_downward', 'folder_open',
-    'filter_list',
+    'filter_list', 'more_vert',
     # States
     'check_circle+', 'warning+', 'cancel+', 'sync', 'do_not_disturb_on+', 'radio_button_unchecked', 'schedule+',
     'pause_circle+', 'error+', 'info+', 'play_circle+', 'hourglass_top',

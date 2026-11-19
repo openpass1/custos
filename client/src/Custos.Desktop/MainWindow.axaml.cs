@@ -22,6 +22,8 @@ internal sealed partial class MainWindow : Window
     private readonly List<Icon> _sortArrows = [];
     private GridLength _cardWidth = new(350);
     private bool _selecting;
+    private bool _fitting;
+    private bool _compactToolbar;
 
     /// <summary>Only for the XAML previewer of an IDE; the program uses <see cref="MainWindow(MainViewModel)"/>.</summary>
     public MainWindow()
@@ -53,6 +55,12 @@ internal sealed partial class MainWindow : Window
     /// <summary>What the buttons do; the tests press them through here as well.</summary>
     public MainActions Actions => _actions;
 
+    /// <summary>The width of the screen at 100 % scale for the tests, which have no screen; null = the real one.</summary>
+    internal double? ScreenWidth { get; set; }
+
+    /// <summary>Lays the toolbar out again for the width of the window and of the screen.</summary>
+    internal void Refit() => FitToolbar();
+
     /// <summary>Set when the program quits: then the window really closes.</summary>
     public bool Quitting { get; set; }
 
@@ -60,6 +68,61 @@ internal sealed partial class MainWindow : Window
     {
         base.OnOpened(e);
         TitleBar.Paint(this);
+        Toolbar.SizeChanged += (_, _) => FitToolbar();
+        ToolbarEnd.SizeChanged += (_, _) => FitToolbar();
+        PositionChanged += (_, _) => FitToolbar();
+        FitToolbar();
+    }
+
+    /// <summary>
+    /// Every button of the toolbar fits: the window cannot be made narrower than that. On a screen narrower than the
+    /// whole toolbar (1024×768, a notebook at 125 %) «Клонировать» and «Восстановить» move into «⋮ Ещё» and the margins
+    /// get smaller, so the window still fits on the screen.
+    /// </summary>
+    private void FitToolbar()
+    {
+        if (_fitting || !IsVisible)
+        {
+            return;
+        }
+
+        _fitting = true;
+        try
+        {
+            static double WidthOf(Control c) => double.IsNaN(c.Width) ? c.Bounds.Width : c.Width;
+            double moved = WidthOf(CloneButton) + WidthOf(RestoreButton);
+            double more = WidthOf(MoreButton);
+            const double FullMargins = 14 + 12 + 14 + 6;
+            const double CompactMargins = 8 + 8 + 8 + 4;
+
+            // What the toolbar takes with every button out, whichever way it is shown now.
+            double start = ToolbarStart.DesiredSize.Width - FabPanel.Margin.Right;
+            double startFull = _compactToolbar ? start - more + moved : start;
+            double end = ToolbarEnd.DesiredSize.Width;
+            double full = startFull + end + FullMargins;
+            double compact = startFull - moved + more + end + CompactMargins;
+
+            var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+            double room = ScreenWidth ?? (screen is null ? double.PositiveInfinity : screen.WorkingArea.Width / screen.Scaling);
+            room -= 16;
+            double minimum = full <= room ? full : Math.Min(compact, Math.Max(room, 640));
+            MinWidth = Math.Ceiling(minimum);
+
+            bool narrow = Bounds.Width < full - 0.5;
+            if (narrow != _compactToolbar)
+            {
+                _compactToolbar = narrow;
+                CloneButton.IsVisible = !narrow;
+                RestoreButton.IsVisible = !narrow;
+                MoreButton.IsVisible = narrow;
+                Toolbar.Margin = narrow ? new Thickness(8, 4, 8, 4) : new Thickness(14, 4, 12, 4);
+                FabPanel.Margin = new Thickness(0, 0, narrow ? 8 : 14, 0);
+            }
+        }
+        finally
+        {
+            _fitting = false;
+        }
     }
 
     /// <summary>Closing the window leaves CUSTOS in the tray, as Custos.exe does. The program password typed for this
@@ -87,7 +150,7 @@ internal sealed partial class MainWindow : Window
     private void RestoreLayout()
     {
         var ui = _vm.Ui;
-        if (ui.Width is >= 820 and <= 10000 && ui.Height is >= 520 and <= 10000)
+        if (ui.Width is >= 640 and <= 10000 && ui.Height is >= 520 and <= 10000)
         {
             Width = ui.Width.Value;
             Height = ui.Height.Value;

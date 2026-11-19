@@ -53,8 +53,9 @@ const SCHEMES = [
   ['neutral', withSurfaces(site, null, 0, 2)],
   // Almost no colour: black and white accents.
   ['graphite', (dark) => new SchemeMonochrome(hct(SITE), dark, 0)],
-  // The default accent of Windows 11, kept close to itself («fidelity»): a clear blue, cool grey-blue surfaces.
-  ['blue', (dark) => new SchemeFidelity(hct('#0067c0'), dark, 0)],
+  // The default accent of Windows 11, kept close to itself («fidelity»): a clear blue on the grey surfaces of the main
+  // scheme, so that only the accents differ from it.
+  ['blue', withSurfaces((dark) => new SchemeFidelity(hct('#0067c0'), dark, 0), hct(SITE).hue, 0, 2)],
   // Warm: the site's blue on warm grey surfaces, like paper under a lamp.
   ['warm', withSurfaces(site, 70, 5, 8)],
   // Sepia: brown ink on cream paper, as an old photograph. Its containers (selected row, running chip) are a quiet

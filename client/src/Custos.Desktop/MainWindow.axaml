@@ -7,16 +7,16 @@
         x:DataType="p:MainViewModel"
         Title="{x:Static g:Strings.AppTitle}"
         Icon="/Assets/custos.ico"
-        Width="1180" Height="780" MinWidth="820" MinHeight="520"
+        Width="1180" Height="780" MinWidth="1100" MinHeight="520"
         WindowStartupLocation="CenterScreen">
 
   <Panel>
     <DockPanel>
 
       <!-- Toolbar: «Создать» as an extended FAB, the rest as icon-over-label items (docs/client-ui.md, 2.1). -->
-      <Grid DockPanel.Dock="Top" Height="84" Margin="14,4,12,4" ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Panel Margin="0,0,14,0">
+      <Grid Name="Toolbar" DockPanel.Dock="Top" Height="84" Margin="14,4,12,4" ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Name="ToolbarStart" Orientation="Horizontal" VerticalAlignment="Center">
+          <Panel Name="FabPanel" Margin="0,0,14,0">
           <Border Classes="fabshadow" />
           <Border Classes="fab">
             <StackPanel Orientation="Horizontal">
@@ -60,9 +60,24 @@
           <p:ToolButton Name="PauseButton" Label="{Binding PauseText}" IconKind="{Binding PauseIcon}" IsEnabled="{Binding CanPause}" Click="OnPause"
                         ToolTip.Tip="{x:Static g:Strings.ToolPauseHint}" />
           <Border Classes="vsep" />
-          <p:ToolButton Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnNotYet" />
+          <p:ToolButton Name="RestoreButton" Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnNotYet" />
+          <!-- On a screen too narrow for every button, «Клонировать» and «Восстановить» move into this menu (FitToolbar). -->
+          <p:ToolButton Name="MoreButton" Label="{x:Static p:DesktopStrings.More}" IconKind="more_vert" IsVisible="False">
+            <p:ToolButton.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="menu">
+                <StackPanel MinWidth="240">
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnClone" IsEnabled="{Binding CanEditOne}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnNotYet" IsEnabled="{Binding CanRestore}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="settings_backup_restore" /><TextBlock Text="{x:Static g:Strings.ToolRestore}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </p:ToolButton.Flyout>
+          </p:ToolButton>
         </StackPanel>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Name="ToolbarEnd" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center" IsVisible="{Binding ShowAdminsOnly}">
             <p:Icon Kind="lock" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" />
             <TextBlock Classes="small var" Text="{x:Static g:Strings.ToolAdminsOnly}" VerticalAlignment="Center" />
@@ -268,7 +283,7 @@
               <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Log}" IsVisible="{Binding IsLogTab}" Margin="8,4,8,4">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="p:LogRow">
-                    <Grid Height="34" ColumnDefinitions="150,30,*" Margin="12,0,12,0" Background="Transparent">
+                    <Grid Height="28" ColumnDefinitions="150,30,*" Margin="12,0,12,0" Background="Transparent">
                       <TextBlock Classes="var num" Text="{Binding Time}" VerticalAlignment="Center" FontSize="13.5" />
                       <p:Icon Grid.Column="1" Classes="level" Classes.info="{Binding IsInfo}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
                               Kind="{Binding Icon}" VerticalAlignment="Center" HorizontalAlignment="Left" />
@@ -297,7 +312,7 @@
                 <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="p:HistoryRow">
-                      <Grid Height="36" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
+                      <Grid Height="30" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
                         <TextBlock Classes="num" Text="{Binding Started}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="1" Classes="num" Text="{Binding Duration}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="2" Text="{Binding Type}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />

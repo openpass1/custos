@@ -81,7 +81,7 @@ internal static class Program
             }
         }
 
-        if (!MenuWorks() | !EditorWorks() | !SelectionWorks())
+        if (!MenuWorks() | !EditorWorks() | !SelectionWorks() | !ToolbarWorks(folder))
         {
             return 1;
         }
@@ -259,6 +259,44 @@ internal static class Program
         bool ok = one && two && kept && alone;
         Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted, a click selects one again."
             : $"Selection: one={one}, two={two}, kept after sorting={kept}, one again after a click={alone}.");
+        Close(window);
+        return ok;
+    }
+
+    /// <summary>
+    /// Every button of the toolbar fits: the window is not made narrower than that. On a screen of 1024 points the
+    /// window still fits: «Клонировать» and «Восстановить» move into «⋮ Ещё».
+    /// </summary>
+    private static bool ToolbarWorks(string folder)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        vm.ColorChoice = Palettes.Default;
+        window.Show();
+        vm.Start();
+        Pump();
+        window.Refit();
+        Pump();
+        var settings = window.FindControl<Button>("SettingsButton")!;
+        bool Inside() => settings.TranslatePoint(new Point(settings.Bounds.Width, 0), window) is { } p && p.X <= window.Bounds.Width + 0.5;
+        bool Shown(string name) => window.FindControl<Control>(name)!.IsVisible;
+        double minimum = window.MinWidth;
+        bool full = minimum is > 1000 and < 1200 && Shown("CloneButton") && Shown("RestoreButton") && !Shown("MoreButton") && Inside();
+        window.Width = 900;
+        Pump();
+        bool kept = window.Bounds.Width >= minimum - 0.5 && Inside();
+
+        window.ScreenWidth = 1024;
+        window.Refit();
+        window.Width = 1024 - 16;
+        Pump();
+        window.Refit();
+        Pump();
+        bool narrow = window.MinWidth <= 1008 && !Shown("CloneButton") && !Shown("RestoreButton") && Shown("MoreButton") && Inside();
+        Save(window, Path.Combine(folder, "13-uzkiy-ekran-svetloe.png"));
+        bool ok = full && kept && narrow;
+        Console.WriteLine(ok ? $"Toolbar: every button fits ({minimum:0} points at least); on a screen of 1024 two go into «Ещё»."
+            : $"Toolbar: full={full} (minimum {minimum:0}), kept={kept}, narrow screen={narrow} (minimum {window.MinWidth:0}).");
         Close(window);
         return ok;
     }

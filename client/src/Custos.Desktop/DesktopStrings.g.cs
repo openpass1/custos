@@ -53,6 +53,9 @@ static partial class DesktopStrings
     /// <summary>Resume</summary>
     public static string Resume => Get(nameof(Resume));
 
+    /// <summary>More</summary>
+    public static string More => Get(nameof(More));
+
     /// <summary>«{0}» is running now. Stop it first, then delete it.</summary>
     public static string DeleteRunning => Get(nameof(DeleteRunning));
 
