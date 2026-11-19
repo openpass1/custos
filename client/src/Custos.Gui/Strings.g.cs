@@ -2767,4 +2767,19 @@ static partial class Strings
 
     /// <summary>Create new key</summary>
     public static string RemoteCreateNewKey => Get(nameof(RemoteCreateNewKey));
+
+    /// <summary>for Windows 7 and 8.1</summary>
+    public static string EditionLegacy => Get(nameof(EditionLegacy));
+
+    /// <summary>{0} (not in the edition for Windows 7)</summary>
+    public static string KindNotInLegacy => Get(nameof(KindNotInLegacy));
+
+    /// <summary>CUSTOS for Windows 7 and 8.1 cannot write to cloud drives. The task writes nothing there and reports an err...</summary>
+    public static string DestinationNotInLegacy => Get(nameof(DestinationNotInLegacy));
+
+    /// <summary>The button looks at the official 7-Zip releases on GitHub only when pressed, and updates only after you agr...</summary>
+    public static string Settings7ZipNoteLegacy => Get(nameof(Settings7ZipNoteLegacy));
+
+    /// <summary>You have 7-Zip {0}; the newest is {1}.</summary>
+    public static string SevenZipAskUpdateLegacy => Get(nameof(SevenZipAskUpdateLegacy));
 }

@@ -172,7 +172,7 @@ public static class TaskExport
         byte[] plain = new byte[data.Length - TagBytes];
         try
         {
-            using (var gcm = new AesGcm(key, TagBytes))
+            using (var gcm = NewAesGcm(key))
             {
                 gcm.Decrypt(nonce, data.AsSpan(0, plain.Length), data.AsSpan(plain.Length), plain, AssociatedData);
             }
@@ -266,7 +266,7 @@ public static class TaskExport
         byte[] data = new byte[plain.Length + TagBytes];
         try
         {
-            using var gcm = new AesGcm(key, TagBytes);
+            using var gcm = NewAesGcm(key);
             gcm.Encrypt(nonce, plain, data.AsSpan(0, plain.Length), data.AsSpan(plain.Length), AssociatedData);
             return new ExportSecretsBox
             {
@@ -309,4 +309,12 @@ public static class TaskExport
         ClientId = credential.ClientId,
         ExtensionData = credential.ExtensionData is null ? null : new Dictionary<string, JsonElement>(credential.ExtensionData),
     };
+
+    /// <summary>AES-GCM with a 16-byte tag. .NET 6 (the legacy edition) has only the constructor without the tag size.</summary>
+    private static AesGcm NewAesGcm(byte[] key) =>
+#if CUSTOS_LEGACY
+        new(key);
+#else
+        new(key, TagBytes);
+#endif
 }

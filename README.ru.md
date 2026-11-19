@@ -17,7 +17,7 @@ CUSTOS состоит из двух частей. Программа для Wind
 | | CUSTOS для Windows | CUSTOS Monitor |
 |---|---|---|
 | Что это | Программа резервного копирования: служба Windows и значок в трее | Сайт: сводка, уведомления, удалённое управление |
-| Где работает | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64) | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ |
+| Где работает | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64); отдельная 32-битная версия для Windows 7 SP1 и 8.1 ([подробнее](client/README.ru.md#версия-для-windows-7-и-81)) | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ |
 | Скачать | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<версия>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<версия>.zip` |
 | Инструкция | [client/README.ru.md](client/README.ru.md) | [server/INSTALL.md](server/INSTALL.md) |
 

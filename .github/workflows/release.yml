@@ -4,7 +4,10 @@ name: Release
 # type the version. The draft gets the files, SHA256SUMS.txt and its text: the changes from the part's CHANGELOG.md
 # (client/ or server/, made by .github/release-notes.sh) and how to install and update, in English. Only people who can
 # write to the repository see a draft; it becomes public when it is published by hand on the Releases page, and the tag
-# (client-v<version> or server-v<version>) is created at that moment.
+# (client-v<version>, client-legacy-v<version> or server-v<version>) is created at that moment.
+#
+# client-legacy is the edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy): released as is, only when needed, with
+# the version of the client code it is built from and the text of client/CHANGELOG.md.
 #
 # A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
 on:
@@ -13,7 +16,7 @@ on:
       part:
         description: 'What to release'
         type: choice
-        options: [client, server]
+        options: [client, client-legacy, server]
         required: true
       version:
         description: 'Version, for example 1.0.0. For the server it must equal VERSION in server/src/App.php'
@@ -37,6 +40,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       client: ${{ steps.check.outputs.client }}
+      legacy: ${{ steps.check.outputs.legacy }}
       server: ${{ steps.check.outputs.server }}
       version: ${{ steps.check.outputs.version }}
       tag: ${{ steps.check.outputs.tag }}
@@ -57,11 +61,12 @@ jobs:
             # Test run: both parts, nothing is published. The client gets a version no real release uses.
             {
               echo "client=true"
+              echo "legacy=true"
               echo "server=true"
               echo "version=0.0.1"
               echo "tag="
             } >> "$GITHUB_OUTPUT"
-            echo "Test run: both parts are built, nothing is published." >> "$GITHUB_STEP_SUMMARY"
+            echo "Test run: every part is built, nothing is published." >> "$GITHUB_STEP_SUMMARY"
             # The changelogs still give a release text, and the site's starts with its version.
             .github/release-notes.sh client top > /dev/null
             .github/release-notes.sh server "$site_version" > /dev/null
@@ -81,12 +86,15 @@ jobs:
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             fail "A release $tag already exists, probably a draft: delete it on the Releases page first. / Выпуск $tag уже есть, скорее всего черновик: сначала удалите его на странице Releases."
           fi
-          # The release text comes from the part's CHANGELOG.md: it must start with this version.
-          if ! message=$(.github/release-notes.sh "$PART" "$VERSION" 2>&1 > /dev/null); then
-            fail "$message / В $PART/CHANGELOG.md нет раздела «## $VERSION» с изменениями этой версии: его нужно добавить."
+          # The release text comes from the part's CHANGELOG.md: it must start with this version. The edition for
+          # Windows 7 and 8.1 is the client code built another way, so it takes the client's.
+          notes=${PART%-legacy}
+          if ! message=$(.github/release-notes.sh "$notes" "$VERSION" 2>&1 > /dev/null); then
+            fail "$message / В $notes/CHANGELOG.md нет раздела «## $VERSION» с изменениями этой версии: его нужно добавить."
           fi
           {
             echo "client=$([ "$PART" = client ] && echo true || echo false)"
+            echo "legacy=$([ "$PART" = client-legacy ] && echo true || echo false)"
             echo "server=$([ "$PART" = server ] && echo true || echo false)"
             echo "version=$VERSION"
             echo "tag=$tag"
@@ -146,6 +154,52 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # The edition for Windows 7 SP1 and 8.1: the same code built for .NET 6, 32-bit, with its own names. No cloud drive
+  # applications: that edition has no cloud drives. The tests run on the standard edition only.
+  legacy:
+    needs: check
+    if: needs.check.outputs.legacy == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (Test-Path $iscc) { Write-Host "Inno Setup is already installed: $iscc"; exit 0 }
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build the edition for Windows 7 and 8.1
+        shell: powershell
+        working-directory: client
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: .\build.ps1 -Configuration Release -Legacy -Version $env:VERSION
+
+      - name: Collect the files
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          New-Item -ItemType Directory -Path out | Out-Null
+          Copy-Item "client/artifacts-legacy/installer/CUSTOS-Legacy-Setup-$env:VERSION.exe" out/
+          Copy-Item "client/artifacts-legacy/update/custos-legacy-$env:VERSION.zip" out/
+          Get-ChildItem out | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-legacy
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
   server:
     needs: check
     if: needs.check.outputs.server == 'true'
@@ -191,11 +245,11 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [check, client, server]
+    needs: [check, client, legacy, server]
     if: >-
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
-      (needs.client.result == 'success' || needs.server.result == 'success') &&
-      needs.client.result != 'failure' && needs.server.result != 'failure'
+      (needs.client.result == 'success' || needs.legacy.result == 'success' || needs.server.result == 'success') &&
+      needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.server.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -225,7 +279,7 @@ jobs:
           # The changes since the previous release of the same part (tags exist for published ones only), then how to
           # install and update. English only: the guides have the Russian.
           previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
-          ../.github/release-notes.sh "$PART" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
+          ../.github/release-notes.sh "${PART%-legacy}" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
           printf '\n---\n\n' >> ../notes.md
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           if [ "$PART" = client ]; then
@@ -236,6 +290,19 @@ jobs:
           **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
 
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
+
+          Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
+          EOF
+          elif [ "$PART" = client-legacy ]; then
+            title="CUSTOS for Windows 7 and 8.1 $VERSION"
+            cat >> ../notes.md <<EOF
+          **This is the edition for old Windows**, released as is and updated only when needed: Windows 7 SP1, 8.1, Server 2008 R2 SP1, 2012 and 2012 R2, 32 and 64-bit. On Windows 10, 11 and Server 2019+ install the standard edition (\`client-v…\` releases). Windows 8 (not 8.1) is not supported.
+
+          **Install:** run \`CUSTOS-Legacy-Setup-$VERSION.exe\`. The 32-bit .NET 6 Desktop Runtime is inside. Windows 7 needs the updates KB3063858 and KB2999226 (or all Windows updates); the setup says when one is missing. .NET 6 and these Windows versions get no security fixes any more: keep such computers in a closed network.
+
+          **What it lacks:** cloud drives (Google Drive, Yandex Disk, Dropbox), the dark theme, the 7-Zip update from the site. FTPS, WebDAV and S3 over https and a site over https work only with servers that still offer TLS 1.2 ciphers these Windows know.
+
+          **Update:** with a monitoring site 1.2.0 or newer, its Updates page offers this version in the section for Windows 7 and 8.1, or upload \`custos-legacy-$VERSION.zip\` there as it is. Without a site the program checks GitHub for \`client-legacy-v…\` releases once a day.
 
           Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
           EOF

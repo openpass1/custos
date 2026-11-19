@@ -15,6 +15,8 @@ use OpenSSLAsymmetricKey;
 final class Agents
 {
     public const MIN_KEY_BITS = 3072;
+    /** The edition of the program for Windows 7 and 8.1 (A.3, A.4); the standard edition sends none (''). */
+    public const LEGACY = 'legacy';
 
     public function __construct(private readonly Db $db, private readonly Monitor $monitor, private readonly Notices $notices)
     {
@@ -41,7 +43,7 @@ final class Agents
      * The same public key always maps to the same agent, so a repeated registration does not create duplicates.
      * A new key on a machine that is already known becomes a pending re-registration of that machine.
      *
-     * @param array{hostname: string, machine_guid: string, os: string, agent_version: string, time_zone: string} $info
+     * @param array{hostname: string, machine_guid: string, os: string, agent_version: string, edition?: string, time_zone: string} $info
      */
     public function register(array $info, OpenSSLAsymmetricKey $publicKey, string $ip): array
     {
@@ -50,9 +52,9 @@ final class Agents
             $existing = $this->db->one('SELECT id, status FROM agents WHERE key_sha256 = ? FOR UPDATE', [$sha]);
             if ($existing !== null) {
                 $this->db->exec(
-                    'UPDATE agents SET hostname = ?, machine_guid = ?, os = ?, agent_version = ?, time_zone = ?, last_ip = ?
+                    'UPDATE agents SET hostname = ?, machine_guid = ?, os = ?, agent_version = ?, edition = ?, time_zone = ?, last_ip = ?
                      WHERE id = ?',
-                    [$info['hostname'], $info['machine_guid'], $info['os'], $info['agent_version'], $info['time_zone'], $ip, $existing['id']]
+                    [$info['hostname'], $info['machine_guid'], $info['os'], $info['agent_version'], $info['edition'] ?? '', $info['time_zone'], $ip, $existing['id']]
                 );
                 return $existing;
             }
@@ -63,12 +65,12 @@ final class Agents
             $id = Crypto::uuid4();
             $this->db->exec(
                 'INSERT INTO agents (id, status, hostname, machine_guid, public_key, key_sha256, key_fingerprint, reregistration_of,
-                                     os, agent_version, time_zone, last_ip, first_seen_at)
-                 VALUES (?, \'pending\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                     os, agent_version, edition, time_zone, last_ip, first_seen_at)
+                 VALUES (?, \'pending\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $id, $info['hostname'], $info['machine_guid'], Crypto::publicPem($publicKey), $sha,
-                    Crypto::fingerprint($publicKey), $previous['id'] ?? null, $info['os'], $info['agent_version'], $info['time_zone'],
-                    $ip, Time::now(),
+                    Crypto::fingerprint($publicKey), $previous['id'] ?? null, $info['os'], $info['agent_version'], $info['edition'] ?? '',
+                    $info['time_zone'], $ip, Time::now(),
                 ]
             );
             if ($previous === null) {
@@ -83,17 +85,18 @@ final class Agents
     /**
      * Stores what the heartbeat says (A.4).
      *
-     * @param array{agent_version: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>, sevenzip_version?: ?string} $hb
+     * @param array{agent_version: string, edition?: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>, sevenzip_version?: ?string} $hb
      */
     public function heartbeat(string $id, array $hb, string $ip, string $status): void
     {
         $this->monitor->presence($id, $status, time());
         $this->db->exec(
-            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, sevenzip_version = ?, time_zone = ?,
+            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, edition = ?, sevenzip_version = ?, time_zone = ?,
                                service_started_at = ?, state = ?, running = ?, queue = ?
              WHERE id = ?',
             [
-                Time::now(), $ip, $hb['agent_version'], $hb['sevenzip_version'] ?? null, $hb['time_zone'], $hb['service_started_at'], $hb['state'],
+                Time::now(), $ip, $hb['agent_version'], $hb['edition'] ?? '', $hb['sevenzip_version'] ?? null, $hb['time_zone'],
+                $hb['service_started_at'], $hb['state'],
                 $hb['running'] === null ? null : json_encode($hb['running'], JSON_UNESCAPED_SLASHES),
                 json_encode($hb['queue'], JSON_UNESCAPED_SLASHES),
                 $id,
@@ -102,6 +105,18 @@ final class Agents
         if ($hb['state'] === 'idle') {
             $this->db->exec('DELETE FROM run_progress WHERE agent_id = ?', [$id]);
         }
+    }
+
+    /** Whether the machine runs the edition for Windows 7 and 8.1: no cloud drives, no 7-Zip update from the site. */
+    public static function isLegacy(array $agent): bool
+    {
+        return ($agent['edition'] ?? '') === self::LEGACY;
+    }
+
+    /** The edition as stored: what the agent sent when the site knows it, otherwise the standard one (''). */
+    public static function edition(?string $sent): string
+    {
+        return $sent === self::LEGACY ? self::LEGACY : '';
     }
 
     public function approve(string $id): void
@@ -132,12 +147,12 @@ final class Agents
             $this->db->exec(
                 "UPDATE agents SET id = ?, status = 'approved', approved_at = ?, reregistration_of = NULL,
                         hostname = ?, machine_guid = ?, public_key = ?, key_sha256 = ?, key_fingerprint = ?, os = ?,
-                        agent_version = ?, time_zone = ?, last_ip = ?, last_heartbeat_at = ?, service_started_at = ?,
+                        agent_version = ?, edition = ?, time_zone = ?, last_ip = ?, last_heartbeat_at = ?, service_started_at = ?,
                         state = ?, running = ?, queue = ?, config_revision = NULL
                  WHERE id = ?",
                 [
                     $newId, Time::now(), $new['hostname'], $new['machine_guid'], $new['public_key'], $new['key_sha256'],
-                    $new['key_fingerprint'], $new['os'], $new['agent_version'], $new['time_zone'], $new['last_ip'],
+                    $new['key_fingerprint'], $new['os'], $new['agent_version'], $new['edition'], $new['time_zone'], $new['last_ip'],
                     $new['last_heartbeat_at'], $new['service_started_at'], $new['state'], $new['running'], $new['queue'],
                     $oldId,
                 ]

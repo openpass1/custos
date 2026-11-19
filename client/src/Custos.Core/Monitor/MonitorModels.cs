@@ -43,6 +43,10 @@ public sealed class RegisterBody
 
     public required string AgentVersion { get; set; }
 
+    /// <summary><c>legacy</c> for the edition for Windows 7 and 8.1; not sent by the standard edition (A.3).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Edition { get; set; } = CustosEdition.Wire;
+
     public required string TimeZone { get; set; }
 
     public required string PublicKey { get; set; }
@@ -64,6 +68,10 @@ public sealed class RegisterAnswer
 public sealed class HeartbeatBody
 {
     public required string AgentVersion { get; set; }
+
+    /// <summary><c>legacy</c> for the edition for Windows 7 and 8.1; not sent by the standard edition (A.4).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Edition { get; set; } = CustosEdition.Wire;
 
     public string? SevenzipVersion { get; set; }
 
@@ -459,6 +467,9 @@ public sealed class UpdateManifest
     public string Version { get; set; } = string.Empty;
 
     public int MinProtocol { get; set; }
+
+    /// <summary><c>legacy</c> for a package of the legacy edition (Windows 7 and 8.1); absent for the standard one.</summary>
+    public string? Edition { get; set; }
 
     public List<UpdateManifestFile> Files { get; set; } = [];
 }

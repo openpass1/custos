@@ -9,6 +9,7 @@ use Custos\Domain\Agents;
 use Custos\Domain\Input;
 use Custos\Domain\InvalidInput;
 use Custos\Domain\Monitor;
+use Custos\Domain\Packages;
 use Custos\Http\Request;
 use Custos\Http\Response;
 use Custos\Infra\Cidr;
@@ -158,7 +159,8 @@ final class AgentApi
                 'runLog' => $this->ok(fn() => $this->app->reports()->log($agent['id'], $params[0], $input)),
                 'commandResult' => $this->ok(fn() => $this->app->commands()->result($agent['id'], $params[0], $input)),
                 'inventory' => $this->ok(fn() => $this->app->reports()->inventory($agent['id'], $input)),
-                'downloadUpdate' => $this->package('agent', $params[0]),
+                // Each edition downloads the packages of its own kind (A.10).
+                'downloadUpdate' => $this->package(Packages::agentKind($agent), $params[0]),
                 'downloadSevenZip' => $this->package('7zip', $params[0]),
             };
         } catch (InvalidInput $e) {
@@ -219,6 +221,7 @@ final class AgentApi
                 'machine_guid' => $in->string('machine_guid', 64),
                 'os' => $in->string('os'),
                 'agent_version' => $in->string('agent_version', 32),
+                'edition' => Agents::edition($in->string('edition', 32, true)),
                 'time_zone' => self::timeZone($in),
             ];
             $publicKey = Crypto::loadPublicKey($in->string('public_key', 16384));
@@ -250,6 +253,7 @@ final class AgentApi
         $running = $in->object('running', true);
         $hb = [
             'agent_version' => $in->string('agent_version', 32),
+            'edition' => Agents::edition($in->string('edition', 32, true)),
             'config_revision' => $in->int('config_revision', true),
             'time_zone' => self::timeZone($in),
             'service_started_at' => $in->time('service_started_at', true),

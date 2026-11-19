@@ -6,19 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Service: MIT -->
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.14" />
     <!-- Logging: Apache-2.0 -->
     <PackageVersion Include="Serilog" Version="4.3.1" />
-    <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <!-- Local database: MIT (Microsoft.Data.Sqlite), Apache-2.0 (SQLitePCLRaw), public domain (SQLite) -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
-    <!-- DPAPI for stored passwords: MIT -->
-    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
     <!-- ZIP archives (streaming, AES-256): MIT -->
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <!-- SSH to Linux servers through custos-helper (stage 2a): MIT; brings BouncyCastle.Cryptography (MIT) -->
@@ -27,10 +21,6 @@
     <PackageVersion Include="FluentFTP" Version="55.1.0" />
     <!-- S3 destinations (stage 4): Apache-2.0; brings AWSSDK.Core (Apache-2.0) -->
     <PackageVersion Include="AWSSDK.S3" Version="4.1.0" />
-    <!-- Starting and stopping the service from the tray menu (the service itself gets it through Hosting.WindowsServices): MIT -->
-    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
-    <!-- WMI, for the shadow copies (VSS): MIT -->
-    <PackageVersion Include="System.Management" Version="10.0.14" />
     <!-- Trial window in Material 3 (src/Custos.Preview): MIT -->
     <PackageVersion Include="Avalonia" Version="12.1.6" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
@@ -40,6 +30,37 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <!--
+    Microsoft's libraries, MIT: the service host, DPAPI for stored passwords, the tray's service control (the service
+    itself gets it through Hosting.WindowsServices) and WMI for the shadow copies (VSS).
+  -->
+  <ItemGroup Condition="'$(CustosLegacy)' != 'true'">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.14" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="10.0.14" />
+    <PackageVersion Include="System.Management" Version="10.0.14" />
+  </ItemGroup>
+
+  <!--
+    The legacy edition (.NET 6, CustosLegacy=true) takes them from the 8.0 line, the last one built for .NET 6: the
+    10.0 packages have their Windows code only for .NET 8 and later, so on .NET 6 NuGet would pick their
+    netstandard2.0 files, which on these libraries only throw PlatformNotSupportedException (the service would not
+    even start). System.Text.Json and TimeProvider are built into .NET 10 and come as packages here.
+  -->
+  <ItemGroup Condition="'$(CustosLegacy)' == 'true'">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageVersion Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+    <PackageVersion Include="System.Management" Version="8.0.0" />
+    <PackageVersion Include="System.Diagnostics.EventLog" Version="8.0.2" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.6" />
+    <PackageVersion Include="Microsoft.Bcl.TimeProvider" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

@@ -174,7 +174,7 @@ public sealed class NoSnapshots : ISnapshotSet
 {
     public static readonly NoSnapshots Instance = new();
 
-    public string Map(string path) => path;
+    public string Map(string path) => Wow64Paths.Native(path);
 
     public void Dispose()
     {
@@ -348,7 +348,7 @@ public class LocalBackupPlatform : IBackupPlatform
         return process.ExitCode;
     }
 
-    public virtual Func<string, string?> Variables(string? profileSid) => Environment.GetEnvironmentVariable;
+    public virtual Func<string, string?> Variables(string? profileSid) => Wow64Paths.Variable;
 
     public virtual void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle)
     {
@@ -364,16 +364,19 @@ public class LocalBackupPlatform : IBackupPlatform
 
     private static ProcessStartInfo StartInfo(string command, string arguments)
     {
+        // The legacy edition on 64-bit Windows starts the 64-bit cmd and PowerShell (Wow64Paths), so that a script sees
+        // the same Windows as it does from the standard edition.
+        command = Wow64Paths.Native(command);
         string extension = Path.GetExtension(command);
         if (extension.Equals(".bat", StringComparison.OrdinalIgnoreCase) || extension.Equals(".cmd", StringComparison.OrdinalIgnoreCase))
         {
             // cmd /s /c "…" takes everything between the outer quotes as the command line, quotes inside included.
-            return new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), $"/d /s /c \"\"{command}\" {arguments}\"");
+            return new ProcessStartInfo(Wow64Paths.Native(Path.Combine(Environment.SystemDirectory, "cmd.exe")), $"/d /s /c \"\"{command}\" {arguments}\"");
         }
 
         if (extension.Equals(".ps1", StringComparison.OrdinalIgnoreCase))
         {
-            string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+            string powershell = Wow64Paths.Native(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"));
             return new ProcessStartInfo(powershell, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{command}\" {arguments}");
         }
 

@@ -6,11 +6,16 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
-// From page to page (app.css, "From page to page"). This file runs before the first frame of a page (layout.php:
-// blocking="render"; a browser that does not know it may have drawn the page already, then nothing moves), so the
-// content of a page opened from another page of the site comes in with its movement: html.page-in, and tab-in when
-// the other page is a tab of this one. The same page again (a filter, a saved form, F5, Back) just shows. The marks
-// are taken off after the movement: a live part put in place later must not come in again.
+// From page to page (app.css, "From page to page"). Where the browser can, the old page dissolves into the new one
+// (a view transition between documents): the menu and the content change together, nothing is drawn in afterwards.
+// The dissolve needs no motion asked to be less (app.css turns it off then).
+const dissolves = 'CSSViewTransitionRule' in window && !still();
+
+// Elsewhere this file runs before the first frame of a page (layout.php: blocking="render"; a browser that does not
+// know it may have drawn the page already, then nothing moves), so the content of a page opened from another page of
+// the site comes in with its movement: html.page-in, and tab-in when the other page is a tab of this one. The same
+// page again (a filter, a saved form, F5, Back) just shows. The marks are taken off after the movement: a live part
+// put in place later must not come in again. A page that the browser dissolved in has no movement of its own.
 (() => {
     const entry = performance.getEntriesByType('navigation')[0];
     let from = null;
@@ -23,19 +28,101 @@ const still = () => stillQuery.matches;
         || from.pathname === window.location.pathname || performance.getEntriesByType('paint').length > 0) {
         return;
     }
-    const root = document.documentElement;
-    root.classList.add('page-in');
-    if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
-        root.classList.add('tab-in');
+    const comeIn = () => {
+        const root = document.documentElement;
+        root.classList.add('page-in');
+        if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
+            root.classList.add('tab-in');
+        }
+        setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
+    };
+    if (dissolves && 'onpagereveal' in window) {
+        window.addEventListener('pagereveal', (event) => {
+            if (!event.viewTransition) {
+                comeIn();
+            }
+        }, { once: true });
+    } else if (!dissolves) {
+        comeIn();
     }
-    setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
 })();
 
-// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav): the
-// section is marked open and the old content goes at once, without waiting for the server; the page comes when it
-// answers. A tab of a page (.tabs) is marked the same way. Ctrl+click and the like open a browser tab and change
-// nothing here. Back to this page from the browser history: the menu and the tabs show this page again. No answer
-// for a few seconds: the content is shown again.
+// While a page dissolves in, the browser shows a picture of the two pages over it and gives every press to <html>:
+// a quick click on the menu right after the page came (within 0.225 s) did nothing. A press then ends the dissolve at
+// once and goes, with its click, to what is under the pointer, as if the page had been there all along (the circle
+// of the press too).
+(() => {
+    if (!dissolves || !('onpagereveal' in window)) {
+        return;
+    }
+    const root = document.documentElement;
+    let dissolving = null;
+    let target = null;
+    window.addEventListener('pagereveal', (event) => {
+        dissolving = event.viewTransition || null;
+        if (dissolving) {
+            dissolving.finished.finally(() => {
+                dissolving = null;
+            });
+        }
+    }, { once: true });
+    const under = (event) => {
+        const el = document.elementFromPoint(event.clientX, event.clientY);
+        return el && el !== root ? el : null;
+    };
+    document.addEventListener('pointerdown', (event) => {
+        if (!event.isTrusted) {
+            return;
+        }
+        target = null;
+        if (!dissolving || event.target !== root) {
+            return;
+        }
+        dissolving.skipTransition();
+        dissolving = null;
+        const el = under(event);
+        if (!el) {
+            return;
+        }
+        event.stopImmediatePropagation();
+        target = el;
+        el.dispatchEvent(new PointerEvent('pointerdown', {
+            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
+            screenY: event.screenY, button: event.button, buttons: event.buttons, pointerId: event.pointerId,
+            pointerType: event.pointerType, isPrimary: event.isPrimary, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
+            altKey: event.altKey, metaKey: event.metaKey,
+        }));
+    }, true);
+    document.addEventListener('click', (event) => {
+        if (!event.isTrusted) {
+            return;
+        }
+        const from = target;
+        target = null;
+        if (!from || event.target !== root) {
+            return;
+        }
+        const el = under(event);
+        const link = (node) => (node.closest ? node.closest('a[href], button, summary, label') : null);
+        if (!el || (link(el) || el) !== (link(from) || from)) {
+            return;
+        }
+        event.stopImmediatePropagation();
+        el.dispatchEvent(new MouseEvent('click', {
+            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
+            screenY: event.screenY, button: event.button, buttons: event.buttons, detail: event.detail, ctrlKey: event.ctrlKey,
+            shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey,
+        }));
+    }, true);
+})();
+
+// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav). Where
+// the page dissolves into the next one, only the mark of the section clicked lights up (.going): its icon, the old
+// mark and the content change in the dissolve. Elsewhere the section is marked open and the old content goes at
+// once, without waiting for the server; the page comes when it answers. A tab of a page (.tabs) is marked the same
+// way, or left to the dissolve. Ctrl+click and the like open a browser tab and change nothing here. Back to this page
+// from the browser history: the menu and the tabs show this page again. No answer for a few seconds: the content is
+// shown again.
 (() => {
     const main = document.querySelector('main.sheet');
     let before = null;
@@ -66,6 +153,15 @@ const still = () => stillQuery.matches;
         if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) {
             return;
         }
+        if (dissolves) {
+            if (link.hasAttribute('data-nav') && !link.classList.contains('active')) {
+                for (const other of document.querySelectorAll('a[data-nav].going')) {
+                    other.classList.remove('going');
+                }
+                link.classList.add('going');
+            }
+            return;
+        }
         if (!link.hasAttribute('data-nav')) {
             const tabs = link.closest('.tabs');
             if (tabBefore === null) {
@@ -88,6 +184,9 @@ const still = () => stillQuery.matches;
     window.addEventListener('pageshow', (event) => {
         if (!event.persisted) {
             return;
+        }
+        for (const link of document.querySelectorAll('a[data-nav].going')) {
+            link.classList.remove('going');
         }
         if (tabBefore !== null) {
             markTab(tabBefore[0], tabBefore[1]);
@@ -1235,48 +1334,150 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 })();
 
-// Ripple (Material 3): pressing a button, a menu item, a chip, a tab or a section of the menu spreads a circle from
-// the pointer that fades when the press ends. In the narrow rail and the phone's bottom bar it fills the pill around
-// the icon. Nothing of it with less motion asked for.
+// Ripple (Material 3): pressing a button, a menu item, a chip, a tile or a section of the menu spreads a soft-edged
+// circle from the pointer. On buttons and the like it shows within 0.2 s, grows for 0.9 s and, once the press has ended
+// (but not sooner than 0.45 s after it began), fades for 0.75 s: twice the Material 3 times, which felt too quick. On
+// the sections of the menu (rail, bottom bar, "More") it keeps the Material 3 times of 1.1.2 (0.1 / 0.45 / 0.225 /
+// 0.375 s); in the narrow rail and the phone's bottom bar it fills the pill around the icon. Tabs have none. A press
+// that opens a page (a section, a link, a button that sends its form) would cut the circle off half-way: the press is
+// handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same section, button
+// or link if the page has it. Nothing of it with less motion asked for.
 (() => {
-    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .tabs a, .editor-toc a, a.tile, .sr-item';
-    document.addEventListener('pointerdown', (event) => {
-        if (still() || event.button !== 0) {
-            return;
-        }
-        const el = event.target.closest(hosts);
-        if (!el || el.disabled || el.classList.contains('link') || el.closest('.month-days')) {
-            return;
-        }
+    const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .editor-toc a, a.tile, .sr-item';
+    const SLOW = { grow: 900, press: 450, fade: 750 };
+    const MENU = { grow: 450, press: 225, fade: 375 };
+    const timesOf = (el) => (el.hasAttribute('data-nav') ? MENU : SLOW);
+    const CARRY = 'custos.ripple';
+    // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
+    const hostOf = (el) => {
         const pill = el.querySelector(':scope > .nav-icon');
-        const host = pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+        return pill && getComputedStyle(pill).display !== 'contents' ? pill : el;
+    };
+    // A circle on its host around the point (x, y) of it, as it is `age` ms after the press began.
+    const spread = (host, x, y, age, times) => {
         const box = host.getBoundingClientRect();
         if (box.width === 0) {
-            return;
+            return null;
         }
-        const x = event.clientX - box.left;
-        const y = event.clientY - box.top;
-        const size = 2 * Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y));
+        const longest = Math.max(box.width, box.height);
+        // The edge of the circle is soft (app.css), so it is drawn that much wider than the farthest corner needs.
+        const size = 2 * (Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + Math.max(0.35 * longest, 75));
         const wave = document.createElement('span');
-        wave.className = 'ripple';
+        wave.className = times === MENU ? 'ripple quick' : 'ripple';
         const dot = document.createElement('i');
         dot.style.width = dot.style.height = size + 'px';
         dot.style.left = (x - size / 2) + 'px';
         dot.style.top = (y - size / 2) + 'px';
         wave.append(dot);
         host.append(wave);
+        if (dot.animate) {
+            const grow = dot.animate([{ transform: 'scale(' + (0.2 * longest / size) + ')' }, { transform: 'scale(1)' }],
+                { duration: times.grow, easing: 'cubic-bezier(.2, 0, 0, 1)', fill: 'forwards' });
+            grow.currentTime = Math.min(Math.max(age, 0), times.grow);
+        }
+        return wave;
+    };
+    // The press has ended: the circle stays for the rest of its shortest time, then fades and goes.
+    const release = (wave, age, times) => {
+        setTimeout(() => {
+            wave.classList.remove('pressed');
+            setTimeout(() => wave.remove(), times.fade + 50);
+        }, Math.max(0, times.press - age));
+    };
+    // What the element is: a section of the menu by its name and place, else where it leads (a link) or sends to (a
+    // button) and its text. The next page finds its own copy of it by these.
+    const signature = (el) => {
+        if (el.hasAttribute('data-nav')) {
+            return 'nav|' + el.getAttribute('data-nav') + '|' + (el.closest('.bottom-nav') ? 'bar' : 'rail');
+        }
+        const form = el.form || null;
+        return [el.tagName, el.getAttribute('href') || '', form ? (form.getAttribute('action') || '') + ' ' + (el.name || '') + '=' + (el.value || '') : '',
+            (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80)].join('|');
+    };
+    const usable = (el) => el && !el.disabled && !el.classList.contains('link') && !el.closest('.month-days');
+
+    // The press that opened this page goes on. This runs before the first frame (layout.php: blocking="render").
+    let carried = null;
+    try {
+        carried = JSON.parse(window.sessionStorage.getItem(CARRY) || 'null');
+        window.sessionStorage.removeItem(CARRY);
+    } catch (error) {
+        carried = null;
+    }
+    if (carried && !still() && typeof carried.key === 'string' && [carried.x, carried.y, carried.at].every(Number.isFinite)) {
+        const age = Date.now() - carried.at;
+        const el = age >= 0
+            ? [...document.querySelectorAll(hosts)].find((one) => usable(one) && signature(one) === carried.key && one.getClientRects().length > 0) : null;
+        const times = el ? timesOf(el) : null;
+        const wave = el && age < times.press + times.grow ? spread(hostOf(el), carried.x, carried.y, age, times) : null;
+        if (wave) {
+            // It was already showing on the page before: it shows at once here, without fading in again.
+            const dot = wave.firstChild;
+            dot.style.transition = 'none';
+            wave.classList.add('pressed');
+            void dot.offsetWidth;
+            dot.style.transition = '';
+            release(wave, age, times);
+        }
+    }
+
+    let pressed = null;
+    document.addEventListener('pointerdown', (event) => {
+        pressed = null;
+        if (still() || event.button !== 0) {
+            return;
+        }
+        const el = event.target.closest(hosts);
+        if (!usable(el)) {
+            return;
+        }
+        const times = timesOf(el);
+        const host = hostOf(el);
+        const box = host.getBoundingClientRect();
+        const x = event.clientX - box.left;
+        const y = event.clientY - box.top;
+        const wave = spread(host, x, y, 0, times);
+        if (!wave) {
+            return;
+        }
+        // The style without "pressed" has to be in force first, or the circle would not fade in.
+        void wave.offsetWidth;
+        wave.classList.add('pressed');
         const born = performance.now();
+        pressed = { el, at: Date.now(), x, y, times, clicked: false };
         const end = () => {
             document.removeEventListener('pointerup', end);
             document.removeEventListener('pointercancel', end);
-            // The circle grows to its full size before it fades, however short the press.
-            setTimeout(() => {
-                wave.classList.add('fading');
-                setTimeout(() => wave.remove(), 350);
-            }, Math.max(0, 220 - (performance.now() - born)));
+            release(wave, performance.now() - born, times);
         };
         document.addEventListener('pointerup', end);
         document.addEventListener('pointercancel', end);
+    });
+    // A plain click that follows the press may open a page in this browser tab (Ctrl+click and the like open another
+    // one and leave this page as it is). The keyboard ends what the pointer started.
+    document.addEventListener('click', (event) => {
+        if (pressed && pressed.el.contains(event.target) && event.button === 0
+            && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || pressed.el.target)) {
+            pressed.clicked = true;
+        } else {
+            pressed = null;
+        }
+    });
+    document.addEventListener('keydown', () => {
+        pressed = null;
+    });
+    // This page goes while its circle is still on: the circle goes on on the next page.
+    window.addEventListener('pagehide', () => {
+        const press = pressed;
+        pressed = null;
+        if (!press || !press.clicked || Date.now() - press.at >= press.times.press + press.times.grow) {
+            return;
+        }
+        try {
+            window.sessionStorage.setItem(CARRY, JSON.stringify({ key: signature(press.el), x: press.x, y: press.y, at: press.at }));
+        } catch (error) {
+            // No storage (a private window of an old browser): the circle ends with the page, as before.
+        }
     });
 })();
 

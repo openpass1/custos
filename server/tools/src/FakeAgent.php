@@ -50,7 +50,7 @@ final class FakeAgent
     /**
      * @param array{url: string, code: ?string, hostname: string, time_zone: string, run_seconds: int,
      *              skip_schedule: bool, offline_min: ?int, pause_s: ?int, result?: ?string, sevenzip?: ?string,
-     *              once_run?: bool} $options
+     *              once_run?: bool, legacy?: bool} $options
      * @param \Closure(string): void $log
      */
     public function __construct(
@@ -62,7 +62,11 @@ final class FakeAgent
         $saved = is_file($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : null;
         $this->state = is_array($saved) ? $saved : $this->newState();
         // State files of older fake agents have no versions yet.
-        $this->state += ['agent_version' => self::VERSION, 'sevenzip_version' => self::SEVENZIP_VERSION];
+        $this->state += ['agent_version' => self::VERSION, 'sevenzip_version' => self::SEVENZIP_VERSION, 'edition' => ''];
+        if (!empty($options['legacy'])) {
+            // The edition for Windows 7 and 8.1 (A.3, A.4): its own packages, no 7-Zip from the site.
+            $this->state['edition'] = 'legacy';
+        }
         if (array_key_exists('sevenzip', $options)) {
             $this->state['sevenzip_version'] = $options['sevenzip'];
         }
@@ -199,10 +203,10 @@ final class FakeAgent
         $result = $this->client->register($code, [
             'hostname' => $this->state['hostname'],
             'machine_guid' => $this->state['machine_guid'],
-            'os' => 'Windows 11 Pro 24H2 (26100)',
+            'os' => $this->state['edition'] === 'legacy' ? 'Windows 7 Professional SP1 (7601)' : 'Windows 11 Pro 24H2 (26100)',
             'agent_version' => $this->state['agent_version'] ?? self::VERSION,
             'time_zone' => $this->state['time_zone'],
-        ]);
+        ] + $this->edition());
         if (!$result['ok']) {
             $this->problem('registration failed: ' . $result['reason']);
             // A real agent retries in 10 minutes (A.3); the simulator is impatient.
@@ -224,6 +228,7 @@ final class FakeAgent
         $this->nextHeartbeat = $now + $this->interval;
         $result = $this->client->call('POST', 'agent/heartbeat', [
             'agent_version' => $this->state['agent_version'] ?? self::VERSION,
+            ...$this->edition(),
             'sevenzip_version' => $this->state['sevenzip_version'] ?? null,
             'config_revision' => $this->state['config_revision'],
             'time_zone' => $this->state['time_zone'],
@@ -775,7 +780,11 @@ final class FakeAgent
         $version = (string) ($payload['version'] ?? '');
         $sha256 = strtolower((string) ($payload['sha256'] ?? ''));
         $signature = (string) ($payload['signature'] ?? '');
-        $signed = $sevenZip ? $this->client->verifySevenZip($version, $sha256, $signature) : $this->client->verifyUpdate($version, $sha256, $signature);
+        if ($sevenZip && $this->state['edition'] === 'legacy') {
+            return ['rejected', '7-Zip is updated only with the program in the edition for Windows 7 and 8.1'];
+        }
+        $signed = $sevenZip ? $this->client->verifySevenZip($version, $sha256, $signature)
+            : $this->client->verifyUpdate($version, $sha256, $signature, $this->state['edition']);
         if (!$signed || !preg_match('/^[0-9A-Za-z.+-]{1,32}$/', $version)) {
             return ['rejected', 'bad signature'];
         }
@@ -794,6 +803,12 @@ final class FakeAgent
         // A real agent restarts after an update; the new version reaches the server with the next heartbeat.
         $this->nextHeartbeat = min($this->nextHeartbeat, microtime(true) + 2);
         return ['done', sprintf('%s %s installed (%s)', $sevenZip ? '7-Zip' : 'CUSTOS', $version, self::size(strlen($download['body'])))];
+    }
+
+    /** The edition field of the registration and the heartbeat: sent only by the edition for Windows 7 and 8.1. */
+    private function edition(): array
+    {
+        return $this->state['edition'] === '' ? [] : ['edition' => $this->state['edition']];
     }
 
     private static function size(int $bytes): string

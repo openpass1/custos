@@ -35,7 +35,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 SHA-256 официального 64-битного установщика и `7zr.exe` с [github.com/ip7z/7zip](https://github.com/ip7z/7zip/releases)).
 Сборка один раз скачивает оба файла в `installer\redist\7-zip\<версия>`, отказывается от файла с другой SHA-256,
 достаёт из установщика `7z.dll` и лицензию 7-Zip и кладёт их в программу; тесты используют тот же `7z.dll`. Чтобы
-перейти на новую 7-Zip, поменяйте пять значений в `7-zip.json`. Раз в месяц задание `7-Zip release check` открывает
+перейти на новую 7-Zip, поменяйте семь значений в `7-zip.json`. Раз в месяц задание `7-Zip release check` открывает
 issue, если вышла 7-Zip новее, с готовыми значениями.
 
 GitHub Actions запускает тот же скрипт при каждом изменении в `client/` (задание `Client build`) и хранит три файла
@@ -60,6 +60,36 @@ WebDAV по http и https, MinIO с Object Lock ([`tools/ci-destinations.sh`](to
 
 Тексты программы лежат в `src/Custos.Core/Resources/Messages.tsv` и `src/Custos.Gui/Resources/Strings.tsv` (английский
 и русский рядом); после правки выполните `python3 tools/make-strings.py` в папке `client/`.
+
+## Версия для Windows 7 и 8.1
+
+Отдельная сборка того же кода для старых компьютеров: **.NET 6, 32 бита (x86)**, для Windows 7 SP1 и 8.1, 32- и
+64-битных. Выпускается как есть (`client-legacy-vX.Y.Z` в [Releases](https://github.com/openpass1/custos/releases),
+«CUSTOS for Windows 7 and 8.1»: `CUSTOS-Legacy-Setup-<версия>.exe`) и обновляется только при серьёзных поломках.
+Windows 7, 8.1 и .NET 6 Microsoft больше не исправляет, поэтому ставьте её только там, где Windows обновить нельзя.
+
+- **Установка.** Установщик содержит .NET 6 Desktop Runtime x86 и ставит его, если его нет, как обычный делает с
+  .NET 10. Он отказывается ставиться в Windows 8 (8.0, нужно бесплатное обновление до 8.1) и в Windows 7 без
+  обновлений, без которых .NET 6 не работает: KB3063858 и Universal C Runtime (KB2999226 или Visual C++ 2015-2019
+  Redistributable x86). В Windows 10 и новее он предлагает поставить обычный CUSTOS.
+- **Чего нет в этой версии:** облачных дисков (Google Диск, Яндекс Диск, Dropbox: для входа в них нужен современный
+  браузер), тёмной темы, обновления 7-Zip с сайта (сайт хранит 64-битную 7-Zip). Их не видно вовсе, ни в программе,
+  ни на сайте. 7z.dll здесь 32-битный: кнопка «Проверить обновление 7-Zip» скачивает 32-битную 7-Zip с GitHub, а
+  вручную 7z.dll берут из 32-битной 7-Zip (`7zXXXX.exe`, без `-x64`).
+- **Работает так же:** локальные, сетевые папки и флешки, SFTP, FTP/FTPS, WebDAV, S3 с Object Lock, VSS, базы данных,
+  custos-helper, скрипты, сервер мониторинга, экспорт и импорт, импорт из Cobian. Соединения по TLS идут по TLS 1.2
+  (Windows 7 без просьбы предлагает только TLS 1.0; TLS 1.3 не знает ни одна из них).
+- **64-битная Windows.** 32-битная программа читает источники так, как их видит 64-битная Windows: `C:\Windows\System32`
+  (а не SysWOW64), `%ProgramFiles%` = `C:\Program Files`, 64-битный реестр, cmd.exe и PowerShell для скриптов задач.
+- **Обновления.** Без сервера мониторинга она ищет выпуски `client-legacy-vX.Y.Z` и их `custos-legacy-X.Y.Z.zip`. На
+  сайте пакеты этой версии загружаются на странице «Обновления», как обычные (их отдельный блок появляется, когда
+  подключён такой компьютер), и уходят только на компьютеры этой версии; пакет одной версии на другую не ставится.
+- **Сборка:** `powershell -ExecutionPolicy Bypass -File .\build.ps1 -Legacy` тем же .NET 10 SDK. Она скачивает
+  .NET 6 Desktop Runtime x86 и 32-битный установщик 7-Zip (`installer32Url` в `7-zip.json`) и пишет
+  `artifacts-legacy\installer\CUSTOS-Legacy-Setup-<версия>.exe` и `artifacts-legacy\update\custos-legacy-<версия>.zip`.
+  Тесты для этой версии не запускаются (они идут на обычной, код тот же). В коде версия задаётся
+  `-p:CustosLegacy=true` (`CUSTOS_LEGACY`); недостающие API .NET лежат в `src/Legacy`. Задание `legacy` в
+  `Client build` собирает её, ставит на машину GitHub и проверяет, что 32-битная служба запускается.
 
 ## Архивы
 

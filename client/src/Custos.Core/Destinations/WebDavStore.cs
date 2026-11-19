@@ -55,7 +55,7 @@ public sealed class WebDavStore : RemoteStore
             ConnectTimeout = ConnectTimeout,
             AutomaticDecompression = DecompressionMethods.None,
             UseCookies = false,
-        };
+        }.WithTls();
         handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, errors) => _trust.Validate(certificate, errors);
         _http = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
     }

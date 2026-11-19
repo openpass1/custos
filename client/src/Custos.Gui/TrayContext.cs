@@ -69,7 +69,11 @@ internal sealed class TrayContext : ApplicationContext
         _stopAll = new ToolStripMenuItem(Strings.MenuStopAll, null, (_, _) => StopAll());
 
         // The shield of Windows says that the command asks for administrator rights.
+#if CUSTOS_LEGACY
+        using (var shield = new Icon(SystemIcons.Shield, SystemInformation.SmallIconSize))
+#else
         using (var shield = SystemIcons.GetStockIcon(StockIconId.Shield, StockIconOptions.SmallIcon))
+#endif
         {
             _shield = shield.ToBitmap();
         }

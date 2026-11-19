@@ -49,8 +49,9 @@ public static partial class HelperScript
         return reader.ReadToEnd().Replace("\r\n", "\n", StringComparison.Ordinal);
     }
 
-    [GeneratedRegex(@"^readonly VERSION=([0-9.]+)", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
-    private static partial Regex VersionLine();
+    private static readonly Regex VersionLineRegex = new(@"^readonly VERSION=([0-9.]+)", RegexOptions.Multiline | RegexOptions.CultureInvariant);
+
+    private static Regex VersionLine() => VersionLineRegex;
 }
 
 /// <summary>
@@ -289,9 +290,11 @@ public static partial class HelperSetup
         return value == "/" ? string.Empty : value;
     }
 
-    [GeneratedRegex(@"^[0-9A-Za-z.:/*?!\-]+(,[0-9A-Za-z.:/*?!\-]+)*$", RegexOptions.CultureInvariant)]
-    private static partial Regex FromPattern();
+    private static readonly Regex FromPatternRegex = new(@"^[0-9A-Za-z.:/*?!\-]+(,[0-9A-Za-z.:/*?!\-]+)*$", RegexOptions.CultureInvariant);
 
-    [GeneratedRegex(@"^[A-Za-z0-9+/]{16,}=*$", RegexOptions.CultureInvariant)]
-    private static partial Regex Base64Pattern();
+    private static Regex FromPattern() => FromPatternRegex;
+
+    private static readonly Regex Base64PatternRegex = new(@"^[A-Za-z0-9+/]{16,}=*$", RegexOptions.CultureInvariant);
+
+    private static Regex Base64Pattern() => Base64PatternRegex;
 }

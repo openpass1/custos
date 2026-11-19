@@ -61,8 +61,9 @@ public static class DestinationKinds
     public const string YaDisk = "yadisk";
     public const string Dropbox = "dropbox";
 
-    /// <summary>Kinds this version can write to.</summary>
-    public static bool IsSupported(string kind) => kind is Local or Unc or Usb or Ftp or Ftps or Sftp or S3 or WebDav or GDrive or YaDisk or Dropbox;
+    /// <summary>Kinds this version can write to (the legacy edition has no cloud drives, <see cref="CustosEdition"/>).</summary>
+    public static bool IsSupported(string kind) =>
+        kind is Local or Unc or Usb or Ftp or Ftps or Sftp or S3 or WebDav or GDrive or YaDisk or Dropbox && CustosEdition.Supports(kind);
 
     /// <summary>A cloud drive of a personal account (section 6.3, «Облачные диски»): Google Drive, Yandex Disk, Dropbox.</summary>
     public static bool IsCloudDrive(string? kind) => kind is GDrive or YaDisk or Dropbox;

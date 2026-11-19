@@ -20,6 +20,9 @@ public static class ServicePipe
     /// <exception cref="UnauthorizedAccessException">Another process owns a pipe with this name.</exception>
     public static NamedPipeServerStream CreateServer(string pipeName, bool firstInstance)
     {
+#if CUSTOS_LEGACY
+        return LegacyPipes.CreateServer(pipeName, firstInstance, CreateSecurity());
+#else
         var options = PipeOptions.Asynchronous;
         if (firstInstance)
         {
@@ -35,6 +38,7 @@ public static class ServicePipe
             inBufferSize: 0,
             outBufferSize: 0,
             CreateSecurity());
+#endif
     }
 
     /// <summary>

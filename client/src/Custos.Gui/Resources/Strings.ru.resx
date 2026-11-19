@@ -2842,4 +2842,21 @@ for f in /etc/ssh/ssh_host_*_key.pub; do ssh-keygen -lf "$f"; done
   <data name="RemoteCreateNewKey" xml:space="preserve">
     <value>Создать новый ключ</value>
   </data>
+  <data name="EditionLegacy" xml:space="preserve">
+    <value>для Windows 7 и 8.1</value>
+  </data>
+  <data name="KindNotInLegacy" xml:space="preserve">
+    <value>{0} (нет в версии для Windows 7)</value>
+  </data>
+  <data name="DestinationNotInLegacy" xml:space="preserve">
+    <value>CUSTOS для Windows 7 и 8.1 не умеет записывать на облачные диски. Задание ничего туда не пишет и сообщает об ошибке.</value>
+  </data>
+  <data name="Settings7ZipNoteLegacy" xml:space="preserve">
+    <value>Кнопка смотрит официальные выпуски 7-Zip на GitHub, только когда её нажимают, и обновляет только с вашего согласия. Вручную: остановите службу CUSTOS, замените 7z.dll в папке программы CUSTOS файлом из 32-битного 7-Zip (7zXXXX.exe, без -x64), запустите службу.</value>
+  </data>
+  <data name="SevenZipAskUpdateLegacy" xml:space="preserve">
+    <value>У вас 7-Zip {0}, последняя версия {1}.
+
+Обновить сейчас? Служба скачает 32-битный установщик с официальной страницы 7-Zip на GitHub, проверит его SHA-256, возьмёт из него 7z.dll, проверит его в работе и только потом заменит старый файл (он сохранится как 7z.dll.old). Задания на это время ждут; это около минуты.</value>
+  </data>
 </root>

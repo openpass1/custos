@@ -280,6 +280,22 @@ final class TaskFormTest extends TestCase
         $this->assertTrue($form->task()['destinations'][1]['disconnect_after'], 'a new destination gets the default');
     }
 
+    public function testMachineWithTheEditionForWindows7HasNoCloudDrives(): void
+    {
+        $task = $this->task();
+        $post = self::formFor($task);
+        $post['destinations'][] = ['id' => '', 'kind' => 'yadisk', 'path' => 'office', 'credential' => self::CLOUD, 'part_mb' => '0', 'speed_limit_mbps' => '0'];
+        $this->assertSame([], TaskForm::parse($task, $post, $this->credentials())->errors);
+        $form = TaskForm::parse($task, $post, $this->credentials(), legacy: true);
+        $this->assertContains('task_form.error.cloud_legacy', array_column($form->errors, 'key'));
+        $this->assertSame([], TaskForm::parse($task, self::formFor($task), $this->credentials(), legacy: true)->errors, 'other destinations stay');
+
+        $this->assertSame(TaskForm::DESTINATION_KINDS, TaskForm::destinationKinds(false));
+        $this->assertSame(['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav'], TaskForm::destinationKinds(true));
+        $this->assertSame(['yadisk'], TaskForm::cloudKinds($form->view));
+        $this->assertSame([], TaskForm::cloudKinds($task));
+    }
+
     public function testCloudDriveInATemplateNamesNoAccount(): void
     {
         $task = $this->task();

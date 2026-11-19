@@ -56,14 +56,18 @@ final class DashboardController extends Controller
             ),
             'storage' => $app->storage()->summary(),
             'notices' => $app->notices()->latest(5, 0, true),
+            // Each edition of the program is compared with its own current version; 7-Zip only on the standard one,
+            // the only one the site updates it on.
             'versions' => self::distribution($db->all(
-                "SELECT agent_version AS version, COUNT(*) AS n FROM agents WHERE status = 'approved' GROUP BY agent_version"
+                "SELECT agent_version AS version, edition, COUNT(*) AS n FROM agents WHERE status = 'approved' GROUP BY agent_version, edition"
             )),
             'sevenZipVersions' => self::distribution($db->all(
-                "SELECT sevenzip_version AS version, COUNT(*) AS n FROM agents WHERE status = 'approved' AND sevenzip_version IS NOT NULL
+                "SELECT sevenzip_version AS version, COUNT(*) AS n FROM agents
+                 WHERE status = 'approved' AND sevenzip_version IS NOT NULL AND edition <> 'legacy'
                  GROUP BY sevenzip_version"
             )),
             'currentVersion' => $app->packages()->current()['version'] ?? null,
+            'legacyVersion' => $app->packages()->current('legacy')['version'] ?? null,
             'latestSevenZip' => $app->updateWatch()->latestSevenZip()['version'] ?? null,
             'unread' => $app->notices()->unreadCount(),
         ];
@@ -77,7 +81,7 @@ final class DashboardController extends Controller
     /** Versions with their number of machines, newest first. */
     private static function distribution(array $rows): array
     {
-        usort($rows, fn($a, $b) => version_compare((string) $b['version'], (string) $a['version']));
+        usort($rows, fn($a, $b) => version_compare((string) $b['version'], (string) $a['version']) ?: strcmp((string) ($a['edition'] ?? ''), (string) ($b['edition'] ?? '')));
         return $rows;
     }
 }

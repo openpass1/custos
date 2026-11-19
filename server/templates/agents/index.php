@@ -39,7 +39,7 @@ use Custos\Domain\Agents;
                             <?php endif ?>
                         </td>
                         <td data-label="<?= e(t('agents.col.ip')) ?>"><?= e($a['last_ip'] ?? '—') ?></td>
-                        <td data-label="<?= e(t('agents.col.os')) ?>"><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?></div></td>
+                        <td data-label="<?= e(t('agents.col.os')) ?>"><?= e($a['os']) ?><div class="note"><?= e(t('agents.version', ['v' => $a['agent_version']])) ?><?= edition_badge($a) ?></div></td>
                         <td data-label="<?= e(t('agents.col.fingerprint')) ?>"><code class="fingerprint"><?= e($a['key_fingerprint']) ?></code></td>
                         <td data-label="<?= e(t('agents.col.first_seen')) ?>"><?= e(fmt_time($a['first_seen_at'])) ?></td>
                         <td class="actions card-end">
@@ -169,7 +169,7 @@ use Custos\Domain\Agents;
                                     <?php endif ?>
                                 </td>
                                 <td class="nowrap" data-label="<?= e(t('agents.col.last_seen')) ?>" title="<?= e(fmt_time($a['last_heartbeat_at'], true)) ?>"><?= e(fmt_ago($a['last_heartbeat_at'])) ?></td>
-                                <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?></td>
+                                <td data-label="<?= e(t('agents.col.version')) ?>"><?= e($a['agent_version']) ?><?= edition_badge($a) ?></td>
                                 <td class="pills card-end">
                                     <?php if ($agentTasks === []): ?><span class="note"><?= e(t('agent.tasks.empty')) ?></span><?php endif ?>
                                     <?php foreach ($agentTasks as $task): ?>
