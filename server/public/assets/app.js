@@ -276,7 +276,14 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         }
     }, { capture: true, passive: true });
     window.addEventListener('pointerup', (event) => {
-        if (!press || press.up || inPanel(event.target)) {
+        if (inPanel(event.target)) {
+            return;
+        }
+        if (!press || press.up) {
+            // A release whose press the page never got: the browser lost the press (the click is lost with it).
+            if (event.isTrusted) {
+                note('release with no press before it, on ' + where(event.target) + ': the page never got the press' + late(event));
+            }
             return;
         }
         const p = press;
