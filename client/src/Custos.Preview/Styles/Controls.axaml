@@ -322,4 +322,271 @@
       <Setter Property="Width" Value="64" />
     </Style>
   </ControlTheme>
+
+  <!-- ===== Task editor ===== -->
+
+  <!-- Outlined text field: the label sits on the top edge of the frame, the hint under it. -->
+  <ControlTheme x:Key="{x:Type p:Field}" TargetType="p:Field">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel>
+          <Panel>
+            <Border Name="frame" Margin="0,8,0,0" MinHeight="52" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Outline}">
+              <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" VerticalContentAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" />
+            </Border>
+            <p:Icon Name="trail" Kind="{TemplateBinding TrailingIcon}" Margin="0,8,12,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                    IsHitTestVisible="False" Foreground="{DynamicResource OnSurfaceVariant}"
+                    IsVisible="{TemplateBinding TrailingIcon, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Border Name="labelback" Background="{DynamicResource Surface}" Padding="4,0" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    IsVisible="{TemplateBinding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Name="label" Text="{TemplateBinding Label}" FontSize="12" LineHeight="16" Foreground="{DynamicResource OnSurfaceVariant}" />
+            </Border>
+          </Panel>
+          <TextBlock Name="hint" Text="{TemplateBinding Hint}" FontSize="12" LineHeight="16" Margin="16,4,16,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{TemplateBinding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#frame">
+      <Setter Property="BorderBrush" Value="{DynamicResource OnSurface}" />
+    </Style>
+    <Style Selector="^:focus-within /template/ Border#frame">
+      <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="^:focus-within /template/ TextBlock#label">
+      <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    </Style>
+    <Style Selector="^.compact /template/ Border#frame">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="MinHeight" Value="40" />
+    </Style>
+  </ControlTheme>
+
+  <!-- Switch: 52 x 32 track; the handle grows and carries a check when on. -->
+  <ControlTheme x:Key="Switch" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Width="52" Height="32" Background="Transparent">
+          <Border Name="track" CornerRadius="16" BorderThickness="2" BorderBrush="{DynamicResource Outline}" Background="{DynamicResource SurfaceContainerHighest}" />
+          <Border Name="thumb" Width="16" Height="16" CornerRadius="12" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Background="{DynamicResource Outline}">
+            <p:Icon Name="mark" Kind="check" Size="16" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Foreground="{DynamicResource OnPrimaryContainer}" />
+          </Border>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#thumb">
+      <Setter Property="Background" Value="{DynamicResource OnSurfaceVariant}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#track">
+      <Setter Property="Background" Value="{DynamicResource Primary}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#thumb">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Margin" Value="0,0,4,0" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Background" Value="{DynamicResource OnPrimary}" />
+    </Style>
+    <Style Selector="^:checked:pointerover /template/ Border#thumb">
+      <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
+    </Style>
+    <Style Selector="^:checked /template/ p|Icon#mark">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+
+  <!-- Checkbox: an 18 px box in a 40 px touch circle, the text beside it. -->
+  <ControlTheme x:Key="M3Check" TargetType="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="Auto,*" Background="Transparent">
+          <Panel Width="40" Height="40" VerticalAlignment="Top">
+            <Border Name="layer" CornerRadius="20" Background="{TemplateBinding Background}" />
+            <Border Name="box" Width="18" Height="18" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource OnSurfaceVariant}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Path Name="mark" Data="M2.5,7.2 L5.7,10.4 L11.5,4.2" Stroke="{DynamicResource OnPrimary}" StrokeThickness="2" IsVisible="False"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" />
+            </Border>
+          </Panel>
+          <ContentPresenter Name="content" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Margin="4,10,0,0" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <!-- Beside a field on the same line: the text in the middle of the 40 px row. -->
+    <Style Selector="^.inline /template/ ContentPresenter#content">
+      <Setter Property="Margin" Value="4,0,0,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="^:pointerover /template/ Border#layer">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#box">
+      <Setter Property="Background" Value="{DynamicResource Primary}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
+    </Style>
+    <Style Selector="^:checked /template/ Path#mark">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+
+  <!-- Radio button: a 20 px ring with a dot when chosen. -->
+  <ControlTheme x:Key="M3Radio" TargetType="RadioButton">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="Auto,*" Background="Transparent">
+          <Panel Width="40" Height="40" VerticalAlignment="Top">
+            <Border Name="layer" CornerRadius="20" Background="{TemplateBinding Background}" />
+            <Ellipse Name="ring" Width="20" Height="20" Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
+            <Ellipse Name="dot" Width="10" Height="10" Fill="{DynamicResource Primary}" IsVisible="False" />
+          </Panel>
+          <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Margin="4,10,0,0" VerticalAlignment="Top" />
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#layer">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+    <Style Selector="^:checked /template/ Ellipse#ring">
+      <Setter Property="Stroke" Value="{DynamicResource Primary}" />
+    </Style>
+    <Style Selector="^:checked /template/ Ellipse#dot">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+
+  <!-- One button of a segmented row; the row's outline and round ends come from Border.segments around them. -->
+  <ControlTheme x:Key="Segment" TargetType="RadioButton">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bg" Height="38" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Outline}" Background="{TemplateBinding Background}" Padding="16,0,18,0">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <p:Icon Name="check" Kind="check" Size="18" IsVisible="False" />
+            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#bg">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#bg">
+      <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    </Style>
+    <Style Selector="^:checked">
+      <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+    </Style>
+    <Style Selector="^:checked /template/ p|Icon#check">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+
+  <!-- Item of the editor's page list (navigation drawer item). -->
+  <ControlTheme x:Key="NavItem" TargetType="ListBoxItem" BasedOn="{StaticResource M3ListItem}">
+    <Setter Property="CornerRadius" Value="26" />
+    <Setter Property="Height" Value="52" />
+    <Setter Property="Margin" Value="0,0,0,2" />
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </ControlTheme>
+
+  <!-- Common buttons: filled, tonal, outlined (40 px pills) and the icon button. -->
+  <ControlTheme x:Key="FilledButton" TargetType="Button">
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimary}" />
+    <Setter Property="Background" Value="{DynamicResource Primary}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="24,0" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Height="40" CornerRadius="20" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}">
+          <Border Name="layer" CornerRadius="20" Padding="{TemplateBinding Padding}" Background="Transparent">
+            <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#layer">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+    <Style Selector="^:pressed /template/ Border#layer">
+      <Setter Property="Background" Value="{DynamicResource PressedLayer}" />
+    </Style>
+  </ControlTheme>
+  <ControlTheme x:Key="TonalButton" TargetType="Button" BasedOn="{StaticResource FilledButton}">
+    <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+    <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    <Setter Property="Padding" Value="16,0,24,0" />
+  </ControlTheme>
+  <ControlTheme x:Key="OutlinedButton" TargetType="Button" BasedOn="{StaticResource FilledButton}">
+    <Setter Property="Foreground" Value="{DynamicResource Primary}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </ControlTheme>
+  <ControlTheme x:Key="IconButton" TargetType="Button">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bg" Width="40" Height="40" CornerRadius="20" Background="{TemplateBinding Background}">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#bg">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- A colour of the «Цвет» menu: a round sample (the scheme's main colour on its background) and a check on the one in use. -->
+  <ControlTheme x:Key="Swatch" TargetType="RadioButton">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bg" Height="44" CornerRadius="12" Margin="4,0" Padding="12,0,16,0" Background="{TemplateBinding Background}">
+          <Grid ColumnDefinitions="*,Auto">
+            <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
+            <p:Icon Name="check" Grid.Column="1" Kind="check" Size="20" IsVisible="False" Margin="12,0,0,0" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#bg">
+      <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
+    </Style>
+    <Style Selector="^:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
+    </Style>
+    <Style Selector="^:checked /template/ p|Icon#check">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
 </ResourceDictionary>

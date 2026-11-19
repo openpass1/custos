@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: CustosPreview-screenshots
-          path: out/screenshots/*.png
+          path: out/screenshots
           if-no-files-found: error
           retention-days: 30
 

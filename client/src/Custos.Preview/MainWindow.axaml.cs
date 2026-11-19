@@ -1,8 +1,9 @@
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Shapes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.LogicalTree;
@@ -34,7 +35,12 @@ internal sealed partial class MainWindow : Window
         BuildHeader();
         ShowCardColumn();
         vm.PropertyChanged += OnViewModelChanged;
-        ActualThemeVariantChanged += (_, _) => PaintTitleBar();
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            TitleBar.Paint(this);
+            BuildColorMenu();
+        };
+        BuildColorMenu();
     }
 
     public MainViewModel ViewModel => _vm;
@@ -42,7 +48,7 @@ internal sealed partial class MainWindow : Window
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
-        PaintTitleBar();
+        TitleBar.Paint(this);
     }
 
     protected override void OnClosed(EventArgs e)
@@ -95,6 +101,11 @@ internal sealed partial class MainWindow : Window
         {
             ShowCardColumn();
         }
+        else if (e.PropertyName == nameof(MainViewModel.ColorChoice))
+        {
+            TitleBar.Paint(this);
+            BuildColorMenu();
+        }
     }
 
     /// <summary>«Карточка» off gives the list the whole width; on brings the card back at the width it had.</summary>
@@ -121,6 +132,77 @@ internal sealed partial class MainWindow : Window
 
         CardSplitter.IsVisible = _vm.ShowCard;
         CardPane.IsVisible = _vm.ShowCard;
+    }
+
+    /// <summary>
+    /// The colours of the «Настройки» menu: a round sample of each scheme (its main colour on its background, in the
+    /// theme now shown) and a check on the one in use.
+    /// </summary>
+    private void BuildColorMenu()
+    {
+        ColorMenu.Children.Clear();
+        var theme = this.FindResource("Swatch") as ControlTheme;
+        bool dark = ActualThemeVariant == ThemeVariant.Dark;
+        foreach (string id in Palettes.Ids)
+        {
+            var (primary, surface) = Palettes.Sample(id, dark);
+            var sample = new Panel
+            {
+                Width = 24,
+                Height = 24,
+                Children =
+                {
+                    new Ellipse { Fill = new SolidColorBrush(surface), Stroke = this.FindResource("OutlineVariant") as IBrush, StrokeThickness = 1 },
+                    new Ellipse { Width = 14, Height = 14, Fill = new SolidColorBrush(primary) },
+                },
+            };
+            var item = new RadioButton
+            {
+                Theme = theme,
+                GroupName = "color",
+                IsChecked = id == _vm.ColorChoice,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 12,
+                    Children = { sample, new TextBlock { Text = Palettes.Title(id), VerticalAlignment = VerticalAlignment.Center } },
+                },
+            };
+            item.Click += (_, _) =>
+            {
+                CloseMenu(item);
+                _vm.ColorChoice = id;
+            };
+            ColorMenu.Children.Add(item);
+        }
+    }
+
+    private async void OnEdit(object? sender, RoutedEventArgs e) => await OpenEditor(_vm.EditSelected());
+
+    private async void OnCreate(object? sender, RoutedEventArgs e) => await OpenEditor(_vm.CreateNew());
+
+    private async void OnTaskDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (_vm.CanEdit)
+        {
+            await OpenEditor(_vm.EditSelected());
+        }
+    }
+
+    /// <summary>The task editor as a dialog; «Сохранить» only says that the trial window keeps nothing.</summary>
+    private async Task OpenEditor(EditorModel? model)
+    {
+        if (model is null)
+        {
+            return;
+        }
+
+        var editor = new EditorWindow(model);
+        await editor.ShowDialog(this);
+        if (editor.Saved)
+        {
+            _vm.Snack(Strings.PreviewNotSaved);
+        }
     }
 
     private void OnReadOnly(object? sender, RoutedEventArgs e)
@@ -167,46 +249,4 @@ internal sealed partial class MainWindow : Window
             popup.Close();
         }
     }
-
-    /// <summary>
-    /// Windows 11 draws the title bar in the window's own surface colour; Windows 10 only makes it dark in the dark theme.
-    /// Elsewhere (and on older Windows) the system title bar stays as it is.
-    /// </summary>
-    private void PaintTitleBar()
-    {
-        if (!OperatingSystem.IsWindows() || TryGetPlatformHandle()?.Handle is not { } hwnd || hwnd == IntPtr.Zero)
-        {
-            return;
-        }
-
-        var variant = ActualThemeVariant;
-        int dark = variant == ThemeVariant.Dark ? 1 : 0;
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
-        {
-            _ = NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.UseImmersiveDarkMode, ref dark, sizeof(int));
-        }
-
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000)
-            && this.TryFindResource("SurfaceContainer", variant, out object? back) && back is ISolidColorBrush caption
-            && this.TryFindResource("OnSurface", variant, out object? fore) && fore is ISolidColorBrush text)
-        {
-            int captionColor = ColorRef(caption.Color);
-            int textColor = ColorRef(text.Color);
-            _ = NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.CaptionColor, ref captionColor, sizeof(int));
-            _ = NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.TextColor, ref textColor, sizeof(int));
-        }
-    }
-
-    private static int ColorRef(Color color) => color.R | (color.G << 8) | (color.B << 16);
-}
-
-internal static partial class NativeMethods
-{
-    public const int UseImmersiveDarkMode = 20;
-    public const int CaptionColor = 35;
-    public const int TextColor = 36;
-
-    [LibraryImport("dwmapi.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static partial int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 }

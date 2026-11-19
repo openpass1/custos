@@ -43,7 +43,9 @@ internal sealed class MainViewModel : Observable, IDisposable
     private string _emptyText = string.Empty;
     private string _snackText = string.Empty;
     private bool _snackVisible;
+    private readonly PreviewSettings _settings = PreviewSettings.Load();
     private string? _themeChoice;
+    private string _colorChoice;
     private int _sortColumn;
     private bool _sortAscending = true;
 
@@ -51,6 +53,9 @@ internal sealed class MainViewModel : Observable, IDisposable
     {
         _monitor = monitor;
         _demo = demo;
+        _themeChoice = _settings.Theme;
+        _colorChoice = _settings.Color is { } color && Palettes.Ids.Contains(color) ? color : Palettes.Site;
+        ApplyColor();
         _monitor.StatusChanged += (_, _) => ShowStatus();
         _monitor.SnapshotChanged += (_, _) => ShowSnapshot();
         _monitor.ProgressChanged += (_, _) => ShowProgress();
@@ -199,6 +204,23 @@ internal sealed class MainViewModel : Observable, IDisposable
             if (Set(ref _themeChoice, value))
             {
                 ApplyTheme();
+                _settings.Theme = value;
+                _settings.Save();
+            }
+        }
+    }
+
+    /// <summary>The colour scheme picked in the «Настройки» menu (Palettes.cs), kept for the next start.</summary>
+    public string ColorChoice
+    {
+        get => _colorChoice;
+        set
+        {
+            if (Set(ref _colorChoice, value))
+            {
+                ApplyColor();
+                _settings.Color = value;
+                _settings.Save();
             }
         }
     }
@@ -228,6 +250,28 @@ internal sealed class MainViewModel : Observable, IDisposable
         _sortColumn = column;
         Changed(nameof(SortColumn));
         ShowSnapshot();
+    }
+
+    /// <summary>The editor with the selected task, or null when no task is selected.</summary>
+    public EditorModel? EditSelected()
+    {
+        var snapshot = _monitor.Snapshot;
+        return _selected is { } row && snapshot?.Tasks.FirstOrDefault(t => Describe.SameId(t.Id, row.TaskId)) is { } task
+            ? new EditorModel(task, snapshot, isNew: false)
+            : null;
+    }
+
+    /// <summary>The editor with a new task: the defaults and a name not used yet, as in Custos.exe.</summary>
+    public EditorModel CreateNew()
+    {
+        var snapshot = _monitor.Snapshot;
+        var task = new TaskDefinition { Name = Strings.NewTaskName };
+        for (int i = 2; snapshot?.Tasks.Any(t => string.Equals(t.Name, task.Name, StringComparison.OrdinalIgnoreCase)) == true; i++)
+        {
+            task.Name = Strings.NewTaskName + " " + i.ToString(System.Globalization.CultureInfo.CurrentCulture);
+        }
+
+        return new EditorModel(task, snapshot, isNew: true);
     }
 
     /// <summary>Said for every button that would change something: this window only shows.</summary>
@@ -364,6 +408,14 @@ internal sealed class MainViewModel : Observable, IDisposable
                 server.OfflineSince is { } since ? Math.Max(0, (int)(DateTimeOffset.UtcNow - since).TotalMinutes) : 0), "cloud_off"),
             _ => (Strings.Format(Strings.ServerProblem, host, ServerLink.StateText(server.State).TrimEnd('.')), "cloud_off"),
         };
+    }
+
+    private void ApplyColor()
+    {
+        if (Application.Current is { } app)
+        {
+            Palettes.Apply(app, _colorChoice);
+        }
     }
 
     private void ApplyTheme()

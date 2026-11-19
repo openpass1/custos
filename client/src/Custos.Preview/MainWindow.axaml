@@ -20,7 +20,7 @@
           <Border Classes="fabshadow" />
           <Border Classes="fab">
             <StackPanel Orientation="Horizontal">
-              <Button Theme="{StaticResource FabPart}" Click="OnReadOnly" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{x:Static g:Strings.ToolCreate}">
+              <Button Theme="{StaticResource FabPart}" Click="OnCreate" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{x:Static g:Strings.ToolCreate}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <p:Icon Kind="add" />
                   <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center" />
@@ -49,7 +49,7 @@
             </StackPanel>
           </Border>
           </Panel>
-          <p:ToolButton Label="{x:Static g:Strings.ToolEdit}" IconKind="edit" IsEnabled="{Binding CanEdit}" Click="OnReadOnly" />
+          <p:ToolButton Label="{x:Static g:Strings.ToolEdit}" IconKind="edit" IsEnabled="{Binding CanEdit}" Click="OnEdit" />
           <p:ToolButton Label="{x:Static g:Strings.ToolClone}" IconKind="content_copy" IsEnabled="{Binding CanEdit}" Click="OnReadOnly" />
           <p:ToolButton Label="{x:Static g:Strings.ToolDelete}" IconKind="delete" IsEnabled="{Binding CanEdit}" Click="OnReadOnly" />
           <p:ToolButton Label="{x:Static g:Strings.ToolDisable}" IconKind="toggle_off" IsEnabled="{Binding CanEdit}" Click="OnReadOnly" />
@@ -77,6 +77,9 @@
                   <Button Theme="{StaticResource MenuItemButton}" Click="OnTheme" Tag="dark">
                     <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="dark_mode" /><TextBlock Text="{x:Static g:Strings.PreviewThemeDark}" VerticalAlignment="Center" /></StackPanel>
                   </Button>
+                  <Border Classes="divider" Margin="0,8" />
+                  <TextBlock Classes="menuhead" Text="{x:Static g:Strings.PreviewColor}" />
+                  <StackPanel Name="ColorMenu" />
                 </StackPanel>
               </Flyout>
             </p:ToolButton.Flyout>
@@ -134,7 +137,7 @@
                     <Border DockPanel.Dock="Top" Classes="divider" Height="40" Margin="0,0,0,4">
                       <Grid Name="Header" ColumnDefinitions="160,130,170,150,200,*" />
                     </Border>
-                    <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}">
+                    <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}" DoubleTapped="OnTaskDoubleTapped">
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="p:TaskRow">
                           <Grid Height="48" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">

@@ -97,12 +97,23 @@ internal static class DemoData
             {
                 Id = Accounting,
                 Name = "Accounting",
+                Revision = 14,
                 BackupType = BackupTypes.Differential,
                 Sources = [new TaskSource { Id = "s1", Kind = SourceKinds.Folder, Path = @"D:\Accounting" }],
                 Destinations = [new TaskDestination { Id = "d1", Kind = DestinationKinds.Unc, Path = @"\\fileserver\backup\accounting", CredentialId = Account }],
                 Archive = new ArchiveOptions { Format = ArchiveFormats.SevenZip, Level = 5, Encrypt = true },
                 Retention = new RetentionOptions { Mode = RetentionModes.Count, KeepFull = 8 },
                 Schedule = new ScheduleOptions { Type = ScheduleTypes.Weekly, Times = ["11:30"], DaysOfWeek = [1, 2, 3, 4, 5] },
+                Events = new TaskEvents
+                {
+                    Pre = [new TaskEvent { Kind = TaskEventKinds.ServiceStop, Service = "AccountingDB", TimeoutS = 300 }],
+                    Post =
+                    [
+                        new TaskEvent { Kind = TaskEventKinds.ServiceStart, Service = "AccountingDB", TimeoutS = 300 },
+                        new TaskEvent { Kind = TaskEventKinds.Run, Command = @"C:\Scripts\notify.cmd", Args = "accounting", TimeoutS = 600 },
+                    ],
+                    AbortOnPreFailure = true,
+                },
                 UpdatedAt = At(-6, 10, 0),
                 UpdatedBy = @"local:OFFICE\admin",
             },
@@ -110,6 +121,7 @@ internal static class DemoData
             {
                 Id = Desktop,
                 Name = "Desktop",
+                Revision = 5,
                 BackupType = BackupTypes.Incremental,
                 Sources = [new TaskSource { Id = "s2", Kind = SourceKinds.Folder, Path = @"%USERPROFILE%\Desktop" }],
                 Destinations = [new TaskDestination { Id = "d2", Kind = DestinationKinds.Unc, Path = @"\\fileserver\backup\desktop", CredentialId = Account }],
@@ -123,8 +135,16 @@ internal static class DemoData
             {
                 Id = Documents,
                 Name = "Documents",
+                Revision = 23,
                 BackupType = BackupTypes.Incremental,
-                Sources = [new TaskSource { Id = "s3", Kind = SourceKinds.Folder, Path = @"D:\Data" }],
+                Comment = Strings.PreviewDemoComment,
+                ForceFull = new ForceFullOptions { Weekday = 7 },
+                Sources =
+                [
+                    new TaskSource { Id = "s3", Kind = SourceKinds.Folder, Path = @"D:\Data" },
+                    new TaskSource { Id = "s3b", Kind = SourceKinds.Unc, Path = @"\\fileserver\shared\Contracts", CredentialId = Account },
+                ],
+                Filters = new TaskFilters { ExcludeDirs = [@"D:\Data\Temp", @"D:\Data\Scans\Raw"] },
                 Destinations =
                 [
                     new TaskDestination { Id = "d3", Kind = DestinationKinds.Usb, Path = @"Backups\Documents", UsbLabel = "BACKUP-USB" },
@@ -140,6 +160,7 @@ internal static class DemoData
             {
                 Id = Photos,
                 Name = "Photos",
+                Revision = 3,
                 BackupType = BackupTypes.Full,
                 Sources = [new TaskSource { Id = "s4", Kind = SourceKinds.Folder, Path = @"D:\Photos" }],
                 Destinations = [new TaskDestination { Id = "d6", Kind = DestinationKinds.Usb, Path = "Photos", UsbLabel = "BACKUP-USB" }],
@@ -151,6 +172,7 @@ internal static class DemoData
             {
                 Id = Projects,
                 Name = "Projects",
+                Revision = 9,
                 BackupType = BackupTypes.Mirror,
                 Sources = [new TaskSource { Id = "s5", Kind = SourceKinds.Folder, Path = @"D:\Projects" }],
                 Destinations = [new TaskDestination { Id = "d7", Kind = DestinationKinds.Unc, Path = @"\\nas\backup\projects", CredentialId = Account }],
@@ -162,6 +184,7 @@ internal static class DemoData
             {
                 Id = OldArchive,
                 Name = "Old archive",
+                Revision = 2,
                 Enabled = false,
                 BackupType = BackupTypes.Full,
                 Sources = [new TaskSource { Id = "s6", Kind = SourceKinds.Folder, Path = @"E:\Archive" }],

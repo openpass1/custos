@@ -227,3 +227,34 @@ internal sealed class ProgressLine : Control
         });
     }
 }
+
+/// <summary>
+/// An M3 outlined text field: a frame with the label on its top edge and a hint under it. The TextBox or ComboBox put
+/// inside goes without a frame of its own (Styles/M3.axaml), so the frame turns primary when it has the keyboard.
+/// </summary>
+internal sealed class Field : ContentControl
+{
+    public static readonly StyledProperty<string?> LabelProperty = AvaloniaProperty.Register<Field, string?>(nameof(Label));
+
+    public static readonly StyledProperty<string?> HintProperty = AvaloniaProperty.Register<Field, string?>(nameof(Hint));
+
+    public static readonly StyledProperty<string?> TrailingIconProperty = AvaloniaProperty.Register<Field, string?>(nameof(TrailingIcon));
+
+    public string? Label
+    {
+        get => GetValue(LabelProperty);
+        set => SetValue(LabelProperty, value);
+    }
+
+    public string? Hint
+    {
+        get => GetValue(HintProperty);
+        set => SetValue(HintProperty, value);
+    }
+
+    public string? TrailingIcon
+    {
+        get => GetValue(TrailingIconProperty);
+        set => SetValue(TrailingIconProperty, value);
+    }
+}

@@ -29,6 +29,40 @@ internal static partial class Strings
 
     public static string PreviewThemeDark => Russian ? "Тёмная" : "Dark";
 
+    public static string PreviewColor => Russian ? "Цвет" : "Colour";
+
+    public static string PreviewColorSite => Russian ? "Как на сайте" : "As the site";
+
+    public static string PreviewColorNeutral => Russian ? "Нейтральный серый" : "Neutral grey";
+
+    public static string PreviewColorBlue => Russian ? "Синий" : "Blue";
+
+    public static string PreviewColorTeal => Russian ? "Бирюзовый" : "Teal";
+
+    public static string PreviewColorGraphite => Russian ? "Графит" : "Graphite";
+
+    public static string PreviewSave => Russian ? "Сохранить" : "Save";
+
+    public static string PreviewNotSaved => Russian
+        ? "Пробное окно ничего не сохраняет: задание осталось как было."
+        : "The trial window saves nothing: the task stays as it was.";
+
+    public static string PreviewEditorReadOnly => Russian
+        ? "В пробном окне эта кнопка ничего не делает."
+        : "In the trial window this button does nothing.";
+
+    public static string PreviewLinuxServer => Russian ? "Linux-сервер" : "Linux server";
+
+    public static string PreviewEveryMinutes => Russian ? "минут" : "minutes";
+
+    public static string PreviewWormTag => Russian ? "WORM {0} дн." : "WORM {0} days";
+
+    public static string PreviewObjectLockTag => Russian ? "Object Lock {0} дн." : "Object Lock {0} days";
+
+    public static string PreviewDemoComment => Russian
+        ? "Документы отдела: диск USB, NAS с защитой от удаления и копия вне офиса."
+        : "The department's documents: a USB disk, the NAS with protection from deletion, and a copy outside the office.";
+
     public static string PreviewDemoUsb => Russian ? "Диск BACKUP-USB не подключён." : "The disk BACKUP-USB is not connected.";
 
     public static string PreviewDemoStarted => Russian ? "запуск по расписанию" : "started by the schedule";

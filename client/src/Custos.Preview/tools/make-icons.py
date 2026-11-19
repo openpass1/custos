@@ -20,11 +20,15 @@ ICONS = [
     'brightness_auto', 'light_mode', 'dark_mode', 'check', 'close', 'arrow_upward', 'arrow_downward', 'folder_open',
     'filter_list',
     # States
-    'check_circle+', 'warning+', 'cancel+', 'sync', 'do_not_disturb_on+', 'radio_button_unchecked', 'schedule',
+    'check_circle+', 'warning+', 'cancel+', 'sync', 'do_not_disturb_on+', 'radio_button_unchecked', 'schedule+',
     'pause_circle+', 'error+', 'info+', 'play_circle+', 'hourglass_top',
     # Tabs, status bar, empty states
     'receipt_long+', 'history', 'monitoring', 'cloud_done', 'cloud_off', 'cloud_sync', 'cloud', 'person', 'favorite+',
     'link_off', 'shield+', 'task_alt',
+    # Task editor: pages, cards of sources, destinations and events, fields
+    'description+', 'folder+', 'database+', 'hard_drive+', 'folder_zip+', 'layers+', 'bolt+', 'tune+', 'lan', 'dns', 'usb',
+    'cloud_upload', 'terminal', 'stop_circle', 'lock_clock', 'label', 'speed', 'help', 'event_available', 'key',
+    'power_settings_new', 'palette', 'visibility_off',
 ]
 
 NUMBER = re.compile(r'[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?')
