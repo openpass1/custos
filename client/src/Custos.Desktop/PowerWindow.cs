@@ -81,9 +81,14 @@ internal sealed class PowerWindow : Window
     /// <summary>The service started the countdown again, for example after another run.</summary>
     public void ShowCountdown(PowerCountdown countdown)
     {
+        // Every snapshot brings the countdown; only a new one (another deadline) clears what the last one showed.
+        if (countdown.Deadline != _countdown.Deadline)
+        {
+            _cancel.IsEnabled = true;
+            ShowError(null);
+        }
+
         _countdown = countdown;
-        _cancel.IsEnabled = true;
-        ShowError(null);
         UpdateText();
     }
 
