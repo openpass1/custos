@@ -1,11 +1,9 @@
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Custos.Core.Archives.SevenZip;
 
 /// <summary>Reads a 7z archive through 7z.dll: the list of items and their data, with the CRC of every item checked.</summary>
-[SupportedOSPlatform("windows")]
-public sealed unsafe class SevenZipReader : IArchiveReader
+public sealed unsafe partial class SevenZipReader : IArchiveReader
 {
     private readonly IInArchive _archive;
     private readonly CallbackErrors _errors;
@@ -62,7 +60,7 @@ public sealed unsafe class SevenZipReader : IArchiveReader
             if (!opened)
             {
                 _ = archive.Close();
-                Marshal.FinalReleaseComObject(archive);
+                SevenZipLibrary.Release(archive);
                 stream.Dispose();
             }
         }
@@ -113,7 +111,7 @@ public sealed unsafe class SevenZipReader : IArchiveReader
 
         _disposed = true;
         _ = _archive.Close();
-        Marshal.FinalReleaseComObject(_archive);
+        SevenZipLibrary.Release(_archive);
         _input.Stream.Dispose();
     }
 
@@ -130,7 +128,7 @@ public sealed unsafe class SevenZipReader : IArchiveReader
             entries.Add(new ArchiveEntry
             {
                 Index = (int)i,
-                Path = Get(archive, i, SevenZipConst.KpidPath) as string ?? string.Empty,
+                Path = WindowsSeparators(Get(archive, i, SevenZipConst.KpidPath) as string ?? string.Empty),
                 IsFolder = Get(archive, i, SevenZipConst.KpidIsDir) is true,
                 Size = Get(archive, i, SevenZipConst.KpidSize) is ulong size ? (long)size : 0,
                 ModifiedUtc = Get(archive, i, SevenZipConst.KpidMTime) as DateTime?,
@@ -142,6 +140,9 @@ public sealed unsafe class SevenZipReader : IArchiveReader
         return entries;
     }
 
+    /// <summary>Paths of entries use "\" everywhere, as from 7z.dll on Windows; 7z.so gives "/".</summary>
+    private static string WindowsSeparators(string path) => OperatingSystem.IsWindows() ? path : path.Replace('/', '\\');
+
     private static object? Get(IInArchive archive, uint index, uint propId)
     {
         PropVariant value = default;
@@ -149,9 +150,8 @@ public sealed unsafe class SevenZipReader : IArchiveReader
     }
 
     /// <summary>Gives 7-Zip the password when the list of names is encrypted.</summary>
-    [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.None)]
-    private sealed class OpenCallback(string? password) : IArchiveOpenCallback, ICryptoGetTextPassword
+    [GeneratedComClass]
+    private sealed partial class OpenCallback(string? password) : IArchiveOpenCallback, ICryptoGetTextPassword
     {
         public bool PasswordAsked { get; private set; }
 
@@ -168,15 +168,14 @@ public sealed unsafe class SevenZipReader : IArchiveReader
                 return SevenZipConst.E_ABORT;
             }
 
-            *(IntPtr*)passwordOut = Marshal.StringToBSTR(password);
+            *(IntPtr*)passwordOut = NativeText.AllocBstr(password);
             return SevenZipConst.S_OK;
         }
     }
 
     /// <summary>Hands 7-Zip a stream for each requested item and collects the results.</summary>
-    [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.None)]
-    private sealed class ExtractCallback(
+    [GeneratedComClass]
+    private sealed partial class ExtractCallback(
         IReadOnlyList<ArchiveEntry> entries,
         Func<ArchiveEntry, Stream?> target,
         Action<ArchiveEntry, ExtractOutcome> done,
@@ -262,7 +261,7 @@ public sealed unsafe class SevenZipReader : IArchiveReader
                 return SevenZipConst.E_ABORT;
             }
 
-            *(IntPtr*)passwordOut = Marshal.StringToBSTR(password);
+            *(IntPtr*)passwordOut = NativeText.AllocBstr(password);
             return SevenZipConst.S_OK;
         }
 

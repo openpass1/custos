@@ -160,11 +160,12 @@ internal sealed class TestPlatform : LocalBackupPlatform
     }
 }
 
-/// <summary>7z works only on Windows with a 7z.dll (CUSTOS_7Z_DLL, set by build.ps1).</summary>
+/// <summary>7z needs the 7-Zip library: 7z.dll on Windows (CUSTOS_7Z_DLL, set by build.ps1), 7z.so built from the
+/// sources elsewhere (CUSTOS_7Z_DLL, set by the macOS CI or by hand).</summary>
 internal static class SevenZipCheck
 {
-    /// <summary>Skips a 7z test where 7z cannot work; with CUSTOS_REQUIRE_7Z=1 (the Windows CI) it fails instead, so
-    /// that a lost 7z.dll cannot quietly turn every 7z test off.</summary>
+    /// <summary>Skips a 7z test where 7z cannot work; with CUSTOS_REQUIRE_7Z=1 (the Windows and macOS CI) it fails
+    /// instead, so that a lost library cannot quietly turn every 7z test off.</summary>
     public static void SkipUnlessAvailable(string format)
     {
         if (format != ArchiveFormats.SevenZip)
@@ -173,13 +174,13 @@ internal static class SevenZipCheck
         }
 
         string? path = Environment.GetEnvironmentVariable("CUSTOS_7Z_DLL");
-        bool available = OperatingSystem.IsWindows() && !string.IsNullOrEmpty(path) && File.Exists(path);
+        bool available = !string.IsNullOrEmpty(path) && File.Exists(path);
         if (!available && Environment.GetEnvironmentVariable("CUSTOS_REQUIRE_7Z") == "1")
         {
-            Assert.Fail("7z.dll is required here (CUSTOS_REQUIRE_7Z=1), but CUSTOS_7Z_DLL does not point to it.");
+            Assert.Fail("The 7-Zip library is required here (CUSTOS_REQUIRE_7Z=1), but CUSTOS_7Z_DLL does not point to it.");
         }
 
-        Assert.SkipUnless(available, "7z needs Windows and 7z.dll (CUSTOS_7Z_DLL).");
+        Assert.SkipUnless(available, "7z needs the 7-Zip library (CUSTOS_7Z_DLL: 7z.dll or 7z.so).");
     }
 }
 

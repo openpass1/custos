@@ -1,21 +1,25 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Custos.Core.Archives.SevenZip;
 
 /// <summary>
-/// 7z.dll loaded from a given path (section 2: 7-Zip x64, LGPL). Any x64 build of 7-Zip works: the administrator may
-/// replace the file with a newer one without a new CUSTOS. Only the 7z format is used, through
-/// <c>CreateObject</c>; the library stays loaded until the process ends.
+/// The 7-Zip library loaded from a given path (section 2: 7-Zip, LGPL): 7z.dll (x64) on Windows, 7z.so built from the
+/// same sources on macOS. Any x64 7z.dll works on Windows: the administrator may replace the file with a newer one
+/// without a new CUSTOS. Only the 7z format is used, through <c>CreateObject</c>; the library stays loaded until the
+/// process ends.
 /// </summary>
-[SupportedOSPlatform("windows")]
 public sealed unsafe class SevenZipLibrary
 {
-    public const string FileName = "7z.dll";
+    /// <summary>The name of the file next to the program: 7z.dll on Windows, 7z.so elsewhere.</summary>
+    public static string FileName => OperatingSystem.IsWindows() ? "7z.dll" : "7z.so";
 
     private const ushort MachineAmd64 = 0x8664;
+
+    /// <summary>Wraps the objects of 7-Zip and our callbacks for each other (source-generated COM).</summary>
+    internal static readonly StrategyBasedComWrappers Wrappers = new();
 
     private static readonly Lock CacheLock = new();
     private static readonly Dictionary<string, SevenZipLibrary> Cache = new(StringComparer.OrdinalIgnoreCase);
@@ -36,7 +40,7 @@ public sealed unsafe class SevenZipLibrary
     public string Version { get; }
 
     /// <summary>
-    /// Loads 7z.dll from <paramref name="path"/>, or returns the one already loaded from there. A file replaced
+    /// Loads the library from <paramref name="path"/>, or returns the one already loaded from there. A file replaced
     /// after it was loaded is only picked up by the next start of the process.
     /// </summary>
     /// <exception cref="ArchiveException">The file is missing, not 64-bit or not a 7-Zip library.</exception>
@@ -56,8 +60,9 @@ public sealed unsafe class SevenZipLibrary
                 throw new ArchiveException(Messages.Format(Messages.SevenZipMissing, full));
             }
 
-            ushort machine = ReadMachine(full);
-            if (machine != MachineAmd64)
+            // A 32-bit 7z.dll cannot be loaded into the 64-bit service; say so instead of a cryptic error. The library
+            // of other systems is built together with CUSTOS for its processor.
+            if (OperatingSystem.IsWindows() && ReadMachine(full) != MachineAmd64)
             {
                 throw new ArchiveException(Messages.Format(Messages.SevenZipNot64Bit, full));
             }
@@ -101,11 +106,21 @@ public sealed unsafe class SevenZipLibrary
 
         try
         {
-            return Marshal.GetObjectForIUnknown((IntPtr)pointer);
+            return Wrappers.GetOrCreateObjectForComInstance((IntPtr)pointer, CreateObjectFlags.UniqueInstance);
         }
         finally
         {
-            Marshal.Release((IntPtr)pointer);
+            // The wrapper holds its own reference.
+            _ = ((delegate* unmanaged<void*, uint>)(*(void***)pointer)[2])(pointer);
+        }
+    }
+
+    /// <summary>Lets go of a 7-Zip object at once instead of when the garbage collector finds its wrapper.</summary>
+    internal static void Release(object? comObject)
+    {
+        if (comObject is ComObject wrapper)
+        {
+            wrapper.FinalRelease();
         }
     }
 
@@ -142,10 +157,13 @@ public sealed unsafe class SevenZipLibrary
     /// <summary>"26.06": from the version resource of the file, or from GetModuleProp of 7-Zip 23 and newer.</summary>
     private static string ReadVersion(string path, IntPtr handle)
     {
-        var info = FileVersionInfo.GetVersionInfo(path);
-        if (info.FileMajorPart > 0 || info.FileMinorPart > 0)
+        if (OperatingSystem.IsWindows())
         {
-            return string.Create(CultureInfo.InvariantCulture, $"{info.FileMajorPart}.{info.FileMinorPart:00}");
+            var info = FileVersionInfo.GetVersionInfo(path);
+            if (info.FileMajorPart > 0 || info.FileMinorPart > 0)
+            {
+                return string.Create(CultureInfo.InvariantCulture, $"{info.FileMajorPart}.{info.FileMinorPart:00}");
+            }
         }
 
         if (NativeLibrary.TryGetExport(handle, "GetModuleProp", out IntPtr export))

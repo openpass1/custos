@@ -1,5 +1,4 @@
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -16,8 +15,7 @@ namespace Custos.Core.Archives.SevenZip;
 /// reads the files sorted by path (case-insensitive), not in the given order. A <see cref="ArchiveItem.Separate"/>
 /// item is reported as huge, which puts it into a solid block of its own; the real size is counted while it is read.
 /// </remarks>
-[SupportedOSPlatform("windows")]
-public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
+public sealed partial class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
 {
     /// <summary>The size 7-Zip takes as "unknown" (stdin).</summary>
     internal const ulong UnknownSize = ulong.MaxValue;
@@ -55,7 +53,7 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
         }
         finally
         {
-            Marshal.FinalReleaseComObject(archive);
+            SevenZipLibrary.Release(archive);
         }
     }
 
@@ -78,20 +76,22 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
         }
 
         var setter = (ISetProperties)archive;
-        var names = new IntPtr[settings.Count];
-        var values = new PropVariant[settings.Count];
+        int count = settings.Count;
+        int stride = Props.Stride;
+        var names = new IntPtr[count];
+        byte* values = stackalloc byte[count * stride];
+        new Span<byte>(values, count * stride).Clear();
         try
         {
-            fixed (PropVariant* valuePointer = values)
             fixed (IntPtr* namePointer = names)
             {
-                for (int i = 0; i < settings.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
-                    names[i] = Marshal.StringToHGlobalUni(settings[i].Name);
-                    settings[i].Set((IntPtr)(valuePointer + i));
+                    names[i] = NativeText.AllocWide(settings[i].Name);
+                    settings[i].Set((IntPtr)(values + (i * stride)));
                 }
 
-                int hr = setter.SetProperties((IntPtr)namePointer, (IntPtr)valuePointer, (uint)settings.Count);
+                int hr = setter.SetProperties((IntPtr)namePointer, (IntPtr)values, (uint)count);
                 if (hr != SevenZipConst.S_OK)
                 {
                     throw new ArchiveException(Messages.Format(Messages.SevenZipWriteFailed, SevenZipLibrary.Hresult(hr)));
@@ -102,24 +102,24 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
         {
             foreach (var name in names)
             {
-                Marshal.FreeHGlobal(name);
+                NativeText.FreeWide(name);
             }
 
             // 7-Zip copies what it is given; the strings are ours to free.
-            foreach (var value in values)
+            for (int i = 0; i < count; i++)
             {
-                if (value.VarType == PropVariant.VtBstr)
+                var value = (PropVariant*)(values + (i * stride));
+                if (value->VarType == PropVariant.VtBstr)
                 {
-                    Marshal.FreeBSTR(value.Pointer);
+                    NativeText.FreeBstr(value->Pointer);
                 }
             }
         }
     }
 
     /// <summary>Answers the questions of 7-Zip about the items and hands out their data.</summary>
-    [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.None)]
-    private sealed unsafe class UpdateCallback(IReadOnlyList<ArchiveItem> items, string? password, CallbackErrors errors, CancellationToken cancellationToken)
+    [GeneratedComClass]
+    private sealed unsafe partial class UpdateCallback(IReadOnlyList<ArchiveItem> items, string? password, CallbackErrors errors, CancellationToken cancellationToken)
         : IArchiveUpdateCallback, ICryptoGetTextPassword2
     {
         private InStreamAdapter? _current;
@@ -156,7 +156,7 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
                 switch (propId)
                 {
                     case SevenZipConst.KpidPath:
-                        Props.SetString(value, ArchivePaths.ToWindows(item.Path));
+                        Props.SetString(value, ArchivePaths.ToNative(item.Path));
                         break;
                     case SevenZipConst.KpidIsDir:
                         Props.SetBool(value, item.IsFolder);
@@ -229,7 +229,7 @@ public sealed class SevenZipWriter(SevenZipLibrary library) : IArchiveWriter
         public int CryptoGetTextPassword2(IntPtr passwordIsDefined, IntPtr passwordOut)
         {
             *(int*)passwordIsDefined = password is null ? 0 : 1;
-            *(IntPtr*)passwordOut = password is null ? IntPtr.Zero : Marshal.StringToBSTR(password);
+            *(IntPtr*)passwordOut = password is null ? IntPtr.Zero : NativeText.AllocBstr(password);
             return SevenZipConst.S_OK;
         }
 

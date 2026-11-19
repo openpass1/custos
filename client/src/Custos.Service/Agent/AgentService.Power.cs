@@ -148,7 +148,7 @@ internal sealed partial class AgentService
         PublishSnapshot();
         try
         {
-            WindowsBackupPlatform.PowerAction(due.Action);
+            HostPlatform.PowerAction(due.Action);
         }
         catch (BackupException ex)
         {

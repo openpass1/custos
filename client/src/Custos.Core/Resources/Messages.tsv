@@ -638,3 +638,8 @@ TasksExportedBy	Tasks exported to a file without passwords: {0} ({1}).	Зада�
 TasksExportedWithSecretsBy	Tasks exported to a file with passwords and keys, encrypted with the export password: {0} ({1}).	Задания выгружены в файл вместе с паролями и ключами, зашифрованными паролем экспорта: {0} ({1}).
 TasksLoadedBy	Tasks imported from a CUSTOS file: {0} ({1}).	Импортировано заданий из файла CUSTOS: {0} ({1}).
 ExportNotAllowed	Only administrators of this computer may export tasks.	Выгружать задания могут только администраторы этого компьютера.
+MacSnapshotFailed	APFS snapshot failed: {0}	Не удалось сделать снимок APFS: {0}
+MacShareFailed	Network folder {0} could not be connected: {1}	Не удалось подключить сетевую папку {0}: {1}
+MacOwnerNotSet	Owner and permissions of {0} were not restored: {1}	Не удалось восстановить владельца и права {0}: {1}
+SevenZipMacBundled	On macOS 7-Zip comes inside CUSTOS and is updated together with the program.	В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.
+MacUpdateFailed	The installer of macOS did not install the update: {0}	Установщик macOS не установил обновление: {0}

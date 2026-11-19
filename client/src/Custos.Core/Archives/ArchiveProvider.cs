@@ -17,34 +17,32 @@ public interface IArchiveProvider
     IArchiveReader OpenReader(string format, Stream stream, string? password);
 }
 
-/// <summary>ZIP through SharpZipLib everywhere; 7z through the 7z.dll at <see cref="SevenZipPath"/> on Windows.</summary>
+/// <summary>ZIP through SharpZipLib everywhere; 7z through the 7-Zip library at <see cref="SevenZipPath"/> (7z.dll on
+/// Windows, 7z.so on macOS).</summary>
 public sealed class ArchiveProvider(string sevenZipPath) : IArchiveProvider
 {
     private volatile SevenZipLibrary? _library;
 
     public string SevenZipPath { get; } = sevenZipPath;
 
-    public string? SevenZipVersion => OperatingSystem.IsWindows() ? _library?.Version : null;
+    public string? SevenZipVersion => _library?.Version;
 
     /// <summary>Loads 7z.dll now, to log its version or report what is wrong with it.</summary>
     /// <returns>The version.</returns>
     /// <exception cref="ArchiveException">7z.dll is missing, not 64-bit or broken.</exception>
-    public string LoadSevenZip() => OperatingSystem.IsWindows() ? Library().Version : throw new ArchiveException(Messages.SevenZipWindowsOnly);
+    public string LoadSevenZip() => Library().Version;
 
     /// <summary>The 7z.dll in use, loaded now if it is not yet.</summary>
     /// <exception cref="ArchiveException">7z.dll is missing, not 64-bit or broken.</exception>
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public SevenZipLibrary CurrentSevenZip() => Library();
 
     /// <summary>Uses another 7z.dll from now on: the one an update installed (see <see cref="SevenZipInstaller"/>).</summary>
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public void UseSevenZip(SevenZipLibrary library) => _library = library ?? throw new ArgumentNullException(nameof(library));
 
     public IArchiveWriter CreateWriter(string format) => format switch
     {
         ArchiveFormats.Zip => new ZipWriter(),
-        ArchiveFormats.SevenZip when OperatingSystem.IsWindows() => new SevenZipWriter(Library()),
-        ArchiveFormats.SevenZip => throw new ArchiveException(Messages.SevenZipWindowsOnly),
+        ArchiveFormats.SevenZip => new SevenZipWriter(Library()),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 
@@ -55,7 +53,7 @@ public sealed class ArchiveProvider(string sevenZipPath) : IArchiveProvider
         {
             case ArchiveFormats.Zip:
                 return ZipReader.Open(stream, password);
-            case ArchiveFormats.SevenZip when OperatingSystem.IsWindows():
+            case ArchiveFormats.SevenZip:
                 SevenZipLibrary library;
                 try
                 {
@@ -70,17 +68,9 @@ public sealed class ArchiveProvider(string sevenZipPath) : IArchiveProvider
                 return SevenZipReader.Open(library, stream, password);
             default:
                 stream.Dispose();
-                throw new ArchiveException(format == ArchiveFormats.SevenZip ? Messages.SevenZipWindowsOnly : Messages.Format(Messages.ArchiveUnreadable, format));
+                throw new ArchiveException(Messages.Format(Messages.ArchiveUnreadable, format));
         }
     }
 
-    private SevenZipLibrary Library()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            throw new ArchiveException(Messages.SevenZipWindowsOnly);
-        }
-
-        return _library ??= SevenZipLibrary.Load(SevenZipPath);
-    }
+    private SevenZipLibrary Library() => _library ??= SevenZipLibrary.Load(SevenZipPath);
 }

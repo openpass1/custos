@@ -29,6 +29,12 @@ internal sealed partial class AgentService
     public async Task<SevenZipCheckResult> CheckSevenZipAsync(CancellationToken cancellationToken)
     {
         string? installed = InstalledSevenZip();
+        if (!OperatingSystem.IsWindows())
+        {
+            // The releases of 7-Zip carry 7z.dll only in installers for Windows; the 7z.so of macOS comes with CUSTOS.
+            return new SevenZipCheckResult { Installed = installed, Error = Messages.SevenZipMacBundled };
+        }
+
         try
         {
             var release = await NewestSevenZipAsync(cancellationToken).ConfigureAwait(false);
@@ -49,6 +55,11 @@ internal sealed partial class AgentService
     public async Task<OkResult> UpdateSevenZipAsync(string user, CancellationToken cancellationToken)
     {
         string? installed = InstalledSevenZip();
+        if (!OperatingSystem.IsWindows())
+        {
+            return new OkResult { Ok = false, Message = Messages.SevenZipMacBundled };
+        }
+
         string installer;
         try
         {
@@ -85,6 +96,11 @@ internal sealed partial class AgentService
     /// </summary>
     public OkResult InstallSevenZip(string installer, string user, CancellationToken cancellationToken, bool waitForRuns = false)
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return SevenZipFailed(Messages.SevenZipMacBundled);
+        }
+
         if (Platform.Archives is not ArchiveProvider provider)
         {
             return SevenZipFailed(Messages.SevenZipWindowsOnly);

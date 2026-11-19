@@ -69,8 +69,9 @@ public sealed class ArchiveBackupTests : IDisposable
         }
         else
         {
-            // 7-Zip packs by path: custos-set.json before Data\, so the manifest has no SHA-256 for these files.
-            Assert.Null(a.Sha256);
+            // 7-Zip packs by path. On Windows it ignores case: custos-set.json comes before Data\, so the manifest has
+            // no SHA-256 for these files. 7-Zip of macOS compares with case: Data\ comes first.
+            Assert.Equal(OperatingSystem.IsWindows() ? null : Sha256("alpha"), a.Sha256);
             Assert.Contains(reader.Entries, e => e.Path == SetManifest.FileName);
         }
 

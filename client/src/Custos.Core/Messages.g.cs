@@ -1867,4 +1867,19 @@ static partial class Messages
 
     /// <summary>Only administrators of this computer may export tasks.</summary>
     public static string ExportNotAllowed => Get(nameof(ExportNotAllowed));
+
+    /// <summary>APFS snapshot failed: {0}</summary>
+    public static string MacSnapshotFailed => Get(nameof(MacSnapshotFailed));
+
+    /// <summary>Network folder {0} could not be connected: {1}</summary>
+    public static string MacShareFailed => Get(nameof(MacShareFailed));
+
+    /// <summary>Owner and permissions of {0} were not restored: {1}</summary>
+    public static string MacOwnerNotSet => Get(nameof(MacOwnerNotSet));
+
+    /// <summary>On macOS 7-Zip comes inside CUSTOS and is updated together with the program.</summary>
+    public static string SevenZipMacBundled => Get(nameof(SevenZipMacBundled));
+
+    /// <summary>The installer of macOS did not install the update: {0}</summary>
+    public static string MacUpdateFailed => Get(nameof(MacUpdateFailed));
 }

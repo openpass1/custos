@@ -75,8 +75,10 @@ public static class ProgramReleases
     /// The newest published release of the program in an answer of <see cref="ApiUrl"/> that can be installed: it
     /// has the update package and a SHA-256 to check it with. Pre-releases are skipped. Null when there is none.
     /// </summary>
+    /// <param name="json">The answer of GitHub.</param>
+    /// <param name="packagePrefix">The start of the name of the package: <c>custos-</c> for Windows, <c>custos-macos-</c> for macOS.</param>
     /// <exception cref="ReleaseCheckException">The answer is not a list of releases.</exception>
-    public static ProgramRelease? Newest(Stream json)
+    public static ProgramRelease? Newest(Stream json, string packagePrefix = "custos-")
     {
         ArgumentNullException.ThrowIfNull(json);
         JsonDocument document;
@@ -104,7 +106,7 @@ public static class ProgramReleases
                     || Text(release, "tag_name") is not { } tag || !tag.StartsWith(TagPrefix, StringComparison.Ordinal)
                     || ParseVersion(tag[TagPrefix.Length..]) is not { } version
                     || (bestVersion is not null && Compare(version, bestVersion) <= 0)
-                    || Read(release, tag[TagPrefix.Length..]) is not { } found)
+                    || Read(release, tag[TagPrefix.Length..], packagePrefix) is not { } found)
                 {
                     continue;
                 }
@@ -259,14 +261,14 @@ public static class ProgramReleases
     }
 
     /// <summary>The package of a release and how to check it; null if it has no package or nothing to check it with.</summary>
-    private static ProgramRelease? Read(JsonElement release, string version)
+    private static ProgramRelease? Read(JsonElement release, string version, string packagePrefix)
     {
         if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
         {
             return null;
         }
 
-        string packageName = $"custos-{version}.zip";
+        string packageName = $"{packagePrefix}{version}.zip";
         string downloads = ReleasesPrefix + "download/";
         JsonElement? package = null;
         Uri? sums = null;

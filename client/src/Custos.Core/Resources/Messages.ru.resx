@@ -1888,4 +1888,19 @@
   <data name="ExportNotAllowed" xml:space="preserve">
     <value>Выгружать задания могут только администраторы этого компьютера.</value>
   </data>
+  <data name="MacSnapshotFailed" xml:space="preserve">
+    <value>Не удалось сделать снимок APFS: {0}</value>
+  </data>
+  <data name="MacShareFailed" xml:space="preserve">
+    <value>Не удалось подключить сетевую папку {0}: {1}</value>
+  </data>
+  <data name="MacOwnerNotSet" xml:space="preserve">
+    <value>Не удалось восстановить владельца и права {0}: {1}</value>
+  </data>
+  <data name="SevenZipMacBundled" xml:space="preserve">
+    <value>В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.</value>
+  </data>
+  <data name="MacUpdateFailed" xml:space="preserve">
+    <value>Установщик macOS не установил обновление: {0}</value>
+  </data>
 </root>

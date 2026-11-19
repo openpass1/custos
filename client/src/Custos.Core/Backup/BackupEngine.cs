@@ -445,7 +445,7 @@ public sealed partial class BackupEngine
             try
             {
                 context.Session = Session(IsNetworkPath(source.Path) ? source.CredentialId : null);
-                string readRoot = run.Snapshots.Map(source.Path);
+                string readRoot = context.Session.LocalPath(run.Snapshots.Map(source.Path));
                 context.ReadRoot = readRoot;
                 context.Scan = context.Session.Run(() => SourceScanner.Scan(source, i, readRoot, filter,
                     (path, reason) =>
@@ -1430,7 +1430,8 @@ public sealed partial class BackupEngine
 
     /// <summary>A UNC path (<c>\\server\share</c>): read through a network logon, never through VSS.</summary>
     public static bool IsNetworkPath(string path) =>
-        path.StartsWith(@"\\", StringComparison.Ordinal) && !path.StartsWith(@"\\?\", StringComparison.Ordinal) && !path.StartsWith(@"\\.\", StringComparison.Ordinal);
+        (path.StartsWith(@"\\", StringComparison.Ordinal) && !path.StartsWith(@"\\?\", StringComparison.Ordinal) && !path.StartsWith(@"\\.\", StringComparison.Ordinal))
+        || (path.StartsWith("//", StringComparison.Ordinal) && path.Length > 2 && path[2] != '/');
 
     // ---- Types -------------------------------------------------------------------------------------------------
 

@@ -38,7 +38,7 @@ internal sealed partial class AgentService : IMonitorHost
 
     private void StartMonitor(CancellationToken stoppingToken)
     {
-        var store = new LinkStore(DataFolders.Config, new DpapiProtector());
+        var store = new LinkStore(DataFolders.Config, new HostSecretProtector());
         store.Load();
         foreach (string problem in store.Problems)
         {

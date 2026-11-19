@@ -1,6 +1,7 @@
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -25,10 +26,8 @@ internal sealed class CallbackErrors
 }
 
 /// <summary>A .NET stream as 7-Zip input (the data of one item, or the archive being read).</summary>
-[SupportedOSPlatform("windows")]
-[ComVisible(true)]
-[ClassInterface(ClassInterfaceType.None)]
-internal sealed unsafe class InStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialInStream, IInStream
+[GeneratedComClass]
+internal sealed unsafe partial class InStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialInStream, IInStream
 {
     public Stream Stream { get; } = stream;
 
@@ -88,10 +87,8 @@ internal sealed unsafe class InStreamAdapter(Stream stream, CallbackErrors error
 }
 
 /// <summary>A .NET stream as 7-Zip output: the archive being written (seekable) or an item being unpacked.</summary>
-[SupportedOSPlatform("windows")]
-[ComVisible(true)]
-[ClassInterface(ClassInterfaceType.None)]
-internal sealed unsafe class OutStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialOutStream, IOutStream
+[GeneratedComClass]
+internal sealed unsafe partial class OutStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialOutStream, IOutStream
 {
     public int Write(IntPtr data, uint size, IntPtr processedSize)
     {
@@ -159,14 +156,21 @@ internal sealed unsafe class OutStreamAdapter(Stream stream, CallbackErrors erro
     }
 }
 
-/// <summary>PROPVARIANT helpers. Strings are BSTRs from OLE Automation, which 7z.dll frees with SysFreeString.</summary>
-[SupportedOSPlatform("windows")]
+/// <summary>
+/// PROPVARIANT helpers. On Windows strings are BSTRs from OLE Automation, which 7z.dll frees with SysFreeString.
+/// The 7z.so of other systems has its own BSTR (CPP/Common/MyWindows.cpp): wchar_t there is UTF-32, the length in
+/// bytes (UInt32) stands before the characters, and the memory comes from malloc; <see cref="NativeText"/> makes them
+/// the same way.
+/// </summary>
 internal static unsafe partial class Props
 {
+    /// <summary>The size of a PROPVARIANT in an array: 24 bytes on 64-bit Windows, 16 in 7-Zip of other systems.</summary>
+    public static int Stride => OperatingSystem.IsWindows() ? 24 : 16;
+
     public static void SetString(IntPtr target, string value)
     {
         var p = (PropVariant*)target;
-        p->Pointer = Marshal.StringToBSTR(value);
+        p->Pointer = NativeText.AllocBstr(value);
         p->VarType = PropVariant.VtBstr;
     }
 
@@ -205,14 +209,14 @@ internal static unsafe partial class Props
         p->VarType = PropVariant.VtFiletime;
     }
 
-    /// <summary>Reads a value 7z.dll put into a PROPVARIANT and frees it.</summary>
+    /// <summary>Reads a value 7-Zip put into a PROPVARIANT and frees it.</summary>
     public static object? Take(PropVariant* value)
     {
         try
         {
             return value->VarType switch
             {
-                PropVariant.VtBstr => value->Pointer == IntPtr.Zero ? string.Empty : Marshal.PtrToStringBSTR(value->Pointer),
+                PropVariant.VtBstr => value->Pointer == IntPtr.Zero ? string.Empty : NativeText.ReadBstr(value->Pointer),
                 PropVariant.VtBool => value->BoolValue != 0,
                 PropVariant.VtUi4 => (ulong)value->UInt32Value,
                 PropVariant.VtUi8 => (ulong)value->Int64Value,
@@ -222,10 +226,111 @@ internal static unsafe partial class Props
         }
         finally
         {
-            _ = PropVariantClear(value);
+            Clear(value);
         }
+    }
+
+    /// <summary>Frees what a PROPVARIANT holds and empties it.</summary>
+    public static void Clear(PropVariant* value)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            _ = PropVariantClear(value);
+            return;
+        }
+
+        if (value->VarType == PropVariant.VtBstr)
+        {
+            NativeText.FreeBstr(value->Pointer);
+        }
+
+        value->VarType = PropVariant.VtEmpty;
+        value->Int64Value = 0;
     }
 
     [LibraryImport("ole32.dll")]
     private static partial int PropVariantClear(PropVariant* value);
+}
+
+/// <summary>
+/// Strings for 7-Zip: <c>wchar_t</c> is UTF-16 on Windows and UTF-32 on macOS and Linux, and BSTRs are made the way
+/// the 7-Zip library frees them (see <see cref="Props"/>).
+/// </summary>
+internal static unsafe class NativeText
+{
+    public static IntPtr AllocBstr(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (OperatingSystem.IsWindows())
+        {
+            return Marshal.StringToBSTR(value);
+        }
+
+        int length = Encoding.UTF32.GetByteCount(value);
+        byte* block = (byte*)NativeMemory.Alloc((nuint)(sizeof(uint) + length + sizeof(uint)));
+        *(uint*)block = (uint)length;
+        Encoding.UTF32.GetBytes(value, new Span<byte>(block + sizeof(uint), length));
+        *(uint*)(block + sizeof(uint) + length) = 0;
+        return (IntPtr)(block + sizeof(uint));
+    }
+
+    public static void FreeBstr(IntPtr bstr)
+    {
+        if (bstr == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Marshal.FreeBSTR(bstr);
+            return;
+        }
+
+        NativeMemory.Free((byte*)bstr - sizeof(uint));
+    }
+
+    public static string ReadBstr(IntPtr bstr)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return Marshal.PtrToStringBSTR(bstr);
+        }
+
+        uint length = *((uint*)bstr - 1);
+        return Encoding.UTF32.GetString((byte*)bstr, (int)length);
+    }
+
+    /// <summary>A zero-terminated <c>wchar_t</c> string; free it with <see cref="FreeWide"/>.</summary>
+    public static IntPtr AllocWide(string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (OperatingSystem.IsWindows())
+        {
+            return Marshal.StringToHGlobalUni(value);
+        }
+
+        int length = Encoding.UTF32.GetByteCount(value);
+        byte* text = (byte*)NativeMemory.Alloc((nuint)(length + sizeof(uint)));
+        Encoding.UTF32.GetBytes(value, new Span<byte>(text, length));
+        *(uint*)(text + length) = 0;
+        return (IntPtr)text;
+    }
+
+    public static void FreeWide(IntPtr text)
+    {
+        if (text == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Marshal.FreeHGlobal(text);
+        }
+        else
+        {
+            NativeMemory.Free((void*)text);
+        }
+    }
 }

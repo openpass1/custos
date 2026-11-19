@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- CUSTOS for macOS (Apple silicon, macOS 15 and newer): one program in Custos.app with two roles. Started by
+       launchd with "agent" it is the service (root) that does all the work, the same code as CustosService.exe on
+       Windows (compiled from src/Custos.Service with its own platform classes in Platform/). Started from the Finder
+       it is the window and the icon in the menu bar, like Custos.exe. Built for osx-arm64 by mac/build-mac.sh; the
+       tests also build and run it on Linux. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Custos.Mac</RootNamespace>
+    <AssemblyName>Custos</AssemblyName>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);CUSTOS_MAC</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <!-- The service code shared with Windows is marked [SupportedOSPlatform("windows")]; here it is compiled against
+         the classes of macOS, so the platform check of the analyzer would only see false alarms. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Custos.Core\Custos.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+  </ItemGroup>
+
+  <!-- The service: the agent of Windows as it is. -->
+  <ItemGroup>
+    <Compile Include="..\Custos.Service\Agent\*.cs" Link="Service\Agent\%(Filename)%(Extension)" />
+    <Compile Include="..\Custos.Service\Ipc\PipeServer.cs" Link="Service\Ipc\PipeServer.cs" />
+    <Compile Include="..\Custos.Service\ServiceLog.cs" Link="Service\ServiceLog.cs" />
+    <Compile Include="..\Custos.Service\ServiceLifecycle.cs" Link="Service\ServiceLifecycle.cs" />
+  </ItemGroup>
+
+  <!-- The interface: the texts and the connection to the service of Custos.exe. -->
+  <ItemGroup>
+    <Compile Include="..\Custos.Gui\Strings.cs" Link="Gui\Shared\Strings.cs" />
+    <Compile Include="..\Custos.Gui\Strings.g.cs" Link="Gui\Shared\Strings.g.cs" />
+    <Compile Include="..\Custos.Gui\ServiceMonitor.cs" Link="Gui\Shared\ServiceMonitor.cs" />
+    <Compile Include="..\Custos.Gui\UiState.cs" Link="Gui\Shared\UiState.cs" />
+    <EmbeddedResource Include="..\Custos.Gui\Resources\Strings.resx" Link="Gui\Shared\Strings.resx" LogicalName="Custos.Gui.Resources.Strings.resources" />
+    <EmbeddedResource Include="..\Custos.Gui\Resources\Strings.ru.resx" Link="Gui\Shared\Strings.ru.resx" LogicalName="Custos.Gui.Resources.Strings.ru.resources" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Custos.Mac.Tests" />
+  </ItemGroup>
+
+</Project>

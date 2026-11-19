@@ -41,7 +41,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(6);
     private static readonly TimeSpan RunnerStopTimeout = TimeSpan.FromSeconds(20);
 
-    private readonly ConfigStore _config = new(DataFolders.Config, new DpapiProtector());
+    private readonly ConfigStore _config = new(DataFolders.Config, new HostSecretProtector());
     private readonly PendingRuns _queue = new();
     private readonly LiveLog _liveLog = new();
     private readonly JournalFile _journal = new(DataFolders.Journal);
@@ -54,7 +54,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
     private readonly List<string> _problems = [];
     private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private AgentDatabase? _database;
-    private WindowsBackupPlatform? _platform;
+    private HostPlatform? _platform;
     private ActiveRun? _current;
     private string? _sevenZipProblem;
     private long _version;
@@ -65,7 +65,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
     private AgentDatabase Database => _database ?? throw new AgentRequestException(PipeProtocol.Errors.Internal, "The service is starting.");
 
-    private WindowsBackupPlatform Platform => _platform ?? throw new AgentRequestException(PipeProtocol.Errors.Internal, "The service is starting.");
+    private HostPlatform Platform => _platform ?? throw new AgentRequestException(PipeProtocol.Errors.Internal, "The service is starting.");
 
     /// <summary>
     /// Whether users other than administrators may change tasks and settings (section 4). Off by default:
@@ -815,7 +815,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             ServiceLog.LeftoverShadowsDeleted(logger, leftovers);
         }
 
-        _platform = new WindowsBackupPlatform(_config, shadows);
+        _platform = new HostPlatform(_config, shadows);
         Core.Archives.SevenZip.SevenZipInstaller.CleanUp(AppContext.BaseDirectory, DataFolders.Updates);
         LoadSevenZip();
 
