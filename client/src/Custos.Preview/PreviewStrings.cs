@@ -31,13 +31,13 @@ internal static partial class Strings
 
     public static string PreviewColor => Russian ? "Цвет" : "Colour";
 
-    public static string PreviewColorSite => Russian ? "Как на сайте" : "As the site";
-
     public static string PreviewColorNeutral => Russian ? "Нейтральный серый" : "Neutral grey";
 
     public static string PreviewColorBlue => Russian ? "Синий" : "Blue";
 
-    public static string PreviewColorTeal => Russian ? "Бирюзовый" : "Teal";
+    public static string PreviewColorWarm => Russian ? "Тёплый" : "Warm";
+
+    public static string PreviewColorSepia => Russian ? "Сепия" : "Sepia";
 
     public static string PreviewColorGraphite => Russian ? "Графит" : "Graphite";
 

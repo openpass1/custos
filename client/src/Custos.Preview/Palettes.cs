@@ -13,20 +13,18 @@ namespace Custos.Preview;
 /// </summary>
 internal static partial class Palettes
 {
-    public const string Site = "site";
-
-    /// <summary>The scheme the window starts with: the site's accent on grey surfaces, the look chosen for the site as well.</summary>
+    /// <summary>The scheme the window starts with: the site's accent on grey surfaces, the look of the site as well.</summary>
     public const string Default = "neutral";
 
     public static IEnumerable<string> Ids => Schemes.Select(s => s.Id);
 
     public static string Title(string id) => id switch
     {
-        "neutral" => Strings.PreviewColorNeutral,
-        "blue" => Strings.PreviewColorBlue,
-        "teal" => Strings.PreviewColorTeal,
         "graphite" => Strings.PreviewColorGraphite,
-        _ => Strings.PreviewColorSite,
+        "blue" => Strings.PreviewColorBlue,
+        "warm" => Strings.PreviewColorWarm,
+        "sepia" => Strings.PreviewColorSepia,
+        _ => Strings.PreviewColorNeutral,
     };
 
     /// <summary>The main colour and the background of a scheme, for the round sample in the menu.</summary>

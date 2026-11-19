@@ -213,11 +213,11 @@ internal static class Program
         // A colour of the menu puts its scheme in place at once.
         flyout.ShowAt(settings);
         Pump();
-        var teal = window.FindControl<StackPanel>("ColorMenu")!.Children.OfType<RadioButton>().ElementAt(Palettes.Ids.ToList().IndexOf("teal"));
-        teal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        var sepia = window.FindControl<StackPanel>("ColorMenu")!.Children.OfType<RadioButton>().ElementAt(Palettes.Ids.ToList().IndexOf("sepia"));
+        sepia.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Pump();
         var primary = window.FindResource(ThemeVariant.Dark, "Primary") as ISolidColorBrush;
-        bool painted = !flyout.IsOpen && window.ViewModel.ColorChoice == "teal" && primary?.Color == Palettes.Sample("teal", dark: true).Primary;
+        bool painted = !flyout.IsOpen && window.ViewModel.ColorChoice == "sepia" && primary?.Color == Palettes.Sample("sepia", dark: true).Primary;
         Console.WriteLine(painted ? "Menu: a colour puts its scheme in place." : $"Menu: colour={window.ViewModel.ColorChoice}, primary={primary?.Color}, open={flyout.IsOpen}.");
         ok &= painted;
         window.Close();

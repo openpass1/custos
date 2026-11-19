@@ -23,31 +23,48 @@ const { Hct, argbFromHex, DynamicScheme, TonalPalette, SchemeTonalSpot, SchemeFi
 
 const hct = (hex) => Hct.fromInt(argbFromHex(hex));
 
-// The site's scheme with grey surfaces: the blue of the site stays on buttons and selection, the background has no tint.
-function neutralSurfaces(isDark) {
-  const site = new SchemeTonalSpot(hct('#2457c5'), isDark, 0);
-  return new DynamicScheme({
-    sourceColorArgb: site.sourceColorArgb,
-    variant: site.variant,
-    contrastLevel: 0,
-    isDark,
-    primaryPalette: site.primaryPalette,
-    secondaryPalette: site.secondaryPalette,
-    tertiaryPalette: site.tertiaryPalette,
-    neutralPalette: TonalPalette.fromHueAndChroma(site.sourceColorHct.hue, 0),
-    neutralVariantPalette: TonalPalette.fromHueAndChroma(site.sourceColorHct.hue, 2),
-  });
+const SITE = '#2457c5';
+
+// A scheme whose accents come from `base` and whose surfaces and outlines come from grey or tinted neutral palettes.
+function withSurfaces(base, hue, chroma, variantChroma, palettes = {}) {
+  return (isDark) => {
+    const b = base(isDark);
+    return new DynamicScheme({
+      sourceColorArgb: b.sourceColorArgb,
+      variant: b.variant,
+      contrastLevel: 0,
+      isDark,
+      primaryPalette: palettes.primary ?? b.primaryPalette,
+      secondaryPalette: palettes.secondary ?? b.secondaryPalette,
+      tertiaryPalette: palettes.tertiary ?? b.tertiaryPalette,
+      neutralPalette: TonalPalette.fromHueAndChroma(hue ?? b.sourceColorHct.hue, chroma),
+      neutralVariantPalette: TonalPalette.fromHueAndChroma(hue ?? b.sourceColorHct.hue, variantChroma),
+    });
+  };
 }
 
+const site = (dark) => new SchemeTonalSpot(hct(SITE), dark, 0);
+const tone = (hue, chroma) => TonalPalette.fromHueAndChroma(hue, chroma);
+
+// Ok, warning and error keep their colours in every scheme, so no scheme takes a red, orange or yellow accent: a
+// running task would look like a warning. The warm schemes are warm in their surfaces and keep a calm accent.
 const SCHEMES = [
-  // As the site: a hint of violet in the surfaces, because the hue of #2457c5 is 271°.
-  ['site', (dark) => new SchemeTonalSpot(hct('#2457c5'), dark, 0)],
-  ['neutral', neutralSurfaces],
+  // The main one: the site's blue on grey surfaces (the site uses it too).
+  ['neutral', withSurfaces(site, null, 0, 2)],
+  // Almost no colour: black and white accents.
+  ['graphite', (dark) => new SchemeMonochrome(hct(SITE), dark, 0)],
   // The default accent of Windows 11, kept close to itself («fidelity»): a clear blue, cool grey-blue surfaces.
   ['blue', (dark) => new SchemeFidelity(hct('#0067c0'), dark, 0)],
-  ['teal', (dark) => new SchemeTonalSpot(hct('#006a6a'), dark, 0)],
-  ['graphite', (dark) => new SchemeMonochrome(hct('#2457c5'), dark, 0)],
+  // Warm: the site's blue on warm grey surfaces, like paper under a lamp.
+  ['warm', withSurfaces(site, 70, 5, 8)],
+  // Sepia: brown ink on cream paper, as an old photograph. Its containers (selected row, running chip) are a quiet
+  // beige from a weak palette: tone 90 of a stronger brown is the peach of the warning chip.
+  ['sepia', withSurfaces(site, 80, 6, 10, { primary: tone(60, 24), secondary: tone(70, 10), tertiary: tone(95, 16) }),
+    withSurfaces(site, 80, 6, 10, { primary: tone(70, 10), secondary: tone(75, 8) })],
 ];
+
+// Roles a scheme may take from its second, quieter scheme.
+const CONTAINERS = ['primaryContainer', 'onPrimaryContainer', 'secondaryContainer', 'onSecondaryContainer'];
 
 const ROLES = [
   'primary', 'onPrimary', 'primaryContainer', 'onPrimaryContainer', 'secondaryContainer', 'onSecondaryContainer',
@@ -60,11 +77,12 @@ const hex = (argb) => '0x' + (argb >>> 0).toString(16).toUpperCase().padStart(8,
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
 let body = '';
-for (const [id, make] of SCHEMES) {
+for (const [id, make, containers] of SCHEMES) {
   body += `        new("${id}",\n`;
   for (const dark of [false, true]) {
     const scheme = make(dark);
-    const pairs = ROLES.map((role) => `["${cap(role)}"] = ${hex(C[role].getArgb(scheme))}`);
+    const quiet = containers ? containers(dark) : scheme;
+    const pairs = ROLES.map((role) => `["${cap(role)}"] = ${hex(C[role].getArgb(CONTAINERS.includes(role) ? quiet : scheme))}`);
     body += `            new Dictionary<string, uint> { ${pairs.join(', ')} }${dark ? '),' : ','}\n`;
   }
 }
