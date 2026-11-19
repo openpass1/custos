@@ -311,6 +311,13 @@
       </Panel>
     </DataTemplate>
 
+    <DataTemplate DataType="p:ProgressItem">
+      <StackPanel Spacing="8" Margin="{Binding Offset}">
+        <p:ProgressLine Value="{Binding Percent}" Live="True" />
+        <TextBlock Classes="small" Text="{Binding Text}" TextWrapping="Wrap" />
+      </StackPanel>
+    </DataTemplate>
+
     <DataTemplate DataType="p:InfoItem">
       <Border Classes="info" Margin="{Binding Offset}">
         <Grid ColumnDefinitions="Auto,*">

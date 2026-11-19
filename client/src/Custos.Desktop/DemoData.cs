@@ -237,7 +237,7 @@ internal static class DemoData
         Destinations = [new DestinationProgress { DestinationId = "d2", Label = @"\\fileserver\backup\desktop", State = DestinationStates.Writing }],
     };
 
-    private static List<LogLine> Log()
+    internal static List<LogLine> Log()
     {
         var lines = new List<(DateTimeOffset Time, string Level, string? Task, string Text)>
         {

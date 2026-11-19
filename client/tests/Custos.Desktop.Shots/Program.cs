@@ -79,6 +79,19 @@ internal static class Program
         DialogShot(folder, "19-okno-baza-dannyh-svetloe", "light", c => DbServer(c));
         DialogShot(folder, "20-okno-linux-server-svetloe", "light", c => new RemoteSourceDialog(c, new Custos.Core.Model.TaskSource()), height: 1100);
 
+        // The windows opened from the main window.
+        WindowShot(folder, "21-okno-nastroek-svetloe", "light", vm => new SettingsDialog(vm.Monitor), height: 1000);
+        WindowShot(folder, "22-vosstanovlenie-tyomnoe", "dark", vm => Restore(vm), height: 1000);
+        WindowShot(folder, "23-zhurnal-zapuska-svetloe", "light", vm => RunLog(vm));
+        WindowShot(folder, "24-otschyot-vyklyucheniya-tyomnoe", "dark", vm => new PowerWindow(vm.Monitor, new Custos.Core.Ipc.PowerCountdown
+        {
+            Action = Custos.Core.Model.AfterActions.Shutdown,
+            TaskName = "Documents",
+            Deadline = DateTimeOffset.UtcNow.AddSeconds(42.5),
+        }) { Done = true });
+        string cobian = CobianListFile();
+        WindowShot(folder, "25-import-cobian-svetloe", "light", vm => CobianImport(vm, cobian), height: 900);
+
         // Every colour scheme of the «Настройки» menu, light and dark.
         string colors = Path.Combine(folder, "colors");
         Directory.CreateDirectory(colors);
@@ -91,7 +104,9 @@ internal static class Program
             }
         }
 
-        if (!MenuWorks() | !EditorWorks() | !SelectionWorks() | !ToolbarWorks(folder))
+        bool cobianWorks = CobianImportWorks(cobian);
+        File.Delete(cobian);
+        if (!MenuWorks() | !EditorWorks() | !SelectionWorks() | !ToolbarWorks(folder) | !cobianWorks)
         {
             return 1;
         }
@@ -129,7 +144,7 @@ internal static class Program
         vm.ShowCard = card;
         if (note)
         {
-            vm.Snack(DesktopStrings.NotYet);
+            vm.Snack(Strings.ToolAdminsOnly);
         }
 
         Pump();
@@ -188,6 +203,180 @@ internal static class Program
             DataDir = @"C:\Program Files\MariaDB 11.4\data",
         });
         return dialog;
+    }
+
+    /// <summary>A window opened from the main window with the made-up tasks.</summary>
+    private static void WindowShot(string folder, string name, string theme, Func<MainViewModel, Window> make, double height = 0)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        vm.SetDemoTheme(theme);
+        window.Show();
+        vm.Start();
+        Pump();
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == "Documents");
+        Pump();
+        var dialog = make(vm);
+        if (height > 0)
+        {
+            dialog.SizeToContent = SizeToContent.Manual;
+            dialog.Height = height;
+        }
+
+        dialog.Show(window);
+        Pump();
+        string path = Path.Combine(folder, name + ".png");
+        Save(dialog, path);
+        Console.WriteLine(path);
+        dialog.Close();
+        Close(window);
+    }
+
+    /// <summary>«Восстановить» with three sets found in the folder of «Documents».</summary>
+    private static RestoreDialog Restore(MainViewModel vm)
+    {
+        var dialog = new RestoreDialog(vm.Monitor, vm.SelectedTask?.TaskId);
+        var result = new Custos.Core.Ipc.RestoreListResult();
+        var when = DemoData.Now.AddHours(-2);
+        foreach (var (type, files, bytes) in new[] { ("incremental", 214L, 48_300_000L), ("differential", 1_380L, 512_000_000L), ("full", 18_412L, 9_640_000_000L) })
+        {
+            result.Sets.Add(new Custos.Core.Ipc.RestoreSetInfo
+            {
+                Location = @"E:\Backup\Documents\" + when.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture),
+                Where = @"E:\Backup\Documents",
+                Header = new Custos.Core.Backup.SetManifestHeader
+                {
+                    SetName = when.ToString("yyyy-MM-dd_HHmm", CultureInfo.InvariantCulture),
+                    TaskName = "Documents",
+                    BackupType = type,
+                    StartedAt = when,
+                    SetFileCount = files,
+                    SetBytes = bytes,
+                },
+            });
+            when = when.AddDays(-1);
+        }
+
+        dialog.ShowSets(result);
+        return dialog;
+    }
+
+    /// <summary>The log of the last run of «Desktop».</summary>
+    private static RunLogWindow RunLog(MainViewModel vm)
+    {
+        string id = vm.Tasks.First(t => t.Name == "Desktop").TaskId;
+        var run = DemoData.Snapshot().States.First(s => s.TaskId == id).LastRun!;
+        var log = new RunLogWindow(null, run);
+        var lines = DemoData.Log().Where(l => l.TaskId == id).ToList();
+        log.ShowResult(new Custos.Core.Ipc.RunLogResult
+        {
+            Found = true,
+            Path = @"C:\ProgramData\Custos\logs\runs\2026-11\" + run.RunId + ".log",
+            Lines = lines,
+            Total = lines.Count,
+            Matched = lines.Count,
+            RetentionDays = 365,
+        });
+        return log;
+    }
+
+    /// <summary>A Cobian Backup 11 list with two tasks, one of them run as an account of the network.</summary>
+    private static string CobianListFile()
+    {
+        static string Bits(double value) => Convert.ToString(BitConverter.DoubleToInt64Bits(value), 2).PadLeft(64, '0');
+        string evening = Bits(45292 + (21.5 / 24));
+        string path = Path.Combine(Path.GetTempPath(), "custos-shots-" + Guid.NewGuid().ToString("N") + ".lst");
+        File.WriteAllText(path, $$"""
+            {11//
+            Name=Documents
+            Id={00000000-1111-2222-3333-444444444444}
+            Enabled=true
+            Include subdirectories=true
+            Create separated backups=true
+            Use VSC=true
+            Backup type=1
+            Destination="1,\\server\backup\docs"
+            Destination="1,\serverackup\docs"
+            Schedule type=1
+            Date/Time={{evening}}
+            Full copies=4
+            Impersonate=true
+            Run as User name=backup-user
+            Run as Domain=EXAMPLE
+            //11}
+            {11//
+            Name=Photos
+            Enabled=false
+            Backup type=2
+            Source=1,D:\Photos
+            Destination=1,F:\Copies
+            Schedule type=2
+            Day of the week=1,5
+            Date/Time={{evening}}
+            //11}
+            """, System.Text.Encoding.UTF8);
+        return path;
+    }
+
+    private static CobianImportDialog CobianImport(MainViewModel vm, string list)
+    {
+        var dialog = new CobianImportDialog(vm.Monitor);
+        dialog.ReadFile(list);
+        return dialog;
+    }
+
+    /// <summary>
+    /// The Cobian import lists both tasks ticked and asks for the password of the account once; without the task
+    /// that uses the account it is not asked for.
+    /// </summary>
+    private static bool CobianImportWorks(string list)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        window.Show();
+        vm.Start();
+        Pump();
+        var dialog = CobianImport(vm, list);
+        dialog.Show(window);
+        Pump();
+        var problems = new List<string>();
+        if (dialog.TaskItems.Count != 2 || dialog.TaskItems.Any(t => !t.On))
+        {
+            problems.Add($"{dialog.TaskItems.Count} tasks read, not 2 ticked");
+        }
+
+        if (dialog.AccountCount != 1)
+        {
+            problems.Add($"{dialog.AccountCount} accounts asked for, not 1");
+        }
+
+        string remark = CobianImportDialog.Remark(new Custos.Core.Cobian.ImportWarning(Custos.Core.Cobian.ImportWarningCodes.RunAsAccount, @"EXAMPLE\backup-user"));
+        if (dialog.TaskItems.Count > 0 && dialog.TaskItems[0].Description?.Contains(remark, StringComparison.Ordinal) != true)
+        {
+            problems.Add("the remark of the account is not under the task: " + dialog.TaskItems[0].Description);
+        }
+
+        if (dialog.TaskItems.Count > 0)
+        {
+            dialog.TaskItems[0].On = false;
+            Pump();
+            if (dialog.AccountCount != 0)
+            {
+                problems.Add("the account is still asked for without its task");
+            }
+
+            dialog.TaskItems[0].On = true;
+            Pump();
+            if (dialog.AccountCount != 1)
+            {
+                problems.Add("the account is not asked for again");
+            }
+        }
+
+        dialog.Close();
+        Close(window);
+        Console.WriteLine(problems.Count == 0 ? "Cobian import: OK" : "Cobian import: " + string.Join("; ", problems));
+        return problems.Count == 0;
     }
 
     /// <summary>A window of the editor over the editor of «Documents».</summary>

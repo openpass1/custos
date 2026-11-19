@@ -977,3 +977,22 @@ internal sealed class InfoItem(string icon, string title, string? detail = null)
 
     public bool HasDetail => !string.IsNullOrEmpty(_detail);
 }
+
+/// <summary>A bar of how far some work is (a restore), with a line under it.</summary>
+internal sealed class ProgressItem : FormItem
+{
+    private double _percent;
+    private string _text = string.Empty;
+
+    public double Percent
+    {
+        get => _percent;
+        set => Set(ref _percent, value);
+    }
+
+    public string Text
+    {
+        get => _text;
+        set => Set(ref _text, value);
+    }
+}

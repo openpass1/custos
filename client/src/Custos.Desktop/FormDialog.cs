@@ -92,6 +92,9 @@ internal abstract class FormDialog : Window
 
     protected Button OkButton { get; }
 
+    /// <summary>«Отмена», or «Закрыть» where nothing can be changed.</summary>
+    protected Button CancelButton => _cancel;
+
     protected ScrollViewer Scroll { get; }
 
     /// <summary>Opens the dialog over <paramref name="owner"/>; true when it was closed with the main button.</summary>

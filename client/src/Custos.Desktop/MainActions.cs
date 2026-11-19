@@ -347,10 +347,59 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         static string Safe(string name) => new([.. name.Where(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')]);
     }
 
-    /// <summary>
-    /// The task editor. It shows every page of the task; saving comes in the next version of the new window, so for
-    /// now «Сохранить» says so and the task stays as it was.
-    /// </summary>
+    /// <summary>«Импорт из Cobian Backup»: the tasks of Cobian Backup 11, added switched off.</summary>
+    public async Task CobianImportAsync()
+    {
+        if (!vm.CanEdit || !await Monitor.EnsureUnlockedAsync())
+        {
+            return;
+        }
+
+        await new CobianImportDialog(Monitor).ShowAsync(window);
+    }
+
+    /// <summary>«Восстановить»: administrators only, with the program password when one is set (section 6.11).</summary>
+    public async Task RestoreAsync()
+    {
+        if (!vm.IsDemo && (Monitor.Status.Hello?.IsAdmin != true || !await Monitor.EnsureUnlockedAsync()))
+        {
+            return;
+        }
+
+        await new RestoreDialog(Monitor, vm.SelectedTask?.TaskId).ShowAsync(window);
+    }
+
+    /// <summary>«Обновить»: the service downloads the version from GitHub, checks it and installs it.</summary>
+    public async Task InstallUpdateAsync()
+    {
+        if (Monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
+            || !await Dialogs.Ask(window, Strings.Format(Strings.UpdateAsk, version), Strings.UpdateInstall, Strings.ButtonCancel)
+            || !await Monitor.EnsureUnlockedAsync())
+        {
+            return;
+        }
+
+        var result = await Monitor.RequestAsync(PipeProtocol.Methods.ProgramUpdate, EmptyRequest.Instance,
+            IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult, TimeSpan.FromMinutes(15));
+        await Dialogs.Show(window, result.Ok ? result.Message ?? Strings.UpdateInstalling : result.Message ?? Strings.ProblemNoAnswer);
+    }
+
+    /// <summary>«Все настройки»: everyone may look; the window asks for the program password before a change is sent.</summary>
+    public async Task SettingsAsync()
+    {
+        if (!Monitor.IsConnected)
+        {
+            return;
+        }
+
+        if (vm.CanEdit && !await Monitor.EnsureUnlockedAsync())
+        {
+            return;
+        }
+
+        await new SettingsDialog(Monitor).ShowAsync(window);
+    }
+
     private async Task OpenEditorAsync(EditorModel model)
     {
         var editor = new EditorWindow(model);

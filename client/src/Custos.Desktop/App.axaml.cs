@@ -26,6 +26,8 @@ internal sealed partial class App : Application, IDisposable
 
     private readonly LastKnown _lastKnown = LastKnown.Load();
     private MainWindow? _window;
+    private StatusWindow? _statusWindow;
+    private PowerWindow? _powerWindow;
     private TrayIcon? _tray;
     private NativeMenuItem? _status;
     private NativeMenuItem? _open;
@@ -61,8 +63,16 @@ internal sealed partial class App : Application, IDisposable
             _window = window;
             var monitor = window.ViewModel.Monitor;
             monitor.AskPassword = () => AskPasswordAsync(monitor);
-            monitor.StatusChanged += (_, _) => OnServiceChanged();
-            monitor.SnapshotChanged += (_, _) => OnServiceChanged();
+            monitor.StatusChanged += (_, _) =>
+            {
+                OnServiceChanged();
+                UpdatePower();
+            };
+            monitor.SnapshotChanged += (_, _) =>
+            {
+                OnServiceChanged();
+                UpdatePower();
+            };
             monitor.ProgressChanged += (_, _) => UpdateTray();
             desktop.ShutdownRequested += (_, _) => window.Quitting = true;
             CreateTray();
@@ -190,6 +200,11 @@ internal sealed partial class App : Application, IDisposable
                 {
                     _window.Hide();
                 }
+
+                if (mode == TrayModes.Full && _statusWindow is { IsVisible: true } status)
+                {
+                    status.Hide();
+                }
             }
         }
 
@@ -237,6 +252,34 @@ internal sealed partial class App : Application, IDisposable
         _stopAll.IsEnabled = monitor.IsConnected && ((current is not null && !current.Stopping) || snapshot?.Queue.Count > 0);
     }
 
+    /// <summary>Shows the countdown to a shutdown or sleep after a run while the service counts, and closes it after.</summary>
+    private void UpdatePower()
+    {
+        var monitor = _window!.ViewModel.Monitor;
+        var power = monitor.IsConnected ? monitor.Snapshot?.Power : null;
+        if (power is null)
+        {
+            if (_powerWindow is { } shown)
+            {
+                shown.Done = true;
+                shown.Close();
+                _powerWindow = null;
+            }
+
+            return;
+        }
+
+        if (_powerWindow is null)
+        {
+            _powerWindow = new PowerWindow(monitor, power);
+            _powerWindow.Show();
+        }
+        else
+        {
+            _powerWindow.ShowCountdown(power);
+        }
+    }
+
     private void UpdateServiceItems()
     {
         bool? running = DesktopPlatform.Current.ServiceRunning();
@@ -280,11 +323,22 @@ internal sealed partial class App : Application, IDisposable
         }
     }
 
-    /// <summary>The main window of an administrator or of a user with the full interface; the others have only the icon.</summary>
+    /// <summary>
+    /// The main window of an administrator or of a user with the full interface; a user with «Только состояние» or
+    /// «Скрыт» gets the window with the state of the backups (without an icon: when the program is started again).
+    /// </summary>
     private void ShowWindow()
     {
-        if (_window is not { } window || _mode != TrayModes.Full)
+        if (_window is not { } window)
         {
+            return;
+        }
+
+        if (_mode != TrayModes.Full)
+        {
+            _statusWindow ??= new StatusWindow(window.ViewModel);
+            _statusWindow.Show();
+            _statusWindow.Activate();
             return;
         }
 
@@ -319,6 +373,18 @@ internal sealed partial class App : Application, IDisposable
         {
             window.Quitting = true;
             window.ViewModel.Monitor.Lock();
+            if (_statusWindow is { } status)
+            {
+                status.Quitting = true;
+                status.Close();
+            }
+
+            if (_powerWindow is { } power)
+            {
+                power.Done = true;
+                power.Close();
+            }
+
             window.Close();
             window.ViewModel.Dispose();
         }

@@ -22,9 +22,6 @@
   <data name="HistoryCount" xml:space="preserve">
     <value>{0}: запусков {1}</value>
   </data>
-  <data name="NotYet" xml:space="preserve">
-    <value>В новом окне этого пока нет: появится в одной из следующих версий. А пока — в обычном окне CUSTOS (Custos.exe).</value>
-  </data>
   <data name="SettingsAll" xml:space="preserve">
     <value>Все настройки…</value>
   </data>
@@ -70,9 +67,6 @@
   <data name="Save" xml:space="preserve">
     <value>Сохранить</value>
   </data>
-  <data name="EditorNotYet" xml:space="preserve">
-    <value>Эта кнопка заработает в следующей версии нового окна.</value>
-  </data>
   <data name="LinuxServer" xml:space="preserve">
     <value>Linux-сервер</value>
   </data>
@@ -108,5 +102,11 @@
   </data>
   <data name="DemoLocked" xml:space="preserve">
     <value>файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx</value>
+  </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Двойной щелчок по запуску открывает его журнал.</value>
+  </data>
+  <data name="RestoreSetHint" xml:space="preserve">
+    <value>{0} файлов · {1} · {2}</value>
   </data>
 </root>

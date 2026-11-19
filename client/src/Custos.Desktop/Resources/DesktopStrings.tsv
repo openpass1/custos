@@ -4,7 +4,6 @@
 Tasks	Tasks	Задания
 Now	now	сейчас
 HistoryCount	{0}: {1} runs	{0}: запусков {1}
-NotYet	The new window does not have this yet: it comes in one of the next versions. Until then use the usual CUSTOS window (Custos.exe).	В новом окне этого пока нет: появится в одной из следующих версий. А пока — в обычном окне CUSTOS (Custos.exe).
 SettingsAll	All settings…	Все настройки…
 ThemeHeading	Theme	Тема
 ThemeForAll	For all users of this computer	Для всех пользователей компьютера
@@ -21,7 +20,6 @@ More	More	Ещё
 DeleteRunning	«{0}» is running now. Stop it first, then delete it.	Задание «{0}» сейчас выполняется. Сначала остановите его, потом удаляйте.
 # ---- Task editor
 Save	Save	Сохранить
-EditorNotYet	This button works from the next version of the new window on.	Эта кнопка заработает в следующей версии нового окна.
 LinuxServer	Linux server	Linux-сервер
 EveryMinutes	minutes	минут
 WormTag	WORM {0} days	WORM {0} дн.
@@ -35,3 +33,5 @@ DemoStarted	started by the schedule	запуск по расписанию
 DemoDone	success — {0} files, {1}, {2}	успешно — файлов {0}, {1}, {2}
 DemoScan	looking for files: 12 640	поиск файлов: 12 640
 DemoLocked	the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx	файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx
+HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
+RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}

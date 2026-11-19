@@ -198,6 +198,38 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public string VersionText { get; }
 
+    /// <summary>«Вышла CUSTOS …» above the list while GitHub has a newer version than this one.</summary>
+    public bool UpdateVisible { get => _updateVisible; private set => Set(ref _updateVisible, value); }
+
+    public string UpdateText { get => _updateText; private set => Set(ref _updateText, value); }
+
+    public string UpdateButton { get => _updateButton; private set => Set(ref _updateButton, value); }
+
+    /// <summary>Only administrators install, and not twice at once.</summary>
+    public bool CanInstallUpdate { get => _canInstallUpdate; private set => Set(ref _canInstallUpdate, value); }
+
+    public bool HasReleasePage { get => _hasReleasePage; private set => Set(ref _hasReleasePage, value); }
+
+    private bool _updateVisible;
+    private string _updateText = string.Empty;
+    private string _updateButton = Strings.UpdateInstall;
+    private bool _canInstallUpdate;
+    private bool _hasReleasePage;
+
+    private void ShowUpdate(ProgramUpdateInfo? update)
+    {
+        UpdateVisible = update is { Available: true, Latest: not null };
+        if (!UpdateVisible)
+        {
+            return;
+        }
+
+        UpdateText = Strings.Format(Strings.UpdateBanner, update!.Latest, Core.CustosInfo.Version);
+        UpdateButton = update.Installing ? Strings.UpdateInstalling : Strings.UpdateInstall;
+        CanInstallUpdate = _monitor.Status.Hello?.IsAdmin == true && !update.Installing;
+        HasReleasePage = update.PageUrl is not null;
+    }
+
     /// <summary>What the list says while there is no connection.</summary>
     public string EmptyText { get => _emptyText; private set => Set(ref _emptyText, value); }
 
@@ -457,6 +489,7 @@ internal sealed class MainViewModel : Observable, IDisposable
 
         ShowCardOf();
         ShowServer(snapshot.Server);
+        ShowUpdate(snapshot.ProgramUpdate);
         ShowProgress();
         ApplyTheme();
         ShowCommands();
@@ -740,7 +773,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         LogFilterLevels.Matches(LogLevel, line.Level)
         && (!LogSelectedOnly || _selected is null || Describe.SameId(line.TaskId, _selected.TaskId));
 
-    private static LogRow Row(LogLine line) => new()
+    internal static LogRow Row(LogLine line) => new()
     {
         Seq = line.Seq,
         Time = line.Time == DateTimeOffset.MinValue ? string.Empty : Describe.LogTime(line.Time),
@@ -784,6 +817,7 @@ internal sealed class MainViewModel : Observable, IDisposable
             {
                 History.Add(new HistoryRow
                 {
+                    Run = run,
                     Started = Describe.Time(run.StartedAt),
                     Duration = run.FinishedAt is { } finished ? Sizes.FormatDuration(finished - run.StartedAt) : "—",
                     Type = Words.BackupType(run.BackupType),

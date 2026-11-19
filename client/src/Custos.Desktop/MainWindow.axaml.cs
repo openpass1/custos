@@ -434,11 +434,54 @@ internal sealed partial class MainWindow : Window
         Safe.Run(_actions.ExportAsync, ShowProblem);
     }
 
-    /// <summary>What the new window does not have yet: it says so and where to find it meanwhile.</summary>
-    private void OnNotYet(object? sender, RoutedEventArgs e)
+    private void OnCobianImport(object? sender, RoutedEventArgs e)
     {
         CloseMenu(sender);
-        _vm.Snack(DesktopStrings.NotYet);
+        Safe.Run(_actions.CobianImportAsync, ShowProblem);
+    }
+
+    private void OnRestore(object? sender, RoutedEventArgs e)
+    {
+        CloseMenu(sender);
+        Safe.Run(_actions.RestoreAsync, ShowProblem);
+    }
+
+    /// <summary>A double click on a run of the history: its log (section 6.10).</summary>
+    private void OnHistoryDoubleTapped(object? sender, TappedEventArgs e) => OpenRunLog(sender);
+
+    private void OnHistoryKey(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            OpenRunLog(sender);
+        }
+    }
+
+    private void OpenRunLog(object? sender)
+    {
+        if (sender is ListBox { SelectedItem: HistoryRow row })
+        {
+            var log = new RunLogWindow(_vm.IsDemo ? null : _vm.Monitor, row.Run);
+            Safe.Run(() => log.ShowDialog(this), ShowProblem);
+        }
+    }
+
+    private void OnInstallUpdate(object? sender, RoutedEventArgs e) => Safe.Run(_actions.InstallUpdateAsync, ShowProblem);
+
+    /// <summary>«Что нового»: the page of the release on GitHub.</summary>
+    private void OnReleasePage(object? sender, RoutedEventArgs e)
+    {
+        if (_vm.Monitor.Snapshot?.ProgramUpdate.PageUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            Safe.Run(async () => await Launcher.LaunchUriAsync(uri), ShowProblem);
+        }
+    }
+
+    private void OnSettings(object? sender, RoutedEventArgs e)
+    {
+        CloseMenu(sender);
+        Safe.Run(_actions.SettingsAsync, ShowProblem);
     }
 
     /// <summary>A double click: the task editor for those who may change tasks, else the card.</summary>

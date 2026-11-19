@@ -14,9 +14,6 @@ static partial class DesktopStrings
     /// <summary>{0}: {1} runs</summary>
     public static string HistoryCount => Get(nameof(HistoryCount));
 
-    /// <summary>The new window does not have this yet: it comes in one of the next versions. Until then use the usual CUSTO...</summary>
-    public static string NotYet => Get(nameof(NotYet));
-
     /// <summary>All settings…</summary>
     public static string SettingsAll => Get(nameof(SettingsAll));
 
@@ -62,9 +59,6 @@ static partial class DesktopStrings
     /// <summary>Save</summary>
     public static string Save => Get(nameof(Save));
 
-    /// <summary>This button works from the next version of the new window on.</summary>
-    public static string EditorNotYet => Get(nameof(EditorNotYet));
-
     /// <summary>Linux server</summary>
     public static string LinuxServer => Get(nameof(LinuxServer));
 
@@ -100,4 +94,10 @@ static partial class DesktopStrings
 
     /// <summary>the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx</summary>
     public static string DemoLocked => Get(nameof(DemoLocked));
+
+    /// <summary>Double-click a run to see its log.</summary>
+    public static string HistoryOpenLog => Get(nameof(HistoryOpenLog));
+
+    /// <summary>{0} files · {1} · {2}</summary>
+    public static string RestoreSetHint => Get(nameof(RestoreSetHint));
 }

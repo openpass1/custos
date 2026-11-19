@@ -171,6 +171,9 @@ internal sealed class LogRow
 /// <summary>A run in the history of the selected task.</summary>
 internal sealed class HistoryRow : StateItem
 {
+    /// <summary>The run itself: a double click opens its log.</summary>
+    public required Core.Model.RunRecord Run { get; init; }
+
     public required string Started { get; init; }
 
     public required string Duration { get; init; }

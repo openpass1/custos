@@ -22,9 +22,6 @@
   <data name="HistoryCount" xml:space="preserve">
     <value>{0}: {1} runs</value>
   </data>
-  <data name="NotYet" xml:space="preserve">
-    <value>The new window does not have this yet: it comes in one of the next versions. Until then use the usual CUSTOS window (Custos.exe).</value>
-  </data>
   <data name="SettingsAll" xml:space="preserve">
     <value>All settings…</value>
   </data>
@@ -70,9 +67,6 @@
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="EditorNotYet" xml:space="preserve">
-    <value>This button works from the next version of the new window on.</value>
-  </data>
   <data name="LinuxServer" xml:space="preserve">
     <value>Linux server</value>
   </data>
@@ -108,5 +102,11 @@
   </data>
   <data name="DemoLocked" xml:space="preserve">
     <value>the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx</value>
+  </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Double-click a run to see its log.</value>
+  </data>
+  <data name="RestoreSetHint" xml:space="preserve">
+    <value>{0} files · {1} · {2}</value>
   </data>
 </root>

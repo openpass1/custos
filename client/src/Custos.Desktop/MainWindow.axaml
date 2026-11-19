@@ -35,7 +35,7 @@
                       <Button Theme="{StaticResource MenuItemButton}" Click="OnImport">
                         <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="upload_file" /><TextBlock Text="{x:Static g:Strings.ToolImportFile}" VerticalAlignment="Center" /></StackPanel>
                       </Button>
-                      <Button Theme="{StaticResource MenuItemButton}" Click="OnNotYet">
+                      <Button Theme="{StaticResource MenuItemButton}" Click="OnCobianImport">
                         <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="input" /><TextBlock Text="{x:Static g:Strings.ToolImportCobian}" VerticalAlignment="Center" /></StackPanel>
                       </Button>
                       <Border Classes="divider" Margin="0,8" />
@@ -60,7 +60,7 @@
           <p:ToolButton Name="PauseButton" Label="{Binding PauseText}" IconKind="{Binding PauseIcon}" IsEnabled="{Binding CanPause}" Click="OnPause"
                         ToolTip.Tip="{x:Static g:Strings.ToolPauseHint}" />
           <Border Classes="vsep" />
-          <p:ToolButton Name="RestoreButton" Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnNotYet" />
+          <p:ToolButton Name="RestoreButton" Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnRestore" />
           <!-- On a screen too narrow for every button, «Клонировать» and «Восстановить» move into this menu (FitToolbar). -->
           <p:ToolButton Name="MoreButton" Label="{x:Static p:DesktopStrings.More}" IconKind="more_vert" IsVisible="False">
             <p:ToolButton.Flyout>
@@ -69,7 +69,7 @@
                   <Button Theme="{StaticResource MenuItemButton}" Click="OnClone" IsEnabled="{Binding CanEditOne}">
                     <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
                   </Button>
-                  <Button Theme="{StaticResource MenuItemButton}" Click="OnNotYet" IsEnabled="{Binding CanRestore}">
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnRestore" IsEnabled="{Binding CanRestore}">
                     <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="settings_backup_restore" /><TextBlock Text="{x:Static g:Strings.ToolRestore}" VerticalAlignment="Center" /></StackPanel>
                   </Button>
                 </StackPanel>
@@ -96,7 +96,7 @@
                   <TextBlock Classes="menunote" Text="{x:Static p:DesktopStrings.ColorForYou}" />
                   <StackPanel Name="ColorMenu" />
                   <Border Classes="divider" Margin="0,8" />
-                  <Button Theme="{StaticResource MenuItemButton}" Click="OnNotYet" IsEnabled="{Binding IsConnected}">
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnSettings" IsEnabled="{Binding IsConnected}">
                     <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="tune" /><TextBlock Text="{x:Static p:DesktopStrings.SettingsAll}" VerticalAlignment="Center" /></StackPanel>
                   </Button>
                 </StackPanel>
@@ -105,6 +105,18 @@
           </p:ToolButton>
         </StackPanel>
       </Grid>
+
+      <!-- A new version on GitHub: an M3 banner over the list (administrators install it). -->
+      <Border DockPanel.Dock="Top" Classes="info" Margin="12,0,12,8" IsVisible="{Binding UpdateVisible}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <p:Icon Kind="update" Size="20" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding UpdateText}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,16,0" />
+          <Button Grid.Column="2" Theme="{StaticResource TextButton}" Content="{x:Static g:Strings.UpdateWhatsNew}" Click="OnReleasePage"
+                  IsVisible="{Binding HasReleasePage}" Margin="0,0,8,0" />
+          <Button Grid.Column="3" Theme="{StaticResource FilledButton}" Content="{Binding UpdateButton}" Click="OnInstallUpdate"
+                  IsEnabled="{Binding CanInstallUpdate}" />
+        </Grid>
+      </Border>
 
       <!-- Status bar. -->
       <Grid DockPanel.Dock="Bottom" Height="36" Margin="18,0,12,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
@@ -309,7 +321,8 @@
                     <TextBlock Grid.Column="7" Classes="key" Text="{x:Static g:Strings.ColumnDetails}" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
-                <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0">
+                <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0" DoubleTapped="OnHistoryDoubleTapped"
+                         KeyDown="OnHistoryKey" ToolTip.Tip="{x:Static p:DesktopStrings.HistoryOpenLog}" ToolTip.ShowDelay="1200">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="p:HistoryRow">
                       <Grid Height="30" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
