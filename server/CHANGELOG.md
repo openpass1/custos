@@ -13,9 +13,6 @@ a version that was never released by itself is not lost.
 
 ## 1.2.1
 
-### Added
-- A click log for troubleshooting: open any page of the site with `?clicklog=1` at the end of its address, and the browser notes every press and what came of it (a page opened, a menu opened, or why there was no click) until it is switched off; a small panel at the bottom left saves the log as a text file. Typed text is never noted.
-
 ### Changed
 - Pages change at once, without the dissolve from one page into the next and without the content coming in from below: in Chrome on Windows with its animation effects on, a click soon after such a page change now and then did nothing, and the user menu was now and then not redrawn. A click on a menu section still marks it at once.
 - The circle that spreads over a pressed button, menu section or tile has the times of Material 3 again (it shows in 0.1 s, grows for 0.45 s and fades for 0.375 s): the slower circle of 1.2.0 made the site feel slow.
@@ -24,7 +21,7 @@ a version that was never released by itself is not lost.
 - The logo nearly vanished in the **Blue** colour scheme (a blue shield on a blue square): its square now keeps the colour of the default scheme in every scheme.
 - A click on a menu section, a tile or another link was sometimes lost when the mouse moved a little during the press: the browser began to drag the link instead of opening it. Links can no longer be dragged.
 - A click on a tile or a button of a block that refreshes itself was lost when the block was refreshed during the press; the block now waits until the press has ended.
-- A click was sometimes lost because the browser gave the page the press of the mouse button but not its release (seen in Chrome on Windows on quick clicks soon after a page opened). When the mouse next moves with the button let go, the site now finishes such a press and clicks what was pressed, if the pointer is still on it. The click log also notes this, a release whose press never reached the page, input that came late and the browser window losing focus.
+- A click was sometimes lost because the browser gave the page the press of the mouse button but not its release (seen in Chrome on Windows on quick clicks soon after a page opened). When the mouse next moves with the button let go, the site now finishes such a press and clicks what was pressed, if the pointer is still on it.
 
 ## 1.2.0
 
