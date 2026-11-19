@@ -189,6 +189,9 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         note('page closed');
         flush();
     });
+    // Another window (of the browser or of another program) taking the keyboard from the page, and giving it back.
+    window.addEventListener('blur', () => note('window lost focus'));
+    window.addEventListener('focus', () => note('window got focus'));
     document.addEventListener('visibilitychange', () => {
         note(document.hidden ? 'tab hidden' : 'tab shown');
         if (document.hidden) {
@@ -235,8 +238,16 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
             if (p.dissolving) {
                 reasons.push('pressed while the page dissolved in');
             }
+            if (!p.up) {
+                reasons.push('the page never got the release of the button');
+            }
             note('#' + p.n + ' NO CLICK' + (why ? ' ' + why : '') + (reasons.length ? ': ' + reasons.join('; ') : ''));
         }
+    };
+    // How long the browser kept an event of the hand before the page got it (a busy page, or a browser that holds input).
+    const late = (event) => {
+        const ms = event.isTrusted ? Math.round(performance.now() - event.timeStamp) : 0;
+        return ms >= 30 ? ' (came ' + ms + ' ms after the hand)' : '';
     };
     window.addEventListener('pointerdown', (event) => {
         if (inPanel(event.target)) {
@@ -257,7 +268,7 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         };
         note('#' + press.n + ' press ' + event.pointerType + (event.button !== 0 ? ' button ' + event.button : '') + ' at ' + Math.round(event.clientX)
             + ',' + Math.round(event.clientY) + ' on ' + where(event.target) + (event.isTrusted ? '' : ' (re-sent by the site)')
-            + (dissolving ? ', page dissolving in' : ''));
+            + (dissolving ? ', page dissolving in' : '') + late(event));
     }, true);
     window.addEventListener('pointermove', (event) => {
         if (press && !press.up && event.buttons) {
@@ -271,7 +282,7 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         const p = press;
         p.up = event.target;
         note('#' + p.n + ' release after ' + Math.round(performance.now() - p.at) + ' ms' + (p.moved >= 1 ? ', moved ' + Math.round(p.moved) + ' px' : '')
-            + (actorOf(event.target) !== p.actor ? ' on ' + where(event.target) : ''));
+            + (actorOf(event.target) !== p.actor ? ' on ' + where(event.target) : '') + (event.isTrusted ? late(event) : ' (sent by the site)'));
         setTimeout(() => end(p), 400);
     }, true);
     window.addEventListener('pointercancel', (event) => {
@@ -298,7 +309,7 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         if (inPanel(event.target)) {
             return;
         }
-        if (!event.isTrusted && press) {
+        if (!event.isTrusted && press && press.clicked) {
             note('#' + press.n + ' click re-sent by the site to ' + where(event.target));
             return;
         }
@@ -864,6 +875,59 @@ document.addEventListener('dragstart', (event) => {
         event.preventDefault();
     }
 });
+
+// A press whose release never reached the page. Now and then the browser gives a page the press of the mouse button
+// but not its release, and nothing comes of the click: the click log of 1.2.1 caught it in Chrome on Windows on about
+// one quick click in ten (links of the menu, rows of a table, the user menu alike), each time about 1.5 s after the
+// page had opened; the press itself was on time. The next move of the mouse shows the button already let go: if the
+// pointer is still on what was pressed, the site ends the press and clicks it, as the browser would have. Fields,
+// presses with Ctrl and the like, and presses that ended in any other way are left alone.
+(() => {
+    const acts = 'a[href], button, summary, label, [role="button"], [data-dialog], table.row-links tbody tr';
+    let press = null;
+    document.addEventListener('pointerdown', (event) => {
+        press = null;
+        const el = event.target instanceof Element ? event.target : null;
+        if (!event.isTrusted || event.pointerType !== 'mouse' || event.button !== 0 || event.ctrlKey || event.metaKey
+            || event.shiftKey || event.altKey || !el || !el.closest(acts) || el.closest('input, select, textarea, [contenteditable], .clicklog')) {
+            return;
+        }
+        press = {
+            el, act: el.closest(acts), at: performance.now(), id: event.pointerId,
+            x: event.clientX, y: event.clientY, sx: event.screenX, sy: event.screenY,
+        };
+    }, true);
+    const over = () => {
+        press = null;
+    };
+    for (const name of ['pointerup', 'pointercancel', 'dragstart', 'click', 'contextmenu', 'keydown']) {
+        document.addEventListener(name, over, true);
+    }
+    window.addEventListener('pagehide', over);
+    document.addEventListener('pointermove', (event) => {
+        if (!press || !event.isTrusted || event.pointerType !== 'mouse' || (event.buttons & 1) !== 0) {
+            return;
+        }
+        const p = press;
+        press = null;
+        const age = Math.round(performance.now() - p.at);
+        const under = document.elementFromPoint(event.clientX, event.clientY);
+        const same = age < 2000 && p.el.isConnected && !!under && under.closest(acts) === p.act;
+        if (window.custosClickLog) {
+            window.custosClickLog('  the button was let go but the page got no release (' + age + ' ms after the press)'
+                + (same ? ': the site ends the press and clicks' : ': the pointer is elsewhere now, no click'));
+        }
+        if (!same) {
+            return;
+        }
+        const at = {
+            bubbles: true, cancelable: true, composed: true, view: window,
+            clientX: p.x, clientY: p.y, screenX: p.sx, screenY: p.sy, button: 0, buttons: 0,
+        };
+        p.el.dispatchEvent(new PointerEvent('pointerup', { ...at, pointerId: p.id, pointerType: 'mouse', isPrimary: true }));
+        p.el.dispatchEvent(new MouseEvent('click', { ...at, detail: 1 }));
+    }, { capture: true, passive: true });
+})();
 
 // "More" menus (details.dropdown): one open at a time, closed by a click elsewhere or Esc. A menu inside a table that
 // scrolls sideways is placed over the page (position: fixed), so that the edge of the table does not cut it off; it
