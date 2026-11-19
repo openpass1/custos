@@ -43,8 +43,8 @@ internal abstract class FormDialog : Window
         ShowInTaskbar = false;
         Classes.Add("surface");
 
-        var view = new FormView { Items = Items, Margin = new Thickness(28, 0, 28, 20) };
-        var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(28, 24, 28, 12) };
+        var view = new FormView { Items = Items, Margin = new Thickness(24, 0, 24, 16) };
+        var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24, 18, 24, 8) };
         Scroll = new ScrollViewer { Content = view, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         _cancel = Ui.Text(Strings.ButtonCancel, () => Close());
         OkButton = Ui.Filled(Strings.ButtonOk, () => { });
@@ -55,7 +55,7 @@ internal abstract class FormDialog : Window
         var bottom = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-            Margin = new Thickness(28, 12, 24, 18),
+            Margin = new Thickness(24, 10, 20, 14),
             Children = { _error, _buttons },
         };
         Grid.SetColumn(_buttons, 1);
@@ -75,14 +75,8 @@ internal abstract class FormDialog : Window
                 Close();
             }
         };
-        Opened += (_, _) =>
-        {
-            TitleBar.Paint(this);
-            if (Screens.ScreenFromWindow(this) is { } screen)
-            {
-                MaxHeight = screen.WorkingArea.Height / screen.Scaling * 0.92;
-            }
-        };
+        Opened += (_, _) => TitleBar.Paint(this);
+        ScreenFit.Keep(this);
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
         Closing += (_, e) => e.Cancel = _busy;
     }
@@ -100,6 +94,8 @@ internal abstract class FormDialog : Window
     /// <summary>Opens the dialog over <paramref name="owner"/>; true when it was closed with the main button.</summary>
     public async Task<bool> ShowAsync(Window owner)
     {
+        // Sized for the screen before it is placed over the owner, so that it opens whole on it.
+        ScreenFit.Limit(this, owner);
         await ShowDialog(owner);
         return _result;
     }

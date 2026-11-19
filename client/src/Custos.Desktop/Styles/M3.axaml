@@ -57,7 +57,7 @@
   </Style>
   <Style Selector="Border.vsep">
     <Setter Property="Width" Value="1" />
-    <Setter Property="Height" Value="40" />
+    <Setter Property="Height" Value="32" />
     <Setter Property="Margin" Value="8,0" />
     <Setter Property="Background" Value="{DynamicResource OutlineVariant}" />
   </Style>
@@ -66,14 +66,14 @@
   <!-- The shadow is a layer of its own under the button: a Border with BoxShadow did not draw its content in pictures. -->
   <Style Selector="Border.fab">
     <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
-    <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Height" Value="48" />
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
   <Style Selector="Border.fabshadow">
     <Setter Property="Background" Value="{DynamicResource PrimaryContainer}" />
-    <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Height" Value="56" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Height" Value="48" />
     <Setter Property="BoxShadow" Value="0 1 3 0 #40000000" />
   </Style>
 
@@ -167,9 +167,9 @@
 
   <!-- Task card. -->
   <Style Selector="Border.lead">
-    <Setter Property="Width" Value="44" />
-    <Setter Property="Height" Value="44" />
-    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="20" />
     <Setter Property="Background" Value="{DynamicResource SurfaceContainerHighest}" />
     <Setter Property="TextElement.Foreground" Value="{DynamicResource OnSurfaceVariant}" />
   </Style>
@@ -192,8 +192,8 @@
   <Style Selector="Border.progblock">
     <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
     <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Padding" Value="14,14,14,12" />
-    <Setter Property="Margin" Value="0,14,0,2" />
+    <Setter Property="Padding" Value="12,10,12,10" />
+    <Setter Property="Margin" Value="0,10,0,2" />
   </Style>
   <Style Selector="p|ProgressLine">
     <Setter Property="Fill" Value="{DynamicResource Primary}" />
@@ -203,8 +203,8 @@
     <Setter Property="Background" Value="{DynamicResource ErrorContainer}" />
     <Setter Property="TextElement.Foreground" Value="{DynamicResource OnErrorContainer}" />
     <Setter Property="CornerRadius" Value="12" />
-    <Setter Property="Padding" Value="12,10" />
-    <Setter Property="Margin" Value="0,14,0,2" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Margin" Value="0,10,0,2" />
   </Style>
   <Style Selector="TextBlock.value">
     <Setter Property="TextWrapping" Value="Wrap" />
@@ -299,8 +299,8 @@
   <!-- ===== Task editor ===== -->
 
   <Style Selector="TextBlock.pagetitle">
-    <Setter Property="FontSize" Value="28" />
-    <Setter Property="LineHeight" Value="36" />
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="LineHeight" Value="32" />
   </Style>
   <Style Selector="TextBlock.section">
     <Setter Property="FontSize" Value="16" />
@@ -325,7 +325,7 @@
     <Setter Property="CaretBrush" Value="{DynamicResource Primary}" />
     <Setter Property="SelectionBrush" Value="{DynamicResource PrimaryContainer}" />
     <Setter Property="SelectionForegroundBrush" Value="{DynamicResource OnPrimaryContainer}" />
-    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontSize" Value="14" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="16,0" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -335,7 +335,7 @@
     <Setter Property="BorderThickness" Value="0" />
   </Style>
   <Style Selector="p|Field TextBox.multi">
-    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Padding" Value="16,10" />
     <Setter Property="VerticalContentAlignment" Value="Top" />
     <Setter Property="AcceptsReturn" Value="True" />
     <Setter Property="TextWrapping" Value="Wrap" />
@@ -344,7 +344,7 @@
     <Setter Property="Padding" Value="16,0,48,0" />
   </Style>
   <Style Selector="p|Field.icon TextBox.multi">
-    <Setter Property="Padding" Value="16,12,48,12" />
+    <Setter Property="Padding" Value="16,10,48,10" />
   </Style>
   <Style Selector="p|Field.compact TextBox">
     <Setter Property="Padding" Value="12,0" />
@@ -354,7 +354,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
-    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontSize" Value="14" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="Padding" Value="16,0,8,0" />
@@ -370,13 +370,20 @@
     <Setter Property="IsVisible" Value="False" />
   </Style>
 
-  <!-- Segmented buttons: one outlined pill; each button draws the line on its left, the first one's lies under the outline. -->
+  <!--
+    Segmented buttons: one outlined pill; each button draws the line on its left, the first one's lies under the
+    outline. The buttons are cut to the rounding inside the outline (Border.segmentsinside), so the colour of the chosen
+    first or last one does not cover the outline at the round ends.
+  -->
   <Style Selector="Border.segments">
     <Setter Property="BorderBrush" Value="{DynamicResource Outline}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="20" />
-    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="CornerRadius" Value="17" />
     <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Border.segmentsinside">
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
 
   <!-- A switch with its text; .card puts it in a tonal block. -->
@@ -386,19 +393,19 @@
   <Style Selector="Border.switchrow.card">
     <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
     <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="Padding" Value="14,8" />
   </Style>
 
   <!-- Source, destination or event: an icon tile, two lines, tags and the buttons. -->
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{DynamicResource SurfaceContainerLow}" />
     <Setter Property="CornerRadius" Value="16" />
-    <Setter Property="Padding" Value="16,12,8,12" />
+    <Setter Property="Padding" Value="14,8,6,8" />
   </Style>
   <Style Selector="Border.tile">
-    <Setter Property="Width" Value="40" />
-    <Setter Property="Height" Value="40" />
-    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
     <Setter Property="TextElement.Foreground" Value="{DynamicResource OnSecondaryContainer}" />
   </Style>
@@ -426,7 +433,7 @@
     <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
     <Setter Property="TextElement.Foreground" Value="{DynamicResource OnSecondaryContainer}" />
     <Setter Property="CornerRadius" Value="12" />
-    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="Padding" Value="12,8" />
   </Style>
   <Style Selector="Border.info.warn">
     <Setter Property="Background" Value="{DynamicResource WarnContainer}" />

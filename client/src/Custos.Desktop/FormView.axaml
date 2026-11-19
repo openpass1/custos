@@ -55,7 +55,7 @@
   <UserControl.DataTemplates>
 
     <DataTemplate DataType="p:HeadingItem">
-      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,18,0,2">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
         <TextBlock Classes="section" Text="{Binding Text}" VerticalAlignment="Center" />
         <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
                 ToolTip.ShowDelay="200" VerticalAlignment="Center" />
@@ -83,7 +83,7 @@
     <DataTemplate DataType="p:RowItem">
       <ItemsControl Classes="form" ItemsSource="{Binding Items}" Margin="{Binding Offset}">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.Styles>
           <Style Selector="ItemsControl.form > ContentPresenter">
@@ -113,7 +113,7 @@
           </Grid>
         </p:Field>
         <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,24,0,0" />
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
       </Grid>
     </DataTemplate>
 
@@ -123,7 +123,7 @@
           <TextBox Text="{Binding Text}" />
         </p:Field>
         <p:Icon Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,24,0,0" />
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,20,0,0" />
       </StackPanel>
     </DataTemplate>
 
@@ -133,7 +133,7 @@
           <TextBox Text="{Binding Text}" />
         </p:Field>
         <p:Icon Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,24,0,0" />
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,20,0,0" />
       </StackPanel>
     </DataTemplate>
 
@@ -144,7 +144,7 @@
           <ComboBox ItemsSource="{Binding Options}" SelectedIndex="{Binding Selected}" MaxDropDownHeight="360" />
         </p:Field>
         <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,24,0,0" />
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
       </Grid>
     </DataTemplate>
 
@@ -155,7 +155,7 @@
           <ComboBox ItemsSource="{Binding Options}" IsEditable="True" Text="{Binding Text}" MaxDropDownHeight="360" />
         </p:Field>
         <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,24,0,0" />
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
       </Grid>
     </DataTemplate>
 
@@ -190,25 +190,27 @@
     </DataTemplate>
 
     <DataTemplate DataType="p:SegmentsItem">
-      <StackPanel Spacing="8" Margin="{Binding Offset}">
+      <StackPanel Spacing="6" Margin="{Binding Offset}">
         <TextBlock Classes="small var" Text="{Binding Label}" />
         <Border Classes="segments">
-          <ItemsControl ItemsSource="{Binding Segments}" Margin="-1,0,0,0">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="p:Segment">
-                <RadioButton Theme="{StaticResource Segment}" IsChecked="{Binding On}" Content="{Binding Text}" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <Border Classes="segmentsinside">
+            <ItemsControl ItemsSource="{Binding Segments}" Margin="-1,0,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="p:Segment">
+                  <RadioButton Theme="{StaticResource Segment}" IsChecked="{Binding On}" Content="{Binding Text}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
         </Border>
       </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:ChipsItem">
-      <StackPanel Spacing="8" Margin="{Binding Offset}">
+      <StackPanel Spacing="6" Margin="{Binding Offset}">
         <TextBlock Classes="small var" Text="{Binding Label}" />
         <ItemsControl ItemsSource="{Binding Chips}">
           <ItemsControl.ItemsPanel>
@@ -228,7 +230,7 @@
         <TextBlock Classes="note" Text="{Binding Empty}" IsVisible="{Binding ShowEmpty}" />
         <ItemsControl Classes="form" ItemsSource="{Binding Cards}">
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
         </ItemsControl>
       </StackPanel>
@@ -240,7 +242,7 @@
           <Border Classes="tile" VerticalAlignment="Top">
             <p:Icon Kind="{Binding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Grid.Column="1" Margin="16,0,8,0" VerticalAlignment="Center" Spacing="2">
+          <StackPanel Grid.Column="1" Margin="14,0,8,0" VerticalAlignment="Center" Spacing="2">
             <TextBlock Text="{Binding Title}" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
             <TextBlock Classes="small var" Classes.warn="{Binding Warning}" Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}"
                        TextWrapping="Wrap" LineHeight="18" />
@@ -333,7 +335,7 @@
 
   <ItemsControl Name="List" Classes="form">
     <ItemsControl.ItemsPanel>
-      <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+      <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
     </ItemsControl.ItemsPanel>
   </ItemsControl>
 </UserControl>

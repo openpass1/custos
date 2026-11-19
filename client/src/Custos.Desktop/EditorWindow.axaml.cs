@@ -30,6 +30,7 @@ internal sealed partial class EditorWindow : Window
         InitializeComponent();
         model.PropertyChanged += OnModelChanged;
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
+        ScreenFit.Keep(this);
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.S && e.KeyModifiers == KeyModifiers.Control)

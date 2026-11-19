@@ -17,6 +17,7 @@ internal sealed partial class StatusWindow : Window
         InitializeComponent();
         Opened += (_, _) => TitleBar.Paint(this);
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
+        ScreenFit.Keep(this);
         Closing += (_, e) =>
         {
             if (!Quitting)

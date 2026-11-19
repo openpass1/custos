@@ -298,12 +298,17 @@ internal sealed class MainViewModel : Observable, IDisposable
         get => _colorChoice;
         set
         {
-            if (Set(ref _colorChoice, value))
+            if (_colorChoice == value)
             {
-                ApplyColor();
-                Ui.Color = value == Palettes.Default ? null : value;
-                Ui.Save();
+                return;
             }
+
+            // The colours first: whoever hears of the change (the title bar of Windows 11) reads the new ones.
+            _colorChoice = value;
+            ApplyColor();
+            Changed(nameof(ColorChoice));
+            Ui.Color = value == Palettes.Default ? null : value;
+            Ui.Save();
         }
     }
 

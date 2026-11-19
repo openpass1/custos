@@ -23,6 +23,7 @@ internal sealed partial class RunLogWindow : Window
     private readonly DispatcherTimer _typing = new() { Interval = TimeSpan.FromMilliseconds(400) };
     private string? _path;
     private int _request;
+    private bool _opened;
 
     /// <summary>Only for the XAML previewer of an IDE.</summary>
     public RunLogWindow()
@@ -58,9 +59,12 @@ internal sealed partial class RunLogWindow : Window
         };
         Opened += (_, _) =>
         {
+            // IsLoaded is still false here: the lines are asked for at once, not only after «Обновить».
+            _opened = true;
             TitleBar.Paint(this);
             Reload();
         };
+        ScreenFit.Keep(this);
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
         Closed += (_, _) => _typing.Stop();
     }
@@ -94,7 +98,7 @@ internal sealed partial class RunLogWindow : Window
 
     private void Reload()
     {
-        if (_monitor is null || !IsLoaded)
+        if (_monitor is null || !_opened)
         {
             return;
         }

@@ -69,6 +69,7 @@ internal static class Program
         EditorShot(folder, "9-zadanie-hranenie-svetloe", "light", "Accounting", Strings.PageRetention, height: 900);
         EditorShot(folder, "10-zadanie-sobytiya-tyomnoe", "dark", "Accounting", Strings.PageEvents);
         EditorShot(folder, "11-zadanie-szhatie-svetloe", "light", "Accounting", Strings.PageArchive);
+        EditorShot(folder, "12-zadanie-raspisanie-ezhednevno-tyomnoe", "dark", "Documents", Strings.PageSchedule);
 
         // The windows of the editor pages.
         DialogShot(folder, "14-okno-istochnik-svetloe", "light", c => new SourceDialog(c, Task("Documents").Sources[1]));

@@ -255,6 +255,15 @@ internal sealed partial class MainWindow : Window
         }
         else if (e.PropertyName == nameof(MainViewModel.ColorChoice))
         {
+            // Every open window: the window of the status-only mode, the editor, a dialog.
+            if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                foreach (var window in desktop.Windows)
+                {
+                    TitleBar.Paint(window);
+                }
+            }
+
             TitleBar.Paint(this);
             BuildSettingsMenu();
         }

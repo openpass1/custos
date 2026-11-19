@@ -65,6 +65,7 @@ internal sealed class PowerWindow : Window
         UpdateText();
         Opened += (_, _) => TitleBar.Paint(this);
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
+        ScreenFit.Keep(this);
         Closed += (_, _) => _timer.Stop();
 
         // Closed by the service (the countdown is over or cancelled), not by the person: they cancel with the button.

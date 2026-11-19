@@ -24,11 +24,11 @@ internal class DialogWindow : Window
         Body = new StackPanel { Spacing = 8 };
         Content = new DockPanel
         {
-            Margin = new Thickness(24, 20, 24, 18),
+            Margin = new Thickness(22, 16, 22, 14),
             Children =
             {
-                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(0, 0, 0, 14), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
-                Dock(new Border { Child = _buttons, Margin = new Thickness(0, 20, 0, 0) }, Avalonia.Controls.Dock.Bottom),
+                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(0, 0, 0, 10), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
+                Dock(new Border { Child = _buttons, Margin = new Thickness(0, 14, 0, 0) }, Avalonia.Controls.Dock.Bottom),
                 Body,
             },
         };
@@ -40,6 +40,7 @@ internal class DialogWindow : Window
             }
         };
         Opened += (_, _) => TitleBar.Paint(this);
+        ScreenFit.Keep(this);
     }
 
     /// <summary>Where the content goes.</summary>
