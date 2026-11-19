@@ -6,11 +6,6 @@
 const stillQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const still = () => stillQuery.matches;
 
-// From page to page (app.css, "From page to page"). Where the browser can, the old page dissolves into the new one
-// (a view transition between documents): the menu and the content change together, nothing is drawn in afterwards.
-// The dissolve needs no motion asked to be less (app.css turns it off then).
-const dissolves = 'CSSViewTransitionRule' in window && !still();
-
 // Click log, to find out why a click sometimes does nothing. Off unless switched on in this browser: open any page of
 // the site with ?clicklog=1 at the end of its address (?clicklog=0 or the "Off" button of its panel switches it off).
 // It notes every press and what came of it: the click and where it went, a page opened, a menu opened or closed, a
@@ -424,126 +419,14 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
     }
 })();
 
-// Elsewhere this file runs before the first frame of a page (layout.php: blocking="render"; a browser that does not
-// know it may have drawn the page already, then nothing moves), so the content of a page opened from another page of
-// the site comes in with its movement: html.page-in, and tab-in when the other page is a tab of this one. The same
-// page again (a filter, a saved form, F5, Back) just shows. The marks are taken off after the movement: a live part
-// put in place later must not come in again. A page that the browser dissolved in has no movement of its own.
+// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav) marks
+// it open at once, without waiting for the server; the page comes when it answers, at once, with nothing moving or
+// fading (app.css, "From page to page"). A tab of a page (.tabs) is marked the same way. Ctrl+click and the like open
+// a browser tab and change nothing here. Back to this page from the browser history: the menu and the tabs show this
+// page again.
 (() => {
-    const entry = performance.getEntriesByType('navigation')[0];
-    let from = null;
-    try {
-        from = document.referrer ? new URL(document.referrer) : null;
-    } catch (error) {
-        from = null;
-    }
-    if (still() || !entry || entry.type !== 'navigate' || !from || from.origin !== window.location.origin
-        || from.pathname === window.location.pathname || performance.getEntriesByType('paint').length > 0) {
-        return;
-    }
-    const comeIn = () => {
-        const root = document.documentElement;
-        root.classList.add('page-in');
-        if ([...document.querySelectorAll('.tabs a[href]')].some((tab) => tab.pathname === from.pathname)) {
-            root.classList.add('tab-in');
-        }
-        setTimeout(() => root.classList.remove('page-in', 'tab-in'), 600);
-    };
-    if (dissolves && 'onpagereveal' in window) {
-        window.addEventListener('pagereveal', (event) => {
-            if (!event.viewTransition) {
-                comeIn();
-            }
-        }, { once: true });
-    } else if (!dissolves) {
-        comeIn();
-    }
-})();
-
-// While a page dissolves in, the browser shows a picture of the two pages over it and gives every press to <html>:
-// a quick click on the menu right after the page came (within 0.225 s) did nothing. A press then ends the dissolve at
-// once and goes, with its click, to what is under the pointer, as if the page had been there all along (the circle
-// of the press too).
-(() => {
-    if (!dissolves || !('onpagereveal' in window)) {
-        return;
-    }
-    const root = document.documentElement;
-    let dissolving = null;
-    let target = null;
-    window.addEventListener('pagereveal', (event) => {
-        dissolving = event.viewTransition || null;
-        if (dissolving) {
-            dissolving.finished.finally(() => {
-                dissolving = null;
-            });
-        }
-    }, { once: true });
-    const under = (event) => {
-        const el = document.elementFromPoint(event.clientX, event.clientY);
-        return el && el !== root ? el : null;
-    };
-    document.addEventListener('pointerdown', (event) => {
-        if (!event.isTrusted) {
-            return;
-        }
-        target = null;
-        if (!dissolving || event.target !== root) {
-            return;
-        }
-        dissolving.skipTransition();
-        dissolving = null;
-        const el = under(event);
-        if (window.custosClickLog) {
-            window.custosClickLog('  the press ended the dissolve' + (el ? '' : ', nothing under it'));
-        }
-        if (!el) {
-            return;
-        }
-        event.stopImmediatePropagation();
-        target = el;
-        el.dispatchEvent(new PointerEvent('pointerdown', {
-            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
-            screenY: event.screenY, button: event.button, buttons: event.buttons, pointerId: event.pointerId,
-            pointerType: event.pointerType, isPrimary: event.isPrimary, ctrlKey: event.ctrlKey, shiftKey: event.shiftKey,
-            altKey: event.altKey, metaKey: event.metaKey,
-        }));
-    }, true);
-    document.addEventListener('click', (event) => {
-        if (!event.isTrusted) {
-            return;
-        }
-        const from = target;
-        target = null;
-        if (!from || event.target !== root) {
-            return;
-        }
-        const el = under(event);
-        const link = (node) => (node.closest ? node.closest('a[href], button, summary, label') : null);
-        if (!el || (link(el) || el) !== (link(from) || from)) {
-            return;
-        }
-        event.stopImmediatePropagation();
-        el.dispatchEvent(new MouseEvent('click', {
-            bubbles: true, cancelable: true, composed: true, clientX: event.clientX, clientY: event.clientY, screenX: event.screenX,
-            screenY: event.screenY, button: event.button, buttons: event.buttons, detail: event.detail, ctrlKey: event.ctrlKey,
-            shiftKey: event.shiftKey, altKey: event.altKey, metaKey: event.metaKey,
-        }));
-    }, true);
-})();
-
-// A click on a section of the menu (the rail, the bottom bar of a phone and its "More"; layout.php: data-nav). Where
-// the page dissolves into the next one, only the mark of the section clicked lights up (.going): its icon, the old
-// mark and the content change in the dissolve. Elsewhere the section is marked open and the old content goes at
-// once, without waiting for the server; the page comes when it answers. A tab of a page (.tabs) is marked the same
-// way, or left to the dissolve. Ctrl+click and the like open a browser tab and change nothing here. Back to this page
-// from the browser history: the menu and the tabs show this page again. No answer for a few seconds: the content is
-// shown again.
-(() => {
-    const main = document.querySelector('main.sheet');
     let before = null;
     let tabBefore = null;
-    let timer = 0;
     const markTab = (tabs, tab) => {
         for (const other of tabs.querySelectorAll('a')) {
             other.classList.toggle('active', other === tab);
@@ -569,15 +452,6 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) {
             return;
         }
-        if (dissolves) {
-            if (link.hasAttribute('data-nav') && !link.classList.contains('active')) {
-                for (const other of document.querySelectorAll('a[data-nav].going')) {
-                    other.classList.remove('going');
-                }
-                link.classList.add('going');
-            }
-            return;
-        }
         if (!link.hasAttribute('data-nav')) {
             const tabs = link.closest('.tabs');
             if (tabBefore === null) {
@@ -591,18 +465,10 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
             before = open ? open.getAttribute('data-nav') : '';
         }
         mark(link.getAttribute('data-nav'));
-        if (main && !still() && link.pathname !== window.location.pathname) {
-            main.classList.add('leaving');
-            clearTimeout(timer);
-            timer = setTimeout(() => main.classList.remove('leaving'), 4000);
-        }
     });
     window.addEventListener('pageshow', (event) => {
         if (!event.persisted) {
             return;
-        }
-        for (const link of document.querySelectorAll('a[data-nav].going')) {
-            link.classList.remove('going');
         }
         if (tabBefore !== null) {
             markTab(tabBefore[0], tabBefore[1]);
@@ -611,10 +477,6 @@ const dissolves = 'CSSViewTransitionRule' in window && !still();
         if (before !== null) {
             mark(before);
             before = null;
-            clearTimeout(timer);
-            if (main) {
-                main.classList.remove('leaving');
-            }
         }
     });
 })();

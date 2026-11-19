@@ -17,6 +17,7 @@ a version that was never released by itself is not lost.
 - A click log for troubleshooting: open any page of the site with `?clicklog=1` at the end of its address, and the browser notes every press and what came of it (a page opened, a menu opened, or why there was no click) until it is switched off; a small panel at the bottom left saves the log as a text file. Typed text is never noted.
 
 ### Changed
+- Pages change at once, without the dissolve from one page into the next and without the content coming in from below: in Chrome on Windows with its animation effects on, a click soon after such a page change now and then did nothing, and the user menu was now and then not redrawn. A click on a menu section still marks it at once.
 - The circle that spreads over a pressed button, menu section or tile has the times of Material 3 again (it shows in 0.1 s, grows for 0.45 s and fades for 0.375 s): the slower circle of 1.2.0 made the site feel slow.
 
 ### Fixed
