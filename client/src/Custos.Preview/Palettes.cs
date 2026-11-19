@@ -15,6 +15,9 @@ internal static partial class Palettes
 {
     public const string Site = "site";
 
+    /// <summary>The scheme the window starts with: the site's accent on grey surfaces, the look chosen for the site as well.</summary>
+    public const string Default = "neutral";
+
     public static IEnumerable<string> Ids => Schemes.Select(s => s.Id);
 
     public static string Title(string id) => id switch

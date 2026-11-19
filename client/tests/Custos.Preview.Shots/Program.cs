@@ -91,7 +91,7 @@ internal static class Program
         Progress,
     }
 
-    private static void Shot(string folder, string name, string theme, string task, Tab tab, bool card, bool note = false, string color = Palettes.Site)
+    private static void Shot(string folder, string name, string theme, string task, Tab tab, bool card, bool note = false, string color = Palettes.Default)
     {
         var window = App.CreateMainWindow(demo: true);
         var vm = window.ViewModel;
@@ -120,7 +120,7 @@ internal static class Program
         Pump();
     }
 
-    private static void EditorShot(string folder, string name, string theme, string task, string page, double height = 0, string color = Palettes.Site)
+    private static void EditorShot(string folder, string name, string theme, string task, string page, double height = 0, string color = Palettes.Default)
     {
         var window = App.CreateMainWindow(demo: true);
         var vm = window.ViewModel;

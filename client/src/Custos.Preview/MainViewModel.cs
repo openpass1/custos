@@ -54,7 +54,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         _monitor = monitor;
         _demo = demo;
         _themeChoice = _settings.Theme;
-        _colorChoice = _settings.Color is { } color && Palettes.Ids.Contains(color) ? color : Palettes.Site;
+        _colorChoice = _settings.Color is { } color && Palettes.Ids.Contains(color) ? color : Palettes.Default;
         ApplyColor();
         _monitor.StatusChanged += (_, _) => ShowStatus();
         _monitor.SnapshotChanged += (_, _) => ShowSnapshot();
