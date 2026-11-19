@@ -11,6 +11,15 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.2.1
+
+### Changed
+- The circle that spreads over a pressed section of the menu is as slow as on the buttons; on the tiles of the home page it is back to the speed of 1.1.6, twice as quick as on the buttons.
+
+### Fixed
+- A click on a menu section, a tile or another link was sometimes lost when the mouse moved a little during the press: the browser began to drag the link instead of opening it. Links can no longer be dragged.
+- A click on a tile or a button of a block that refreshes itself was lost when the block was refreshed during the press; the block now waits until the press has ended.
+
 ## 1.2.0
 
 ### Added

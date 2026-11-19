@@ -457,6 +457,16 @@ document.addEventListener('click', async (event) => {
     }, 1600);
 });
 
+// Links and pictures of the site are not dragged. A press on a link that moves 4 pixels or more before it ends (a quick
+// hand on the mouse) started dragging the link, and the click was lost: the menu or a tile did not open. app.css says
+// the same for Chrome and Safari (-webkit-user-drag); this is for Firefox.
+document.addEventListener('dragstart', (event) => {
+    const el = event.target instanceof Element ? event.target : event.target.parentElement;
+    if (el && el.closest('a[href], img')) {
+        event.preventDefault();
+    }
+});
+
 // "More" menus (details.dropdown): one open at a time, closed by a click elsewhere or Esc. A menu inside a table that
 // scrolls sideways is placed over the page (position: fixed), so that the edge of the table does not cut it off; it
 // opens upwards when there is no room below. Any menu opens rightwards when there is no room on the left (phones).
@@ -583,9 +593,9 @@ document.addEventListener('change', (event) => {
 // - <main data-live-page="10"> (layout.php, 'live' => 10 in the controller): the page asks for itself again (header
 //   X-Custos-Live) and takes the parts with the same names from the answer, and the counters of the menu and the bell.
 // - [data-live="url"] with data-live-every (dashboard, wall screen): the URL answers {parts: {name: html}, bell, counts}.
-// A part is left as it is for a round while it is in use: a field of it has the focus or was changed (a form being
-// filled in keeps what was typed until it is sent), text in it is selected, a menu of it is open, a form of it is on
-// its way, or a dialog is open over the page. A folded block (details) stays open or closed as the user left it.
+// A part is left as it is for a round while it is in use: it is being pressed (or was a moment ago), a field of it has
+// the focus or was changed (a form being filled in keeps what was typed until it is sent), text in it is selected, a
+// menu of it is open, a form of it is on its way, or a dialog is open over the page. A folded block (details) stays open or closed as the user left it.
 // The requests do not keep the session alive; a page whose session has ended is reloaded so that the login appears.
 // After a round that changed something, "custos:parts" goes to the document for the helpers below.
 (() => {
@@ -687,9 +697,27 @@ document.addEventListener('change', (event) => {
     document.addEventListener('input', touch);
     document.addEventListener('change', touch);
 
+    // A press on a part: the part stays until the press has ended and its click has had time to open what it opens.
+    // Put in place under the pointer, a new copy of the button or tile would not get the end of the press, so the
+    // click would be lost.
+    let pressedOn = null;
+    let pressTimer = 0;
+    document.addEventListener('pointerdown', (event) => {
+        clearTimeout(pressTimer);
+        pressedOn = event.target instanceof Element ? event.target : null;
+    }, true);
+    const pressEnded = () => {
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(() => {
+            pressedOn = null;
+        }, 1000);
+    };
+    document.addEventListener('pointerup', pressEnded, true);
+    document.addEventListener('pointercancel', pressEnded, true);
+
     const inUse = (part) => {
         const focus = document.activeElement;
-        if (part.hasAttribute('data-touched')
+        if ((pressedOn && part.contains(pressedOn)) || part.hasAttribute('data-touched')
             || (focus && part.contains(focus) && focus.matches('input, select, textarea, [contenteditable]'))
             || part.querySelector('details.dropdown[open], form[data-sending]')) {
             return true;
@@ -1335,18 +1363,18 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 // Ripple (Material 3): pressing a button, a menu item, a chip, a tile or a section of the menu spreads a soft-edged
-// circle from the pointer. On buttons and the like it shows within 0.4 s, grows for 1.8 s and, once the press has ended
-// (but not sooner than 0.9 s after it began), fades for 1.5 s: four times the Material 3 times, which felt too quick. On
-// the sections of the menu (rail, bottom bar, "More") it keeps the Material 3 times of 1.1.2 (0.1 / 0.45 / 0.225 /
-// 0.375 s); in the narrow rail and the phone's bottom bar it fills the pill around the icon. Tabs have none. A press
-// that opens a page (a section, a link, a button that sends its form) would cut the circle off half-way: the press is
-// handed to the new page (sessionStorage) and the circle goes on there, from where it was, on the same section, button
-// or link if the page has it. Nothing of it with less motion asked for.
+// circle from the pointer. It shows within 0.4 s, grows for 1.8 s and, once the press has ended (but not sooner than
+// 0.9 s after it began), fades for 1.5 s: four times the Material 3 times, which felt too quick. The tiles of the home
+// page take half of these (0.2 / 0.9 / 0.45 / 0.75 s). In the narrow rail and the phone's bottom bar the circle fills
+// the pill around the icon. Tabs have none. A press that opens a page (a section, a link, a button that sends its
+// form) would cut the circle off half-way: the press is handed to the new page (sessionStorage) and the circle goes on
+// there, from where it was, on the same section, button or link if the page has it. Nothing of it with less motion
+// asked for.
 (() => {
     const hosts = 'button, a.button-link, details.dropdown > summary, .icon-button, .menu-item, .nav-item, .bar-item, .editor-toc a, a.tile, .sr-item';
     const SLOW = { grow: 1800, press: 900, fade: 1500 };
-    const MENU = { grow: 450, press: 225, fade: 375 };
-    const timesOf = (el) => (el.hasAttribute('data-nav') ? MENU : SLOW);
+    const TILE = { grow: 900, press: 450, fade: 750 };
+    const timesOf = (el) => (el.matches('a.tile') ? TILE : SLOW);
     const CARRY = 'custos.ripple';
     // Where the circle of an element is drawn: the pill around the icon where the menu has one, else the element.
     const hostOf = (el) => {
@@ -1363,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // The edge of the circle is soft (app.css), so it is drawn that much wider than the farthest corner needs.
         const size = 2 * (Math.hypot(Math.max(x, box.width - x), Math.max(y, box.height - y)) + Math.max(0.35 * longest, 75));
         const wave = document.createElement('span');
-        wave.className = times === MENU ? 'ripple quick' : 'ripple';
+        wave.className = times === TILE ? 'ripple half' : 'ripple';
         const dot = document.createElement('i');
         dot.style.width = dot.style.height = size + 'px';
         dot.style.left = (x - size / 2) + 'px';

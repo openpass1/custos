@@ -380,6 +380,9 @@ html {
 }
 body { margin: 0; background: var(--md-surface-container); color: var(--md-on-surface); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 a { color: var(--md-primary); text-decoration: none; }
+/* Links and pictures are not dragged: a press that moves a few pixels before it ends would drag the link instead of
+   opening it (app.js does the same for Firefox). */
+a, img { -webkit-user-drag: none; }
 a:hover { text-decoration: underline; }
 h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 20px; font-size: 28px; line-height: 36px; font-weight: 400; letter-spacing: 0; }
 h2 { margin: 0 0 16px; font-size: 22px; line-height: 28px; font-weight: 400; letter-spacing: 0; }
@@ -749,13 +752,13 @@ button.busy::after { content: ""; width: 14px; height: 14px; border: 2px solid c
 
 /* The ripple: a circle with a soft edge that spreads from the pointer (app.js adds it on press and makes it grow).
    It shows quickly while pressed and fades slowly after, as Material 3 has it but at a quarter of its speed; on the
-   sections of the menu (.quick) at the speed of Material 3. Tabs have none. */
+   tiles of the home page (.half) at half of its speed. Tabs have none. */
 .ripple { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity 1.5s linear;
     background: radial-gradient(closest-side, currentColor max(calc(100% - 70px), 65%), transparent 100%); }
 .ripple.pressed > i { opacity: .12; transition-duration: .42s; }
-.ripple.quick > i { transition-duration: .375s; }
-.ripple.quick.pressed > i { transition-duration: .105s; }
+.ripple.half > i { transition-duration: .75s; }
+.ripple.half.pressed > i { transition-duration: .21s; }
 
 /* Filter chips (machine list, task list): outlined; the chosen one is tonal. */
 button.chip {
