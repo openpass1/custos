@@ -134,7 +134,7 @@ public sealed class ServiceTests(ServiceFixture service)
         Assert.Empty(Directory.GetFiles(destination, "a.txt", SearchOption.AllDirectories));
 
         task.Vss.OnFailure = VssFailureActions.Continue;
-        task = await service.SaveAsync(task);
+        task = await service.SaveAsync(task, task.Revision);
         run = await service.RunAsync(task.Id);
         log = await RunLogAsync(run.RunId);
 
@@ -279,10 +279,11 @@ public sealed class ServiceFixture : IAsyncLifetime
     /// <summary>Changes need an administrator of the computer (or the setting that lets every user change tasks).</summary>
     public void RequireAdmin() => Assert.SkipUnless(Hello.IsAdmin, "Changing tasks needs an administrator of this computer.");
 
-    public async Task<TaskDefinition> SaveAsync(TaskDefinition task)
+    /// <summary>«Сохранить» in the editor: a new task, or a change of one saved before (<paramref name="baseRevision"/>).</summary>
+    public async Task<TaskDefinition> SaveAsync(TaskDefinition task, int? baseRevision = null)
     {
         RequireAdmin();
-        var saved = await RequestAsync(PipeProtocol.Methods.TaskSave, new TaskSaveRequest { Task = task },
+        var saved = await RequestAsync(PipeProtocol.Methods.TaskSave, new TaskSaveRequest { Task = task, BaseRevision = baseRevision },
             IpcJsonContext.Default.TaskSaveRequest, IpcJsonContext.Default.TaskSaveResult);
         return saved.Task;
     }
