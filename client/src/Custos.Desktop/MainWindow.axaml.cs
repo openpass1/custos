@@ -422,6 +422,30 @@ internal sealed partial class MainWindow : Window
 
     private void OnPause(object? sender, RoutedEventArgs e) => Safe.Run(_actions.PauseAsync, ShowProblem);
 
+    /// <summary>An item of the menu of the task list (a right click); its Tag says which.</summary>
+    private void OnTaskMenu(object? sender, RoutedEventArgs e)
+    {
+        CloseMenu(sender);
+        Func<Task>? work = (sender as Control)?.Tag switch
+        {
+            "run" => _actions.RunAsync,
+            "stop" => _actions.StopAsync,
+            "edit" => _actions.EditAsync,
+            "clone" => _actions.CloneAsync,
+            "delete" => _actions.DeleteAsync,
+            "toggle" => _actions.ToggleAsync,
+            _ => null,
+        };
+        if (work is not null)
+        {
+            Safe.Run(work, ShowProblem);
+        }
+        else
+        {
+            TaskList.SelectAll();
+        }
+    }
+
     private void OnImport(object? sender, RoutedEventArgs e)
     {
         CloseMenu(sender);

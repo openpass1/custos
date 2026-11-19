@@ -4,7 +4,7 @@
     The windows of the new CUSTOS interface in Material Design 3, on Avalonia (thread «Перевести клиент на Avalonia»):
     the main window, the task editor, the dialogs, the tray icon and its menu, the colour schemes. No code of one
     operating system here: what differs between Windows and macOS comes through DesktopPlatform. The Windows program
-    is src/Custos.Windows (CustosNew.exe until it replaces Custos.exe); CUSTOS for macOS moves onto it later.
+    is src/Custos.Windows (Custos.exe of the standard edition); CUSTOS for macOS moves onto it later.
   -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CustosNew" />
+    <InternalsVisibleTo Include="Custos" />
     <InternalsVisibleTo Include="CustosDesktopShots" />
   </ItemGroup>
 

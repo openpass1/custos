@@ -1,8 +1,9 @@
-name: New window (Avalonia)
+name: Window (Avalonia)
 
-# CustosNew.exe: the new CUSTOS interface in Material Design 3 on Avalonia (client/src/Custos.Desktop and
-# client/src/Custos.Windows). It runs next to Custos.exe until it does everything Custos.exe does; it is not in the
-# installer yet. Runs when the new window, the files of Custos.exe it shares, or this file change.
+# Custos.exe, the CUSTOS window in Material Design 3 on Avalonia (client/src/Custos.Desktop and
+# client/src/Custos.Windows): pictures of it with made-up tasks, the checks of its menus and buttons, and the program
+# itself against a real service on Windows. The installer with it comes from build.yml. Runs when the window, the files
+# of the Windows Forms window it shares, or this file change.
 on:
   push:
     branches: [main]
@@ -58,42 +59,42 @@ jobs:
         run: dotnet run -c Release --project tests/Custos.Desktop.Shots -- "$GITHUB_WORKSPACE/out/screenshots"
 
       # Framework-dependent: uses the .NET 10 that the CUSTOS installer has already put on the computer.
-      - name: Publish CustosNew for Windows
+      - name: Publish the window for Windows
         working-directory: client
         run: >-
           dotnet publish src/Custos.Windows -c Release -r win-x64 --self-contained false
-          -p:Version=0.6.${{ github.run_number }} -o "$GITHUB_WORKSPACE/out/CustosNew"
+          -p:Version=0.6.${{ github.run_number }} -o "$GITHUB_WORKSPACE/out/custos-window"
 
-      - name: Upload CustosNew
+      - name: Upload the window
         uses: actions/upload-artifact@v6
         with:
-          name: CustosNew
-          path: out/CustosNew
+          name: custos-window
+          path: out/custos-window
           if-no-files-found: error
           retention-days: 30
 
       - name: Upload the pictures
         uses: actions/upload-artifact@v6
         with:
-          name: CustosNew-screenshots
+          name: custos-window-screenshots
           path: out/screenshots
           if-no-files-found: error
           retention-days: 30
 
       - name: Say what the files are for
         run: |
-          size=$(du -sb out/CustosNew | cut -f1)
-          files=$(find out/CustosNew -type f | wc -l)
+          size=$(du -sb out/custos-window | cut -f1)
+          files=$(find out/custos-window -type f | wc -l)
           mb=$(awk "BEGIN { printf \"%.1f\", $size / 1048576 }")
-          zip_mb=$(cd out && zip -qr -9 new.zip CustosNew && awk "BEGIN { printf \"%.1f\", $(stat -c %s new.zip) / 1048576 }")
+          zip_mb=$(cd out && zip -qr -9 new.zip custos-window && awk "BEGIN { printf \"%.1f\", $(stat -c %s new.zip) / 1048576 }")
           echo "::notice title=Size::${mb} MB in the folder (${files} files), ${zip_mb} MB zipped"
           {
-            echo "### CustosNew 0.6.${{ github.run_number }}: новое окно CUSTOS (Material 3)"
+            echo "### Окно CUSTOS 0.6.${{ github.run_number }} (Material 3)"
             echo
             echo "| Файл | Что это |"
             echo "|---|---|"
-            echo "| \`CustosNew\` | Программа для Windows: распаковать в любую папку и запустить \`CustosNew.exe\`. Работает со службой CUSTOS на этом компьютере рядом с обычным окном. С ключом \`--demo\` показывает придуманные задания. |"
-            echo "| \`CustosNew-screenshots\` | Снимки окна с придуманными заданиями, светлая и тёмная тема, все цвета. |"
+            echo "| \`custos-window\` | Только окно, без службы: распаковать в любую папку и запустить \`Custos.exe --demo\`, чтобы посмотреть его с придуманными заданиями. Ставится оно установщиком из сборки «Client build». |"
+            echo "| \`custos-window-screenshots\` | Снимки окна с придуманными заданиями, светлая и тёмная тема, все цвета. |"
             echo
             echo "Размер программы: ${mb} МБ в папке (${files} файлов), ${zip_mb} МБ в архиве."
           } >> "$GITHUB_STEP_SUMMARY"
@@ -114,8 +115,8 @@ jobs:
 
       - uses: actions/download-artifact@v7
         with:
-          name: CustosNew
-          path: CustosNew
+          name: custos-window
+          path: custos-window
 
       # The service as a real Windows service (LocalSystem), as setup.exe installs it: a process started in the
       # console of one step does not live on into the next. Its data and logs go to C:\ProgramData\CUSTOS as usual.
@@ -139,14 +140,14 @@ jobs:
         working-directory: client
         run: dotnet run -c Release --project tests/Custos.Desktop.Shots -- --service "$env:GITHUB_WORKSPACE\shots"
 
-      - name: Start CustosNew.exe with the service, measure the memory, take a picture of the screen
+      - name: Start Custos.exe with the service, measure the memory, take a picture of the screen
         shell: pwsh
         run: |
-          $exe = Join-Path $PWD 'CustosNew\CustosNew.exe'
+          $exe = Join-Path $PWD 'custos-window\Custos.exe'
           $p = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 20
           $p.Refresh()
-          if ($p.HasExited) { throw "CustosNew.exe closed by itself, exit code $($p.ExitCode)." }
+          if ($p.HasExited) { throw "Custos.exe closed by itself, exit code $($p.ExitCode)." }
           $ws = [math]::Round($p.WorkingSet64 / 1MB)
           $private = [math]::Round($p.PrivateMemorySize64 / 1MB)
           $peak = [math]::Round($p.PeakWorkingSet64 / 1MB)
@@ -161,7 +162,7 @@ jobs:
 
           # A second start only brings the first one up and quits.
           $second = Start-Process -FilePath $exe -PassThru
-          if (-not $second.WaitForExit(15000)) { throw 'A second CustosNew.exe did not quit.' }
+          if (-not $second.WaitForExit(15000)) { throw 'A second Custos.exe did not quit.' }
           Stop-Process -Id $p.Id -Force
 
           $os = (Get-CimInstance Win32_OperatingSystem).Caption
@@ -191,7 +192,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: CustosNew-windows
+          name: custos-window-on-windows
           path: shots/*.png
           if-no-files-found: ignore
           retention-days: 30

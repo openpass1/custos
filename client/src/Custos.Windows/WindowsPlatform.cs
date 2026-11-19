@@ -14,7 +14,7 @@ internal sealed class WindowsPlatform : DesktopPlatform
     {
         if (!_icons.TryGetValue(state, out var icon))
         {
-            using var stream = AssetLoader.Open(new Uri($"avares://CustosNew/Assets/tray-{state.ToString().ToLowerInvariant()}.ico"));
+            using var stream = AssetLoader.Open(new Uri($"avares://Custos/Assets/tray-{state.ToString().ToLowerInvariant()}.ico"));
             icon = _icons[state] = new WindowIcon(stream);
         }
 

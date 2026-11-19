@@ -170,6 +170,37 @@
                     </Border>
                     <ListBox Name="TaskList" Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectionMode="Multiple"
                              SelectionChanged="OnTaskSelection" DoubleTapped="OnTaskDoubleTapped" KeyDown="OnTaskKey">
+                      <!-- A right click: what the toolbar does with the selected tasks, as in the menu of the list of Custos.exe. -->
+                      <ListBox.ContextFlyout>
+                        <Flyout Placement="Pointer" FlyoutPresenterClasses="menu">
+                          <StackPanel MinWidth="240">
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="run" Click="OnTaskMenu" IsEnabled="{Binding CanRun}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="play_arrow" /><TextBlock Text="{x:Static g:Strings.ToolRun}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="stop" Click="OnTaskMenu" IsEnabled="{Binding CanStop}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="stop" /><TextBlock Text="{x:Static g:Strings.ToolStop}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="edit" Click="OnTaskMenu" IsEnabled="{Binding CanEditOne}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="edit" /><TextBlock Text="{x:Static g:Strings.ToolEdit}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="clone" Click="OnTaskMenu" IsEnabled="{Binding CanEditOne}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="delete" Click="OnTaskMenu" IsEnabled="{Binding CanDelete}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="delete" /><TextBlock Text="{x:Static g:Strings.ToolDelete}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="toggle" Click="OnTaskMenu" IsEnabled="{Binding CanToggle}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="{Binding ToggleIcon}" /><TextBlock Text="{Binding ToggleText}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="all" Click="OnTaskMenu">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="select_all" /><TextBlock Text="{x:Static g:Strings.MenuSelectAll}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                          </StackPanel>
+                        </Flyout>
+                      </ListBox.ContextFlyout>
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="p:TaskRow">
                           <Grid Height="48" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">

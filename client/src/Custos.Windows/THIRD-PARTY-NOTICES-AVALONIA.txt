@@ -1,8 +1,8 @@
-CustosNew — third-party components of the new CUSTOS window
-==========================================================
+CUSTOS — third-party components of the window
+=============================================
 
-CustosNew.exe is part of CUSTOS (GPL-3.0, LICENSE). Besides the components listed in
-THIRD-PARTY-NOTICES.txt, the new window ships with the components below; each keeps its own license.
+Custos.exe, the window of CUSTOS, is part of CUSTOS (GPL-3.0, LICENSE). Besides the components listed in
+THIRD-PARTY-NOTICES.txt, the window ships with the components below; each keeps its own license.
 The MIT License and the Apache License 2.0 are quoted in THIRD-PARTY-NOTICES.txt; the BSD 3-Clause
 License follows the list.
 

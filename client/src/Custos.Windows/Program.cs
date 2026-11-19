@@ -13,12 +13,12 @@ internal static class Program
     private const string TrayArgument = "--tray";
 
     // Local\ objects exist once per Windows session, so every session gets its own interface (section 3.1). The names
-    // are not those of Custos.exe: both run side by side until this one takes its place.
-    private const string InstanceMutexName = @"Local\CUSTOS.Desktop";
-    private const string ActivateEventName = @"Local\CUSTOS.Desktop.Activate";
+    // are those of the Windows Forms Custos.exe this program replaced.
+    private const string InstanceMutexName = @"Local\CUSTOS.Gui";
+    private const string ActivateEventName = @"Local\CUSTOS.Gui.Activate";
 
     /// <summary>
-    /// <c>CustosNew.exe [--tray] [--demo]</c>: the window and the tray icon of the CUSTOS service on this computer;
+    /// <c>Custos.exe [--tray] [--demo]</c>: the window and the tray icon of the CUSTOS service on this computer;
     /// <c>--demo</c> shows made-up tasks and needs no service. A copy started from the tray menu with administrator
     /// rights only starts or stops the service.
     /// </summary>

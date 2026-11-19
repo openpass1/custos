@@ -541,9 +541,17 @@ internal static class Program
         list.SelectedIndex = vm.Tasks.IndexOf(vm.Tasks.First(t => t.Name == "Accounting"));
         Pump();
         bool alone = vm.Selection.Count == 1 && list.SelectedItems?.Count == 1 && vm.SelectedTask?.Name == "Accounting" && vm.CanEditOne;
-        bool ok = one && two && kept && alone;
-        Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted, a click selects one again."
-            : $"Selection: one={one}, two={two}, kept after sorting={kept}, one again after a click={alone}.");
+        // «Выделить всё» of the menu of a right click.
+        var flyout = (Flyout)list.ContextFlyout!;
+        flyout.ShowAt(list);
+        Pump();
+        var all = ((Panel)flyout.Content!).Children.OfType<Button>().First(b => b.Tag is "all");
+        all.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
+        bool menu = !flyout.IsOpen && vm.Selection.Count == vm.Tasks.Count && !vm.CanEditOne;
+        bool ok = one && two && kept && alone && menu;
+        Console.WriteLine(ok ? "Selection: several tasks with Ctrl, «Изменить» for one only, «Включить» while one is off, kept when sorted, a click selects one again, «Выделить всё» in the menu of a right click."
+            : $"Selection: one={one}, two={two}, kept after sorting={kept}, one again after a click={alone}, select all in the menu={menu}.");
         Close(window);
         return ok;
     }

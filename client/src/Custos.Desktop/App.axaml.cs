@@ -237,7 +237,8 @@ internal sealed partial class App : Application, IDisposable
 
         bool full = _mode == TrayModes.Full;
         _tray.IsVisible = _mode != TrayModes.Hidden && _tray.Icon is not null;
-        _open!.IsVisible = full;
+        // «Состояние копий» in the status-only mode opens the window of the task list without buttons.
+        _open!.Header = full ? Strings.MenuOpen : Strings.MenuOpenStatus;
         _runAll!.IsVisible = full;
         _stopAll!.IsVisible = full;
         _commandsSeparator!.IsVisible = full;

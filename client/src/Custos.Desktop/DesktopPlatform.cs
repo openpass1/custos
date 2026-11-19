@@ -14,7 +14,7 @@ internal enum TrayState
 }
 
 /// <summary>
-/// What the windows need from the operating system: set by the program (CustosNew.exe on Windows) before the window
+/// What the windows need from the operating system: set by the program (Custos.exe on Windows) before the window
 /// opens. This base class does nothing, which is what the pictures of CI and the tests need.
 /// </summary>
 internal class DesktopPlatform

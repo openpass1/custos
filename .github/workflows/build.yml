@@ -1,14 +1,13 @@
 name: Client build
 
 # Builds and tests the Windows client and makes the installer. Runs only when the client, custos-helper (which the
-# client puts into the install block) or this file changes; the new window on Avalonia has its own desktop.yml.
+# client puts into the install block) or this file changes. The window (src/Custos.Windows and src/Custos.Desktop) is
+# in the installer, so it counts too; its pictures and the checks of its buttons are in desktop.yml.
 on:
   push:
     branches: [main]
     paths:
       - 'client/**'
-      - '!client/src/Custos.Desktop/**'
-      - '!client/src/Custos.Windows/**'
       - '!client/tests/Custos.Desktop.Shots/**'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
@@ -16,8 +15,6 @@ on:
   pull_request:
     paths:
       - 'client/**'
-      - '!client/src/Custos.Desktop/**'
-      - '!client/src/Custos.Windows/**'
       - '!client/tests/Custos.Desktop.Shots/**'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
@@ -119,9 +116,44 @@ jobs:
           |---|---|
           | ``CUSTOS-Setup`` | Установщик версии ${v} (zip, внутри ``CUSTOS-Setup-${v}.exe``). |
           | ``custos-${v}.zip`` | Пакет обновления ${v} для сайта, раздел «Обновления». Обновляет машины, где стоит более старая версия. Загружается на сайт как есть, без распаковки. |
-          | ``client-screenshots`` | Снимки окон программы в светлой и тёмной теме, сделанные тестами. Нужны, чтобы посмотреть оформление без установки. |
+          | ``client-screenshots`` | Снимки окон Windows Forms (их ставит выпуск для Windows 7 и 8.1), сделанные тестами. Снимки нового окна лежат в сборке «Window (Avalonia)». |
           | ``custos-${v}.1-test.zip`` | Пробное обновление: те же программы с версией ${v}.1. Нужно только для проверки обновления с сайта на машине, где уже стоит ${v}. Загружается на сайт как есть, без распаковки. |
           "@ >> $env:GITHUB_STEP_SUMMARY
+
+      # The setup on this runner: the service starts, and the window (Custos.exe, Avalonia) starts with the libraries
+      # the three programs share in one folder (build.ps1 keeps the newer of two versions) and stays open.
+      - name: Install it, start the service and the window
+        shell: pwsh
+        run: |
+          $setup = "client/artifacts/installer/CUSTOS-Setup-0.5.${{ github.run_number }}.exe"
+          $process = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=$PWD\setup.log" -Wait -PassThru
+          $dir = Join-Path $env:ProgramFiles 'CUSTOS'
+          $logs = Join-Path $env:ProgramData 'CUSTOS\logs'
+          $errors = Join-Path $env:APPDATA 'CUSTOS\desktop-errors.log'
+          $show = {
+            if (Test-Path setup.log) { Get-Content setup.log -Tail 40 }
+            if (Test-Path $logs) { Get-ChildItem $logs -File -Recurse | ForEach-Object { "--- $($_.FullName)"; Get-Content $_.FullName -Tail 60 } }
+            if (Test-Path $errors) { "--- $errors"; Get-Content $errors -Tail 60 }
+          }
+          if ($process.ExitCode -ne 0) { & $show; throw "The setup exited with code $($process.ExitCode)." }
+          $service = $null
+          for ($i = 0; $i -lt 30; $i++) {
+            $service = Get-Service CustosService -ErrorAction SilentlyContinue
+            if ($service -and $service.Status -eq 'Running') { break }
+            Start-Sleep -Seconds 2
+          }
+          Start-Sleep -Seconds 10
+          $service = Get-Service CustosService -ErrorAction SilentlyContinue
+          if (-not $service -or $service.Status -ne 'Running') { & $show; throw "The service is not running: $($service.Status)." }
+          # The setup may have started the window already (it does not in silent mode): one copy per session.
+          Get-Process Custos -ErrorAction SilentlyContinue | Stop-Process -Force
+          $window = Start-Process (Join-Path $dir 'Custos.exe') -PassThru
+          Start-Sleep -Seconds 20
+          $window.Refresh()
+          if ($window.HasExited) { & $show; throw "Custos.exe closed by itself, exit code $($window.ExitCode)." }
+          if (Test-Path $errors) { & $show; throw 'The window wrote errors.' }
+          Write-Host "Custos.exe runs as process $($window.Id), $([math]::Round($window.WorkingSet64 / 1MB)) MB."
+          Stop-Process -Id $window.Id -Force
 
   # The edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy: .NET 6, 32-bit). The runner has a newer Windows, so the
   # job checks what can be checked here: the build, the setup installing the bundled 32-bit .NET 6 and the service
