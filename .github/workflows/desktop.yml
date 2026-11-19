@@ -117,19 +117,22 @@ jobs:
           name: CustosNew
           path: CustosNew
 
-      # The service in the console (no installation needed): the runner works with administrator rights, as the
-      # service of Windows would. Its data go to C:\ProgramData\CUSTOS as usual.
-      - name: Start the CUSTOS service
+      # The service as a real Windows service (LocalSystem), as setup.exe installs it: a process started in the
+      # console of one step does not live on into the next. Its data and logs go to C:\ProgramData\CUSTOS as usual.
+      # The pipe is looked for in the list of pipes: Test-Path would connect to it and take an instance.
+      - name: Install and start the CUSTOS service
         shell: pwsh
         working-directory: client
         run: |
           dotnet publish src/Custos.Service -c Release -o "$env:RUNNER_TEMP\service" | Out-Host
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $p = Start-Process -FilePath "$env:RUNNER_TEMP\service\CustosService.exe" -WorkingDirectory "$env:RUNNER_TEMP\service" `
-            -RedirectStandardOutput "$env:RUNNER_TEMP\service.log" -RedirectStandardError "$env:RUNNER_TEMP\service-errors.log" -PassThru
-          for ($i = 0; $i -lt 60 -and -not (Test-Path '\\.\pipe\custos'); $i++) { Start-Sleep -Seconds 1 }
-          if (-not (Test-Path '\\.\pipe\custos')) { Get-Content "$env:RUNNER_TEMP\service.log"; throw 'The service did not open its pipe.' }
-          Write-Host "Service started, process $($p.Id)."
+          New-Service -Name CustosService -DisplayName CUSTOS -StartupType Manual `
+            -BinaryPathName "`"$env:RUNNER_TEMP\service\CustosService.exe`"" | Out-Host
+          Start-Service CustosService
+          function Test-Pipe { [System.IO.Directory]::GetFiles('\\.\pipe\') -contains '\\.\pipe\custos' }
+          for ($i = 0; $i -lt 60 -and -not (Test-Pipe); $i++) { Start-Sleep -Seconds 1 }
+          if (-not (Test-Pipe)) { throw 'The service did not open its pipe.' }
+          Write-Host "Service: $((Get-Service CustosService).Status)."
 
       - name: Press the buttons of the window against the service
         shell: pwsh
@@ -179,8 +182,9 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          Get-Content "$env:RUNNER_TEMP\service.log" -ErrorAction SilentlyContinue | Select-Object -Last 200
-          Get-Content "$env:RUNNER_TEMP\service-errors.log" -ErrorAction SilentlyContinue | Select-Object -Last 100
+          Get-Service CustosService -ErrorAction SilentlyContinue | Format-Table Name, Status
+          Get-ChildItem "$env:ProgramData\CUSTOS\logs\service-*.log" -ErrorAction SilentlyContinue |
+            ForEach-Object { Get-Content $_.FullName | Select-Object -Last 200 }
           Get-Content "$env:APPDATA\CUSTOS\desktop-errors.log" -ErrorAction SilentlyContinue
 
       - name: Upload the pictures
