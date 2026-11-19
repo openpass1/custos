@@ -13,8 +13,11 @@ a version that was never released by itself is not lost.
 
 ## 1.2.1
 
+### Added
+- A click log for troubleshooting: open any page of the site with `?clicklog=1` at the end of its address, and the browser notes every press and what came of it (a page opened, a menu opened, or why there was no click) until it is switched off; a small panel at the bottom left saves the log as a text file. Typed text is never noted.
+
 ### Changed
-- The circle that spreads over a pressed section of the menu is as slow as on the buttons; on the tiles of the home page it is back to the speed of 1.1.6, twice as quick as on the buttons.
+- The circle that spreads over a pressed button, menu section or tile has the times of Material 3 again (it shows in 0.1 s, grows for 0.45 s and fades for 0.375 s): the slower circle of 1.2.0 made the site feel slow.
 
 ### Fixed
 - A click on a menu section, a tile or another link was sometimes lost when the mouse moved a little during the press: the browser began to drag the link instead of opening it. Links can no longer be dragged.
