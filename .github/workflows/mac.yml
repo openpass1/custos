@@ -105,8 +105,8 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' /Applications/Custos.app/Contents/Info.plist | grep -qx "$VERSION"
           # The installer chose the part of this processor, and only that one.
           [ "$(uname -m)" = "${{ matrix.arch }}" ] || { echo "This Mac is $(uname -m), not ${{ matrix.arch }}"; exit 1; }
-          echo "The installed program: $(lipo -archs /Applications/Custos.app/Contents/MacOS/Custos)"
-          [ "$(lipo -archs /Applications/Custos.app/Contents/MacOS/Custos)" = "${{ matrix.arch }}" ]
+          echo "The installed program: $(lipo /Applications/Custos.app/Contents/MacOS/Custos -archs)"
+          [ "$(lipo /Applications/Custos.app/Contents/MacOS/Custos -archs)" = "${{ matrix.arch }}" ]
           pkgutil --pkgs | grep '^org\.custos\.' | tee receipts.txt
           grep -qx "org.custos.pkg.${{ matrix.arch }}" receipts.txt
           [ "$(wc -l < receipts.txt | tr -d ' ')" = 1 ]

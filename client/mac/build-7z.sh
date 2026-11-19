@@ -42,7 +42,7 @@ if [ "$(uname -s)" = Darwin ]; then
     make -j"$jobs" -f "../../cmpl_mac_$arch.mak" > "$work/build-$arch.log" 2>&1 || { tail -n 40 "$work/build-$arch.log"; exit 1; }
   done
   lipo -create -output "$work/7z.so" b/m_arm64/7z.so b/m_x64/7z.so
-  lipo -verify_arch arm64 x86_64 "$work/7z.so"
+  lipo "$work/7z.so" -verify_arch arm64 x86_64
   built="$work/7z.so"
 else
   make -j"$jobs" -f ../../cmpl_gcc.mak > "$work/build.log" 2>&1 || { tail -n 40 "$work/build.log"; exit 1; }

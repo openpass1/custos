@@ -34,7 +34,7 @@ if [ ! -f "$out/7z/7z.so" ]; then
   bash "$here/build-7z.sh" "$out/7z"
 fi
 file "$out/7z/7z.so"
-lipo -verify_arch arm64 x86_64 "$out/7z/7z.so"
+lipo "$out/7z/7z.so" -verify_arch arm64 x86_64
 
 # Two builds of the program, one for each kind of processor, in one installer: Installer takes the one of this Mac
 # (distribution.xml). 7z.so is one universal library for both.
@@ -64,7 +64,7 @@ for arch in $archs; do
   cp "$here/org.custos.agent.plist" "$root/Library/LaunchDaemons/org.custos.agent.plist"
   cp "$here/org.custos.menu.plist" "$root/Library/LaunchAgents/org.custos.menu.plist"
   plutil -lint "$root/Library/LaunchDaemons/org.custos.agent.plist" "$root/Library/LaunchAgents/org.custos.menu.plist"
-  lipo -verify_arch "$arch" "$app/Contents/MacOS/Custos"
+  lipo "$app/Contents/MacOS/Custos" -verify_arch "$arch"
 
   step "Ad-hoc signature for $arch"
   others=$(find "$app/Contents/MacOS" -type f | while read -r f; do file -b "$f" | grep -q 'Mach-O' || echo "$f"; done)
@@ -75,7 +75,7 @@ for arch in $archs; do
   fi
   # Every library must run on this kind of Mac (one of the processor or universal).
   find "$app/Contents/MacOS" -type f | while read -r f; do
-    lipo -verify_arch "$arch" "$f" || { echo "$f has no $arch code" >&2; exit 1; }
+    lipo "$f" -verify_arch "$arch" || { echo "$f has no $arch code" >&2; exit 1; }
   done
   # The libraries first (Avalonia, Skia, SQLite, 7-Zip), then the bundle, which signs the program itself with them.
   find "$app/Contents/MacOS" -type f ! -path "$app/Contents/MacOS/Custos" | while read -r f; do
