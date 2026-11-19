@@ -844,6 +844,58 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('CUSTOS 1.0.1 installed', $output);
     }
 
+    /**
+     * A Mac (CUSTOS for macOS, A.3, A.4, A.10): marked macOS, an APFS snapshot and Mac paths in its task editor, no
+     * 7-Zip from the site, and only the update packages of its edition. After the machine for Windows 7.
+     */
+    #[Depends('testMachineWithTheEditionForWindows7')]
+    public function testMachineWithCustosForMac(): void
+    {
+        [$exit, $output] = $this->fakeAgent(['--name=MAC-MINI', '--mac', '--connect=' . $this->connectionString(), '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        [, $agents] = $this->http('GET', '/agents');
+        $this->assertSame(1, preg_match('#/agents/([0-9a-f-]{36})/approve#', $agents, $id));
+        $agentUrl = "/agents/{$id[1]}";
+        $this->post("$agentUrl/approve", ['back' => 'list']);
+        [$exit, $output] = $this->fakeAgent(['--name=MAC-MINI', '--mac', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertStringContainsString('CUSTOS 1.0.0 для macOS', $page);
+        $this->assertStringContainsString('снимок APFS вместо VSS', $page);
+        $this->assertStringNotContainsString('Доступен 7-Zip', $page, 'the site keeps 7-Zip 24.10, but not for a Mac');
+        [$status, $editor] = $this->http('GET', "$agentUrl/tasks/new");
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('снимок APFS для открытых файлов', $editor);
+        $this->assertStringContainsString('/Users/Shared/Data', $editor);
+        $this->assertStringContainsString('value="gdrive"', $editor, 'a Mac has cloud drives');
+
+        $package = TestEnv::dir() . '/custos-macos-1.0.1.zip';
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=macos', '--out=' . $package]);
+        $this->assertSame(0, $code, $output);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('CUSTOS для macOS', $updates);
+        $this->assertStringContainsString('встроен в программу', $updates);
+        preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
+        [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-macos-1.0.1.zip')]);
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Пакет 1.0.1 для macOS загружен.', $this->http('GET', '/updates')[1]);
+        [$status] = $this->post('/updates/macos/1.0.1/current', []);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновить CUSTOS для macOS до 1.0.1', $updates);
+        $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => '7zip']);
+        $this->http('POST', '/updates/install', self::encode($fields));
+        $this->assertStringContainsString('Ни одной выбранной машине нельзя отправить 7-Zip', $this->http('GET', '/updates')[1]);
+        $fields = self::withValues(self::formFields($this->http('GET', '/updates')[1], '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => 'macos']);
+        $this->http('POST', '/updates/install', self::encode($fields));
+        $this->assertStringContainsString('Обновление до 1.0.1 отправлено машинам: 1.', $this->http('GET', '/updates')[1]);
+        [$exit, $output] = $this->fakeAgent(['--name=MAC-MINI', '--mac', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        $this->assertStringContainsString('CUSTOS 1.0.1 installed', $output);
+        $this->assertStringContainsString('macOS', $this->http('GET', '/')[1], 'the dashboard marks the Mac version');
+    }
+
     // ---- helpers ----
 
     private function settings(array $overrides): array
