@@ -48,6 +48,7 @@ internal static class Program
         Step("main window, light", () => MainShot("01-glavnoe-okno-svetloe", "light", "Photos", Tab.Log, card: true));
         Step("main window, dark", () => MainShot("02-glavnoe-okno-tyomnoe", "dark", "Desktop", Tab.Progress, card: true));
         Step("history without the card", () => MainShot("03-istoriya-bez-kartochki", "light", "Accounting", Tab.History, card: false));
+        Step("colour schemes", Colors);
         Step("task editor", Editor);
         Step("destinations", Destinations);
         Step("settings", Settings);
@@ -117,6 +118,24 @@ internal static class Program
         Pump();
         Save(window, name);
         Close(window);
+    }
+
+    /// <summary>The main window in every colour scheme of the settings, light and dark (04-cvet-…).</summary>
+    private static void Colors()
+    {
+        try
+        {
+            foreach (string id in Palettes.Ids)
+            {
+                Palettes.Apply(Application.Current!, id);
+                MainShot($"04-cvet-{id}-svetlyj", "light", "Photos", Tab.Log, card: true);
+                MainShot($"04-cvet-{id}-tyomnyj", "dark", "Photos", Tab.Log, card: true);
+            }
+        }
+        finally
+        {
+            Palettes.Apply(Application.Current!, Palettes.Default);
+        }
     }
 
     /// <summary>Every page of the editor of a task with three destinations.</summary>

@@ -5,8 +5,9 @@
              RequestedThemeVariant="Default">
 
   <!--
-    Colours of the monitoring site (server/public/assets/app.css): the Material 3 tonal-spot scheme of the site blue #2457c5,
-    with green and amber harmonized. Light and dark follow Windows unless the settings or the «Настройки» menu say otherwise.
+    Material 3 colours. The scheme roles below are replaced at the start by the scheme of the user (Palettes.cs, neutral
+    grey unless another is picked in Settings → Look); error, green and amber stay as here. Light and dark follow macOS
+    unless the settings say otherwise.
   -->
   <Application.Resources>
     <ResourceDictionary>

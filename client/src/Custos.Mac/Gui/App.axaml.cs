@@ -44,7 +44,13 @@ internal sealed partial class App : Application, IDisposable
     /// <summary>Only the icon in the menu bar at the start (<c>--tray</c>: at login, after an update).</summary>
     public static bool StartHidden { get; set; }
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+
+        // The colour scheme of this user (Settings → Look), the neutral grey one until another is picked.
+        Palettes.Apply(this, UiState.Load().Color);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

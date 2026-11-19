@@ -22,6 +22,13 @@ TrustKey	Trust the key	Доверять ключу
 SpeedUnit	MB/s	МБ/с
 ThemeAuto	As in macOS	Как в macOS
 ThemeHelp	«As in macOS» follows System Settings → Appearance.	«Как в macOS» следует за «Системные настройки → Оформление».
+ColorLabel	Colour:	Цвет:
+ColorHelp	Only for you: other users of this Mac keep their own. It changes at once.	Только для вас: у других пользователей этого Mac свой цвет. Меняется сразу.
+ColorNeutral	Neutral grey	Нейтральный серый
+ColorGraphite	Graphite	Графит
+ColorBlue	Blue	Синий
+ColorWarm	Warm	Тёплый
+ColorSepia	Sepia	Сепия
 SevenZipVersion	7-Zip {0} comes inside the program and is updated with it.	7-Zip {0} входит в программу и обновляется вместе с ней.
 SevenZipProblem	7-Zip cannot be used: {0}	7-Zip недоступен: {0}
 LogRetentionHelp	The journal is in /Library/Application Support/CUSTOS/logs.	Журнал хранится в /Library/Application Support/CUSTOS/logs.

@@ -46,6 +46,9 @@ internal sealed class UiState
 
     public Dictionary<string, int> HistoryColumns { get; set; } = [];
 
+    /// <summary>The colour scheme of the new window (src/Custos.Desktop, Palettes.cs); null = the main one.</summary>
+    public string? Color { get; set; }
+
     /// <summary>Where ui.json is kept; the interface tests use a folder of their own.</summary>
     internal static string Folder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CUSTOS");
 

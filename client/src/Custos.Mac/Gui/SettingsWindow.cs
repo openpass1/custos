@@ -27,6 +27,7 @@ internal sealed class SettingsWindow : Window
     private readonly ServiceMonitor _monitor;
     private readonly bool _isAdmin;
     private readonly ComboBox _theme;
+    private readonly ComboBox _color;
     private readonly ComboBox _language;
     private readonly NumericUpDown _logDays;
     private readonly NumericUpDown _historyDays;
@@ -57,6 +58,9 @@ internal sealed class SettingsWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         _theme = Ui.Choice([(Themes.Auto, MacStrings.ThemeAuto), (Themes.Light, Strings.ThemeLight), (Themes.Dark, Strings.ThemeDark)], settings.Theme);
+        // The colour belongs to this user, not to the service: it is kept in ui.json and changes as soon as it is picked.
+        _color = Ui.Choice(Palettes.Ids.Select(id => (id, Palettes.Title(id))), Palettes.Known(UiState.Load().Color));
+        _color.SelectionChanged += (_, _) => PickColor(Ui.Read(_color));
         _language = Ui.Choice([("auto", Strings.LanguageAuto), ("ru", Strings.LanguageRussian), ("en", Strings.LanguageEnglish)],
             Languages.Contains(settings.Language) ? settings.Language : "auto");
         _logDays = Ui.Number(settings.LogRetentionDays, 1, 3650);
@@ -93,6 +97,7 @@ internal sealed class SettingsWindow : Window
             (Strings.SettingsLook, "palette", Ui.Page(
                 Ui.Title(Strings.SettingsLook),
                 Ui.Row(Strings.ThemeLabel, _theme, MacStrings.ThemeHelp),
+                Ui.Row(MacStrings.ColorLabel, _color, MacStrings.ColorHelp),
                 Ui.Row(Strings.ServiceLanguage, _language, MacStrings.ServiceLanguageHelp))),
             (Strings.SettingsServer, "cloud", Ui.Page(
                 Ui.Title(Strings.SettingsServer),
@@ -178,6 +183,19 @@ internal sealed class SettingsWindow : Window
     }
 
     private void OnSnapshot(object? sender, EventArgs e) => ShowState();
+
+    /// <summary>Puts the colour scheme in place in every window at once and remembers it for this user.</summary>
+    private static void PickColor(string id)
+    {
+        if (Application.Current is { } app)
+        {
+            Palettes.Apply(app, id);
+        }
+
+        var state = UiState.Load();
+        state.Color = id == Palettes.Default ? null : id;
+        state.Save();
+    }
 
     private void ShowError(Exception ex) => Ui.Show(_error, ex.Message);
 

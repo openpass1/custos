@@ -82,6 +82,27 @@
   <data name="ThemeHelp" xml:space="preserve">
     <value>«As in macOS» follows System Settings → Appearance.</value>
   </data>
+  <data name="ColorLabel" xml:space="preserve">
+    <value>Colour:</value>
+  </data>
+  <data name="ColorHelp" xml:space="preserve">
+    <value>Only for you: other users of this Mac keep their own. It changes at once.</value>
+  </data>
+  <data name="ColorNeutral" xml:space="preserve">
+    <value>Neutral grey</value>
+  </data>
+  <data name="ColorGraphite" xml:space="preserve">
+    <value>Graphite</value>
+  </data>
+  <data name="ColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ColorWarm" xml:space="preserve">
+    <value>Warm</value>
+  </data>
+  <data name="ColorSepia" xml:space="preserve">
+    <value>Sepia</value>
+  </data>
   <data name="SevenZipVersion" xml:space="preserve">
     <value>7-Zip {0} comes inside the program and is updated with it.</value>
   </data>

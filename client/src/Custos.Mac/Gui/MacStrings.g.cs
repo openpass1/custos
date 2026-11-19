@@ -74,6 +74,27 @@ static partial class MacStrings
     /// <summary>«As in macOS» follows System Settings → Appearance.</summary>
     public static string ThemeHelp => Get(nameof(ThemeHelp));
 
+    /// <summary>Colour:</summary>
+    public static string ColorLabel => Get(nameof(ColorLabel));
+
+    /// <summary>Only for you: other users of this Mac keep their own. It changes at once.</summary>
+    public static string ColorHelp => Get(nameof(ColorHelp));
+
+    /// <summary>Neutral grey</summary>
+    public static string ColorNeutral => Get(nameof(ColorNeutral));
+
+    /// <summary>Graphite</summary>
+    public static string ColorGraphite => Get(nameof(ColorGraphite));
+
+    /// <summary>Blue</summary>
+    public static string ColorBlue => Get(nameof(ColorBlue));
+
+    /// <summary>Warm</summary>
+    public static string ColorWarm => Get(nameof(ColorWarm));
+
+    /// <summary>Sepia</summary>
+    public static string ColorSepia => Get(nameof(ColorSepia));
+
     /// <summary>7-Zip {0} comes inside the program and is updated with it.</summary>
     public static string SevenZipVersion => Get(nameof(SevenZipVersion));
 
