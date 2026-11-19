@@ -52,6 +52,8 @@ jobs:
           assets=$(gh api "repos/ip7z/7zip/releases/tags/$latest" --jq '.assets[] | "\(.name) \(.digest // "")"')
           digest() { echo "$assets" | awk -v n="$1" '$1 == n { sub(/^sha256:/, "", $2); print $2 }'; }
           installer="7z${short}-x64.exe"
+          # The 32-bit installer, for the legacy edition (Windows 7 and 8.1).
+          installer32="7z${short}.exe"
           {
             echo "Вышла 7-Zip $latest, в CUSTOS сейчас $pinned. Перейти на новую версию: заменить значения в \`client/installer/7-zip.json\` на эти, собрать и проверить на виртуалке. Уже установленные компьютеры можно обновить и без новой сборки: раздел «Замена 7z.dll» в \`client/README.ru.md\`."
             echo
@@ -61,6 +63,8 @@ jobs:
             echo "  \"version\": \"$latest\","
             echo "  \"installerUrl\": \"https://github.com/ip7z/7zip/releases/download/$latest/$installer\","
             echo "  \"installerSha256\": \"$(digest "$installer")\","
+            echo "  \"installer32Url\": \"https://github.com/ip7z/7zip/releases/download/$latest/$installer32\","
+            echo "  \"installer32Sha256\": \"$(digest "$installer32")\","
             echo "  \"extractorUrl\": \"https://github.com/ip7z/7zip/releases/download/$latest/7zr.exe\","
             echo "  \"extractorSha256\": \"$(digest 7zr.exe)\""
             echo '```'

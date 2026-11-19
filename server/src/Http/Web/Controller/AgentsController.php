@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Custos\Http\Web\Controller;
 
 use Custos\Domain\Agents;
+use Custos\Domain\Packages;
 use Custos\Domain\TaskEdits;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
@@ -90,8 +91,9 @@ final class AgentsController extends Controller
             ),
             'live' => self::REFRESH_S,
             'commands' => $this->app->commands()->forAgent($agent['id']),
-            'currentVersion' => $this->app->packages()->current(),
-            'latestSevenZip' => $this->app->packages()->latestSevenZip(),
+            'currentVersion' => $this->app->packages()->current(Packages::agentKind($agent)),
+            // The edition for Windows 7 and 8.1 takes no 7-Zip from the site: nothing to offer.
+            'latestSevenZip' => Agents::isLegacy($agent) ? null : $this->app->packages()->latestSevenZip(),
             'settings' => json_decode((string) $agent['settings'], true) ?: [],
             'storages' => $this->app->storage()->forAgent($agent['id']),
         ], Agents::name($agent));
@@ -196,7 +198,7 @@ final class AgentsController extends Controller
                 break;
             case 'update':
             case 'sevenzip':
-                $this->install($agent, $action === 'update' ? 'agent' : '7zip');
+                $this->install($agent, $action === 'update' ? Packages::agentKind($agent) : '7zip');
                 break;
         }
         return $this->redirect($this->post('back') === 'list' ? '/agents' : '/agents/' . $id);
@@ -337,16 +339,20 @@ final class AgentsController extends Controller
         return false;
     }
 
-    /** "Update the agent" / "Update 7-Zip" on one machine. */
+    /** "Update the agent" (kind agent or legacy, the machine's edition) / "Update 7-Zip" on one machine. */
     private function install(array $agent, string $kind): void
     {
         if (!$this->approved($agent)) {
             return;
         }
+        if (!Packages::fits($kind, $agent)) {
+            $this->session->flash('error', $this->t('updates.error.no_machines_7zip'));
+            return;
+        }
         $packages = $this->app->packages();
-        $package = $kind === 'agent' ? $packages->current() : $packages->latestSevenZip();
+        $package = $kind === '7zip' ? $packages->latestSevenZip() : $packages->current($kind);
         if ($package === null) {
-            $this->session->flash('error', $this->t($kind === 'agent' ? 'updates.error.no_current' : 'sevenzip.error.none'));
+            $this->session->flash('error', $this->t($kind === '7zip' ? 'sevenzip.error.none' : 'updates.error.no_current'));
             return;
         }
         $result = $packages->install($kind, $package['version'], [$agent], $this->user());
@@ -355,8 +361,8 @@ final class AgentsController extends Controller
             $this->session->flash('info', $this->t('updates.flash.not_needed', ['version' => $package['version']]));
             return;
         }
-        $this->audit($kind === 'agent' ? 'update.install' : 'sevenzip.install', 'agent', $agent['id'],
+        $this->audit($kind === '7zip' ? 'sevenzip.install' : 'update.install', 'agent', $agent['id'],
             ['name' => Agents::name($agent), 'version' => $package['version']]);
-        $this->session->flash('info', $this->t($kind === 'agent' ? 'updates.flash.queued_one' : 'sevenzip.flash.queued_one', ['version' => $package['version']]));
+        $this->session->flash('info', $this->t($kind === '7zip' ? 'sevenzip.flash.queued_one' : 'updates.flash.queued_one', ['version' => $package['version']]));
     }
 }

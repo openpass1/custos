@@ -1,4 +1,8 @@
+#if CUSTOS_LEGACY
+using System.Runtime.InteropServices;
+#else
 using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -118,7 +122,12 @@ public sealed partial class SevenZipWriter(SevenZipLibrary library) : IArchiveWr
     }
 
     /// <summary>Answers the questions of 7-Zip about the items and hands out their data.</summary>
+#if CUSTOS_LEGACY
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+#else
     [GeneratedComClass]
+#endif
     private sealed unsafe partial class UpdateCallback(IReadOnlyList<ArchiveItem> items, string? password, CallbackErrors errors, CancellationToken cancellationToken)
         : IArchiveUpdateCallback, ICryptoGetTextPassword2
     {

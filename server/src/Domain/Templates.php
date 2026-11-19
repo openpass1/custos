@@ -191,6 +191,9 @@ final class Templates
                 $error = ['key' => 'templates.apply.not_approved', 'params' => []];
             } elseif (TaskEdits::remoteEditOff($agent)) {
                 $error = ['key' => 'templates.apply.remote_edit_off', 'params' => []];
+            } elseif (Agents::isLegacy($agent) && TaskForm::cloudKinds($template['task']) !== []) {
+                // The edition for Windows 7 and 8.1 has no cloud drives.
+                $error = ['key' => 'templates.apply.cloud_legacy', 'params' => []];
             } else {
                 $task = self::machineTask($template, $agent['id']);
                 $existing = TaskEdits::credentials($agent);

@@ -176,7 +176,18 @@ public static class SetManifest
     /// </summary>
     private static readonly JavaScriptEncoder TextEncoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
+#if CUSTOS_LEGACY
+    // System.Text.Json 8 (the legacy edition) cannot choose the line end and writes Environment.NewLine, "\r\n" on
+    // Windows: the lines of the list follow it. Any reader takes both.
+    private static ReadOnlySpan<byte> EntryIndent => "\r\n    "u8;
+
+    private static JsonWriterOptions HeaderOptions => new() { Indented = true, Encoder = TextEncoder };
+#else
     private static ReadOnlySpan<byte> EntryIndent => "\n    "u8;
+
+    // "\n" on every system: the same file from Windows and Linux, and the lines of the list (EntryIndent) match.
+    private static JsonWriterOptions HeaderOptions => new() { Indented = true, NewLine = "\n", Encoder = TextEncoder };
+#endif
 
     /// <summary>
     /// The file list comes last, so that the header can be read without the whole list. The header is indented; each
@@ -188,8 +199,7 @@ public static class SetManifest
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(files);
-        // "\n" on every system: the same file from Windows and Linux, and the lines of the list (EntryIndent) match.
-        using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = TextEncoder });
+        using var writer = new Utf8JsonWriter(stream, HeaderOptions);
         var line = new ArrayBufferWriter<byte>(1024);
         using var lineWriter = new Utf8JsonWriter(line, new JsonWriterOptions { Encoder = TextEncoder });
         writer.WriteStartObject();

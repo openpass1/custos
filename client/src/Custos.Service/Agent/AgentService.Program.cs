@@ -26,13 +26,6 @@ internal sealed partial class AgentService
     /// <summary>How often the loop looks whether a check is due (the setting may have been turned on meanwhile).</summary>
     private static readonly TimeSpan ProgramLoopTick = TimeSpan.FromHours(1);
 
-#if CUSTOS_MAC
-    /// <summary>custos-macos-1.2.0.zip: the package of macOS in the same release as the one of Windows.</summary>
-    private const string ProgramPackagePrefix = "custos-macos-";
-#else
-    private const string ProgramPackagePrefix = "custos-";
-#endif
-
     private static readonly string ProgramStateFile = Path.Combine(DataFolders.Config, "program-update.json");
 
     private readonly Lock _programLock = new();
@@ -321,7 +314,7 @@ internal sealed partial class AgentService
             var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
             await using (stream.ConfigureAwait(false))
             {
-                return ProgramReleases.Newest(stream, ProgramPackagePrefix);
+                return ProgramReleases.Newest(stream);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException

@@ -6,6 +6,8 @@
  * @var array<string, array> $waitingSevenZip @var int $uploadLimit
  * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
  * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
+ * @var bool $legacyOn @var ?array $legacyLatest @var ?array $legacyNewer @var list<array> $legacyPackages @var ?array $legacyCurrent
+ * @var array<string, array> $legacyOutdated
  */
 use Custos\Domain\Agents;
 
@@ -22,6 +24,37 @@ $stateError = function (?array $error): string {
     return $error === null ? '' : t((string) ($error['key'] ?? 'site.error.unexpected'), (array) ($error['params'] ?? []));
 };
 $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . ' UTC');
+$hasLegacyMachines = array_filter($agents, fn($a) => Agents::isLegacy($a)) !== [];
+// The packages of one edition, with "current" and "delete"; $kind is agent or legacy.
+$packageTable = function (array $packages, string $kind) use ($short): void { ?>
+        <div class="table-wrap gap-top">
+            <table>
+                <thead><tr><th><?= e(t('updates.col.version')) ?></th><th><?= e(t('updates.col.file')) ?></th><th><?= e(t('updates.col.uploaded')) ?></th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($packages as $p): ?>
+                    <?php $manifest = json_decode((string) $p['manifest'], true) ?: []; ?>
+                    <tr>
+                        <td><strong><?= e($p['version']) ?></strong> <?php if ($p['is_current']): ?><?= badge('ok', t('updates.is_current')) ?><?php endif ?>
+                            <div class="note"><?= e(t('updates.protocol', ['n' => (int) ($manifest['min_protocol'] ?? 0)])) ?></div></td>
+                        <td><?= e(fmt_bytes($p['size'])) ?><div class="note mono" title="<?= e($p['sha256']) ?>">SHA-256 <?= e($short($p['sha256'])) ?></div></td>
+                        <td class="nowrap"><?= e(fmt_time($p['uploaded_at'])) ?><div class="note"><?= e($p['uploaded_by']) ?></div></td>
+                        <td class="actions">
+                            <?php if (!$p['is_current']): ?>
+                                <form method="post" action="<?= e(url('/updates/' . $kind . '/' . $p['version'] . '/current')) ?>">
+                                    <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('updates.action.current')) ?></button>
+                                </form>
+                            <?php endif ?>
+                            <form method="post" action="<?= e(url('/updates/' . $kind . '/' . $p['version'] . '/delete')) ?>"
+                                  data-confirm="<?= e(t($kind === 'legacy' ? 'updates.confirm.delete_legacy' : 'updates.confirm.delete', ['version' => $p['version']])) ?>">
+                                <?= csrf_field() ?><button type="submit" class="link danger-link"><?= e(t('updates.action.delete')) ?></button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+<?php };
 ?>
 <h1><?= e(t('updates.title')) ?></h1>
 <p class="hint"><?= e(t('updates.hint')) ?></p>
@@ -147,38 +180,11 @@ $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . 
         <label><?= e(t('updates.upload')) ?>
             <input type="file" name="package" accept=".zip,application/zip" required>
             <span class="note"><?= e(t('updates.upload.hint', ['limit' => fmt_bytes($uploadLimit)])) ?></span>
+            <span class="note"><?= e(t('updates.upload.legacy_hint')) ?></span>
         </label>
         <button type="submit"><?= e(t('updates.upload.submit')) ?></button>
     </form>
-    <?php if ($agentPackages !== []): ?>
-        <div class="table-wrap gap-top">
-            <table>
-                <thead><tr><th><?= e(t('updates.col.version')) ?></th><th><?= e(t('updates.col.file')) ?></th><th><?= e(t('updates.col.uploaded')) ?></th><th></th></tr></thead>
-                <tbody>
-                <?php foreach ($agentPackages as $p): ?>
-                    <?php $manifest = json_decode((string) $p['manifest'], true) ?: []; ?>
-                    <tr>
-                        <td><strong><?= e($p['version']) ?></strong> <?php if ($p['is_current']): ?><?= badge('ok', t('updates.is_current')) ?><?php endif ?>
-                            <div class="note"><?= e(t('updates.protocol', ['n' => (int) ($manifest['min_protocol'] ?? 0)])) ?></div></td>
-                        <td><?= e(fmt_bytes($p['size'])) ?><div class="note mono" title="<?= e($p['sha256']) ?>">SHA-256 <?= e($short($p['sha256'])) ?></div></td>
-                        <td class="nowrap"><?= e(fmt_time($p['uploaded_at'])) ?><div class="note"><?= e($p['uploaded_by']) ?></div></td>
-                        <td class="actions">
-                            <?php if (!$p['is_current']): ?>
-                                <form method="post" action="<?= e(url('/updates/agent/' . $p['version'] . '/current')) ?>">
-                                    <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('updates.action.current')) ?></button>
-                                </form>
-                            <?php endif ?>
-                            <form method="post" action="<?= e(url('/updates/agent/' . $p['version'] . '/delete')) ?>"
-                                  data-confirm="<?= e(t('updates.confirm.delete', ['version' => $p['version']])) ?>">
-                                <?= csrf_field() ?><button type="submit" class="link danger-link"><?= e(t('updates.action.delete')) ?></button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endforeach ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif ?>
+    <?php if ($agentPackages !== []): ?><?php $packageTable($agentPackages, 'agent') ?><?php endif ?>
 </section>
 
 <section class="panel">
@@ -253,6 +259,30 @@ $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . 
 </section>
 </div>
 
+<?php if ($legacyOn): ?>
+<?php /* Only while the site has a machine or a package of the edition for Windows 7 and 8.1. */ ?>
+<section class="panel">
+    <h2><?= e(t('updates.legacy')) ?></h2>
+    <p class="hint"><?= e(t('updates.legacy.hint')) ?></p>
+    <p><?= $legacyCurrent === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $legacyCurrent['version']])) ?></p>
+    <dl class="props">
+        <dt><?= e(t('client.github')) ?></dt>
+        <dd><?php if ($legacyLatest !== null): ?>
+                <strong><?= e($legacyLatest['version']) ?></strong>
+                <span class="note"><?= e($published($legacyLatest)) ?></span>
+                <?php if (($legacyLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($legacyLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
+                <?php if ($legacyNewer === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
+            <?php else: ?><?= e(t('client.github.none')) ?><?php endif ?></dd>
+    </dl>
+    <?php if ($legacyNewer !== null): ?>
+        <form method="post" action="<?= e(url('/updates/releases/legacy')) ?>" class="gap-top">
+            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $legacyNewer['version']])) ?></button>
+        </form>
+    <?php endif ?>
+    <?php if ($legacyPackages !== []): ?><?php $packageTable($legacyPackages, 'legacy') ?><?php endif ?>
+</section>
+<?php endif ?>
+
 <?php /* Live part: versions and updates on their way change by themselves (app.js) until a machine is ticked here. */ ?>
 <div data-part="machines">
 <section class="panel">
@@ -271,11 +301,13 @@ $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . 
                         <td><input type="checkbox" name="agent_ids[]" value="<?= e($a['id']) ?>" aria-label="<?= e(Agents::name($a)) ?>"<?= $a['status'] !== 'approved' ? ' disabled' : '' ?>></td>
                         <td><a href="<?= e(url('/agents/' . $a['id'])) ?>"><?= e(Agents::name($a)) ?></a>
                             <?php if ($a['group_name'] !== null): ?><span class="note"><?= e($a['group_name']) ?></span><?php endif ?>
+                            <?= edition_badge($a) ?>
                             <?php if ($a['status'] !== 'approved'): ?><?= badge($a['status']) ?><?php endif ?></td>
                         <td><?= e($a['agent_version'] === '' ? '—' : $a['agent_version']) ?>
-                            <?php if (isset($outdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
+                            <?php if (isset($outdated[$a['id']]) || isset($legacyOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
                             <?php if (isset($waitingAgent[$a['id']])): ?><div class="note"><?= e(t('updates.waiting', ['version' => (string) ($waitingAgent[$a['id']]['data']['version'] ?? '')])) ?> <?= badge($waitingAgent[$a['id']]['status']) ?></div><?php endif ?></td>
                         <td><?= e($a['sevenzip_version'] ?? '—') ?>
+                            <?php if (Agents::isLegacy($a)): ?><div class="note"><?= e(t('updates.sevenzip.legacy')) ?></div><?php endif ?>
                             <?php if (isset($sevenZipOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
                             <?php if (isset($waitingSevenZip[$a['id']])): ?><div class="note"><?= e(t('updates.waiting', ['version' => (string) ($waitingSevenZip[$a['id']]['data']['version'] ?? '')])) ?> <?= badge($waitingSevenZip[$a['id']]['status']) ?></div><?php endif ?></td>
                     </tr>
@@ -285,7 +317,7 @@ $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . 
         </div>
         <div class="choices">
             <label class="choice"><input type="radio" name="target" value="selected" checked> <span><?= e(t('updates.target.selected')) ?></span></label>
-            <label class="choice"><input type="radio" name="target" value="outdated"> <span><?= e(t('updates.target.outdated', ['agent' => count($outdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
+            <label class="choice"><input type="radio" name="target" value="outdated"> <span><?= e(t('updates.target.outdated', ['agent' => count($outdated) + count($legacyOutdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
             <?php if ($groups !== []): ?>
                 <label class="choice"><input type="radio" name="target" value="group"> <span><?= e(t('updates.target.group')) ?></span></label>
             <?php endif ?>
@@ -301,10 +333,13 @@ $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . 
             <?php if ($current !== null): ?>
                 <button type="submit" name="kind" value="agent"><?= e(t('updates.install.agent', ['version' => $current['version']])) ?></button>
             <?php endif ?>
+            <?php if ($legacyCurrent !== null && $hasLegacyMachines): ?>
+                <button type="submit" name="kind" value="legacy"><?= e(t('updates.install.legacy', ['version' => $legacyCurrent['version']])) ?></button>
+            <?php endif ?>
             <?php if ($storedSevenZip !== null): ?>
                 <button type="submit" name="kind" value="7zip"><?= e(t('updates.install.sevenzip', ['version' => $storedSevenZip['version']])) ?></button>
             <?php endif ?>
-            <?php if ($current === null && $storedSevenZip === null): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
+            <?php if ($current === null && $storedSevenZip === null && ($legacyCurrent === null || !$hasLegacyMachines)): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
         </div>
         <p class="note"><?= e(t('updates.install.hint')) ?></p>
     </form>

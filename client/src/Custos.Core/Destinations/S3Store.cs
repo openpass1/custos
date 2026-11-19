@@ -916,7 +916,7 @@ public sealed class S3Store : RemoteStore
                         AutomaticDecompression = DecompressionMethods.None,
                         UseCookies = false,
                         AllowAutoRedirect = false,
-                    };
+                    }.WithTls();
                     handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, errors) => trust.Validate(certificate, errors);
                     _client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
                 }

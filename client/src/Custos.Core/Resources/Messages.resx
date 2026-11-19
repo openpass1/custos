@@ -1888,6 +1888,30 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="ExportNotAllowed" xml:space="preserve">
     <value>Only administrators of this computer may export tasks.</value>
   </data>
+  <data name="DestinationKindNotInLegacy" xml:space="preserve">
+    <value>Destinations of type «{0}» are not available in CUSTOS for Windows 7 and 8.1.</value>
+  </data>
+  <data name="MonitorPackageNotLegacy" xml:space="preserve">
+    <value>This package is for Windows 10 and later; CUSTOS for Windows 7 and 8.1 installs only its own packages (custos-legacy-….zip).</value>
+  </data>
+  <data name="MonitorPackageLegacy" xml:space="preserve">
+    <value>This package is CUSTOS for Windows 7 and 8.1; this computer runs the edition for Windows 10 and later.</value>
+  </data>
+  <data name="MonitorPackageNotMac" xml:space="preserve">
+    <value>This package is not CUSTOS for macOS; a Mac installs only its own packages (custos-macos-….zip).</value>
+  </data>
+  <data name="MonitorPackageMac" xml:space="preserve">
+    <value>This package is CUSTOS for macOS; it is not installed on Windows.</value>
+  </data>
+  <data name="SevenZipRemoteNotInLegacy" xml:space="preserve">
+    <value>CUSTOS for Windows 7 and 8.1 does not take 7-Zip from the site (the site keeps the 64-bit 7-Zip). Update 7z.dll with the button in the CUSTOS settings.</value>
+  </data>
+  <data name="SevenZipNot32Bit" xml:space="preserve">
+    <value>{0} is not a 32-bit 7z.dll. CUSTOS for Windows 7 and 8.1 needs 7z.dll from the 32-bit 7-Zip (7zXXXX.exe, without -x64).</value>
+  </data>
+  <data name="SevenZipMissingLegacy" xml:space="preserve">
+    <value>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 32-bit 7-Zip there.</value>
+  </data>
   <data name="MacSnapshotCreated" xml:space="preserve">
     <value>APFS snapshot of the disk made: the files are read from it.</value>
   </data>

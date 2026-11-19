@@ -273,7 +273,7 @@ internal sealed class RestoreForm : Form
     private void ChooseStore()
     {
         using var toolTip = new ToolTip();
-        var start = _storeDestination ?? new TaskDestination { Kind = DestinationKinds.GDrive };
+        var start = _storeDestination ?? new TaskDestination { Kind = Core.CustosEdition.IsLegacy ? DestinationKinds.Sftp : DestinationKinds.GDrive };
         using var dialog = new DestinationDialog(new EditorContext(_monitor, toolTip), start, isNew: _storeDestination is null, Strings.RestoreStoreTitle);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {

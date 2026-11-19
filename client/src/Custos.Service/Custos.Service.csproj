@@ -3,8 +3,8 @@
   <!-- CustosService.exe: the Windows service (LocalSystem) that does all the work. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <TargetFramework>$(CustosWindowsTargetFramework)</TargetFramework>
+    <RuntimeIdentifier>$(CustosRuntimeIdentifier)</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <RootNamespace>Custos.Service</RootNamespace>
     <AssemblyName>CustosService</AssemblyName>
@@ -27,6 +27,11 @@
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="System.Management" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+  <!-- Legacy edition: the event log library with its Windows code for .NET 6 (Directory.Packages.props). -->
+  <ItemGroup Condition="'$(CustosLegacy)' == 'true'">
+    <PackageReference Include="System.Diagnostics.EventLog" />
   </ItemGroup>
 
 </Project>

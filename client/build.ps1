@@ -25,6 +25,12 @@
                                            installed from this very build (its own update package has the version
                                            the machine already runs, so the server has nothing to update)
 
+    The legacy edition for Windows 7 SP1 and 8.1 (-Legacy, CustosEdition.cs): the same programs for .NET 6, 32-bit,
+    with the 32-bit .NET 6 Desktop Runtime inside setup.exe and 7z.dll from the 32-bit 7-Zip of the same pin. Its
+    results go to artifacts-legacy\ under their own names: CUSTOS-Legacy-Setup-<version>.exe and
+    custos-legacy-<version>.zip, whose manifest.json says "edition": "legacy" (A.10). The tests are built for .NET 10
+    and run on the standard edition only, so -Legacy skips them.
+
     Code signing (optional): set CUSTOS_SIGN_PFX (path to a .pfx) and CUSTOS_SIGN_PASSWORD. Without them the
     files are left unsigned. CUSTOS_SIGNTOOL may point to signtool.exe if it is not found automatically.
 
@@ -33,6 +39,9 @@
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File .\build.ps1 -SkipTests -SkipInstaller
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File .\build.ps1 -Legacy
 #>
 [CmdletBinding()]
 param(
@@ -46,12 +55,15 @@ param(
 
     [switch] $SkipInstaller,
 
-    # Download the newest .NET 10 Desktop Runtime even if one is already in installer\redist.
+    # Download the newest .NET Desktop Runtime (10, or 6 with -Legacy) even if one is already in installer\redist.
     [switch] $RefreshRuntime,
 
     # Also build the programs with this version (higher than -Version, for example 0.3.15.1) into an update package
     # of its own: install the setup, upload this package to the server and update to it.
-    [string] $TestUpdateVersion
+    [string] $TestUpdateVersion,
+
+    # The legacy edition for Windows 7 SP1 and 8.1: .NET 6, 32-bit (see above).
+    [switch] $Legacy
 )
 
 Set-StrictMode -Version Latest
@@ -59,7 +71,23 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $Root = $PSScriptRoot
-$Artifacts = Join-Path $Root 'artifacts'
+# What differs between the editions: the runtime, the processor, the names of the results.
+if ($Legacy) {
+    $Artifacts = Join-Path $Root 'artifacts-legacy'
+    $RuntimeMajor = '6'
+    $Platform = 'x86'
+    $PeMachine = 0x014C
+    $PackagePrefix = 'custos-legacy-'
+    $SetupPrefix = 'CUSTOS-Legacy-Setup-'
+}
+else {
+    $Artifacts = Join-Path $Root 'artifacts'
+    $RuntimeMajor = '10'
+    $Platform = 'x64'
+    $PeMachine = 0x8664
+    $PackagePrefix = 'custos-'
+    $SetupPrefix = 'CUSTOS-Setup-'
+}
 $PublishDir = Join-Path $Artifacts 'publish'
 $InstallerOutDir = Join-Path $Artifacts 'installer'
 $UpdateOutDir = Join-Path $Artifacts 'update'
@@ -140,17 +168,18 @@ function Invoke-Sign([string[]] $Files) {
 
 function Get-DesktopRuntime {
     if (-not (Test-Path $RedistDir)) { New-Item -ItemType Directory -Path $RedistDir | Out-Null }
-    $existing = Get-ChildItem -Path $RedistDir -Filter 'windowsdesktop-runtime-10.*-win-x64.exe' -ErrorAction SilentlyContinue |
-        Sort-Object { [version]($_.Name -replace '^windowsdesktop-runtime-(10\.\d+\.\d+)-win-x64\.exe$', '$1') } -Descending |
+    $existing = Get-ChildItem -Path $RedistDir -Filter "windowsdesktop-runtime-$RuntimeMajor.*-win-$Platform.exe" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match "^windowsdesktop-runtime-$RuntimeMajor\.\d+\.\d+-win-$Platform\.exe$" } |
+        Sort-Object { [version]($_.Name -replace '^windowsdesktop-runtime-(\d+\.\d+\.\d+)-win-.*$', '$1') } -Descending |
         Select-Object -First 1
     if ($existing -and -not $RefreshRuntime) {
         Write-Host "Using $($existing.Name) from installer\redist."
         return $existing.FullName
     }
 
-    Write-Host 'Looking up the newest .NET 10 Desktop Runtime at Microsoft...'
+    Write-Host "Looking up the newest .NET $RuntimeMajor Desktop Runtime ($Platform) at Microsoft..."
     try {
-        $metadata = Invoke-RestMethod -UseBasicParsing -Uri 'https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json'
+        $metadata = Invoke-RestMethod -UseBasicParsing -Uri "https://builds.dotnet.microsoft.com/dotnet/release-metadata/$RuntimeMajor.0/releases.json"
     }
     catch {
         if ($existing) {
@@ -158,14 +187,14 @@ function Get-DesktopRuntime {
             return $existing.FullName
         }
         Stop-Build ("Cannot download the .NET Desktop Runtime: $($_.Exception.Message)`n" +
-            "Download windowsdesktop-runtime-10.x.x-win-x64.exe from https://dotnet.microsoft.com/download/dotnet/10.0 " +
+            "Download windowsdesktop-runtime-$RuntimeMajor.x.x-win-$Platform.exe from https://dotnet.microsoft.com/download/dotnet/$RuntimeMajor.0 " +
             "and put it into $RedistDir")
     }
 
     $release = $metadata.releases | Select-Object -First 1
-    $file = $release.windowsdesktop.files | Where-Object { $_.name -eq 'windowsdesktop-runtime-win-x64.exe' } | Select-Object -First 1
-    if (-not $file) { Stop-Build 'The Microsoft release list has no windowsdesktop-runtime-win-x64.exe.' }
-    $target = Join-Path $RedistDir "windowsdesktop-runtime-$($release.windowsdesktop.version)-win-x64.exe"
+    $file = $release.windowsdesktop.files | Where-Object { $_.name -eq "windowsdesktop-runtime-win-$Platform.exe" } | Select-Object -First 1
+    if (-not $file) { Stop-Build "The Microsoft release list has no windowsdesktop-runtime-win-$Platform.exe." }
+    $target = Join-Path $RedistDir "windowsdesktop-runtime-$($release.windowsdesktop.version)-win-$Platform.exe"
     if (-not (Test-Path $target)) {
         Write-Host "Downloading .NET Desktop Runtime $($release.windowsdesktop.version)..."
         $partial = "$target.part"
@@ -213,17 +242,19 @@ function Get-PinnedFile([string] $Url, [string] $Sha256, [string] $Folder) {
     return $target
 }
 
-# Unpacks 7z.dll and the 7-Zip license from the pinned 7-Zip build; returns the folder that holds them.
+# Unpacks 7z.dll and the 7-Zip license from the pinned 7-Zip build (its 32-bit installer for -Legacy); returns the
+# folder that holds them.
 function Get-SevenZip {
     $pin = Get-Content -Raw -Path $SevenZipPin | ConvertFrom-Json
     $folder = Join-Path (Join-Path $RedistDir '7-zip') $pin.version
     if (-not (Test-Path $folder)) { New-Item -ItemType Directory -Path $folder | Out-Null }
-    $installer = Get-PinnedFile $pin.installerUrl $pin.installerSha256 $folder
+    if ($Legacy) { $installer = Get-PinnedFile $pin.installer32Url $pin.installer32Sha256 $folder }
+    else { $installer = Get-PinnedFile $pin.installerUrl $pin.installerSha256 $folder }
     $extractor = Get-PinnedFile $pin.extractorUrl $pin.extractorSha256 $folder
     # The tests of the 7-Zip update unpack this installer the way the service does.
     $env:CUSTOS_7Z_INSTALLER = $installer
 
-    $out = Join-Path $folder 'unpacked'
+    $out = Join-Path $folder "unpacked-$Platform"
     if (Test-Path $out) { Remove-Item $out -Recurse -Force }
     Invoke-Native $extractor @('x', $installer, "-o$out", '-y', '-bso0', '-bsp0', '7z.dll', 'License.txt') | Out-Host
     foreach ($name in @('7z.dll', 'License.txt')) {
@@ -234,7 +265,7 @@ function Get-SevenZip {
     $bytes = [IO.File]::ReadAllBytes($dll)
     $peOffset = [BitConverter]::ToInt32($bytes, 0x3C)
     $machine = [BitConverter]::ToUInt16($bytes, $peOffset + 4)
-    if ($machine -ne 0x8664) { Stop-Build "$dll is not a 64-bit (x64) library." }
+    if ($machine -ne $PeMachine) { Stop-Build "$dll is not a $Platform library." }
     Write-Host "7z.dll: 7-Zip $($pin.version), file version $((Get-Item $dll).VersionInfo.FileVersion)"
     return $out
 }
@@ -245,8 +276,10 @@ function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $
     New-Item -ItemType Directory -Path $Folder -Force | Out-Null
     foreach ($program in $Programs) {
         $project = Join-Path $Root "src\$program\$program.csproj"
-        Invoke-Native 'dotnet' @('publish', $project, '-c', $Configuration, '-r', 'win-x64', '--self-contained', 'false',
+        $arguments = @('publish', $project, '-c', $Configuration, '-r', "win-$Platform", '--self-contained', 'false',
             "-p:Version=$ProgramVersion", '-o', $Folder)
+        if ($Legacy) { $arguments += '-p:CustosLegacy=true' }
+        Invoke-Native 'dotnet' $arguments
     }
     Copy-Item (Join-Path $SevenZipFolder '7z.dll') $Folder
     Copy-Item (Join-Path $SevenZipFolder 'License.txt') (Join-Path $Folder '7-Zip-License.txt')
@@ -255,9 +288,10 @@ function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $
     Invoke-Sign ($OwnFiles | ForEach-Object { Join-Path $Folder $_ })
 }
 
-# Makes the update package (A.10): every file of $Folder and manifest.json {version, min_protocol, files[{path,
-# sha256}]}. Paths use "/", as zip wants. $NameSuffix only marks the file (custos-<version><suffix>.zip): the server
-# reads the version from manifest.json. Returns the path of the zip.
+# Makes the update package (A.10): every file of $Folder and manifest.json {version, edition (legacy only),
+# min_protocol, files[{path, sha256}]}. Paths use "/", as zip wants. $NameSuffix only marks the file
+# (custos-<version><suffix>.zip, custos-legacy-... for -Legacy): the server reads the version and the edition from
+# manifest.json. Returns the path of the zip.
 function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] $OutDir, [string] $NameSuffix = '') {
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -271,10 +305,13 @@ function New-UpdatePackage([string] $PackageVersion, [string] $Folder, [string] 
             sha256 = (Get-FileHash -Path $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         }
     }
-    $manifest = [ordered]@{ version = $PackageVersion; min_protocol = $MinProtocol; files = $list }
+    $manifest = [ordered]@{ version = $PackageVersion }
+    if ($Legacy) { $manifest.edition = 'legacy' }
+    $manifest.min_protocol = $MinProtocol
+    $manifest.files = $list
     $json = ConvertTo-Json -InputObject $manifest -Depth 5
 
-    $zipPath = Join-Path $OutDir "custos-$PackageVersion$NameSuffix.zip"
+    $zipPath = Join-Path $OutDir "$PackagePrefix$PackageVersion$NameSuffix.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
     $stream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew)
     $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
@@ -324,6 +361,13 @@ if ($Version -notmatch $versionPattern) { Stop-Build "Version '$Version' is not 
 if ($Version -match '^(\d+\.\d+\.\d+)') { $fileVersion = $Matches[1] }
 else { Stop-Build "Version '$Version' must start with three numbers, like 0.1.0." }
 Write-Host "Version: $Version"
+if ($Legacy) {
+    Write-Host 'Edition: legacy (Windows 7 SP1 and 8.1, .NET 6, 32-bit)'
+    if (-not $SkipTests) {
+        Write-Host 'The tests are built for .NET 10 and run on the standard edition: skipped.'
+        $SkipTests = $true
+    }
+}
 if ($TestUpdateVersion) {
     if ($TestUpdateVersion -notmatch $versionPattern) { Stop-Build "Test update version '$TestUpdateVersion' is not like 0.3.15.1." }
     Write-Host "Test update version: $TestUpdateVersion"
@@ -362,9 +406,11 @@ if (-not $SkipInstaller) {
 
     Write-Step 'Building the installer'
     $script = Join-Path $Root 'installer\custos.iss'
-    Invoke-Native $iscc @("/DAppVersion=$Version", "/DFileVersion=$fileVersion", "/DPublishDir=$PublishDir",
-        "/DOutputDir=$InstallerOutDir", "/DRuntimeInstaller=$runtime", $script)
-    $setup = Join-Path $InstallerOutDir "CUSTOS-Setup-$Version.exe"
+    $arguments = @("/DAppVersion=$Version", "/DFileVersion=$fileVersion", "/DPublishDir=$PublishDir",
+        "/DOutputDir=$InstallerOutDir", "/DRuntimeInstaller=$runtime")
+    if ($Legacy) { $arguments += '/DLegacy' }
+    Invoke-Native $iscc ($arguments + $script)
+    $setup = Join-Path $InstallerOutDir "$SetupPrefix$Version.exe"
     Invoke-Sign @($setup)
 }
 

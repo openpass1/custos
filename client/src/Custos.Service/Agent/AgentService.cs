@@ -728,7 +728,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
 
         if (!DestinationKinds.IsSupported(destination.Kind))
         {
-            return new DestinationTestResult { Error = Messages.Format(Messages.DestinationKindNotSupported, destination.Kind) };
+            return new DestinationTestResult { Error = CustosEdition.DestinationNotSupported(destination.Kind) };
         }
 
         if (DestinationStores.Problem(destination) is { } lacking)

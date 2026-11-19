@@ -1,6 +1,8 @@
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+#if !CUSTOS_LEGACY
 using System.Runtime.InteropServices.Marshalling;
+#endif
 using System.Text;
 
 namespace Custos.Core.Archives.SevenZip;
@@ -26,7 +28,12 @@ internal sealed class CallbackErrors
 }
 
 /// <summary>A .NET stream as 7-Zip input (the data of one item, or the archive being read).</summary>
+#if CUSTOS_LEGACY
+[ComVisible(true)]
+[ClassInterface(ClassInterfaceType.None)]
+#else
 [GeneratedComClass]
+#endif
 internal sealed unsafe partial class InStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialInStream, IInStream
 {
     public Stream Stream { get; } = stream;
@@ -87,7 +94,12 @@ internal sealed unsafe partial class InStreamAdapter(Stream stream, CallbackErro
 }
 
 /// <summary>A .NET stream as 7-Zip output: the archive being written (seekable) or an item being unpacked.</summary>
+#if CUSTOS_LEGACY
+[ComVisible(true)]
+[ClassInterface(ClassInterfaceType.None)]
+#else
 [GeneratedComClass]
+#endif
 internal sealed unsafe partial class OutStreamAdapter(Stream stream, CallbackErrors errors, CancellationToken cancellationToken) : ISequentialOutStream, IOutStream
 {
     public int Write(IntPtr data, uint size, IntPtr processedSize)
@@ -164,8 +176,11 @@ internal sealed unsafe partial class OutStreamAdapter(Stream stream, CallbackErr
 /// </summary>
 internal static unsafe partial class Props
 {
-    /// <summary>The size of a PROPVARIANT in an array: 24 bytes on 64-bit Windows, 16 in 7-Zip of other systems.</summary>
-    public static int Stride => OperatingSystem.IsWindows() ? 24 : 16;
+    /// <summary>
+    /// The size of a PROPVARIANT in an array: on Windows the one of <see cref="PropVariant"/> (24 bytes for the 64-bit
+    /// program, 16 for the 32-bit edition for Windows 7 and 8.1), 16 in 7-Zip of other systems.
+    /// </summary>
+    public static int Stride => OperatingSystem.IsWindows() ? sizeof(PropVariant) : 16;
 
     public static void SetString(IntPtr target, string value)
     {
@@ -248,8 +263,8 @@ internal static unsafe partial class Props
         value->Int64Value = 0;
     }
 
-    [LibraryImport("ole32.dll")]
-    private static partial int PropVariantClear(PropVariant* value);
+    [DllImport("ole32.dll")]
+    private static extern int PropVariantClear(PropVariant* value);
 }
 
 /// <summary>

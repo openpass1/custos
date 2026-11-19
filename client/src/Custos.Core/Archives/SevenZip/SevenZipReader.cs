@@ -1,4 +1,8 @@
+#if CUSTOS_LEGACY
+using System.Runtime.InteropServices;
+#else
 using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -150,7 +154,12 @@ public sealed unsafe partial class SevenZipReader : IArchiveReader
     }
 
     /// <summary>Gives 7-Zip the password when the list of names is encrypted.</summary>
+#if CUSTOS_LEGACY
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+#else
     [GeneratedComClass]
+#endif
     private sealed partial class OpenCallback(string? password) : IArchiveOpenCallback, ICryptoGetTextPassword
     {
         public bool PasswordAsked { get; private set; }
@@ -174,7 +183,12 @@ public sealed unsafe partial class SevenZipReader : IArchiveReader
     }
 
     /// <summary>Hands 7-Zip a stream for each requested item and collects the results.</summary>
+#if CUSTOS_LEGACY
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+#else
     [GeneratedComClass]
+#endif
     private sealed partial class ExtractCallback(
         IReadOnlyList<ArchiveEntry> entries,
         Func<ArchiveEntry, Stream?> target,

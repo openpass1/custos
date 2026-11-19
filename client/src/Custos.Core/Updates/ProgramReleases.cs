@@ -57,8 +57,8 @@ public sealed class ReleaseCheckException(string message, Exception? inner = nul
 /// </summary>
 public static class ProgramReleases
 {
-    /// <summary>Tags of the program; the site has its own (<c>server-v</c>).</summary>
-    public const string TagPrefix = "client-v";
+    /// <summary>Tags of the program (<c>client-v</c>, or <c>client-legacy-v</c> for the legacy edition); the site has its own (<c>server-v</c>).</summary>
+    public static string TagPrefix => CustosEdition.ReleaseTagPrefix;
 
     /// <summary>The update package never is bigger; a bigger answer is not saved.</summary>
     public const long MaxPackageBytes = 500L * 1024 * 1024;
@@ -75,10 +75,8 @@ public static class ProgramReleases
     /// The newest published release of the program in an answer of <see cref="ApiUrl"/> that can be installed: it
     /// has the update package and a SHA-256 to check it with. Pre-releases are skipped. Null when there is none.
     /// </summary>
-    /// <param name="json">The answer of GitHub.</param>
-    /// <param name="packagePrefix">The start of the name of the package: <c>custos-</c> for Windows, <c>custos-macos-</c> for macOS.</param>
     /// <exception cref="ReleaseCheckException">The answer is not a list of releases.</exception>
-    public static ProgramRelease? Newest(Stream json, string packagePrefix = "custos-")
+    public static ProgramRelease? Newest(Stream json)
     {
         ArgumentNullException.ThrowIfNull(json);
         JsonDocument document;
@@ -106,7 +104,7 @@ public static class ProgramReleases
                     || Text(release, "tag_name") is not { } tag || !tag.StartsWith(TagPrefix, StringComparison.Ordinal)
                     || ParseVersion(tag[TagPrefix.Length..]) is not { } version
                     || (bestVersion is not null && Compare(version, bestVersion) <= 0)
-                    || Read(release, tag[TagPrefix.Length..], packagePrefix) is not { } found)
+                    || Read(release, tag[TagPrefix.Length..]) is not { } found)
                 {
                     continue;
                 }
@@ -261,14 +259,14 @@ public static class ProgramReleases
     }
 
     /// <summary>The package of a release and how to check it; null if it has no package or nothing to check it with.</summary>
-    private static ProgramRelease? Read(JsonElement release, string version, string packagePrefix)
+    private static ProgramRelease? Read(JsonElement release, string version)
     {
         if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
         {
             return null;
         }
 
-        string packageName = $"{packagePrefix}{version}.zip";
+        string packageName = CustosEdition.PackageName(version);
         string downloads = ReleasesPrefix + "download/";
         JsonElement? package = null;
         Uri? sums = null;

@@ -45,11 +45,11 @@ internal sealed partial record ClientIdentity(string User, bool IsAdmin, int? Se
         identity.Groups?.Contains(Administrators) == true
         || identity.Claims.Any(c => c.Type == ClaimTypes.DenyOnlySid && c.Value == Administrators.Value);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetNamedPipeClientSessionId(SafePipeHandle pipe, out uint clientSessionId);
+    private static extern bool GetNamedPipeClientSessionId(SafePipeHandle pipe, out uint clientSessionId);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint clientProcessId);
+    private static extern bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint clientProcessId);
 }

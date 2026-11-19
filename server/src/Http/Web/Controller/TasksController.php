@@ -175,7 +175,7 @@ final class TasksController extends Controller
             $this->session->flash('error', $error);
             return $this->redirect('/agents/' . $agent['id'] . '/tasks/' . $taskId . '/edit');
         }
-        $form = TaskForm::parse($current['task'], $this->request->post, TaskEdits::credentials($agent));
+        $form = TaskForm::parse($current['task'], $this->request->post, TaskEdits::credentials($agent), false, Agents::isLegacy($agent));
         if (!$form->valid()) {
             return $this->editor($agent, $form->view, $form->errors, $current['pending'], false, 422);
         }
@@ -220,7 +220,7 @@ final class TasksController extends Controller
         if ($this->app->tasks()->find($agent['id'], (string) $base['id']) !== null) {
             $base['id'] = TaskForm::defaults()['id'];
         }
-        $form = TaskForm::parse($base, $this->request->post, TaskEdits::credentials($agent));
+        $form = TaskForm::parse($base, $this->request->post, TaskEdits::credentials($agent), false, Agents::isLegacy($agent));
         if (!$form->valid()) {
             return $this->editor($agent, $form->view, $form->errors, null, true, 422);
         }

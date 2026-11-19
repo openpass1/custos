@@ -566,12 +566,15 @@ public static partial class CobianImporter
 
     private static bool HasWildcard(string mask) => mask.Contains('*', StringComparison.Ordinal) || mask.Contains('?', StringComparison.Ordinal);
 
-    [GeneratedRegex(@"^\s*(\d+)\s*,(.*)$", RegexOptions.Singleline)]
-    private static partial Regex TypedEntry();
+    private static readonly Regex TypedEntryRegex = new(@"^\s*(\d+)\s*,(.*)$", RegexOptions.Singleline);
 
-    [GeneratedRegex(@"^\d+$")]
-    private static partial Regex Number();
+    private static Regex TypedEntry() => TypedEntryRegex;
 
-    [GeneratedRegex(@"^[A-Za-z]:\\")]
-    private static partial Regex DriveRooted();
+    private static readonly Regex NumberRegex = new(@"^\d+$");
+
+    private static Regex Number() => NumberRegex;
+
+    private static readonly Regex DriveRootedRegex = new(@"^[A-Za-z]:\\");
+
+    private static Regex DriveRooted() => DriveRootedRegex;
 }

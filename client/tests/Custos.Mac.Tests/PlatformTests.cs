@@ -1,4 +1,5 @@
 using System.Text;
+using Custos.Core;
 using Custos.Service.Ipc;
 using Custos.Service.Platform;
 
@@ -23,6 +24,17 @@ public sealed class PlatformTests
     [InlineData("relative/folder")]
     public void Other_paths_are_not_network_paths(string path) =>
         Assert.False(SmbSession.TryParse(path, out _, out _, out _));
+
+    /// <summary>A Mac tells the site and the update packages that it is the macOS edition (A.3, A.10).</summary>
+    [Fact]
+    public void A_Mac_is_the_macos_edition()
+    {
+        Assert.SkipUnless(OperatingSystem.IsMacOS(), "macOS only.");
+        Assert.Equal(CustosEdition.MacName, CustosEdition.Wire);
+        Assert.Equal("custos-macos-1.2.3.zip", CustosEdition.PackageName("1.2.3"));
+        Assert.Equal("macos\n1.2.3\nabc", CustosEdition.PackageSignedString("1.2.3", "abc"));
+        Assert.Equal("client-v", CustosEdition.ReleaseTagPrefix);
+    }
 
     [Fact]
     public void Owner_and_permissions_come_back_as_they_were()

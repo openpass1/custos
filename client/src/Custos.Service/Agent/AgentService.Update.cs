@@ -47,7 +47,7 @@ internal sealed partial class AgentService
             return Rejected(version ?? "?", Messages.MonitorPackageBadCommand);
         }
 
-        if (!_link!.VerifyServerSignature($"{version}\n{sha256}", signature))
+        if (!_link!.VerifyServerSignature(CustosEdition.PackageSignedString(version, sha256), signature))
         {
             return Rejected(version, Messages.MonitorPackageBadSignature);
         }
@@ -343,6 +343,12 @@ internal sealed partial class AgentService
             return Messages.Format(Messages.MonitorPackageProtocol, manifest.MinProtocol);
         }
 
+        // The editions are different programs (.NET 10 x64, .NET 6 x86, the program of macOS): none installs another's package.
+        if (!string.Equals(manifest.Edition, CustosEdition.Wire, StringComparison.Ordinal))
+        {
+            return CustosEdition.PackageOfOtherEdition(manifest.Edition);
+        }
+
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string root = Path.GetFullPath(staging) + Path.DirectorySeparatorChar;
         foreach (var file in manifest.Files)
@@ -434,6 +440,7 @@ internal sealed partial class AgentService
     }
 
     /// <summary>The form of versions the server accepts for packages.</summary>
-    [GeneratedRegex(@"^\d{1,5}(\.\d{1,5}){1,3}([-+][0-9A-Za-z.-]{1,20})?$")]
-    private static partial Regex VersionPattern();
+    private static readonly Regex VersionPatternRegex = new(@"^\d{1,5}(\.\d{1,5}){1,3}([-+][0-9A-Za-z.-]{1,20})?$");
+
+    private static Regex VersionPattern() => VersionPatternRegex;
 }

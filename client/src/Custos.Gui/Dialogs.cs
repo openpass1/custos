@@ -279,11 +279,15 @@ internal sealed class SourceDialog : DialogForm
 /// </summary>
 internal sealed class DestinationDialog : DialogForm
 {
+    // The legacy edition has no cloud drives: they are not offered (CustosEdition).
     private static readonly string[] Kinds =
     [
-        DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb,
-        DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3,
-        DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox,
+        .. new[]
+        {
+            DestinationKinds.Local, DestinationKinds.Unc, DestinationKinds.Usb,
+            DestinationKinds.Sftp, DestinationKinds.Ftp, DestinationKinds.Ftps, DestinationKinds.WebDav, DestinationKinds.S3,
+            DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox,
+        }.Where(DestinationKinds.IsSupported),
     ];
 
     /// <summary>The part size a new Yandex Disk destination starts with: the Disk without a subscription takes files
@@ -365,6 +369,10 @@ internal sealed class DestinationDialog : DialogForm
         _context = context;
         _original = destination;
         _supported = DestinationKinds.IsSupported(destination.Kind);
+        if (CustosEdition.IsLegacy && DestinationKinds.IsCloudDrive(destination.Kind))
+        {
+            _unsupported.Text = Strings.DestinationNotInLegacy;
+        }
         _account = new CredentialPicker(context) { Dock = DockStyle.Fill };
         _hostHelp = Ui.HelpIcon(Tips, Strings.DestinationHostHelp);
         _endpointHelp = Ui.HelpIcon(Tips, Strings.DestinationEndpointHelp);
@@ -1472,10 +1480,14 @@ internal sealed class SettingsForm : DialogForm
         AddRow(Strings.CopyPriority, _priority, Ui.HelpIcon(_toolTip, Strings.CopyPriorityHelp));
         AddRow(Strings.ServiceLanguage, _language, Ui.HelpIcon(_toolTip, Strings.ServiceLanguageHelp));
 
-        var lookHeading = new Label { Text = Strings.SettingsLook, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
-        lookHeading.Font = heading.Font;
-        AddWide(lookHeading);
-        AddRow(Strings.ThemeLabel, _theme, Ui.HelpIcon(_toolTip, Strings.ThemeHelp));
+        // The legacy edition has no dark theme (Theme), so it has nothing to choose here.
+        if (!CustosEdition.IsLegacy)
+        {
+            var lookHeading = new Label { Text = Strings.SettingsLook, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+            lookHeading.Font = heading.Font;
+            AddWide(lookHeading);
+            AddRow(Strings.ThemeLabel, _theme, Ui.HelpIcon(_toolTip, Strings.ThemeHelp));
+        }
 
         // New versions of the program on GitHub, for a computer without a monitoring site.
         var updatesHeading = new Label { Text = Strings.SettingsUpdates, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
@@ -1503,7 +1515,7 @@ internal sealed class SettingsForm : DialogForm
         archiverRow.Controls.Add(_archiver, 0, 0);
         archiverRow.Controls.Add(_sevenZipCheck, 1, 0);
         AddWide(archiverRow);
-        AddNote(Strings.Settings7ZipNote);
+        AddNote(CustosEdition.IsLegacy ? Strings.Settings7ZipNoteLegacy : Strings.Settings7ZipNote);
         ShowArchiver();
         bool admin = monitor.Status.Hello?.IsAdmin == true;
         _sevenZipCheck.Enabled = admin && monitor.IsConnected;
@@ -1514,22 +1526,26 @@ internal sealed class SettingsForm : DialogForm
 
         _sevenZipCheck.Click += (_, _) => Ui.Run(this, CheckSevenZipAsync);
 
-        // Cloud drives (section 6.3): what this version brings, and the administrator's own applications.
-        var cloudHeading = new Label { Text = Strings.SettingsCloud, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
-        cloudHeading.Font = heading.Font;
-        AddWide(cloudHeading);
-        var cloudRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
-        cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        cloudRow.Controls.Add(_cloudApps, 0, 0);
-        cloudRow.Controls.Add(_cloudOwn, 1, 0);
-        AddWide(cloudRow);
-        AddNote(admin ? Strings.SettingsCloudNote : Strings.CloudAdminOnly);
-        _cloudApps.Text = admin ? string.Empty : Strings.Format(Strings.SettingsCloudBuiltIn, "—");
-        foreach (string kind in CloudNames.Kinds)
+        // Cloud drives (section 6.3): what this version brings, and the administrator's own applications. The legacy
+        // edition has none (CustosEdition).
+        if (!CustosEdition.IsLegacy)
         {
-            string chosen = kind;
-            _cloudMenu.Items.Add(CloudNames.Name(kind), null, (_, _) => ConnectCloud(chosen, null));
+            var cloudHeading = new Label { Text = Strings.SettingsCloud, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
+            cloudHeading.Font = heading.Font;
+            AddWide(cloudHeading);
+            var cloudRow = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
+            cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            cloudRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            cloudRow.Controls.Add(_cloudApps, 0, 0);
+            cloudRow.Controls.Add(_cloudOwn, 1, 0);
+            AddWide(cloudRow);
+            AddNote(admin ? Strings.SettingsCloudNote : Strings.CloudAdminOnly);
+            _cloudApps.Text = admin ? string.Empty : Strings.Format(Strings.SettingsCloudBuiltIn, "—");
+            foreach (string kind in CloudNames.Kinds)
+            {
+                string chosen = kind;
+                _cloudMenu.Items.Add(CloudNames.Name(kind), null, (_, _) => ConnectCloud(chosen, null));
+            }
         }
 
         var accountsHeading = new Label { Text = Strings.SettingsAccounts, AutoSize = true, Margin = new Padding(0, 14, 0, 4) };
@@ -1537,7 +1553,7 @@ internal sealed class SettingsForm : DialogForm
         AddWide(accountsHeading);
         AddNote(Strings.SettingsAccountsNote);
         var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = new Padding(8, 0, 0, 0) };
-        buttons.Controls.AddRange([_addAccount, _connectCloud, _editAccount, _deleteAccount]);
+        buttons.Controls.AddRange(CustosEdition.IsLegacy ? [_addAccount, _editAccount, _deleteAccount] : [_addAccount, _connectCloud, _editAccount, _deleteAccount]);
         var row = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, Margin = new Padding(0) };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -1716,7 +1732,7 @@ internal sealed class SettingsForm : DialogForm
                 return;
             }
 
-            if (!Ui.Confirm(this, Strings.Format(Strings.SevenZipAskUpdate, check.Installed ?? "—", check.Latest)))
+            if (!Ui.Confirm(this, Strings.Format(CustosEdition.IsLegacy ? Strings.SevenZipAskUpdateLegacy : Strings.SevenZipAskUpdate, check.Installed ?? "—", check.Latest)))
             {
                 return;
             }

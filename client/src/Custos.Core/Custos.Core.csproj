@@ -4,7 +4,7 @@
        Targets plain net10.0 so that its tests also run outside Windows; Windows-only code is marked
        with [SupportedOSPlatform("windows")]. -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>$(CustosTargetFramework)</TargetFramework>
     <RootNamespace>Custos.Core</RootNamespace>
     <AssemblyName>Custos.Core</AssemblyName>
     <!-- The 7z.dll interop reads and writes native buffers directly. -->
@@ -21,6 +21,13 @@
     <PackageReference Include="SSH.NET" />
     <PackageReference Include="FluentFTP" />
     <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+
+  <!-- Legacy edition (.NET 6, Directory.Build.props): what .NET 10 has built in and .NET 6 lacks. -->
+  <ItemGroup Condition="'$(CustosLegacy)' == 'true'">
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Microsoft.Bcl.TimeProvider" />
+    <Compile Include="..\Legacy\Net6Apis.cs" Link="Legacy\Net6Apis.cs" />
   </ItemGroup>
 
   <!-- Built-in cloud drive applications (stage 4b). The ids come from the environment of the build (GitHub Actions

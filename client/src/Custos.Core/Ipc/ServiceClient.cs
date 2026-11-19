@@ -51,6 +51,12 @@ public sealed class ServiceClient : IAsyncDisposable
         CancellationToken cancellationToken,
         string pipeName = PipeProtocol.PipeName)
     {
+#if CUSTOS_LEGACY
+        if (OperatingSystem.IsWindows())
+        {
+            return new ServiceClient(await LegacyPipes.ConnectAsync(pipeName, timeout, cancellationToken).ConfigureAwait(false), onEvent);
+        }
+#endif
         var pipe = CreatePipe(pipeName);
         try
         {
@@ -117,6 +123,7 @@ public sealed class ServiceClient : IAsyncDisposable
 
     private static NamedPipeClientStream CreatePipe(string pipeName)
     {
+#if !CUSTOS_LEGACY
         if (OperatingSystem.IsWindows())
         {
             // Ask only for what the service's pipe grants to ordinary users. The service may identify the caller
@@ -129,6 +136,7 @@ public sealed class ServiceClient : IAsyncDisposable
                 TokenImpersonationLevel.Identification,
                 HandleInheritability.None);
         }
+#endif
 
         // macOS: a socket at a full path; the usual name means the socket of the service.
         string path = pipeName == PipeProtocol.PipeName ? PipeProtocol.UnixSocketPath : pipeName;

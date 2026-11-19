@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+#if !CUSTOS_LEGACY
 using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -17,9 +19,15 @@ public sealed unsafe class SevenZipLibrary
     public static string FileName => OperatingSystem.IsWindows() ? "7z.dll" : "7z.so";
 
     private const ushort MachineAmd64 = 0x8664;
+    private const ushort MachineI386 = 0x014C;
 
-    /// <summary>Wraps the objects of 7-Zip and our callbacks for each other (source-generated COM).</summary>
+#if !CUSTOS_LEGACY
+    /// <summary>
+    /// Wraps the objects of 7-Zip and our callbacks for each other (source-generated COM). The edition for Windows 7
+    /// and 8.1 (.NET 6, which has no source-generated COM) uses the COM interop built into .NET on Windows instead.
+    /// </summary>
     internal static readonly StrategyBasedComWrappers Wrappers = new();
+#endif
 
     private static readonly Lock CacheLock = new();
     private static readonly Dictionary<string, SevenZipLibrary> Cache = new(StringComparer.OrdinalIgnoreCase);
@@ -57,14 +65,14 @@ public sealed unsafe class SevenZipLibrary
 
             if (!File.Exists(full))
             {
-                throw new ArchiveException(Messages.Format(Messages.SevenZipMissing, full));
+                throw new ArchiveException(Messages.Format(Environment.Is64BitProcess ? Messages.SevenZipMissing : Messages.SevenZipMissingLegacy, full));
             }
 
-            // A 32-bit 7z.dll cannot be loaded into the 64-bit service; say so instead of a cryptic error. The library
-            // of other systems is built together with CUSTOS for its processor.
-            if (OperatingSystem.IsWindows() && ReadMachine(full) != MachineAmd64)
+            // The 32-bit legacy edition loads the 32-bit 7z.dll, the standard one the 64-bit 7z.dll; the library of
+            // macOS is built together with CUSTOS for its processor.
+            if (OperatingSystem.IsWindows() && ReadMachine(full) != (Environment.Is64BitProcess ? MachineAmd64 : MachineI386))
             {
-                throw new ArchiveException(Messages.Format(Messages.SevenZipNot64Bit, full));
+                throw new ArchiveException(Messages.Format(Environment.Is64BitProcess ? Messages.SevenZipNot64Bit : Messages.SevenZipNot32Bit, full));
             }
 
             IntPtr handle;
@@ -106,7 +114,12 @@ public sealed unsafe class SevenZipLibrary
 
         try
         {
+#if CUSTOS_LEGACY
+            // The edition for Windows 7 and 8.1 runs on Windows only.
+            return OperatingSystem.IsWindows() ? Marshal.GetObjectForIUnknown((IntPtr)pointer) : throw new PlatformNotSupportedException();
+#else
             return Wrappers.GetOrCreateObjectForComInstance((IntPtr)pointer, CreateObjectFlags.UniqueInstance);
+#endif
         }
         finally
         {
@@ -118,10 +131,17 @@ public sealed unsafe class SevenZipLibrary
     /// <summary>Lets go of a 7-Zip object at once instead of when the garbage collector finds its wrapper.</summary>
     internal static void Release(object? comObject)
     {
+#if CUSTOS_LEGACY
+        if (OperatingSystem.IsWindows() && comObject is not null && Marshal.IsComObject(comObject))
+        {
+            Marshal.FinalReleaseComObject(comObject);
+        }
+#else
         if (comObject is ComObject wrapper)
         {
             wrapper.FinalRelease();
         }
+#endif
     }
 
     internal static string Hresult(int hr) => "0x" + hr.ToString("X8", CultureInfo.InvariantCulture);

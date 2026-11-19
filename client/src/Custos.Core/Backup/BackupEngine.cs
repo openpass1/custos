@@ -267,7 +267,7 @@ public sealed partial class BackupEngine
             {
                 if (!DestinationKinds.IsSupported(destination.Kind))
                 {
-                    throw new BackupException(Messages.Format(Messages.DestinationKindNotSupported, destination.Kind));
+                    throw new BackupException(CustosEdition.DestinationNotSupported(destination.Kind));
                 }
 
                 var store = _platform.OpenStore(destination, destination.Kind == DestinationKinds.Unc ? Session(destination.CredentialId) : null);

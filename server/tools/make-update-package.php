@@ -3,7 +3,9 @@
 // Makes a test update package of CUSTOS (A.10) for checking "Updates" with the fake agent: a zip with manifest.json
 // and a couple of dummy files. Real packages come from the client build.
 //
-//   php tools/make-update-package.php --version=1.0.1 [--out=custos-1.0.1.zip] [--min-protocol=1]
+//   php tools/make-update-package.php --version=1.0.1 [--out=custos-1.0.1.zip] [--min-protocol=1] [--edition=legacy]
+//
+// --edition=legacy makes a package of the edition for Windows 7 and 8.1 (custos-legacy-1.0.1.zip).
 
 declare(strict_types=1);
 
@@ -19,16 +21,18 @@ foreach (array_slice($argv, 1) as $arg) {
 }
 $version = (string) ($options['version'] ?? '');
 if (!preg_match('/^\d{1,5}(\.\d{1,5}){1,3}([-+][0-9A-Za-z.-]{1,20})?$/', $version)) {
-    fwrite(STDERR, "Usage: php tools/make-update-package.php --version=1.0.1 [--out=FILE] [--min-protocol=1]\n");
+    fwrite(STDERR, "Usage: php tools/make-update-package.php --version=1.0.1 [--out=FILE] [--min-protocol=1] [--edition=legacy]\n");
     exit(2);
 }
-$out = (string) ($options['out'] ?? "custos-$version.zip");
+$edition = isset($options['edition']) ? (string) $options['edition'] : null;
+$out = (string) ($options['out'] ?? ($edition === 'legacy' ? "custos-legacy-$version.zip" : "custos-$version.zip"));
 $files = [
     'Custos.Service.exe' => "MZ fake CUSTOS service $version\n" . random_bytes(2048),
     'Custos.Gui.exe' => "MZ fake CUSTOS window $version\n" . random_bytes(2048),
 ];
 $manifest = [
     'version' => $version,
+    ...($edition === null ? [] : ['edition' => $edition]),
     'min_protocol' => (int) ($options['min-protocol'] ?? 1),
     'files' => array_map(fn($name) => ['path' => $name, 'sha256' => hash('sha256', $files[$name])], array_keys($files)),
 ];

@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
+#if !CUSTOS_LEGACY
 using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace Custos.Core.Archives.SevenZip;
 
@@ -13,7 +15,12 @@ namespace Custos.Core.Archives.SevenZip;
 // IIDs are {23170F69-40C1-278A-0000-00gg00ss0000}: gg = group (0 progress, 3 streams, 5 password, 6 archive),
 // ss = number of the interface in the group.
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000000050000")]
 internal partial interface IProgress
 {
@@ -24,7 +31,12 @@ internal partial interface IProgress
     int SetCompleted(IntPtr completeValue);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000300010000")]
 internal partial interface ISequentialInStream
 {
@@ -32,7 +44,12 @@ internal partial interface ISequentialInStream
     int Read(IntPtr data, uint size, IntPtr processedSize);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000300020000")]
 internal partial interface ISequentialOutStream
 {
@@ -40,7 +57,12 @@ internal partial interface ISequentialOutStream
     int Write(IntPtr data, uint size, IntPtr processedSize);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000300030000")]
 internal partial interface IInStream
 {
@@ -51,7 +73,12 @@ internal partial interface IInStream
     int Seek(long offset, uint seekOrigin, IntPtr newPosition);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000300040000")]
 internal partial interface IOutStream
 {
@@ -65,7 +92,12 @@ internal partial interface IOutStream
     int SetSize(ulong newSize);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000300060000")]
 internal partial interface IStreamGetSize
 {
@@ -73,7 +105,12 @@ internal partial interface IStreamGetSize
     int GetSize(IntPtr size);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000500100000")]
 internal partial interface ICryptoGetTextPassword
 {
@@ -81,7 +118,12 @@ internal partial interface ICryptoGetTextPassword
     int CryptoGetTextPassword(IntPtr password);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000500110000")]
 internal partial interface ICryptoGetTextPassword2
 {
@@ -89,7 +131,12 @@ internal partial interface ICryptoGetTextPassword2
     int CryptoGetTextPassword2(IntPtr passwordIsDefined, IntPtr password);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600030000")]
 internal partial interface ISetProperties
 {
@@ -97,7 +144,12 @@ internal partial interface ISetProperties
     int SetProperties(IntPtr names, IntPtr values, uint numProps);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600100000")]
 internal partial interface IArchiveOpenCallback
 {
@@ -108,7 +160,12 @@ internal partial interface IArchiveOpenCallback
     int SetCompleted(IntPtr files, IntPtr bytes);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600200000")]
 internal partial interface IArchiveExtractCallback
 {
@@ -129,7 +186,12 @@ internal partial interface IArchiveExtractCallback
     int SetOperationResult(int operationResult);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600600000")]
 internal partial interface IInArchive
 {
@@ -164,7 +226,12 @@ internal partial interface IInArchive
     int GetArchivePropertyInfo(uint index, IntPtr name, IntPtr propId, IntPtr varType);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600800000")]
 internal partial interface IArchiveUpdateCallback
 {
@@ -188,7 +255,12 @@ internal partial interface IArchiveUpdateCallback
     int SetOperationResult(int operationResult);
 }
 
+#if CUSTOS_LEGACY
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+#else
 [GeneratedComInterface]
+#endif
 [Guid("23170F69-40C1-278A-0000-000600A00000")]
 internal partial interface IOutArchive
 {
@@ -250,10 +322,14 @@ internal static class SevenZipConst
 }
 
 /// <summary>
-/// A PROPVARIANT as 7-Zip uses it (24 bytes on x64): the type, three reserved words and the value. Only the types
-/// 7-Zip exchanges with an archive handler are needed here.
+/// A PROPVARIANT as 7-Zip uses it (24 bytes on x64, 16 on x86, where the legacy edition runs): the type, three
+/// reserved words and the value. Only the types 7-Zip exchanges with an archive handler are needed here.
 /// </summary>
+#if CUSTOS_LEGACY
+[StructLayout(LayoutKind.Explicit, Size = 16)]
+#else
 [StructLayout(LayoutKind.Explicit, Size = 24)]
+#endif
 internal struct PropVariant
 {
     public const ushort VtEmpty = 0;

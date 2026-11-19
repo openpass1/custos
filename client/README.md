@@ -38,7 +38,7 @@ installer (about 60 MB) into `installer\redist`; it is bundled into setup.exe so
 SHA-256 of the official x64 installer and `7zr.exe` from [github.com/ip7z/7zip](https://github.com/ip7z/7zip/releases)).
 The build downloads both once into `installer\redist\7-zip\<version>`, refuses a file whose SHA-256 differs, unpacks
 `7z.dll` and the 7-Zip license from the installer and ships them; the tests use the same `7z.dll`. To move to a new
-7-Zip, change the five values in `7-zip.json`. Once a month the workflow `7-Zip release check` opens an issue when a
+7-Zip, change the seven values in `7-zip.json`. Once a month the workflow `7-Zip release check` opens an issue when a
 newer 7-Zip is out, with the values to paste.
 
 GitHub Actions runs the same script on every change under `client/` (workflow `Client build`) and keeps three files
@@ -63,6 +63,37 @@ nobody clicks) fails instead of hanging the build.
 
 Texts of the program are in `src/Custos.Core/Resources/Messages.tsv` and `src/Custos.Gui/Resources/Strings.tsv`
 (English and Russian side by side); after a change run `python3 tools/make-strings.py` in `client/`.
+
+## Edition for Windows 7 and 8.1
+
+A separate build of the same code for old computers: **.NET 6, 32-bit (x86)**, for Windows 7 SP1 and 8.1, 32- and
+64-bit. It is released as is (`client-legacy-vX.Y.Z` on [Releases](https://github.com/openpass1/custos/releases),
+«CUSTOS for Windows 7 and 8.1»: `CUSTOS-Legacy-Setup-<version>.exe`) and updated only when something serious breaks.
+Windows 7 and 8.1 and .NET 6 get no more fixes from Microsoft, so use it only where Windows cannot be upgraded.
+
+- **Setup.** The installer carries the x86 .NET 6 Desktop Runtime and installs it when missing, like the standard
+  one does with .NET 10. It refuses Windows 8 (8.0, needs the free update to 8.1), and Windows 7 without the updates
+  .NET 6 needs: KB3063858 and the Universal C Runtime (KB2999226 or the Visual C++ 2015-2019 Redistributable x86). On
+  Windows 10 and later it suggests the standard CUSTOS instead.
+- **Not in this edition:** cloud drives (Google Drive, Yandex Disk, Dropbox: their sign-in needs a current browser),
+  the dark theme, the 7-Zip update from the site (the site keeps the 64-bit 7-Zip). These are not shown at all, in
+  the program and on the site. 7z.dll is the 32-bit one: the button «Check for a 7-Zip update» downloads the 32-bit
+  7-Zip from GitHub, and by hand 7z.dll is taken from the 32-bit 7-Zip (`7zXXXX.exe`, without `-x64`).
+- **Works the same:** local, network and USB folders, SFTP, FTP/FTPS, WebDAV, S3 with Object Lock, VSS, databases,
+  custos-helper, scripts, the monitoring server, export and import, Cobian import. Connections over TLS use TLS 1.2
+  (Windows 7 offers only TLS 1.0 unless asked; neither knows TLS 1.3).
+- **64-bit Windows.** The 32-bit program reads sources as 64-bit Windows sees them: `C:\Windows\System32` (not
+  SysWOW64), `%ProgramFiles%` = `C:\Program Files`, the 64-bit registry, cmd.exe and PowerShell for task scripts.
+- **Updates.** Without a monitoring server it looks for `client-legacy-vX.Y.Z` releases and their
+  `custos-legacy-X.Y.Z.zip`. On the site, packages of this edition are uploaded on the «Updates» page like the standard
+  ones (their own block appears once such a computer is connected) and go only to computers of this edition; a
+  package of one edition is never installed on the other.
+- **Build:** `powershell -ExecutionPolicy Bypass -File .\build.ps1 -Legacy` with the same .NET 10 SDK. It downloads
+  the x86 .NET 6 Desktop Runtime and the 32-bit 7-Zip installer (`installer32Url` in `7-zip.json`) and writes
+  `artifacts-legacy\installer\CUSTOS-Legacy-Setup-<version>.exe` and `artifacts-legacy\update\custos-legacy-<version>.zip`.
+  Tests are not run for this edition (they run on the standard one; the code is the same). In code the edition is
+  `-p:CustosLegacy=true` (`CUSTOS_LEGACY`); the missing .NET APIs are in `src/Legacy`. The job `legacy` of
+  `Client build` builds it, installs it on the runner and checks that the 32-bit service starts.
 
 ## macOS
 
@@ -97,7 +128,8 @@ an update: check it after each update.
 
 **Updates.** Without a monitoring site the service checks the GitHub releases once a day, as on Windows, and installs
 `custos-macos-<version>.zip` of the same release (`manifest.json` and `Custos.pkg`, checked by SHA-256) with the
-macOS installer. A site does not update Macs yet: the next site version learns the macOS edition.
+macOS installer. A monitoring site 1.3.0 or newer updates Macs too: on its «Updates» page the packages of macOS
+(`custos-macos-<version>.zip`) have their own block and go only to Macs.
 
 **Uninstall.** In Terminal:
 
