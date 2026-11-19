@@ -67,7 +67,8 @@ public/      web root: index.php front controller, assets, favicon.*; assets/ven
 src/         Custos\ classes: Infra (config, DB, crypto), Domain (data), Http (agent API and web pages)
 templates/   page templates
 tools/       fake-agent.php and its Custos\Tools\ classes, make-update-package.php, make-favicon.py (site icons from
-             the client's shield), make-zabbix-template.py, fake-space.php
+             the client's shield), make-zabbix-template.py, fake-space.php, make-icons.py (icons.svg),
+             make-colors.mjs (the colour schemes in app.css)
 tests/       PHPUnit tests
 var/         sessions, logs, cron lock, update packages, fake agent state, update/ (site updates: state.json, the
              previous version in backup/), created at run time

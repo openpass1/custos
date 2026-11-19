@@ -56,6 +56,13 @@ final class View
         return in_array($theme, ['light', 'dark'], true) ? $theme : 'auto';
     }
 
+    /** The colour scheme of the page (app.css, "Colour schemes"): the user's choice, else the base one. */
+    public function color(): string
+    {
+        $color = (string) ($this->session?->user()['color'] ?? '');
+        return in_array($color, \Custos\Domain\Users::COLORS, true) ? $color : \Custos\Domain\Users::COLORS[0];
+    }
+
     /** A template without the layout, for blocks that the page refreshes by itself. */
     public function partial(string $template, array $vars): string
     {
