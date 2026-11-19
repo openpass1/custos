@@ -18,6 +18,9 @@ a version that was never released by itself is not lost.
 - Such a machine is offered only what its program can do: no cloud drives in its task editor (a task or template with one is refused for it), no 7-Zip update, and no update packages of the standard program.
 - **Updates** take packages of the edition for Windows 7 and 8.1 (`custos-legacy-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has such a machine or package. The site also finds `client-legacy-v…` releases on GitHub and downloads them like the standard program.
 
+### Changed
+- Backgrounds, cards, lines and grey text are neutral grey instead of slightly blue-violet, in the light and the dark theme; buttons, the selected menu item and other accents keep the blue.
+
 ## 1.1.6
 
 ### Added
