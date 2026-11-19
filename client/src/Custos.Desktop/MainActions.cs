@@ -24,7 +24,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         }
 
         var task = new TaskDefinition { Name = vm.UniqueName(Strings.NewTaskName) };
-        await OpenEditorAsync(new EditorModel(task, Monitor.Snapshot, isNew: true));
+        await OpenEditorAsync(new EditorModel(Monitor, task, isNew: true, vm.IsDemo));
     }
 
     public async Task EditAsync()
@@ -46,7 +46,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         }
 
         // The task as it is now: the snapshot may have changed while the password was typed.
-        await OpenEditorAsync(new EditorModel(vm.SelectedDefinition ?? task, Monitor.Snapshot, isNew: false));
+        await OpenEditorAsync(new EditorModel(Monitor, vm.SelectedDefinition ?? task, isNew: false, vm.IsDemo));
     }
 
     /// <summary>A copy of the selected task, switched off, with a name of its own; it is selected once it is there.</summary>
@@ -355,10 +355,28 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     {
         var editor = new EditorWindow(model);
         await editor.ShowDialog(window);
-        if (editor.Saved)
+        if (editor.Saved is not { } saved)
         {
-            vm.Snack(DesktopStrings.EditorNotSaved);
+            return;
         }
+
+        if (model.IsDemo && Monitor.Snapshot is { } snapshot)
+        {
+            // The made-up tasks have no service: the window keeps the change itself.
+            int index = snapshot.Tasks.FindIndex(t => t.Id == saved.Id);
+            if (index >= 0)
+            {
+                snapshot.Tasks[index] = saved;
+            }
+            else
+            {
+                snapshot.Tasks.Add(saved);
+            }
+
+            Monitor.SimulateSnapshot(snapshot);
+        }
+
+        vm.SelectWhenShown(saved.Id);
     }
 
     /// <summary>Whether the task waits in the queue.</summary>

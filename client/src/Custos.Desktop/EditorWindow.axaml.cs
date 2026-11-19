@@ -1,41 +1,49 @@
 using System.ComponentModel;
-using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Custos.Core.Model;
 using Custos.Gui;
 
 namespace Custos.Desktop;
 
-/// <summary>The task editor of the new window: shows the settings of the task page by page; saving comes in the next version.</summary>
+/// <summary>
+/// The task editor of the new window: the pages of the task on the left, the open page on the right, «Сохранить»
+/// sends the task to the service and closes the window once the service stored it.
+/// </summary>
 internal sealed partial class EditorWindow : Window
 {
     private readonly EditorModel _model;
-    private readonly DispatcherTimer _snackTimer = new() { Interval = TimeSpan.FromSeconds(5) };
+    private bool _saving;
 
     /// <summary>Only for the XAML previewer of an IDE.</summary>
     public EditorWindow()
-        : this(new EditorModel(new TaskDefinition { Name = Strings.NewTaskName }, null, isNew: true))
+        : this(new EditorModel(new ServiceMonitor(), new TaskDefinition { Name = Strings.NewTaskName }, isNew: true, demo: true))
     {
     }
 
     public EditorWindow(EditorModel model)
     {
         _model = model;
+        model.Context.Owner = this;
         DataContext = model;
         InitializeComponent();
-        AddHandler(Button.ClickEvent, OnPageButton);
         model.PropertyChanged += OnModelChanged;
-        _snackTimer.Tick += (_, _) => HideSnack();
         ActualThemeVariantChanged += (_, _) => TitleBar.Paint(this);
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.S && e.KeyModifiers == KeyModifiers.Control)
+            {
+                e.Handled = true;
+                OnSave(this, new RoutedEventArgs());
+            }
+        };
     }
 
     public EditorModel Model => _model;
 
-    /// <summary>The window was closed with «Сохранить».</summary>
-    public bool Saved { get; private set; }
+    /// <summary>The task as the service stored it, after «Сохранить»; null when the window was closed without it.</summary>
+    public TaskDefinition? Saved { get; private set; }
 
     protected override void OnOpened(EventArgs e)
     {
@@ -43,10 +51,20 @@ internal sealed partial class EditorWindow : Window
         TitleBar.Paint(this);
     }
 
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        // The answer of the service is awaited; closing now would leave the user unsure whether the task was saved.
+        if (_saving)
+        {
+            e.Cancel = true;
+        }
+
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _model.PropertyChanged -= OnModelChanged;
-        _snackTimer.Stop();
         base.OnClosed(e);
     }
 
@@ -58,31 +76,36 @@ internal sealed partial class EditorWindow : Window
         }
     }
 
-    /// <summary>Buttons on a page (add, change, remove) would open dialogs of their own; here they only say so.</summary>
-    private void OnPageButton(object? sender, RoutedEventArgs e)
-    {
-        if (e.Source is Visual source && PagePane.IsVisualAncestorOf(source))
-        {
-            SnackText.Text = DesktopStrings.EditorNotYet;
-            Snack.IsVisible = true;
-            _snackTimer.Stop();
-            _snackTimer.Start();
-        }
-    }
-
-    private void OnSnackClose(object? sender, RoutedEventArgs e) => HideSnack();
-
-    private void HideSnack()
-    {
-        _snackTimer.Stop();
-        Snack.IsVisible = false;
-    }
-
     private void OnCancel(object? sender, RoutedEventArgs e) => Close();
 
-    private void OnSave(object? sender, RoutedEventArgs e)
+    private void OnSave(object? sender, RoutedEventArgs e) => Safe.Run(SaveAsync, ex => _model.Problem = ex.Message);
+
+    private async Task SaveAsync()
     {
-        Saved = true;
-        Close();
+        if (_saving)
+        {
+            return;
+        }
+
+        _saving = true;
+        SaveButton.IsEnabled = CancelButton.IsEnabled = false;
+        Cursor = new Cursor(StandardCursorType.Wait);
+        bool saved;
+        try
+        {
+            saved = await _model.SaveAsync();
+        }
+        finally
+        {
+            _saving = false;
+            SaveButton.IsEnabled = CancelButton.IsEnabled = true;
+            Cursor = Cursor.Default;
+        }
+
+        if (saved)
+        {
+            Saved = _model.Saved;
+            Close();
+        }
     }
 }

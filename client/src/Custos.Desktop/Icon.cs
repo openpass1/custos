@@ -2,11 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
+using Avalonia.Rendering;
 
 namespace Custos.Desktop;
 
 /// <summary>A Material Symbols icon (IconData.g.cs), drawn as a path so it is sharp at every screen scale.</summary>
-internal sealed class Icon : Control
+internal sealed class Icon : Control, ICustomHitTest
 {
     public static readonly StyledProperty<string?> KindProperty = AvaloniaProperty.Register<Icon, string?>(nameof(Kind));
 
@@ -22,6 +23,9 @@ internal sealed class Icon : Control
         AffectsRender<Icon>(KindProperty, FilledProperty, ForegroundProperty);
         AffectsMeasure<Icon>(SizeProperty);
     }
+
+    /// <summary>The whole square of the icon takes the pointer, not only its strokes: a «?» shows its tip anywhere on it.</summary>
+    public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
 
     public string? Kind
     {

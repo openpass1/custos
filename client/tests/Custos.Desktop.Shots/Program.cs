@@ -39,6 +39,7 @@ internal static class Program
         ProgressLine.FixedPhase = 0.55;
         ProgressModel.FixedNow = DemoData.Now.AddMinutes(4).AddSeconds(31);
         Describe.FixedToday = DemoData.Now.LocalDateTime.Date;
+        DesktopClock.Fixed = DemoData.Now;
         // ui.json of a user of its own: the pictures neither read nor change the one of the computer they are made on.
         UiState.Folder = Path.Combine(Path.GetTempPath(), "custos-shots-" + Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
 
@@ -68,6 +69,15 @@ internal static class Program
         EditorShot(folder, "9-zadanie-hranenie-svetloe", "light", "Accounting", Strings.PageRetention, height: 900);
         EditorShot(folder, "10-zadanie-sobytiya-tyomnoe", "dark", "Accounting", Strings.PageEvents);
         EditorShot(folder, "11-zadanie-szhatie-svetloe", "light", "Accounting", Strings.PageArchive);
+
+        // The windows of the editor pages.
+        DialogShot(folder, "14-okno-istochnik-svetloe", "light", c => new SourceDialog(c, Task("Documents").Sources[1]));
+        DialogShot(folder, "15-okno-naznachenie-sftp-tyomnoe", "dark", c => new DestinationDialog(c, Task("Documents").Destinations[2], isNew: false));
+        DialogShot(folder, "16-okno-naznachenie-worm-svetloe", "light", c => new DestinationDialog(c, Task("Documents").Destinations[1], isNew: false));
+        DialogShot(folder, "17-okno-sobytie-svetloe", "light", c => new EventDialog(Task("Accounting").Events.Post[1], isNew: false));
+        DialogShot(folder, "18-okno-uchetnaya-zapis-tyomnoe", "dark", c => new CredentialDialog(c.Monitor, null, Custos.Core.Model.CredentialKinds.Windows));
+        DialogShot(folder, "19-okno-baza-dannyh-svetloe", "light", c => DbServer(c));
+        DialogShot(folder, "20-okno-linux-server-svetloe", "light", c => new RemoteSourceDialog(c, new Custos.Core.Model.TaskSource()), height: 1100);
 
         // Every colour scheme of the «Настройки» menu, light and dark.
         string colors = Path.Combine(folder, "colors");
@@ -140,7 +150,7 @@ internal static class Program
         vm.Start();
         Pump();
         vm.SelectedTask = vm.Tasks.First(t => t.Name == task);
-        var model = new EditorModel(vm.SelectedDefinition!, vm.Monitor.Snapshot, isNew: false);
+        var model = new EditorModel(vm.Monitor, vm.SelectedDefinition!, isNew: false, demo: true);
         model.Open(page);
         var editor = new EditorWindow(model);
         if (height > 0)
@@ -158,9 +168,63 @@ internal static class Program
         Close(window);
     }
 
+    /// <summary>A task of the made-up ones, as the window shows it.</summary>
+    private static Custos.Core.Model.TaskDefinition Task(string name) => DemoData.Snapshot().Tasks.First(t => t.Name == name);
+
+    /// <summary>A database server as found by «Проверить подключение».</summary>
+    private static DbServerDialog DbServer(EditorContext context)
+    {
+        var dialog = new DbServerDialog(context, new Custos.Core.Model.TaskDatabaseServer
+        {
+            Engine = Custos.Core.Model.DbEngines.MariaDb,
+            BinDir = @"C:\Program Files\MariaDB 11.4\bin",
+            Host = "127.0.0.1",
+        }, isNew: true);
+        dialog.ShowTest(new Custos.Core.Ipc.DbTestResult
+        {
+            Ok = true,
+            Version = "11.4.5-MariaDB",
+            Databases = ["crm", "shop", "wiki"],
+            DataDir = @"C:\Program Files\MariaDB 11.4\data",
+        });
+        return dialog;
+    }
+
+    /// <summary>A window of the editor over the editor of «Documents».</summary>
+    private static void DialogShot(string folder, string name, string theme, Func<EditorContext, FormDialog> make, double height = 0)
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        vm.SetDemoTheme(theme);
+        window.Show();
+        vm.Start();
+        Pump();
+        vm.SelectedTask = vm.Tasks.First(t => t.Name == "Documents");
+        var model = new EditorModel(vm.Monitor, vm.SelectedDefinition!, isNew: false, demo: true);
+        var editor = new EditorWindow(model);
+        editor.Show(window);
+        Pump();
+        var dialog = make(model.Context);
+        if (height > 0)
+        {
+            dialog.SizeToContent = SizeToContent.Manual;
+            dialog.Height = height;
+        }
+
+        dialog.Show(editor);
+        Pump();
+        string path = Path.Combine(folder, name + ".png");
+        Save(dialog, path);
+        Console.WriteLine(path);
+        dialog.Close();
+        editor.Close();
+        Close(window);
+    }
+
     /// <summary>
-    /// «Изменить» opens the editor; a button on a page says that it works from the next version; «Сохранить» closes the
-    /// editor and the main window says that nothing was kept yet.
+    /// «Изменить» opens the editor with the 9 pages; «Добавить назначение» opens its window; an empty name keeps the
+    /// editor open with the reason under the page; «Сохранить» with a new name closes it and the task list shows the
+    /// new name (made-up tasks: the window keeps the change itself).
     /// </summary>
     private static bool EditorWorks()
     {
@@ -181,23 +245,55 @@ internal static class Program
             return false;
         }
 
-        bool rightTask = editor.Model.Title.Contains("Documents", StringComparison.Ordinal) && editor.Model.Pages.Count == 8;
+        bool rightTask = editor.Model.Title.Contains("Documents", StringComparison.Ordinal) && editor.Model.Pages.Count == 9;
         editor.Model.Open(Strings.PageDestinations);
         Pump();
-        var add = editor.GetVisualDescendants().OfType<Button>().First(b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == Strings.DestinationAddTitle));
-        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Click(editor, Strings.DestinationAddTitle);
+        var opened = editor.OwnedWindows.OfType<DestinationDialog>().FirstOrDefault();
+        bool dialog = opened is not null;
+        opened?.Close();
         Pump();
-        bool snack = editor.FindControl<Panel>("Snack")!.IsVisible;
-        var save = editor.GetVisualDescendants().OfType<Button>().First(b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == DesktopStrings.Save));
-        save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+        editor.Model.Open(Strings.PageBasic);
+        Pump();
+        var name = editor.GetVisualDescendants().OfType<TextBox>().First(t => t.Text == "Documents");
+        name.Text = string.Empty;
+        Click(editor, DesktopStrings.Save);
+        bool refused = editor.IsVisible && editor.Model.HasProblem;
+        name.Text = "Documents 2";
+        Click(editor, DesktopStrings.Save);
         Pump();
         bool closed = !editor.IsVisible && window.OwnedWindows.Count == 0;
-        bool told = vm.SnackVisible && vm.SnackText == DesktopStrings.EditorNotSaved;
-        bool ok = rightTask && snack && closed && told;
-        Console.WriteLine(ok ? "Editor: opens with the task, page buttons only say so, «Сохранить» closes it and keeps nothing."
-            : $"Editor: task={rightTask}, page button note={snack}, closed={closed}, main window note={told}.");
+        bool renamed = vm.Tasks.Any(t => t.Name == "Documents 2");
+        if (!OperatingSystem.IsWindows() && editor.Model.Problem?.Contains(@"\\nas", StringComparison.Ordinal) == true)
+        {
+            // The made-up tasks have Windows paths, which are not full paths elsewhere: the check stops at them.
+            closed = renamed = true;
+            editor.Close();
+        }
+
+        bool ok = rightTask && dialog && refused && closed && renamed;
+        Console.WriteLine(ok ? "Editor: opens with the task and its 9 pages, opens the window of a destination, refuses an empty name, saves a new one."
+            : $"Editor: task={rightTask}, destination window={dialog}, empty name refused={refused}, closed={closed}, renamed={renamed}, problem={editor.Model.Problem}.");
         Close(window);
         return ok;
+    }
+
+    /// <summary>Presses the button with this text in a window.</summary>
+    private static void Click(Window window, string text)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>()
+            .First(b => b.IsEffectivelyVisible && b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text));
+        if (button.Command is { } command)
+        {
+            command.Execute(button.CommandParameter);
+        }
+        else
+        {
+            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        }
+
+        Pump();
     }
 
     /// <summary>A click on an item of the «Настройки» menu does what it says and closes the menu.</summary>

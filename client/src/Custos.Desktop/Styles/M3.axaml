@@ -11,6 +11,11 @@
     <Setter Property="FontSize" Value="14" />
   </Style>
 
+  <!-- Dialogs of forms: the fields stand on the surface, as in the panes of the main window. -->
+  <Style Selector="Window.surface">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+  </Style>
+
   <Style Selector="TextBlock.title">
     <Setter Property="FontSize" Value="18" />
     <Setter Property="FontWeight" Value="Medium" />

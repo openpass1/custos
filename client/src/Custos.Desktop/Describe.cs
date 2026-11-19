@@ -213,7 +213,7 @@ internal static class Describe
 
     public static bool SameId(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
-    private static string PresetTitle(string? preset) => preset switch
+    public static string PresetTitle(string? preset) => preset switch
     {
         RemotePresets.IspmanagerSites => Strings.RemotePresetIspSites,
         RemotePresets.IspmanagerFull => Strings.RemotePresetIspFull,
@@ -235,4 +235,12 @@ internal enum RowState
 
     /// <summary>The task is off.</summary>
     Off,
+}
+
+/// <summary>The time the editor shows its examples and next runs for: fixed in the pictures, so they stay the same.</summary>
+internal static class DesktopClock
+{
+    public static DateTimeOffset? Fixed { get; set; }
+
+    public static DateTimeOffset Now => Fixed ?? DateTimeOffset.Now;
 }

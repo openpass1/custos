@@ -455,11 +455,16 @@
             <Ellipse Name="ring" Width="20" Height="20" Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
             <Ellipse Name="dot" Width="10" Height="10" Fill="{DynamicResource Primary}" IsVisible="False" />
           </Panel>
-          <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+          <ContentPresenter Name="content" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
                             Margin="4,10,0,0" VerticalAlignment="Top" />
         </Grid>
       </ControlTemplate>
     </Setter>
+    <!-- Several on one line (folder, file, network folder): the text in the middle of the 40 px row, space after it. -->
+    <Style Selector="^.inline /template/ ContentPresenter#content">
+      <Setter Property="Margin" Value="4,0,12,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style Selector="^:pointerover /template/ Border#layer">
       <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
     </Style>
@@ -548,6 +553,23 @@
     <Setter Property="BorderThickness" Value="1" />
   </ControlTheme>
   <ControlTheme x:Key="IconButton" TargetType="Button">
+    <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bg" Width="40" Height="40" CornerRadius="20" Background="{TemplateBinding Background}">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#bg">
+      <Setter Property="Background" Value="{DynamicResource HoverLayer}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- An icon that stays pressed (the eye of a password field). -->
+  <ControlTheme x:Key="IconToggle" TargetType="ToggleButton">
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Cursor" Value="Hand" />

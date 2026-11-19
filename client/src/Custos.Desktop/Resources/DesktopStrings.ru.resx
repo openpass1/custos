@@ -70,9 +70,6 @@
   <data name="Save" xml:space="preserve">
     <value>Сохранить</value>
   </data>
-  <data name="EditorNotSaved" xml:space="preserve">
-    <value>Новое окно пока не сохраняет задания: это следующий этап работы над ним. Задание осталось как было; пока меняйте его в обычном окне CUSTOS.</value>
-  </data>
   <data name="EditorNotYet" xml:space="preserve">
     <value>Эта кнопка заработает в следующей версии нового окна.</value>
   </data>
@@ -87,6 +84,12 @@
   </data>
   <data name="ObjectLockTag" xml:space="preserve">
     <value>Object Lock {0} дн.</value>
+  </data>
+  <data name="MonthDaysNote" xml:space="preserve">
+    <value>Отметьте один или несколько дней. В месяце без выбранного дня (30 февраля) копия делается в его последний день, так что ни один месяц не пропускается.</value>
+  </data>
+  <data name="NumberRange" xml:space="preserve">
+    <value>Введите число от {0} до {1}.</value>
   </data>
   <data name="DemoComment" xml:space="preserve">
     <value>Документы отдела: диск USB, NAS с защитой от удаления и копия вне офиса.</value>

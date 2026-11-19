@@ -28,7 +28,12 @@ ICONS = [
     # Task editor: pages, cards of sources, destinations and events, fields
     'description+', 'folder+', 'database+', 'hard_drive+', 'folder_zip+', 'layers+', 'bolt+', 'tune+', 'lan', 'dns', 'usb',
     'cloud_upload', 'terminal', 'stop_circle', 'lock_clock', 'label', 'speed', 'help', 'event_available', 'key',
-    'power_settings_new', 'palette', 'visibility_off',
+    'power_settings_new', 'palette', 'visibility_off', 'visibility', 'content_paste', 'file_open', 'key_off', 'network_check',
+    'open_in_new', 'person_add', 'save', 'search',
+    # Settings, restore, run log, updates
+    'timer', 'manage_accounts', 'notifications', 'update', 'computer', 'mail', 'apps', 'refresh', 'link',
+    'restart_alt', 'bedtime', 'article', 'checklist', 'logout', 'badge', 'password', 'select_all',
+    'deselect', 'chevron_right', 'drive_file_move', 'person_remove', 'sync_alt',
 ]
 
 NUMBER = re.compile(r'[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?')

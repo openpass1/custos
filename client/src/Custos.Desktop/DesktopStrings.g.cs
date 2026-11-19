@@ -62,9 +62,6 @@ static partial class DesktopStrings
     /// <summary>Save</summary>
     public static string Save => Get(nameof(Save));
 
-    /// <summary>The new window cannot save tasks yet: that is the next step of its work. The task stays as it was; change i...</summary>
-    public static string EditorNotSaved => Get(nameof(EditorNotSaved));
-
     /// <summary>This button works from the next version of the new window on.</summary>
     public static string EditorNotYet => Get(nameof(EditorNotYet));
 
@@ -79,6 +76,12 @@ static partial class DesktopStrings
 
     /// <summary>Object Lock {0} days</summary>
     public static string ObjectLockTag => Get(nameof(ObjectLockTag));
+
+    /// <summary>Tick one or more days. A month without the chosen day (30 February) runs on its last day, so no month is sk...</summary>
+    public static string MonthDaysNote => Get(nameof(MonthDaysNote));
+
+    /// <summary>Enter a number from {0} to {1}.</summary>
+    public static string NumberRange => Get(nameof(NumberRange));
 
     /// <summary>The department's documents: a USB disk, the NAS with protection from deletion, and a copy outside the office.</summary>
     public static string DemoComment => Get(nameof(DemoComment));

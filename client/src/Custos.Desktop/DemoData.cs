@@ -80,7 +80,7 @@ internal static class DemoData
         return new HistoryResult { Runs = runs };
     }
 
-    private static AgentSnapshot Snapshot() => new()
+    internal static AgentSnapshot Snapshot() => new()
     {
         Version = 1,
         ConfigRevision = 14,

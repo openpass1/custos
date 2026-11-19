@@ -37,6 +37,9 @@ internal class DesktopPlatform
     public virtual void ControlService(bool start)
     {
     }
+
+    /// <summary>The names of the services of this computer, for an event that stops or starts one.</summary>
+    public virtual IReadOnlyList<string> ServiceNames() => [];
 }
 
 /// <summary>The font of the windows: Roboto, carried inside the program (Assets/Fonts, Apache 2.0).</summary>

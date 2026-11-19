@@ -70,9 +70,6 @@
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
-  <data name="EditorNotSaved" xml:space="preserve">
-    <value>The new window cannot save tasks yet: that is the next step of its work. The task stays as it was; change it in the usual CUSTOS window for now.</value>
-  </data>
   <data name="EditorNotYet" xml:space="preserve">
     <value>This button works from the next version of the new window on.</value>
   </data>
@@ -87,6 +84,12 @@
   </data>
   <data name="ObjectLockTag" xml:space="preserve">
     <value>Object Lock {0} days</value>
+  </data>
+  <data name="MonthDaysNote" xml:space="preserve">
+    <value>Tick one or more days. A month without the chosen day (30 February) runs on its last day, so no month is skipped.</value>
+  </data>
+  <data name="NumberRange" xml:space="preserve">
+    <value>Enter a number from {0} to {1}.</value>
   </data>
   <data name="DemoComment" xml:space="preserve">
     <value>The department's documents: a USB disk, the NAS with protection from deletion, and a copy outside the office.</value>
