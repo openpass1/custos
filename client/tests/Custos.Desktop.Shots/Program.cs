@@ -55,6 +55,10 @@ internal static class Program
         }
 
         Console.WriteLine($"Icons: {IconData.CheckAll()} parse.");
+        if (Environment.GetEnvironmentVariable("CUSTOS_SHOTS_ONLY") == "newtask")
+        {
+            return NewTaskWorks() ? 0 : 1;
+        }
 
         Shot(folder, "1-glavnoe-okno-svetloe", "light", "Photos", Tab.Log, card: true);
         Shot(folder, "2-glavnoe-okno-tyomnoe", "dark", "Desktop", Tab.Progress, card: true);
@@ -107,7 +111,7 @@ internal static class Program
 
         bool cobianWorks = CobianImportWorks(cobian);
         File.Delete(cobian);
-        if (!MenuWorks() | !EditorWorks() | !SelectionWorks() | !ToolbarWorks(folder) | !cobianWorks)
+        if (!MenuWorks() | !EditorWorks() | !NewTaskWorks() | !SelectionWorks() | !ToolbarWorks(folder) | !cobianWorks)
         {
             return 1;
         }
@@ -467,6 +471,73 @@ internal static class Program
             : $"Editor: task={rightTask}, destination window={dialog}, empty name refused={refused}, closed={closed}, renamed={renamed}, problem={editor.Model.Problem}.");
         Close(window);
         return ok;
+    }
+
+    /// <summary>
+    /// A new task: a local folder as the source and a local folder as the destination, each added with «ОК» of its
+    /// window, which closes it and puts the folder on the page.
+    /// </summary>
+    private static bool NewTaskWorks()
+    {
+        var window = App.CreateMainWindow(demo: true);
+        var vm = window.ViewModel;
+        window.Show();
+        vm.Start();
+        Pump();
+        var model = new EditorModel(vm.Monitor, new Custos.Core.Model.TaskDefinition { Name = Strings.NewTaskName }, isNew: true, demo: true);
+        var editor = new EditorWindow(model);
+        editor.Show(window);
+        Pump();
+        string folder = Path.Combine(Path.GetTempPath(), "custos-shots-folder");
+        Directory.CreateDirectory(folder);
+
+        model.Open(Strings.PageSources);
+        Pump();
+        Click(editor, Strings.SourceAddTitle);
+        bool source = AddWithOk<SourceDialog>(editor, folder, out string sourceNote);
+
+        model.Open(Strings.PageDestinations);
+        Pump();
+        Click(editor, Strings.DestinationAddTitle);
+        bool destination = AddWithOk<DestinationDialog>(editor, folder + "-copies", out string destinationNote);
+
+        bool ok = source && destination;
+        Console.WriteLine(ok ? "New task: a local source folder and a local destination folder are added with «ОК»."
+            : $"New task: source={sourceNote}, destination={destinationNote}.");
+        editor.Close();
+        Close(window);
+        return ok;
+    }
+
+    /// <summary>Types the path into the first field of the open window of <typeparamref name="T"/>, presses «ОК» and
+    /// looks for the path on the page under it.</summary>
+    private static bool AddWithOk<T>(EditorWindow editor, string path, out string note)
+        where T : Window
+    {
+        if (editor.OwnedWindows.OfType<T>().FirstOrDefault() is not { } dialog)
+        {
+            note = "the window did not open";
+            return false;
+        }
+
+        var field = dialog.GetVisualDescendants().OfType<TextBox>().First(t => t.IsEffectivelyVisible && t.IsEnabled);
+        field.Text = path;
+        Pump();
+        Click(dialog, Strings.ButtonOk);
+        Pump();
+        if (dialog.IsVisible)
+        {
+            string shown = string.Join(" | ", dialog.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible && t.Foreground is ISolidColorBrush { Color.R: > 150, Color.G: < 120 }).Select(t => t.Text));
+            note = $"still open after «ОК» ({shown})";
+            dialog.Close();
+            Pump();
+            return false;
+        }
+
+        bool listed = editor.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains(path, StringComparison.Ordinal) == true);
+        note = listed ? "ok" : "closed, but the folder is not on the page";
+        return listed;
     }
 
     /// <summary>Presses the button with this text in a window.</summary>

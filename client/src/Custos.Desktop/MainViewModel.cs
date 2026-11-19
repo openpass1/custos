@@ -256,7 +256,8 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public string ToggleText => ToggleOn ? Strings.ToolEnable : Strings.ToolDisable;
 
-    public string ToggleIcon => ToggleOn ? "toggle_on" : "toggle_off";
+    /// <summary>The switch as the tasks are now, as on the editor's switches: right = on. «Включить» shows it left, off.</summary>
+    public string ToggleIcon => ToggleOn ? "toggle_off" : "toggle_on";
 
     /// <summary>One of the selected tasks neither runs nor waits in the queue.</summary>
     public bool CanRun => IsConnected && _selection.Any(r => r.State is not (RowState.Running or RowState.Queued));
