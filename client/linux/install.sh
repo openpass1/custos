@@ -72,7 +72,7 @@ install_packages() {
     for name in "$@"; do
       if [ "$name" = libicu ]; then
         # The package has the version in its name: libicu72, libicu74 …
-        name=$(apt-cache pkgnames libicu 2> /dev/null | grep -E '^libicu[0-9]+$' | sort -V | tail -n 1)
+        name=$(apt-cache pkgnames libicu 2> /dev/null | grep -E '^libicu[0-9]+$' | sort -V | tail -n 1 || true)
         [ -n "$name" ] || continue
       fi
       wanted+=("$name")
@@ -83,11 +83,14 @@ install_packages() {
   elif command -v yum > /dev/null; then
     yum -y -q install "$@" > /dev/null
   elif command -v zypper > /dev/null; then
+    # A fresh system may have no metadata of its repositories yet: the search needs it.
+    zypper -n --gpg-auto-import-keys -q refresh > /dev/null 2>&1 || true
     local wanted=()
     for name in "$@"; do
       if [ "$name" = libicu ]; then
         # libicu73_2 on newer releases, libicu-suse65_1 on older ones.
-        name=$(zypper -q search -t package 'libicu*' 2> /dev/null | awk -F'|' '{gsub(/ /,"",$2); print $2}' | grep -E '^libicu(-suse)?[0-9_]+$' | sort -V | tail -n 1)
+        name=$(zypper -n -q search -t package libicu 2> /dev/null | awk -F'|' 'NF > 2 {gsub(/ /,"",$2); print $2}' \
+          | grep -E '^libicu(-suse)?[0-9_]+$' | sort -V | tail -n 1 || true)
         [ -n "$name" ] || continue
       fi
       wanted+=("$name")

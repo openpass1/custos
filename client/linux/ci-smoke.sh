@@ -11,7 +11,14 @@ here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck disable=SC1091
 . /etc/os-release
 echo "== $PRETTY_NAME, $(getconf GNU_LIBC_VERSION)"
-bash "$here/install.sh" --packages-only
+if ! bash "$here/install.sh" --packages-only; then
+  # What the package manager offers for ICU, to see why none was found.
+  if command -v zypper > /dev/null; then zypper -n search -t package libicu || true; fi
+  if command -v apt-cache > /dev/null; then apt-cache pkgnames libicu || true; fi
+  if command -v dnf > /dev/null; then dnf -q list available 'libicu*' || true; fi
+  echo "FAILED on $PRETTY_NAME: install.sh --packages-only"
+  exit 1
+fi
 mkdir -p /opt/custos
 tar -xzf "$archive" -C /opt/custos
 /opt/custos/custos version
