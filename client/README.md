@@ -194,8 +194,8 @@ the package `custos-linux-<version>.zip` under **Updates** (upload it, or downlo
 must reach the site, and its address must be in the networks allowed for agents. The packages the program needs
 (libicu, OpenSSL, cifs-utils) are installed when they are missing.
 
-**Install from GitHub** (another way): `install.sh` downloads the archive of its processor from the newest release;
-the connection line from the site connects it.
+**Install from GitHub** (another way): `install.sh` downloads the archive of its processor from the newest release
+that has CUSTOS for Linux; the connection line from the site connects it.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/openpass1/custos/main/client/linux/install.sh | sudo bash -s -- 'http://backup.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14'

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Custos.exe of the standard edition: the CUSTOS interface for Windows, the windows of src/Custos.Desktop with the
+    tray icon, the control of the service and the rest that only Windows has. Runs in every user session; does no work
+    itself. build.ps1 publishes it into the installer and the update packages; the edition for Windows 7 and 8.1 keeps
+    the Windows Forms interface of src/Custos.Gui under the same name (Avalonia needs .NET 8 or newer).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Custos</AssemblyName>
+    <RootNamespace>Custos.Windows</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Custos.Gui\Resources\custos.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Custos.Desktop\Custos.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tray icons of Custos.exe, one for each state. -->
+    <AvaloniaResource Include="..\Custos.Gui\Resources\tray-*.ico" Link="Assets\%(Filename)%(Extension)" />
+    <!-- The licences of Avalonia and Roboto go next to the program. -->
+    <None Include="..\..\..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="THIRD-PARTY-NOTICES-AVALONIA.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\Custos.Desktop\Assets\Fonts\Roboto-LICENSE.txt" Link="Roboto-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Debug symbols are of no use on the computers; those of Skia and HarfBuzz alone are 100 MB. -->
+  <Target Name="DropSymbolsFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -24,7 +24,9 @@ final class InstallController extends Controller
         $install = $this->app->install();
         $package = $install->package();
         $releases = $this->app->releases();
+        // Each system from its own newest release: a client-v release may carry the files of only some of them.
         $client = $releases->latest('client');
+        $mac = $releases->latest('macos');
         $legacy = $releases->latest('legacy');
         return $this->render('install/index', [
             'section' => 'install',
@@ -38,7 +40,7 @@ final class InstallController extends Controller
             'archives' => $package === null ? [] : array_keys(Install::archiveSums($package)),
             'releasesPage' => 'https://github.com/' . $releases->repo . '/releases',
             'windows' => self::installer($client, '/^CUSTOS-Setup-[0-9.]+\.exe$/'),
-            'mac' => self::installer($client, '/^Custos-[0-9.]+\.pkg$/'),
+            'mac' => self::installer($mac, '/^Custos-[0-9.]+\.pkg$/'),
             'legacy' => self::installer($legacy, '/^CUSTOS-Legacy-Setup-[0-9.]+\.exe$/'),
         ], $this->t('install.title'));
     }

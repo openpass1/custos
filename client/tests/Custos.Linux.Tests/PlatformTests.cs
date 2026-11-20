@@ -1,5 +1,7 @@
 using System.Text;
+using Custos.Core;
 using Custos.Core.Backup;
+using Custos.Core.Updates;
 using Custos.Service.Ipc;
 using Custos.Service.Platform;
 
@@ -22,6 +24,25 @@ public sealed class PlatformTests
         32 22 0:43 / /srv/my\040files rw,relatime shared:43 - ext4 /dev/sdc1 rw
         33 23 0:44 / /proc/sys/fs/binfmt_misc rw,relatime shared:44 - binfmt_misc binfmt_misc rw
         """;
+
+    [Fact]
+    public void The_update_check_takes_the_newest_release_that_has_the_Linux_package()
+    {
+        // client-v1.5.0 carries the files of Windows and the Mac only: CUSTOS for Linux takes 1.4.0, the newest with its own package.
+        static string Asset(string version, string name) =>
+            $$"""{"name": "{{name}}", "size": 1000, "digest": "sha256:{{new string('a', 64)}}", "browser_download_url": "https://github.com/{{CustosInfo.GitHubRepository}}/releases/download/client-v{{version}}/{{name}}"}""";
+        string json = $$"""
+            [{"tag_name": "client-v1.5.0", "draft": false, "prerelease": false,
+              "assets": [{{Asset("1.5.0", "custos-1.5.0.zip")}}, {{Asset("1.5.0", "custos-macos-1.5.0.zip")}}]},
+             {"tag_name": "client-v1.4.0", "draft": false, "prerelease": false,
+              "assets": [{{Asset("1.4.0", "custos-1.4.0.zip")}}, {{Asset("1.4.0", "custos-linux-1.4.0.zip")}}]}]
+            """;
+
+        var release = ProgramReleases.Newest(new MemoryStream(Encoding.UTF8.GetBytes(json)));
+
+        Assert.NotNull(release);
+        Assert.Equal(("1.4.0", "custos-linux-1.4.0.zip"), (release.Version, release.PackageName));
+    }
 
     private static MountTable Table() => new([.. MountInfo.Split('\n').Select(MountTable.Parse).OfType<MountEntry>()]);
 

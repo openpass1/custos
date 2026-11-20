@@ -6,6 +6,7 @@ namespace Custos\Tests\Integration;
 
 use Custos\Http\Web\Controller\AgentsController;
 use Custos\Http\Web\Controller\TasksController;
+use Custos\Domain\Settings;
 use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
@@ -923,6 +924,18 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('На сайте ещё нет CUSTOS для Linux', $install);
         $this->assertStringContainsString('value="' . htmlspecialchars($this->connectionString()) . '"', $install, 'the connection string for Windows and macOS');
         $this->assertStringContainsString('href="/install"', $this->http('GET', '/agents')[1], 'Machines: Add a machine');
+
+        // Each installer comes from the newest release of its own system: here the newest client-v carries only the Mac files.
+        $settings = new Settings($this->db());
+        $settings->set('release_client', (string) json_encode(['version' => '2.4.0', 'installers' => [
+            'CUSTOS-Setup-2.4.0.exe' => 'https://example.test/CUSTOS-Setup-2.4.0.exe', 'Custos-2.4.0.pkg' => 'https://example.test/Custos-2.4.0.pkg']]));
+        $settings->set('release_macos', (string) json_encode(['version' => '2.5.0', 'installers' => [
+            'Custos-2.5.0.pkg' => 'https://example.test/Custos-2.5.0.pkg']]));
+        $links = $this->http('GET', '/install')[1];
+        $this->assertStringContainsString('href="https://example.test/CUSTOS-Setup-2.4.0.exe"', $links, 'Windows: from its own newest release');
+        $this->assertStringContainsString('href="https://example.test/Custos-2.5.0.pkg"', $links, 'macOS: from the newest release with the Mac files');
+        $this->assertStringNotContainsString('Custos-2.4.0.pkg', $links);
+        $this->db()->exec("DELETE FROM settings WHERE name IN ('release_client', 'release_macos')");
         $path = "/install/linux/$token";
 
         // No login, no session: the script says there is nothing to install yet.

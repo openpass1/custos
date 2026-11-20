@@ -20,6 +20,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 TABLES = [
     ("src/Custos.Core/Resources/Messages.tsv", "Custos.Core", "Messages", "src/Custos.Core/Messages.g.cs"),
     ("src/Custos.Gui/Resources/Strings.tsv", "Custos.Gui", "Strings", "src/Custos.Gui/Strings.g.cs"),
+    ("src/Custos.Desktop/Resources/DesktopStrings.tsv", "Custos.Desktop", "DesktopStrings", "src/Custos.Desktop/DesktopStrings.g.cs"),
     ("src/Custos.Mac/Resources/MacStrings.tsv", "Custos.Mac.Gui", "MacStrings", "src/Custos.Mac/Gui/MacStrings.g.cs"),
     ("src/Custos.Linux/Resources/LinuxStrings.tsv", "Custos.Service.Platform", "LinuxStrings", "src/Custos.Linux/Platform/LinuxStrings.g.cs"),
 ]

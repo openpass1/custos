@@ -71,6 +71,12 @@ final class ReleasesTest extends TestCase
         $this->assertSame('custos-2.4.0.zip', $client['zip_name'], 'the Linux package is never taken for Windows');
         $this->assertSame(['CUSTOS-Setup-2.4.0.exe', 'Custos-2.4.0.pkg'], array_keys($client['installers']));
         $this->assertSame('https://example.test/CUSTOS-Setup-2.4.0.exe', $client['installers']['CUSTOS-Setup-2.4.0.exe']);
+
+        // A newer release with the Mac files only: Linux and Windows keep 2.4.0, the Mac takes it with its installer.
+        $releases[] = ['tag_name' => 'client-v2.5.0', 'assets' => [$asset('custos-macos-2.5.0.zip'), $asset('Custos-2.5.0.pkg')]];
+        $this->assertSame('2.4.0', Releases::pick($releases, 'linux')['version']);
+        $this->assertSame('2.4.0', Releases::pick($releases, 'client')['version']);
+        $this->assertSame(['2.5.0', ['Custos-2.5.0.pkg']], [Releases::pick($releases, 'macos')['version'], array_keys(Releases::pick($releases, 'macos')['installers'])]);
     }
 
     public function testTablesThatMigrationsChange(): void

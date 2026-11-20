@@ -1,88 +1,88 @@
 # Changelog: CUSTOS Monitor
 
-Changes of the monitoring site, newest first. Each version is a `server-v…` release on the
-[Releases](https://github.com/openpass1/custos/releases) page; its release text comes from this file.
+One section per release, newest first. The section of a version is the text of its `server-v…` release on the
+[Releases](https://github.com/openpass1/custos/releases) page, word for word.
 
-Sections: **Added** (new features), **Changed** (existing behaviour), **Fixed** (bugs), **Removed**. Each item says
-what a user sees, not how the code does it, and stays on one line: GitHub shows the line breaks of a release text
-as they are. A change goes under the version at the top; if that version is already released, it goes under a new
-heading for the next one. The version at the top is always `VERSION` in `src/App.php`.
+How to write it:
+- Groups in this order: **Added**, **Improved**, **Fixed**, **Removed**. Leave out a group with nothing in it.
+- One short line per item (up to 140 characters): what the user gets. No explanations, no "before, it did …".
+- New items go under the version at the top while it is not released; if the version changes before the release,
+  rename that heading. Once a version is released, start a new section above it.
+- The version at the top is always `VERSION` in `src/App.php`.
 
-The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
-a version that was never released by itself is not lost.
+`.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
 ## 1.4.0
 
 ### Added
-- A new menu section **Install** (also **Add a machine** on **Machines**): how to connect a new machine. For a Linux server it gives one command (`curl … | sudo bash`, or with `wget`) that downloads CUSTOS for Linux from this site, installs it and connects it; the machine then waits for approval as usual. The address in the command is made from the registration key, so a new key makes the old commands stop working. For Windows and macOS it links the installers of the newest release on GitHub and shows the connection string to paste.
-- Machines with CUSTOS for Linux are marked **Linux**. **Updates** take its packages (`custos-linux-<version>.zip`, the program for both processors) in a section of their own with their own current version, find them in the `client-v…` releases on GitHub, and send them only to Linux machines; a Linux machine is never offered 7-Zip.
-- The page of a Linux machine has a **Snapshots** block: for each volume of its tasks, whether a snapshot can be made (LVM, btrfs, ZFS), how much room the volume group has, the last snapshot, and what to do when there is no room, with the command that adds a disk to the volume group ready to copy. A volume without room for a snapshot, or whose last snapshot ran full, opens a **Snapshot** problem for each of its tasks, shown on the dashboard and sent by Telegram or e-mail; it closes by itself when the agent says the volume is fine again.
-- The task editor of a Linux machine shows Linux paths, calls the snapshot of open files a **volume snapshot (LVM, btrfs, ZFS)**, copies **owners and permissions** instead of NTFS rights, offers no cloud drives, and a new task goes on without a snapshot (with a warning) by default when none can be made.
-- The settings of a Linux machine leave out the program password, the tray icon and the other users of the computer, which it does not have.
+- **Install** page and **Add a machine** button: how to connect a new Windows, Mac or Linux machine.
+- Linux servers install CUSTOS with one command copied from **Install**: it downloads the program from this site and connects it.
+- Machines with CUSTOS for macOS or Linux are marked **macOS** or **Linux** across the site.
+- **Updates** take packages of CUSTOS for macOS and for Linux, uploaded or found on GitHub, each in a section of its own.
+- A Mac or a Linux server is offered only its own update packages and never 7-Zip.
+- The task editor of a Mac or a Linux server shows its own paths and its own snapshot: APFS, or LVM, btrfs and ZFS.
+- **Snapshots** block on the page of a Linux machine, with the command to fix a volume group without room.
+- A problem and a notification when a Linux volume has no room for a snapshot; it closes once snapshots work again.
 
-## 1.3.0
-
-### Added
-- Machines with CUSTOS for macOS are marked **macOS** in the machine list, on the machine page, under **Updates** and on the dashboard.
-- **Updates** take packages of CUSTOS for macOS (`custos-macos-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has a Mac or such a package. The site also finds them in the `client-v…` releases on GitHub and downloads them like the program for Windows.
-- A Mac gets only the update packages of CUSTOS for macOS and is never offered 7-Zip from the site (7-Zip is inside the program there).
-- The task editor of a Mac shows Mac path examples and calls the snapshot of open files an **APFS snapshot** instead of VSS.
-
-### Changed
-- A network folder may also be written as `//server/share`, the way macOS writes it.
+### Improved
+- A network folder may also be written as `//server/share`, as macOS writes it.
+- The settings of a Linux machine leave out the program password, the tray icon and other users, which it does not have.
 
 ## 1.2.1
 
-### Changed
-- Pages change at once, without the dissolve from one page into the next and without the content coming in from below: in Chrome on Windows with its animation effects on, a click soon after such a page change now and then did nothing, and the user menu was now and then not redrawn. A click on a menu section still marks it at once.
-- The circle that spreads over a pressed button, menu section or tile has the times of Material 3 again (it shows in 0.1 s, grows for 0.45 s and fades for 0.375 s): the slower circle of 1.2.0 made the site feel slow.
+### Improved
+- Pages open at once, without the dissolve between them.
+- The press effect on buttons is quick again, with Material 3 timing.
 
 ### Fixed
-- The logo nearly vanished in the **Blue** colour scheme (a blue shield on a blue square): its square now keeps the colour of the default scheme in every scheme.
-- A click on a menu section, a tile or another link was sometimes lost when the mouse moved a little during the press: the browser began to drag the link instead of opening it. Links can no longer be dragged.
-- A click on a tile or a button of a block that refreshes itself was lost when the block was refreshed during the press; the block now waits until the press has ended.
-- A click was sometimes lost because the browser gave the page the press of the mouse button but not its release (seen in Chrome on Windows on quick clicks soon after a page opened). When the mouse next moves with the button let go, the site now finishes such a press and clicks what was pressed, if the pointer is still on it.
+- The logo is visible in the **Blue** colour scheme.
+- Clicks are no longer lost when the mouse moves slightly during a press.
+- Clicks are no longer lost on blocks that refresh themselves.
+- Quick clicks in Chrome on Windows soon after a page opens are no longer lost.
 
 ## 1.2.0
 
 ### Added
-- Machines with CUSTOS for Windows 7 and 8.1 (the legacy edition of the program) are marked **Windows 7, 8.1** in the machine list, on the machine page, under **Updates** and on the dashboard.
-- Such a machine is offered only what its program can do: no cloud drives in its task editor (a task or template with one is refused for it), no 7-Zip update, and no update packages of the standard program.
-- **Updates** take packages of the edition for Windows 7 and 8.1 (`custos-legacy-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has such a machine or package. The site also finds `client-legacy-v…` releases on GitHub and downloads them like the standard program.
-- A **Colour** choice in the user menu, for each user: **Neutral grey** (the default), **Graphite**, **Blue**, **Warm** and **Sepia**, each in the light and the dark theme.
+- Machines with CUSTOS for Windows 7 and 8.1 are marked **Windows 7, 8.1** across the site.
+- Such machines are offered only what their edition supports: no cloud drives and no 7-Zip update.
+- **Updates** take packages of the Windows 7 and 8.1 edition, uploaded or found on GitHub.
+- **Colour** in the user menu: Neutral grey, Graphite, Blue, Warm or Sepia, each light and dark.
 
-### Changed
-- Backgrounds, cards, lines and grey text are neutral grey instead of slightly blue-violet, in the light and the dark theme; buttons, the selected menu item and other accents keep the blue.
-- The circle that spreads over a pressed button grows and fades twice as slowly.
+### Improved
+- Neutral grey backgrounds and cards instead of slightly blue-violet ones.
+- Smoother press effect and page changes.
 
-## 1.1.6
+## 1.1.1
 
 ### Added
-- Search of machines and tasks in the top bar: matches show while you type, the arrows and **Enter** open one, **Enter** alone opens a page with every match, the **/** key jumps to the field.
-- A light/dark switch in the top bar, next to the bell.
-- Phones get a bottom navigation bar with the main sections and **More** for the rest.
-- The task list of a machine shows a running task as **now** with a small progress circle and its percent.
+- Search of machines and tasks in the top bar; the **/** key jumps to it.
+- Light/dark switch in the top bar.
+- Bottom navigation bar on phones.
+- A running task shows its progress in the task list of its machine.
 
-### Changed
-- New look in the style of Material Design 3: a navigation rail on the left (narrow on mid-size screens), rounded cards, Roboto font, Material Symbols icons, status badges with icons, filled and tonal buttons, fields with floating labels, press and hover effects, a smooth change from page to page. The old look is gone.
-- Progress bars are 8 px thick, with a gap and an end dot, a moving sheen while a copy runs and smooth movement between updates.
+### Improved
+- New Material Design 3 look: navigation rail, rounded cards, new icons, buttons and fields.
+- Thicker progress bars that move smoothly.
 - Animations follow the system setting to reduce motion.
-- Task editor: the days of a monthly schedule are a small calendar of 1–30 and **last day of the month**. The 31st is gone: a task saved with it shows **last day of the month**, which it always meant.
-- New installs by `install.sh` and the nginx example of the install guide let the browser keep styles, fonts and icons for 30 days (`location /assets/`). An existing install made by `install.sh` gets it by running `bash install.sh` again.
+- Smooth moves between sections; the tabs of **Settings** stay in place.
+- Monthly schedule: days are picked in a calendar of 1–30 and **last day of the month**.
+- `install.sh` and the nginx example let browsers cache styles, fonts and icons for 30 days.
 
 ### Fixed
-- A monthly schedule on the 29th or 30th no longer skips February: a month without the chosen day runs on its last day, as the program 1.0.1 does. Expected runs and missed-run alerts follow the same rule.
+- A monthly schedule on the 29th or 30th no longer skips February.
+- Letters no longer change their shape a moment after a page opens.
 
 ## 1.0.1
 
 ### Added
-- **Tasks** page: all tasks of all machines in one list, errors and missed runs first, with quick filters (the parts of the dashboard tile, plus **Disabled**) and a search by task or machine. The **Machines** page links to it with **All tasks**.
-- The run list shows how much its runs wrote in all.
-- A quiet **Support the project** link in the page footer.
+- **Tasks** page: all tasks of all machines in one list, with filters and search.
+- The run list shows the total amount written.
+- **Support the project** link in the page footer.
 
 ### Fixed
-- Dashboard tiles: **Tasks** opened the machine list, the same as **Machines**. Now **Tasks** opens the task list, **Least free space** opens that machine at its storage with the destination outlined, and **Written in a day** opens the runs of the last 24 hours.
+- The dashboard tiles **Tasks**, **Least free space** and **Written in a day** open their own pages.
 
 ## 1.0.0
 
-First public release.
+### Added
+- First public release.
