@@ -10,8 +10,9 @@ use Custos\Http\Response;
 use Custos\Http\Web\Controller;
 
 /**
- * The signed-in user's own settings (section 7): interface language, theme and password. They live in the menu under
- * the user name on every page (layout.php); each form comes back to the page it was sent from.
+ * The signed-in user's own settings (section 7): interface language, theme, colour scheme and password. They live in
+ * the menu under the user name on every page (layout.php); each form comes back to the page it was sent from and
+ * changes only what it sends.
  */
 final class ProfileController extends Controller
 {
@@ -24,11 +25,15 @@ final class ProfileController extends Controller
     public function save(): Response
     {
         $me = $this->user();
-        $language = $this->post('language');
+        $sent = fn(string $key): bool => is_string($this->request->post[$key] ?? null);
+        $language = $sent('language') ? $this->post('language') : (string) ($me['language'] ?? '');
         $language = in_array($language, App::LANGUAGES, true) ? $language : null;
-        $theme = in_array($this->post('theme'), Users::THEMES, true) ? $this->post('theme') : 'auto';
-        $this->app->users()->setPreferences((int) $me['id'], $language, $theme);
-        $this->audit('profile.update', 'user', (string) $me['id'], ['language' => $language ?? 'default', 'theme' => $theme]);
+        $theme = $sent('theme') ? $this->post('theme') : (string) ($me['theme'] ?? '');
+        $theme = in_array($theme, Users::THEMES, true) ? $theme : 'auto';
+        $color = $sent('color') ? $this->post('color') : (string) ($me['color'] ?? '');
+        $color = in_array($color, Users::COLORS, true) ? $color : Users::COLORS[0];
+        $this->app->users()->setPreferences((int) $me['id'], $language, $theme, $color);
+        $this->audit('profile.update', 'user', (string) $me['id'], ['language' => $language ?? 'default', 'theme' => $theme, 'color' => $color]);
         // The page itself shows the new theme or language: no message needed.
         return $this->back();
     }

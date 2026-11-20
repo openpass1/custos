@@ -182,7 +182,13 @@ internal sealed class MainViewModel : Observable, IDisposable
     /// <summary>What the list says while there is no connection.</summary>
     public string EmptyText { get => _emptyText; private set => Set(ref _emptyText, value); }
 
+    /// <summary>The service answers and sent its tasks (or the made-up ones of --demo).</summary>
+    public bool IsConnected => _demo || (_monitor.IsConnected && _monitor.Snapshot is not null);
+
     public bool CanEdit => _demo || _monitor.CanEdit;
+
+    /// <summary>A lock and «только администраторы» in the toolbar: this user may look but not change.</summary>
+    public bool ShowAdminsOnly => IsConnected && !CanEdit;
 
     /// <summary>Restoring writes anywhere on the Mac: administrators only (section 4).</summary>
     public bool CanRestore => _demo || (_monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true);
@@ -293,7 +299,9 @@ internal sealed class MainViewModel : Observable, IDisposable
             ServiceState.Connecting => Describe.Capitalize(ServiceMonitor.Describe(status.State)),
             _ => Strings.Format(Strings.NoConnection, status.Problem ?? Describe.Capitalize(ServiceMonitor.Describe(status.State))),
         };
+        Changed(nameof(IsConnected));
         Changed(nameof(CanEdit));
+        Changed(nameof(ShowAdminsOnly));
         Changed(nameof(CanRestore));
     }
 
@@ -344,7 +352,9 @@ internal sealed class MainViewModel : Observable, IDisposable
         ApplyTheme();
         Changed(nameof(CanRun));
         Changed(nameof(CanStop));
+        Changed(nameof(IsConnected));
         Changed(nameof(CanEdit));
+        Changed(nameof(ShowAdminsOnly));
         Changed(nameof(CanRestore));
         Changed(nameof(ToggleText));
         Changed(nameof(ToggleIcon));

@@ -14,19 +14,19 @@
     <DockPanel>
 
       <!-- Toolbar: «Создать» as an extended FAB, the rest as icon-over-label items (docs/client-ui.md, 2.1). -->
-      <Grid DockPanel.Dock="Top" Height="84" Margin="14,4,12,4" ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Panel Margin="0,0,14,0">
+      <Grid Name="Toolbar" DockPanel.Dock="Top" Height="56" Margin="10,0,10,0" ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Name="ToolbarStart" Orientation="Horizontal" VerticalAlignment="Center">
+          <Panel Name="FabPanel" Margin="0,0,10,0">
           <Border Classes="fabshadow" />
           <Border Classes="fab">
             <StackPanel Orientation="Horizontal">
               <Button Theme="{StaticResource FabPart}" Click="OnCreate" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{x:Static g:Strings.ToolCreate}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <p:Icon Kind="add" />
-                  <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center" />
+                  <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-              <Border Width="1" Margin="0,12" Background="{DynamicResource OutlineVariant}" />
+              <Border Width="1" Margin="0,8" Background="{DynamicResource OutlineVariant}" />
               <Button Theme="{StaticResource FabPart}" Padding="8,0" IsEnabled="{Binding CanEdit}">
                 <p:Icon Kind="arrow_drop_down" />
                 <Button.Flyout>
@@ -49,23 +49,48 @@
           <p:ToolButton Label="{x:Static g:Strings.ToolEdit}" IconKind="edit" IsEnabled="{Binding CanEdit}" Click="OnEdit" />
           <p:ToolButton Label="{x:Static g:Strings.ToolClone}" IconKind="content_copy" IsEnabled="{Binding CanEdit}" Click="OnClone" />
           <p:ToolButton Label="{x:Static g:Strings.ToolDelete}" IconKind="delete" IsEnabled="{Binding CanEdit}" Click="OnDelete" />
-          <p:ToolButton Label="{Binding ToggleText}" IconKind="{Binding ToggleIcon}" IsEnabled="{Binding CanEdit}" Click="OnToggle" />
+          <p:ToolButton Label="{Binding ToggleText}" IconKind="{Binding ToggleIcon}" IsEnabled="{Binding CanEdit}" Click="OnToggle"
+                        ToolTip.Tip="{x:Static g:Strings.ToolEnableHint}" />
           <Border Classes="vsep" />
           <p:ToolButton Classes="go" Label="{x:Static g:Strings.ToolRun}" IconKind="play_arrow" IsEnabled="{Binding CanRun}" Click="OnRun" />
           <p:ToolButton Classes="halt" Label="{x:Static g:Strings.ToolStop}" IconKind="stop" IsEnabled="{Binding CanStop}" Click="OnStop" />
-          <p:ToolButton Label="{x:Static g:Strings.ToolPause}" IconKind="pause" IsEnabled="{Binding CanStop}" Click="OnPause" />
+          <p:ToolButton Label="{x:Static g:Strings.ToolPause}" IconKind="pause" IsEnabled="{Binding CanStop}" Click="OnPause"
+                        ToolTip.Tip="{x:Static g:Strings.ToolPauseHint}" />
           <Border Classes="vsep" />
           <p:ToolButton Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnRestore" />
         </StackPanel>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Name="ToolbarEnd" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center" IsVisible="{Binding ShowAdminsOnly}">
+            <p:Icon Kind="lock" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" />
+            <TextBlock Classes="small var" Text="{x:Static g:Strings.ToolAdminsOnly}" VerticalAlignment="Center" />
+          </StackPanel>
           <p:ToolToggle Label="{x:Static g:Strings.ToolCard}" IconKind="view_sidebar" IsChecked="{Binding ShowCard}" HotKey="Alt+P"
                         ToolTip.Tip="{x:Static g:Strings.ToolCardHint}" />
-          <p:ToolButton Label="{x:Static g:Strings.ToolSettings}" IconKind="settings" Click="OnSettings" />
+          <p:ToolButton Name="SettingsButton" Label="{x:Static g:Strings.ToolSettings}" IconKind="settings">
+            <p:ToolButton.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="menu">
+                <StackPanel MinWidth="300">
+                  <TextBlock Classes="menuhead" Text="{x:Static p:MacStrings.ThemeHeading}" />
+                  <TextBlock Classes="menunote" Text="{x:Static p:MacStrings.ThemeForAll}" />
+                  <StackPanel Name="ThemeMenu" />
+                  <Border Classes="divider" Margin="0,8" />
+                  <TextBlock Classes="menuhead" Text="{x:Static p:MacStrings.Color}" />
+                  <TextBlock Classes="menunote" Text="{x:Static p:MacStrings.ColorForYou}" />
+                  <StackPanel Name="ColorMenu" />
+                  <Border Classes="divider" Margin="0,8" />
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnSettings" IsEnabled="{Binding IsConnected}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="tune" /><TextBlock Text="{x:Static p:MacStrings.SettingsAll}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </p:ToolButton.Flyout>
+          </p:ToolButton>
         </StackPanel>
       </Grid>
 
+
       <!-- Status bar. -->
-      <Grid DockPanel.Dock="Bottom" Height="36" Margin="18,0,12,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+      <Grid DockPanel.Dock="Bottom" Height="26" Margin="14,0,10,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
           <Ellipse Classes="dot" Classes.ok="{Binding ServiceOk}" />
           <TextBlock Classes="small var" Text="{Binding ServiceText}" />
@@ -91,33 +116,60 @@
       <Grid Name="Body" Margin="12,0,12,0">
         <Grid.RowDefinitions>
           <RowDefinition Height="*" MinHeight="160" />
-          <RowDefinition Height="14" />
+          <RowDefinition Height="8" />
           <RowDefinition Height="230" MinHeight="120" />
         </Grid.RowDefinitions>
         <Grid Name="Top">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="340" />
-            <ColumnDefinition Width="14" />
+            <ColumnDefinition Width="8" />
             <ColumnDefinition Width="350" MinWidth="280" />
           </Grid.ColumnDefinitions>
 
           <!-- Task list -->
           <Border Classes="pane">
             <DockPanel>
-              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="22,14,20,4">
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="16,6,14,0">
                 <TextBlock Classes="title" Text="{x:Static p:MacStrings.Tasks}" VerticalAlignment="Center" />
                 <Border Classes="countpill" IsVisible="{Binding HasSnapshot}"><TextBlock Text="{Binding TaskCount}" /></Border>
               </StackPanel>
               <Panel>
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="8,0,8,6" IsVisible="{Binding HasSnapshot}">
                   <DockPanel MinWidth="930">
-                    <Border DockPanel.Dock="Top" Classes="divider" Height="40" Margin="0,0,0,4">
+                    <Border DockPanel.Dock="Top" Classes="divider" Height="28" Margin="0,0,0,2">
                       <Grid Name="Header" ColumnDefinitions="160,130,170,150,200,*" />
                     </Border>
-                    <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}" DoubleTapped="OnTaskDoubleTapped">
+                    <ListBox Name="TaskList" Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}" DoubleTapped="OnTaskDoubleTapped">
+                      <!-- A right click: what the toolbar does with the selected task, as in the new window of Windows. -->
+                      <ListBox.ContextFlyout>
+                        <Flyout Placement="Pointer" FlyoutPresenterClasses="menu">
+                          <StackPanel MinWidth="240">
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="run" Click="OnTaskMenu" IsEnabled="{Binding CanRun}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="play_arrow" /><TextBlock Text="{x:Static g:Strings.ToolRun}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="stop" Click="OnTaskMenu" IsEnabled="{Binding CanStop}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="stop" /><TextBlock Text="{x:Static g:Strings.ToolStop}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                              <Border Classes="divider" Margin="0,8" />
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="edit" Click="OnTaskMenu" IsEnabled="{Binding CanEdit}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="edit" /><TextBlock Text="{x:Static g:Strings.ToolEdit}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="clone" Click="OnTaskMenu" IsEnabled="{Binding CanEdit}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="delete" Click="OnTaskMenu" IsEnabled="{Binding CanEdit}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="delete" /><TextBlock Text="{x:Static g:Strings.ToolDelete}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                              <Border Classes="divider" Margin="0,8" />
+                              <Button Theme="{StaticResource MenuItemButton}" Tag="toggle" Click="OnTaskMenu" IsEnabled="{Binding CanEdit}">
+                                <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="{Binding ToggleIcon}" /><TextBlock Text="{Binding ToggleText}" VerticalAlignment="Center" /></StackPanel>
+                              </Button>
+                          </StackPanel>
+                        </Flyout>
+                      </ListBox.ContextFlyout>
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="p:TaskRow">
-                          <Grid Height="48" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">
+                          <Grid Height="30" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">
                             <Grid ColumnDefinitions="Auto,*" Margin="12,0">
                               <p:Icon Classes="state" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
                                       Classes.run="{Binding IsRun}" Classes.none="{Binding IsNone}" Kind="{Binding StateIcon}" VerticalAlignment="Center" />
@@ -156,12 +208,12 @@
           <Border Name="CardPane" Grid.Column="2" Classes="pane">
             <Panel>
               <ScrollViewer IsVisible="{Binding HasCard}" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="20,18,20,16" DataContext="{Binding Card}" x:DataType="p:CardModel">
+                <StackPanel Margin="12,10,12,10" DataContext="{Binding Card}" x:DataType="p:CardModel">
                   <Grid ColumnDefinitions="Auto,*">
                     <Border Classes="lead" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}" Classes.run="{Binding IsRun}">
                       <p:Icon Kind="{Binding StateIcon}" Filled="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
                       <TextBlock Classes="headline" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                       <TextBlock Classes="small var" Text="{Binding Subtitle}" />
                     </StackPanel>
@@ -178,10 +230,10 @@
                       <TextBlock Grid.Column="1" Margin="10,1,0,0" Classes="small" Text="{Binding Error}" TextWrapping="Wrap" />
                     </Grid>
                   </Border>
-                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,8,0,0">
+                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,6,0,0">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="p:CardRow">
-                        <Border Classes="divider" Padding="0,9,0,9">
+                        <Border Classes="divider" Padding="0,4,0,4">
                           <StackPanel>
                             <TextBlock Classes="key" Text="{Binding Key}" />
                             <TextBlock Classes="value" Classes.accent="{Binding Accent}" Text="{Binding Value}" />
@@ -240,7 +292,7 @@
               <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Log}" IsVisible="{Binding IsLogTab}" Margin="8,4,8,4">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="p:LogRow">
-                    <Grid Height="34" ColumnDefinitions="150,30,*" Margin="12,0,12,0" Background="Transparent">
+                    <Grid Height="22" ColumnDefinitions="150,30,*" Margin="10,0,10,0" Background="Transparent">
                       <TextBlock Classes="var num" Text="{Binding Time}" VerticalAlignment="Center" FontSize="13.5" />
                       <p:Icon Grid.Column="1" Classes="level" Classes.info="{Binding IsInfo}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
                               Kind="{Binding Icon}" VerticalAlignment="Center" HorizontalAlignment="Left" />
@@ -254,7 +306,7 @@
 
               <!-- History of the selected task -->
               <DockPanel IsVisible="{Binding IsHistoryTab}" Margin="8,0,8,4">
-                <Border DockPanel.Dock="Top" Classes="divider" Height="36">
+                <Border DockPanel.Dock="Top" Classes="divider" Height="28">
                   <Grid ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0">
                     <TextBlock Classes="key" Text="{x:Static g:Strings.ColumnStarted}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="key" Text="{x:Static g:Strings.ColumnDuration}" VerticalAlignment="Center" />
@@ -266,10 +318,11 @@
                     <TextBlock Grid.Column="7" Classes="key" Text="{x:Static g:Strings.ColumnDetails}" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
-                <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0" DoubleTapped="OnRunDoubleTapped">
+                <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0" DoubleTapped="OnRunDoubleTapped"
+                         KeyDown="OnHistoryKey" ToolTip.Tip="{x:Static p:MacStrings.HistoryOpenLog}" ToolTip.ShowDelay="1200">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="p:HistoryRow">
-                      <Grid Height="36" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
+                      <Grid Height="24" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
                         <TextBlock Classes="num" Text="{Binding Started}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="1" Classes="num" Text="{Binding Duration}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="2" Text="{Binding Type}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />

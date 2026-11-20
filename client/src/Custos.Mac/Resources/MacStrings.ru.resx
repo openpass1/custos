@@ -22,6 +22,27 @@
   <data name="HistoryCount" xml:space="preserve">
     <value>{0}: запусков {1}</value>
   </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Двойной щелчок по запуску открывает его журнал.</value>
+  </data>
+  <data name="SettingsAll" xml:space="preserve">
+    <value>Все настройки…</value>
+  </data>
+  <data name="ThemeHeading" xml:space="preserve">
+    <value>Тема</value>
+  </data>
+  <data name="ThemeForAll" xml:space="preserve">
+    <value>Для всех пользователей Mac</value>
+  </data>
+  <data name="ThemeAdminsOnly" xml:space="preserve">
+    <value>Тема общая для всех пользователей Mac: её меняет администратор.</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Цвет</value>
+  </data>
+  <data name="ColorForYou" xml:space="preserve">
+    <value>Только для вас</value>
+  </data>
   <data name="MenuQuit" xml:space="preserve">
     <value>Завершить CUSTOS</value>
   </data>
@@ -249,5 +270,8 @@
   </data>
   <data name="UsbDisk" xml:space="preserve">
     <value>Внешний диск «{0}»</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сохранить</value>
   </data>
 </root>

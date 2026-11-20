@@ -104,8 +104,12 @@ icon in the menu bar only shows and sends commands. The tasks, the destinations,
 file are the same, so a task can move between Windows and a Mac.
 
 **Install.** Run `Custos-<version>.pkg` from the release. The program is not signed by Apple yet (that needs an Apple
-Developer ID, a paid membership): the first time macOS refuses to open it; right click the file → **Open** → **Open**,
-or allow it in System Settings → Privacy & Security → **Open Anyway**. The installer puts `Custos.app` into
+Developer ID, a paid membership), so macOS says it «was not opened» because Apple could not check it. Press **Done**
+(not «Move to Trash»), then System Settings → Privacy & Security, scroll down to **Security**: next to the line about
+`Custos-<version>.pkg` press **Open Anyway** and type the password of the Mac. Open the .pkg again and press **Open
+Anyway** in the question. (macOS 15 no longer opens such a file with right click → Open.) The button stays there for
+about an hour after the first try. Another way, in Terminal: type `xattr -c ` with a space, drag the .pkg into the
+Terminal window, press Enter; then the .pkg opens with a double click. The installer puts `Custos.app` into
 Applications, starts the service and the menu bar icon, and opens the window.
 
 **Full Disk Access.** Without it macOS hides the Desktop, Documents, Mail and other folders of the users from the

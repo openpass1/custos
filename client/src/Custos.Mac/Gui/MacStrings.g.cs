@@ -14,6 +14,27 @@ static partial class MacStrings
     /// <summary>{0}: {1} runs</summary>
     public static string HistoryCount => Get(nameof(HistoryCount));
 
+    /// <summary>Double-click a run to see its log.</summary>
+    public static string HistoryOpenLog => Get(nameof(HistoryOpenLog));
+
+    /// <summary>All settings…</summary>
+    public static string SettingsAll => Get(nameof(SettingsAll));
+
+    /// <summary>Theme</summary>
+    public static string ThemeHeading => Get(nameof(ThemeHeading));
+
+    /// <summary>For all users of this Mac</summary>
+    public static string ThemeForAll => Get(nameof(ThemeForAll));
+
+    /// <summary>The theme is the same for all users of this Mac: an administrator changes it.</summary>
+    public static string ThemeAdminsOnly => Get(nameof(ThemeAdminsOnly));
+
+    /// <summary>Colour</summary>
+    public static string Color => Get(nameof(Color));
+
+    /// <summary>Only for you</summary>
+    public static string ColorForYou => Get(nameof(ColorForYou));
+
     /// <summary>Quit CUSTOS</summary>
     public static string MenuQuit => Get(nameof(MenuQuit));
 
@@ -241,4 +262,7 @@ static partial class MacStrings
 
     /// <summary>External disk «{0}»</summary>
     public static string UsbDisk => Get(nameof(UsbDisk));
+
+    /// <summary>Save</summary>
+    public static string Save => Get(nameof(Save));
 }

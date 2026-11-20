@@ -18,7 +18,7 @@ ICONS = [
     'add', 'arrow_drop_down', 'arrow_drop_up', 'edit', 'content_copy', 'delete', 'toggle_off', 'toggle_on', 'play_arrow+',
     'stop+', 'pause', 'settings_backup_restore', 'view_sidebar+', 'settings', 'lock', 'upload_file', 'input', 'download',
     'brightness_auto', 'light_mode', 'dark_mode', 'check', 'close', 'arrow_upward', 'arrow_downward', 'folder_open',
-    'filter_list',
+    'filter_list', 'select_all', 'help',
     # States
     'check_circle+', 'warning+', 'cancel+', 'sync', 'do_not_disturb_on+', 'radio_button_unchecked', 'schedule',
     'pause_circle+', 'error+', 'info+', 'play_circle+', 'hourglass_top',
@@ -27,6 +27,8 @@ ICONS = [
     'link_off', 'shield+', 'task_alt',
     # Pages of the task editor and of the settings
     'folder', 'save', 'folder_zip', 'bolt', 'tune', 'palette', 'update', 'key',
+    # Buttons of the forms, as in the window of Windows
+    'network_check', 'person_add', 'link', 'password', 'search', 'create_new_folder', 'note_add', 'lan', 'content_paste',
 ]
 
 NUMBER = re.compile(r'[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?')

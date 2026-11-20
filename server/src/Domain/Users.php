@@ -14,6 +14,8 @@ final class Users
 {
     public const MIN_PASSWORD = 8;
     public const THEMES = ['auto', 'light', 'dark'];
+    /** Colour schemes of the site (app.css, made by tools/make-colors.mjs); the first is the base palette. */
+    public const COLORS = ['neutral', 'graphite', 'blue', 'warm', 'sepia'];
 
     public function __construct(private readonly Db $db)
     {
@@ -82,10 +84,10 @@ final class Users
         $this->db->exec('UPDATE users SET password_hash = ? WHERE id = ?', [self::hash($password), $id]);
     }
 
-    /** Interface language (null = the site default) and theme of a user (7, profile). */
-    public function setPreferences(int $id, ?string $language, string $theme): void
+    /** Interface language (null = the site default), theme and colour scheme of a user (7, profile). */
+    public function setPreferences(int $id, ?string $language, string $theme, string $color): void
     {
-        $this->db->exec('UPDATE users SET language = ?, theme = ? WHERE id = ?', [$language, $theme, $id]);
+        $this->db->exec('UPDATE users SET language = ?, theme = ?, color = ? WHERE id = ?', [$language, $theme, $color, $id]);
     }
 
     public function setDisabled(int $id, bool $disabled): void

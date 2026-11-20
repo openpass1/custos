@@ -2,9 +2,11 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Custos.Core.Model;
 using Custos.Gui;
@@ -55,6 +57,8 @@ internal static class Program
         Step("restore", Restore);
         Step("run log", RunLog);
         Step("menu bar", MenuBar);
+        Step("buttons", Buttons);
+        Step("settings menu", SettingsMenu);
 
         if (IconData.Missing.Count > 0)
         {
@@ -255,6 +259,104 @@ internal static class Program
         }
 
         Close(main);
+    }
+
+    /// <summary>
+    /// The buttons made in code handle their click in their own first handler; the async work added after it with
+    /// OnClick must still run. Then the real case: a new local folder typed into the destination dialog, «ОК» closes
+    /// it and gives the destination back.
+    /// </summary>
+    private static void Buttons()
+    {
+        bool ran = false;
+        var probe = Ui.Filled("probe", () => { });
+        probe.OnClick(() =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+        probe.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!ran)
+        {
+            Failures.Add("buttons: the work added with OnClick did not run");
+        }
+
+        var main = Open();
+        var task = main.ViewModel.Monitor.Snapshot!.Tasks.First(t => t.Name == "Documents").Clone();
+        var context = new EditorContext(main, main.ViewModel.Monitor, task);
+        string folder = Path.Combine(Path.GetTempPath(), "custos-shots-copies");
+        var shown = DestinationDialog.Show(context, new TaskDestination { Kind = DestinationKinds.Local });
+        Pump();
+        var dialog = main.OwnedWindows[^1];
+        var field = dialog.GetVisualDescendants().OfType<TextBox>().First(t => t.IsEffectivelyVisible && t.IsEnabled);
+        field.Text = folder;
+        Pump();
+        Click(dialog, Strings.ButtonOk);
+        if (!shown.IsCompleted)
+        {
+            Failures.Add("buttons: «ОК» of the destination dialog did nothing");
+            dialog.Close();
+            Pump();
+        }
+        else if (shown.Result?.Path != folder)
+        {
+            Failures.Add($"buttons: the destination dialog gave back «{shown.Result?.Path}» instead of «{folder}»");
+        }
+        else
+        {
+            Console.WriteLine("Buttons: «ОК» of the destination dialog adds a local folder.");
+        }
+
+        Close(main);
+    }
+
+    /// <summary>
+    /// The «Настройки» menu of the toolbar, as in the new window of Windows: three themes and the five colours with a
+    /// check on the one in use; a colour picked there is the colour of the window and is remembered.
+    /// </summary>
+    private static void SettingsMenu()
+    {
+        var main = Open();
+        var button = main.GetVisualDescendants().OfType<ToolButton>().First(b => b.Name == "SettingsButton");
+        button.Flyout!.ShowAt(button);
+        Pump();
+        var themes = main.FindControl<StackPanel>("ThemeMenu")!.Children.OfType<RadioButton>().ToList();
+        var colors = main.FindControl<StackPanel>("ColorMenu")!.Children.OfType<RadioButton>().ToList();
+        if (themes.Count != 3 || colors.Count != 5 || themes.Count(t => t.IsChecked == true) != 1 || colors.Count(c => c.IsChecked == true) != 1)
+        {
+            Failures.Add($"settings menu: {themes.Count} themes, {colors.Count} colours, checks wrong");
+        }
+
+        string before = Palettes.Current;
+        try
+        {
+            var blue = colors.First(c => c.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == Palettes.Title("blue")));
+            blue.RaiseEvent(new RoutedEventArgs(RadioButton.ClickEvent));
+            Pump();
+            if (Palettes.Current != "blue")
+            {
+                Failures.Add($"settings menu: «{Palettes.Title("blue")}» was clicked, the colour is {Palettes.Current}");
+            }
+            else
+            {
+                Console.WriteLine("Settings menu: three themes, five colours, a colour picked there is used.");
+            }
+        }
+        finally
+        {
+            Palettes.Choose(before);
+            button.Flyout.Hide();
+            Close(main);
+        }
+    }
+
+    /// <summary>Presses the button with this text in a window.</summary>
+    private static void Click(Window window, string text)
+    {
+        var button = window.GetVisualDescendants().OfType<Button>()
+            .First(b => b.IsEffectivelyVisible && b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == text));
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Pump();
     }
 
     private static ListBox Nav(Window window) =>

@@ -56,11 +56,12 @@ internal sealed class SettingsWindow : Window
         MinWidth = 760;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ScreenFit.Keep(this);
 
         _theme = Ui.Choice([(Themes.Auto, MacStrings.ThemeAuto), (Themes.Light, Strings.ThemeLight), (Themes.Dark, Strings.ThemeDark)], settings.Theme);
         // The colour belongs to this user, not to the service: it is kept in ui.json and changes as soon as it is picked.
-        _color = Ui.Choice(Palettes.Ids.Select(id => (id, Palettes.Title(id))), Palettes.Known(UiState.Load().Color));
-        _color.SelectionChanged += (_, _) => PickColor(Ui.Read(_color));
+        _color = Ui.Choice(Palettes.Ids.Select(id => (id, Palettes.Title(id))), Palettes.Current);
+        _color.SelectionChanged += (_, _) => Palettes.Choose(Ui.Read(_color));
         _language = Ui.Choice([("auto", Strings.LanguageAuto), ("ru", Strings.LanguageRussian), ("en", Strings.LanguageEnglish)],
             Languages.Contains(settings.Language) ? settings.Language : "auto");
         _logDays = Ui.Number(settings.LogRetentionDays, 1, 3650);
@@ -69,21 +70,23 @@ internal sealed class SettingsWindow : Window
         _checkUpdates = Ui.Check(Strings.CheckUpdates, settings.CheckUpdates);
         _allowAll = Ui.Check(Strings.AllowAllUsersEdit, settings.AllowAllUsersEdit);
 
-        var paste = Ui.Text(Strings.ServerPasteTip, () => { });
+        var paste = Ui.IconButton("content_paste", Strings.ServerPasteTip, () => { });
         paste.OnClick(PasteAsync);
-        var connect = Ui.Filled(Strings.ServerConnectButton, () => { });
+        paste.Margin = new Thickness(4, 0, 0, 0);
+        Grid.SetColumn(paste, 1);
+        var connect = Ui.Tonal("link", Strings.ServerConnectButton, () => { });
         connect.OnClick(() => ConnectAsync(connect), ShowError);
-        _reset = Ui.Text(Strings.ServerResetButton, () => { });
+        _reset = Ui.Outlined(Strings.ServerResetButton, () => { });
         _reset.OnClick(ResetAsync, ShowError);
-        var checkNow = Ui.Outlined(Strings.UpdatesCheckNow, () => { });
+        var checkNow = Ui.Tonal("update", Strings.UpdatesCheckNow, () => { });
         checkNow.OnClick(() => CheckUpdatesAsync(checkNow), ShowError);
         _updateNow = Ui.Filled(Strings.UpdateInstall, () => { });
         _updateNow.OnClick(UpdateAsync, ShowError);
-        var setPassword = Ui.Outlined(Strings.ProgramPasswordSetButton, () => { });
+        var setPassword = Ui.Tonal("password", Strings.ProgramPasswordSetButton, () => { });
         setPassword.OnClick(SetPasswordAsync, ShowError);
         var removePassword = Ui.Text(Strings.ProgramPasswordRemoveButton, () => { });
         removePassword.OnClick(RemovePasswordAsync, ShowError);
-        var addAccount = Ui.Outlined(Strings.ButtonAdd, () => { });
+        var addAccount = Ui.Tonal("person_add", Strings.ButtonAddAccount, () => { });
         addAccount.OnClick(AddAccountAsync, ShowError);
         var editAccount = Ui.Text(Strings.ButtonEdit, () => { });
         editAccount.OnClick(EditAccountAsync, ShowError);
@@ -103,9 +106,8 @@ internal sealed class SettingsWindow : Window
                 Ui.Title(Strings.SettingsServer),
                 _serverState,
                 _serverDetails,
-                Ui.Heading(Strings.ServerLineLabel),
-                Ui.Horizontal(_serverLine, paste),
-                Ui.Note(Strings.ServerLineHelp),
+                Ui.Row(Strings.ServerLineLabel, new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Children = { _serverLine, paste } },
+                    Strings.ServerLineHelp),
                 Ui.Horizontal(connect, _reset))),
             (Strings.SettingsUpdates, "update", Ui.Page(
                 Ui.Title(Strings.SettingsUpdates),
@@ -140,25 +142,31 @@ internal sealed class SettingsWindow : Window
             ItemsSource = pages.Select(p => new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 12,
-                Children = { new Icon { Kind = p.Icon, Size = 20 }, new TextBlock { Text = p.Title, VerticalAlignment = VerticalAlignment.Center } },
+                Spacing = 10,
+                Margin = new Thickness(12, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new Icon { Kind = p.Icon, Size = 20, VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = p.Title, FontWeight = FontWeight.Medium, VerticalAlignment = VerticalAlignment.Center },
+                },
             }).ToList(),
-            Width = 240,
-            Margin = new Thickness(12),
+            Width = 210,
+            Margin = new Thickness(8, 10, 0, 8),
         };
         nav.SelectionChanged += (_, _) => view.Content = nav.SelectedIndex >= 0 ? pages[nav.SelectedIndex].View : null;
 
-        var save = Ui.Filled(Strings.ButtonOk, () => { });
+        var save = Ui.Save();
         save.OnClick(() => SaveAsync(save), ShowError);
         save.IsEnabled = _isAdmin || monitor.CanEdit;
         var bottom = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-            Margin = new Thickness(24, 10, 20, 14),
+            Margin = new Thickness(20, 8, 12, 10),
             Children =
             {
                 new StackPanel { Children = { Ui.Note(_isAdmin || monitor.CanEdit ? string.Empty : Strings.SettingsReadOnly), _error } },
-                Ui.Horizontal(Ui.Text(Strings.ButtonCancel, Close), save),
+                Ui.Horizontal(Ui.Outlined(Strings.ButtonCancel, Close), save),
             },
         };
         Grid.SetColumn(bottom.Children[1], 1);
@@ -167,7 +175,7 @@ internal sealed class SettingsWindow : Window
         DockPanel.SetDock(nav, Dock.Left);
         dock.Children.Add(bottom);
         dock.Children.Add(nav);
-        dock.Children.Add(new Border { Classes = { "pane" }, Margin = new Thickness(12), Child = view });
+        dock.Children.Add(new Border { Classes = { "pane" }, Margin = new Thickness(8, 8, 8, 8), Child = view });
         Content = dock;
         nav.SelectedIndex = 0;
 
@@ -184,18 +192,6 @@ internal sealed class SettingsWindow : Window
 
     private void OnSnapshot(object? sender, EventArgs e) => ShowState();
 
-    /// <summary>Puts the colour scheme in place in every window at once and remembers it for this user.</summary>
-    private static void PickColor(string id)
-    {
-        if (Application.Current is { } app)
-        {
-            Palettes.Apply(app, id);
-        }
-
-        var state = UiState.Load();
-        state.Color = id == Palettes.Default ? null : id;
-        state.Save();
-    }
 
     private void ShowError(Exception ex) => Ui.Show(_error, ex.Message);
 

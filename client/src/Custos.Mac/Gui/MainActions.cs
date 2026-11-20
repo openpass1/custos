@@ -144,6 +144,39 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         await new RestoreWindow(Monitor, vm.SelectedDefinition?.Id).ShowDialog(window);
     }
 
+    /// <summary>The theme of the «Настройки» menu: a setting of the service, the same for all users of this Mac.</summary>
+    public async Task SetThemeAsync(string theme)
+    {
+        if (vm.Demo)
+        {
+            vm.ThemeChoice = theme;
+            return;
+        }
+
+        if (Monitor.Snapshot?.Settings is not { } current || current.Theme == theme)
+        {
+            return;
+        }
+
+        if (!vm.CanEdit)
+        {
+            vm.Snack(MacStrings.ThemeAdminsOnly);
+            return;
+        }
+
+        if (!await Monitor.EnsureUnlockedAsync())
+        {
+            return;
+        }
+
+        // A copy: the snapshot keeps what the service said until it says otherwise.
+        var json = IpcJsonContext.Default.AgentSettings;
+        var settings = System.Text.Json.JsonSerializer.Deserialize(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(current, json), json)!;
+        settings.Theme = theme;
+        await Monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
+            IpcJsonContext.Default.SettingsSaveRequest, IpcJsonContext.Default.OkResult);
+    }
+
     public async Task SettingsAsync() => await new SettingsWindow(Monitor).ShowDialog(window);
 
     /// <summary>«Импорт заданий из файла»: a file of «Экспорт заданий» (section 9a), all its tasks.</summary>

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -43,6 +44,7 @@ internal sealed class RestoreWindow : Window
         Height = 760;
         MinWidth = 700;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ScreenFit.Keep(this);
         var tasks = monitor.Snapshot?.Tasks ?? [];
         _byTask = Ui.Radio("from", Strings.RestoreByTask, true);
         _byFolder = Ui.Radio("from", Strings.RestoreByFolder, false);
@@ -56,7 +58,7 @@ internal sealed class RestoreWindow : Window
         browseFolder.OnClick(async () => _folder.Text = await PickAsync() ?? _folder.Text);
         var browseTarget = Ui.Text(Strings.ButtonBrowse, () => { });
         browseTarget.OnClick(async () => _target.Text = await PickAsync() ?? _target.Text);
-        var search = Ui.Outlined(Strings.RestoreSearch, () => { });
+        var search = Ui.Tonal("search", Strings.RestoreSearch, () => { });
         search.OnClick(() => SearchAsync(search), ex => _found.Text = ex.Message);
         _start = Ui.Filled(Strings.RestoreStart, () => { });
         _start.OnClick(StartAsync, ex => _state.Text = ex.Message);
@@ -80,9 +82,19 @@ internal sealed class RestoreWindow : Window
             Ui.Horizontal(_target, browseTarget),
             Ui.Row(Strings.RestoreExisting, _existing, labelWidth: 220),
             _bar,
-            _state,
-            Ui.Horizontal(Ui.Text(Strings.ButtonClose, Close), _start));
-        Content = body;
+            _state);
+
+        // As the dialogs: the form on the light surface, a divider, the buttons at the bottom right.
+        Classes.Add("surface");
+        var buttons = Ui.Horizontal(Ui.Text(Strings.ButtonClose, Close), _start);
+        buttons.HorizontalAlignment = HorizontalAlignment.Right;
+        buttons.Margin = new Thickness(20, 8, 16, 10);
+        var dock = new DockPanel();
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        dock.Children.Add(buttons);
+        dock.Children.Add(new Border { Classes = { "divider" }, Height = 1, Margin = new Thickness(0), [DockPanel.DockProperty] = Dock.Bottom });
+        dock.Children.Add(body);
+        Content = dock;
         _poll.Tick += (_, _) => Safe.Run(PollAsync);
         Closed += (_, _) => _poll.Stop();
         Opened += (_, _) => Safe.Run(PollAsync);
