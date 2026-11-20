@@ -1927,8 +1927,29 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="MacOwnerNotSet" xml:space="preserve">
     <value>Owner and permissions of {0} were not restored: {1}</value>
   </data>
+  <data name="MonitorPackageNotLinux" xml:space="preserve">
+    <value>This package is not CUSTOS for Linux; a Linux server installs only its own packages (custos-linux-….zip).</value>
+  </data>
+  <data name="MonitorPackageLinux" xml:space="preserve">
+    <value>This package is CUSTOS for Linux; it is not installed here.</value>
+  </data>
+  <data name="LinuxSnapshotCreated" xml:space="preserve">
+    <value>Snapshot made ({0}): the files are read from it.</value>
+  </data>
+  <data name="LinuxSnapshotFailedContinue" xml:space="preserve">
+    <value>No snapshot: {0}. Copying without it: files that change during the copy may be copied half-written.</value>
+  </data>
+  <data name="LinuxSnapshotFailedAbort" xml:space="preserve">
+    <value>No snapshot: {0}. The task is set to stop in that case.</value>
+  </data>
+  <data name="LinuxSnapshotPartialAbort" xml:space="preserve">
+    <value>Not every volume of the sources got a snapshot. {0} The task is set to stop in that case.</value>
+  </data>
+  <data name="FolderSkippedMount" xml:space="preserve">
+    <value>Folder {0} skipped: {1}.</value>
+  </data>
   <data name="SevenZipMacBundled" xml:space="preserve">
-    <value>On macOS 7-Zip comes inside CUSTOS and is updated together with the program.</value>
+    <value>On macOS and Linux 7-Zip comes inside CUSTOS and is updated together with the program.</value>
   </data>
   <data name="MacUpdateFailed" xml:space="preserve">
     <value>The installer of macOS did not install the update: {0}</value>

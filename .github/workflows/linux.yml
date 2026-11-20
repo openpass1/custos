@@ -1,0 +1,164 @@
+name: Linux agent
+
+# Builds and tests CUSTOS for Linux on two Ubuntu machines of GitHub, x86_64 and ARM: 7z.so and SQLite built in
+# AlmaLinux 8 (so that glibc 2.28 is enough), the tests of the core (x86_64), the tests of the agent as a user and as
+# root (LVM snapshots of ext4 and XFS, btrfs snapshots, a volume group without free room, all on loop disks), the
+# archive of the program, install.sh with the tests run against the installed service, and uninstall.sh. Then the
+# archive is started on other distributions in containers, and the update package with both archives is made.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/linux.yml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/linux.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERSION: 0.7.${{ github.run_number }}
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  linux:
+    name: linux (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            core: true
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            core: false
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Tools for the tests of snapshots
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lvm2 btrfs-progs xfsprogs > /dev/null
+
+      - name: Build 7z.so and SQLite in AlmaLinux 8
+        run: bash client/linux/build-native-linux.sh client/artifacts-linux/native-${{ matrix.arch }}
+
+      - name: Test the core with 7z.so
+        if: matrix.core
+        working-directory: client
+        env:
+          CUSTOS_7Z_DLL: ${{ github.workspace }}/client/artifacts-linux/native-x64/7z.so
+          CUSTOS_REQUIRE_7Z: '1'
+        run: dotnet test tests/Custos.Core.Tests -c Release
+
+      - name: Test the agent as a user
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+        run: |
+          dotnet build tests/Custos.Linux.Tests -c Release
+          cp artifacts-linux/native-${{ matrix.arch }}/7z.so tests/Custos.Linux.Tests/bin/Release/net10.0/
+          dotnet test tests/Custos.Linux.Tests -c Release --no-build
+
+      # As root the service mounts, and makes snapshots of volumes on loop disks: these tests must not be skipped here.
+      - name: Test the agent as root
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+          CUSTOS_REQUIRE_SNAPSHOTS: '1'
+        run: sudo -E env "PATH=$PATH" "DOTNET_ROOT=${DOTNET_ROOT:-}" dotnet test tests/Custos.Linux.Tests -c Release --no-build
+
+      - name: Build the archive of the program
+        run: bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
+
+      - name: Install it with install.sh
+        run: |
+          set -euo pipefail
+          sudo bash client/linux/install.sh --archive client/artifacts-linux/custos-linux-${{ matrix.arch }}.tar.gz
+          systemctl is-active custos
+          systemctl is-enabled custos
+          [ "$(custos version)" = "$VERSION" ]
+          # Nothing in the program may need a glibc newer than 2.28 (AlmaLinux 8, Debian 10).
+          newest=$(objdump -T /opt/custos/custos /opt/custos/7z.so /opt/custos/libe_sqlite3.so | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -n 1)
+          echo "Newest glibc symbol: $newest"
+          [ "$(printf '%s\n2.28\n' "$newest" | sort -V | tail -n 1)" = 2.28 ]
+
+      - name: Test the installed service
+        working-directory: client
+        env:
+          CUSTOS_REQUIRE_7Z: '1'
+          CUSTOS_REQUIRE_SNAPSHOTS: '1'
+        run: |
+          sudo -E env "PATH=$PATH" "DOTNET_ROOT=${DOTNET_ROOT:-}" CUSTOS_INSTALLED_SERVICE=1 CUSTOS_EXPECTED_VERSION="$VERSION" \
+            dotnet test tests/Custos.Linux.Tests -c Release --no-build --filter "FullyQualifiedName~ServiceTests|FullyQualifiedName~SnapshotTests"
+
+      - name: The log of the service
+        if: always()
+        run: sudo journalctl -u custos --no-pager -n 60 || true
+
+      - name: Remove it with uninstall.sh
+        run: |
+          set -euo pipefail
+          sudo /opt/custos/uninstall.sh --purge
+          test ! -e /opt/custos
+          test ! -e /usr/local/bin/custos
+          test ! -e /etc/systemd/system/custos.service
+          test ! -e /var/lib/custos
+          if systemctl is-active --quiet custos; then echo "The service still runs"; exit 1; fi
+
+      - name: Upload the archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-linux-${{ matrix.arch }}
+          path: client/artifacts-linux/custos-linux-${{ matrix.arch }}.tar.gz
+          retention-days: 14
+
+  distributions:
+    name: other distributions and the update package
+    needs: linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: custos-linux-*
+          path: client/artifacts-linux
+          merge-multiple: true
+
+      - name: Make the update package
+        run: bash client/linux/build-linux.sh package "$VERSION" client/artifacts-linux
+
+      # Each in a container without systemd: install.sh --packages-only, then the service started by hand.
+      - name: Start the program on other distributions
+        run: |
+          set -euo pipefail
+          for image in ubuntu:20.04 debian:12 debian:13 almalinux:8 almalinux:9 almalinux:10 opensuse/leap:15.6; do
+            echo "::group::$image"
+            docker run --rm -v "$PWD:/w:ro" "$image" bash /w/client/linux/ci-smoke.sh /w/client/artifacts-linux/custos-linux-x64.tar.gz
+            echo "::endgroup::"
+          done
+
+      - name: Upload the update package
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-linux-update
+          path: client/artifacts-linux/custos-linux-*.zip
+          retention-days: 14

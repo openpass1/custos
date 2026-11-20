@@ -151,6 +151,7 @@ public sealed partial class BackupEngine
         if (IsArchive(task))
         {
             WriteArchive(run);
+            CheckSnapshots(run);
         }
         else
         {
@@ -168,6 +169,7 @@ public sealed partial class BackupEngine
                 DeleteFromMirror(run);
             }
 
+            CheckSnapshots(run);
             FinishSets(run);
         }
 
@@ -408,8 +410,23 @@ public sealed partial class BackupEngine
         try
         {
             run.Snapshots = _platform.CreateSnapshots(local);
-            // macOS makes an APFS snapshot instead of a shadow copy (VSS), and says so.
-            _log.Write(RunLogLevel.Info, OperatingSystem.IsMacOS() ? Messages.MacSnapshotCreated : Messages.VssCreated);
+
+            // macOS makes an APFS snapshot instead of a shadow copy (VSS), Linux one of LVM, btrfs or ZFS per volume
+            // (none at all when the sources lie only on /boot).
+            if (run.Snapshots.Description is { } made)
+            {
+                _log.Write(RunLogLevel.Info, Messages.Format(Messages.LinuxSnapshotCreated, made));
+            }
+            else if (!CustosEdition.IsLinux)
+            {
+                _log.Write(RunLogLevel.Info, OperatingSystem.IsMacOS() ? Messages.MacSnapshotCreated : Messages.VssCreated);
+            }
+
+            foreach (string note in run.Task.Vss.OnFailure == VssFailureActions.Continue ? run.Snapshots.Notes : [])
+            {
+                run.Result.Warnings++;
+                _log.Write(RunLogLevel.Warning, note);
+            }
         }
         catch (BackupException ex)
         {
@@ -417,12 +434,38 @@ public sealed partial class BackupEngine
             if (run.Task.Vss.OnFailure == VssFailureActions.Continue)
             {
                 run.Result.Warnings++;
-                _log.Write(RunLogLevel.Warning, Messages.Format(OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedContinue : Messages.VssFailedContinue, ex.Message));
+                _log.Write(RunLogLevel.Warning, Messages.Format(
+                    CustosEdition.IsLinux ? Messages.LinuxSnapshotFailedContinue : OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedContinue : Messages.VssFailedContinue,
+                    ex.Message));
             }
             else
             {
-                throw new BackupException(Messages.Format(OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedAbort : Messages.VssFailedAbort, ex.Message), ex);
+                throw new BackupException(Messages.Format(
+                    CustosEdition.IsLinux ? Messages.LinuxSnapshotFailedAbort : OperatingSystem.IsMacOS() ? Messages.MacSnapshotFailedAbort : Messages.VssFailedAbort,
+                    ex.Message), ex);
             }
+
+            return;
+        }
+
+        // Linux: some volumes may have a snapshot and others not; a task that insists on snapshots stops then.
+        if (run.Snapshots.Notes.Count > 0 && run.Task.Vss.OnFailure != VssFailureActions.Continue)
+        {
+            string notes = string.Join(" ", run.Snapshots.Notes);
+            run.Snapshots.Dispose();
+            run.Snapshots = NoSnapshots.Instance;
+            run.Result.VssFailed = true;
+            throw new BackupException(Messages.Format(Messages.LinuxSnapshotPartialAbort, notes));
+        }
+    }
+
+    /// <summary>A snapshot that cannot be trusted any more (it ran out of room while the files were read) fails the run
+    /// before anything is kept: the next run reads the files again.</summary>
+    private static void CheckSnapshots(RunContext run)
+    {
+        if (run.Snapshots.Verify() is { } broken)
+        {
+            throw new BackupException(broken);
         }
     }
 
@@ -455,7 +498,9 @@ public sealed partial class BackupEngine
                         run.UnreadableFolders++;
                         _log.Write(RunLogLevel.Warning, Messages.Format(Messages.FolderUnreadable, path, reason));
                     },
-                    run.Cancellation));
+                    run.Cancellation,
+                    _platform.SkipFolder,
+                    (path, reason) => _log.Write(RunLogLevel.Info, Messages.Format(Messages.FolderSkippedMount, path, reason))));
             }
             catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException)
             {
@@ -1070,7 +1115,7 @@ public sealed partial class BackupEngine
     private void Commit(RunContext run)
     {
         var files = new List<KeyValuePair<string, FileStamp>>();
-        var selected = run.ToCopy.Select(c => c.File.OriginalPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var selected = run.ToCopy.Select(c => c.File.OriginalPath).ToHashSet(PathNames.Comparer);
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
             foreach (var file in context.Scan!.Files)
@@ -1463,14 +1508,14 @@ public sealed partial class BackupEngine
 
         public List<SourceContext> Sources { get; } = [];
 
-        public Dictionary<string, FileStamp> LastState { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, FileStamp> LastState { get; set; } = new(PathNames.Comparer);
 
         public List<(SourceContext Context, ScannedFile File)> ToCopy { get; } = [];
 
         public long BytesToCopy { get; set; }
 
         /// <summary>Copied files: original path → SHA-256.</summary>
-        public Dictionary<string, string> Copied { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> Copied { get; } = new(PathNames.Comparer);
 
         public int FailedFiles { get; set; }
 
@@ -1496,13 +1541,13 @@ public sealed partial class BackupEngine
         public int UnreadableFolders { get; set; }
 
         /// <summary>Files deleted between the scan and the copy.</summary>
-        public HashSet<string> Vanished { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Vanished { get; } = new(PathNames.Comparer);
 
         /// <summary>Files that could not be read (archives only; the copy counts them in <see cref="FailedFiles"/>).</summary>
-        public HashSet<string> Failed { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Failed { get; } = new(PathNames.Comparer);
 
         /// <summary>Files a destination would not let replace (original paths): the next run copies them again.</summary>
-        public HashSet<string> Refused { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Refused { get; } = new(PathNames.Comparer);
 
         public string? SetName { get; set; }
 
@@ -1573,7 +1618,7 @@ public sealed partial class BackupEngine
         /// <summary><see cref="WriteFolder"/> is a set folder this run made: removed if the run does not finish it.</summary>
         public bool OwnsWriteFolder { get; set; }
 
-        public HashSet<string> CreatedFolders { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> CreatedFolders { get; } = new(PathNames.Comparer);
 
         /// <summary>Permissions could not be set here: no more tries in this run.</summary>
         public bool SecurityFailed { get; set; }
@@ -1614,7 +1659,7 @@ public sealed partial class BackupEngine
         public HashSet<string>? TakenNames { get; set; }
 
         /// <summary>Files of the run this destination would not let replace (paths in the set): it keeps its own.</summary>
-        public HashSet<string> Refused { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Refused { get; } = new(PathNames.Comparer);
 
         /// <summary>Files a full copy into a shared folder found there in the same version and did not write.</summary>
         public int HeldFiles { get; set; }
@@ -1625,13 +1670,13 @@ public sealed partial class BackupEngine
 
         /// <summary>The files in the mirror before the run (or, for a full copy into a shared folder, in the folders its
         /// sources go to): path in the destination → size and time.</summary>
-        public Dictionary<string, MirrorEntry> Existing { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, MirrorEntry> Existing { get; } = new(PathNames.Comparer);
 
         /// <summary>The files the last run put into the mirror (its manifest): only these are ever deleted.</summary>
-        public Dictionary<string, ManifestFile> Previous { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, ManifestFile> Previous { get; } = new(PathNames.Comparer);
 
         /// <summary>Files this mirror lacks or holds in another version.</summary>
-        public HashSet<string> Needed { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Needed { get; } = new(PathNames.Comparer);
 
         /// <summary>Where a safe mirror puts what this run replaces or deletes; made when first needed.</summary>
         public string? Bin { get; set; }

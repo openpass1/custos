@@ -101,7 +101,7 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
     private readonly IRunLog _log = log ?? throw new ArgumentNullException(nameof(log));
     private readonly RestoreProgress _progress = new();
     private readonly Stopwatch _clock = Stopwatch.StartNew();
-    private readonly HashSet<string> _restored = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _restored = new(PathNames.Comparer);
     private TimeSpan _lastProgress = TimeSpan.MinValue;
 
     /// <summary>Runs the restore. Problems with single files end up in the result; a set that cannot be read at all
@@ -130,7 +130,7 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
         foreach (var set in chain)
         {
             var files = SetCatalog.ReadManifest(set, request.Access).Files;
-            manifests.Add((set, files.ToDictionary(f => Key(f.Path), StringComparer.OrdinalIgnoreCase)));
+            manifests.Add((set, files.ToDictionary(f => Key(f.Path), PathNames.Comparer)));
         }
 
         // Each file of the date, from the newest set of the chain that holds it. A 7z archive lists some files before
@@ -152,7 +152,7 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
             if (!entries.TryGetValue(set, out var present))
             {
                 using var reader = request.Access.Open(set);
-                entries[set] = present = reader.Entries.Where(e => !e.IsFolder).Select(e => Key(e.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                entries[set] = present = reader.Entries.Where(e => !e.IsFolder).Select(e => Key(e.Path)).ToHashSet(PathNames.Comparer);
             }
 
             return present.Contains(key);
@@ -249,13 +249,13 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
                 return Path.Combine(source.Path, Local(path));
             }
 
-            if (string.Equals(path, target, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(path, target, PathNames.Comparison))
             {
                 // A single file stored under its name.
                 return source.Path;
             }
 
-            if (path.StartsWith(target + "\\", StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWith(target + "\\", PathNames.Comparison))
             {
                 return Path.Combine(source.Path, Local(path[(target.Length + 1)..]));
             }
@@ -338,8 +338,8 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
 
         using var reader = request.Access.Open(set);
         var byPath = reader.Entries.Where(e => !e.IsFolder)
-            .GroupBy(e => Key(e.Path), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Last(), StringComparer.OrdinalIgnoreCase);
+            .GroupBy(e => Key(e.Path), PathNames.Comparer)
+            .ToDictionary(g => g.Key, g => g.Last(), PathNames.Comparer);
         var wanted = new Dictionary<int, Planned>();
         foreach (var planned in todo)
         {

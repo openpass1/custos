@@ -3,6 +3,7 @@ client/**/bin/
 client/**/obj/
 client/artifacts/
 client/artifacts-mac/
+client/artifacts-linux/
 client/installer/redist/
 client/TestResults/
 *.user

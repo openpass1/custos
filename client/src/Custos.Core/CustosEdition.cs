@@ -15,6 +15,9 @@ namespace Custos.Core;
 /// <item>macos: the same Custos.Core with the service of src/Custos.Mac, Apple silicon and Intel, macOS 15 and later. It is
 /// released together with the standard edition (the same <c>client-v</c> releases, its own package
 /// <c>custos-macos-X.Y.Z.zip</c>); 7-Zip comes inside the program.</item>
+/// <item>linux: the same Custos.Core with the service of src/Custos.Linux, without a window, for Linux servers (x64 and
+/// arm64, glibc 2.28 and later). It is released together with the standard edition (its own package
+/// <c>custos-linux-X.Y.Z.zip</c> with the programs of both processors); 7-Zip comes inside the program.</item>
 /// </list>
 /// The site learns the edition from the <c>edition</c> field of the registration and the heartbeat (A.3, A.4) and
 /// hides what an edition cannot do; update packages carry it in manifest.json (A.10).
@@ -27,6 +30,11 @@ public static class CustosEdition
     /// <summary>The value of <c>edition</c> for CUSTOS for macOS (A.3, A.4, A.10).</summary>
     public const string MacName = "macos";
 
+    /// <summary>The value of <c>edition</c> for CUSTOS for Linux (A.3, A.4, A.10).</summary>
+    public const string LinuxName = "linux";
+
+    private static volatile bool _linux;
+
 #if CUSTOS_LEGACY
     /// <summary>True in the build for Windows 7 and 8.1.</summary>
     public static bool IsLegacy => true;
@@ -38,25 +46,46 @@ public static class CustosEdition
     /// <summary>True in CUSTOS for macOS: Custos.Core is the same assembly there, so it is told by the system.</summary>
     public static bool IsMac => OperatingSystem.IsMacOS();
 
+    /// <summary>
+    /// True in CUSTOS for Linux. Custos.Core is the same assembly there, but it cannot be told by the system: the tests
+    /// of the core run on Linux as the standard edition. The program of Linux says so first thing (<see cref="UseLinux"/>).
+    /// </summary>
+    public static bool IsLinux => _linux;
+
     /// <summary>What the agent sends as <c>edition</c> and expects in manifest.json; null (not sent) for the standard edition.</summary>
-    public static string? Wire => IsLegacy ? LegacyName : IsMac ? MacName : null;
+    public static string? Wire => IsLegacy ? LegacyName : IsMac ? MacName : IsLinux ? LinuxName : null;
+
+    /// <summary>Makes this process CUSTOS for Linux (<see cref="IsLinux"/>); called by src/Custos.Linux before anything else.</summary>
+    /// <exception cref="PlatformNotSupportedException">This is not Linux.</exception>
+    public static void UseLinux()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            throw new PlatformNotSupportedException("CUSTOS for Linux runs only on Linux.");
+        }
+
+        _linux = true;
+    }
 
     /// <summary>Tags of the program on GitHub: <c>client-vX.Y.Z</c>, or <c>client-legacy-vX.Y.Z</c> for the legacy edition.</summary>
     public static string ReleaseTagPrefix => IsLegacy ? "client-legacy-v" : "client-v";
 
-    /// <summary>The update package of a version: <c>custos-1.1.0.zip</c>, <c>custos-legacy-1.1.0.zip</c> or <c>custos-macos-1.1.0.zip</c>.</summary>
+    /// <summary>The update package of a version: <c>custos-1.1.0.zip</c>, <c>custos-legacy-1.1.0.zip</c>, <c>custos-macos-1.1.0.zip</c>
+    /// or <c>custos-linux-1.1.0.zip</c>.</summary>
     public static string PackageName(string version) => Wire is { } edition ? $"custos-{edition}-{version}.zip" : $"custos-{version}.zip";
 
     /// <summary>Why a package of another edition (its <c>edition</c> in manifest.json) is not installed here.</summary>
     public static string PackageOfOtherEdition(string? packageEdition) =>
         IsMac ? Messages.MonitorPackageNotMac
+        : IsLinux ? Messages.MonitorPackageNotLinux
         : packageEdition == MacName ? Messages.MonitorPackageMac
+        : packageEdition == LinuxName ? Messages.MonitorPackageLinux
         : IsLegacy ? Messages.MonitorPackageNotLegacy
         : Messages.MonitorPackageLegacy;
 
     /// <summary>
     /// The string the site signs for an update package (A.10): <c>"{version}\n{sha256}"</c>, and for the other
-    /// editions <c>"legacy\n{version}\n{sha256}"</c> or <c>"macos\n{version}\n{sha256}"</c>, so that a signature of
+    /// editions <c>"legacy\n{version}\n{sha256}"</c>, <c>"macos\n{version}\n{sha256}"</c> or <c>"linux\n{version}\n{sha256}"</c>, so that a signature of
     /// one edition's package is never taken for another's.
     /// </summary>
     public static string PackageSignedString(string version, string sha256) =>

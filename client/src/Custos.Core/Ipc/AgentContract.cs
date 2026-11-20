@@ -54,6 +54,9 @@ public sealed class AgentSnapshot
 
     /// <summary>New versions of the program on GitHub, for a computer without a monitoring site.</summary>
     public ProgramUpdateInfo ProgramUpdate { get; set; } = new();
+
+    /// <summary>CUSTOS for Linux: whether the sources of the tasks with snapshots on can have them; empty elsewhere.</summary>
+    public List<SnapshotReadiness> Snapshots { get; set; } = [];
 }
 
 /// <summary>What the service knows about new versions of the program on GitHub.</summary>

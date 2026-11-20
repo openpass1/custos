@@ -335,6 +335,11 @@ public sealed class RunLogBody
 public sealed class InventoryBody
 {
     public List<InventoryDestination> Destinations { get; set; } = [];
+
+    /// <summary>CUSTOS for Linux: whether the sources of the tasks with snapshots on can have them (A.8); not sent by
+    /// the other editions.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<Backup.SnapshotReadiness>? Snapshots { get; set; }
 }
 
 public sealed class InventoryDestination

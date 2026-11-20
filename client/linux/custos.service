@@ -1,0 +1,27 @@
+# The service of CUSTOS for Linux, installed by install.sh as /etc/systemd/system/custos.service (an update puts the
+# unit of the new version in place). Settings and the database: /var/lib/custos; logs: /var/log/custos.
+[Unit]
+Description=CUSTOS backup agent
+Documentation=https://github.com/openpass1/custos
+After=network-online.target local-fs.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+ExecStart=/opt/custos/custos agent --systemd
+WorkingDirectory=/
+Restart=on-failure
+RestartSec=10
+# A run in progress is stopped and its snapshots removed before the service ends.
+TimeoutStopSec=60
+KillMode=mixed
+# The snapshots and network folders the service mounts are seen by the service alone.
+PrivateMounts=yes
+# Backups read a lot: other programs' disk access goes first.
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+LimitNOFILE=65536
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+[Install]
+WantedBy=multi-user.target

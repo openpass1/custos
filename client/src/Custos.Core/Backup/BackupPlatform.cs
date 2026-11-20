@@ -98,6 +98,13 @@ public interface IBackupPlatform
     /// <summary>Asks Windows to serve the I/O of this file after that of other programs. Failures are ignored.</summary>
     void LowerIoPriority(Microsoft.Win32.SafeHandles.SafeFileHandle handle);
 
+    /// <summary>
+    /// Why a folder met inside a source is not read at all, or null to read it. On Linux: a mount of the system
+    /// (/proc, /sys, /run …) or of another computer (NFS, SMB) below the source, as <c>tar --one-file-system</c> and
+    /// rsync <c>-x</c> keep to one system; a source that is itself such a folder is read as asked.
+    /// </summary>
+    string? SkipFolder(string readPath) => null;
+
     /// <summary>The NTFS permissions, owner and group of a file or folder (section 6.8); null if there are none.</summary>
     byte[]? ReadSecurity(string path, bool folder);
 
@@ -132,6 +139,20 @@ public interface ISnapshotSet : IDisposable
     /// <summary>The path to read instead of <paramref name="path"/>: inside the shadow copy of its volume, or the path
     /// itself when its volume has none.</summary>
     string Map(string path);
+
+    /// <summary>What was made, for the run log (Linux: «LVM: / (ubuntu-vg/ubuntu-lv)»); null = the usual words of the
+    /// system (VSS, APFS).</summary>
+    string? Description => null;
+
+    /// <summary>Volumes of the sources read without a snapshot, each with the reason: warnings of the run (Linux, where
+    /// one volume may have a snapshot and another not).</summary>
+    IReadOnlyList<string> Notes => Array.Empty<string>();
+
+    /// <summary>
+    /// Asked once the files are read and before the copy is kept: why what was read from the snapshots cannot be
+    /// trusted (an LVM snapshot that ran out of room), or null when it can.
+    /// </summary>
+    string? Verify() => null;
 }
 
 /// <summary>A run cannot go on, with a message for the log.</summary>
@@ -225,6 +246,8 @@ public class LocalBackupPlatform : IBackupPlatform
     public virtual INetworkSession OpenSession(string? credentialId) => ProcessSession.Instance;
 
     public virtual ISnapshotSet CreateSnapshots(IReadOnlyCollection<string> localPaths) => NoSnapshots.Instance;
+
+    public virtual string? SkipFolder(string readPath) => null;
 
     public virtual string? FindVolumeByLabel(string label)
     {
