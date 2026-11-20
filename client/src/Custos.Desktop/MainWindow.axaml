@@ -1,0 +1,454 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="using:Custos.Desktop"
+        xmlns:g="using:Custos.Gui"
+        x:Class="Custos.Desktop.MainWindow"
+        x:ClassModifier="internal"
+        x:DataType="p:MainViewModel"
+        Title="{x:Static g:Strings.AppTitle}"
+        Icon="/Assets/custos.ico"
+        Width="1180" Height="780" MinWidth="1100" MinHeight="520"
+        WindowStartupLocation="CenterScreen">
+
+  <Panel>
+    <DockPanel>
+
+      <!-- Toolbar: «Создать» as an extended FAB, the rest as icon-over-label items (docs/client-ui.md, 2.1). -->
+      <Grid Name="Toolbar" DockPanel.Dock="Top" Height="56" Margin="10,0,10,0" ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Name="ToolbarStart" Orientation="Horizontal" VerticalAlignment="Center">
+          <Panel Name="FabPanel" Margin="0,0,10,0">
+          <Border Classes="fabshadow" />
+          <Border Classes="fab">
+            <StackPanel Orientation="Horizontal">
+              <Button Theme="{StaticResource FabPart}" Click="OnCreate" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{x:Static g:Strings.ToolCreate}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <p:Icon Kind="add" />
+                  <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Border Width="1" Margin="0,8" Background="{DynamicResource OutlineVariant}" />
+              <Button Theme="{StaticResource FabPart}" Padding="8,0" IsEnabled="{Binding CanEdit}">
+                <p:Icon Kind="arrow_drop_down" />
+                <Button.Flyout>
+                  <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="menu">
+                    <StackPanel MinWidth="300">
+                      <Button Theme="{StaticResource MenuItemButton}" Click="OnImport">
+                        <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="upload_file" /><TextBlock Text="{x:Static g:Strings.ToolImportFile}" VerticalAlignment="Center" /></StackPanel>
+                      </Button>
+                      <Button Theme="{StaticResource MenuItemButton}" Click="OnCobianImport">
+                        <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="input" /><TextBlock Text="{x:Static g:Strings.ToolImportCobian}" VerticalAlignment="Center" /></StackPanel>
+                      </Button>
+                      <Border Classes="divider" Margin="0,8" />
+                      <Button Theme="{StaticResource MenuItemButton}" Click="OnExport" IsEnabled="{Binding CanRestore}">
+                        <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="download" /><TextBlock Text="{x:Static g:Strings.ToolExportFile}" VerticalAlignment="Center" /></StackPanel>
+                      </Button>
+                    </StackPanel>
+                  </Flyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
+          </Border>
+          </Panel>
+          <p:ToolButton Name="EditButton" Label="{x:Static g:Strings.ToolEdit}" IconKind="edit" IsEnabled="{Binding CanEditOne}" Click="OnEdit" />
+          <p:ToolButton Name="CloneButton" Label="{x:Static g:Strings.ToolClone}" IconKind="content_copy" IsEnabled="{Binding CanEditOne}" Click="OnClone" />
+          <p:ToolButton Name="DeleteButton" Label="{x:Static g:Strings.ToolDelete}" IconKind="delete" IsEnabled="{Binding CanDelete}" Click="OnDelete" />
+          <p:ToolButton Name="ToggleButton" Label="{Binding ToggleText}" IconKind="{Binding ToggleIcon}" IsEnabled="{Binding CanToggle}" Click="OnToggle"
+                        ToolTip.Tip="{x:Static g:Strings.ToolEnableHint}" />
+          <Border Classes="vsep" />
+          <p:ToolButton Name="RunButton" Classes="go" Label="{x:Static g:Strings.ToolRun}" IconKind="play_arrow" IsEnabled="{Binding CanRun}" Click="OnRun" />
+          <p:ToolButton Name="StopButton" Classes="halt" Label="{x:Static g:Strings.ToolStop}" IconKind="stop" IsEnabled="{Binding CanStop}" Click="OnStop" />
+          <p:ToolButton Name="PauseButton" Label="{Binding PauseText}" IconKind="{Binding PauseIcon}" IsEnabled="{Binding CanPause}" Click="OnPause"
+                        ToolTip.Tip="{x:Static g:Strings.ToolPauseHint}" />
+          <Border Classes="vsep" />
+          <p:ToolButton Name="RestoreButton" Label="{x:Static g:Strings.ToolRestore}" IconKind="settings_backup_restore" IsEnabled="{Binding CanRestore}" Click="OnRestore" />
+          <!-- On a screen too narrow for every button, «Клонировать» and «Восстановить» move into this menu (FitToolbar). -->
+          <p:ToolButton Name="MoreButton" Label="{x:Static p:DesktopStrings.More}" IconKind="more_vert" IsVisible="False">
+            <p:ToolButton.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="menu">
+                <StackPanel MinWidth="240">
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnClone" IsEnabled="{Binding CanEditOne}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnRestore" IsEnabled="{Binding CanRestore}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="settings_backup_restore" /><TextBlock Text="{x:Static g:Strings.ToolRestore}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </p:ToolButton.Flyout>
+          </p:ToolButton>
+        </StackPanel>
+        <StackPanel Name="ToolbarEnd" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" VerticalAlignment="Center" IsVisible="{Binding ShowAdminsOnly}">
+            <p:Icon Kind="lock" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" />
+            <TextBlock Classes="small var" Text="{x:Static g:Strings.ToolAdminsOnly}" VerticalAlignment="Center" />
+          </StackPanel>
+          <p:ToolToggle Label="{x:Static g:Strings.ToolCard}" IconKind="view_sidebar" IsChecked="{Binding ShowCard}" HotKey="Alt+P"
+                        ToolTip.Tip="{x:Static g:Strings.ToolCardHint}" />
+          <p:ToolButton Name="SettingsButton" Label="{x:Static g:Strings.ToolSettings}" IconKind="settings">
+            <p:ToolButton.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="menu">
+                <StackPanel MinWidth="300">
+                  <TextBlock Classes="menuhead" Text="{x:Static p:DesktopStrings.ThemeHeading}" />
+                  <TextBlock Classes="menunote" Text="{x:Static p:DesktopStrings.ThemeForAll}" />
+                  <StackPanel Name="ThemeMenu" />
+                  <Border Classes="divider" Margin="0,8" />
+                  <TextBlock Classes="menuhead" Text="{x:Static p:DesktopStrings.Color}" />
+                  <TextBlock Classes="menunote" Text="{x:Static p:DesktopStrings.ColorForYou}" />
+                  <StackPanel Name="ColorMenu" />
+                  <Border Classes="divider" Margin="0,8" />
+                  <Button Theme="{StaticResource MenuItemButton}" Click="OnSettings" IsEnabled="{Binding IsConnected}">
+                    <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="tune" /><TextBlock Text="{x:Static p:DesktopStrings.SettingsAll}" VerticalAlignment="Center" /></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Flyout>
+            </p:ToolButton.Flyout>
+          </p:ToolButton>
+        </StackPanel>
+      </Grid>
+
+      <!-- A new version on GitHub: an M3 banner over the list (administrators install it). -->
+      <Border DockPanel.Dock="Top" Classes="info" Margin="12,0,12,8" IsVisible="{Binding UpdateVisible}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <p:Icon Kind="update" Size="20" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding UpdateText}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="12,0,16,0" />
+          <Button Grid.Column="2" Theme="{StaticResource TextButton}" Content="{x:Static g:Strings.UpdateWhatsNew}" Click="OnReleasePage"
+                  IsVisible="{Binding HasReleasePage}" Margin="0,0,8,0" />
+          <Button Grid.Column="3" Theme="{StaticResource FilledButton}" Content="{Binding UpdateButton}" Click="OnInstallUpdate"
+                  IsEnabled="{Binding CanInstallUpdate}" />
+        </Grid>
+      </Border>
+
+      <!-- Status bar. -->
+      <Grid DockPanel.Dock="Bottom" Height="26" Margin="14,0,10,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
+          <Ellipse Classes="dot" Classes.ok="{Binding ServiceOk}" />
+          <TextBlock Classes="small var" Text="{Binding ServiceText}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,20,0">
+          <p:Icon Kind="{Binding ServerIcon}" Size="16" Foreground="{DynamicResource OnSurfaceVariant}" />
+          <TextBlock Classes="small var" Text="{Binding ServerText}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" IsVisible="{Binding UserText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <p:Icon Kind="person" Size="16" Foreground="{DynamicResource OnSurfaceVariant}" />
+          <TextBlock Classes="small var" Text="{Binding UserText}" />
+        </StackPanel>
+        <Button Grid.Column="4" Theme="{StaticResource LinkButton}" Click="OnDonate" VerticalAlignment="Center" ToolTip.Tip="{x:Static g:Strings.StatusDonateTip}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="favorite" Filled="True" Size="16" />
+            <TextBlock Classes="small" Text="{x:Static g:Strings.StatusDonate}" FontWeight="Medium" />
+          </StackPanel>
+        </Button>
+        <TextBlock Grid.Column="5" Classes="small var" Text="{Binding VersionText}" VerticalAlignment="Center" Margin="12,0,6,0" />
+      </Grid>
+
+      <!-- List | card, then the tabs; the gaps hold M3 drag handles (the borders move, docs/client-ui.md 2.3). -->
+      <Grid Name="Body" Margin="12,0,12,0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" MinHeight="160" />
+          <RowDefinition Height="8" />
+          <RowDefinition Height="230" MinHeight="120" />
+        </Grid.RowDefinitions>
+        <Grid Name="Top">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="340" />
+            <ColumnDefinition Width="8" />
+            <ColumnDefinition Width="350" MinWidth="280" />
+          </Grid.ColumnDefinitions>
+
+          <!-- Task list -->
+          <Border Classes="pane">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="16,6,14,0">
+                <TextBlock Classes="title" Text="{x:Static p:DesktopStrings.Tasks}" VerticalAlignment="Center" />
+                <Border Classes="countpill" IsVisible="{Binding HasSnapshot}"><TextBlock Text="{Binding TaskCount}" /></Border>
+              </StackPanel>
+              <Panel>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="8,0,8,6" IsVisible="{Binding HasSnapshot}">
+                  <DockPanel MinWidth="930">
+                    <Border DockPanel.Dock="Top" Classes="divider" Height="28" Margin="0,0,0,2">
+                      <Grid Name="Header" ColumnDefinitions="160,130,170,150,200,*" />
+                    </Border>
+                    <ListBox Name="TaskList" Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectionMode="Multiple"
+                             SelectionChanged="OnTaskSelection" DoubleTapped="OnTaskDoubleTapped" KeyDown="OnTaskKey">
+                      <!-- A right click: what the toolbar does with the selected tasks, as in the menu of the list of Custos.exe. -->
+                      <ListBox.ContextFlyout>
+                        <Flyout Placement="Pointer" FlyoutPresenterClasses="menu">
+                          <StackPanel MinWidth="240">
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="run" Click="OnTaskMenu" IsEnabled="{Binding CanRun}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="play_arrow" /><TextBlock Text="{x:Static g:Strings.ToolRun}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="stop" Click="OnTaskMenu" IsEnabled="{Binding CanStop}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="stop" /><TextBlock Text="{x:Static g:Strings.ToolStop}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="edit" Click="OnTaskMenu" IsEnabled="{Binding CanEditOne}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="edit" /><TextBlock Text="{x:Static g:Strings.ToolEdit}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="clone" Click="OnTaskMenu" IsEnabled="{Binding CanEditOne}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="content_copy" /><TextBlock Text="{x:Static g:Strings.ToolClone}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="delete" Click="OnTaskMenu" IsEnabled="{Binding CanDelete}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="delete" /><TextBlock Text="{x:Static g:Strings.ToolDelete}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="toggle" Click="OnTaskMenu" IsEnabled="{Binding CanToggle}">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="{Binding ToggleIcon}" /><TextBlock Text="{Binding ToggleText}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                            <Border Classes="divider" Margin="0,8" />
+                            <Button Theme="{StaticResource MenuItemButton}" Tag="all" Click="OnTaskMenu">
+                              <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="select_all" /><TextBlock Text="{x:Static g:Strings.MenuSelectAll}" VerticalAlignment="Center" /></StackPanel>
+                            </Button>
+                          </StackPanel>
+                        </Flyout>
+                      </ListBox.ContextFlyout>
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="p:TaskRow">
+                          <Grid Height="30" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">
+                            <Grid ColumnDefinitions="Auto,*" Margin="12,0">
+                              <p:Icon Classes="state" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
+                                      Classes.run="{Binding IsRun}" Classes.none="{Binding IsNone}" Kind="{Binding StateIcon}" VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="1" Margin="12,0,0,0" Text="{Binding Name}" FontWeight="Medium" VerticalAlignment="Center"
+                                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                            </Grid>
+                            <TextBlock Grid.Column="1" Classes="cell" Text="{Binding Type}" />
+                            <TextBlock Grid.Column="2" Classes="cell" Text="{Binding Schedule}" ToolTip.Tip="{Binding Schedule}" />
+                            <TextBlock Grid.Column="3" Classes="cell" Text="{Binding LastRun}" />
+                            <Border Grid.Column="4" Classes="st" Margin="12,0,0,0" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}"
+                                    Classes.bad="{Binding IsBad}" Classes.run="{Binding IsRun}" Classes.none="{Binding IsNone}">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <p:Ring Value="{Binding Percent}" IsVisible="{Binding IsRunning}" VerticalAlignment="Center" />
+                                <p:Icon Kind="{Binding ResultIcon}" IsVisible="{Binding HasResultIcon}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Result}" />
+                              </StackPanel>
+                            </Border>
+                            <TextBlock Grid.Column="5" Classes="cell" Text="{Binding NextRun}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                  </DockPanel>
+                </ScrollViewer>
+                <StackPanel IsVisible="{Binding !HasSnapshot}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24">
+                  <p:Icon Kind="link_off" Size="40" Foreground="{DynamicResource OnSurfaceVariant}" />
+                  <TextBlock Text="{Binding EmptyText}" Classes="var" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" />
+                </StackPanel>
+              </Panel>
+            </DockPanel>
+          </Border>
+
+          <GridSplitter Name="CardSplitter" Grid.Column="1" Theme="{StaticResource DragHandleV}" />
+
+          <!-- Task card -->
+          <Border Name="CardPane" Grid.Column="2" Classes="pane">
+            <Panel>
+              <ScrollViewer IsVisible="{Binding HasCard}" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="12,10,12,10" DataContext="{Binding Card}" x:DataType="p:CardModel">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Border Classes="lead" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}" Classes.run="{Binding IsRun}">
+                      <p:Icon Kind="{Binding StateIcon}" Filled="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                      <TextBlock Classes="headline" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="small var" Text="{Binding Subtitle}" />
+                    </StackPanel>
+                  </Grid>
+                  <Border Classes="progblock" IsVisible="{Binding ShowProgress}">
+                    <StackPanel Spacing="10">
+                      <p:ProgressLine Value="{Binding Percent}" Live="{Binding Live}" />
+                      <TextBlock Classes="small" Text="{Binding ProgressLine}" FontWeight="Medium" />
+                    </StackPanel>
+                  </Border>
+                  <Border Classes="errbox" IsVisible="{Binding HasError}">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <p:Icon Kind="error" Filled="True" Size="20" VerticalAlignment="Top" />
+                      <TextBlock Grid.Column="1" Margin="10,1,0,0" Classes="small" Text="{Binding Error}" TextWrapping="Wrap" />
+                    </Grid>
+                  </Border>
+                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,6,0,0">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="p:CardRow">
+                        <Border Classes="divider" Padding="0,4,0,4">
+                          <StackPanel>
+                            <TextBlock Classes="key" Text="{Binding Key}" />
+                            <TextBlock Classes="value" Classes.accent="{Binding Accent}" Text="{Binding Value}" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+              <TextBlock IsVisible="{Binding !HasCard}" Text="{x:Static g:Strings.CardNoSelection}" Classes="var"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Panel>
+          </Border>
+        </Grid>
+
+        <GridSplitter Grid.Row="1" Theme="{StaticResource DragHandleH}" />
+
+        <!-- Bottom tabs -->
+        <Border Grid.Row="2" Classes="pane">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Classes="divider" Padding="12,0,12,0">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal">
+                  <RadioButton Theme="{StaticResource TabButton}" GroupName="bottom" IsChecked="{Binding IsLogTab}">
+                    <StackPanel Orientation="Horizontal" Spacing="8"><p:Icon Kind="receipt_long" Size="20" /><TextBlock Text="{x:Static g:Strings.TabLog}" VerticalAlignment="Center" /></StackPanel>
+                  </RadioButton>
+                  <RadioButton Theme="{StaticResource TabButton}" GroupName="bottom" IsChecked="{Binding IsHistoryTab}">
+                    <StackPanel Orientation="Horizontal" Spacing="8"><p:Icon Kind="history" Size="20" /><TextBlock Text="{x:Static g:Strings.TabHistory}" VerticalAlignment="Center" /></StackPanel>
+                  </RadioButton>
+                  <RadioButton Theme="{StaticResource TabButton}" GroupName="bottom" IsChecked="{Binding IsProgressTab}">
+                    <StackPanel Orientation="Horizontal" Spacing="8"><p:Icon Kind="monitoring" Size="20" /><TextBlock Text="{x:Static g:Strings.TabProgress}" VerticalAlignment="Center" /></StackPanel>
+                  </RadioButton>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding IsLogTab}">
+                  <Button Theme="{StaticResource MenuChip}" Content="{Binding LogLevelText}">
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="menu">
+                        <StackPanel MinWidth="240">
+                          <Button Theme="{StaticResource MenuItemButton}" Click="OnLogLevel" Tag="all" Content="{x:Static g:Strings.LogShowAll}" />
+                          <Button Theme="{StaticResource MenuItemButton}" Click="OnLogLevel" Tag="problems" Content="{x:Static g:Strings.LogShowProblems}" />
+                          <Button Theme="{StaticResource MenuItemButton}" Click="OnLogLevel" Tag="errors" Content="{x:Static g:Strings.LogShowErrors}" />
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
+                  <ToggleButton Theme="{StaticResource Chip}" IsChecked="{Binding LogSelectedOnly}" Content="{x:Static g:Strings.JournalSelectedOnly}" />
+                  <TextBlock Classes="small var" Text="{Binding LogCount}" VerticalAlignment="Center" Margin="4,0,4,0" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Classes="small var" Text="{Binding HistoryNote}" VerticalAlignment="Center" Margin="0,0,4,0"
+                           IsVisible="{Binding IsHistoryTab}" />
+              </Grid>
+            </Border>
+            <Panel>
+              <!-- Journal: newest first -->
+              <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Log}" IsVisible="{Binding IsLogTab}" Margin="8,4,8,4">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="p:LogRow">
+                    <Grid Height="22" ColumnDefinitions="150,30,*" Margin="10,0,10,0" Background="Transparent">
+                      <TextBlock Classes="var num" Text="{Binding Time}" VerticalAlignment="Center" FontSize="13.5" />
+                      <p:Icon Grid.Column="1" Classes="level" Classes.info="{Binding IsInfo}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
+                              Kind="{Binding Icon}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                      <TextBlock Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="13.5">
+                        <Run Text="{Binding Task}" FontWeight="Medium" /><Run Text="{Binding Text}" />
+                      </TextBlock>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <!-- History of the selected task -->
+              <DockPanel IsVisible="{Binding IsHistoryTab}" Margin="8,0,8,4">
+                <Border DockPanel.Dock="Top" Classes="divider" Height="28">
+                  <Grid ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0">
+                    <TextBlock Classes="key" Text="{x:Static g:Strings.ColumnStarted}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="key" Text="{x:Static g:Strings.ColumnDuration}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="key" Text="{x:Static g:Strings.ColumnType}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Classes="key" Text="{x:Static g:Strings.ColumnTrigger}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Classes="key" Text="{x:Static g:Strings.ColumnFiles}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="5" Classes="key" Text="{x:Static g:Strings.ColumnSize}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="6" Classes="key" Text="{x:Static g:Strings.ColumnResult}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="7" Classes="key" Text="{x:Static g:Strings.ColumnDetails}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+                <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding History}" Margin="0,4,0,0" DoubleTapped="OnHistoryDoubleTapped"
+                         KeyDown="OnHistoryKey" ToolTip.Tip="{x:Static p:DesktopStrings.HistoryOpenLog}" ToolTip.ShowDelay="1200">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="p:HistoryRow">
+                      <Grid Height="24" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
+                        <TextBlock Classes="num" Text="{Binding Started}" VerticalAlignment="Center" FontSize="13.5" />
+                        <TextBlock Grid.Column="1" Classes="num" Text="{Binding Duration}" VerticalAlignment="Center" FontSize="13.5" />
+                        <TextBlock Grid.Column="2" Text="{Binding Type}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                        <TextBlock Grid.Column="3" Text="{Binding Trigger}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                        <TextBlock Grid.Column="4" Classes="num" Text="{Binding Files}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" FontSize="13.5" />
+                        <TextBlock Grid.Column="5" Classes="num" Text="{Binding Size}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" FontSize="13.5" />
+                        <Border Grid.Column="6" Classes="st" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}" Height="24">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <p:Icon Kind="{Binding ResultIcon}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Result}" FontSize="12.5" />
+                          </StackPanel>
+                        </Border>
+                        <TextBlock Grid.Column="7" Classes="var" Text="{Binding Details}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" />
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </DockPanel>
+
+              <!-- Progress of the run in progress -->
+              <Panel IsVisible="{Binding IsProgressTab}">
+                <TextBlock IsVisible="{Binding !Progress.Active}" Text="{x:Static g:Strings.ProgressIdle}" Classes="var"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <ScrollViewer IsVisible="{Binding Progress.Active}">
+                  <Grid ColumnDefinitions="*,32,*" Margin="24,16,24,12" DataContext="{Binding Progress}" x:DataType="p:ProgressModel">
+                    <StackPanel>
+                      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                        <TextBlock Text="{Binding Task}" Classes="title" FontSize="16" />
+                        <TextBlock Grid.Column="1" Classes="small var" Text="{Binding Trigger}" VerticalAlignment="Center" />
+                      </Grid>
+                      <p:ProgressLine Value="{Binding Percent}" Live="{Binding Live}" />
+                      <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,12,0,0">
+                        <TextBlock Classes="key" Text="{x:Static g:Strings.ProgressPhase}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Column="1" Text="{Binding Phase}" Margin="0,2,16,2" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Classes="key" Text="{x:Static g:Strings.ProgressSpeed}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Column="3" Classes="num" Text="{Binding Speed}" Margin="0,2" />
+                        <TextBlock Grid.Row="1" Classes="key" Text="{x:Static g:Strings.ProgressFiles}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Classes="num" Text="{Binding Files}" Margin="0,2,16,2" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Classes="key" Text="{x:Static g:Strings.ProgressRemaining}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Classes="num" Text="{Binding Remaining}" Margin="0,2" />
+                        <TextBlock Grid.Row="2" Classes="key" Text="{x:Static g:Strings.ProgressBytes}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Classes="num" Text="{Binding Bytes}" Margin="0,2,16,2" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Classes="key" Text="{x:Static g:Strings.ProgressElapsed}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Row="2" Grid.Column="3" Classes="num" Text="{Binding Elapsed}" Margin="0,2" />
+                        <TextBlock Grid.Row="3" Classes="key" Text="{x:Static g:Strings.ProgressFile}" Margin="0,3,12,3" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding File}" TextTrimming="PrefixCharacterEllipsis"
+                                   Classes="var" Margin="0,2" ToolTip.Tip="{Binding File}" />
+                      </Grid>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                      <Border Classes="divider" Padding="0,0,0,6">
+                        <Grid ColumnDefinitions="*,110">
+                          <TextBlock Classes="key" Text="{x:Static g:Strings.ColumnDestination}" />
+                          <TextBlock Grid.Column="1" Classes="key" Text="{x:Static g:Strings.ColumnState}" />
+                        </Grid>
+                      </Border>
+                      <ItemsControl ItemsSource="{Binding Destinations}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="p:DestinationRow">
+                            <Border Classes="divider" Padding="0,8">
+                              <StackPanel>
+                                <Grid ColumnDefinitions="*,110">
+                                  <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                                  <TextBlock Grid.Column="1" Text="{Binding State}" />
+                                </Grid>
+                                <TextBlock Text="{Binding Error}" Foreground="{DynamicResource Error}" TextWrapping="Wrap" FontSize="12.5"
+                                           IsVisible="{Binding Failed}" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Grid>
+                </ScrollViewer>
+              </Panel>
+            </Panel>
+          </DockPanel>
+        </Border>
+      </Grid>
+    </DockPanel>
+
+    <!-- Snackbar -->
+    <Panel IsVisible="{Binding SnackVisible}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24,0,0,52" MaxWidth="600">
+      <Border Classes="snackshadow" />
+      <Border Classes="snack">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding SnackText}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,8,16,8" />
+          <Button Grid.Column="1" Theme="{StaticResource TextButton}" Content="{x:Static g:Strings.ButtonOk}" Click="OnSnackClose"
+                  Foreground="{DynamicResource InversePrimary}" />
+        </Grid>
+      </Border>
+    </Panel>
+  </Panel>
+</Window>

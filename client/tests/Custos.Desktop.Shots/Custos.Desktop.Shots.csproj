@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Draws the new CUSTOS window (src/Custos.Desktop) with the made-up tasks into PNG pictures and checks its menus and
+    buttons, on Avalonia's headless platform: no screen and no Windows needed. Run by .github/workflows/desktop.yml with
+    the folder for the pictures as its only argument.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CustosDesktopShots</AssemblyName>
+    <RootNamespace>Custos.Desktop.Shots</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Custos.Desktop\Custos.Desktop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Headless" />
+  </ItemGroup>
+
+</Project>

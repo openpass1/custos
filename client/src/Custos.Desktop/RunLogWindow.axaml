@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:p="using:Custos.Desktop"
+        xmlns:g="using:Custos.Gui"
+        x:Class="Custos.Desktop.RunLogWindow"
+        x:ClassModifier="internal"
+        Icon="/Assets/custos.ico"
+        Width="1000" Height="640" MinWidth="640" MinHeight="380"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Classes="surface">
+
+  <!-- The log of one run (section 6.10), opened from the history: what to show, a search, the lines, and where the file is. -->
+  <DockPanel Margin="20,16,20,16">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,10">
+      <p:Field FrameWidth="200" Label="{x:Static p:RunLogWindow.ShowLabel}">
+        <ComboBox Name="Level" SelectedIndex="0">
+          <ComboBoxItem Content="{x:Static g:Strings.LogShowAll}" />
+          <ComboBoxItem Content="{x:Static g:Strings.LogShowProblems}" />
+          <ComboBoxItem Content="{x:Static g:Strings.LogShowErrors}" />
+        </ComboBox>
+      </p:Field>
+      <p:Field Grid.Column="1" FrameWidth="260" Margin="20,0,0,0" Label="{x:Static g:Strings.LogSearch}">
+        <TextBox Name="Search" />
+      </p:Field>
+      <Button Grid.Column="3" Theme="{StaticResource TonalButton}" Click="OnRefresh" VerticalAlignment="Center" Margin="0,6,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <p:Icon Kind="refresh" Size="18" VerticalAlignment="Center" />
+          <TextBlock Text="{x:Static g:Strings.RunLogRefresh}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+      <TextBlock Name="Status" Classes="small var" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+      <Button Name="ShowFile" Grid.Column="1" Theme="{StaticResource OutlinedButton}" Click="OnShowFile" IsEnabled="False" Margin="0,0,8,0">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <p:Icon Kind="folder_open" Size="18" VerticalAlignment="Center" />
+          <TextBlock Text="{x:Static g:Strings.RunLogShowFile}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="2" Theme="{StaticResource FilledButton}" Content="{x:Static g:Strings.ButtonClose}" Click="OnClose" IsCancel="True" />
+    </Grid>
+    <Border Classes="pane" Padding="4">
+      <Panel>
+        <ListBox Name="Lines" Theme="{StaticResource M3List}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="p:LogRow">
+              <Grid Height="28" ColumnDefinitions="150,30,*" Margin="12,0,12,0" Background="Transparent">
+                <TextBlock Classes="var num" Text="{Binding Time}" VerticalAlignment="Center" FontSize="13.5" />
+                <p:Icon Grid.Column="1" Classes="level" Classes.info="{Binding IsInfo}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
+                        Kind="{Binding Icon}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                <TextBlock Grid.Column="2" Text="{Binding Text}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="13.5"
+                           ToolTip.Tip="{Binding Text}" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <ProgressBar Name="Busy" IsIndeterminate="True" VerticalAlignment="Top" Height="4" IsVisible="False" />
+      </Panel>
+    </Border>
+  </DockPanel>
+</Window>

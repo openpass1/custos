@@ -25,6 +25,9 @@
                                            installed from this very build (its own update package has the version
                                            the machine already runs, so the server has nothing to update)
 
+    The window, Custos.exe, is src\Custos.Windows (Material Design 3 on Avalonia) in the standard edition and
+    src\Custos.Gui (Windows Forms) in the legacy one: Avalonia needs .NET 8 or newer.
+
     The legacy edition for Windows 7 SP1 and 8.1 (-Legacy, CustosEdition.cs): the same programs for .NET 6, 32-bit,
     with the 32-bit .NET 6 Desktop Runtime inside setup.exe and 7z.dll from the 32-bit 7-Zip of the same pin. Its
     results go to artifacts-legacy\ under their own names: CUSTOS-Legacy-Setup-<version>.exe and
@@ -79,6 +82,7 @@ if ($Legacy) {
     $PeMachine = 0x014C
     $PackagePrefix = 'custos-legacy-'
     $SetupPrefix = 'CUSTOS-Legacy-Setup-'
+    $Window = 'Custos.Gui'
 }
 else {
     $Artifacts = Join-Path $Root 'artifacts'
@@ -87,6 +91,7 @@ else {
     $PeMachine = 0x8664
     $PackagePrefix = 'custos-'
     $SetupPrefix = 'CUSTOS-Setup-'
+    $Window = 'Custos.Windows'
 }
 $PublishDir = Join-Path $Artifacts 'publish'
 $InstallerOutDir = Join-Path $Artifacts 'installer'
@@ -94,9 +99,10 @@ $UpdateOutDir = Join-Path $Artifacts 'update'
 $TestUpdateOutDir = Join-Path $Artifacts 'update-test'
 $RedistDir = Join-Path (Join-Path $Root 'installer') 'redist'
 $SevenZipPin = Join-Path (Join-Path $Root 'installer') '7-zip.json'
-$Programs = @('Custos.Service', 'Custos.Gui', 'Custos.Updater')
+$Programs = @('Custos.Service', $Window, 'Custos.Updater')
 $OwnFiles = @('Custos.exe', 'Custos.dll', 'CustosService.exe', 'CustosService.dll',
               'Custos.Updater.exe', 'Custos.Updater.dll', 'Custos.Core.dll')
+if (-not $Legacy) { $OwnFiles += 'Custos.Desktop.dll' }
 # The protocol of the monitoring server the programs speak (MonitorClient.ProtocolVersion); goes into manifest.json.
 $MinProtocol = 1
 
@@ -270,17 +276,51 @@ function Get-SevenZip {
     return $out
 }
 
+# The version of a file from its version resource; 0.0.0.0 for a file without one.
+function Get-FileVersion([string] $Path) {
+    $info = (Get-Item $Path).VersionInfo
+    return New-Object Version $info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart
+}
+
+# Copies the published files of one program into the program folder. The programs share libraries, and one of them
+# may get a library in a newer version through another package (the service gets Microsoft.Extensions.* 10 through
+# Hosting, the window 8 through SSH.NET): the newer file stays, since a program runs with a newer version of a library
+# but not with an older one. Of two files with the same version the first stays.
+function Merge-Published([string] $From, [string] $To) {
+    $base = (Resolve-Path $From).Path.TrimEnd('\') + '\'
+    foreach ($file in Get-ChildItem -Path $From -File -Recurse) {
+        $relative = $file.FullName.Substring($base.Length)
+        $target = Join-Path $To $relative
+        if (Test-Path $target) {
+            $old = Get-FileVersion $target
+            $new = Get-FileVersion $file.FullName
+            if ($new -le $old) {
+                if ($new -lt $old) { Write-Host "Keeping $relative $old, not $new" }
+                continue
+            }
+            Write-Host "Taking $relative $new instead of $old"
+        }
+        New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null
+        Copy-Item $file.FullName $target -Force
+    }
+}
+
 # Publishes the three programs with $ProgramVersion into $Folder, with 7z.dll, the notices and the GPL text (LICENSE.txt),
-# and signs them.
+# and signs them. Each program is published into a folder of its own first, then merged (Merge-Published).
 function Publish-Programs([string] $ProgramVersion, [string] $Folder, [string] $SevenZipFolder) {
     New-Item -ItemType Directory -Path $Folder -Force | Out-Null
+    $staging = "$Folder-programs"
+    if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
     foreach ($program in $Programs) {
         $project = Join-Path $Root "src\$program\$program.csproj"
+        $out = Join-Path $staging $program
         $arguments = @('publish', $project, '-c', $Configuration, '-r', "win-$Platform", '--self-contained', 'false',
-            "-p:Version=$ProgramVersion", '-o', $Folder)
+            "-p:Version=$ProgramVersion", '-o', $out)
         if ($Legacy) { $arguments += '-p:CustosLegacy=true' }
         Invoke-Native 'dotnet' $arguments
+        Merge-Published $out $Folder
     }
+    Remove-Item $staging -Recurse -Force
     Copy-Item (Join-Path $SevenZipFolder '7z.dll') $Folder
     Copy-Item (Join-Path $SevenZipFolder 'License.txt') (Join-Path $Folder '7-Zip-License.txt')
     Copy-Item (Join-Path $Root 'THIRD-PARTY-NOTICES.txt') $Folder

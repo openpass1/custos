@@ -3,7 +3,9 @@ CUSTOS — third-party components
 
 CUSTOS is free software under the GNU General Public License version 3 (LICENSE). It ships with the
 components below; each keeps its own license. The texts of the MIT License and of the Apache License 2.0
-follow the list. 7-Zip (7z.dll) comes with its own license in 7-Zip-License.txt.
+follow the list. 7-Zip (7z.dll) comes with its own license in 7-Zip-License.txt. The components of the window
+(Avalonia, SkiaSharp, HarfBuzzSharp, the Roboto font) are listed in THIRD-PARTY-NOTICES-AVALONIA.txt and
+Roboto-LICENSE.txt; the edition for Windows 7 and 8.1 has the Windows Forms window and none of them.
 
 Component                         Version     License       Copyright
 --------------------------------  ----------  ------------  ----------------------------------------------------

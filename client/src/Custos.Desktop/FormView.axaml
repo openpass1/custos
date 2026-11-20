@@ -1,0 +1,358 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:p="using:Custos.Desktop"
+             xmlns:g="using:Custos.Gui"
+             x:Class="Custos.Desktop.FormView"
+             x:ClassModifier="internal">
+
+  <!-- The pieces of a form (Form.cs) in Material 3 controls: the pages of the task editor, the dialogs, the settings. -->
+  <UserControl.Styles>
+    <!-- A hidden or switched-off piece takes its slot with it, so the spacing of the list does not leave gaps. -->
+    <Style Selector="ItemsControl.form > ContentPresenter" x:DataType="p:FormItem">
+      <Setter Property="IsVisible" Value="{Binding IsVisible}" />
+      <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+    </Style>
+    <Style Selector="TextBlock.note.bad">
+      <Setter Property="Foreground" Value="{DynamicResource Error}" />
+    </Style>
+    <Style Selector="TextBlock.note.good">
+      <Setter Property="Foreground" Value="{DynamicResource Ok}" />
+    </Style>
+    <Style Selector="TextBlock.note.caution">
+      <Setter Property="Foreground" Value="{DynamicResource OnWarnContainer}" />
+    </Style>
+    <!-- What does nothing now is pale: the piece as a whole, and the arrows of the first and the last card. -->
+    <Style Selector="ItemsControl.form > ContentPresenter:disabled">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="Button.move:disabled">
+      <Setter Property="Opacity" Value="0.38" />
+    </Style>
+    <Style Selector="TextBlock.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Error}" />
+    </Style>
+    <Style Selector="p|Field.error /template/ Border#frame">
+      <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+    </Style>
+    <Style Selector="p|Field.error /template/ TextBlock#hint">
+      <Setter Property="Foreground" Value="{DynamicResource Error}" />
+    </Style>
+    <Style Selector="p|Field.error /template/ TextBlock#label">
+      <Setter Property="Foreground" Value="{DynamicResource Error}" />
+    </Style>
+    <Style Selector="TextBox.mono">
+      <Setter Property="FontFamily" Value="Consolas, Menlo, DejaVu Sans Mono, monospace" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="p|Field">
+      <Setter Property="LabelWidth" Value="190" />
+    </Style>
+    <Style Selector="Border.checklist">
+      <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="4" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.DataTemplates>
+
+    <DataTemplate DataType="p:HeadingItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+        <TextBlock Classes="section" Text="{Binding Text}" VerticalAlignment="Center" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:NoteItem">
+      <Panel Margin="{Binding Offset}">
+        <TextBlock Classes="note" Classes.bad="{Binding IsError}" Classes.good="{Binding IsOk}" Classes.caution="{Binding IsCaution}"
+                   Text="{Binding Text}" IsVisible="{Binding IsLine}" />
+        <Border Classes="info warn" IsVisible="{Binding IsBox}">
+          <Grid ColumnDefinitions="Auto,*">
+            <p:Icon Kind="warning" Filled="True" Size="16" VerticalAlignment="Top" />
+            <TextBlock Grid.Column="1" Margin="8,0,0,0" Text="{Binding Text}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17" />
+          </Grid>
+        </Border>
+      </Panel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:LabelItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" Width="{Binding Width}"
+                   FontWeight="{Binding Strong, Converter={x:Static p:FormView.Weight}}" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:RowItem">
+      <ItemsControl Classes="form row" ItemsSource="{Binding Items}" Margin="{Binding Offset}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.Styles>
+          <Style Selector="ItemsControl.form > ContentPresenter">
+            <Setter Property="VerticalAlignment" Value="Center" />
+          </Style>
+          <Style Selector="p|Field">
+            <Setter Property="LabelWidth" Value="NaN" />
+          </Style>
+          <Style Selector="ItemsControl.row > ContentPresenter:nth-child(1) p|Field">
+            <Setter Property="LabelWidth" Value="190" />
+          </Style>
+        </ItemsControl.Styles>
+      </ItemsControl>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:TextItem">
+      <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
+                 Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding Text}" Height="{Binding Height}" Classes.multi="{Binding Multiline}" Classes.mono="{Binding Mono}"
+                     AcceptsReturn="{Binding Multiline}" TextWrapping="{Binding Wrap, Converter={x:Static p:FormView.Wrapping}}"
+                     PasswordChar="{Binding Mask}" PlaceholderText="{Binding Placeholder}" IsReadOnly="{Binding ReadOnly}"
+                     MaxLength="{Binding MaxLength}" ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+            <Button Grid.Column="1" Theme="{StaticResource IconButton}" IsVisible="{Binding HasAction}" ToolTip.Tip="{Binding ActionTip}"
+                    Command="{Binding Run}" Margin="0,0,6,0" VerticalAlignment="Center">
+              <p:Icon Kind="{Binding ActionIcon}" Size="20" />
+            </Button>
+            <ToggleButton Grid.Column="1" Theme="{StaticResource IconToggle}" IsVisible="{Binding Secret}" IsChecked="{Binding Reveal}"
+                          ToolTip.Tip="{x:Static g:Strings.ShowPassword}" Margin="0,0,6,0" VerticalAlignment="Center">
+              <p:Icon Kind="{Binding RevealIcon}" Size="20" />
+            </ToggleButton>
+          </Grid>
+        </p:Field>
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:NumberItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+          <TextBox Text="{Binding Text}" />
+        </p:Field>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,6,0,0" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:SpeedItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+          <TextBox Text="{Binding Text}" />
+        </p:Field>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,6,0,0" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:ChoiceItem">
+      <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
+                 Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+          <ComboBox ItemsSource="{Binding Options}" SelectedIndex="{Binding Selected}" MaxDropDownHeight="360" />
+        </p:Field>
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:ComboItem">
+      <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
+                 Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+          <ComboBox ItemsSource="{Binding Options}" IsEditable="True" Text="{Binding Text}" MaxDropDownHeight="360" />
+        </p:Field>
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:SwitchItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <CheckBox Theme="{StaticResource M3Check}" Classes="inline" IsChecked="{Binding On}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            <TextBlock Classes="small var" Text="{Binding Short}" IsVisible="{Binding HasShort}" VerticalAlignment="Center" />
+          </StackPanel>
+        </CheckBox>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Long}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:CheckItem">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <CheckBox Theme="{StaticResource M3Check}" Classes="inline" IsChecked="{Binding On}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            <TextBlock Classes="small var" Text="{Binding Short}" IsVisible="{Binding HasShort}" VerticalAlignment="Center" />
+          </StackPanel>
+        </CheckBox>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Long}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:RadioItem">
+      <StackPanel Orientation="Horizontal" Spacing="4" Margin="{Binding Offset}">
+        <RadioButton Theme="{StaticResource M3Radio}" Classes="inline" IsChecked="{Binding On}" Content="{Binding Title}" VerticalAlignment="Center" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Hint}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" Margin="0,0,10,0" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:SegmentsItem">
+      <StackPanel Spacing="4" Margin="{Binding Offset}">
+        <TextBlock Classes="small var" Text="{Binding Label}" />
+        <Border Classes="segments">
+          <Border Classes="segmentsinside">
+            <ItemsControl ItemsSource="{Binding Segments}" Margin="-1,0,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="p:Segment">
+                  <RadioButton Theme="{StaticResource Segment}" IsChecked="{Binding On}" Content="{Binding Text}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
+        </Border>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:ChipsItem">
+      <StackPanel Spacing="4" Margin="{Binding Offset}">
+        <TextBlock Classes="small var" Text="{Binding Label}" />
+        <ItemsControl ItemsSource="{Binding Chips}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="p:Chip">
+              <ToggleButton Theme="{StaticResource Chip}" IsChecked="{Binding On}" Content="{Binding Text}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:CardsItem">
+      <StackPanel Spacing="8" Margin="{Binding Offset}">
+        <TextBlock Classes="note" Text="{Binding Empty}" IsVisible="{Binding ShowEmpty}" />
+        <ItemsControl Classes="form" ItemsSource="{Binding Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:CardItem">
+      <Border Classes="card" Margin="{Binding Offset}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="tile" VerticalAlignment="Top">
+            <p:Icon Kind="{Binding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="{Binding Title}" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+            <TextBlock Classes="small var" Classes.warn="{Binding Warning}" Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}"
+                       TextWrapping="Wrap" LineHeight="16" />
+            <ItemsControl ItemsSource="{Binding Tags}" IsVisible="{Binding HasTags}" Margin="0,3,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="p:CardTag">
+                  <Border Classes="tag" Classes.accent="{Binding Accent}" Margin="0,0,6,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <p:Icon Kind="{Binding Icon}" Size="14" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Text}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Classes="move" Theme="{StaticResource IconButton}" IsVisible="{Binding CanMove}" IsEnabled="{Binding CanUp}" Command="{Binding DoUp}"
+                    ToolTip.Tip="{x:Static g:Strings.ButtonUp}"><p:Icon Kind="arrow_upward" Size="18" /></Button>
+            <Button Classes="move" Theme="{StaticResource IconButton}" IsVisible="{Binding CanMove}" IsEnabled="{Binding CanDown}" Command="{Binding DoDown}"
+                    ToolTip.Tip="{x:Static g:Strings.ButtonDown}"><p:Icon Kind="arrow_downward" Size="18" /></Button>
+            <Button Theme="{StaticResource IconButton}" IsVisible="{Binding CanEdit}" Command="{Binding DoEdit}"
+                    ToolTip.Tip="{x:Static g:Strings.ToolEdit}"><p:Icon Kind="edit" Size="18" /></Button>
+            <Button Theme="{StaticResource IconButton}" IsVisible="{Binding CanDelete}" Command="{Binding DoDelete}"
+                    ToolTip.Tip="{x:Static g:Strings.ToolDelete}"><p:Icon Kind="delete" Size="18" /></Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:CheckListItem">
+      <Border Classes="checklist" Height="{Binding Height}" Margin="{Binding Offset}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl Classes="form" ItemsSource="{Binding Items}" />
+        </ScrollViewer>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:ButtonItem">
+      <Panel HorizontalAlignment="Left" Margin="{Binding Offset}">
+        <Button Theme="{StaticResource TonalButton}" IsVisible="{Binding IsTonal}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Theme="{StaticResource OutlinedButton}" IsVisible="{Binding IsOutlined}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Theme="{StaticResource FilledButton}" IsVisible="{Binding IsFilled}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Theme="{StaticResource TextButton}" IsVisible="{Binding IsText}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+            <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Panel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:ProgressItem">
+      <StackPanel Spacing="8" Margin="{Binding Offset}">
+        <p:ProgressLine Value="{Binding Percent}" Live="True" />
+        <TextBlock Classes="small" Text="{Binding Text}" TextWrapping="Wrap" />
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="p:InfoItem">
+      <Border Classes="info" Margin="{Binding Offset}">
+        <Grid ColumnDefinitions="Auto,*">
+          <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Top" />
+          <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
+            <SelectableTextBlock Text="{Binding Title}" FontWeight="Medium" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextWrapping="Wrap" FontSize="12.5" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <ItemsControl Name="List" Classes="form">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate><StackPanel Spacing="5" /></ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+  </ItemsControl>
+</UserControl>
