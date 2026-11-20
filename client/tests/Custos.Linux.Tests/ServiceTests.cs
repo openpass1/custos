@@ -79,6 +79,7 @@ public sealed class ServiceTests(ServiceFixture service)
         }
 
         Assert.SkipUnless(have7z, "7z.so is not next to the tests (build it with linux/build-native-linux.sh).");
+        Assert.SkipUnless(service.Hello.IsAdmin, "Saving a password needs root or a member of sudo.");
         var password = await service.RequestAsync(PipeProtocol.Methods.CredentialSave,
             new CredentialInput { Credential = new Credential { Kind = CredentialKinds.ArchivePassword, User = "archive" }, Password = "Секрет-7z!" },
             IpcJsonContext.Default.CredentialInput, IpcJsonContext.Default.CredentialSaveResult);
