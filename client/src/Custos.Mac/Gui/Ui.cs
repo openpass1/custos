@@ -239,14 +239,15 @@ internal static class Safe
         }
     }
 
+    /// <summary>
+    /// Runs <paramref name="work"/> on a click. It is called also when the click is already handled: the buttons of
+    /// <see cref="Ui"/> handle it in their own first handler, after which an ordinary one is never called (the «ОК»
+    /// of the dialogs and every other button with async work did nothing).
+    /// </summary>
     public static void OnClick(this Button button, Func<Task> work, Action<Exception>? failed = null) =>
-        button.Click += (_, e) =>
+        button.AddHandler(Button.ClickEvent, (_, e) =>
         {
-            if (e is RoutedEventArgs routed)
-            {
-                routed.Handled = true;
-            }
-
+            e.Handled = true;
             Run(work, failed);
-        };
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
 }
