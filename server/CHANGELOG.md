@@ -22,12 +22,29 @@ a version that was never released by itself is not lost.
 ### Changed
 - A network folder may also be written as `//server/share`, the way macOS writes it.
 
+## 1.2.1
+
+### Changed
+- Pages change at once, without the dissolve from one page into the next and without the content coming in from below: in Chrome on Windows with its animation effects on, a click soon after such a page change now and then did nothing, and the user menu was now and then not redrawn. A click on a menu section still marks it at once.
+- The circle that spreads over a pressed button, menu section or tile has the times of Material 3 again (it shows in 0.1 s, grows for 0.45 s and fades for 0.375 s): the slower circle of 1.2.0 made the site feel slow.
+
+### Fixed
+- The logo nearly vanished in the **Blue** colour scheme (a blue shield on a blue square): its square now keeps the colour of the default scheme in every scheme.
+- A click on a menu section, a tile or another link was sometimes lost when the mouse moved a little during the press: the browser began to drag the link instead of opening it. Links can no longer be dragged.
+- A click on a tile or a button of a block that refreshes itself was lost when the block was refreshed during the press; the block now waits until the press has ended.
+- A click was sometimes lost because the browser gave the page the press of the mouse button but not its release (seen in Chrome on Windows on quick clicks soon after a page opened). When the mouse next moves with the button let go, the site now finishes such a press and clicks what was pressed, if the pointer is still on it.
+
 ## 1.2.0
 
 ### Added
 - Machines with CUSTOS for Windows 7 and 8.1 (the legacy edition of the program) are marked **Windows 7, 8.1** in the machine list, on the machine page, under **Updates** and on the dashboard.
 - Such a machine is offered only what its program can do: no cloud drives in its task editor (a task or template with one is refused for it), no 7-Zip update, and no update packages of the standard program.
 - **Updates** take packages of the edition for Windows 7 and 8.1 (`custos-legacy-<version>.zip`) through the same upload field and keep them in a section of their own with their own current version; the section shows only while the site has such a machine or package. The site also finds `client-legacy-v…` releases on GitHub and downloads them like the standard program.
+- A **Colour** choice in the user menu, for each user: **Neutral grey** (the default), **Graphite**, **Blue**, **Warm** and **Sepia**, each in the light and the dark theme.
+
+### Changed
+- Backgrounds, cards, lines and grey text are neutral grey instead of slightly blue-violet, in the light and the dark theme; buttons, the selected menu item and other accents keep the blue.
+- The circle that spreads over a pressed button grows and fades twice as slowly.
 
 ## 1.1.6
 

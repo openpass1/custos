@@ -16,6 +16,7 @@ $unread = $user === null ? 0 : $app->notices()->unreadCount();
 $nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'templates' => '/templates',
         'updates' => '/updates', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
 $theme = $view->theme();
+$color = $view->color();
 // The rarer sections stand under the heading "Manage" in the rail and behind "More" in the phone's bottom bar.
 $rare = ['templates', 'updates', 'users', 'audit', 'settings'];
 $filled = ['dashboard', 'agents', 'problems', 'templates', 'users', 'audit', 'settings'];
@@ -37,7 +38,7 @@ $fonts = ['roboto-latin-400-normal', 'roboto-latin-500-normal'];
 if ($app->lang()->code === 'ru') {
     array_push($fonts, 'roboto-cyrillic-400-normal', 'roboto-cyrillic-500-normal');
 }
-// The user menu and the theme switch send their choice and come back to this page.
+// The user menu and the theme switch send their choice and come back to this page; each form changes only what it sends.
 $query = (string) parse_url($view->request->uri, PHP_URL_QUERY);
 $back = $view->request->path() . ($query === '' ? '' : '?' . $query);
 $myLanguage = (string) ($user['language'] ?? '');
@@ -45,7 +46,7 @@ $check = fn(bool $on): string => $on ? '<span class="menu-check">' . icon('check
 $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login'], 0, 1));
 ?>
 <!doctype html>
-<html lang="<?= e($app->lang()->code) ?>"<?= $theme === 'auto' ? '' : ' data-theme="' . e($theme) . '"' ?>>
+<html lang="<?= e($app->lang()->code) ?>"<?= $theme === 'auto' ? '' : ' data-theme="' . e($theme) . '"' ?><?= $color === \Custos\Domain\Users::COLORS[0] ? '' : ' data-color="' . e($color) . '"' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,7 +58,7 @@ $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login']
     <?php endforeach ?>
     <link rel="stylesheet" href="<?= e(asset('app.css')) ?>">
     <?php /* blocking="render": the first frame waits for app.js, so that labels are already in their frames and the
-             content of a new section comes in with its movement (app.css, "From page to page"). */ ?>
+             circle of the press that opened this page goes on from its first frame (app.js, "Ripple"). */ ?>
     <script src="<?= e(asset('app.js')) ?>" defer blocking="render"></script>
     <?php foreach ($scripts as $script): ?>
         <script src="<?= e(asset($script)) ?>" defer></script>
@@ -89,7 +90,7 @@ $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login']
         <div class="top-tools">
             <button type="button" class="icon-button search-open" data-search-open title="<?= e(t('nav.search')) ?>" aria-label="<?= e(t('nav.search')) ?>"><?= icon('search') ?></button>
             <form method="post" action="<?= e(url('/profile')) ?>" class="theme-switch">
-                <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>"><input type="hidden" name="language" value="<?= e($myLanguage) ?>">
+                <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>">
                 <button type="submit" class="icon-button to-dark" name="theme" value="dark" title="<?= e(t('theme.to_dark')) ?>" aria-label="<?= e(t('theme.to_dark')) ?>"><?= icon('moon') ?></button>
                 <button type="submit" class="icon-button to-light" name="theme" value="light" title="<?= e(t('theme.to_light')) ?>" aria-label="<?= e(t('theme.to_light')) ?>"><?= icon('sun') ?></button>
             </form>
@@ -102,15 +103,24 @@ $initial = $user === null ? '' : mb_strtoupper(mb_substr((string) $user['login']
                 <div class="dropdown-menu">
                     <div class="menu-label"><?= e(t('profile.theme')) ?></div>
                     <form method="post" action="<?= e(url('/profile')) ?>">
-                        <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>"><input type="hidden" name="language" value="<?= e($myLanguage) ?>">
+                        <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>">
                         <?php foreach (\Custos\Domain\Users::THEMES as $choice): ?>
                             <button type="submit" class="menu-item" name="theme" value="<?= e($choice) ?>" aria-pressed="<?= $theme === $choice ? 'true' : 'false' ?>">
                                 <?= icon(['auto' => 'monitor', 'light' => 'sun', 'dark' => 'moon'][$choice]) ?><?= e(t('profile.theme.' . $choice)) ?><?= $check($theme === $choice) ?></button>
                         <?php endforeach ?>
                     </form>
+                    <?php /* The colour scheme: a round sample of each (its main colour on its background, in the theme shown now). */ ?>
+                    <div class="menu-label"><?= e(t('profile.color')) ?></div>
+                    <form method="post" action="<?= e(url('/profile')) ?>">
+                        <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>">
+                        <?php foreach (\Custos\Domain\Users::COLORS as $choice): ?>
+                            <button type="submit" class="menu-item" name="color" value="<?= e($choice) ?>" aria-pressed="<?= $color === $choice ? 'true' : 'false' ?>">
+                                <span class="swatch swatch-<?= e($choice) ?>" aria-hidden="true"></span><?= e(t('profile.color.' . $choice)) ?><?= $check($color === $choice) ?></button>
+                        <?php endforeach ?>
+                    </form>
                     <div class="menu-label"><?= e(t('profile.language')) ?></div>
                     <form method="post" action="<?= e(url('/profile')) ?>">
-                        <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>"><input type="hidden" name="theme" value="<?= e($theme) ?>">
+                        <?= csrf_field() ?><input type="hidden" name="back" value="<?= e($back) ?>">
                         <?php $languages = $app->languages(); $default = $app->defaultLanguage(); ?>
                         <button type="submit" class="menu-item" name="language" value="" aria-pressed="<?= $myLanguage === '' ? 'true' : 'false' ?>">
                             <?= icon('globe') ?><?= e(t('profile.language.default', ['name' => $languages[$default] ?? $default])) ?><?= $check($myLanguage === '') ?></button>

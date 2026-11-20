@@ -1,8 +1,11 @@
 /* CUSTOS Monitor in Material Design 3.
-   Colours: the M3 "tonal spot" scheme of the site's blue (#2457c5), with green and amber harmonised to it for "ok" and
-   "warning". The profile chooses auto, light or dark: the dark palette is written twice, once for "auto" with a dark
-   system theme and once for "dark". Type: Roboto and Roboto Mono (fonts/, SIL OFL). Icons: Material Symbols Rounded
-   (icons.svg, built by tools/make-icons.py). Motion: M3 easing, short; with less motion asked for nothing moves. */
+   Colours: the M3 "tonal spot" scheme of the site's blue (#2457c5) with neutral grey surfaces (its neutral palettes at
+   chroma 0 and 2, without the blue-violet tint), the same "neutral grey" as the trial Windows window; green and amber
+   are harmonised to the blue for "ok" and "warning". Four more schemes of the program window (graphite, blue, warm,
+   sepia) are made by tools/make-colors.mjs and put over it. The profile chooses auto, light or dark: the dark palette
+   is written twice, once for "auto" with a dark system theme and once for "dark". Type: Roboto and Roboto Mono
+   (fonts/, SIL OFL). Icons: Material Symbols Rounded (icons.svg, built by tools/make-icons.py). Motion: M3 easing,
+   short; with less motion asked for nothing moves. */
 
 @font-face { font-family: Roboto; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/roboto-cyrillic-400-normal.woff2) format("woff2");
     unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
@@ -28,6 +31,9 @@
     --md-primary: #4a5c92;
     --md-on-primary: #ffffff;
     --md-primary-container: #dbe1ff;
+    /* The square behind the logo: always the colour of the base scheme, which the blue shield stands out on; the colour
+       schemes (below) leave it as it is (the Blue one would hide the shield). */
+    --brand-bg: #dbe1ff;
     --md-on-primary-container: #314578;
     --md-secondary: #585e71;
     --md-secondary-container: #dde2f9;
@@ -38,19 +44,19 @@
     --md-on-error: #ffffff;
     --md-error-container: #ffdad6;
     --md-on-error-container: #93000a;
-    --md-surface: #faf8ff;
+    --md-surface: #f9f9f9;
     --md-surface-bright: #ffffff;
-    --md-on-surface: #1a1b21;
-    --md-on-surface-variant: #45464f;
+    --md-on-surface: #1b1b1b;
+    --md-on-surface-variant: #474648;
     --md-surface-container-lowest: #ffffff;
-    --md-surface-container-low: #f4f3fa;
-    --md-surface-container: #eeedf4;
-    --md-surface-container-high: #e8e7ef;
-    --md-surface-container-highest: #e3e2e9;
-    --md-outline: #757680;
-    --md-outline-variant: #c5c6d0;
-    --md-inverse-surface: #2f3036;
-    --md-inverse-on-surface: #f1f0f7;
+    --md-surface-container-low: #f3f3f3;
+    --md-surface-container: #eeeeee;
+    --md-surface-container-high: #e8e8e8;
+    --md-surface-container-highest: #e2e2e2;
+    --md-outline: #787678;
+    --md-outline-variant: #c8c6c7;
+    --md-inverse-surface: #303030;
+    --md-inverse-on-surface: #f1f1f1;
     --md-inverse-primary: #b3c5ff;
     --md-ok: #006c4d;
     --md-ok-container: #b4f2d4;
@@ -60,15 +66,15 @@
     --md-on-warn-container: #693c00;
     /* A list item on a card: white in the light theme, a step lighter than the card in the dark one. */
     --item-bg: #ffffff;
-    --log-bg: #2f3036;
-    --log-text: #f1f0f7;
-    --heat-none: #e3e2e9;
+    --log-bg: #303030;
+    --log-text: #f1f1f1;
+    --heat-none: #e2e2e2;
     --heat-success: #40a17b;
     --heat-warning: #f09727;
-    --heat-missed_offline: #a8abb7;
+    --heat-missed_offline: #adabac;
     --heat-missed: #ff8b68;
     --heat-error: #de3730;
-    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%2345464f' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23474648' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
     --sh1: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 3px 1px rgba(0, 0, 0, .15);
     --sh2: 0 1px 2px rgba(0, 0, 0, .3), 0 2px 6px 2px rgba(0, 0, 0, .15);
     --sh3: 0 1px 3px rgba(0, 0, 0, .3), 0 4px 8px 3px rgba(0, 0, 0, .15);
@@ -92,6 +98,7 @@
         --md-primary: #b3c5ff;
         --md-on-primary: #192e60;
         --md-primary-container: #314578;
+        --brand-bg: #314578;
         --md-on-primary-container: #dbe1ff;
         --md-secondary: #c1c6dd;
         --md-secondary-container: #414659;
@@ -102,19 +109,19 @@
         --md-on-error: #690005;
         --md-error-container: #93000a;
         --md-on-error-container: #ffdad6;
-        --md-surface: #121318;
-        --md-surface-bright: #38393f;
-        --md-on-surface: #e3e2e9;
-        --md-on-surface-variant: #c5c6d0;
-        --md-surface-container-lowest: #0d0e13;
-        --md-surface-container-low: #1a1b21;
-        --md-surface-container: #1e1f25;
-        --md-surface-container-high: #292a2f;
-        --md-surface-container-highest: #33343a;
-        --md-outline: #8f909a;
-        --md-outline-variant: #45464f;
-        --md-inverse-surface: #e3e2e9;
-        --md-inverse-on-surface: #2f3036;
+        --md-surface: #131313;
+        --md-surface-bright: #393939;
+        --md-on-surface: #e2e2e2;
+        --md-on-surface-variant: #c8c6c7;
+        --md-surface-container-lowest: #0e0e0e;
+        --md-surface-container-low: #1b1b1b;
+        --md-surface-container: #1f1f1f;
+        --md-surface-container-high: #2a2a2a;
+        --md-surface-container-highest: #353535;
+        --md-outline: #929092;
+        --md-outline-variant: #474648;
+        --md-inverse-surface: #e2e2e2;
+        --md-inverse-on-surface: #303030;
         --md-inverse-primary: #4a5c92;
         --md-ok: #6bdbad;
         --md-ok-container: #005139;
@@ -122,16 +129,16 @@
         --md-warn: #ffb86e;
         --md-warn-container: #693c00;
         --md-on-warn-container: #ffdcbd;
-        --item-bg: #24252b;
-        --log-bg: #0d0e13;
-        --log-text: #e3e2e9;
-        --heat-none: #33343a;
+        --item-bg: #252525;
+        --log-bg: #0e0e0e;
+        --log-text: #e2e2e2;
+        --heat-none: #353535;
         --heat-success: #40a17b;
         --heat-warning: #e08a18;
-        --heat-missed_offline: #5b5e69;
+        --heat-missed_offline: #5f5e5f;
         --heat-missed: #ff8b68;
         --heat-error: #ff5449;
-        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c5c6d0' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
         --sh1: 0 1px 2px rgba(0, 0, 0, .6), 0 1px 3px 1px rgba(0, 0, 0, .3);
         --sh2: 0 1px 2px rgba(0, 0, 0, .6), 0 2px 6px 2px rgba(0, 0, 0, .3);
         --sh3: 0 1px 3px rgba(0, 0, 0, .6), 0 4px 8px 3px rgba(0, 0, 0, .3);
@@ -142,6 +149,7 @@
     --md-primary: #b3c5ff;
     --md-on-primary: #192e60;
     --md-primary-container: #314578;
+    --brand-bg: #314578;
     --md-on-primary-container: #dbe1ff;
     --md-secondary: #c1c6dd;
     --md-secondary-container: #414659;
@@ -152,19 +160,19 @@
     --md-on-error: #690005;
     --md-error-container: #93000a;
     --md-on-error-container: #ffdad6;
-    --md-surface: #121318;
-    --md-surface-bright: #38393f;
-    --md-on-surface: #e3e2e9;
-    --md-on-surface-variant: #c5c6d0;
-    --md-surface-container-lowest: #0d0e13;
-    --md-surface-container-low: #1a1b21;
-    --md-surface-container: #1e1f25;
-    --md-surface-container-high: #292a2f;
-    --md-surface-container-highest: #33343a;
-    --md-outline: #8f909a;
-    --md-outline-variant: #45464f;
-    --md-inverse-surface: #e3e2e9;
-    --md-inverse-on-surface: #2f3036;
+    --md-surface: #131313;
+    --md-surface-bright: #393939;
+    --md-on-surface: #e2e2e2;
+    --md-on-surface-variant: #c8c6c7;
+    --md-surface-container-lowest: #0e0e0e;
+    --md-surface-container-low: #1b1b1b;
+    --md-surface-container: #1f1f1f;
+    --md-surface-container-high: #2a2a2a;
+    --md-surface-container-highest: #353535;
+    --md-outline: #929092;
+    --md-outline-variant: #474648;
+    --md-inverse-surface: #e2e2e2;
+    --md-inverse-on-surface: #303030;
     --md-inverse-primary: #4a5c92;
     --md-ok: #6bdbad;
     --md-ok-container: #005139;
@@ -172,21 +180,200 @@
     --md-warn: #ffb86e;
     --md-warn-container: #693c00;
     --md-on-warn-container: #ffdcbd;
-    --item-bg: #24252b;
-    --log-bg: #0d0e13;
-    --log-text: #e3e2e9;
-    --heat-none: #33343a;
+    --item-bg: #252525;
+    --log-bg: #0e0e0e;
+    --log-text: #e2e2e2;
+    --heat-none: #353535;
     --heat-success: #40a17b;
     --heat-warning: #e08a18;
-    --heat-missed_offline: #5b5e69;
+    --heat-missed_offline: #5f5e5f;
     --heat-missed: #ff8b68;
     --heat-error: #ff5449;
-    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c5c6d0' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
     --sh1: 0 1px 2px rgba(0, 0, 0, .6), 0 1px 3px 1px rgba(0, 0, 0, .3);
     --sh2: 0 1px 2px rgba(0, 0, 0, .6), 0 2px 6px 2px rgba(0, 0, 0, .3);
     --sh3: 0 1px 3px rgba(0, 0, 0, .6), 0 4px 8px 3px rgba(0, 0, 0, .3);
     color-scheme: dark;
 }
+
+/* The other colour schemes a user may choose in the user menu (layout.php: <html data-color="...">) put their colours
+   over the palette above: the same Material scheme with other accents or other surfaces, as in the program window. */
+/* Colour schemes (made by tools/make-colors.mjs, do not edit by hand) */
+/* graphite */
+:root[data-color="graphite"] {
+    --md-primary: #000000; --md-on-primary: #e2e2e2; --md-primary-container: #3b3b3b;
+    --md-on-primary-container: #ffffff; --md-secondary: #5e5e5e; --md-secondary-container: #d4d4d4;
+    --md-on-secondary-container: #1b1b1b; --md-tertiary-container: #747474; --md-on-tertiary-container: #ffffff;
+    --md-surface: #f9f9f9; --md-surface-bright: #ffffff; --md-on-surface: #1b1b1b; --md-on-surface-variant: #474747;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #f3f3f3; --md-surface-container: #eeeeee;
+    --md-surface-container-high: #e8e8e8; --md-surface-container-highest: #e2e2e2; --md-outline: #777777;
+    --md-outline-variant: #c6c6c6; --md-inverse-surface: #303030; --md-inverse-on-surface: #f1f1f1;
+    --md-inverse-primary: #c6c6c6; --item-bg: #ffffff; --log-bg: #303030; --log-text: #f1f1f1; --heat-none: #e2e2e2;
+    --heat-missed_offline: #ababab;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23474747' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="graphite"]:not([data-theme="light"]) {
+        --md-primary: #ffffff; --md-on-primary: #1b1b1b; --md-primary-container: #d4d4d4;
+        --md-on-primary-container: #000000; --md-secondary: #c6c6c6; --md-secondary-container: #474747;
+        --md-on-secondary-container: #e2e2e2; --md-tertiary-container: #919191; --md-on-tertiary-container: #000000;
+        --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c6c6c6;
+        --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+        --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #919191;
+        --md-outline-variant: #474747; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+        --md-inverse-primary: #5e5e5e; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+        --heat-missed_offline: #5e5e5e;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c6c6c6' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="graphite"][data-theme="dark"] {
+    --md-primary: #ffffff; --md-on-primary: #1b1b1b; --md-primary-container: #d4d4d4;
+    --md-on-primary-container: #000000; --md-secondary: #c6c6c6; --md-secondary-container: #474747;
+    --md-on-secondary-container: #e2e2e2; --md-tertiary-container: #919191; --md-on-tertiary-container: #000000;
+    --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c6c6c6;
+    --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+    --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #919191;
+    --md-outline-variant: #474747; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+    --md-inverse-primary: #5e5e5e; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+    --heat-missed_offline: #5e5e5e;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c6c6c6' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* blue */
+:root[data-color="blue"] {
+    --md-primary: #004f96; --md-on-primary: #ffffff; --md-primary-container: #0067c0;
+    --md-on-primary-container: #dbe7ff; --md-secondary: #485f83; --md-secondary-container: #bed6ff;
+    --md-on-secondary-container: #465c80; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+    --md-surface: #f9f9f9; --md-surface-bright: #ffffff; --md-on-surface: #1b1b1b; --md-on-surface-variant: #474648;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #f3f3f3; --md-surface-container: #eeeeee;
+    --md-surface-container-high: #e8e8e8; --md-surface-container-highest: #e2e2e2; --md-outline: #787678;
+    --md-outline-variant: #c8c6c7; --md-inverse-surface: #303030; --md-inverse-on-surface: #f1f1f1;
+    --md-inverse-primary: #a6c8ff; --item-bg: #ffffff; --log-bg: #303030; --log-text: #f1f1f1; --heat-none: #e2e2e2;
+    --heat-missed_offline: #adabad;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23474648' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="blue"]:not([data-theme="light"]) {
+        --md-primary: #a6c8ff; --md-on-primary: #003060; --md-primary-container: #0067c0;
+        --md-on-primary-container: #dbe7ff; --md-secondary: #b0c8f0; --md-secondary-container: #30476a;
+        --md-on-secondary-container: #9fb6de; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+        --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c8c6c7;
+        --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+        --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #929092;
+        --md-outline-variant: #474648; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+        --md-inverse-primary: #005eb1; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+        --heat-missed_offline: #5f5e60;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="blue"][data-theme="dark"] {
+    --md-primary: #a6c8ff; --md-on-primary: #003060; --md-primary-container: #0067c0;
+    --md-on-primary-container: #dbe7ff; --md-secondary: #b0c8f0; --md-secondary-container: #30476a;
+    --md-on-secondary-container: #9fb6de; --md-tertiary-container: #7d5d7a; --md-on-tertiary-container: #ffddf9;
+    --md-surface: #131313; --md-surface-bright: #393939; --md-on-surface: #e2e2e2; --md-on-surface-variant: #c8c6c7;
+    --md-surface-container-lowest: #0e0e0e; --md-surface-container-low: #1b1b1b; --md-surface-container: #1f1f1f;
+    --md-surface-container-high: #2a2a2a; --md-surface-container-highest: #353535; --md-outline: #929092;
+    --md-outline-variant: #474648; --md-inverse-surface: #e2e2e2; --md-inverse-on-surface: #303030;
+    --md-inverse-primary: #005eb1; --item-bg: #252525; --log-bg: #0e0e0e; --log-text: #e2e2e2; --heat-none: #353535;
+    --heat-missed_offline: #5f5e60;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23c8c6c7' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* warm */
+:root[data-color="warm"] {
+    --md-primary: #4a5c92; --md-on-primary: #ffffff; --md-primary-container: #dbe1ff;
+    --md-on-primary-container: #314578; --md-secondary: #585e71; --md-secondary-container: #dde2f9;
+    --md-on-secondary-container: #414659; --md-tertiary-container: #ffd6f9; --md-on-tertiary-container: #5a3d58;
+    --md-surface: #fff8f4; --md-surface-bright: #ffffff; --md-on-surface: #201b15; --md-on-surface-variant: #504539;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #fef1e8; --md-surface-container: #f8ece2;
+    --md-surface-container-high: #f2e6dc; --md-surface-container-highest: #ece0d7; --md-outline: #827568;
+    --md-outline-variant: #d4c4b5; --md-inverse-surface: #362f29; --md-inverse-on-surface: #fbefe5;
+    --md-inverse-primary: #b3c5ff; --item-bg: #ffffff; --log-bg: #362f29; --log-text: #fbefe5; --heat-none: #ece0d7;
+    --heat-missed_offline: #b8a99b;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23504539' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="warm"]:not([data-theme="light"]) {
+        --md-primary: #b3c5ff; --md-on-primary: #192e60; --md-primary-container: #314578;
+        --md-on-primary-container: #dbe1ff; --md-secondary: #c1c6dd; --md-secondary-container: #414659;
+        --md-on-secondary-container: #dde2f9; --md-tertiary-container: #5a3d58; --md-on-tertiary-container: #ffd6f9;
+        --md-surface: #18120d; --md-surface-bright: #3f3831; --md-on-surface: #ece0d7; --md-on-surface-variant: #d4c4b5;
+        --md-surface-container-lowest: #120d08; --md-surface-container-low: #201b15; --md-surface-container: #241f19;
+        --md-surface-container-high: #2f2923; --md-surface-container-highest: #3a342d; --md-outline: #9c8e81;
+        --md-outline-variant: #504539; --md-inverse-surface: #ece0d7; --md-inverse-on-surface: #362f29;
+        --md-inverse-primary: #4a5c92; --item-bg: #2a241e; --log-bg: #120d08; --log-text: #ece0d7; --heat-none: #3a342d;
+        --heat-missed_offline: #685c50;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4b5' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="warm"][data-theme="dark"] {
+    --md-primary: #b3c5ff; --md-on-primary: #192e60; --md-primary-container: #314578;
+    --md-on-primary-container: #dbe1ff; --md-secondary: #c1c6dd; --md-secondary-container: #414659;
+    --md-on-secondary-container: #dde2f9; --md-tertiary-container: #5a3d58; --md-on-tertiary-container: #ffd6f9;
+    --md-surface: #18120d; --md-surface-bright: #3f3831; --md-on-surface: #ece0d7; --md-on-surface-variant: #d4c4b5;
+    --md-surface-container-lowest: #120d08; --md-surface-container-low: #201b15; --md-surface-container: #241f19;
+    --md-surface-container-high: #2f2923; --md-surface-container-highest: #3a342d; --md-outline: #9c8e81;
+    --md-outline-variant: #504539; --md-inverse-surface: #ece0d7; --md-inverse-on-surface: #362f29;
+    --md-inverse-primary: #4a5c92; --item-bg: #2a241e; --log-bg: #120d08; --log-text: #ece0d7; --heat-none: #3a342d;
+    --heat-missed_offline: #685c50;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4b5' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* sepia */
+:root[data-color="sepia"] {
+    --md-primary: #7c5635; --md-on-primary: #ffffff; --md-primary-container: #f4dfcb;
+    --md-on-primary-container: #524436; --md-secondary: #6b5c4c; --md-secondary-container: #f0e0cf;
+    --md-on-secondary-container: #4f4539; --md-tertiary-container: #f0e2bb; --md-on-tertiary-container: #4f462a;
+    --md-surface: #fff8f3; --md-surface-bright: #ffffff; --md-on-surface: #201b13; --md-on-surface-variant: #504535;
+    --md-surface-container-lowest: #ffffff; --md-surface-container-low: #fef2e5; --md-surface-container: #f8ecdf;
+    --md-surface-container-high: #f2e6d9; --md-surface-container-highest: #ece1d4; --md-outline: #827563;
+    --md-outline-variant: #d4c4af; --md-inverse-surface: #352f27; --md-inverse-on-surface: #fbefe2;
+    --md-inverse-primary: #efbd94; --item-bg: #ffffff; --log-bg: #352f27; --log-text: #fbefe2; --heat-none: #ece1d4;
+    --heat-missed_offline: #b8aa95;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23504535' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+    :root[data-color="sepia"]:not([data-theme="light"]) {
+        --md-primary: #efbd94; --md-on-primary: #48290b; --md-primary-container: #524436;
+        --md-on-primary-container: #f4dfcb; --md-secondary: #d7c3b0; --md-secondary-container: #4f4539;
+        --md-on-secondary-container: #f0e0cf; --md-tertiary-container: #4f462a; --md-on-tertiary-container: #f0e2bb;
+        --md-surface: #17130b; --md-surface-bright: #3f382f; --md-on-surface: #ece1d4; --md-on-surface-variant: #d4c4af;
+        --md-surface-container-lowest: #120d07; --md-surface-container-low: #201b13; --md-surface-container: #241f17;
+        --md-surface-container-high: #2f2921; --md-surface-container-highest: #3a342b; --md-outline: #9c8f7b;
+        --md-outline-variant: #504535; --md-inverse-surface: #ece1d4; --md-inverse-on-surface: #352f27;
+        --md-inverse-primary: #7c5635; --item-bg: #2a241c; --log-bg: #120d07; --log-text: #ece1d4; --heat-none: #3a342b;
+        --heat-missed_offline: #685d4c;
+        --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4af' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+    }
+}
+:root[data-color="sepia"][data-theme="dark"] {
+    --md-primary: #efbd94; --md-on-primary: #48290b; --md-primary-container: #524436;
+    --md-on-primary-container: #f4dfcb; --md-secondary: #d7c3b0; --md-secondary-container: #4f4539;
+    --md-on-secondary-container: #f0e0cf; --md-tertiary-container: #4f462a; --md-on-tertiary-container: #f0e2bb;
+    --md-surface: #17130b; --md-surface-bright: #3f382f; --md-on-surface: #ece1d4; --md-on-surface-variant: #d4c4af;
+    --md-surface-container-lowest: #120d07; --md-surface-container-low: #201b13; --md-surface-container: #241f17;
+    --md-surface-container-high: #2f2921; --md-surface-container-highest: #3a342b; --md-outline: #9c8f7b;
+    --md-outline-variant: #504535; --md-inverse-surface: #ece1d4; --md-inverse-on-surface: #352f27;
+    --md-inverse-primary: #7c5635; --item-bg: #2a241c; --log-bg: #120d07; --log-text: #ece1d4; --heat-none: #3a342b;
+    --heat-missed_offline: #685d4c;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='%23d4c4af' d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+}
+/* The samples in the user menu */
+.swatch-neutral { --swatch-fg: #4a5c92; --swatch-bg: #eeeeee; }
+.swatch-graphite { --swatch-fg: #000000; --swatch-bg: #eeeeee; }
+.swatch-blue { --swatch-fg: #004f96; --swatch-bg: #eeeeee; }
+.swatch-warm { --swatch-fg: #4a5c92; --swatch-bg: #f8ece2; }
+.swatch-sepia { --swatch-fg: #7c5635; --swatch-bg: #f8ecdf; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .swatch-neutral { --swatch-fg: #b3c5ff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-graphite { --swatch-fg: #ffffff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-blue { --swatch-fg: #a6c8ff; --swatch-bg: #1f1f1f; }
+    :root:not([data-theme="light"]) .swatch-warm { --swatch-fg: #b3c5ff; --swatch-bg: #241f19; }
+    :root:not([data-theme="light"]) .swatch-sepia { --swatch-fg: #efbd94; --swatch-bg: #241f17; }
+}
+:root[data-theme="dark"] .swatch-neutral { --swatch-fg: #b3c5ff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-graphite { --swatch-fg: #ffffff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-blue { --swatch-fg: #a6c8ff; --swatch-bg: #1f1f1f; }
+:root[data-theme="dark"] .swatch-warm { --swatch-fg: #b3c5ff; --swatch-bg: #241f19; }
+:root[data-theme="dark"] .swatch-sepia { --swatch-fg: #efbd94; --swatch-bg: #241f17; }
+/* End of the colour schemes */
 
 /* ---------------------------------------------------------------------------------------------------------------------
    Base
@@ -198,6 +385,9 @@ html {
 }
 body { margin: 0; background: var(--md-surface-container); color: var(--md-on-surface); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 a { color: var(--md-primary); text-decoration: none; }
+/* Links and pictures are not dragged: a press that moves a few pixels before it ends would drag the link instead of
+   opening it (app.js does the same for Firefox). */
+a, img { -webkit-user-drag: none; }
 a:hover { text-decoration: underline; }
 h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 20px; font-size: 28px; line-height: 36px; font-weight: 400; letter-spacing: 0; }
 h2 { margin: 0 0 16px; font-size: 22px; line-height: 28px; font-weight: 400; letter-spacing: 0; }
@@ -233,7 +423,7 @@ body.no-user .frame { grid-column: auto; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 64px; padding: 0 12px 0 8px; margin-bottom: 4px;
     color: var(--md-on-surface); font-size: 18px; line-height: 24px; font-weight: 500; letter-spacing: .02em; text-decoration: none; }
 .brand:hover { text-decoration: none; }
-.brand-mark { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--md-primary-container); }
+.brand-mark { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--brand-bg); }
 .brand-mark img { display: block; }
 .brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -245,9 +435,6 @@ body.no-user .frame { grid-column: auto; }
 .nav-item:hover { background-color: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--md-on-surface); text-decoration: none; }
 .nav-item.active { background-color: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .nav-item.active:hover { background-color: color-mix(in srgb, var(--md-on-secondary-container) 8%, var(--md-secondary-container)); }
-/* The section clicked while the page dissolves into the next one (app.js, "From page to page"): its mark lights up
-   at once; the icon, the old mark and the content change together as the next page comes. */
-.nav-item.going { background-color: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .nav-icon .icon { width: 24px; height: 24px; }
 /* The open section has the filled form of its icon; both forms are in the page (layout.php), so that a click can
    mark the section at once. */
@@ -327,7 +514,7 @@ header.top details.user-menu > summary {
 .avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: var(--md-tertiary-container);
     color: var(--md-on-tertiary-container); font-size: 16px; font-weight: 500; }
 .user-menu > summary > .icon { color: var(--md-on-surface-variant); }
-.user-menu .dropdown-menu { min-width: 260px; }
+.user-menu .dropdown-menu { min-width: 260px; max-height: calc(100dvh - 80px); overflow-y: auto; overscroll-behavior: contain; }
 
 main.sheet {
     --bg-here: var(--md-surface); flex: 1 0 auto; min-width: 0; margin: 0 16px 0 0; padding: 28px 32px 40px; border-radius: 28px;
@@ -347,12 +534,12 @@ footer { padding: 16px 16px 20px 0; color: var(--md-on-surface-variant); font-si
     .rail .brand-name { display: none; }
     .rail .nav-item { flex-direction: column; justify-content: center; gap: 4px; width: 88px; min-height: 64px; padding: 4px 2px 8px; border-radius: 0;
         background: none; font-size: 12px; line-height: 16px; letter-spacing: .02em; text-align: center; }
-    .rail .nav-item:hover, .rail .nav-item.active, .rail .nav-item.active:hover, .rail .nav-item.going { background: none; }
-    .rail .nav-item:is(.active, .going) { color: var(--md-on-surface); }
+    .rail .nav-item:hover, .rail .nav-item.active, .rail .nav-item.active:hover { background: none; }
+    .rail .nav-item.active { color: var(--md-on-surface); }
     .rail .nav-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 56px; height: 32px; border-radius: 16px;
         transition: background-color .2s var(--ease); }
     .rail .nav-item:hover .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
-    .rail .nav-item.active .nav-icon, .rail .nav-item.going .nav-icon { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+    .rail .nav-item.active .nav-icon { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .rail .nav-label { flex: none; max-width: 84px; }
     .rail .count { position: absolute; top: -2px; left: 30px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; margin: 0;
         background: var(--md-primary); color: var(--md-on-primary); font-size: 11px; line-height: 18px; text-align: center; }
@@ -390,7 +577,7 @@ footer { padding: 16px 16px 20px 0; color: var(--md-on-surface-variant); font-si
         transition: background-color .2s var(--ease); }
     .bar-item:hover .nav-icon { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
     .bar-item.active, .bar-more.active > .bar-item, .bar-more[open] > .bar-item { color: var(--md-on-surface); }
-    .bar-item.active .nav-icon, .bar-item.going .nav-icon, .bar-more.active > .bar-item .nav-icon, .bar-more[open] > .bar-item .nav-icon {
+    .bar-item.active .nav-icon, .bar-more.active > .bar-item .nav-icon, .bar-more[open] > .bar-item .nav-icon {
         background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
     .bar-item .nav-label { max-width: 100%; }
     .bar-item .count { position: absolute; top: -2px; left: 36px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
@@ -566,14 +753,11 @@ button.busy::after { content: ""; width: 14px; height: 14px; border: 2px solid c
     animation: spin .8s linear infinite; }
 
 /* The ripple: a circle with a soft edge that spreads from the pointer (app.js adds it on press and makes it grow).
-   It shows quickly while pressed and fades slowly after, as Material 3 has it but at half its speed; on the sections
-   of the menu (.quick) at the speed of Material 3. Tabs have none. */
+   It shows quickly while pressed and fades slowly after, with the times of Material 3. Tabs have none. */
 .ripple { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity .75s linear;
+.ripple > i { position: absolute; border-radius: 50%; opacity: 0; transition: opacity .375s linear;
     background: radial-gradient(closest-side, currentColor max(calc(100% - 70px), 65%), transparent 100%); }
-.ripple.pressed > i { opacity: .12; transition-duration: .21s; }
-.ripple.quick > i { transition-duration: .375s; }
-.ripple.quick.pressed > i { transition-duration: .105s; }
+.ripple.pressed > i { opacity: .12; transition-duration: .105s; }
 
 /* Filter chips (machine list, task list): outlined; the chosen one is tonal. */
 button.chip {
@@ -689,7 +873,7 @@ details.dropdown[open] > .dropdown-menu { animation: menu-in .22s var(--ease-in)
 .menu-item > .icon { width: 20px; height: 20px; margin: 0; color: var(--md-on-surface-variant); }
 .menu-item.danger { --btn-fg: var(--md-error); border: 0; padding: 0 16px 0 12px; }
 .menu-item.danger > .icon { color: var(--md-error); }
-.menu-item:is(.active, .going) { --btn-bg: var(--md-secondary-container); --btn-fg: var(--md-on-secondary-container); font-weight: 500; }
+.menu-item.active { --btn-bg: var(--md-secondary-container); --btn-fg: var(--md-on-secondary-container); font-weight: 500; }
 .menu-item.active > .nav-icon .icon, .menu-item.active > .icon { color: inherit; }
 .menu-item > .nav-icon { display: contents; }
 .menu-item .nav-icon .icon { width: 20px; height: 20px; color: var(--md-on-surface-variant); }
@@ -698,6 +882,9 @@ details.dropdown[open] > .dropdown-menu { animation: menu-in .22s var(--ease-in)
 .menu-check { display: inline-flex; margin-left: auto; padding-left: 20px; color: var(--md-primary); }
 .menu-check .icon { width: 20px; height: 20px; }
 .menu-code { display: inline-flex; justify-content: center; flex: none; width: 20px; color: var(--md-on-surface-variant); font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+/* A colour scheme in the user menu: its main colour on its background (--swatch-*: "Colour schemes" above). */
+.swatch { flex: none; position: relative; width: 20px; height: 20px; border-radius: 50%; background: var(--swatch-bg); box-shadow: inset 0 0 0 1px var(--md-outline-variant); }
+.swatch::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--swatch-fg); }
 .menu-label { padding: 12px 16px 4px; color: var(--md-on-surface-variant); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: .04em; }
 .menu-label:first-child { padding-top: 4px; }
 .menu-sep { height: 1px; margin: 8px 0; background: var(--md-outline-variant); }
@@ -1128,15 +1315,11 @@ body.wall { --bg-here: var(--md-surface); min-height: 100vh; padding: 16px 24px;
    Settings → Accessibility → Visual effects → Animation effects off) nothing moves and nothing fades; a changed row
    keeps its colour for a moment, a busy button gets "…".
 
-   From page to page, where the browser can (Chrome, Edge, Safari 18.2+): the old page dissolves into the new one in
-   0.225 s, the menu and the content together, as the site did before Material (1.0.2). A click on a section only
-   lights up its mark (app.js: .going); the rest changes within the dissolve. Marking the section at once and drawing
-   the content in after the page came was abrupt: the server often answers within a tenth of a second, and the new
-   page cut every change off at its start. What does not move stands still in the dissolve.
-   Elsewhere (Firefox): a click on a section marks it and lets the old content go at once (app.js: main.leaving); the
-   content of another page comes in from slightly below (html.page-in, set by app.js before the first frame). The same
-   page again (a filter, the next page of a list, a saved form) just shows; between the tabs of one page the heading
-   and the tabs stay (html.tab-in).
+   From page to page: a click on a section marks it at once (app.js) and the next page simply shows when it comes,
+   with nothing moving or fading. The dissolve of 1.1.4-1.2.0 (a view transition between documents) and the content
+   that came in from below were taken out in 1.2.1: in Chrome on Windows with its animation effects on, a click soon
+   after such a page change now and then lost its release and did nothing (seen with a click log), and the user menu was now
+   and then not redrawn; with the effects off, which also stopped these movements, neither happened.
    ------------------------------------------------------------------------------------------------------------------ */
 tr.changed > td, tr.arrived > td { animation: glow 1.4s var(--ease); }
 li.problem.arrived, .progress-item.arrived { animation: slide-in .35s var(--ease-in), glow 1.4s var(--ease); }
@@ -1153,12 +1336,6 @@ li.problem.arrived, .progress-item.arrived { animation: slide-in .35s var(--ease
     details.at-once::details-content { transition: none; }
 }
 
-@view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: .225s; animation-timing-function: cubic-bezier(.4, 0, .2, 1); }
-main.sheet.leaving > :not(.toasts) { opacity: 0; transition: opacity .09s var(--ease-out); }
-.page-in main.sheet > :not(.toasts) { animation: page-in .25s var(--ease-in) backwards; }
-.page-in.tab-in main.sheet > :is(h1, .page-head, .tabs) { animation: none; }
-
 @keyframes menu-in { from { opacity: 0; transform: scaleY(.85) translateY(-4px); } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(16px) scale(.96); } }
 @keyframes fade-in { from { opacity: 0; } }
@@ -1169,12 +1346,10 @@ main.sheet.leaving > :not(.toasts) { opacity: 0; transition: opacity .09s var(--
 @keyframes slide-in { from { opacity: 0; transform: translateY(-6px); } }
 @keyframes bump { 30% { transform: scale(1.3); } }
 @keyframes appear { from { opacity: 0; transform: translateY(-4px); } }
-@keyframes page-in { from { opacity: 0; transform: translateY(10px); } }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
         transition-duration: 1ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
-    @view-transition { navigation: none; }
     .ripple { display: none; }
     tr.changed > td, tr.arrived > td, li.problem.arrived, .progress-item.arrived, .wall-problem.arrived { background-color: var(--md-primary-container); }
     button.busy::after { content: "…"; width: auto; height: auto; border: 0; }

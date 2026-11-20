@@ -23,14 +23,20 @@ if [ "$top" != "$version" ]; then
     exit 1
 fi
 
-# A previous release whose section is no longer in the file (its versions were folded into a later one): only the
-# section of this version.
-if [ -n "$previous" ] && ! grep -qE "^## +${previous//./\\.} *$" "$dir/$file"; then
-    previous=$(sed -nE 's/^## +([0-9]+\.[0-9]+\.[0-9]+) *$/\1/p' "$dir/$file" | sed -n 2p)
+# The text stops at the section of the previous release or, when that section is no longer in the file (its versions
+# were folded into a later one, as 1.1.1-1.1.5 into 1.1.6), at the first section older than it.
+stop=
+if [ -n "$previous" ]; then
+    while read -r v; do
+        if [ "$(printf '%s\n%s\n' "$v" "$previous" | sort -V | head -n 1)" = "$v" ]; then
+            stop=$v
+            break
+        fi
+    done < <(sed -nE 's/^## +([0-9]+\.[0-9]+\.[0-9]+) *$/\1/p' "$dir/$file")
 fi
 
-# From the first "## " heading on, until the heading of the previous release.
-body=$(awk -v prev="$previous" '
+# From the first "## " heading on, until that heading.
+body=$(awk -v prev="$stop" '
     /^## / { if ($2 == prev) exit; started = 1 }
     started { print }
 ' "$dir/$file")

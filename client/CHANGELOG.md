@@ -25,15 +25,11 @@ a version that was never released by itself is not lost.
 
 ### Changed
 - Task editor, **Schedule**: the days of a monthly schedule are picked in a drop-down calendar of 1–30 and **last day of the month**, on one line with the time, instead of a text field and a separate box. The 31st is gone: a task with it shows **last day of the month**, which it always meant. The day of a forced full backup on **Basic** offers the same days.
+- The manual install block of custos-helper (helper/README.md) asks for the public key and the office IP itself, with `any` for a dynamic IP, instead of carrying an example address to edit; its README tells how to change the address later.
 
 ### Fixed
 - The service no longer logs «CUSTOS service terminated unexpectedly» and ends with an error code each time it is stopped normally.
 - A monthly task on the 29th, 30th or 31st no longer skips the months without that day: it runs on the last day of such a month (28 or 29 February, 30 April). The same goes for a full backup forced on a day of the month.
-
-### Changed
-- The manual install block of custos-helper (helper/README.md) asks for the public key and the office IP itself, with `any` for a dynamic IP, instead of carrying an example address to edit; its README tells how to change the address later.
-
-### Fixed
 - Running the server block of a Linux server task again after changing **Office IP** replaces the address of the agent's key on the server; before, the old address stayed allowed in a second line.
 
 ## 1.0.0
