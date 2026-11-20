@@ -8,8 +8,8 @@
 #
 #   bash client/mac/build-mac.sh <version> [<output folder>]      default output: client/artifacts-mac
 #
-# The program is signed ad hoc (no Apple Developer ID yet), which Apple silicon requires; the installer opens with
-# right click → Open the first time.
+# The program is signed ad hoc (no Apple Developer ID yet), which Apple silicon requires; the first time the installer
+# is allowed in System Settings → Privacy & Security → Open Anyway (macOS 15 dropped right click → Open).
 set -euo pipefail
 
 version=${1:?"usage: build-mac.sh <version> [<output folder>]"}
