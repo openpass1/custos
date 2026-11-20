@@ -3,22 +3,27 @@
 # the top down to the previous release of that part, so a version that was never released by itself is not lost.
 # With one version its heading is left out (the release title already says the version).
 #
-# Usage: .github/release-notes.sh client|server VERSION [PREVIOUS]
-#   VERSION   the version being released: it must be the top section of the file ("top" takes whatever is there)
+# Usage: .github/release-notes.sh client|client-legacy|server VERSION [PREVIOUS]
+#   VERSION   the version being released: it must be the top section of the file ("top" takes whatever is there).
+#             client-legacy (the edition for Windows 7 and 8.1, text from client/CHANGELOG.md) may also release an
+#             older section: that edition is released only when needed and can stay behind the standard one.
 #   PREVIOUS  the version of the previous release of the part, if there is one
 # Exits with 1 and a message on stderr when the file has no section for VERSION or the section is empty.
 set -euo pipefail
 
-part=${1:?part: client or server}
+part=${1:?part: client, client-legacy or server}
 version=${2:?version}
 previous=${3:-}
 dir=$(cd "$(dirname "$0")/.." && pwd)
-file="$part/CHANGELOG.md"
+file="${part%-legacy}/CHANGELOG.md"
 [ -f "$dir/$file" ] || { echo "$file is missing." >&2; exit 1; }
 
-top=$(sed -nE 's/^## +([0-9]+\.[0-9]+\.[0-9]+) *$/\1/p' "$dir/$file" | head -n 1)
+sections=$(sed -nE 's/^## +([0-9]+\.[0-9]+\.[0-9]+) *$/\1/p' "$dir/$file")
+top=$(head -n 1 <<< "$sections")
 [ "$version" != top ] || version=$top
-if [ "$top" != "$version" ]; then
+if [ "$part" = client-legacy ] && grep -qxF "$version" <<< "$sections"; then
+    :
+elif [ "$top" != "$version" ]; then
     echo "$file starts with version ${top:-(none)}, not $version: add a section \"## $version\" at the top with the changes of this release." >&2
     exit 1
 fi
@@ -32,12 +37,12 @@ if [ -n "$previous" ]; then
             stop=$v
             break
         fi
-    done < <(sed -nE 's/^## +([0-9]+\.[0-9]+\.[0-9]+) *$/\1/p' "$dir/$file")
+    done <<< "$sections"
 fi
 
-# From the first "## " heading on, until that heading.
-body=$(awk -v prev="$stop" '
-    /^## / { if ($2 == prev) exit; started = 1 }
+# From the heading of the version on, until that heading.
+body=$(awk -v ver="$version" -v prev="$stop" '
+    /^## / { if (started && $2 == prev) exit; if ($2 == ver) started = 1 }
     started { print }
 ' "$dir/$file")
 if [ "$(grep -c '^## ' <<< "$body")" -eq 1 ]; then

@@ -7,7 +7,8 @@ name: Release
 # (client-v<version>, client-legacy-v<version> or server-v<version>) is created at that moment.
 #
 # client-legacy is the edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy): released as is, only when needed, with
-# the version of the client code it is built from and the text of client/CHANGELOG.md.
+# the text of client/CHANGELOG.md. Its version may be an older section of that file than the top one, so it can stay
+# behind the standard edition (client 1.1.0 brought the new window, which that edition does not have).
 #
 # A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
 on:
@@ -87,9 +88,10 @@ jobs:
             fail "A release $tag already exists, probably a draft: delete it on the Releases page first. / Выпуск $tag уже есть, скорее всего черновик: сначала удалите его на странице Releases."
           fi
           # The release text comes from the part's CHANGELOG.md: it must start with this version. The edition for
-          # Windows 7 and 8.1 is the client code built another way, so it takes the client's.
+          # Windows 7 and 8.1 is the client code built another way, so it takes the client's, and may release an older
+          # section of it (it stays behind the standard edition, released only when needed).
           notes=${PART%-legacy}
-          if ! message=$(.github/release-notes.sh "$notes" "$VERSION" 2>&1 > /dev/null); then
+          if ! message=$(.github/release-notes.sh "$PART" "$VERSION" 2>&1 > /dev/null); then
             fail "$message / В $notes/CHANGELOG.md нет раздела «## $VERSION» с изменениями этой версии: его нужно добавить."
           fi
           {
@@ -279,7 +281,7 @@ jobs:
           # The changes since the previous release of the same part (tags exist for published ones only), then how to
           # install and update. English only: the guides have the Russian.
           previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
-          ../.github/release-notes.sh "${PART%-legacy}" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
+          ../.github/release-notes.sh "$PART" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
           printf '\n---\n\n' >> ../notes.md
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           if [ "$PART" = client ]; then
