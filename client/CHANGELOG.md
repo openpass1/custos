@@ -1,39 +1,36 @@
 # Changelog: CUSTOS for Windows
 
-Changes of the program (and of custos-helper, which is released with it), newest first. Each version is a
-`client-v…` release on the [Releases](https://github.com/openpass1/custos/releases) page; its release text comes
-from this file.
+One section per release, newest first. The section of a version is the text of its `client-v…` release on the
+[Releases](https://github.com/openpass1/custos/releases) page, word for word.
 
-Sections: **Added** (new features), **Changed** (existing behaviour), **Fixed** (bugs), **Removed**. Each item says
-what a user sees, not how the code does it, and stays on one line: GitHub shows the line breaks of a release text
-as they are. A change goes under the version at the top; if that version is already released, it goes under a new
-heading for the next one. The version at the top is the one to type when running the Release workflow; the edition
-for Windows 7 and 8.1 (`client-legacy`) may also take an older section, as it stays behind the standard edition.
+How to write it:
+- Groups in this order: **Added**, **Improved**, **Fixed**, **Removed**. Leave out a group with nothing in it.
+- One short line per item (up to 140 characters): what the user gets. No explanations, no "before, it did …".
+- New items go under the version at the top while it is not released; if the version changes before the release,
+  rename that heading. Once a version is released, start a new section above it.
+- The version at the top is the one to type when running the Release workflow.
 
-The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
-a version that was never released by itself is not lost.
+`.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
+
+The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
 ## 1.1.0
 
 ### Added
-- A new program window in the Material 3 style, installed instead of the previous one: the task list with the card, journal, run history and progress; every action on tasks, several at once with Ctrl or Shift, also from a right click on the list; the task editor with all its pages and windows; settings, accounts and cloud drives; restore; import and export of tasks and import from Cobian Backup; the log of a run (double click in the history); the countdown before a shutdown; a banner about a new version; the tray icon with its menu. Light and dark theme and five colour schemes in **Settings** (neutral grey, graphite, blue, warm, sepia; the colour is kept for each user). Forms are as compact as in the previous window: names on the left of the fields, long explanations behind a (?) mark. The edition for Windows 7 and 8.1 keeps the previous window.
+- New program window in the Material 3 style, with light and dark themes and five colour schemes.
+- Privacy note in the installer: what the program sends over the network and how to turn it off.
+- **Support the project** link in the main window.
+- A separate edition for Windows 7 SP1 and 8.1 is released as `client-legacy-v…`.
 
-## 1.0.1
-
-### Added
-- The installer shows a short privacy note before installing: what the program sends over the network and how to turn it off.
-- A quiet **Support the project** link in the status bar of the main window.
-- An edition for Windows 7 SP1 and 8.1 (32 and 64-bit, Windows Server 2008 R2 SP1 and 2012 / 2012 R2 too): `CUSTOS-Legacy-Setup-<version>.exe`, a 32-bit program with the .NET 6 Desktop Runtime inside its setup, released as is as `client-legacy-v…`. It has no cloud drives, no dark theme and no 7-Zip update from the site; with a monitoring site 1.2.0 or newer, the site hides those for such a machine and gives it only update packages of its own (`custos-legacy-<version>.zip`).
-- On 64-bit Windows the edition for Windows 7 and 8.1 reads System32 and the 64-bit registry, takes `%ProgramFiles%` as the 64-bit folder, runs task scripts in the 64-bit cmd and PowerShell, and makes shadow copies through the 64-bit provider, so tasks behave as in the standard edition.
-
-### Changed
-- Task editor, **Schedule**: the days of a monthly schedule are picked in a drop-down calendar of 1–30 and **last day of the month**, on one line with the time, instead of a text field and a separate box. The 31st is gone: a task with it shows **last day of the month**, which it always meant. The day of a forced full backup on **Basic** offers the same days.
-- The manual install block of custos-helper (helper/README.md) asks for the public key and the office IP itself, with `any` for a dynamic IP, instead of carrying an example address to edit; its README tells how to change the address later.
+### Improved
+- Monthly schedule: days are picked in a calendar of 1–30 and **last day of the month**.
+- The manual install of custos-helper asks for the public key and the office IP itself.
 
 ### Fixed
-- A monthly task on the 29th, 30th or 31st no longer skips the months without that day: it runs on the last day of such a month (28 or 29 February, 30 April). The same goes for a full backup forced on a day of the month.
-- Running the server block of a Linux server task again after changing **Office IP** replaces the address of the agent's key on the server; before, the old address stayed allowed in a second line.
+- A monthly task on the 29th, 30th or 31st no longer skips shorter months.
+- Changing **Office IP** of a Linux server task replaces the old address on the server.
 
 ## 1.0.0
 
-First public release.
+### Added
+- First public release.
