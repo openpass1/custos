@@ -2,13 +2,15 @@ name: Client build
 
 # Builds and tests the Windows client and makes the installer. Runs only when the client, custos-helper (which the
 # client puts into the install block) or this file changes. The window (src/Custos.Windows and src/Custos.Desktop) is
-# in the installer, so it counts too; its pictures and the checks of its buttons are in desktop.yml.
+# in the installer, so it counts too; its pictures and the checks of its buttons are in desktop.yml. The changelogs
+# are checked by changelog.yml.
 on:
   push:
     branches: [main]
     paths:
       - 'client/**'
       - '!client/tests/Custos.Desktop.Shots/**'
+      - '!client/CHANGELOG*.md'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'
@@ -16,6 +18,7 @@ on:
     paths:
       - 'client/**'
       - '!client/tests/Custos.Desktop.Shots/**'
+      - '!client/CHANGELOG*.md'
       - 'helper/custos-helper'
       - 'helper/tests/Dockerfile'
       - '.github/workflows/build.yml'
