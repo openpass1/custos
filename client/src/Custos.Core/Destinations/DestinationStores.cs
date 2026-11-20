@@ -23,7 +23,22 @@ public static class DestinationStores
             case DestinationKinds.Unc:
                 string root = ResolveRoot(platform, destination);
                 bool owns = session is null;
-                return new LocalStore(root, destination.Kind, platform, session ?? platform.OpenSession(destination.CredentialId), owns)
+                var network = session ?? platform.OpenSession(destination.CredentialId);
+                try
+                {
+                    root = network.LocalPath(root);
+                }
+                catch
+                {
+                    if (owns)
+                    {
+                        network.Dispose();
+                    }
+
+                    throw;
+                }
+
+                return new LocalStore(root, destination.Kind, platform, network, owns)
                 {
                     Limiter = limiter,
                     Worm = WormSettings.Of(destination),

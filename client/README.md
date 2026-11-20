@@ -1,4 +1,4 @@
-# CUSTOS client for Windows
+# CUSTOS client for Windows and macOS
 
 [По-русски](README.ru.md)
 
@@ -12,6 +12,9 @@ C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-clien
 | `src/Custos.Updater` | `Custos.Updater.exe` | Installs an update (from the monitoring server or GitHub): stops the service, replaces the files, starts it again, rolls back on failure |
 | `tests/Custos.Core.Tests` | | xUnit tests of the core; `tests/fixtures` holds sample files for them |
 | `tests/Custos.Gui.Tests` | | Window tests: open the real windows with made-up data (run on Windows only) |
+| `src/Custos.Mac` | `Custos.app` | CUSTOS for macOS: one program that is both the service (`Custos agent`, started by launchd as root) and the window with the menu bar icon (Avalonia). The service is the code of `src/Custos.Service` with a macOS platform layer. See [macOS](#macos) |
+| `tests/Custos.Mac.Tests`, `tests/Custos.Mac.Shots` | | Tests of the macOS program (its service started inside the tests and driven over its socket) and pictures of every window |
+| `mac/` | | The macOS installer: `build-mac.sh`, `build-7z.sh`, the launchd jobs, the uninstaller |
 | `installer/custos.iss` | | Inno Setup script |
 
 ## Build
@@ -91,6 +94,82 @@ Windows 7 and 8.1 and .NET 6 get no more fixes from Microsoft, so use it only wh
   Tests are not run for this edition (they run on the standard one; the code is the same). In code the edition is
   `-p:CustosLegacy=true` (`CUSTOS_LEGACY`); the missing .NET APIs are in `src/Legacy`. The job `legacy` of
   `Client build` builds it, installs it on the runner and checks that the 32-bit service starts.
+
+## macOS
+
+CUSTOS for macOS runs on Macs with Apple silicon (M1 and newer) and on Macs with Intel, with macOS 15 Sequoia or
+newer. One installer serves both: it puts on the Mac the program built for its processor. It does the same
+work as on Windows: the service makes the copies on schedule, also when nobody is logged in, and the window with the
+icon in the menu bar only shows and sends commands. The tasks, the destinations, the monitoring site and the export
+file are the same, so a task can move between Windows and a Mac.
+
+**Install.** Run `Custos-<version>.pkg` from the release. The program is not signed by Apple yet (that needs an Apple
+Developer ID, a paid membership), so macOS says it «was not opened» because Apple could not check it. Press **Done**
+(not «Move to Trash»), then System Settings → Privacy & Security, scroll down to **Security**: next to the line about
+`Custos-<version>.pkg` press **Open Anyway** and type the password of the Mac. Open the .pkg again and press **Open
+Anyway** in the question. (macOS 15 no longer opens such a file with right click → Open.) The button stays there for
+about an hour after the first try. Another way, in Terminal: type `xattr -c ` with a space, drag the .pkg into the
+Terminal window, press Enter; then the .pkg opens with a double click. The installer puts `Custos.app` into
+Applications, starts the service and the menu bar icon, and opens the window.
+
+**Full Disk Access.** Without it macOS hides the Desktop, Documents, Mail and other folders of the users from the
+service, and APFS snapshots cannot be read. System Settings → Privacy & Security → **Full Disk Access** → **+** →
+Applications → **Custos**, and switch it on. While the program is signed only ad hoc, macOS may forget the switch after
+an update: check it after each update.
+
+**What differs from Windows:**
+- Instead of a shadow copy (VSS) the files are read from an APFS snapshot of the disk («Read files from a snapshot»);
+  it is deleted when the run ends.
+- Passwords of accounts are encrypted with a key kept in the System keychain (item `org.custos.agent`), instead of DPAPI.
+- A network folder (`//server/share` or `\\server\share`) is mounted with the stored account for the run and unmounted
+  after it. A USB disk is found by its name under `/Volumes`.
+- The window of the Mac does not set up database servers, Linux servers (custos-helper) and cloud drives yet. Such
+  sources and destinations come with a task imported from Windows or made on the monitoring site; the window shows
+  them and keeps them as they are.
+- Scripts before and after a run are run as root by `/bin/sh` (`.zsh` files by `/bin/zsh`). Shutdown, restart or
+  sleep after a run work as on Windows, and the Mac does not fall asleep during a run.
+- 7-Zip comes inside the program (`7z.so`, built from the same pinned 7-Zip sources); there is no 7-Zip update button
+  and the site does not update it.
+
+**Updates.** Without a monitoring site the service checks the GitHub releases once a day, as on Windows, and installs
+`custos-macos-<version>.zip` of the same release (`manifest.json` and `Custos.pkg`, checked by SHA-256) with the
+macOS installer. A monitoring site 1.3.0 or newer updates Macs too: on its «Updates» page the packages of macOS
+(`custos-macos-<version>.zip`) have their own block and go only to Macs.
+
+**Uninstall.** In Terminal:
+
+```sh
+sudo /Applications/Custos.app/Contents/Resources/uninstall.sh          # the program; tasks, settings and logs stay
+sudo /Applications/Custos.app/Contents/Resources/uninstall.sh --all    # also tasks, settings, logs and the key
+```
+
+The copies already made are never touched.
+
+**Files on a Mac:**
+
+| Where | What |
+|---|---|
+| `/Applications/Custos.app` | The program (with its own .NET and `7z.so`) |
+| `/Library/LaunchDaemons/org.custos.agent.plist` | The service: `sudo launchctl kickstart -k system/org.custos.agent` restarts it |
+| `/Library/LaunchAgents/org.custos.menu.plist` | The menu bar icon of every user who logs in |
+| `/Library/Application Support/CUSTOS/` | `config/`, `db/`, `logs/` as in `C:\ProgramData\CUSTOS` on Windows; `logs/launchd.log` holds what the service printed |
+| `/var/run/custos.sock` | The connection between the window and the service |
+| `~/Library/Application Support/CUSTOS/` | Window size, card and columns of this user |
+
+**Build** (on a Mac with Apple silicon or Intel, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and the
+command line tools of Xcode: `xcode-select --install`):
+
+```sh
+bash client/mac/build-mac.sh 1.0.1
+```
+
+The installer appears in `client/artifacts-mac/Custos-<version>.pkg`, the update package in
+`client/artifacts-mac/custos-macos-<version>.zip`. `7z.so` is built first from the 7-Zip sources pinned in
+[`mac/7-zip-source.json`](mac/7-zip-source.json) (download checked by SHA-256). GitHub Actions does the same on a Mac
+of GitHub for every change under `client/` (workflow `macOS client`): it runs the tests of the core and of the Mac
+program (as a user and as root), draws every window, builds the installer, installs it on that Mac, checks that the
+service answers and runs a task, opens the window and removes everything with the uninstaller. The run keeps the
+installer, the update package and the pictures of the windows for 14 days.
 
 ## Archives
 

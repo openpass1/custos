@@ -643,6 +643,17 @@ ExportNotAllowed	Only administrators of this computer may export tasks.	Выгр
 DestinationKindNotInLegacy	Destinations of type «{0}» are not available in CUSTOS for Windows 7 and 8.1.	Назначения типа «{0}» недоступны в CUSTOS для Windows 7 и 8.1.
 MonitorPackageNotLegacy	This package is for Windows 10 and later; CUSTOS for Windows 7 and 8.1 installs only its own packages (custos-legacy-….zip).	Этот пакет для Windows 10 и новее, а CUSTOS для Windows 7 и 8.1 ставит только свои пакеты (custos-legacy-….zip).
 MonitorPackageLegacy	This package is CUSTOS for Windows 7 and 8.1; this computer runs the edition for Windows 10 and later.	Это пакет CUSTOS для Windows 7 и 8.1, а на этом компьютере версия для Windows 10 и новее.
+MonitorPackageNotMac	This package is not CUSTOS for macOS; a Mac installs only its own packages (custos-macos-….zip).	Это не пакет CUSTOS для macOS, а Mac ставит только свои пакеты (custos-macos-….zip).
+MonitorPackageMac	This package is CUSTOS for macOS; it is not installed on Windows.	Это пакет CUSTOS для macOS, на Windows он не ставится.
 SevenZipRemoteNotInLegacy	CUSTOS for Windows 7 and 8.1 does not take 7-Zip from the site (the site keeps the 64-bit 7-Zip). Update 7z.dll with the button in the CUSTOS settings.	CUSTOS для Windows 7 и 8.1 не берёт 7-Zip с сайта (на сайте 64-битный 7-Zip). Обновите 7z.dll кнопкой в настройках CUSTOS.
 SevenZipNot32Bit	{0} is not a 32-bit 7z.dll. CUSTOS for Windows 7 and 8.1 needs 7z.dll from the 32-bit 7-Zip (7zXXXX.exe, without -x64).	{0} — не 32-битный 7z.dll. CUSTOS для Windows 7 и 8.1 нужен 7z.dll из 32-битного 7-Zip (7zXXXX.exe, без -x64).
 SevenZipMissingLegacy	7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 32-bit 7-Zip there.	Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя; переустановите CUSTOS или положите туда 7z.dll из 32-битного 7-Zip.
+
+# CUSTOS for macOS.
+MacSnapshotCreated	APFS snapshot of the disk made: the files are read from it.	Снимок APFS диска сделан: файлы читаются из него.
+MacSnapshotFailedContinue	APFS snapshot failed: {0}. Copying without it: files that change during the copy may be copied half-written.	Не удалось сделать снимок APFS: {0}. Копирую без него: файлы, которые меняются во время копирования, могут попасть в копию недописанными.
+MacSnapshotFailedAbort	APFS snapshot failed: {0}. The task is set to stop in that case.	Не удалось сделать снимок APFS: {0}. По настройке задания копирование отменено.
+MacShareFailed	Network folder {0} could not be connected: {1}	Не удалось подключить сетевую папку {0}: {1}
+MacOwnerNotSet	Owner and permissions of {0} were not restored: {1}	Не удалось восстановить владельца и права {0}: {1}
+SevenZipMacBundled	On macOS 7-Zip comes inside CUSTOS and is updated together with the program.	В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.
+MacUpdateFailed	The installer of macOS did not install the update: {0}	Установщик macOS не установил обновление: {0}

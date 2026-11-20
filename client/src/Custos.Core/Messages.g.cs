@@ -1877,6 +1877,12 @@ static partial class Messages
     /// <summary>This package is CUSTOS for Windows 7 and 8.1; this computer runs the edition for Windows 10 and later.</summary>
     public static string MonitorPackageLegacy => Get(nameof(MonitorPackageLegacy));
 
+    /// <summary>This package is not CUSTOS for macOS; a Mac installs only its own packages (custos-macos-….zip).</summary>
+    public static string MonitorPackageNotMac => Get(nameof(MonitorPackageNotMac));
+
+    /// <summary>This package is CUSTOS for macOS; it is not installed on Windows.</summary>
+    public static string MonitorPackageMac => Get(nameof(MonitorPackageMac));
+
     /// <summary>CUSTOS for Windows 7 and 8.1 does not take 7-Zip from the site (the site keeps the 64-bit 7-Zip). Update 7z...</summary>
     public static string SevenZipRemoteNotInLegacy => Get(nameof(SevenZipRemoteNotInLegacy));
 
@@ -1885,4 +1891,25 @@ static partial class Messages
 
     /// <summary>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 32-bit 7-Zip there.</summary>
     public static string SevenZipMissingLegacy => Get(nameof(SevenZipMissingLegacy));
+
+    /// <summary>APFS snapshot of the disk made: the files are read from it.</summary>
+    public static string MacSnapshotCreated => Get(nameof(MacSnapshotCreated));
+
+    /// <summary>APFS snapshot failed: {0}. Copying without it: files that change during the copy may be copied half-written.</summary>
+    public static string MacSnapshotFailedContinue => Get(nameof(MacSnapshotFailedContinue));
+
+    /// <summary>APFS snapshot failed: {0}. The task is set to stop in that case.</summary>
+    public static string MacSnapshotFailedAbort => Get(nameof(MacSnapshotFailedAbort));
+
+    /// <summary>Network folder {0} could not be connected: {1}</summary>
+    public static string MacShareFailed => Get(nameof(MacShareFailed));
+
+    /// <summary>Owner and permissions of {0} were not restored: {1}</summary>
+    public static string MacOwnerNotSet => Get(nameof(MacOwnerNotSet));
+
+    /// <summary>On macOS 7-Zip comes inside CUSTOS and is updated together with the program.</summary>
+    public static string SevenZipMacBundled => Get(nameof(SevenZipMacBundled));
+
+    /// <summary>The installer of macOS did not install the update: {0}</summary>
+    public static string MacUpdateFailed => Get(nameof(MacUpdateFailed));
 }

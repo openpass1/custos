@@ -9,7 +9,8 @@ use Custos\Infra\Time;
 /**
  * Keeps an eye on versions (7.1, 7.7, section 8):
  *   - machines with an agent older than the current version of their edition: one notice when their number grows or
- *     the current version changes (agent.outdated, legacy.outdated for the edition for Windows 7 and 8.1);
+ *     the current version changes (agent.outdated; legacy.outdated and macos.outdated for the editions for Windows 7
+ *     and 8.1 and for macOS);
  *   - 7-Zip: once a day the newest release is read from GitHub (ip7z/7zip); when machines have an older 7z.dll, one
  *     notice per new 7-Zip version. The installer is downloaded only when an administrator asks for it.
  *
@@ -39,7 +40,10 @@ final class UpdateWatch
     /** One cron pass. */
     public function pass(int $now): array
     {
-        $stats = ['agents_outdated' => $this->agentNotice('agent'), 'legacy_outdated' => $this->agentNotice('legacy')];
+        $stats = ['agents_outdated' => $this->agentNotice('agent')];
+        foreach (Agents::EDITIONS as $edition) {
+            $stats[$edition . '_outdated'] = $this->agentNotice($edition);
+        }
         if ($this->settings->get('sevenzip_check') !== '0') {
             $last = $this->settings->get('sevenzip_checked_at');
             if ($last === '' || Time::unix($last) <= $now - self::CHECK_EVERY_S) {
@@ -147,7 +151,7 @@ final class UpdateWatch
 
     /**
      * Notice "N machines run an older agent" when the number grows or the current version changes; $kind is the
-     * edition (agent or legacy), each with its own current version and notice.
+     * edition (agent, legacy or macos), each with its own current version and notice.
      */
     private function agentNotice(string $kind): int
     {
@@ -157,13 +161,13 @@ final class UpdateWatch
         }
         $outdated = Packages::outdated(Packages::fitting($kind, $this->agents()), $current['version']);
         $count = count($outdated);
-        $setting = $kind === 'legacy' ? 'legacy_outdated_notified' : 'agent_outdated_notified';
+        $setting = $kind . '_outdated_notified';
         [$version, $notified] = array_pad(explode('|', $this->settings->get($setting)), 2, '0');
         if ($version !== $current['version'] || $count < (int) $notified) {
             $notified = '0';
         }
         if ($count > (int) $notified) {
-            $this->notices->add($kind === 'legacy' ? 'legacy.outdated' : 'agent.outdated', count($outdated) === 1 ? $outdated[0]['id'] : null, null,
+            $this->notices->add("$kind.outdated", count($outdated) === 1 ? $outdated[0]['id'] : null, null,
                 ['version' => $current['version'], 'n' => $count, 'name' => count($outdated) === 1 ? Agents::name($outdated[0]) : '']);
         }
         $this->settings->set($setting, $current['version'] . '|' . $count);

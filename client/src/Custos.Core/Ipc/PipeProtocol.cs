@@ -15,6 +15,13 @@ public static class PipeProtocol
     /// <summary>Pipe name; the full Windows path is <c>\\.\pipe\custos</c>.</summary>
     public const string PipeName = "custos";
 
+    /// <summary>
+    /// The socket of the service on macOS, which stands in for the pipe <see cref="PipeName"/>: in /var/run, where only
+    /// root may create files, so no other program can pose as the service. CUSTOS_SOCKET can point elsewhere (tests).
+    /// </summary>
+    public static string UnixSocketPath =>
+        Environment.GetEnvironmentVariable("CUSTOS_SOCKET") is { Length: > 0 } custom ? custom : "/var/run/custos.sock";
+
     /// <summary>Version of this local protocol. The interface and the service are always installed together,
     /// so a mismatch means a broken installation.</summary>
     public const int Version = 1;

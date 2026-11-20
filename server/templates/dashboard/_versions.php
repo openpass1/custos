@@ -1,9 +1,10 @@
 <?php
 /**
  * @var list<array{version: ?string, edition: string, n: int}> $versions @var list<array{version: string, n: int}> $sevenZipVersions
- * @var ?string $currentVersion @var ?string $legacyVersion @var ?string $latestSevenZip
+ * @var ?string $currentVersion @var array<string, ?string> $editionVersions current version of each other edition (legacy, macos)
+ * @var ?string $latestSevenZip
  */
-use Custos\Domain\Agents;
+use Custos\Domain\Packages;
 $old = fn(?string $have, ?string $want) => $want !== null && (string) $have !== '' && version_compare((string) $have, $want, '<');
 ?>
 <?php if ($versions !== []): ?>
@@ -12,7 +13,7 @@ $old = fn(?string $have, ?string $want) => $want !== null && (string) $have !== 
     <table class="compact">
         <tbody>
         <?php foreach ($versions as $v): ?>
-            <?php $want = Agents::isLegacy($v) ? $legacyVersion : $currentVersion; ?>
+            <?php $kind = Packages::agentKind($v); $want = $kind === 'agent' ? $currentVersion : ($editionVersions[$kind] ?? null); ?>
             <tr>
                 <td>CUSTOS <?= e((string) $v['version'] === '' ? '?' : $v['version']) ?><?= edition_badge($v) ?>
                     <?php if ($want !== null && $v['version'] === $want): ?><?= badge('ok', t('updates.is_current')) ?>

@@ -70,7 +70,13 @@ public sealed class ServiceClientTests
             ServiceClient.ConnectAsync(null, TimeSpan.FromMilliseconds(300), Token, NewPipeName()));
     }
 
-    internal static string NewPipeName() => "custos-test-" + Guid.NewGuid().ToString("N");
+    /// <summary>
+    /// A pipe of its own for each test. Outside Windows a pipe is a Unix socket in the temporary folder, and on macOS
+    /// that folder is so long that the path passes the 104 bytes a socket may have: there the socket goes into /tmp.
+    /// </summary>
+    internal static string NewPipeName() => OperatingSystem.IsWindows()
+        ? "custos-test-" + Guid.NewGuid().ToString("N")
+        : "/tmp/custos-test-" + Guid.NewGuid().ToString("N")[..12];
 
     internal static Task<HelloResult> SayHelloAsync(ServiceClient client) =>
         client.RequestAsync(

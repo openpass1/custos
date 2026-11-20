@@ -21,7 +21,7 @@
     <PackageVersion Include="FluentFTP" Version="55.1.0" />
     <!-- S3 destinations (stage 4): Apache-2.0; brings AWSSDK.Core (Apache-2.0) -->
     <PackageVersion Include="AWSSDK.S3" Version="4.1.0" />
-    <!-- The new window in Material 3 (src/Custos.Desktop, src/Custos.Windows): MIT -->
+    <!-- The new window in Material 3 (src/Custos.Desktop, src/Custos.Windows) and the window of the macOS client: MIT -->
     <PackageVersion Include="Avalonia" Version="12.1.6" />
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />

@@ -8,6 +8,10 @@ public static class CustosInfo
     /// <summary>Windows service name, as used by sc.exe and the installer.</summary>
     public const string ServiceName = "CustosService";
 
+    /// <summary>The label of the launchd service of macOS (/Library/LaunchDaemons/org.custos.agent.plist) and the bundle
+    /// identifier of Custos.app.</summary>
+    public const string MacServiceLabel = "org.custos.agent";
+
     /// <summary>Source name in the Windows Application event log.</summary>
     public const string EventLogSource = "CUSTOS";
 
@@ -27,15 +31,35 @@ public static class CustosInfo
     /// <summary>Product version, for example "0.1.0". Every CUSTOS assembly is built with the same version.</summary>
     public static string Version { get; } = ReadVersion();
 
-    /// <summary><c>C:\ProgramData\CUSTOS</c>: settings, database and logs of the service.</summary>
-    public static string DataDirectory { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "CUSTOS");
+    /// <summary>
+    /// <c>C:\ProgramData\CUSTOS</c>: settings, database and logs of the service; on macOS
+    /// <c>/Library/Application Support/CUSTOS</c>. Outside Windows the variable CUSTOS_DATA_DIR can point elsewhere
+    /// (tests of the macOS service without root).
+    /// </summary>
+    public static string DataDirectory { get; } = ReadDataDirectory();
 
     /// <summary><c>C:\ProgramData\CUSTOS\logs</c>.</summary>
     public static string LogsDirectory { get; } = Path.Combine(DataDirectory, "logs");
 
     /// <summary><c>C:\ProgramData\CUSTOS\logs\journal</c>: the journal of each day (section 6.10).</summary>
     public static string JournalDirectory { get; } = Path.Combine(LogsDirectory, "journal");
+
+    private static string ReadDataDirectory()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "CUSTOS");
+        }
+
+        if (Environment.GetEnvironmentVariable("CUSTOS_DATA_DIR") is { Length: > 0 } custom)
+        {
+            return Path.GetFullPath(custom);
+        }
+
+        return OperatingSystem.IsMacOS()
+            ? "/Library/Application Support/CUSTOS"
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "CUSTOS");
+    }
 
     private static string ReadVersion()
     {

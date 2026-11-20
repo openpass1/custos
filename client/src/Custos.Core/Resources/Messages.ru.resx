@@ -1897,6 +1897,12 @@
   <data name="MonitorPackageLegacy" xml:space="preserve">
     <value>Это пакет CUSTOS для Windows 7 и 8.1, а на этом компьютере версия для Windows 10 и новее.</value>
   </data>
+  <data name="MonitorPackageNotMac" xml:space="preserve">
+    <value>Это не пакет CUSTOS для macOS, а Mac ставит только свои пакеты (custos-macos-….zip).</value>
+  </data>
+  <data name="MonitorPackageMac" xml:space="preserve">
+    <value>Это пакет CUSTOS для macOS, на Windows он не ставится.</value>
+  </data>
   <data name="SevenZipRemoteNotInLegacy" xml:space="preserve">
     <value>CUSTOS для Windows 7 и 8.1 не берёт 7-Zip с сайта (на сайте 64-битный 7-Zip). Обновите 7z.dll кнопкой в настройках CUSTOS.</value>
   </data>
@@ -1905,5 +1911,26 @@
   </data>
   <data name="SevenZipMissingLegacy" xml:space="preserve">
     <value>Не найден 7z.dll: {0}. Задания с 7z выполнить нельзя; переустановите CUSTOS или положите туда 7z.dll из 32-битного 7-Zip.</value>
+  </data>
+  <data name="MacSnapshotCreated" xml:space="preserve">
+    <value>Снимок APFS диска сделан: файлы читаются из него.</value>
+  </data>
+  <data name="MacSnapshotFailedContinue" xml:space="preserve">
+    <value>Не удалось сделать снимок APFS: {0}. Копирую без него: файлы, которые меняются во время копирования, могут попасть в копию недописанными.</value>
+  </data>
+  <data name="MacSnapshotFailedAbort" xml:space="preserve">
+    <value>Не удалось сделать снимок APFS: {0}. По настройке задания копирование отменено.</value>
+  </data>
+  <data name="MacShareFailed" xml:space="preserve">
+    <value>Не удалось подключить сетевую папку {0}: {1}</value>
+  </data>
+  <data name="MacOwnerNotSet" xml:space="preserve">
+    <value>Не удалось восстановить владельца и права {0}: {1}</value>
+  </data>
+  <data name="SevenZipMacBundled" xml:space="preserve">
+    <value>В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.</value>
+  </data>
+  <data name="MacUpdateFailed" xml:space="preserve">
+    <value>Установщик macOS не установил обновление: {0}</value>
   </data>
 </root>

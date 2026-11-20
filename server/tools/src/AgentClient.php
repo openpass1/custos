@@ -112,7 +112,7 @@ final class AgentClient
     /** Checks the signature of the server's update command (A.10): "{version}\n{sha256}". */
     public function verifyUpdate(string $version, string $sha256, string $signature, string $edition = ''): bool
     {
-        // The edition for Windows 7 and 8.1 signs "legacy\n{version}\n{sha256}" (A.10).
+        // The other editions sign "legacy\n{version}\n{sha256}" or "macos\n{version}\n{sha256}" (A.10).
         $signed = ($edition === '' ? '' : "$edition\n") . "$version\n$sha256";
         return $this->serverPublicKey !== null && self::verify($signed, $signature, $this->serverPublicKey);
     }

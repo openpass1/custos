@@ -1,0 +1,28 @@
+#!/bin/sh
+# CUSTOS for macOS, after the files are in place: starts the service, and the menu bar icon for the user at the
+# screen (other users get it at their next login). On the first installation the window opens too.
+label=org.custos.agent
+daemon="/Library/LaunchDaemons/$label.plist"
+agent=/Library/LaunchAgents/org.custos.menu.plist
+data="/Library/Application Support/CUSTOS"
+first=yes
+[ -f "$data/config/tasks.json" ] && first=no
+
+/bin/mkdir -p "$data/logs"
+/usr/sbin/chown root:wheel "$daemon" "$agent"
+/bin/chmod 644 "$daemon" "$agent"
+
+/bin/launchctl enable "system/$label" 2> /dev/null
+/bin/launchctl bootstrap system "$daemon" 2> /dev/null
+/bin/launchctl kickstart "system/$label" 2> /dev/null
+
+user=$(/usr/bin/stat -f %Su /dev/console 2> /dev/null)
+if [ -n "$user" ] && [ "$user" != root ] && [ "$user" != loginwindow ] && [ "$user" != _mbsetupuser ]; then
+  uid=$(/usr/bin/id -u "$user")
+  /bin/launchctl bootstrap "gui/$uid" "$agent" 2> /dev/null || /bin/launchctl kickstart "gui/$uid/org.custos.menu" 2> /dev/null
+  if [ "$first" = yes ] && [ "${COMMAND_LINE_INSTALL:-0}" != 1 ]; then
+    /bin/sleep 3
+    /bin/launchctl asuser "$uid" /usr/bin/sudo -u "$user" /usr/bin/open -a /Applications/Custos.app 2> /dev/null
+  fi
+fi
+exit 0

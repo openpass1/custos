@@ -50,7 +50,7 @@ final class FakeAgent
     /**
      * @param array{url: string, code: ?string, hostname: string, time_zone: string, run_seconds: int,
      *              skip_schedule: bool, offline_min: ?int, pause_s: ?int, result?: ?string, sevenzip?: ?string,
-     *              once_run?: bool, legacy?: bool} $options
+     *              once_run?: bool, legacy?: bool, mac?: bool} $options
      * @param \Closure(string): void $log
      */
     public function __construct(
@@ -66,6 +66,10 @@ final class FakeAgent
         if (!empty($options['legacy'])) {
             // The edition for Windows 7 and 8.1 (A.3, A.4): its own packages, no 7-Zip from the site.
             $this->state['edition'] = 'legacy';
+        }
+        if (!empty($options['mac'])) {
+            // CUSTOS for macOS (A.3, A.4): its own packages, 7-Zip inside the program.
+            $this->state['edition'] = 'macos';
         }
         if (array_key_exists('sevenzip', $options)) {
             $this->state['sevenzip_version'] = $options['sevenzip'];
@@ -203,7 +207,11 @@ final class FakeAgent
         $result = $this->client->register($code, [
             'hostname' => $this->state['hostname'],
             'machine_guid' => $this->state['machine_guid'],
-            'os' => $this->state['edition'] === 'legacy' ? 'Windows 7 Professional SP1 (7601)' : 'Windows 11 Pro 24H2 (26100)',
+            'os' => match ($this->state['edition']) {
+                'legacy' => 'Windows 7 Professional SP1 (7601)',
+                'macos' => 'macOS 15.5 (24F74)',
+                default => 'Windows 11 Pro 24H2 (26100)',
+            },
             'agent_version' => $this->state['agent_version'] ?? self::VERSION,
             'time_zone' => $this->state['time_zone'],
         ] + $this->edition());
@@ -783,6 +791,9 @@ final class FakeAgent
         if ($sevenZip && $this->state['edition'] === 'legacy') {
             return ['rejected', '7-Zip is updated only with the program in the edition for Windows 7 and 8.1'];
         }
+        if ($sevenZip && $this->state['edition'] === 'macos') {
+            return ['rejected', '7-Zip comes inside CUSTOS for macOS'];
+        }
         $signed = $sevenZip ? $this->client->verifySevenZip($version, $sha256, $signature)
             : $this->client->verifyUpdate($version, $sha256, $signature, $this->state['edition']);
         if (!$signed || !preg_match('/^[0-9A-Za-z.+-]{1,32}$/', $version)) {
@@ -805,7 +816,7 @@ final class FakeAgent
         return ['done', sprintf('%s %s installed (%s)', $sevenZip ? '7-Zip' : 'CUSTOS', $version, self::size(strlen($download['body'])))];
     }
 
-    /** The edition field of the registration and the heartbeat: sent only by the edition for Windows 7 and 8.1. */
+    /** The edition field of the registration and the heartbeat: sent only by the editions for Windows 7 and 8.1 and for macOS. */
     private function edition(): array
     {
         return $this->state['edition'] === '' ? [] : ['edition' => $this->state['edition']];

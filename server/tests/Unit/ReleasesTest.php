@@ -49,6 +49,15 @@ final class ReleasesTest extends TestCase
         $this->assertSame('2.0.0', Releases::pick($releases, 'client')['version']);
         $legacy = Releases::pick($releases, 'legacy');
         $this->assertSame(['2.1.0', 'client-legacy-v2.1.0', 'custos-legacy-2.1.0.zip'], [$legacy['version'], $legacy['tag'], $legacy['zip_name']]);
+
+        // CUSTOS for macOS: its own package in the same client-v* releases; a release without it is passed over.
+        $this->assertNull(Releases::pick($releases, 'macos'), 'no Mac package yet');
+        $releases[] = ['tag_name' => 'client-v2.2.0', 'assets' => [$asset('custos-2.2.0.zip'), $asset('custos-macos-2.2.0.zip', "sha256:$sha")]];
+        $releases[] = ['tag_name' => 'client-v2.3.0', 'assets' => [$asset('custos-2.3.0.zip')]];
+        $mac = Releases::pick($releases, 'macos');
+        $this->assertSame(['2.2.0', 'client-v2.2.0', 'custos-macos-2.2.0.zip', $sha], [$mac['version'], $mac['tag'], $mac['zip_name'], $mac['sha256']]);
+        $this->assertSame('custos-2.3.0.zip', Releases::pick($releases, 'client')['zip_name'], 'the Mac package is never taken for Windows');
+        $this->assertSame(['agent', 'legacy', 'macos'], array_map(Releases::kind(...), Releases::PROGRAM_PARTS));
     }
 
     public function testTablesThatMigrationsChange(): void

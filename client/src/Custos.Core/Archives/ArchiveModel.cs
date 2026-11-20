@@ -138,6 +138,10 @@ public static class ArchivePaths
     /// <summary>Any separator → "\".</summary>
     public static string ToWindows(string path) => path.Replace('/', '\\').TrimStart('\\');
 
+    /// <summary>The separator 7-Zip takes from this system: "\" on Windows, "/" elsewhere (7-Zip of macOS would keep a
+    /// "\" as part of the name). Inside the 7z archive it is "/" either way.</summary>
+    public static string ToNative(string path) => OperatingSystem.IsWindows() ? ToWindows(path) : ToZip(path);
+
     /// <summary>
     /// Whether a path from an archive is safe to unpack below a folder: relative, without ".." or a drive.
     /// Archives are written by CUSTOS, but a damaged or foreign one must never write outside the target.

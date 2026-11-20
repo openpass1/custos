@@ -24,11 +24,13 @@ internal sealed partial class AgentService
     /// <summary>What Custos.Updater did (written by it).</summary>
     private static readonly string UpdateResultFile = Path.Combine(DataFolders.Config, "update-result.json");
 
+#if !CUSTOS_MAC
     /// <summary>The files Custos.Updater needs to run (it is a .NET program without other references).</summary>
     private static readonly string[] UpdaterFiles = ["Custos.Updater.exe", "Custos.Updater.dll", "Custos.Updater.runtimeconfig.json", "Custos.Updater.deps.json"];
 
     /// <summary>Without them a package is no CUSTOS.</summary>
     private static readonly string[] RequiredFiles = ["CustosService.exe", "CustosService.dll", "Custos.exe", "Custos.Core.dll", .. UpdaterFiles];
+#endif
 
     /// <summary>If the service still runs this long after the updater was started, the update did not happen.</summary>
     private static readonly TimeSpan UpdateDeadline = TimeSpan.FromMinutes(10);
@@ -127,10 +129,7 @@ internal sealed partial class AgentService
 
             string updaterFolder = Path.Combine(DataFolders.Updates, "updater-" + Guid.NewGuid().ToString("N")[..8]);
             Directory.CreateDirectory(updaterFolder);
-            foreach (string name in UpdaterFiles)
-            {
-                File.Copy(Path.Combine(staging, name), Path.Combine(updaterFolder, name), overwrite: true);
-            }
+            PrepareUpdater(staging, updaterFolder);
 
             // No run may start now, and the one in progress ends first (A.10).
             Log(LogLineLevels.Info, Messages.Format(Messages.MonitorUpdateWaiting, version));
@@ -160,21 +159,7 @@ internal sealed partial class AgentService
             File.WriteAllBytes(UpdatePendingFile, JsonSerializer.SerializeToUtf8Bytes(pending, MonitorJsonContext.Default.PendingUpdate));
             TryDeleteFile(UpdateResultFile);
 
-            var start = new ProcessStartInfo(Path.Combine(updaterFolder, "Custos.Updater.exe"))
-            {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = updaterFolder,
-            };
-            foreach (string argument in new[]
-            {
-                "--install", staging, "--target", AppContext.BaseDirectory.TrimEnd('\\'), "--result", UpdateResultFile,
-                "--service", CustosInfo.ServiceName, "--from", info.Version, "--to", version,
-            })
-            {
-                start.ArgumentList.Add(argument);
-            }
-
+            var start = UpdaterStart(staging, updaterFolder, version);
             ServiceLog.UpdateStarting(logger, version);
             Log(LogLineLevels.Warning, Messages.Format(Messages.MonitorUpdateInstalling, info.Version, version));
             try
@@ -200,6 +185,37 @@ internal sealed partial class AgentService
             }
         }
     }
+
+#if !CUSTOS_MAC
+    /// <summary>Custos.Updater runs from a copy: the program folder is what it replaces.</summary>
+    private static void PrepareUpdater(string staging, string updaterFolder)
+    {
+        foreach (string name in UpdaterFiles)
+        {
+            File.Copy(Path.Combine(staging, name), Path.Combine(updaterFolder, name), overwrite: true);
+        }
+    }
+
+    private ProcessStartInfo UpdaterStart(string staging, string updaterFolder, string version)
+    {
+        var start = new ProcessStartInfo(Path.Combine(updaterFolder, "Custos.Updater.exe"))
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = updaterFolder,
+        };
+        foreach (string argument in new[]
+        {
+            "--install", staging, "--target", AppContext.BaseDirectory.TrimEnd('\\'), "--result", UpdateResultFile,
+            "--service", CustosInfo.ServiceName, "--from", info.Version, "--to", version,
+        })
+        {
+            start.ArgumentList.Add(argument);
+        }
+
+        return start;
+    }
+#endif
 
     /// <summary>The updater stops this service within seconds; if it never does, the runs go on and the server hears why.</summary>
     private void WatchUpdate(string version)
@@ -327,17 +343,17 @@ internal sealed partial class AgentService
             return Messages.Format(Messages.MonitorPackageProtocol, manifest.MinProtocol);
         }
 
-        // The two editions are different programs (.NET 10 x64 and .NET 6 x86): neither installs the other's package.
+        // The editions are different programs (.NET 10 x64, .NET 6 x86, the program of macOS): none installs another's package.
         if (!string.Equals(manifest.Edition, CustosEdition.Wire, StringComparison.Ordinal))
         {
-            return CustosEdition.IsLegacy ? Messages.MonitorPackageNotLegacy : Messages.MonitorPackageLegacy;
+            return CustosEdition.PackageOfOtherEdition(manifest.Edition);
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string root = Path.GetFullPath(staging) + Path.DirectorySeparatorChar;
         foreach (var file in manifest.Files)
         {
-            string path = file.Path.Replace('/', '\\');
+            string path = file.Path.Replace('/', Path.DirectorySeparatorChar);
             string target = Path.GetFullPath(Path.Combine(staging, path));
             if (string.IsNullOrEmpty(path) || Path.IsPathRooted(path) || path.Contains(':', StringComparison.Ordinal)
                 || !target.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !names.Add(path))

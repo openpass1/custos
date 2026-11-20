@@ -11,6 +11,11 @@ name: Release
 # and 8.1, build.ps1 -Legacy, released only when needed), server/CHANGELOG.md (server). The version released is the
 # top section of its file.
 #
+# A client release is one version for Windows, macOS and Linux (client/CHANGELOG.md, tag client-v<version>), but it
+# carries only the files of the systems ticked when it is run: a fix for the Mac alone is a release with the Mac files
+# only. Each program and the monitoring site look for their own package and pass over a release without it. CUSTOS for
+# macOS is built on a Mac of GitHub by client/mac/build-mac.sh.
+#
 # A pull request that changes this file or release-notes.sh builds every part with a test version and publishes
 # nothing. The changelogs themselves are checked by changelog.yml.
 on:
@@ -25,6 +30,18 @@ on:
         description: 'Version, for example 1.0.0. For the server it must equal VERSION in server/src/App.php'
         type: string
         required: true
+      windows:
+        description: 'Client: files for Windows'
+        type: boolean
+        default: true
+      macos:
+        description: 'Client: files for macOS'
+        type: boolean
+        default: true
+      linux:
+        description: 'Client: files for Linux'
+        type: boolean
+        default: true
   pull_request:
     paths:
       - '.github/workflows/release.yml'
@@ -43,6 +60,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       client: ${{ steps.check.outputs.client }}
+      windows: ${{ steps.check.outputs.windows }}
+      macos: ${{ steps.check.outputs.macos }}
+      linux: ${{ steps.check.outputs.linux }}
       legacy: ${{ steps.check.outputs.legacy }}
       server: ${{ steps.check.outputs.server }}
       version: ${{ steps.check.outputs.version }}
@@ -57,6 +77,9 @@ jobs:
           EVENT: ${{ github.event_name }}
           PART: ${{ inputs.part }}
           VERSION: ${{ inputs.version }}
+          WINDOWS: ${{ inputs.windows }}
+          MACOS: ${{ inputs.macos }}
+          LINUX: ${{ inputs.linux }}
         run: |
           set -euo pipefail
           site_version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" server/src/App.php)
@@ -64,6 +87,9 @@ jobs:
             # Test run: both parts, nothing is published. The client gets a version no real release uses.
             {
               echo "client=true"
+              echo "windows=true"
+              echo "macos=true"
+              echo "linux=true"
               echo "legacy=true"
               echo "server=true"
               echo "version=0.0.1"
@@ -83,6 +109,9 @@ jobs:
           if [ "$PART" = server ] && [ "$VERSION" != "$site_version" ]; then
             fail "server/src/App.php says VERSION = '$site_version', but the version typed is $VERSION. Release $site_version, or change App.php first. / В server/src/App.php версия $site_version, а введена $VERSION."
           fi
+          if [ "$PART" = client ] && [ "$WINDOWS" != true ] && [ "$MACOS" != true ] && [ "$LINUX" != true ]; then
+            fail "Tick at least one system (windows, macos, linux) for a client release. / Отметьте хотя бы одну систему для выпуска клиента."
+          fi
           tag="$PART-v$VERSION"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
             fail "The tag $tag already exists: this version is already released. / Метка $tag уже есть: эта версия уже выпущена."
@@ -96,6 +125,9 @@ jobs:
           fi
           {
             echo "client=$([ "$PART" = client ] && echo true || echo false)"
+            echo "windows=$([ "$PART" = client ] && [ "$WINDOWS" = true ] && echo true || echo false)"
+            echo "macos=$([ "$PART" = client ] && [ "$MACOS" = true ] && echo true || echo false)"
+            echo "linux=$([ "$PART" = client ] && [ "$LINUX" = true ] && echo true || echo false)"
             echo "legacy=$([ "$PART" = client-legacy ] && echo true || echo false)"
             echo "server=$([ "$PART" = server ] && echo true || echo false)"
             echo "version=$VERSION"
@@ -104,7 +136,7 @@ jobs:
 
   client:
     needs: check
-    if: needs.check.outputs.client == 'true'
+    if: needs.check.outputs.windows == 'true'
     runs-on: windows-latest
     timeout-minutes: 40
     steps:
@@ -202,6 +234,37 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # CUSTOS for macOS (Apple silicon and Intel, macOS 15 and newer): one installer for both and the update package. The "macOS client"
+  # workflow tests the same files, installs them on its Mac and removes them again.
+  macos:
+    needs: check
+    if: needs.check.outputs.macos == 'true'
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the installer and the update package
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/mac/build-mac.sh "$VERSION" client/artifacts-mac
+          mkdir -p out
+          cp "client/artifacts-mac/Custos-$VERSION.pkg" "client/artifacts-mac/custos-macos-$VERSION.zip" out/
+          ls -l out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-macos
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
   server:
     needs: check
     if: needs.check.outputs.server == 'true'
@@ -247,11 +310,13 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [check, client, legacy, server]
+    needs: [check, client, legacy, macos, server]
     if: >-
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
-      (needs.client.result == 'success' || needs.legacy.result == 'success' || needs.server.result == 'success') &&
-      needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.server.result != 'failure'
+      (needs.client.result == 'success' || needs.macos.result == 'success' || needs.legacy.result == 'success' ||
+      needs.server.result == 'success') &&
+      needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.macos.result != 'failure' &&
+      needs.server.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -281,8 +346,21 @@ jobs:
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           case "$PART" in
             client)
-              title="CUSTOS for Windows $VERSION"
-              links="**Install:** [Quick start]($blob/README.md#quick-start) · **All changes:** [CHANGELOG]($blob/client/CHANGELOG.md)" ;;
+              # The systems whose files this release carries, in the title and with their install guides.
+              systems=() install=()
+              if compgen -G "CUSTOS-Setup-*.exe" > /dev/null; then
+                systems+=(Windows); install+=("Windows: [Quick start]($blob/README.md#quick-start)")
+              fi
+              if compgen -G "Custos-*.pkg" > /dev/null; then
+                systems+=(macOS); install+=("macOS: [guide]($blob/client/README.md#macos)")
+              fi
+              case ${#systems[@]} in
+                0) echo "::error::No files of any system were built."; exit 1 ;;
+                1) names=${systems[0]} ;;
+                *) names="$(IFS=,; echo "${systems[*]:0:${#systems[@]}-1}" | sed 's/,/, /g') and ${systems[-1]}" ;;
+              esac
+              title="CUSTOS for $names $VERSION"
+              links="**Install:** $(IFS='|'; echo "${install[*]}" | sed 's/|/ · /g') · **All changes:** [CHANGELOG]($blob/client/CHANGELOG.md)" ;;
             client-legacy)
               title="CUSTOS for Windows 7 and 8.1 $VERSION"
               links="**Install:** [guide]($blob/client/README.md#edition-for-windows-7-and-81) · **All changes:** [CHANGELOG]($blob/client/CHANGELOG-legacy.md)" ;;

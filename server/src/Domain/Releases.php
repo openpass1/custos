@@ -15,22 +15,26 @@ use Custos\Infra\Time;
  *   client  tag client-vX.Y.Z, package custos-X.Y.Z.zip: the agent update package (A.10), which the site downloads
  *           on request, checks and signs like an uploaded one;
  *   legacy  tag client-legacy-vX.Y.Z, package custos-legacy-X.Y.Z.zip: the same for the edition for Windows 7 and
- *           8.1 (its packages are of kind legacy). Shown and noticed only while the site has any of that edition.
+ *           8.1 (its packages are of kind legacy). Shown and noticed only while the site has any of that edition;
+ *   macos   tag client-vX.Y.Z (the same releases as the program for Windows), package custos-macos-X.Y.Z.zip: the
+ *           same for CUSTOS for macOS (kind macos), likewise only while the site has any of it.
  * A bell notice tells once per version when the site is older, or when the program is newer than every agent
  * package of its edition on the server. Drafts and pre-releases are skipped. The check can be turned off (server
  * without internet).
  *
- * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server, release_client and
- * release_legacy (JSON of the release found, see pick()), release_*_notified (versions noticed).
+ * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server, release_client,
+ * release_legacy and release_macos (JSON of the release found, see pick()), release_*_notified (versions noticed).
  */
 final class Releases
 {
     public const CHECK_EVERY_S = 86400;
     public const DEFAULT_REPO = 'openpass1/custos';
-    public const PARTS = ['server', 'client', 'legacy'];
+    public const PARTS = ['server', 'client', 'legacy', 'macos'];
+    /** The program parts: the standard edition (client) and the others, named like their package kind. */
+    public const PROGRAM_PARTS = ['client', 'legacy', 'macos'];
     /** The tag of a release of each part is <prefix>X.Y.Z, its package <zip>X.Y.Z.zip. */
-    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v'];
-    private const ZIPS = ['server' => 'custos-server-', 'client' => 'custos-', 'legacy' => 'custos-legacy-'];
+    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v', 'macos' => 'client-v'];
+    private const ZIPS = ['server' => 'custos-server-', 'client' => 'custos-', 'legacy' => 'custos-legacy-', 'macos' => 'custos-macos-'];
     /** Far above the size of the program's update package. */
     private const MAX_CLIENT_BYTES = 100 * 1024 * 1024;
 
@@ -61,10 +65,10 @@ final class Releases
             $this->settings->set('release_server_notified', $site['version']);
             $stats['site'] = $site['version'];
         }
-        foreach (['client', 'legacy'] as $part) {
+        foreach (self::PROGRAM_PARTS as $part) {
             $client = $this->newerClient($part);
             if ($client !== null && $this->settings->get("release_{$part}_notified") !== $client['version']) {
-                $this->notices->add($part === 'legacy' ? 'legacy.release' : 'client.release', null, null, ['version' => $client['version']]);
+                $this->notices->add("$part.release", null, null, ['version' => $client['version']]);
                 $this->settings->set("release_{$part}_notified", $client['version']);
                 $stats[$part] = $client['version'];
             }
@@ -159,13 +163,13 @@ final class Releases
     }
 
     /**
-     * The newest program release of an edition ($part client or legacy) when it is newer than every package of that
-     * edition on the server. The edition for Windows 7 and 8.1 counts only while the site has any of it.
+     * The newest program release of an edition ($part client, legacy or macos) when it is newer than every package of
+     * that edition on the server. The editions other than the standard one count only while the site has any of them.
      */
     public function newerClient(string $part = 'client'): ?array
     {
         $latest = $this->latest($part);
-        if ($latest === null || ($part === 'legacy' && !$this->packages->legacyInUse())) {
+        if ($latest === null || ($part !== 'client' && !$this->packages->inUse(self::kind($part)))) {
             return null;
         }
         $stored = $this->packages->all(self::kind($part))[0]['version'] ?? null;
@@ -216,17 +220,17 @@ final class Releases
                 $params = ['name' => $release['zip_name']];
                 throw new \InvalidArgumentException('releases.error.edition');
             }
-            $this->notices->settleKinds([$part === 'legacy' ? 'legacy.release' : 'client.release']);
+            $this->notices->settleKinds(["$part.release"]);
             return $package;
         } finally {
             @unlink($tmp);
         }
     }
 
-    /** The kind of agent packages of a program part. */
-    private static function kind(string $part): string
+    /** The kind of agent packages of a program part: agent for client, the edition for the others. */
+    public static function kind(string $part): string
     {
-        return $part === 'legacy' ? 'legacy' : 'agent';
+        return $part === 'client' ? 'agent' : $part;
     }
 
     /**

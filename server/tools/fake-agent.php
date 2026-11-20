@@ -38,6 +38,8 @@ Usage: php tools/fake-agent.php --connect='http://custos.lan#KEY#FINGERPRINT' [o
                      reported, like an agent without 7-Zip support)
   --legacy           the agents run the edition for Windows 7 and 8.1 (edition "legacy"): they take only legacy
                      update packages and refuse 7-Zip updates
+  --mac              the agents run CUSTOS for macOS (edition "macos"): they take only macos update packages
+                     and refuse 7-Zip updates
   --reset            forget the agents in the state folder and exit
 
 Agents keep their identity between runs. update.install and sevenzip.update commands are checked (signature,
@@ -99,6 +101,7 @@ $agentOptions = [
     'pause_s' => isset($options['pause']) ? (is_string($options['pause']) ? max(1, (int) $options['pause']) : 120) : null,
     'result' => $options['result'] ?? null,
     'legacy' => isset($options['legacy']),
+    'mac' => isset($options['mac']),
 ];
 if (isset($options['sevenzip'])) {
     if (!is_string($options['sevenzip']) || !preg_match('/^(\d{1,3}\.\d{2}|none)$/', $options['sevenzip'])) {

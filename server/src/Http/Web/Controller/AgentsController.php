@@ -92,8 +92,8 @@ final class AgentsController extends Controller
             'live' => self::REFRESH_S,
             'commands' => $this->app->commands()->forAgent($agent['id']),
             'currentVersion' => $this->app->packages()->current(Packages::agentKind($agent)),
-            // The edition for Windows 7 and 8.1 takes no 7-Zip from the site: nothing to offer.
-            'latestSevenZip' => Agents::isLegacy($agent) ? null : $this->app->packages()->latestSevenZip(),
+            // Only the standard edition takes 7-Zip from the site (Windows 7 and 8.1, macOS: nothing to offer).
+            'latestSevenZip' => Packages::fits('7zip', $agent) ? $this->app->packages()->latestSevenZip() : null,
             'settings' => json_decode((string) $agent['settings'], true) ?: [],
             'storages' => $this->app->storage()->forAgent($agent['id']),
         ], Agents::name($agent));
@@ -339,7 +339,7 @@ final class AgentsController extends Controller
         return false;
     }
 
-    /** "Update the agent" (kind agent or legacy, the machine's edition) / "Update 7-Zip" on one machine. */
+    /** "Update the agent" (kind agent, legacy or macos: the machine's edition) / "Update 7-Zip" on one machine. */
     private function install(array $agent, string $kind): void
     {
         if (!$this->approved($agent)) {

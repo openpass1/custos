@@ -117,6 +117,13 @@ public interface INetworkSession : IDisposable
     void Run(Action action);
 
     T Run<T>(Func<T> action);
+
+    /// <summary>
+    /// Where the file functions find a path of a network folder (<c>\\server\share\…</c>): the path itself on
+    /// Windows; on macOS a folder where the session has mounted the share.
+    /// </summary>
+    /// <exception cref="BackupException">The share cannot be mounted.</exception>
+    string LocalPath(string path) => path;
 }
 
 /// <summary>Shadow copies of some volumes. Disposing releases them.</summary>
@@ -186,9 +193,10 @@ public class LocalBackupPlatform : IBackupPlatform
 {
     private IArchiveProvider? _archives;
 
-    /// <summary>7z.dll next to the program; the variable CUSTOS_7Z_DLL can point elsewhere (tests, development).</summary>
+    /// <summary>7z.dll (7z.so on macOS) next to the program; the variable CUSTOS_7Z_DLL can point elsewhere (tests,
+    /// development).</summary>
     public virtual IArchiveProvider Archives => _archives ??= new ArchiveProvider(
-        Environment.GetEnvironmentVariable("CUSTOS_7Z_DLL") is { Length: > 0 } path ? path : Path.Combine(AppContext.BaseDirectory, "7z.dll"));
+        Environment.GetEnvironmentVariable("CUSTOS_7Z_DLL") is { Length: > 0 } path ? path : Path.Combine(AppContext.BaseDirectory, Custos.Core.Archives.SevenZip.SevenZipLibrary.FileName));
 
     /// <summary>Passwords by credential id; the service supplies its own lookup.</summary>
     public Dictionary<string, string> ArchivePasswords { get; } = new(StringComparer.OrdinalIgnoreCase);

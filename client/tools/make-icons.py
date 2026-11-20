@@ -1,7 +1,9 @@
 """Draws the CUSTOS shield icons (app icon and tray states) as multi-size .ico files.
 
-Usage: python make-icons.py <output folder>     (needs Pillow: pip install pillow)
-The results are committed in src/Custos.Gui/Resources; run this only to change the drawing.
+Usage: python make-icons.py <output folder> [<macOS output folder>]     (needs Pillow: pip install pillow)
+The results are committed in src/Custos.Gui/Resources; run this only to change the drawing. With a second folder
+(src/Custos.Mac/Assets) it also draws the icons of macOS there: custos.icns (the shield on the rounded square of
+macOS app icons) and the menu bar states as tray-*.png of 44 pixels (22 points on a Retina screen).
 """
 import sys
 from PIL import Image, ImageDraw
@@ -74,3 +76,30 @@ save(f"{out}/tray-down.ico", tray, body=GREY, facet=GREY_FACET, badge=((110, 116
 save(f"{out}/tray-running.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((0, 120, 212, 255), "play"))
 save(f"{out}/tray-warning.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((224, 160, 0, 255), "bang"))
 save(f"{out}/tray-error.ico", tray, body=BLUE, facet=BLUE_FACET, badge=((209, 52, 56, 255), "cross"))
+
+if len(sys.argv) > 2:
+    mac = sys.argv[2]
+
+    def app_icon(size):
+        S = size * SS // 4 if size >= 256 else size * SS
+        im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        # The grid of macOS app icons: an 824 of 1024 rounded square in the middle, radius about 185.
+        m, r = S * 100 / 1024, S * 185 / 1024
+        d.rounded_rectangle((m, m + S*0.01, S - m, S - m + S*0.01), radius=r, fill=(0, 0, 0, 60))
+        d.rounded_rectangle((m, m, S - m, S - m), radius=r, fill=(244, 246, 250, 255))
+        w, h = S * 0.50, S * 0.58
+        d.polygon(shield(S/2, S/2, w, h), fill=BLUE)
+        d.polygon(left_half(shield(S/2, S/2 + h*0.02, w*0.56, h*0.60), S/2), fill=BLUE_FACET)
+        return im.resize((size, size), Image.LANCZOS)
+
+    icns = [app_icon(s) for s in (1024, 512, 256, 128, 64, 32, 16)]
+    icns[0].save(f"{mac}/custos.icns", format="ICNS", append_images=icns[1:])
+    for name, body, facet, badge in [
+        ("ok", BLUE, BLUE_FACET, ((46, 160, 67, 255), "check")),
+        ("down", GREY, GREY_FACET, ((110, 116, 122, 255), "dash")),
+        ("running", BLUE, BLUE_FACET, ((0, 120, 212, 255), "play")),
+        ("warning", BLUE, BLUE_FACET, ((224, 160, 0, 255), "bang")),
+        ("error", BLUE, BLUE_FACET, ((209, 52, 56, 255), "cross")),
+    ]:
+        draw(44, body=body, facet=facet, badge=badge).save(f"{mac}/tray-{name}.png")

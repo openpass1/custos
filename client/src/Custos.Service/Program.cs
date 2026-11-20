@@ -33,11 +33,12 @@ try
     builder.Services.AddHostedService<PipeServer>();
 
     using var host = builder.Build();
+    var agent = host.Services.GetRequiredService<AgentService>();
     await host.RunAsync().ConfigureAwait(false);
 
     // The agent could not start (the error is in the log): a non-zero exit code makes the Service Control Manager
-    // restart the service.
-    return host.Services.GetRequiredService<AgentService>().ExecuteTask is { IsFaulted: true } ? 1 : 0;
+    // restart the service. The agent is taken before RunAsync, which disposes the host and its services.
+    return agent.ExecuteTask is { IsFaulted: true } ? 1 : 0;
 }
 catch (Exception ex)
 {

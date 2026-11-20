@@ -1,4 +1,4 @@
-# Changelog: CUSTOS for Windows
+# Changelog: CUSTOS for Windows and macOS
 
 One section per release, newest first. The section of a version is the text of its `client-v…` release on the
 [Releases](https://github.com/openpass1/custos/releases) page, word for word.
@@ -15,6 +15,17 @@ How to write it:
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
+
+## 1.2.0
+
+### Added
+- macOS: CUSTOS for Macs with Apple silicon or Intel, macOS 15 or newer: one installer with the service, the window and a menu bar icon.
+- macOS: the same tasks as on Windows; files are read from an APFS snapshot, passwords are kept in the System keychain.
+- macOS: the window of the new Windows look, with the theme and the five colour schemes in the **Settings** menu.
+- macOS: updates from GitHub releases or from the monitoring site 1.3.0 or newer.
+
+### Fixed
+- Windows: the service no longer logs «CUSTOS service terminated unexpectedly» each time it is stopped normally.
 
 ## 1.1.0
 

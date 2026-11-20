@@ -12,6 +12,17 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
+## 1.3.0
+
+### Added
+- Machines with CUSTOS for macOS are marked **macOS** across the site.
+- **Updates** take packages of CUSTOS for macOS, uploaded or found on GitHub, in a section of their own.
+- A Mac is offered only its own update packages and never 7-Zip.
+- The task editor of a Mac shows Mac paths and an **APFS snapshot** instead of VSS.
+
+### Improved
+- A network folder may also be written as `//server/share`, as macOS writes it.
+
 ## 1.2.1
 
 ### Improved

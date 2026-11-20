@@ -38,7 +38,7 @@ internal sealed partial class AgentService : IMonitorHost
 
     private void StartMonitor(CancellationToken stoppingToken)
     {
-        var store = new LinkStore(DataFolders.Config, new DpapiProtector());
+        var store = new LinkStore(DataFolders.Config, new HostSecretProtector());
         store.Load();
         foreach (string problem in store.Problems)
         {
@@ -701,6 +701,12 @@ internal sealed partial class AgentService : IMonitorHost
         {
             // The site keeps the 64-bit installer of 7-Zip; the 32-bit program updates 7z.dll with its own button.
             return CommandOutcome.Rejected(Messages.SevenZipRemoteNotInLegacy);
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // The 7z.so of macOS comes with CUSTOS: nothing to download (the site 1.3.0 and newer sends no such command).
+            return CommandOutcome.Rejected(Messages.SevenZipMacBundled);
         }
 
         if (version is null || sha256 is null || !IsSha256(sha256) || !SevenZipVersionPattern().IsMatch(version))

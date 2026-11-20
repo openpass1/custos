@@ -1,0 +1,88 @@
+# Texts of the macOS window only; the others come from src/Custos.Gui/Resources/Strings.tsv. Run tools/make-strings.py after a change.
+Tasks	Tasks	Задания
+Now	now	сейчас
+HistoryCount	{0}: {1} runs	{0}: запусков {1}
+HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
+SettingsAll	All settings…	Все настройки…
+ThemeHeading	Theme	Тема
+ThemeForAll	For all users of this Mac	Для всех пользователей Mac
+ThemeAdminsOnly	The theme is the same for all users of this Mac: an administrator changes it.	Тема общая для всех пользователей Mac: её меняет администратор.
+Color	Colour	Цвет
+ColorForYou	Only for you	Только для вас
+MenuQuit	Quit CUSTOS	Завершить CUSTOS
+MenuQuitNote	Quits the window and the menu bar icon. The service goes on with the tasks; the icon comes back at the next login.	Закрывает окно и значок в строке меню. Служба продолжает выполнять задания; значок вернётся при следующем входе.
+DemoUsb	The disk BACKUP-USB is not connected.	Диск BACKUP-USB не подключён.
+DemoStarted	started by the schedule	запуск по расписанию
+DemoDone	success — {0} files, {1}, {2}	успешно — файлов {0}, {1}, {2}
+DemoScan	looking for files: 12 640	поиск файлов: 12 640
+DemoLocked	the file changed while it was read, taken from the snapshot: Reports/2026-11 budget.xlsx	файл менялся во время чтения, взят из снимка: Reports/2026-11 budget.xlsx
+KindLocal	Folder on this Mac	Папка на этом Mac
+KindUnc	Network folder (SMB)	Сетевая папка (SMB)
+KindUsb	External disk	Внешний диск
+CloudKept	Destinations on {0} are set up in CUSTOS for Windows or on the monitoring site. The task keeps this destination as it is.	Назначения в {0} настраиваются в CUSTOS для Windows или на сайте мониторинга. Задание сохраняет это назначение как есть.
+NetworkPathNote	//server/share/folder, as in Finder «smb://server/share/folder». CUSTOS connects the share itself for the run and disconnects it afterwards.	//сервер/папка/подпапка, как в Finder «smb://сервер/папка/подпапка». CUSTOS сам подключает сетевую папку на время запуска и отключает после.
+NetworkAccountNote	The account of the server (NAS) the share is on. Without one, the share must allow guests.	Учётная запись сервера (NAS), на котором сетевая папка. Без неё папка должна пускать гостей.
+DestinationUsbHelp	The name of the disk as Finder shows it (its folder in /Volumes). The copy waits if the disk is not connected.	Имя диска, как его показывает Finder (папка в /Volumes). Если диск не подключён, копия ждёт.
+DestinationUsbFolderHelp	The folder inside the disk, from its root: /CUSTOS/Documents.	Папка на диске от его корня: /CUSTOS/Documents.
+DestinationLocalHelp	A folder from the root: /Users/Shared/Backup. Another disk is a folder in /Volumes, but an external disk is better set as «External disk».	Папка от корня: /Users/Shared/Backup. Другой диск — папка в /Volumes, но внешний диск лучше указывать как «Внешний диск».
+TrustKey	Trust the key	Доверять ключу
+SpeedUnit	MB/s	МБ/с
+ThemeAuto	As in macOS	Как в macOS
+ThemeHelp	«As in macOS» follows System Settings → Appearance.	«Как в macOS» следует за «Системные настройки → Оформление».
+ColorLabel	Colour:	Цвет:
+ColorHelp	Only for you: other users of this Mac keep their own. It changes at once.	Только для вас: у других пользователей этого Mac свой цвет. Меняется сразу.
+ColorNeutral	Neutral grey	Нейтральный серый
+ColorGraphite	Graphite	Графит
+ColorBlue	Blue	Синий
+ColorWarm	Warm	Тёплый
+ColorSepia	Sepia	Сепия
+SevenZipVersion	7-Zip {0} comes inside the program and is updated with it.	7-Zip {0} входит в программу и обновляется вместе с ней.
+SevenZipProblem	7-Zip cannot be used: {0}	7-Zip недоступен: {0}
+LogRetentionHelp	The journal is in /Library/Application Support/CUSTOS/logs.	Журнал хранится в /Library/Application Support/CUSTOS/logs.
+SettingsAccounts	Accounts	Учётные записи
+SettingsAccountsNote	Logins of network folders, servers and storages. The passwords are kept by the service in the system keychain of this Mac.	Логины сетевых папок, серверов и хранилищ. Пароли служба хранит в системной связке ключей этого Mac.
+AllowAllUsersEditHelp	Administrators of this Mac may always change tasks and settings. With this box, every user who logs in may.	Администраторы этого Mac всегда могут менять задания и настройки. С этой галочкой — любой пользователь, вошедший в систему.
+AccountKindSmb	Network folder (SMB)	Сетевая папка (SMB)
+AccountAccessKey	Access key:	Ключ доступа:
+AccountSecretKey	Secret key:	Секретный ключ:
+AccountDomainNote	Only for a Windows domain; empty for a NAS.	Только для домена Windows; для NAS пусто.
+AccountPasswordNote	Kept by the service in the system keychain; never shown again.	Служба хранит его в системной связке ключей; больше не показывается.
+UpdateAsk	Install CUSTOS {0}? The service restarts for a minute; a run in progress is stopped and continued after the update.	Установить CUSTOS {0}? Служба перезапустится примерно на минуту; идущий запуск будет остановлен и продолжен после обновления.
+SourceAddFolder	Add a folder…	Добавить папку…
+SourceAddFile	Add a file…	Добавить файл…
+SourceAddNetwork	Network folder…	Сетевая папка…
+SourceNetworkTitle	Network folder	Сетевая папка
+SourceLinux	Linux server {0}	Linux-сервер {0}
+SourceRemoteKept	Linux servers are set up in CUSTOS for Windows or on the monitoring site; the task keeps them as they are.	Linux-серверы настраиваются в CUSTOS для Windows или на сайте мониторинга; задание сохраняет их как есть.
+DatabasesKept	Database servers ({0}) are set up in CUSTOS for Windows or on the monitoring site; the task keeps them as they are.	Серверы баз данных ({0}) настраиваются в CUSTOS для Windows или на сайте мониторинга; задание сохраняет их как есть.
+SourcesNote	The service reads the files as root. For the folders of users (Desktop, Documents, Mail) macOS needs Full Disk Access for CUSTOS: System Settings → Privacy & Security → Full Disk Access.	Служба читает файлы от имени root. Для папок пользователей (Рабочий стол, Документы, Почта) macOS требует «Полный доступ к диску» для CUSTOS: «Системные настройки → Конфиденциальность и безопасность → Полный доступ к диску».
+FiltersHeading	Filters	Фильтры
+FilterInclude	Only files:	Только файлы:
+FilterIncludeNote	Masks separated by «;»: *.docx; *.xlsx. Empty = all files.	Маски через «;»: *.docx; *.xlsx. Пусто — все файлы.
+FilterExclude	Skip files:	Пропускать файлы:
+FilterExcludeNote	Masks separated by «;»: *.tmp; .DS_Store	Маски через «;»: *.tmp; .DS_Store
+FilterExcludeDirs	Skip folders:	Пропускать папки:
+FilterExcludeDirsNote	One per line: a name (node_modules) or a path inside a source (Library/Caches).	По одной в строке: имя (node_modules) или путь внутри источника (Library/Caches).
+FilterSkipHidden	Skip hidden files (names starting with a dot)	Пропускать скрытые файлы (имена с точки)
+ErrorNotNetwork	«{0}» is not a network path: it must look like //server/share.	«{0}» — не сетевой путь: нужен вид //сервер/папка.
+ErrorPathNotAbsolute	«{0}» must be a full path from the root, like /Users/Shared/Documents.	«{0}» должен быть полным путём от корня, например /Users/Shared/Documents.
+ScheduleLastDay	last	последний
+ScheduleMonthDaysNote	Days separated by commas: 1, 15, last. A day the month does not have (31 in April) runs on its last day.	Дни через запятую: 1, 15, последний. Дня, которого нет в месяце (31 апреля), — запуск в последний день месяца.
+Minutes	minutes	минут
+ArchiveZipHelp	Opens in Finder and on Windows without extra programs.	Открывается в Finder и в Windows без дополнительных программ.
+EventsNote	Programs and scripts run as root, before and after the copy. A .sh script runs through the shell even without the executable bit.	Программы и скрипты выполняются от имени root, до и после копирования. Скрипт .sh запускается через оболочку даже без права на выполнение.
+AfterNote	Only after a run that was started by the schedule.	Только после запуска по расписанию.
+EventKindStop	Stop a launchd service	Остановить службу launchd
+EventKindStart	Start a launchd service	Запустить службу launchd
+EventProgramHelp	A program or a script, a full path from the root.	Программа или скрипт, полный путь от корня.
+EventServiceHelp	The label of the service as launchctl list shows it: com.example.database, homebrew.mxcl.mysql.	Метка службы, как её показывает launchctl list: com.example.database, homebrew.mxcl.mysql.
+SnapshotEnabled	Read the files from an APFS snapshot	Читать файлы из снимка APFS
+SnapshotHelp	Before the copy, a snapshot of the startup disk is taken (as Time Machine does), so files that change meanwhile are copied whole and consistent. The snapshot is deleted after the run.	Перед копированием делается снимок загрузочного диска (как это делает Time Machine), поэтому файлы, которые меняются во время копирования, копируются целыми и согласованными. После запуска снимок удаляется.
+KeepPermissions	Keep the owner and the permissions of files	Сохранять владельца и права доступа файлов
+KeepPermissionsHelp	For copies without compression: files and folders in the copy get the owner and the permissions of the originals. If a destination does not take them (some network folders), the files are still copied and the run gets a warning.	Для копий без сжатия: файлы и папки в копии получают владельца и права доступа оригиналов. Если назначение их не принимает (некоторые сетевые папки), файлы всё равно копируются, а запуск получает предупреждение.
+SnapshotOnFailure	If the snapshot fails:	Если снимок не удался:
+ServiceLanguageHelp	The language of the run logs and of the messages of the service. «Automatic» follows the language of macOS. The window itself follows the language of the user.	Язык журналов запусков и сообщений службы. «Автоматически» — по языку macOS. Само окно программы — на языке пользователя.
+ProgramPasswordHelp	When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of this Mac.	Если он задан, для изменения заданий и настроек и для восстановления нужен он, а не только права. После ввода его не спрашивают 30 минут после последнего изменения или пока окно не закрыто. Задать или убрать его можно и на сайте мониторинга. Он защищает от случайных правок и от посторонних, но не от администратора этого Mac.
+CheckUpdatesHelp	The service asks github.com/{0} once a day. A new version appears in the program window and in the menu bar; it is installed only when an administrator presses «Update». The package is checked against the SHA-256 of the release.	Служба раз в день спрашивает github.com/{0}. Новая версия появляется в окне программы и в строке меню, а устанавливается, только когда администратор нажмёт «Обновить». Пакет сверяется с SHA-256 из выпуска.
+UsbDisk	External disk «{0}»	Внешний диск «{0}»
+Save	Save	Сохранить

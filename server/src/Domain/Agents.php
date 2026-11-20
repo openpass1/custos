@@ -17,6 +17,10 @@ final class Agents
     public const MIN_KEY_BITS = 3072;
     /** The edition of the program for Windows 7 and 8.1 (A.3, A.4); the standard edition sends none (''). */
     public const LEGACY = 'legacy';
+    /** CUSTOS for macOS (A.3, A.4). */
+    public const MACOS = 'macos';
+    /** The editions the site knows besides the standard one; each has its own update packages (kind = edition). */
+    public const EDITIONS = [self::LEGACY, self::MACOS];
 
     public function __construct(private readonly Db $db, private readonly Monitor $monitor, private readonly Notices $notices)
     {
@@ -113,10 +117,16 @@ final class Agents
         return ($agent['edition'] ?? '') === self::LEGACY;
     }
 
+    /** Whether the machine runs CUSTOS for macOS: 7-Zip comes inside the program, never from the site. */
+    public static function isMac(array $agent): bool
+    {
+        return ($agent['edition'] ?? '') === self::MACOS;
+    }
+
     /** The edition as stored: what the agent sent when the site knows it, otherwise the standard one (''). */
     public static function edition(?string $sent): string
     {
-        return $sent === self::LEGACY ? self::LEGACY : '';
+        return in_array($sent, self::EDITIONS, true) ? $sent : '';
     }
 
     public function approve(string $id): void

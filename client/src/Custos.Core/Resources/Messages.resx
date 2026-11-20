@@ -1897,6 +1897,12 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="MonitorPackageLegacy" xml:space="preserve">
     <value>This package is CUSTOS for Windows 7 and 8.1; this computer runs the edition for Windows 10 and later.</value>
   </data>
+  <data name="MonitorPackageNotMac" xml:space="preserve">
+    <value>This package is not CUSTOS for macOS; a Mac installs only its own packages (custos-macos-….zip).</value>
+  </data>
+  <data name="MonitorPackageMac" xml:space="preserve">
+    <value>This package is CUSTOS for macOS; it is not installed on Windows.</value>
+  </data>
   <data name="SevenZipRemoteNotInLegacy" xml:space="preserve">
     <value>CUSTOS for Windows 7 and 8.1 does not take 7-Zip from the site (the site keeps the 64-bit 7-Zip). Update 7z.dll with the button in the CUSTOS settings.</value>
   </data>
@@ -1905,5 +1911,26 @@ is missing on the new server gets the number of the old one. To see what a tar h
   </data>
   <data name="SevenZipMissingLegacy" xml:space="preserve">
     <value>7z.dll was not found: {0}. Tasks with 7z cannot run; reinstall CUSTOS or put 7z.dll from 32-bit 7-Zip there.</value>
+  </data>
+  <data name="MacSnapshotCreated" xml:space="preserve">
+    <value>APFS snapshot of the disk made: the files are read from it.</value>
+  </data>
+  <data name="MacSnapshotFailedContinue" xml:space="preserve">
+    <value>APFS snapshot failed: {0}. Copying without it: files that change during the copy may be copied half-written.</value>
+  </data>
+  <data name="MacSnapshotFailedAbort" xml:space="preserve">
+    <value>APFS snapshot failed: {0}. The task is set to stop in that case.</value>
+  </data>
+  <data name="MacShareFailed" xml:space="preserve">
+    <value>Network folder {0} could not be connected: {1}</value>
+  </data>
+  <data name="MacOwnerNotSet" xml:space="preserve">
+    <value>Owner and permissions of {0} were not restored: {1}</value>
+  </data>
+  <data name="SevenZipMacBundled" xml:space="preserve">
+    <value>On macOS 7-Zip comes inside CUSTOS and is updated together with the program.</value>
+  </data>
+  <data name="MacUpdateFailed" xml:space="preserve">
+    <value>The installer of macOS did not install the update: {0}</value>
   </data>
 </root>

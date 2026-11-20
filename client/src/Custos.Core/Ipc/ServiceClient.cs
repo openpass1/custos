@@ -138,7 +138,9 @@ public sealed class ServiceClient : IAsyncDisposable
         }
 #endif
 
-        return new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+        // macOS: a socket at a full path; the usual name means the socket of the service.
+        string path = pipeName == PipeProtocol.PipeName ? PipeProtocol.UnixSocketPath : pipeName;
+        return new NamedPipeClientStream(".", path, PipeDirection.InOut, PipeOptions.Asynchronous);
     }
 
     private async Task ReadLoopAsync()
