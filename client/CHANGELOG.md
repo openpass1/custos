@@ -16,6 +16,17 @@ How to write it:
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
+## 1.3.0
+
+### Added
+- Linux: CUSTOS for Linux servers (x86_64 and ARM), a service without a window that a monitoring site manages.
+- Linux: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux, Rocky and Oracle Linux 8+, openSUSE 15+.
+- Linux: one command from the **Install** page of a monitoring site 1.4.0 or newer installs and connects it.
+- Linux: files are read from an LVM, btrfs or ZFS snapshot; the site says which disk to add when there is no room for one.
+
+### Fixed
+- Windows: the service no longer logs «CUSTOS service terminated unexpectedly» each time it is stopped normally.
+
 ## 1.2.0
 
 ### Added
@@ -23,10 +34,6 @@ The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGE
 - macOS: the same tasks as on Windows; files are read from an APFS snapshot, passwords are kept in the System keychain.
 - macOS: the window of the new Windows look, with the theme and the five colour schemes in the **Settings** menu.
 - macOS: updates from GitHub releases or from the monitoring site 1.3.0 or newer.
-- Linux: CUSTOS for Linux servers (x86_64 and ARM), a service without a window that a monitoring site manages.
-- Linux: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux, Rocky and Oracle Linux 8+, openSUSE 15+.
-- Linux: one command from the **Install** page of a monitoring site 1.4.0 or newer installs and connects it.
-- Linux: files are read from an LVM, btrfs or ZFS snapshot; the site says which disk to add when there is no room for one.
 
 ### Fixed
 - Windows: the service no longer logs «CUSTOS service terminated unexpectedly» each time it is stopped normally.
