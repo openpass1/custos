@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -9,7 +10,10 @@ using Custos.Gui;
 
 namespace Custos.Mac.Gui;
 
-/// <summary>A modal dialog in the M3 look: a title, the content, and the buttons at the bottom right.</summary>
+/// <summary>
+/// A modal dialog in the M3 look of the window of Windows: the title, the content on the light surface (it scrolls when
+/// the screen is too low), a divider, and the buttons at the bottom right.
+/// </summary>
 internal class DialogWindow : Window
 {
     private readonly StackPanel _buttons = new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
@@ -21,16 +25,18 @@ internal class DialogWindow : Window
         SizeToContent = SizeToContent.Height;
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ScreenFit.Keep(this);
         ShowInTaskbar = false;
-        Body = new StackPanel { Spacing = 8 };
+        Classes.Add("surface");
+        Body = new StackPanel { Spacing = 8, Margin = new Thickness(20, 0, 20, 12) };
         Content = new DockPanel
         {
-            Margin = new Thickness(24, 20, 24, 18),
             Children =
             {
-                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(0, 0, 0, 14), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
-                Dock(new Border { Child = _buttons, Margin = new Thickness(0, 20, 0, 0) }, Avalonia.Controls.Dock.Bottom),
-                Body,
+                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(20, 12, 20, 6), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
+                Dock(new Border { Child = _buttons, Margin = new Thickness(20, 8, 16, 10) }, Avalonia.Controls.Dock.Bottom),
+                Dock(new Border { Classes = { "divider" }, Height = 1, Margin = new Thickness(0) }, Avalonia.Controls.Dock.Bottom),
+                new ScrollViewer { Content = Body, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled },
             },
         };
         KeyDown += (_, e) =>

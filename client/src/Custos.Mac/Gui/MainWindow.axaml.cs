@@ -36,6 +36,14 @@ internal sealed partial class MainWindow : Window
         BuildHeader();
         ShowCardColumn();
         vm.PropertyChanged += OnViewModelChanged;
+        // The menu is made when it opens: the colour may have changed in the settings window meanwhile.
+        if (SettingsButton.Flyout is PopupFlyoutBase menu)
+        {
+            menu.Opening += (_, _) => BuildSettingsMenu();
+        }
+
+        ActualThemeVariantChanged += (_, _) => BuildSettingsMenu();
+        BuildSettingsMenu();
     }
 
     public MainViewModel ViewModel => _vm;
@@ -100,6 +108,96 @@ internal sealed partial class MainWindow : Window
         {
             ShowCardColumn();
         }
+        else if (e.PropertyName == nameof(MainViewModel.ThemeNow))
+        {
+            BuildSettingsMenu();
+        }
+    }
+
+    /// <summary>
+    /// The «Настройки» menu, as in the new window of Windows: the theme of the CUSTOS settings (for all users) and the
+    /// colour of this user, each with a check on the one in use; a colour shows a round sample (its main colour on its
+    /// background, in the theme now shown).
+    /// </summary>
+    private void BuildSettingsMenu()
+    {
+        var theme = this.FindResource("Swatch") as ControlTheme;
+        ThemeMenu.Children.Clear();
+        foreach (var (id, icon, text) in (ReadOnlySpan<(string, string, string)>)[
+            (Core.Model.Themes.Auto, "brightness_auto", MacStrings.ThemeAuto),
+            (Core.Model.Themes.Light, "light_mode", Strings.ThemeLight),
+            (Core.Model.Themes.Dark, "dark_mode", Strings.ThemeDark)])
+        {
+            var item = MenuChoice(theme, "theme", id == _vm.ThemeNow, new Icon { Kind = icon }, text);
+            string chosen = id;
+            item.Click += (_, _) =>
+            {
+                CloseMenu(item);
+                Safe.Run(() => _actions.SetThemeAsync(chosen), ShowProblem);
+                BuildSettingsMenu();
+            };
+            ThemeMenu.Children.Add(item);
+        }
+
+        ColorMenu.Children.Clear();
+        bool dark = ActualThemeVariant == ThemeVariant.Dark;
+        string current = Palettes.Current;
+        foreach (string id in Palettes.Ids)
+        {
+            var (primary, surface) = Palettes.Sample(id, dark);
+            var sample = new Panel
+            {
+                Width = 24,
+                Height = 24,
+                Children =
+                {
+                    new Avalonia.Controls.Shapes.Ellipse { Fill = new SolidColorBrush(surface), Stroke = this.FindResource("OutlineVariant") as IBrush, StrokeThickness = 1 },
+                    new Avalonia.Controls.Shapes.Ellipse { Width = 14, Height = 14, Fill = new SolidColorBrush(primary) },
+                },
+            };
+            var item = MenuChoice(theme, "color", id == current, sample, Palettes.Title(id));
+            string chosen = id;
+            item.Click += (_, _) =>
+            {
+                CloseMenu(item);
+                Palettes.Choose(chosen);
+                BuildSettingsMenu();
+            };
+            ColorMenu.Children.Add(item);
+        }
+    }
+
+    private static RadioButton MenuChoice(ControlTheme? theme, string group, bool on, Control lead, string text) => new()
+    {
+        Theme = theme,
+        GroupName = group,
+        IsChecked = on,
+        Content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            Children = { lead, new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center } },
+        },
+    };
+
+    /// <summary>An item of the menu of the task list (a right click); its Tag says which.</summary>
+    private void OnTaskMenu(object? sender, RoutedEventArgs e)
+    {
+        CloseMenu(sender);
+        Func<Task>? work = (sender as Control)?.Tag switch
+        {
+            "run" => _actions.RunAsync,
+            "stop" => _actions.StopAsync,
+            "edit" => _actions.EditAsync,
+            "clone" => _actions.CloneAsync,
+            "delete" => _actions.DeleteAsync,
+            "toggle" => _actions.ToggleAsync,
+            _ => null,
+        };
+        if (work is not null)
+        {
+            Safe.Run(work, ShowProblem);
+        }
     }
 
     /// <summary>«Карточка» off gives the list the whole width; on brings the card back at the width it had.</summary>
@@ -108,7 +206,7 @@ internal sealed partial class MainWindow : Window
         var columns = Top.ColumnDefinitions;
         if (_vm.ShowCard)
         {
-            columns[1].Width = new GridLength(14);
+            columns[1].Width = new GridLength(8);
             columns[2].MinWidth = 280;
             columns[2].Width = _cardWidth;
         }
@@ -162,7 +260,18 @@ internal sealed partial class MainWindow : Window
 
     private void OnTaskDoubleTapped(object? sender, TappedEventArgs e) => Safe.Run(_actions.EditAsync, ShowProblem);
 
-    private void OnRunDoubleTapped(object? sender, TappedEventArgs e)
+    private void OnRunDoubleTapped(object? sender, TappedEventArgs e) => OpenRunLog(sender);
+
+    private void OnHistoryKey(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            OpenRunLog(sender);
+        }
+    }
+
+    private void OpenRunLog(object? sender)
     {
         if ((sender as ListBox)?.SelectedItem is HistoryRow { RunId: { } runId } row)
         {

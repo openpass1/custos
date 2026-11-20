@@ -36,6 +36,22 @@ internal static partial class Palettes
         return (Color.FromUInt32(colors["Primary"]), Color.FromUInt32(colors["SurfaceContainer"]));
     }
 
+    /// <summary>The colour of this user (null in ui.json = <see cref="Default"/>).</summary>
+    public static string Current => Known(Custos.Gui.UiState.Load().Color);
+
+    /// <summary>Puts the scheme in place in every window at once and remembers it for this user.</summary>
+    public static void Choose(string id)
+    {
+        if (Application.Current is { } app)
+        {
+            Apply(app, id);
+        }
+
+        var state = Custos.Gui.UiState.Load();
+        state.Color = id == Default ? null : id;
+        state.Save();
+    }
+
     public static void Apply(Application app, string? id)
     {
         var scheme = Find(id) ?? Schemes[0];

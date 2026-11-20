@@ -2,6 +2,13 @@
 Tasks	Tasks	Задания
 Now	now	сейчас
 HistoryCount	{0}: {1} runs	{0}: запусков {1}
+HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
+SettingsAll	All settings…	Все настройки…
+ThemeHeading	Theme	Тема
+ThemeForAll	For all users of this Mac	Для всех пользователей Mac
+ThemeAdminsOnly	The theme is the same for all users of this Mac: an administrator changes it.	Тема общая для всех пользователей Mac: её меняет администратор.
+Color	Colour	Цвет
+ColorForYou	Only for you	Только для вас
 MenuQuit	Quit CUSTOS	Завершить CUSTOS
 MenuQuitNote	Quits the window and the menu bar icon. The service goes on with the tasks; the icon comes back at the next login.	Закрывает окно и значок в строке меню. Служба продолжает выполнять задания; значок вернётся при следующем входе.
 DemoUsb	The disk BACKUP-USB is not connected.	Диск BACKUP-USB не подключён.
@@ -78,3 +85,4 @@ ServiceLanguageHelp	The language of the run logs and of the messages of the serv
 ProgramPasswordHelp	When it is set, changing tasks and settings and restoring need it as well as the rights. Once typed, it is not asked again for 30 minutes after the last change, or until the window is closed. It can also be set or removed on the monitoring site. It guards against changes by mistake or by a passer-by, not against an administrator of this Mac.	Если он задан, для изменения заданий и настроек и для восстановления нужен он, а не только права. После ввода его не спрашивают 30 минут после последнего изменения или пока окно не закрыто. Задать или убрать его можно и на сайте мониторинга. Он защищает от случайных правок и от посторонних, но не от администратора этого Mac.
 CheckUpdatesHelp	The service asks github.com/{0} once a day. A new version appears in the program window and in the menu bar; it is installed only when an administrator presses «Update». The package is checked against the SHA-256 of the release.	Служба раз в день спрашивает github.com/{0}. Новая версия появляется в окне программы и в строке меню, а устанавливается, только когда администратор нажмёт «Обновить». Пакет сверяется с SHA-256 из выпуска.
 UsbDisk	External disk «{0}»	Внешний диск «{0}»
+Save	Save	Сохранить

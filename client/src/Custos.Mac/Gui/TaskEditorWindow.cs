@@ -37,6 +37,7 @@ internal sealed class TaskEditorWindow : Window
         MinWidth = 820;
         MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ScreenFit.Keep(this);
 
         var context = new EditorContext(this, monitor, task);
         _pages =
@@ -57,11 +58,15 @@ internal sealed class TaskEditorWindow : Window
             ItemsSource = _pages.Select(p => new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 12,
-                Children = { new Icon { Kind = p.Icon, Size = 20 }, new TextBlock { Text = p.Title, VerticalAlignment = VerticalAlignment.Center } },
+                Spacing = 10,
+                Margin = new Thickness(12, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new Icon { Kind = p.Icon, Size = 20, VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = p.Title, FontWeight = FontWeight.Medium, VerticalAlignment = VerticalAlignment.Center },
+                },
             }).ToList(),
-            Width = 230,
-            Margin = new Thickness(12, 12, 0, 12),
         };
         nav.SelectionChanged += (_, _) =>
         {
@@ -71,36 +76,51 @@ internal sealed class TaskEditorWindow : Window
             }
         };
 
-        _save = Ui.Filled(Strings.ButtonOk, () => { });
-        _save.OnClick(SaveAsync, ex => Ui.Show(_error, ex.Message));
-        _save.IsEnabled = monitor.CanEdit;
+        // As in the window of Windows: the task's name above the pages, its revision under them, «Отмена» and
+        // «Сохранить» under the open page.
+        var heading = new TextBlock { Classes = { "title" }, Text = Title, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12, 2, 12, 8) };
         var revision = new TextBlock
         {
             Classes = { "small", "var" },
-            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(16, 8, 16, 4),
             Text = isNew ? Strings.EditorNewTask
                 : Strings.Format(Strings.EditorRevision, task.Revision, Describe.Time(task.UpdatedAt), task.UpdatedBy ?? "—"),
         };
+        var pages = new DockPanel { Margin = new Thickness(8, 10, 8, 8) };
+        DockPanel.SetDock(heading, Dock.Top);
+        DockPanel.SetDock(revision, Dock.Bottom);
+        pages.Children.Add(heading);
+        pages.Children.Add(revision);
+        pages.Children.Add(nav);
+
+        _save = Ui.Save();
+        _save.OnClick(SaveAsync, ex => Ui.Show(_error, ex.Message));
+        _save.IsEnabled = monitor.CanEdit;
+        _error.VerticalAlignment = VerticalAlignment.Center;
+        _error.Margin = new Thickness(8, 0, 16, 0);
+        var buttons = Ui.Horizontal(Ui.Outlined(Strings.ButtonCancel, Close), _save);
+        Grid.SetColumn(buttons, 1);
         var bottom = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-            Margin = new Thickness(24, 10, 20, 14),
-            Children =
-            {
-                new StackPanel { Children = { revision, _error } },
-                Ui.Horizontal(Ui.Text(Strings.ButtonCancel, Close), _save),
-            },
+            Margin = new Thickness(0, 8, 0, 8),
+            Children = { _error, buttons },
         };
-        Grid.SetColumn(bottom.Children[1], 1);
 
-        var dock = new DockPanel();
-        DockPanel.SetDock(bottom, Dock.Bottom);
-        DockPanel.SetDock(nav, Dock.Left);
-        dock.Children.Add(bottom);
-        dock.Children.Add(new Border { Classes = { "divider" }, Height = 1, Margin = new Thickness(0), [DockPanel.DockProperty] = Dock.Bottom });
-        dock.Children.Add(nav);
-        dock.Children.Add(new Border { Classes = { "pane" }, Margin = new Thickness(12), Child = _view });
-        Content = dock;
+        var pane = new Border { Classes = { "pane" }, Margin = new Thickness(0, 8, 0, 0), Child = _view };
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("210,*"),
+            RowDefinitions = new RowDefinitions("*,Auto"),
+            Margin = new Thickness(0, 0, 8, 0),
+            Children = { pages, pane, bottom },
+        };
+        Grid.SetRowSpan(pages, 2);
+        Grid.SetColumn(pane, 1);
+        Grid.SetColumn(bottom, 1);
+        Grid.SetRow(bottom, 1);
+        Content = grid;
         nav.SelectedIndex = 0;
     }
 
@@ -214,11 +234,17 @@ internal sealed class BasicPage : EditorPage
     private readonly TextBox _name;
     private readonly CheckBox _enabled;
     private readonly List<RadioButton> _types = [];
+    private readonly CheckBox _forceEveryOn;
     private readonly NumericUpDown _forceEvery;
+    private readonly CheckBox _forceWeekdayOn;
+    private readonly ComboBox _forceWeekday;
+    private readonly CheckBox _forceMonthDayOn;
+    private readonly ComboBox _forceMonthDay;
     private readonly ComboBox _mirrorMode;
     private readonly NumericUpDown _safeDays;
     private readonly TextBox _comment;
-    private readonly Control _forceRow;
+    private readonly Control _forceSection;
+    private readonly Control _forceRows;
     private readonly Control _mirrorRow;
 
     public BasicPage(EditorContext context)
@@ -250,9 +276,35 @@ internal sealed class BasicPage : EditorPage
             typePanel.Children.Add(radio);
         }
 
-        _forceEvery = Ui.Number(task.ForceFull.EveryRuns, 0, 1000);
-        _forceRow = Ui.Row(Strings.EditorForceFull, Ui.Horizontal(new TextBlock { Text = Strings.ForceEvery }, _forceEvery, new TextBlock { Text = Strings.ForceEveryRunsSuffix }),
-            Strings.ForceFullNote);
+        // A forced full backup: every N-th run, on a weekday and/or on a day of the month (1–30 or the last day; a 31
+        // means the last day too), as in the window of Windows.
+        var force = task.ForceFull;
+        _forceEveryOn = Ui.Check(Strings.ForceEvery, force.EveryRuns > 0);
+        _forceEvery = Ui.Number(force.EveryRuns > 0 ? force.EveryRuns : 7, 2, 1000, 100);
+        var dayNames = CultureInfo.CurrentCulture.DateTimeFormat.DayNames;
+        _forceWeekdayOn = Ui.Check(Strings.ForceWeekday, force.Weekday is >= 1 and <= 7);
+        _forceWeekday = Ui.Choice(Enumerable.Range(1, 7).Select(d => (d.ToString(CultureInfo.InvariantCulture), dayNames[d % 7])),
+            (force.Weekday is >= 1 and <= 7 ? force.Weekday.Value : 7).ToString(CultureInfo.InvariantCulture), 200);
+        _forceMonthDayOn = Ui.Check(Strings.ForceMonthDay, force.MonthDay is (>= 1 and <= 31) or (-1));
+        _forceMonthDay = Ui.Choice(
+            [.. Enumerable.Range(1, 30).Select(d => (d.ToString(CultureInfo.InvariantCulture), d.ToString(CultureInfo.CurrentCulture))), ("-1", Strings.LastDayOfMonth)],
+            force.MonthDay switch
+            {
+                -1 or 31 => "-1",
+                >= 1 and <= 30 => force.MonthDay.Value.ToString(CultureInfo.InvariantCulture),
+                _ => "1",
+            },
+            200);
+        _forceRows = Ui.Stack(
+            Ui.Horizontal(_forceEveryOn, _forceEvery, new TextBlock { Text = Strings.ForceEveryRunsSuffix }),
+            Ui.Horizontal(_forceWeekdayOn, _forceWeekday),
+            Ui.Horizontal(_forceMonthDayOn, _forceMonthDay));
+        _forceSection = Ui.Stack(Ui.Heading(Strings.EditorForceFull), _forceRows, Ui.Note(Strings.ForceFullNote));
+        foreach (var check in (CheckBox[])[_forceEveryOn, _forceWeekdayOn, _forceMonthDayOn])
+        {
+            check.IsCheckedChanged += (_, _) => ShowRows();
+        }
+
         _mirrorMode = Ui.Choice([(MirrorModes.Safe, Strings.MirrorSafe), (MirrorModes.Exact, Strings.MirrorExact)], task.MirrorMode ?? MirrorModes.Safe, 560);
         _safeDays = Ui.Number(task.Retention.SafeMirrorDays, 1, 3650);
         _mirrorRow = Ui.Stack(_mirrorMode, Ui.Horizontal(_safeDays, new TextBlock { Text = Strings.MirrorSafeDays }), Ui.Note(Strings.MirrorNote));
@@ -266,7 +318,7 @@ internal sealed class BasicPage : EditorPage
             Ui.Heading(Strings.EditorBackupType),
             typePanel,
             _mirrorRow,
-            _forceRow,
+            _forceSection,
             Ui.Heading(Strings.EditorComment),
             _comment);
         ShowRows();
@@ -287,13 +339,20 @@ internal sealed class BasicPage : EditorPage
         task.BackupType = Context.BackupType;
         task.MirrorMode = task.BackupType == BackupTypes.Mirror ? Ui.Read(_mirrorMode) : task.MirrorMode;
         task.Retention.SafeMirrorDays = Ui.Read(_safeDays);
-        task.ForceFull.EveryRuns = task.BackupType is BackupTypes.Incremental or BackupTypes.Differential ? Ui.Read(_forceEvery) : task.ForceFull.EveryRuns;
+        task.ForceFull.EveryRuns = Ui.Read(_forceEveryOn) ? Ui.Read(_forceEvery) : 0;
+        task.ForceFull.Weekday = Ui.Read(_forceWeekdayOn) ? int.Parse(Ui.Read(_forceWeekday), CultureInfo.InvariantCulture) : null;
+        task.ForceFull.MonthDay = Ui.Read(_forceMonthDayOn) ? int.Parse(Ui.Read(_forceMonthDay), CultureInfo.InvariantCulture) : null;
         task.Comment = (_comment.Text ?? string.Empty).Trim();
     }
 
     private void ShowRows()
     {
-        _forceRow.IsVisible = Context.BackupType is BackupTypes.Incremental or BackupTypes.Differential;
+        // Hidden for a mirror; shown but greyed for a full task, which is full every time anyway.
+        _forceSection.IsVisible = Context.BackupType != BackupTypes.Mirror;
+        _forceRows.IsEnabled = Context.BackupType is BackupTypes.Incremental or BackupTypes.Differential;
+        _forceEvery.IsEnabled = Ui.Read(_forceEveryOn);
+        _forceWeekday.IsEnabled = Ui.Read(_forceWeekdayOn);
+        _forceMonthDay.IsEnabled = Ui.Read(_forceMonthDayOn);
         _mirrorRow.IsVisible = Context.BackupType == BackupTypes.Mirror;
     }
 }
@@ -328,11 +387,11 @@ internal sealed class SourcesPage : EditorPage
             }
         };
 
-        var add = Ui.Outlined(MacStrings.SourceAddFolder, () => { });
+        var add = Ui.Tonal("create_new_folder", MacStrings.SourceAddFolder, () => { });
         add.OnClick(AddFolderAsync);
-        var addFile = Ui.Outlined(MacStrings.SourceAddFile, () => { });
+        var addFile = Ui.Tonal("note_add", MacStrings.SourceAddFile, () => { });
         addFile.OnClick(AddFileAsync);
-        var addNetwork = Ui.Outlined(MacStrings.SourceAddNetwork, () => { });
+        var addNetwork = Ui.Tonal("lan", MacStrings.SourceAddNetwork, () => { });
         addNetwork.OnClick(AddNetworkAsync);
         var edit = Ui.Text(Strings.ButtonEdit, () => { });
         edit.OnClick(EditAsync);
@@ -542,7 +601,7 @@ internal sealed class AccountPicker
         _context = context;
         _kind = kind;
         _allowNone = allowNone;
-        var add = Ui.Text(Strings.ButtonAddAccount, () => { });
+        var add = Ui.Tonal("person_add", Strings.ButtonAddAccount, () => { });
         add.OnClick(AddAsync);
         View = Ui.Horizontal(_box, add);
         Fill(selected);
@@ -603,7 +662,7 @@ internal sealed class DestinationsPage : EditorPage
         : base(context)
     {
         _destinations = context.Task.Destinations.ToList();
-        var add = Ui.Outlined(Strings.ButtonAdd, () => { });
+        var add = Ui.Tonal("add", Strings.ButtonAdd, () => { });
         add.OnClick(AddAsync);
         var edit = Ui.Text(Strings.ButtonEdit, () => { });
         edit.OnClick(EditAsync);
@@ -1092,7 +1151,7 @@ internal sealed class EventsPage : EditorPage
 
     private StackPanel Buttons(List<TaskEvent> events, ListBox list)
     {
-        var add = Ui.Outlined(Strings.ButtonAdd, () => { });
+        var add = Ui.Tonal("add", Strings.ButtonAdd, () => { });
         add.OnClick(async () =>
         {
             if (await EditAsync(new TaskEvent(), Strings.EventAddTitle) is { } added)

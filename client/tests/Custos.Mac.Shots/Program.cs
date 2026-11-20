@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Custos.Core.Model;
 using Custos.Gui;
@@ -57,6 +58,7 @@ internal static class Program
         Step("run log", RunLog);
         Step("menu bar", MenuBar);
         Step("buttons", Buttons);
+        Step("settings menu", SettingsMenu);
 
         if (IconData.Missing.Count > 0)
         {
@@ -306,6 +308,46 @@ internal static class Program
         }
 
         Close(main);
+    }
+
+    /// <summary>
+    /// The «Настройки» menu of the toolbar, as in the new window of Windows: three themes and the five colours with a
+    /// check on the one in use; a colour picked there is the colour of the window and is remembered.
+    /// </summary>
+    private static void SettingsMenu()
+    {
+        var main = Open();
+        var button = main.GetVisualDescendants().OfType<ToolButton>().First(b => b.Name == "SettingsButton");
+        button.Flyout!.ShowAt(button);
+        Pump();
+        var themes = main.FindControl<StackPanel>("ThemeMenu")!.Children.OfType<RadioButton>().ToList();
+        var colors = main.FindControl<StackPanel>("ColorMenu")!.Children.OfType<RadioButton>().ToList();
+        if (themes.Count != 3 || colors.Count != 5 || themes.Count(t => t.IsChecked == true) != 1 || colors.Count(c => c.IsChecked == true) != 1)
+        {
+            Failures.Add($"settings menu: {themes.Count} themes, {colors.Count} colours, checks wrong");
+        }
+
+        string before = Palettes.Current;
+        try
+        {
+            var blue = colors.First(c => c.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == Palettes.Title("blue")));
+            blue.RaiseEvent(new RoutedEventArgs(RadioButton.ClickEvent));
+            Pump();
+            if (Palettes.Current != "blue")
+            {
+                Failures.Add($"settings menu: «{Palettes.Title("blue")}» was clicked, the colour is {Palettes.Current}");
+            }
+            else
+            {
+                Console.WriteLine("Settings menu: three themes, five colours, a colour picked there is used.");
+            }
+        }
+        finally
+        {
+            Palettes.Choose(before);
+            button.Flyout.Hide();
+            Close(main);
+        }
     }
 
     /// <summary>Presses the button with this text in a window.</summary>

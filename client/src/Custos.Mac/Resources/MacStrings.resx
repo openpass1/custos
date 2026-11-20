@@ -22,6 +22,27 @@
   <data name="HistoryCount" xml:space="preserve">
     <value>{0}: {1} runs</value>
   </data>
+  <data name="HistoryOpenLog" xml:space="preserve">
+    <value>Double-click a run to see its log.</value>
+  </data>
+  <data name="SettingsAll" xml:space="preserve">
+    <value>All settings…</value>
+  </data>
+  <data name="ThemeHeading" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ThemeForAll" xml:space="preserve">
+    <value>For all users of this Mac</value>
+  </data>
+  <data name="ThemeAdminsOnly" xml:space="preserve">
+    <value>The theme is the same for all users of this Mac: an administrator changes it.</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Colour</value>
+  </data>
+  <data name="ColorForYou" xml:space="preserve">
+    <value>Only for you</value>
+  </data>
   <data name="MenuQuit" xml:space="preserve">
     <value>Quit CUSTOS</value>
   </data>
@@ -249,5 +270,8 @@
   </data>
   <data name="UsbDisk" xml:space="preserve">
     <value>External disk «{0}»</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
   </data>
 </root>

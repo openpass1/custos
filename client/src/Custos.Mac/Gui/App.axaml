@@ -11,6 +11,13 @@
   -->
   <Application.Resources>
     <ResourceDictionary>
+      <!-- Denser Fluent fields, as in the new window of Windows: 13 point text, 28 point fields, boxes and choices. -->
+      <x:Double x:Key="ControlContentThemeFontSize">13</x:Double>
+      <x:Double x:Key="TextControlThemeMinHeight">28</x:Double>
+      <Thickness x:Key="TextControlThemePadding">8,4,6,4</Thickness>
+      <x:Double x:Key="ComboBoxMinHeight">28</x:Double>
+      <x:Double x:Key="CheckBoxMinHeight">28</x:Double>
+      <x:Double x:Key="RadioButtonMinHeight">28</x:Double>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="Primary" Color="#4A5C92" />

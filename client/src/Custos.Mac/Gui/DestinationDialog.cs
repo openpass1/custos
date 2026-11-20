@@ -47,7 +47,7 @@ internal sealed class DestinationDialog
     private readonly TextBlock _error = Ui.Error();
     private readonly Dictionary<string, Control> _rows = [];
     private readonly TextBlock _pathLabel = Ui.Label(Strings.DestinationFolder);
-    private readonly TextBlock _pathNote = Ui.Note(string.Empty);
+    private readonly Control _pathHelp = Ui.Help(string.Empty);
     private AccountPicker? _account;
     private string? _accountKind;
     private string? _fingerprint;
@@ -84,15 +84,18 @@ internal sealed class DestinationDialog
                 _path.Text = Kind == DestinationKinds.Usb ? UsbRelative(folder) : folder;
             }
         });
-        var test = Ui.Outlined(Strings.ButtonTestAccess, () => { });
+        var test = Ui.Tonal("network_check", Strings.ButtonTestAccess, () => { });
         test.OnClick(() => TestAsync(test));
 
-        var pathRow = new Grid { ColumnDefinitions = new ColumnDefinitions("190,*"), Margin = new Avalonia.Thickness(0, 4) };
+        // The path fills the line, «Обзор…» and the (?) mark of the kind after it, as the rows of Ui.Row.
+        var pathRow = new Grid { ColumnDefinitions = new ColumnDefinitions("190,*"), Margin = new Avalonia.Thickness(0, 2) };
         _pathLabel.VerticalAlignment = VerticalAlignment.Top;
-        _pathLabel.Margin = new Avalonia.Thickness(0, 8, Ui.Gap, 0);
+        _pathLabel.Margin = new Avalonia.Thickness(0, 5, Ui.Gap, 0);
         _pathLabel.TextWrapping = TextWrapping.Wrap;
-        var pathRight = new StackPanel { Spacing = 2, Children = { Ui.Horizontal(_path, browse), _pathNote } };
-        _path.Width = 380;
+        var pathRight = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"), Children = { _path, browse, _pathHelp } };
+        browse.Margin = new Avalonia.Thickness(4, 0, 0, 0);
+        Grid.SetColumn(browse, 1);
+        Grid.SetColumn(_pathHelp, 2);
         Grid.SetColumn(pathRight, 1);
         pathRow.Children.Add(_pathLabel);
         pathRow.Children.Add(pathRight);
@@ -109,14 +112,12 @@ internal sealed class DestinationDialog
         _rows["speed"] = Ui.Row(Strings.DestinationSpeed, Ui.Horizontal(_speed, new TextBlock { Text = MacStrings.SpeedUnit }), Strings.DestinationSpeedHelp);
         _rows["lock"] = Ui.Row(Strings.DestinationLock, Ui.Horizontal(_lockDays, new TextBlock { Text = Strings.DestinationLockUnit }), Strings.DestinationLockHelp);
         _rows["lockmode"] = Ui.Row(Strings.DestinationLockMode, _lockMode);
-        _rows["worm"] = Ui.Row(Strings.DestinationWorm,
-            Ui.Stack(Ui.Horizontal(_wormDays, new TextBlock { Text = Strings.DestinationWormUnit }),
-                Ui.Horizontal(new TextBlock { Text = Strings.DestinationWormLock }, _wormHours, new TextBlock { Text = Strings.DestinationWormLockUnit })),
-            Strings.DestinationWormHelp);
+        _rows["worm"] = Ui.Row(Strings.DestinationWorm, Ui.Horizontal(_wormDays, new TextBlock { Text = Strings.DestinationWormUnit }), Strings.DestinationWormHelp);
+        _rows["wormlock"] = Ui.Row(Strings.DestinationWormLock, Ui.Horizontal(_wormHours, new TextBlock { Text = Strings.DestinationWormLockUnit }));
 
         var body = new StackPanel { Spacing = 2 };
         body.Children.Add(Ui.Row(Strings.DestinationKind, _kind));
-        foreach (string key in new[] { "host", "address", "endpoint", "bucket", "region", "usb", "path", "account", "speed", "lock", "lockmode", "worm" })
+        foreach (string key in new[] { "host", "address", "endpoint", "bucket", "region", "usb", "path", "account", "speed", "lock", "lockmode", "worm", "wormlock" })
         {
             body.Children.Add(_rows[key]);
         }
@@ -248,9 +249,9 @@ internal sealed class DestinationDialog
         _rows["speed"].IsVisible = !fileSystem;
         _rows["lock"].IsVisible = kind == DestinationKinds.S3;
         _rows["lockmode"].IsVisible = kind == DestinationKinds.S3 && Ui.Read(_lockDays) > 0;
-        _rows["worm"].IsVisible = fileSystem;
+        _rows["worm"].IsVisible = _rows["wormlock"].IsVisible = fileSystem;
         _wormHours.IsEnabled = Ui.Read(_wormDays) > 0;
-        (_pathLabel.Text, _pathNote.Text) = kind switch
+        (string pathLabel, string pathHelp) = kind switch
         {
             DestinationKinds.Unc => (Strings.SourcePath, MacStrings.NetworkPathNote),
             DestinationKinds.Usb => (Strings.DestinationFolderOnDisk, MacStrings.DestinationUsbFolderHelp),
@@ -259,7 +260,9 @@ internal sealed class DestinationDialog
             DestinationKinds.S3 => (Strings.DestinationFolderInBucket, Strings.DestinationFolderBucketHelp),
             _ => (Strings.DestinationFolder, MacStrings.DestinationLocalHelp),
         };
-        _pathNote.IsVisible = _pathNote.Text.Length > 0;
+        _pathLabel.Text = pathLabel.TrimEnd(':', ' ');
+        ToolTip.SetTip(_pathHelp, pathHelp);
+        _pathHelp.IsVisible = pathHelp.Length > 0;
 
         string? accountKind = DestinationKinds.CredentialKind(kind);
         _rows["account"].IsVisible = accountKind is not null;
