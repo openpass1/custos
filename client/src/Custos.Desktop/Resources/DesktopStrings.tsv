@@ -1,0 +1,37 @@
+# Texts of the new windows only (src/Custos.Desktop); the others come from src/Custos.Gui/Resources/Strings.tsv.
+# Columns: key, English, Russian (TAB-separated). After a change run: python tools/make-strings.py
+# ---- Main window
+Tasks	Tasks	Задания
+Now	now	сейчас
+HistoryCount	{0}: {1} runs	{0}: запусков {1}
+SettingsAll	All settings…	Все настройки…
+ThemeHeading	Theme	Тема
+ThemeForAll	For all users of this computer	Для всех пользователей компьютера
+ThemeAdminsOnly	The theme is the same for all users of this computer: an administrator changes it.	Тема общая для всех пользователей компьютера: её меняет администратор.
+Color	Colour	Цвет
+ColorForYou	Only for you	Только для вас
+ColorNeutral	Neutral grey	Нейтральный серый
+ColorGraphite	Graphite	Графит
+ColorBlue	Blue	Синий
+ColorWarm	Warm	Тёплый
+ColorSepia	Sepia	Сепия
+Resume	Resume	Продолжить
+More	More	Ещё
+DeleteRunning	«{0}» is running now. Stop it first, then delete it.	Задание «{0}» сейчас выполняется. Сначала остановите его, потом удаляйте.
+# ---- Task editor
+Save	Save	Сохранить
+LinuxServer	Linux server	Linux-сервер
+EveryMinutes	minutes	минут
+WormTag	WORM {0} days	WORM {0} дн.
+ObjectLockTag	Object Lock {0} days	Object Lock {0} дн.
+MonthDaysNote	Tick one or more days. A month without the chosen day (30 February) runs on its last day, so no month is skipped.	Отметьте один или несколько дней. В месяце без выбранного дня (30 февраля) копия делается в его последний день, так что ни один месяц не пропускается.
+NumberRange	Enter a number from {0} to {1}.	Введите число от {0} до {1}.
+# ---- Made-up tasks of «--demo» and of the pictures
+DemoComment	The department's documents: a USB disk, the NAS with protection from deletion, and a copy outside the office.	Документы отдела: диск USB, NAS с защитой от удаления и копия вне офиса.
+DemoUsb	The disk BACKUP-USB is not connected.	Диск BACKUP-USB не подключён.
+DemoStarted	started by the schedule	запуск по расписанию
+DemoDone	success — {0} files, {1}, {2}	успешно — файлов {0}, {1}, {2}
+DemoScan	looking for files: 12 640	поиск файлов: 12 640
+DemoLocked	the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx	файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx
+HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
+RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}

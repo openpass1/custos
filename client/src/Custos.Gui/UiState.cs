@@ -5,7 +5,8 @@ namespace Custos.Gui;
 
 /// <summary>
 /// How this Windows user left the main window: size, card, splitters, column widths, the tab at the bottom
-/// (docs/client-ui.md, 2.3). Kept in <c>%APPDATA%\CUSTOS\ui.json</c>; personal, so no administrator rights needed.
+/// (docs/client-ui.md, 2.3). Kept in <c>%APPDATA%\CUSTOS\ui.json</c> (the new window: <c>window.json</c>); personal, so no
+/// administrator rights needed.
 /// Sizes are stored at 100 % scale.
 /// </summary>
 internal sealed class UiState
@@ -46,10 +47,21 @@ internal sealed class UiState
 
     public Dictionary<string, int> HistoryColumns { get; set; } = [];
 
+    /// <summary>The colour scheme of the new window (src/Custos.Desktop, Palettes.cs); null = the main one.</summary>
+    public string? Color { get; set; }
+
     /// <summary>Where ui.json is kept; the interface tests use a folder of their own.</summary>
     internal static string Folder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CUSTOS");
 
-    private static string FilePath => Path.Combine(Folder, "ui.json");
+#if CUSTOS_DESKTOP
+    // The new window keeps its own file: its sizes mean other things, and Custos.exe, which may run next to it, rewrites
+    // ui.json as a whole without the fields it does not know.
+    private const string FileName = "window.json";
+#else
+    private const string FileName = "ui.json";
+#endif
+
+    private static string FilePath => Path.Combine(Folder, FileName);
 
     public static UiState Load()
     {

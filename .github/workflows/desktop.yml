@@ -1,0 +1,198 @@
+name: Window (Avalonia)
+
+# Custos.exe, the CUSTOS window in Material Design 3 on Avalonia (client/src/Custos.Desktop and
+# client/src/Custos.Windows): pictures of it with made-up tasks, the checks of its menus and buttons, and the program
+# itself against a real service on Windows. The installer with it comes from build.yml. Runs when the window, the files
+# of the Windows Forms window it shares, or this file change.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/src/Custos.Desktop/**'
+      - 'client/src/Custos.Windows/**'
+      - 'client/tests/Custos.Desktop.Shots/**'
+      - 'client/src/Custos.Gui/ServiceMonitor.cs'
+      - 'client/src/Custos.Gui/UiState.cs'
+      - 'client/src/Custos.Gui/Strings*.cs'
+      - 'client/src/Custos.Gui/Resources/Strings*'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    paths:
+      - 'client/src/Custos.Desktop/**'
+      - 'client/src/Custos.Windows/**'
+      - 'client/tests/Custos.Desktop.Shots/**'
+      - 'client/src/Custos.Gui/ServiceMonitor.cs'
+      - 'client/src/Custos.Gui/UiState.cs'
+      - 'client/src/Custos.Gui/Strings*.cs'
+      - 'client/src/Custos.Gui/Resources/Strings*'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Avalonia's build tools send anonymous usage data unless told not to.
+  AVALONIA_TELEMETRY_OPTOUT: '1'
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  # Linux is enough to build the Windows program, to draw the window into pictures and to check its menus with the
+  # made-up tasks (Avalonia's headless platform).
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Draw the window into pictures and check its menus
+        working-directory: client
+        run: dotnet run -c Release --project tests/Custos.Desktop.Shots -- "$GITHUB_WORKSPACE/out/screenshots"
+
+      # Framework-dependent: uses the .NET 10 that the CUSTOS installer has already put on the computer.
+      - name: Publish the window for Windows
+        working-directory: client
+        run: >-
+          dotnet publish src/Custos.Windows -c Release -r win-x64 --self-contained false
+          -p:Version=0.6.${{ github.run_number }} -o "$GITHUB_WORKSPACE/out/custos-window"
+
+      - name: Upload the window
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-window
+          path: out/custos-window
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload the pictures
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-window-screenshots
+          path: out/screenshots
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Say what the files are for
+        run: |
+          size=$(du -sb out/custos-window | cut -f1)
+          files=$(find out/custos-window -type f | wc -l)
+          mb=$(awk "BEGIN { printf \"%.1f\", $size / 1048576 }")
+          zip_mb=$(cd out && zip -qr -9 new.zip custos-window && awk "BEGIN { printf \"%.1f\", $(stat -c %s new.zip) / 1048576 }")
+          echo "::notice title=Size::${mb} MB in the folder (${files} files), ${zip_mb} MB zipped"
+          {
+            echo "### Окно CUSTOS 0.6.${{ github.run_number }} (Material 3)"
+            echo
+            echo "| Файл | Что это |"
+            echo "|---|---|"
+            echo "| \`custos-window\` | Только окно, без службы: распаковать в любую папку и запустить \`Custos.exe --demo\`, чтобы посмотреть его с придуманными заданиями. Ставится оно установщиком из сборки «Client build». |"
+            echo "| \`custos-window-screenshots\` | Снимки окна с придуманными заданиями, светлая и тёмная тема, все цвета. |"
+            echo
+            echo "Размер программы: ${mb} МБ в папке (${files} файлов), ${zip_mb} МБ в архиве."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # On a real Windows: the buttons of the window against the real CUSTOS service, then the published program itself
+  # with that service: does it open, and how much memory it takes. The runner has no graphics card, so this is the
+  # case of a virtual machine or a server without one.
+  windows:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: custos-window
+          path: custos-window
+
+      # The service as a real Windows service (LocalSystem), as setup.exe installs it: a process started in the
+      # console of one step does not live on into the next. Its data and logs go to C:\ProgramData\CUSTOS as usual.
+      # The pipe is looked for in the list of pipes: Test-Path would connect to it and take an instance.
+      - name: Install and start the CUSTOS service
+        shell: pwsh
+        working-directory: client
+        run: |
+          dotnet publish src/Custos.Service -c Release -o "$env:RUNNER_TEMP\service" | Out-Host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Service -Name CustosService -DisplayName CUSTOS -StartupType Manual `
+            -BinaryPathName "`"$env:RUNNER_TEMP\service\CustosService.exe`"" | Out-Host
+          Start-Service CustosService
+          function Test-Pipe { [System.IO.Directory]::GetFiles('\\.\pipe\') -contains '\\.\pipe\custos' }
+          for ($i = 0; $i -lt 60 -and -not (Test-Pipe); $i++) { Start-Sleep -Seconds 1 }
+          if (-not (Test-Pipe)) { throw 'The service did not open its pipe.' }
+          Write-Host "Service: $((Get-Service CustosService).Status)."
+
+      - name: Press the buttons of the window against the service
+        shell: pwsh
+        working-directory: client
+        run: dotnet run -c Release --project tests/Custos.Desktop.Shots -- --service "$env:GITHUB_WORKSPACE\shots"
+
+      - name: Start Custos.exe with the service, measure the memory, take a picture of the screen
+        shell: pwsh
+        run: |
+          $exe = Join-Path $PWD 'custos-window\Custos.exe'
+          $p = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 20
+          $p.Refresh()
+          if ($p.HasExited) { throw "Custos.exe closed by itself, exit code $($p.ExitCode)." }
+          $ws = [math]::Round($p.WorkingSet64 / 1MB)
+          $private = [math]::Round($p.PrivateMemorySize64 / 1MB)
+          $peak = [math]::Round($p.PeakWorkingSet64 / 1MB)
+
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          New-Item -ItemType Directory -Force -Path shots | Out-Null
+          $bitmap.Save((Join-Path $PWD 'shots\windows-screen.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+
+          # A second start only brings the first one up and quits.
+          $second = Start-Process -FilePath $exe -PassThru
+          if (-not $second.WaitForExit(15000)) { throw 'A second Custos.exe did not quit.' }
+          Stop-Process -Id $p.Id -Force
+
+          $os = (Get-CimInstance Win32_OperatingSystem).Caption
+          Write-Host "::notice title=Memory after 20 s::working set $ws MB, private $private MB, peak working set $peak MB ($os)"
+          @"
+          ### Запуск на Windows со службой CUSTOS (без видеокарты)
+
+          $os, экран $($bounds.Width)×$($bounds.Height). Кнопки окна проверены с настоящей службой: клонирование, включение и отключение одного и двух заданий, запуск, пауза, продолжение, остановка, удаление двух заданий, тема.
+
+          | Память через 20 с | МБ |
+          |---|---|
+          | Рабочий набор (колонка «Память» в диспетчере задач близка к «Частной») | $ws |
+          | Частная память | $private |
+          | Наибольший рабочий набор | $peak |
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Show the log of the service
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-Service CustosService -ErrorAction SilentlyContinue | Format-Table Name, Status
+          Get-ChildItem "$env:ProgramData\CUSTOS\logs\service-*.log" -ErrorAction SilentlyContinue |
+            ForEach-Object { Get-Content $_.FullName | Select-Object -Last 200 }
+          Get-Content "$env:APPDATA\CUSTOS\desktop-errors.log" -ErrorAction SilentlyContinue
+
+      - name: Upload the pictures
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-window-on-windows
+          path: shots/*.png
+          if-no-files-found: ignore
+          retention-days: 30
