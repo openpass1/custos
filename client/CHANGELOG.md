@@ -9,6 +9,8 @@ How to write it:
 - New items go under the version at the top while it is not released; if the version changes before the release,
   rename that heading. Once a version is released, start a new section above it.
 - The version at the top is the one to type when running the Release workflow.
+- One version for every system. An item for one system only starts with its name (`Windows:`, `macOS:`, `Linux:`);
+  a release carries the files of the systems that changed, so the others skip it.
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
