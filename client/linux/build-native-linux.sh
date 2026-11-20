@@ -22,9 +22,16 @@ if [ "${CUSTOS_NATIVE_HERE:-}" = 1 ] || ! command -v docker > /dev/null; then
 fi
 
 # The gcc 8 of AlmaLinux 8 does not know the warnings the makefiles of 7-Zip ask for: gcc-toolset-13 does, and still
-# builds for the glibc and libstdc++ of the system (what it needs beyond them is linked in).
+# builds for the glibc and libstdc++ of the system (what it needs beyond them is linked in). A mirror of AlmaLinux now
+# and then serves empty metadata ("repomd.xml parser error"): dnf tries again, which takes another mirror.
 docker run --rm -v "$repo:/repo:ro" -v "$out:/out" almalinux:8 bash -euo pipefail -c '
-  dnf -y -q install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ make xz curl findutils unzip openssl > /dev/null
+  for try in 1 2 3; do
+    dnf -y -q install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ make xz curl findutils unzip openssl > /dev/null && break
+    [ "$try" != 3 ] || exit 1
+    echo "dnf failed (attempt $try), trying again with fresh metadata"
+    dnf clean all > /dev/null
+    sleep 20
+  done
   set +u
   source /opt/rh/gcc-toolset-13/enable
   set -u
