@@ -57,7 +57,20 @@ final class ReleasesTest extends TestCase
         $mac = Releases::pick($releases, 'macos');
         $this->assertSame(['2.2.0', 'client-v2.2.0', 'custos-macos-2.2.0.zip', $sha], [$mac['version'], $mac['tag'], $mac['zip_name'], $mac['sha256']]);
         $this->assertSame('custos-2.3.0.zip', Releases::pick($releases, 'client')['zip_name'], 'the Mac package is never taken for Windows');
-        $this->assertSame(['agent', 'legacy', 'macos'], array_map(Releases::kind(...), Releases::PROGRAM_PARTS));
+        $this->assertSame(['agent', 'legacy', 'macos', 'linux'], array_map(Releases::kind(...), Releases::PROGRAM_PARTS));
+
+        // CUSTOS for Linux: its own package in the same releases; the installers are kept for the page Install.
+        $this->assertNull(Releases::pick($releases, 'linux'), 'no Linux package yet');
+        $releases[] = ['tag_name' => 'client-v2.4.0', 'html_url' => 'https://example.test/r/2.4.0', 'assets' => [
+            $asset('custos-2.4.0.zip'), $asset('custos-linux-2.4.0.zip'), $asset('custos-linux-x64.tar.gz'),
+            $asset('CUSTOS-Setup-2.4.0.exe'), $asset('Custos-2.4.0.pkg'),
+        ]];
+        $linux = Releases::pick($releases, 'linux');
+        $this->assertSame(['2.4.0', 'custos-linux-2.4.0.zip'], [$linux['version'], $linux['zip_name']]);
+        $client = Releases::pick($releases, 'client');
+        $this->assertSame('custos-2.4.0.zip', $client['zip_name'], 'the Linux package is never taken for Windows');
+        $this->assertSame(['CUSTOS-Setup-2.4.0.exe', 'Custos-2.4.0.pkg'], array_keys($client['installers']));
+        $this->assertSame('https://example.test/CUSTOS-Setup-2.4.0.exe', $client['installers']['CUSTOS-Setup-2.4.0.exe']);
     }
 
     public function testTablesThatMigrationsChange(): void

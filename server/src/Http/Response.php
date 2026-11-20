@@ -9,6 +9,9 @@ final class Response
     /** A file sent as the body instead of $body (agent update packages): read in chunks, never held in memory. */
     public ?string $file = null;
 
+    /** @var ?\Closure(resource): void writes the body to the stream it gets (a file inside a package), instead of $body */
+    public ?\Closure $stream = null;
+
     /** @param array<string, string> $headers */
     public function __construct(public int $status = 200, public string $body = '', public array $headers = [])
     {
@@ -25,9 +28,33 @@ final class Response
         return $response;
     }
 
-    /** The body, read from the file for a file response. */
+    /**
+     * A body written by $writer to the stream it gets, in pieces: a file inside a stored package (Install).
+     *
+     * @param \Closure(resource): void $writer
+     */
+    public static function stream(\Closure $writer, string $contentType, string $downloadName, int $length): self
+    {
+        $response = new self(200, '', [
+            'Content-Type' => $contentType,
+            'Content-Length' => (string) $length,
+            'Content-Disposition' => 'attachment; filename="' . str_replace('"', '', $downloadName) . '"',
+        ]);
+        $response->stream = $writer;
+        return $response;
+    }
+
+    /** The body, read from the file for a file response or written by the writer of a stream response. */
     public function content(): string
     {
+        if ($this->stream !== null) {
+            $memory = fopen('php://temp', 'w+b');
+            ($this->stream)($memory);
+            rewind($memory);
+            $content = (string) stream_get_contents($memory);
+            fclose($memory);
+            return $content;
+        }
         return $this->file === null ? $this->body : (string) file_get_contents($this->file);
     }
 
@@ -71,11 +98,17 @@ final class Response
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
         }
-        if ($this->file !== null) {
+        if ($this->file !== null || $this->stream !== null) {
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
-            readfile($this->file);
+            if ($this->file !== null) {
+                readfile($this->file);
+            } else {
+                $out = fopen('php://output', 'wb');
+                ($this->stream)($out);
+                fclose($out);
+            }
             return;
         }
         echo $this->body;

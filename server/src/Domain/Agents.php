@@ -19,8 +19,10 @@ final class Agents
     public const LEGACY = 'legacy';
     /** CUSTOS for macOS (A.3, A.4). */
     public const MACOS = 'macos';
+    /** CUSTOS for Linux, the agent of servers without a window (A.3, A.4). */
+    public const LINUX = 'linux';
     /** The editions the site knows besides the standard one; each has its own update packages (kind = edition). */
-    public const EDITIONS = [self::LEGACY, self::MACOS];
+    public const EDITIONS = [self::LEGACY, self::MACOS, self::LINUX];
 
     public function __construct(private readonly Db $db, private readonly Monitor $monitor, private readonly Notices $notices)
     {
@@ -121,6 +123,25 @@ final class Agents
     public static function isMac(array $agent): bool
     {
         return ($agent['edition'] ?? '') === self::MACOS;
+    }
+
+    /**
+     * Whether the machine runs CUSTOS for Linux: snapshots of LVM, btrfs or ZFS instead of VSS, 7-Zip inside the
+     * program, and no cloud drives yet (their sign-in needs the window of the program).
+     */
+    public static function isLinux(array $agent): bool
+    {
+        return ($agent['edition'] ?? '') === self::LINUX;
+    }
+
+    /**
+     * Whether tasks of the machine may write to cloud drives: not with the edition for Windows 7 and 8.1, and not with
+     * CUSTOS for Linux, which has no window to sign in to an account. Null when they may, otherwise the edition (the
+     * messages say why by it).
+     */
+    public static function withoutCloud(array $agent): ?string
+    {
+        return self::isLegacy($agent) || self::isLinux($agent) ? (string) $agent['edition'] : null;
     }
 
     /** The edition as stored: what the agent sent when the site knows it, otherwise the standard one (''). */

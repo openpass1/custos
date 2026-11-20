@@ -40,6 +40,10 @@ Usage: php tools/fake-agent.php --connect='http://custos.lan#KEY#FINGERPRINT' [o
                      update packages and refuse 7-Zip updates
   --mac              the agents run CUSTOS for macOS (edition "macos"): they take only macos update packages
                      and refuse 7-Zip updates
+  --linux            the agents run CUSTOS for Linux (edition "linux"): they take only linux update packages,
+                     refuse 7-Zip updates and report the snapshots of their volume / in the inventory
+  --snapshot=STATE   with --linux: the state of the snapshots of / (ok, low_space, no_space, overflowed or
+                     unsupported; default no_space, an Ubuntu installed with LVM that gave the volume all the disk)
   --reset            forget the agents in the state folder and exit
 
 Agents keep their identity between runs. update.install and sevenzip.update commands are checked (signature,
@@ -102,7 +106,13 @@ $agentOptions = [
     'result' => $options['result'] ?? null,
     'legacy' => isset($options['legacy']),
     'mac' => isset($options['mac']),
+    'linux' => isset($options['linux']),
+    'snapshot' => is_string($options['snapshot'] ?? null) ? $options['snapshot'] : 'no_space',
 ];
+if (!in_array($agentOptions['snapshot'], ['ok', 'low_space', 'no_space', 'overflowed', 'unsupported'], true)) {
+    fwrite(STDERR, "--snapshot must be ok, low_space, no_space, overflowed or unsupported\n");
+    exit(2);
+}
 if (isset($options['sevenzip'])) {
     if (!is_string($options['sevenzip']) || !preg_match('/^(\d{1,3}\.\d{2}|none)$/', $options['sevenzip'])) {
         fwrite(STDERR, "--sevenzip must be a 7-Zip version such as 24.09, or none\n");

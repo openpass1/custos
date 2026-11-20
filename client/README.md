@@ -171,6 +171,92 @@ program (as a user and as root), draws every window, builds the installer, insta
 service answers and runs a task, opens the window and removes everything with the uninstaller. The run keeps the
 installer, the update package and the pictures of the windows for 14 days.
 
+## CUSTOS for Linux
+
+CUSTOS for Linux is the backup agent of a Linux server: a systemd service without a window, run from a monitoring
+site. It does the same work as the service on Windows (copies and archives, schedules, keeping copies, checks, the
+same destinations except cloud drives) and is set up on the site: the tasks of the server are made and changed there.
+It needs x86_64 or ARM64 (aarch64), glibc 2.28 or newer and systemd: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux,
+Rocky and Oracle Linux 8+, openSUSE 15. Alpine and CentOS 7 cannot run it.
+
+**Install from the site** (a monitoring site 1.4.0 or newer). On the site open **Install** (or **Machines** → **Add a
+machine**), copy the command for Linux and run it on the server:
+
+```sh
+curl -fsSL 'https://backup.example.lan/install/linux/<token>' | sudo bash
+```
+
+(`wget -qO- '…' | sudo bash` where curl is missing.) The command downloads the program for the processor of the
+server from the site (the package for Linux under **Updates**), checks its SHA-256, installs it into `/opt/custos`,
+starts the service `custos` and connects it to the site, where the machine waits for approval under **Machines**. The
+token in the address is made from the registration key: after a new key the old commands stop working. The site needs
+the package `custos-linux-<version>.zip` under **Updates** (upload it, or download it there from GitHub). The server
+must reach the site, and its address must be in the networks allowed for agents. The packages the program needs
+(libicu, OpenSSL, cifs-utils) are installed when they are missing.
+
+**Install from GitHub** (another way): `install.sh` downloads the archive of its processor from the newest release;
+the connection line from the site connects it.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/openpass1/custos/main/client/linux/install.sh | sudo bash -s -- 'http://backup.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14'
+```
+
+**Snapshots instead of VSS.** «Read files from a snapshot» takes an LVM snapshot of the logical volume, a btrfs snapshot
+of the subvolume or a ZFS snapshot for the run and deletes it afterwards. An LVM snapshot needs free room in the volume
+group, and the usual Ubuntu install gives all of it to the volume. Then a task goes on without a snapshot and warns
+(the default for Linux; it can be set to stop instead). The machine page on the site shows each volume of the tasks
+(block **Snapshots**) with what to do, and a volume without room, or whose last snapshot ran full, opens a problem for
+its tasks, sent by Telegram or e-mail like the others. The fix is a new disk of 10–20 GB in the group; nothing has to
+be shrunk:
+
+```sh
+lsblk                                            # the new disk, for example /dev/sdb
+sudo pvcreate /dev/sdb && sudo vgextend ubuntu-vg /dev/sdb
+custos snapshots                                 # the volumes and their state
+```
+
+**What differs from Windows:**
+- Paths are Linux paths (`/var/www`, `/etc/nginx`). A network folder (`//server/share` or `\\server\share`) is mounted
+  with the stored account for the run (cifs-utils) and unmounted after it.
+- «Owners and permissions» are copied instead of NTFS rights.
+- Scripts before and after a run are run as root by `/bin/sh`; a service to stop is a systemd unit (`mariadb`).
+- No cloud drives. 7-Zip comes inside the program (`7z.so`); the site does not update it.
+- No window and no program password: the service is used with the commands of the terminal and from the site.
+
+**Commands:** `custos status` (the service, the tasks, the connection), `custos run <task>`, `custos stop`,
+`custos log -f`, `custos snapshots`, `custos connect '<line>'`, `custos disconnect`, `custos version`, `custos help`.
+
+**Updates.** On the site, **Updates** has a section for CUSTOS for Linux: the package `custos-linux-<version>.zip`
+(both processors in one) goes only to Linux machines. The service replaces the program itself and puts the old one back
+if the new one does not start. Running the install command again also updates; settings, tasks and logs stay.
+
+**Uninstall:** `sudo /opt/custos/uninstall.sh` removes the program and keeps the settings, the database and the logs;
+`--purge` removes them too. The copies already made are never touched.
+
+**Files on a Linux server:**
+
+| Where | What |
+|---|---|
+| `/opt/custos` | The program (with its own .NET, `7z.so` and SQLite), `install.sh`, `uninstall.sh` |
+| `/usr/local/bin/custos` | The command |
+| `/etc/systemd/system/custos.service` | The service: `systemctl restart custos`, `journalctl -u custos` |
+| `/var/lib/custos` | Settings, the database, downloaded updates |
+| `/var/log/custos` | The logs |
+| `/run/custos.sock` | The connection between the commands and the service |
+
+**Build** (on Linux with the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and Docker, on an x86_64
+machine for x64 and an ARM machine for arm64):
+
+```sh
+bash client/linux/build-linux.sh 1.0.1 x64          # client/artifacts-linux/custos-linux-x64.tar.gz
+bash client/linux/build-linux.sh package 1.0.1      # custos-linux-1.0.1.zip from both archives
+```
+
+`7z.so` and SQLite are built in AlmaLinux 8 (Docker), so that glibc 2.28 is enough. GitHub Actions does the same for
+every change under `client/` (workflow `Linux agent`): on an x86_64 and an ARM machine it runs the tests (as root too,
+with LVM, btrfs and XFS on loop disks), installs the program with `install.sh`, tests the installed service and removes
+it; then it starts the program on other distributions in containers and makes the update package.
+
 ## Archives
 
 A task can pack each set into one 7z or ZIP archive (the "Compression and checks" page of the task). They are ordinary

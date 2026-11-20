@@ -9,8 +9,9 @@ name: Release
 # client-legacy is the edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy): released as is, only when needed, with
 # the version of the client code it is built from and the text of client/CHANGELOG.md.
 #
-# A client release also holds CUSTOS for macOS (built on a Mac of GitHub by client/mac/build-mac.sh), with the same
-# version: each program looks for its own update package in the client-v releases.
+# A client release also holds CUSTOS for macOS (built on a Mac of GitHub by client/mac/build-mac.sh) and CUSTOS for
+# Linux (built on an x86_64 and an ARM machine of GitHub by client/linux/build-linux.sh), with the same version: each
+# program looks for its own update package in the client-v releases.
 #
 # A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
 on:
@@ -234,6 +235,76 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # CUSTOS for Linux: the archive of the program for each processor, built on a machine of that processor (7z.so and
+  # SQLite in AlmaLinux 8, so that glibc 2.28 is enough). The "Linux agent" workflow tests the same files.
+  linux:
+    name: linux (${{ matrix.arch }})
+    needs: check
+    if: needs.check.outputs.client == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the archive of the program
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/linux/build-native-linux.sh client/artifacts-linux/native-${{ matrix.arch }}
+          bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-${{ matrix.arch }}
+          path: client/artifacts-linux/custos-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  # The update package of CUSTOS for Linux holds both archives; the release has them on their own too (install.sh
+  # without a site downloads the one of its processor).
+  linux-package:
+    needs: [check, linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: linux-*
+          path: client/artifacts-linux
+          merge-multiple: true
+
+      - name: Make the update package
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/linux/build-linux.sh package "$VERSION" client/artifacts-linux
+          mkdir -p out
+          cp client/artifacts-linux/custos-linux-x64.tar.gz client/artifacts-linux/custos-linux-arm64.tar.gz \
+            "client/artifacts-linux/custos-linux-$VERSION.zip" out/
+          ls -l out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-linux
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
   server:
     needs: check
     if: needs.check.outputs.server == 'true'
@@ -279,12 +350,12 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [check, client, legacy, macos, server]
+    needs: [check, client, legacy, macos, linux-package, server]
     if: >-
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
       (needs.client.result == 'success' || needs.legacy.result == 'success' || needs.server.result == 'success') &&
       needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.macos.result != 'failure' &&
-      needs.server.result != 'failure'
+      needs.linux-package.result != 'failure' && needs.server.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -318,13 +389,15 @@ jobs:
           printf '\n---\n\n' >> ../notes.md
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
           if [ "$PART" = client ]; then
-            title="CUSTOS for Windows and macOS $VERSION"
+            title="CUSTOS for Windows, macOS and Linux $VERSION"
             cat >> ../notes.md <<EOF
           **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place; tasks and settings stay.
 
           **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
 
           **macOS:** \`Custos-$VERSION.pkg\`, one installer for Macs with Apple silicon (M1 and newer) and with Intel, macOS 15 or newer. It is not signed by Apple yet: the first time macOS refuses it, allow it in System Settings → Privacy & Security → **Open Anyway** and open it again. After installing, give **Custos** Full Disk Access in System Settings → Privacy & Security, see the [guide]($blob/client/README.md#macos). Updates: from GitHub the same way, or from a monitoring site 1.3.0 or newer (\`custos-macos-$VERSION.zip\`).
+
+          **Linux servers:** CUSTOS for Linux, a service without a window run from a monitoring site, for Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux, Rocky and Oracle Linux 8+ and openSUSE 15 (x86_64 and ARM64, systemd). The easy way is the command on the **Install** page of a monitoring site 1.4.0 or newer: it installs the program from the site and connects it. Without a site: \`curl -fsSL https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$TAG/client/linux/install.sh | sudo bash\` takes \`custos-linux-x64.tar.gz\` or \`custos-linux-arm64.tar.gz\` from this release. Updates: from the site (\`custos-linux-$VERSION.zip\`), or the same command again. See the [guide]($blob/client/README.md#custos-for-linux).
 
           **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
 

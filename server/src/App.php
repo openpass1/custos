@@ -11,6 +11,7 @@ use Custos\Domain\Board;
 use Custos\Domain\Commands;
 use Custos\Domain\ConfigSnapshots;
 use Custos\Domain\Groups;
+use Custos\Domain\Install;
 use Custos\Domain\Integrations;
 use Custos\Domain\Maintenance;
 use Custos\Domain\Monitor;
@@ -28,6 +29,7 @@ use Custos\Domain\Templates;
 use Custos\Domain\UpdateWatch;
 use Custos\Domain\Users;
 use Custos\Http\Api\AgentApi;
+use Custos\Http\Api\InstallApi;
 use Custos\Http\Api\IntegrationApi;
 use Custos\Http\Request;
 use Custos\Http\Response;
@@ -45,7 +47,7 @@ use Custos\Infra\Updater;
  */
 final class App
 {
-    public const VERSION = '1.3.0';
+    public const VERSION = '1.4.0';
     /** Interface languages: lang/<code>.php. */
     public const LANGUAGES = ['ru', 'en'];
     public const DEFAULT_LANGUAGE = 'ru';
@@ -79,6 +81,9 @@ final class App
         }
         if (IntegrationApi::handles($request->path())) {
             return (new IntegrationApi($this))->handle($request);
+        }
+        if (InstallApi::handles($request->path())) {
+            return (new InstallApi($this))->handle($request);
         }
         return (new Web($this))->handle($request);
     }
@@ -213,6 +218,12 @@ final class App
     public function packages(): Packages
     {
         return $this->services[Packages::class] ??= new Packages($this->db(), $this->keys(), $this->commands(), $this->config->varDir() . '/packages');
+    }
+
+    /** Installing CUSTOS for Linux with one command from the site (page "Install"). */
+    public function install(): Install
+    {
+        return $this->services[Install::class] ??= new Install($this->settings(), $this->packages(), $this->keys(), $this->config->url());
     }
 
     public function updateWatch(): UpdateWatch

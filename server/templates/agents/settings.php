@@ -9,6 +9,8 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
 $reported = json_decode((string) $agent['settings'], true) ?: [];
 $passwordSet = !empty($reported['program_password_hash']);
 $action = $values['password_action'] ?? 'keep';
+// CUSTOS for Linux has no window: no program password, tray or users of the computer to set. What it has is sent back.
+$linux = Agents::isLinux($agent);
 ?>
 <p class="crumbs"><a href="<?= e(url('/agents')) ?>"><?= e(t('agents.title')) ?></a> ›
     <a href="<?= e(url('/agents/' . $agent['id'])) ?>"><?= e(Agents::name($agent)) ?></a></p>
@@ -33,6 +35,11 @@ $action = $values['password_action'] ?? 'keep';
 <form method="post" action="<?= e(url('/agents/' . $agent['id'] . '/settings')) ?>" class="stack" autocomplete="off">
     <?= csrf_field() ?>
     <fieldset class="editor" data-scope<?= $refusal !== null ? ' disabled' : '' ?>>
+        <?php if ($linux): ?>
+            <input type="hidden" name="password_action" value="keep">
+            <input type="hidden" name="tray_mode" value="<?= e((string) $values['tray_mode']) ?>">
+            <?php if ($values['allow_all_users_edit']): ?><input type="hidden" name="allow_all_users_edit" value="1"><?php endif ?>
+        <?php else: ?>
         <section class="panel stack">
             <h2><?= e(t('agent_settings.password')) ?></h2>
             <p class="note"><?= e(t($passwordSet ? 'agent_settings.password.state.set' : ($known ? 'agent_settings.password.state.none' : 'agent_settings.password.state.unknown'))) ?></p>
@@ -51,9 +58,11 @@ $action = $values['password_action'] ?? 'keep';
             <?= $error('program_password') ?>
             <p class="note"><?= e(t('agent_settings.password.hint')) ?></p>
         </section>
+        <?php endif ?>
 
         <section class="panel stack">
             <h2><?= e(t('agent_settings.program')) ?></h2>
+            <?php if (!$linux): ?>
             <label><?= e(t('agent_settings.tray_mode')) ?>
                 <select name="tray_mode">
                     <?php foreach (['full', 'status', 'hidden'] as $k): ?>
@@ -64,6 +73,7 @@ $action = $values['password_action'] ?? 'keep';
             <label class="check"><input type="checkbox" name="allow_all_users_edit" value="1"<?= checked((bool) $values['allow_all_users_edit']) ?>>
                 <?= e(t('agent_settings.allow_all_users_edit')) ?></label>
             <p class="note"><?= e(t('agent_settings.allow_all_users_edit.hint')) ?></p>
+            <?php endif ?>
             <label><?= e(t('agent_settings.log_retention_days')) ?>
                 <input type="number" name="log_retention_days" value="<?= e((string) $values['log_retention_days']) ?>" min="1" max="3650" class="short">
             </label>

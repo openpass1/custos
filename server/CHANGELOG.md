@@ -11,6 +11,15 @@ heading for the next one. The version at the top is always `VERSION` in `src/App
 The release text is made by `.github/release-notes.sh`: every version from the top down to the previous release, so
 a version that was never released by itself is not lost.
 
+## 1.4.0
+
+### Added
+- A new menu section **Install** (also **Add a machine** on **Machines**): how to connect a new machine. For a Linux server it gives one command (`curl … | sudo bash`, or with `wget`) that downloads CUSTOS for Linux from this site, installs it and connects it; the machine then waits for approval as usual. The address in the command is made from the registration key, so a new key makes the old commands stop working. For Windows and macOS it links the installers of the newest release on GitHub and shows the connection string to paste.
+- Machines with CUSTOS for Linux are marked **Linux**. **Updates** take its packages (`custos-linux-<version>.zip`, the program for both processors) in a section of their own with their own current version, find them in the `client-v…` releases on GitHub, and send them only to Linux machines; a Linux machine is never offered 7-Zip.
+- The page of a Linux machine has a **Snapshots** block: for each volume of its tasks, whether a snapshot can be made (LVM, btrfs, ZFS), how much room the volume group has, the last snapshot, and what to do when there is no room, with the command that adds a disk to the volume group ready to copy. A volume without room for a snapshot, or whose last snapshot ran full, opens a **Snapshot** problem for each of its tasks, shown on the dashboard and sent by Telegram or e-mail; it closes by itself when the agent says the volume is fine again.
+- The task editor of a Linux machine shows Linux paths, calls the snapshot of open files a **volume snapshot (LVM, btrfs, ZFS)**, copies **owners and permissions** instead of NTFS rights, offers no cloud drives, and a new task goes on without a snapshot (with a warning) by default when none can be made.
+- The settings of a Linux machine leave out the program password, the tray icon and the other users of the computer, which it does not have.
+
 ## 1.3.0
 
 ### Added

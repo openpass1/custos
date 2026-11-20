@@ -103,14 +103,14 @@ function status_class(string $status): string
 {
     return match ($status) {
         'success', 'online', 'ok', 'done', 'sent' => 'ok',
-        'warning', 'anomaly', 'space' => 'warn',
+        'warning', 'anomaly', 'space', 'snapshot' => 'warn',
         'error', 'failed', 'missed' => 'bad',
         'running', 'paused', 'pending', 'queued', 'delivered' => 'info',
         default => 'muted',
     };
 }
 
-/** The mark of a machine with another edition (Windows 7 and 8.1, macOS), or nothing for the standard one. */
+/** The mark of a machine with another edition (Windows 7 and 8.1, macOS, Linux), or nothing for the standard one. */
 function edition_badge(array $agent): string
 {
     $edition = \Custos\Domain\Agents::edition((string) ($agent['edition'] ?? ''));
@@ -130,6 +130,7 @@ function badge(string $status, ?string $label = null): string
         'paused' => 'pause',
         'missed' => 'event-busy',
         'space' => 'hdd',
+        'snapshot' => 'snapshot',
         'offline' => 'cloud-off',
         'disabled' => 'power-off',
         'queued', 'delivered' => 'pending',
@@ -242,6 +243,11 @@ function problem_text(array $p): string
     if ($p['kind'] === 'space') {
         $days = (int) ($p['days_left'] ?? 0);
         return t($days === 0 ? 'problem.space.full' : 'problem.space', ['path' => (string) $p['message'], 'n' => $days]);
+    }
+    if ($p['kind'] === 'snapshot') {
+        $s = \Custos\Domain\Snapshots::problem($p['message']);
+        return t($s['state'] === 'overflowed' ? 'problem.snapshot.overflowed' : 'problem.snapshot.no_space',
+            ['mount' => $s['mount'], 'group' => $s['group'] ?? '?']);
     }
     if ($p['kind'] === 'error') {
         $text = $p['message'] === null ? t('problem.error') : t('problem.error.message', ['message' => $p['message']]);

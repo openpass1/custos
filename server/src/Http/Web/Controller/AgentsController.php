@@ -6,6 +6,7 @@ namespace Custos\Http\Web\Controller;
 
 use Custos\Domain\Agents;
 use Custos\Domain\Packages;
+use Custos\Domain\Snapshots;
 use Custos\Domain\TaskEdits;
 use Custos\Http\Response;
 use Custos\Http\Web\Controller;
@@ -96,6 +97,9 @@ final class AgentsController extends Controller
             'latestSevenZip' => Packages::fits('7zip', $agent) ? $this->app->packages()->latestSevenZip() : null,
             'settings' => json_decode((string) $agent['settings'], true) ?: [],
             'storages' => $this->app->storage()->forAgent($agent['id']),
+            'snapshots' => Snapshots::of($agent),
+            'snapshotsAt' => $agent['snapshots_at'] ?? null,
+            'taskNames' => array_column($db->all('SELECT id, name FROM tasks WHERE agent_id = ? AND deleted = 0', [$agent['id']]), 'name', 'id'),
         ], Agents::name($agent));
     }
 
@@ -339,7 +343,7 @@ final class AgentsController extends Controller
         return false;
     }
 
-    /** "Update the agent" (kind agent, legacy or macos: the machine's edition) / "Update 7-Zip" on one machine. */
+    /** "Update the agent" (kind agent, legacy, macos or linux: the machine's edition) / "Update 7-Zip" on one machine. */
     private function install(array $agent, string $kind): void
     {
         if (!$this->approved($agent)) {

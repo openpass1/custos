@@ -181,13 +181,21 @@ final class Notifier
         ];
     }
 
-    /** One line about a problem: "Documents — ошибка: …", "… не запустилось по расписанию 12.11.2026 00:00 …" or "… место в D:\Backup …". */
+    /**
+     * One line about a problem: "Documents — ошибка: …", "… не запустилось по расписанию 12.11.2026 00:00 …",
+     * "… место в D:\Backup …" or "… снимок / не делается …".
+     */
     public function describe(array $p): string
     {
         $task = $p['task_name'] ?? $this->lang->get('runs.unknown_task');
         if ($p['kind'] === 'space') {
             $days = (int) ($p['days_left'] ?? 0);
             return $this->lang->get($days === 0 ? 'notify.space.full' : 'notify.space', ['task' => $task, 'path' => (string) $p['message'], 'n' => $days]);
+        }
+        if ($p['kind'] === 'snapshot') {
+            $s = Snapshots::problem($p['message']);
+            return $this->lang->get($s['state'] === 'overflowed' ? 'notify.snapshot.overflowed' : 'notify.snapshot.no_space',
+                ['task' => $task, 'mount' => $s['mount'], 'group' => $s['group'] ?? '?', 'command' => Snapshots::fixCommand($s['group'])]);
         }
         if ($p['kind'] === 'error') {
             return $p['message'] === null

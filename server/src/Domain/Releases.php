@@ -17,26 +17,30 @@ use Custos\Infra\Time;
  *   legacy  tag client-legacy-vX.Y.Z, package custos-legacy-X.Y.Z.zip: the same for the edition for Windows 7 and
  *           8.1 (its packages are of kind legacy). Shown and noticed only while the site has any of that edition;
  *   macos   tag client-vX.Y.Z (the same releases as the program for Windows), package custos-macos-X.Y.Z.zip: the
- *           same for CUSTOS for macOS (kind macos), likewise only while the site has any of it.
+ *           same for CUSTOS for macOS (kind macos), likewise only while the site has any of it;
+ *   linux   tag client-vX.Y.Z as well, package custos-linux-X.Y.Z.zip: the same for CUSTOS for Linux (kind linux),
+ *           likewise only while the site has any of it.
  * A bell notice tells once per version when the site is older, or when the program is newer than every agent
  * package of its edition on the server. Drafts and pre-releases are skipped. The check can be turned off (server
  * without internet).
  *
  * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server, release_client,
- * release_legacy and release_macos (JSON of the release found, see pick()), release_*_notified (versions noticed).
+ * release_legacy, release_macos and release_linux (JSON of the release found, see pick()), release_*_notified
+ * (versions noticed).
  */
 final class Releases
 {
     public const CHECK_EVERY_S = 86400;
     public const DEFAULT_REPO = 'openpass1/custos';
-    public const PARTS = ['server', 'client', 'legacy', 'macos'];
+    public const PARTS = ['server', 'client', 'legacy', 'macos', 'linux'];
     /** The program parts: the standard edition (client) and the others, named like their package kind. */
-    public const PROGRAM_PARTS = ['client', 'legacy', 'macos'];
+    public const PROGRAM_PARTS = ['client', 'legacy', 'macos', 'linux'];
     /** The tag of a release of each part is <prefix>X.Y.Z, its package <zip>X.Y.Z.zip. */
-    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v', 'macos' => 'client-v'];
-    private const ZIPS = ['server' => 'custos-server-', 'client' => 'custos-', 'legacy' => 'custos-legacy-', 'macos' => 'custos-macos-'];
-    /** Far above the size of the program's update package. */
-    private const MAX_CLIENT_BYTES = 100 * 1024 * 1024;
+    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v', 'macos' => 'client-v', 'linux' => 'client-v'];
+    private const ZIPS = ['server' => 'custos-server-', 'client' => 'custos-', 'legacy' => 'custos-legacy-', 'macos' => 'custos-macos-',
+                          'linux' => 'custos-linux-'];
+    /** Far above the size of the program's update packages (the one for Linux holds the program twice, about 80 MB). */
+    private const MAX_CLIENT_BYTES = 200 * 1024 * 1024;
 
     /** @param \Closure(string, int): array{0: int, 1: string, 2: string} $http */
     public function __construct(
@@ -104,8 +108,8 @@ final class Releases
 
     /**
      * The newest release of a part in GitHub's list: version, tag, url (the release page), published_at, the package
-     * (zip_name, zip_url, zip_size), sha256 (GitHub's digest of the package, when given) and sums_url (the release's
-     * SHA256SUMS.txt, when present).
+     * (zip_name, zip_url, zip_size), sha256 (GitHub's digest of the package, when given), sums_url (the release's
+     * SHA256SUMS.txt, when present) and installers (name => address of each .exe and .pkg, for the page "Install").
      */
     public static function pick(array $releases, string $part): ?array
     {
@@ -121,12 +125,15 @@ final class Releases
             }
             $zipName = self::ZIPS[$part] . "$version.zip";
             $zip = $sums = null;
+            $installers = [];
             foreach ((array) ($release['assets'] ?? []) as $asset) {
                 $name = (string) ($asset['name'] ?? '');
                 if ($name === $zipName) {
                     $zip = $asset;
                 } elseif ($name === 'SHA256SUMS.txt') {
                     $sums = $asset;
+                } elseif (preg_match('/\.(exe|pkg)$/', $name) && !empty($asset['browser_download_url'])) {
+                    $installers[$name] = (string) $asset['browser_download_url'];
                 }
             }
             if ($zip === null || empty($zip['browser_download_url'])) {
@@ -143,6 +150,7 @@ final class Releases
                 'zip_size' => (int) ($zip['size'] ?? 0),
                 'sha256' => preg_match('/^sha256:([0-9a-f]{64})$/i', $digest, $d) ? strtolower($d[1]) : null,
                 'sums_url' => $sums !== null && !empty($sums['browser_download_url']) ? (string) $sums['browser_download_url'] : null,
+                'installers' => $installers,
             ];
         }
         return $best;
@@ -163,7 +171,7 @@ final class Releases
     }
 
     /**
-     * The newest program release of an edition ($part client, legacy or macos) when it is newer than every package of
+     * The newest program release of an edition ($part client, legacy, macos or linux) when it is newer than every package of
      * that edition on the server. The editions other than the standard one count only while the site has any of them.
      */
     public function newerClient(string $part = 'client'): ?array

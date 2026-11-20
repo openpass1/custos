@@ -70,20 +70,22 @@ final class TaskForm
     /**
      * @param array<string, array> $credentials accounts the task may use, by id: {id, kind, user, domain, has_secret}
      * @param bool $template a template: accounts get no passwords
-     * @param bool $legacy a task of a machine with the edition for Windows 7 and 8.1: no cloud drives
+     * @param ?string $withoutCloud the edition of a machine without cloud drives (Agents::withoutCloud: legacy, linux),
+     *     null when it has them
      */
-    private function __construct(private readonly array $credentials, private readonly bool $template, private readonly bool $legacy = false)
+    private function __construct(private readonly array $credentials, private readonly bool $template, private readonly ?string $withoutCloud = null)
     {
     }
 
     /**
-     * The kinds of destinations a machine can write to: the edition for Windows 7 and 8.1 has no cloud drives.
+     * The kinds of destinations a machine can write to: the edition for Windows 7 and 8.1 and CUSTOS for Linux have
+     * no cloud drives ($withoutCloud is then their edition, see Agents::withoutCloud).
      *
      * @return list<string>
      */
-    public static function destinationKinds(bool $legacy): array
+    public static function destinationKinds(?string $withoutCloud): array
     {
-        return $legacy ? array_values(array_diff(self::DESTINATION_KINDS, self::CLOUD_KINDS)) : self::DESTINATION_KINDS;
+        return $withoutCloud !== null ? array_values(array_diff(self::DESTINATION_KINDS, self::CLOUD_KINDS)) : self::DESTINATION_KINDS;
     }
 
     /**
@@ -103,9 +105,14 @@ final class TaskForm
         return array_values(array_unique($kinds));
     }
 
-    /** A new task with the defaults of A.9. */
-    public static function defaults(): array
+    /**
+     * A new task with the defaults of A.9. On a machine with CUSTOS for Linux a task goes on without a snapshot when
+     * it cannot have one (usually no free room in the LVM volume group, which the machine page explains), and the
+     * Windows temporary files are not excluded.
+     */
+    public static function defaults(?array $agent = null): array
     {
+        $linux = $agent !== null && Agents::isLinux($agent);
         return [
             'id' => Crypto::uuid4(),
             'revision' => 0,
@@ -117,7 +124,7 @@ final class TaskForm
             'mirror_mode' => null,
             'force_full' => ['every_runs' => 0, 'weekday' => null, 'month_day' => null],
             'sources' => [],
-            'filters' => ['include' => [], 'exclude' => ['~$*', '*.tmp', '*.log'], 'exclude_dirs' => [],
+            'filters' => ['include' => [], 'exclude' => $linux ? ['*.tmp', '*.swp'] : ['~$*', '*.tmp', '*.log'], 'exclude_dirs' => [],
                           'skip_hidden' => false, 'skip_system' => true, 'skip_temp' => true],
             'profile_sid' => null,
             'destinations' => [],
@@ -130,7 +137,7 @@ final class TaskForm
                             'gfs' => ['daily' => 7, 'weekly' => 4, 'monthly' => 12], 'safe_mirror_days' => 30],
             'schedule' => ['type' => 'daily', 'times' => ['00:00'], 'days_of_week' => [1, 2, 3, 4, 5, 6, 7], 'days_of_month' => [],
                            'interval_minutes' => 0, 'catch_up' => true],
-            'vss' => ['enabled' => true, 'on_failure' => 'abort'],
+            'vss' => ['enabled' => true, 'on_failure' => $linux ? 'continue' : 'abort'],
             'copy' => ['preserve_acl' => true, 'read_retries' => 1],
             'events' => ['pre' => [], 'post' => [], 'abort_on_pre_failure' => true, 'after' => 'none'],
             'log_level' => 'inherit',
@@ -164,9 +171,9 @@ final class TaskForm
      *
      * @param array<string, array> $credentials accounts by id
      */
-    public static function parse(array $base, array $post, array $credentials, bool $template = false, bool $legacy = false): self
+    public static function parse(array $base, array $post, array $credentials, bool $template = false, ?string $withoutCloud = null): self
     {
-        $form = new self($credentials, $template, $legacy);
+        $form = new self($credentials, $template, $withoutCloud);
         $form->view = $form->read($base, $post);
         return $form;
     }
@@ -358,8 +365,8 @@ final class TaskForm
             $item = $known[$id] ?? ['id' => Crypto::uuid4()];
             $kind = $this->choice($row, 'kind', self::DESTINATION_KINDS);
             $what = $this->label('task_form.destination', $n);
-            if ($this->legacy && in_array($kind, self::CLOUD_KINDS, true)) {
-                $this->error('task_form.error.cloud_legacy', ['what' => $what]);
+            if ($this->withoutCloud !== null && in_array($kind, self::CLOUD_KINDS, true)) {
+                $this->error('task_form.error.cloud_' . $this->withoutCloud, ['what' => $what]);
             }
             $path = trim(self::str($row, 'path'));
             $item = array_replace($item, [

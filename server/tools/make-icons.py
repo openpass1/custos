@@ -35,10 +35,11 @@ ICONS = {
     'inbox': 'move_to_inbox', 'shield': 'verified_user', 'bolt': 'bolt', 'new': 'release_alert+', 'pending': 'pending',
     'task': 'assignment+', 'running': 'progress_activity', 'update': 'system_update_alt', 'zip': 'folder_zip',
     'database': 'database', 'person-add': 'person_add', 'notes': 'edit_note', 'chart': 'bar_chart', 'tv': 'tv',
+    'snapshot': 'photo_camera',
     # Navigation (the filled form marks the open section)
     'nav-dashboard': 'space_dashboard+', 'nav-agents': 'computer+', 'nav-problems': 'report+', 'nav-runs': 'history',
     'nav-templates': 'library_books+', 'nav-updates': 'system_update_alt', 'nav-users': 'group+',
-    'nav-audit': 'receipt_long+', 'nav-settings': 'settings+', 'nav-tasks': 'assignment+',
+    'nav-audit': 'receipt_long+', 'nav-settings': 'settings+', 'nav-tasks': 'assignment+', 'nav-install': 'install_desktop+',
 }
 
 

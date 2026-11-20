@@ -9,8 +9,8 @@ use Custos\Infra\Time;
 /**
  * Keeps an eye on versions (7.1, 7.7, section 8):
  *   - machines with an agent older than the current version of their edition: one notice when their number grows or
- *     the current version changes (agent.outdated; legacy.outdated and macos.outdated for the editions for Windows 7
- *     and 8.1 and for macOS);
+ *     the current version changes (agent.outdated; legacy.outdated, macos.outdated and linux.outdated for the
+ *     editions for Windows 7 and 8.1, macOS and Linux);
  *   - 7-Zip: once a day the newest release is read from GitHub (ip7z/7zip); when machines have an older 7z.dll, one
  *     notice per new 7-Zip version. The installer is downloaded only when an administrator asks for it.
  *
@@ -151,7 +151,7 @@ final class UpdateWatch
 
     /**
      * Notice "N machines run an older agent" when the number grows or the current version changes; $kind is the
-     * edition (agent, legacy or macos), each with its own current version and notice.
+     * edition (agent, legacy, macos or linux), each with its own current version and notice.
      */
     private function agentNotice(string $kind): int
     {

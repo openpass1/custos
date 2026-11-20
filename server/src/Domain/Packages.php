@@ -16,6 +16,8 @@ use Custos\Infra\ZipReader;
  *   - legacy: the same for the edition for Windows 7 and 8.1, whose manifest.json says "edition": "legacy". Such a
  *     machine (Agents::isLegacy) gets only these and the standard ones never; each edition has its own current version;
  *   - macos: the same for CUSTOS for macOS ("edition": "macos", Agents::isMac);
+ *   - linux: the same for CUSTOS for Linux ("edition": "linux", Agents::isLinux): the archive of the program for each
+ *     processor, from which the site also installs the program on a new server (Install);
  *   - 7zip: the 64-bit 7-Zip installer from which agents take 7z.dll (sevenzip.update); only for the standard edition.
  *
  * Each file is checked, its SHA-256 is computed and signed with the server key, and it is kept in var/packages/<kind>/.
@@ -26,8 +28,8 @@ final class Packages
     public const MAX_MANIFEST_PROTOCOL = 1;
     public const VERSION = '/^\d{1,5}(\.\d{1,5}){1,3}([-+][0-9A-Za-z.-]{1,20})?$/';
     public const SEVENZIP_VERSION = '/^\d{1,3}\.\d{2}$/';
-    /** The kinds of program packages: the standard edition, the one for Windows 7 and 8.1 and the one for macOS. */
-    public const PROGRAM_KINDS = ['agent', Agents::LEGACY, Agents::MACOS];
+    /** The kinds of program packages: the standard edition and the others (Windows 7 and 8.1, macOS, Linux). */
+    public const PROGRAM_KINDS = ['agent', Agents::LEGACY, Agents::MACOS, Agents::LINUX];
     /** The agent version stored by the fake agent and real agents before the first heartbeat: no version known. */
     private const UNKNOWN = '';
 
@@ -48,7 +50,7 @@ final class Packages
         return ($kind === 'agent' ? '' : "$kind\n") . "$version\n$sha256";
     }
 
-    /** The kind of program packages this machine takes: its edition (legacy, macos), agent for the standard one. */
+    /** The kind of program packages this machine takes: its edition (legacy, macos, linux), agent for the standard one. */
     public static function agentKind(array $agent): string
     {
         $edition = Agents::edition((string) ($agent['edition'] ?? ''));
@@ -84,7 +86,7 @@ final class Packages
         return $this->db->one('SELECT * FROM agent_updates WHERE kind = ? AND version = ?', [$kind, $version]);
     }
 
-    /** The program version marked current for an edition (agent, legacy or macos), or null. */
+    /** The program version marked current for an edition (agent, legacy, macos or linux), or null. */
     public function current(string $kind = 'agent'): ?array
     {
         return $this->db->one('SELECT * FROM agent_updates WHERE kind = ? AND is_current = 1', [$kind]);
@@ -110,8 +112,8 @@ final class Packages
     /**
      * Adds an agent update package. The zip must have manifest.json with the version, min_protocol not newer than
      * the server speaks, and the list of files, all present in the archive. "edition": "legacy" makes it a package
-     * of the edition for Windows 7 and 8.1 (kind legacy), "edition": "macos" one of CUSTOS for macOS (kind macos); an
-     * edition the server does not know is refused.
+     * of the edition for Windows 7 and 8.1 (kind legacy), "edition": "macos" one of CUSTOS for macOS (kind macos),
+     * "edition": "linux" one of CUSTOS for Linux (kind linux); an edition the server does not know is refused.
      *
      * @throws \InvalidArgumentException with a lang key; the message parameters are in $params
      * @return array the stored row
@@ -159,6 +161,10 @@ final class Packages
                 throw new \InvalidArgumentException('updates.error.file_missing');
             }
         }
+        // CUSTOS for Linux installs from the archive of its processor (Install, the update script of the agent).
+        if ($kind === Agents::LINUX && Install::archiveSums(['manifest' => $json]) === []) {
+            throw new \InvalidArgumentException('updates.error.linux_archive');
+        }
         if ($this->find($kind, $version) !== null) {
             $params = ['version' => $version];
             throw new \InvalidArgumentException($kind === 'agent' ? 'updates.error.exists' : "updates.error.exists_$kind");
@@ -198,7 +204,7 @@ final class Packages
         return $this->store('7zip', $version, $tmpFile, '7z' . str_replace('.', '', $version) . '-x64.exe', null, $source, $login);
     }
 
-    /** Makes $version the program version machines of the edition ($kind agent, legacy or macos) should run. */
+    /** Makes $version the program version machines of the edition ($kind agent, legacy, macos or linux) should run. */
     public function setCurrent(string $version, string $kind = 'agent'): void
     {
         $this->db->transaction(function () use ($version, $kind) {
@@ -208,7 +214,7 @@ final class Packages
     }
 
     /**
-     * Whether the site has anything of an edition ($kind legacy or macos): such a machine or such a package. The
+     * Whether the site has anything of an edition ($kind legacy, macos or linux): such a machine or such a package. The
      * sections and notices of an edition show only then.
      */
     public function inUse(string $kind): bool
@@ -257,7 +263,7 @@ final class Packages
     }
 
     /**
-     * Queues the update of the agent (update.install, kind agent, legacy or macos) or of 7z.dll (sevenzip.update) on
+     * Queues the update of the agent (update.install, kind agent, legacy, macos or linux) or of 7z.dll (sevenzip.update) on
      * machines. Machines that are not approved, already run this version or a newer one, or are of the other
      * edition (fits) are skipped.
      *

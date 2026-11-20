@@ -76,6 +76,61 @@ final class ZipReader
     }
 
     /**
+     * Writes an entry of any size to $out in pieces, never holding it in memory (the archive of the program inside the
+     * package for Linux, about 40 MB), and checks its CRC at the end. Returns the number of bytes written.
+     *
+     * @param resource $out
+     * @throws \RuntimeException when there is no such entry or it is damaged; part of it may have been written then
+     */
+    public function copy(string $name, $out): int
+    {
+        $entry = $this->entries[$name] ?? throw new \RuntimeException("no $name in the archive");
+        if ($entry['flags'] & 1) {
+            throw new \RuntimeException("$name is encrypted");
+        }
+        if (!in_array($entry['method'], [0, 8], true)) {
+            throw new \RuntimeException("$name uses an unsupported compression method {$entry['method']}");
+        }
+        fseek($this->handle, $entry['offset']);
+        $header = (string) fread($this->handle, 30);
+        if (strlen($header) !== 30 || !str_starts_with($header, self::LOCAL)) {
+            throw new \RuntimeException("bad local header of $name");
+        }
+        $local = unpack('vnameLength/vextraLength', substr($header, 26, 4));
+        $meta = stream_get_meta_data($this->handle);
+        $in = @fopen((string) $meta['uri'], 'rb');
+        if ($in === false) {
+            throw new \RuntimeException('cannot open the archive again');
+        }
+        try {
+            fseek($in, $entry['offset'] + 30 + $local['nameLength'] + $local['extraLength']);
+            if ($entry['method'] === 8 && $entry['size'] > 0) {
+                // Raw deflate, as ZIP stores it.
+                stream_filter_append($in, 'zlib.inflate', STREAM_FILTER_READ, ['window' => -15]);
+            }
+            $crc = hash_init('crc32b');
+            $left = $entry['size'];
+            while ($left > 0) {
+                $chunk = fread($in, min(1 << 20, $left));
+                if ($chunk === false || $chunk === '') {
+                    break;
+                }
+                hash_update($crc, $chunk);
+                if (fwrite($out, $chunk) !== strlen($chunk)) {
+                    throw new \RuntimeException("cannot write $name");
+                }
+                $left -= strlen($chunk);
+            }
+            if ($left !== 0 || hash_final($crc) !== sprintf('%08x', $entry['crc'])) {
+                throw new \RuntimeException("$name is damaged");
+            }
+            return $entry['size'];
+        } finally {
+            fclose($in);
+        }
+    }
+
+    /**
      * Unpacks the entries under $prefix ("server/") into $target, without the prefix. $skip decides about each path
      * (relative to the prefix); folders are created as needed. Paths that would leave $target, links and damaged
      * entries stop the unpacking with an exception.

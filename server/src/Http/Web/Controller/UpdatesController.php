@@ -14,9 +14,9 @@ use Custos\Http\Web\Controller;
  * Updates (section 8): the site itself (the newest release on GitHub or an uploaded package, run by cron), agent
  * update packages (upload or download of the newest program release, current version, update machines) and 7-Zip
  * (the daily check of the newest release, download or upload of the installer, update of 7z.dll on machines).
- * The editions for Windows 7 and 8.1 and for macOS have packages of their own (kind legacy, macos) and their own
- * current versions; the section of each shows only while the site has any of it, and their machines are never offered
- * another edition or 7-Zip.
+ * The editions for Windows 7 and 8.1, macOS and Linux have packages of their own (kind legacy, macos, linux) and their
+ * own current versions; the section of each shows only while the site has any of it, and their machines are never
+ * offered another edition or 7-Zip.
  */
 final class UpdatesController extends Controller
 {
@@ -123,7 +123,7 @@ final class UpdatesController extends Controller
     }
 
     /**
-     * Updates machines: kind agent, legacy or macos (the current version of that edition) or 7zip (the newest installer on
+     * Updates machines: kind agent, legacy, macos or linux (the current version of that edition) or 7zip (the newest installer on
      * the server); target "selected" (agent_ids[]), "outdated" or "group" (group_id). Only the machines the package
      * is for are taken (Packages::fits): the other edition's are left out without a word.
      */
@@ -248,7 +248,7 @@ final class UpdatesController extends Controller
 
     /**
      * Downloads the newest program release from GitHub as an agent update package (checked and signed): $part client
-     * for the standard edition, legacy for the edition for Windows 7 and 8.1, macos for CUSTOS for macOS.
+     * for the standard edition, legacy for the edition for Windows 7 and 8.1, macos and linux for CUSTOS for macOS and Linux.
      */
     public function clientDownload(string $part): Response
     {
@@ -318,6 +318,7 @@ final class UpdatesController extends Controller
         return match ($kind) {
             'legacy' => 'Windows 7, 8.1',
             'macos' => 'macOS',
+            'linux' => 'Linux',
             default => 'standard',
         };
     }
