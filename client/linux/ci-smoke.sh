@@ -16,6 +16,7 @@ if ! bash "$here/install.sh" --packages-only; then
   if command -v zypper > /dev/null; then zypper -n search -t package libicu || true; fi
   if command -v apt-cache > /dev/null; then apt-cache pkgnames libicu || true; fi
   if command -v dnf > /dev/null; then dnf -q list available 'libicu*' || true; fi
+  ldconfig -p | grep -i icu || true
   echo "FAILED on $PRETTY_NAME: install.sh --packages-only"
   exit 1
 fi

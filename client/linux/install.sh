@@ -88,9 +88,9 @@ install_packages() {
     local wanted=()
     for name in "$@"; do
       if [ "$name" = libicu ]; then
-        # libicu73_2 on newer releases, libicu-suse65_1 on older ones.
+        # libicu73_2, libicu69 …: the newest. Not libicu-suse65_1, whose libraries have names .NET does not look for.
         name=$(zypper -n -q search -t package libicu 2> /dev/null | awk -F'|' 'NF > 2 {gsub(/ /,"",$2); print $2}' \
-          | grep -E '^libicu(-suse)?[0-9_]+$' | sort -V | tail -n 1 || true)
+          | grep -E '^libicu[0-9_]+$' | sort -V | tail -n 1 || true)
         [ -n "$name" ] || continue
       fi
       wanted+=("$name")
