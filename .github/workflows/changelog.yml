@@ -1,0 +1,44 @@
+name: Changelog
+
+# Checks the three changelogs, whose top sections become the text of the next release (.github/release-notes.sh):
+# groups Added, Improved, Fixed, Removed with one-line items, every older section released, and the site's top section
+# equal to VERSION in server/src/App.php. Takes a few seconds.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/CHANGELOG*.md'
+      - 'server/CHANGELOG.md'
+      - 'server/src/App.php'
+      - '.github/release-notes.sh'
+      - '.github/workflows/changelog.yml'
+  pull_request:
+    paths:
+      - 'client/CHANGELOG*.md'
+      - 'server/CHANGELOG.md'
+      - 'server/src/App.php'
+      - '.github/release-notes.sh'
+      - '.github/workflows/changelog.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check the changelogs
+        run: |
+          set -euo pipefail
+          site_version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" server/src/App.php)
+          for part in client client-legacy server; do
+            version=top
+            [ "$part" != server ] || version=$site_version
+            echo "::group::$part ($version)"
+            .github/release-notes.sh "$part" "$version"
+            echo "::endgroup::"
+          done

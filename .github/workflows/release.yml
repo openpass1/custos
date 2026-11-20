@@ -1,16 +1,18 @@
 name: Release
 
 # Makes a DRAFT release of one part from the commit it runs on: Actions → Release → Run workflow, choose the part and
-# type the version. The draft gets the files, SHA256SUMS.txt and its text: the changes from the part's CHANGELOG.md
-# (client/ or server/, made by .github/release-notes.sh) and how to install and update, in English. Only people who can
-# write to the repository see a draft; it becomes public when it is published by hand on the Releases page, and the tag
-# (client-v<version>, client-legacy-v<version> or server-v<version>) is created at that moment.
+# type the version. The draft gets the files, SHA256SUMS.txt and its text: the section of this version in the part's
+# changelog (made by .github/release-notes.sh: Added, Improved, Fixed, Removed, one line per item) and one line of
+# links, in English. Only people who can write to the repository see a draft; it becomes public when it is published by
+# hand on the Releases page, and the tag (client-v<version>, client-legacy-v<version> or server-v<version>) is created
+# at that moment.
 #
-# client-legacy is the edition for Windows 7 SP1 and 8.1 (build.ps1 -Legacy): released as is, only when needed, with
-# the text of client/CHANGELOG.md. Its version may be an older section of that file than the top one, so it can stay
-# behind the standard edition (client 1.1.0 brought the new window, which that edition does not have).
+# Changelogs: client/CHANGELOG.md (client), client/CHANGELOG-legacy.md (client-legacy, the edition for Windows 7 SP1
+# and 8.1, build.ps1 -Legacy, released only when needed), server/CHANGELOG.md (server). The version released is the
+# top section of its file.
 #
-# A pull request that changes this file or release-notes.sh builds both parts with a test version and publishes nothing.
+# A pull request that changes this file or release-notes.sh builds every part with a test version and publishes
+# nothing. The changelogs themselves are checked by changelog.yml.
 on:
   workflow_dispatch:
     inputs:
@@ -70,6 +72,7 @@ jobs:
             echo "Test run: every part is built, nothing is published." >> "$GITHUB_STEP_SUMMARY"
             # The changelogs still give a release text, and the site's starts with its version.
             .github/release-notes.sh client top > /dev/null
+            .github/release-notes.sh client-legacy top > /dev/null
             .github/release-notes.sh server "$site_version" > /dev/null
             exit 0
           fi
@@ -87,12 +90,9 @@ jobs:
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             fail "A release $tag already exists, probably a draft: delete it on the Releases page first. / Выпуск $tag уже есть, скорее всего черновик: сначала удалите его на странице Releases."
           fi
-          # The release text comes from the part's CHANGELOG.md: it must start with this version. The edition for
-          # Windows 7 and 8.1 is the client code built another way, so it takes the client's, and may release an older
-          # section of it (it stays behind the standard edition, released only when needed).
-          notes=${PART%-legacy}
+          # The release text is the top section of the part's changelog, which must be this version.
           if ! message=$(.github/release-notes.sh "$PART" "$VERSION" 2>&1 > /dev/null); then
-            fail "$message / В $notes/CHANGELOG.md нет раздела «## $VERSION» с изменениями этой версии: его нужно добавить."
+            fail "$message / Текст выпуска берётся из CHANGELOG: наверху должен быть раздел «## $VERSION» с изменениями этой версии."
           fi
           {
             echo "client=$([ "$PART" = client ] && echo true || echo false)"
@@ -258,8 +258,6 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - uses: actions/download-artifact@v7
         with:
@@ -278,46 +276,21 @@ jobs:
           cd out
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
-          # The changes since the previous release of the same part (tags exist for published ones only), then how to
-          # install and update. English only: the guides have the Russian.
-          previous=$(git tag --list "$PART-v*" --sort=-v:refname | head -n 1)
-          ../.github/release-notes.sh "$PART" "$VERSION" "${previous#"$PART-v"}" > ../notes.md
-          printf '\n---\n\n' >> ../notes.md
+          # The changes of this version, then one line of links. English only: the guides have the Russian.
+          ../.github/release-notes.sh "$PART" "$VERSION" > ../notes.md
           blob="https://github.com/$GITHUB_REPOSITORY/blob/$TAG"
-          if [ "$PART" = client ]; then
-            title="CUSTOS for Windows $VERSION"
-            cat >> ../notes.md <<EOF
-          **Install:** run \`CUSTOS-Setup-$VERSION.exe\` (Windows 10/11, Windows Server 2019–2025, x64). An installed copy is updated in place; tasks and settings stay.
-
-          **Update:** without a monitoring site the program checks GitHub once a day and offers **Update** in its window. With a site, its Updates page offers this version with a download button, or upload \`custos-$VERSION.zip\` there as it is.
-
-          **custos-helper:** the script for Linux servers that the program pulls backups from, see [helper/README.md]($blob/helper/README.md). **Cloud drives:** Google Drive works as it is; Yandex Disk and Dropbox need a free application of your own, see the [steps]($blob/client/README.md#custos-applications-at-the-services).
-
-          Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
-          EOF
-          elif [ "$PART" = client-legacy ]; then
-            title="CUSTOS for Windows 7 and 8.1 $VERSION"
-            cat >> ../notes.md <<EOF
-          **This is the edition for old Windows**, released as is and updated only when needed: Windows 7 SP1, 8.1, Server 2008 R2 SP1, 2012 and 2012 R2, 32 and 64-bit. On Windows 10, 11 and Server 2019+ install the standard edition (\`client-v…\` releases). Windows 8 (not 8.1) is not supported.
-
-          **Install:** run \`CUSTOS-Legacy-Setup-$VERSION.exe\`. The 32-bit .NET 6 Desktop Runtime is inside. Windows 7 needs the updates KB3063858 and KB2999226 (or all Windows updates); the setup says when one is missing. .NET 6 and these Windows versions get no security fixes any more: keep such computers in a closed network.
-
-          **What it lacks:** cloud drives (Google Drive, Yandex Disk, Dropbox), the dark theme, the 7-Zip update from the site. FTPS, WebDAV and S3 over https and a site over https work only with servers that still offer TLS 1.2 ciphers these Windows know.
-
-          **Update:** with a monitoring site 1.2.0 or newer, its Updates page offers this version in the section for Windows 7 and 8.1, or upload \`custos-legacy-$VERSION.zip\` there as it is. Without a site the program checks GitHub for \`client-legacy-v…\` releases once a day.
-
-          Checksums: \`SHA256SUMS.txt\`. The Windows files are not code-signed yet: [code signing policy]($blob/CODE_SIGNING.md). [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/client/CHANGELOG.md)
-          EOF
-          else
-            title="CUSTOS Monitor $VERSION"
-            cat >> ../notes.md <<EOF
-          **Update:** the site shows the new version in the bell; press **Update the site to $VERSION** under Updates. Over SSH: \`php bin/update.php\` in the \`server\` folder, or \`bash install.sh --update\` for sites made by install.sh; without access to GitHub add \`--package=custos-server-$VERSION.zip\`. A failed update puts the old version back by itself.
-
-          **New site:** on Debian or Ubuntu \`install.sh\` installs everything, see the [README]($blob/README.md#quick-start); on CloudPanel follow [server/INSTALL.en.md]($blob/server/INSTALL.en.md).
-
-          Checksums: \`SHA256SUMS.txt\`. [Privacy policy]($blob/PRIVACY.md) · [All changes]($blob/server/CHANGELOG.md)
-          EOF
-          fi
+          case "$PART" in
+            client)
+              title="CUSTOS for Windows $VERSION"
+              links="**Install:** [Quick start]($blob/README.md#quick-start) · **All changes:** [CHANGELOG]($blob/client/CHANGELOG.md)" ;;
+            client-legacy)
+              title="CUSTOS for Windows 7 and 8.1 $VERSION"
+              links="**Install:** [guide]($blob/client/README.md#edition-for-windows-7-and-81) · **All changes:** [CHANGELOG]($blob/client/CHANGELOG-legacy.md)" ;;
+            server)
+              title="CUSTOS Monitor $VERSION"
+              links="**Install:** [Quick start]($blob/README.md#quick-start) · **Update:** [guide]($blob/server/INSTALL.en.md#updating) · **All changes:** [CHANGELOG]($blob/server/CHANGELOG.md)" ;;
+          esac
+          printf '\n%s · **Checksums:** `SHA256SUMS.txt`\n' "$links" >> ../notes.md
           cat ../notes.md
           args=(--draft --target "$GITHUB_SHA" --title "$title" --notes-file ../notes.md)
           gh release create "$TAG" "${args[@]}" -- *
