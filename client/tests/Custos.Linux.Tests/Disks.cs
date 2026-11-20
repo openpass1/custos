@@ -33,9 +33,10 @@ internal static class Disks
     public static bool CanLvm { get; } = TestPlace.IsRoot && Have("losetup", "pvcreate", "vgcreate", "lvcreate", "lvs", "dmsetup", "mkfs.ext4")
         && Tool.Run("dmsetup", ["version"]) is (0, var said) && said.Contains("Driver version", StringComparison.Ordinal);
 
-    /// <summary>Whether btrfs file systems can be made and mounted here.</summary>
+    /// <summary>Whether btrfs file systems can be made and mounted here: the kernel knows btrfs, or loads its module
+    /// (Ubuntu loads it only at the first mount of one).</summary>
     public static bool CanBtrfs { get; } = TestPlace.IsRoot && Have("losetup", "mkfs.btrfs", "btrfs")
-        && File.ReadAllText("/proc/filesystems").Contains("btrfs", StringComparison.Ordinal);
+        && (File.ReadAllText("/proc/filesystems").Contains("btrfs", StringComparison.Ordinal) || Tool.Run("modprobe", ["btrfs"]).ExitCode == 0);
 
     /// <summary>Runs a program and gives its standard output; a failure fails the test with what it said.</summary>
     public static string Run(string program, params string[] arguments)
