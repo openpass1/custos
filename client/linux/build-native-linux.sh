@@ -21,8 +21,14 @@ if [ "${CUSTOS_NATIVE_HERE:-}" = 1 ] || ! command -v docker > /dev/null; then
   exit 0
 fi
 
+# The gcc 8 of AlmaLinux 8 does not know the warnings the makefiles of 7-Zip ask for: gcc-toolset-13 does, and still
+# builds for the glibc and libstdc++ of the system (what it needs beyond them is linked in).
 docker run --rm -v "$repo:/repo:ro" -v "$out:/out" almalinux:8 bash -euo pipefail -c '
-  dnf -y -q install gcc gcc-c++ make xz curl findutils unzip openssl > /dev/null
+  dnf -y -q install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ make xz curl findutils unzip openssl > /dev/null
+  set +u
+  source /opt/rh/gcc-toolset-13/enable
+  set -u
+  gcc --version | head -n 1
   bash /repo/client/mac/build-7z.sh /out
   bash /repo/client/linux/build-sqlite.sh /out
   chown '"$(id -u):$(id -g)"' /out/7z.so /out/libe_sqlite3.so
