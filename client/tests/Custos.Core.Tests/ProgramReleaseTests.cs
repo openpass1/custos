@@ -69,6 +69,26 @@ public sealed class ProgramReleaseTests : IDisposable
     }
 
     [Fact]
+    public void A_newer_release_without_the_package_of_this_system_is_passed_over()
+    {
+        // A release made for the other system only (a fix of the Mac alone, or of Windows alone) is not an update here.
+        string other = $$"""
+            {"tag_name": "client-v1.5.0", "draft": false, "prerelease": false, "assets": [
+              {"name": "{{OtherZip("1.5.0")}}", "size": 1000, "digest": "sha256:{{new string('a', 64)}}",
+               "browser_download_url": "{{Downloads}}client-v1.5.0/{{OtherZip("1.5.0")}}"},
+              {"name": "SHA256SUMS.txt", "size": 300, "digest": null,
+               "browser_download_url": "{{Downloads}}client-v1.5.0/SHA256SUMS.txt"}]},
+            """;
+        string releases = Releases($"\"sha256:{PackageSha}\"");
+        string json = "[" + other + releases[(releases.IndexOf('[', StringComparison.Ordinal) + 1)..];
+
+        var release = ProgramReleases.Newest(Json(json));
+
+        Assert.NotNull(release);
+        Assert.Equal("1.2.0", release.Version);
+    }
+
+    [Fact]
     public void No_release_of_the_program_gives_null()
     {
         Assert.Null(ProgramReleases.Newest(Json("[]")));
