@@ -44,6 +44,9 @@
       <Setter Property="FontFamily" Value="Consolas, Menlo, DejaVu Sans Mono, monospace" />
       <Setter Property="FontSize" Value="13" />
     </Style>
+    <Style Selector="p|Field">
+      <Setter Property="LabelWidth" Value="190" />
+    </Style>
     <Style Selector="Border.checklist">
       <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -55,7 +58,7 @@
   <UserControl.DataTemplates>
 
     <DataTemplate DataType="p:HeadingItem">
-      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
         <TextBlock Classes="section" Text="{Binding Text}" VerticalAlignment="Center" />
         <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
                 ToolTip.ShowDelay="200" VerticalAlignment="Center" />
@@ -68,26 +71,36 @@
                    Text="{Binding Text}" IsVisible="{Binding IsLine}" />
         <Border Classes="info warn" IsVisible="{Binding IsBox}">
           <Grid ColumnDefinitions="Auto,*">
-            <p:Icon Kind="warning" Filled="True" Size="20" VerticalAlignment="Top" />
-            <TextBlock Grid.Column="1" Margin="12,0,0,0" Text="{Binding Text}" TextWrapping="Wrap" FontSize="13.5" LineHeight="20" />
+            <p:Icon Kind="warning" Filled="True" Size="16" VerticalAlignment="Top" />
+            <TextBlock Grid.Column="1" Margin="8,0,0,0" Text="{Binding Text}" TextWrapping="Wrap" FontSize="12.5" LineHeight="17" />
           </Grid>
         </Border>
       </Panel>
     </DataTemplate>
 
     <DataTemplate DataType="p:LabelItem">
-      <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="{Binding Offset}"
-                 FontWeight="{Binding Strong, Converter={x:Static p:FormView.Weight}}" />
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" Width="{Binding Width}"
+                   FontWeight="{Binding Strong, Converter={x:Static p:FormView.Weight}}" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:RowItem">
-      <ItemsControl Classes="form" ItemsSource="{Binding Items}" Margin="{Binding Offset}">
+      <ItemsControl Classes="form row" ItemsSource="{Binding Items}" Margin="{Binding Offset}">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.Styles>
           <Style Selector="ItemsControl.form > ContentPresenter">
             <Setter Property="VerticalAlignment" Value="Center" />
+          </Style>
+          <Style Selector="p|Field">
+            <Setter Property="LabelWidth" Value="NaN" />
+          </Style>
+          <Style Selector="ItemsControl.row > ContentPresenter:nth-child(1) p|Field">
+            <Setter Property="LabelWidth" Value="190" />
           </Style>
         </ItemsControl.Styles>
       </ItemsControl>
@@ -95,7 +108,7 @@
 
     <DataTemplate DataType="p:TextItem">
       <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
-        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" Width="{Binding Width}" HorizontalAlignment="{Binding Align}"
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
                  Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
           <Grid ColumnDefinitions="*,Auto">
             <TextBox Text="{Binding Text}" Height="{Binding Height}" Classes.multi="{Binding Multiline}" Classes.mono="{Binding Mono}"
@@ -112,85 +125,89 @@
             </ToggleButton>
           </Grid>
         </p:Field>
-        <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
       </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="p:NumberItem">
       <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
-        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" Width="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
           <TextBox Text="{Binding Text}" />
         </p:Field>
-        <p:Icon Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,20,0,0" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,6,0,0" />
       </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:SpeedItem">
       <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
-        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" Width="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
           <TextBox Text="{Binding Text}" />
         </p:Field>
-        <p:Icon Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,20,0,0" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="0,6,0,0" />
       </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:ChoiceItem">
       <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
-        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" Width="{Binding Width}" HorizontalAlignment="{Binding Align}"
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
                  Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
           <ComboBox ItemsSource="{Binding Options}" SelectedIndex="{Binding Selected}" MaxDropDownHeight="360" />
         </p:Field>
-        <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
       </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="p:ComboItem">
       <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
-        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" Width="{Binding Width}" HorizontalAlignment="{Binding Align}"
+        <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
                  Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
           <ComboBox ItemsSource="{Binding Options}" IsEditable="True" Text="{Binding Text}" MaxDropDownHeight="360" />
         </p:Field>
-        <p:Icon Grid.Column="1" Kind="help" Size="20" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,20,0,0" />
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Tip}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Top" Margin="6,6,0,0" />
       </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="p:SwitchItem">
-      <Border Classes="switchrow" Classes.card="{Binding Card}" Margin="{Binding Offset}">
-        <Grid ColumnDefinitions="*,Auto">
-          <StackPanel VerticalAlignment="Center" Spacing="2">
-            <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="15" />
-            <TextBlock Classes="small var" Text="{Binding Description}" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" LineHeight="18" />
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <CheckBox Theme="{StaticResource M3Check}" Classes="inline" IsChecked="{Binding On}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            <TextBlock Classes="small var" Text="{Binding Short}" IsVisible="{Binding HasShort}" VerticalAlignment="Center" />
           </StackPanel>
-          <ToggleButton Grid.Column="1" Theme="{StaticResource Switch}" IsChecked="{Binding On}" Margin="24,0,0,0" VerticalAlignment="Center" />
-        </Grid>
-      </Border>
+        </CheckBox>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Long}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:CheckItem">
-      <CheckBox Theme="{StaticResource M3Check}" Classes.inline="{Binding Inline}" IsChecked="{Binding On}" Margin="{Binding Offset}">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-          <TextBlock Classes="small var" Text="{Binding Description}" IsVisible="{Binding HasDescription}" TextWrapping="Wrap" LineHeight="18" />
-        </StackPanel>
-      </CheckBox>
+      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}">
+        <CheckBox Theme="{StaticResource M3Check}" Classes="inline" IsChecked="{Binding On}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            <TextBlock Classes="small var" Text="{Binding Short}" IsVisible="{Binding HasShort}" VerticalAlignment="Center" />
+          </StackPanel>
+        </CheckBox>
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Long}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
+      </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:RadioItem">
-      <RadioButton Theme="{StaticResource M3Radio}" Classes.inline="{Binding Inline}" IsChecked="{Binding On}" Margin="{Binding Offset}">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-          <TextBlock Classes="small var" Text="{Binding Hint}" IsVisible="{Binding HasHint}" TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,4" />
-        </StackPanel>
-      </RadioButton>
+      <StackPanel Orientation="Horizontal" Spacing="4" Margin="{Binding Offset}">
+        <RadioButton Theme="{StaticResource M3Radio}" Classes="inline" IsChecked="{Binding On}" Content="{Binding Title}" VerticalAlignment="Center" />
+        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasLong}" ToolTip.Tip="{Binding Hint}"
+                ToolTip.ShowDelay="200" VerticalAlignment="Center" Margin="0,0,10,0" />
+      </StackPanel>
     </DataTemplate>
 
     <DataTemplate DataType="p:SegmentsItem">
-      <StackPanel Spacing="6" Margin="{Binding Offset}">
+      <StackPanel Spacing="4" Margin="{Binding Offset}">
         <TextBlock Classes="small var" Text="{Binding Label}" />
         <Border Classes="segments">
           <Border Classes="segmentsinside">
@@ -210,11 +227,11 @@
     </DataTemplate>
 
     <DataTemplate DataType="p:ChipsItem">
-      <StackPanel Spacing="6" Margin="{Binding Offset}">
+      <StackPanel Spacing="4" Margin="{Binding Offset}">
         <TextBlock Classes="small var" Text="{Binding Label}" />
         <ItemsControl ItemsSource="{Binding Chips}">
           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate><WrapPanel ItemSpacing="8" LineSpacing="8" /></ItemsPanelTemplate>
+            <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="p:Chip">
@@ -242,11 +259,11 @@
           <Border Classes="tile" VerticalAlignment="Top">
             <p:Icon Kind="{Binding Icon}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
-          <StackPanel Grid.Column="1" Margin="14,0,8,0" VerticalAlignment="Center" Spacing="2">
+          <StackPanel Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center" Spacing="1">
             <TextBlock Text="{Binding Title}" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
             <TextBlock Classes="small var" Classes.warn="{Binding Warning}" Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}"
-                       TextWrapping="Wrap" LineHeight="18" />
-            <ItemsControl ItemsSource="{Binding Tags}" IsVisible="{Binding HasTags}" Margin="0,6,0,0">
+                       TextWrapping="Wrap" LineHeight="16" />
+            <ItemsControl ItemsSource="{Binding Tags}" IsVisible="{Binding HasTags}" Margin="0,3,0,0">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
@@ -254,7 +271,7 @@
                 <DataTemplate x:DataType="p:CardTag">
                   <Border Classes="tag" Classes.accent="{Binding Accent}" Margin="0,0,6,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" />
+                      <p:Icon Kind="{Binding Icon}" Size="14" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding Text}" />
                     </StackPanel>
                   </Border>
@@ -264,13 +281,13 @@
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
             <Button Classes="move" Theme="{StaticResource IconButton}" IsVisible="{Binding CanMove}" IsEnabled="{Binding CanUp}" Command="{Binding DoUp}"
-                    ToolTip.Tip="{x:Static g:Strings.ButtonUp}"><p:Icon Kind="arrow_upward" Size="20" /></Button>
+                    ToolTip.Tip="{x:Static g:Strings.ButtonUp}"><p:Icon Kind="arrow_upward" Size="18" /></Button>
             <Button Classes="move" Theme="{StaticResource IconButton}" IsVisible="{Binding CanMove}" IsEnabled="{Binding CanDown}" Command="{Binding DoDown}"
-                    ToolTip.Tip="{x:Static g:Strings.ButtonDown}"><p:Icon Kind="arrow_downward" Size="20" /></Button>
+                    ToolTip.Tip="{x:Static g:Strings.ButtonDown}"><p:Icon Kind="arrow_downward" Size="18" /></Button>
             <Button Theme="{StaticResource IconButton}" IsVisible="{Binding CanEdit}" Command="{Binding DoEdit}"
-                    ToolTip.Tip="{x:Static g:Strings.ToolEdit}"><p:Icon Kind="edit" Size="20" /></Button>
+                    ToolTip.Tip="{x:Static g:Strings.ToolEdit}"><p:Icon Kind="edit" Size="18" /></Button>
             <Button Theme="{StaticResource IconButton}" IsVisible="{Binding CanDelete}" Command="{Binding DoDelete}"
-                    ToolTip.Tip="{x:Static g:Strings.ToolDelete}"><p:Icon Kind="delete" Size="20" /></Button>
+                    ToolTip.Tip="{x:Static g:Strings.ToolDelete}"><p:Icon Kind="delete" Size="18" /></Button>
           </StackPanel>
         </Grid>
       </Border>
@@ -286,27 +303,27 @@
 
     <DataTemplate DataType="p:ButtonItem">
       <Panel HorizontalAlignment="Left" Margin="{Binding Offset}">
-        <Button Theme="{StaticResource TonalButton}" IsVisible="{Binding IsTonal}" IsEnabled="{Binding IsFree}" Command="{Binding Press}" Margin="{Binding Margin}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+        <Button Theme="{StaticResource TonalButton}" IsVisible="{Binding IsTonal}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
             <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Theme="{StaticResource OutlinedButton}" IsVisible="{Binding IsOutlined}" IsEnabled="{Binding IsFree}" Command="{Binding Press}" Margin="{Binding Margin}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+        <Button Theme="{StaticResource OutlinedButton}" IsVisible="{Binding IsOutlined}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
             <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Theme="{StaticResource FilledButton}" IsVisible="{Binding IsFilled}" IsEnabled="{Binding IsFree}" Command="{Binding Press}" Margin="{Binding Margin}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+        <Button Theme="{StaticResource FilledButton}" IsVisible="{Binding IsFilled}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
             <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Theme="{StaticResource TextButton}" IsVisible="{Binding IsText}" IsEnabled="{Binding IsFree}" Command="{Binding Press}" Margin="{Binding Margin}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
+        <Button Theme="{StaticResource TextButton}" IsVisible="{Binding IsText}" IsEnabled="{Binding IsFree}" Command="{Binding Press}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <p:Icon Kind="{Binding Icon}" Size="16" VerticalAlignment="Center" IsVisible="{Binding HasIcon}" />
             <TextBlock Text="{Binding Text}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -323,10 +340,10 @@
     <DataTemplate DataType="p:InfoItem">
       <Border Classes="info" Margin="{Binding Offset}">
         <Grid ColumnDefinitions="Auto,*">
-          <p:Icon Kind="{Binding Icon}" Size="20" VerticalAlignment="Top" />
-          <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="4">
+          <p:Icon Kind="{Binding Icon}" Size="18" VerticalAlignment="Top" />
+          <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
             <SelectableTextBlock Text="{Binding Title}" FontWeight="Medium" TextWrapping="Wrap" />
-            <SelectableTextBlock Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextWrapping="Wrap" FontSize="13.5" />
+            <SelectableTextBlock Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextWrapping="Wrap" FontSize="12.5" />
           </StackPanel>
         </Grid>
       </Border>
@@ -335,7 +352,7 @@
 
   <ItemsControl Name="List" Classes="form">
     <ItemsControl.ItemsPanel>
-      <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+      <ItemsPanelTemplate><StackPanel Spacing="5" /></ItemsPanelTemplate>
     </ItemsControl.ItemsPanel>
   </ItemsControl>
 </UserControl>

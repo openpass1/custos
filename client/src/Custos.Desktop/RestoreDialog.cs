@@ -25,7 +25,7 @@ internal sealed class RestoreDialog : FormDialog
     private readonly TextItem _folder;
     private readonly ChoiceItem _account;
     private readonly RadioItem _byStore;
-    private readonly InfoItem _store = new("cloud", Strings.RestoreStoreNone) { Indent = 52 };
+    private readonly InfoItem _store = new("cloud", Strings.RestoreStoreNone) { Indent = 30 };
     private readonly ButtonItem _chooseStore;
     private readonly TextItem _password = new(L(Strings.RestorePassword), width: 360) { Secret = true };
     private readonly ButtonItem _search;
@@ -57,16 +57,16 @@ internal sealed class RestoreDialog : FormDialog
     {
         _monitor = monitor;
         _byTask = new RadioItem(_from, Strings.RestoreByTask, on: true);
-        _task = new ChoiceItem(null, [], 0, 420) { Indent = 52 };
+        _task = new ChoiceItem(null, [], 0, 420) { Indent = 30 };
         _byFolder = new RadioItem(_from, Strings.RestoreByFolder);
-        _folder = new TextItem(null) { Indent = 52, ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_folder!) };
-        _account = new ChoiceItem(L(Strings.RestoreAccount), [], 0, 420) { Indent = 52 };
+        _folder = new TextItem(null) { Indent = 30, ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_folder!) };
+        _account = new ChoiceItem(L(Strings.RestoreAccount), [], 0, 420) { Indent = 30 };
         _byStore = new RadioItem(_from, Strings.RestoreByStore);
-        _chooseStore = new ButtonItem("cloud", Strings.RestoreChooseStore, ChooseStoreAsync, ButtonLook.Outlined) { Indent = 52, Failed = ex => ShowError(ex.Message) };
+        _chooseStore = new ButtonItem("cloud", Strings.RestoreChooseStore, ChooseStoreAsync, ButtonLook.Outlined) { Indent = 30, Failed = ex => ShowError(ex.Message) };
         _search = new ButtonItem("search", Strings.RestoreSearch, SearchAsync) { Failed = ex => _found.Show(ex.Message, Tone.Error) };
         _toOriginal = new RadioItem(_to, Strings.RestoreToOriginal, on: true);
         _toFolder = new RadioItem(_to, Strings.RestoreToFolder);
-        _target = new TextItem(null) { Indent = 52, ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_target!) };
+        _target = new TextItem(null) { Indent = 30, ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_target!) };
         _dumps = new TextItem(L(Strings.RestoreDumpsFolder)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_dumps!) };
 
         Items.Add(_byTask);

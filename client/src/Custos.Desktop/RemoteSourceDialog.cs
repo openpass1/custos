@@ -21,12 +21,12 @@ internal sealed class RemoteSourceDialog : FormDialog
 
     private readonly EditorContext _context;
     private readonly TaskSource _original;
-    private readonly TextItem _host = new(L(Strings.RemoteHost), width: 340) { Help = Strings.RemoteHostHelp };
-    private readonly NumberItem _port = new(L(Strings.RemotePort), 22, 1, 65535, 100);
+    private readonly TextItem _host = new(L(Strings.RemoteHost), width: 300) { Help = Strings.RemoteHostHelp };
+    private readonly NumberItem _port = new(L(Strings.RemotePort), 22, 1, 65535, 70);
     private readonly TextItem _user = new(L(Strings.RemoteUser), "custos", 160);
-    private readonly TextItem _officeIp = new(L(Strings.RemoteOfficeIp), width: 340) { Help = Strings.RemoteOfficeIpHelp };
+    private readonly TextItem _officeIp = new(L(Strings.RemoteOfficeIp), width: 300) { Help = Strings.RemoteOfficeIpHelp };
     private readonly NoteItem _officeWarning = new(Strings.RemoteOfficeEmpty, Tone.Caution);
-    private readonly ChoiceItem _preset = new(L(Strings.RemotePreset), [.. Presets.Select(Describe.PresetTitle)], 0, 340);
+    private readonly ChoiceItem _preset = new(L(Strings.RemotePreset), [.. Presets.Select(Describe.PresetTitle)], 0, 300);
     private readonly TextItem _roots = new(L(Strings.RemoteRoots)) { Multiline = true, Lines = 4, Help = Strings.RemoteRootsHelp };
     private readonly NoteItem _etcWarning = new(Strings.RemoteEtcWarning, Tone.Caution);
     private readonly TextItem _excludes = new(L(Strings.RemoteExcludes)) { Multiline = true, Lines = 3, Help = Strings.RemoteExcludesHelp };
@@ -63,7 +63,8 @@ internal sealed class RemoteSourceDialog : FormDialog
         _saveBlock = new ButtonItem("save", Strings.ButtonSaveAs, SaveBlockAsync, ButtonLook.Outlined) { Failed = ex => ShowError(ex.Message) };
         _test = new ButtonItem("network_check", Strings.ButtonTestConnection, TestAsync) { Failed = ex => _testResult.Show(ex.Message, Tone.Error) };
 
-        Items.Add(new RowItem(_host, _port, _user));
+        Items.Add(new RowItem(_host, _port));
+        Items.Add(_user);
         Items.Add(_officeIp);
         Items.Add(_officeWarning);
 
@@ -72,8 +73,7 @@ internal sealed class RemoteSourceDialog : FormDialog
         Items.Add(_roots);
         Items.Add(_etcWarning);
         Items.Add(_excludes);
-        Items.Add(new LabelItem(L(Strings.RemoteEngines)));
-        Items.Add(new RowItem(_engines));
+        Items.Add(new RowItem([new LabelItem(L(Strings.RemoteEngines)) { Width = 192 }, .. _engines]));
 
         // The databases to dump: the list fills in on «Проверить подключение» below.
         Items.Add(new HeadingItem(L(Strings.RemoteDbChoice), Strings.RemoteDbChoiceHelp));

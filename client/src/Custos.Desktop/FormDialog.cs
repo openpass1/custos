@@ -43,8 +43,8 @@ internal abstract class FormDialog : Window
         ShowInTaskbar = false;
         Classes.Add("surface");
 
-        var view = new FormView { Items = Items, Margin = new Thickness(24, 0, 24, 16) };
-        var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24, 18, 24, 8) };
+        var view = new FormView { Items = Items, Margin = new Thickness(20, 0, 20, 12) };
+        var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(20, 12, 20, 6) };
         Scroll = new ScrollViewer { Content = view, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         _cancel = Ui.Text(Strings.ButtonCancel, () => Close());
         OkButton = Ui.Filled(Strings.ButtonOk, () => { });
@@ -55,7 +55,7 @@ internal abstract class FormDialog : Window
         var bottom = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-            Margin = new Thickness(24, 10, 20, 14),
+            Margin = new Thickness(20, 8, 16, 10),
             Children = { _error, _buttons },
         };
         Grid.SetColumn(_buttons, 1);

@@ -13,9 +13,9 @@
     <Setter Property="Width" Value="86" />
     <Setter Property="Template">
       <ControlTemplate>
-        <StackPanel Spacing="4" Background="Transparent" VerticalAlignment="Center">
-          <Border Name="ind" Width="56" Height="32" CornerRadius="16" HorizontalAlignment="Center" Background="{TemplateBinding Background}">
-            <p:Icon Name="icon" Kind="{TemplateBinding IconKind}" Size="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <StackPanel Spacing="2" Background="Transparent" VerticalAlignment="Center">
+          <Border Name="ind" Width="48" Height="26" CornerRadius="13" HorizontalAlignment="Center" Background="{TemplateBinding Background}">
+            <p:Icon Name="icon" Kind="{TemplateBinding IconKind}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="{TemplateBinding Label}" FontSize="12" FontWeight="Medium" LetterSpacing="0.3" HorizontalAlignment="Center" />
         </StackPanel>
@@ -47,9 +47,9 @@
     <Setter Property="Width" Value="86" />
     <Setter Property="Template">
       <ControlTemplate>
-        <StackPanel Spacing="4" Background="Transparent" VerticalAlignment="Center">
-          <Border Name="ind" Width="56" Height="32" CornerRadius="16" HorizontalAlignment="Center" Background="{TemplateBinding Background}">
-            <p:Icon Name="icon" Kind="{TemplateBinding IconKind}" Size="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <StackPanel Spacing="2" Background="Transparent" VerticalAlignment="Center">
+          <Border Name="ind" Width="48" Height="26" CornerRadius="13" HorizontalAlignment="Center" Background="{TemplateBinding Background}">
+            <p:Icon Name="icon" Kind="{TemplateBinding IconKind}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Name="label" Text="{TemplateBinding Label}" FontSize="12" FontWeight="Medium" LetterSpacing="0.3" HorizontalAlignment="Center" />
         </StackPanel>
@@ -132,7 +132,7 @@
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Panel Background="{TemplateBinding Background}" Height="40">
+        <Panel Background="{TemplateBinding Background}" Height="34">
           <ContentPresenter Content="{TemplateBinding Content}" Margin="16,0" VerticalAlignment="Center" />
           <Border Name="line" Height="3" CornerRadius="3,3,0,0" Margin="8,0" VerticalAlignment="Bottom"
                   Background="{DynamicResource Primary}" IsVisible="False" />
@@ -160,10 +160,10 @@
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Height="32" CornerRadius="8" BorderThickness="1" Padding="12,0,14,0"
+        <Border Name="bg" Height="28" CornerRadius="8" BorderThickness="1" Padding="10,0,12,0"
                 Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
           <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <p:Icon Name="check" Kind="check" Size="18" IsVisible="False" />
+            <p:Icon Name="check" Kind="check" Size="16" IsVisible="False" />
             <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
@@ -195,7 +195,7 @@
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Height="32" CornerRadius="8" BorderThickness="1" Padding="14,0,8,0"
+        <Border Name="bg" Height="28" CornerRadius="8" BorderThickness="1" Padding="12,0,8,0"
                 Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
           <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
             <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
@@ -217,7 +217,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Height="40" CornerRadius="12" Margin="4,0" Padding="12,0,16,0" Background="{TemplateBinding Background}">
+        <Border Name="bg" Height="32" CornerRadius="10" Margin="4,0" Padding="12,0,16,0" Background="{TemplateBinding Background}">
           <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
         </Border>
       </ControlTemplate>
@@ -325,29 +325,32 @@
 
   <!-- ===== Task editor ===== -->
 
-  <!-- Outlined text field: the label sits on the top edge of the frame, the hint under it. -->
+  <!-- Outlined text field: the label on its left (as wide as LabelWidth, so that the fields of a form line up), the frame,
+       and under it what is wrong. -->
   <ControlTheme x:Key="{x:Type p:Field}" TargetType="p:Field">
     <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
     <Setter Property="HorizontalAlignment" Value="Left" />
     <Setter Property="Template">
       <ControlTemplate>
-        <StackPanel>
-          <Panel>
-            <Border Name="frame" Margin="0,8,0,0" MinHeight="44" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Outline}">
-              <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" VerticalContentAlignment="Stretch"
-                                HorizontalContentAlignment="Stretch" />
-            </Border>
-            <p:Icon Name="trail" Kind="{TemplateBinding TrailingIcon}" Margin="0,8,12,0" HorizontalAlignment="Right" VerticalAlignment="Center"
-                    IsHitTestVisible="False" Foreground="{DynamicResource OnSurfaceVariant}"
-                    IsVisible="{TemplateBinding TrailingIcon, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            <Border Name="labelback" Background="{DynamicResource Surface}" Padding="4,0" Margin="12,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"
-                    IsVisible="{TemplateBinding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-              <TextBlock Name="label" Text="{TemplateBinding Label}" FontSize="12" LineHeight="16" Foreground="{DynamicResource OnSurfaceVariant}" />
-            </Border>
-          </Panel>
-          <TextBlock Name="hint" Text="{TemplateBinding Hint}" FontSize="12" LineHeight="16" Margin="16,4,16,0" TextWrapping="Wrap"
-                     Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{TemplateBinding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-        </StackPanel>
+        <DockPanel>
+          <TextBlock Name="label" DockPanel.Dock="Left" Text="{TemplateBinding Label}" Width="{TemplateBinding LabelWidth}" TextWrapping="Wrap" Margin="0,6,12,0"
+                     VerticalAlignment="Top" IsVisible="{TemplateBinding Label, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <StackPanel>
+            <p:FrameBox Limit="{TemplateBinding FrameWidth}">
+              <Panel>
+                <Border Name="frame" MinHeight="30" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource Outline}">
+                  <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" VerticalContentAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch" />
+                </Border>
+                <p:Icon Name="trail" Kind="{TemplateBinding TrailingIcon}" Size="18" Margin="0,0,10,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        IsHitTestVisible="False" Foreground="{DynamicResource OnSurfaceVariant}"
+                        IsVisible="{TemplateBinding TrailingIcon, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </Panel>
+            </p:FrameBox>
+            <TextBlock Name="hint" Text="{TemplateBinding Hint}" FontSize="12" LineHeight="16" Margin="2,2,0,0" TextWrapping="Wrap"
+                       Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{TemplateBinding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </DockPanel>
       </ControlTemplate>
     </Setter>
     <Style Selector="^:pointerover /template/ Border#frame">
@@ -361,8 +364,7 @@
       <Setter Property="Foreground" Value="{DynamicResource Primary}" />
     </Style>
     <Style Selector="^.compact /template/ Border#frame">
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="MinHeight" Value="28" />
     </Style>
   </ControlTheme>
 
@@ -372,11 +374,11 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Panel Width="52" Height="32" Background="Transparent">
-          <Border Name="track" CornerRadius="16" BorderThickness="2" BorderBrush="{DynamicResource Outline}" Background="{DynamicResource SurfaceContainerHighest}" />
-          <Border Name="thumb" Width="16" Height="16" CornerRadius="12" Margin="8,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
+        <Panel Width="40" Height="22" Background="Transparent">
+          <Border Name="track" CornerRadius="11" BorderThickness="2" BorderBrush="{DynamicResource Outline}" Background="{DynamicResource SurfaceContainerHighest}" />
+          <Border Name="thumb" Width="12" Height="12" CornerRadius="8" Margin="5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center"
                   Background="{DynamicResource Outline}">
-            <p:Icon Name="mark" Kind="check" Size="16" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <p:Icon Name="mark" Kind="check" Size="12" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
                     Foreground="{DynamicResource OnPrimaryContainer}" />
           </Border>
         </Panel>
@@ -390,9 +392,9 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Primary}" />
     </Style>
     <Style Selector="^:checked /template/ Border#thumb">
-      <Setter Property="Width" Value="24" />
-      <Setter Property="Height" Value="24" />
-      <Setter Property="Margin" Value="0,0,4,0" />
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="Margin" Value="0,0,3,0" />
       <Setter Property="HorizontalAlignment" Value="Right" />
       <Setter Property="Background" Value="{DynamicResource OnPrimary}" />
     </Style>
@@ -412,22 +414,22 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Panel Width="32" Height="32" VerticalAlignment="Top">
-            <Border Name="layer" CornerRadius="16" Background="{TemplateBinding Background}" />
-            <Border Name="box" Width="18" Height="18" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource OnSurfaceVariant}"
+          <Panel Width="24" Height="24" VerticalAlignment="Top">
+            <Border Name="layer" CornerRadius="12" Background="{TemplateBinding Background}" />
+            <Border Name="box" Width="16" Height="16" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource OnSurfaceVariant}"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Path Name="mark" Data="M2.5,7.2 L5.7,10.4 L11.5,4.2" Stroke="{DynamicResource OnPrimary}" StrokeThickness="2" IsVisible="False"
+              <Path Name="mark" Data="M1.5,6.2 L4.7,9.4 L10.5,3.2" Stroke="{DynamicResource OnPrimary}" StrokeThickness="2" IsVisible="False"
                     HorizontalAlignment="Left" VerticalAlignment="Top" />
             </Border>
           </Panel>
           <ContentPresenter Name="content" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Margin="4,6,0,0" VerticalAlignment="Top" />
+                            Margin="6,3,0,0" VerticalAlignment="Top" />
         </Grid>
       </ControlTemplate>
     </Setter>
     <!-- Beside a field on the same line: the text in the middle of the 32 px row. -->
     <Style Selector="^.inline /template/ ContentPresenter#content">
-      <Setter Property="Margin" Value="4,0,0,0" />
+      <Setter Property="Margin" Value="6,0,0,0" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="^:pointerover /template/ Border#layer">
@@ -450,19 +452,19 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Panel Width="32" Height="32" VerticalAlignment="Top">
-            <Border Name="layer" CornerRadius="16" Background="{TemplateBinding Background}" />
-            <Ellipse Name="ring" Width="20" Height="20" Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
-            <Ellipse Name="dot" Width="10" Height="10" Fill="{DynamicResource Primary}" IsVisible="False" />
+          <Panel Width="24" Height="24" VerticalAlignment="Top">
+            <Border Name="layer" CornerRadius="12" Background="{TemplateBinding Background}" />
+            <Ellipse Name="ring" Width="17" Height="17" Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
+            <Ellipse Name="dot" Width="8" Height="8" Fill="{DynamicResource Primary}" IsVisible="False" />
           </Panel>
           <ContentPresenter Name="content" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Margin="4,6,0,0" VerticalAlignment="Top" />
+                            Margin="6,3,0,0" VerticalAlignment="Top" />
         </Grid>
       </ControlTemplate>
     </Setter>
     <!-- Several on one line (folder, file, network folder): the text in the middle of the 32 px row, space after it. -->
     <Style Selector="^.inline /template/ ContentPresenter#content">
-      <Setter Property="Margin" Value="4,0,12,0" />
+      <Setter Property="Margin" Value="6,0,14,0" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="^:pointerover /template/ Border#layer">
@@ -484,9 +486,9 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Height="32" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Outline}" Background="{TemplateBinding Background}" Padding="14,0,16,0">
+        <Border Name="bg" Height="28" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Outline}" Background="{TemplateBinding Background}" Padding="12,0,14,0">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <p:Icon Name="check" Kind="check" Size="18" IsVisible="False" />
+            <p:Icon Name="check" Kind="check" Size="16" IsVisible="False" />
             <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
@@ -508,8 +510,8 @@
 
   <!-- Item of the editor's page list (navigation drawer item). -->
   <ControlTheme x:Key="NavItem" TargetType="ListBoxItem" BasedOn="{StaticResource M3ListItem}">
-    <Setter Property="CornerRadius" Value="20" />
-    <Setter Property="Height" Value="40" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Height" Value="32" />
     <Setter Property="Margin" Value="0,0,0,2" />
     <Setter Property="Foreground" Value="{DynamicResource OnSurfaceVariant}" />
     <Setter Property="Cursor" Value="Hand" />
@@ -521,14 +523,14 @@
     <Setter Property="Background" Value="{DynamicResource Primary}" />
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Padding" Value="24,0" />
+    <Setter Property="Padding" Value="18,0" />
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Height="36" CornerRadius="18" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+        <Border Height="30" CornerRadius="15" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                 BorderThickness="{TemplateBinding BorderThickness}">
-          <Border Name="layer" CornerRadius="18" Padding="{TemplateBinding Padding}" Background="Transparent">
+          <Border Name="layer" CornerRadius="15" Padding="{TemplateBinding Padding}" Background="Transparent">
             <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
         </Border>
@@ -544,7 +546,7 @@
   <ControlTheme x:Key="TonalButton" TargetType="Button" BasedOn="{StaticResource FilledButton}">
     <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
     <Setter Property="Background" Value="{DynamicResource SecondaryContainer}" />
-    <Setter Property="Padding" Value="16,0,24,0" />
+    <Setter Property="Padding" Value="12,0,18,0" />
   </ControlTheme>
   <ControlTheme x:Key="OutlinedButton" TargetType="Button" BasedOn="{StaticResource FilledButton}">
     <Setter Property="Foreground" Value="{DynamicResource Primary}" />
@@ -558,7 +560,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Width="36" Height="36" CornerRadius="18" Background="{TemplateBinding Background}">
+        <Border Name="bg" Width="28" Height="28" CornerRadius="14" Background="{TemplateBinding Background}">
           <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
       </ControlTemplate>
@@ -575,7 +577,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Width="36" Height="36" CornerRadius="18" Background="{TemplateBinding Background}">
+        <Border Name="bg" Width="28" Height="28" CornerRadius="14" Background="{TemplateBinding Background}">
           <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
       </ControlTemplate>
@@ -593,7 +595,7 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="bg" Height="40" CornerRadius="12" Margin="4,0" Padding="12,0,16,0" Background="{TemplateBinding Background}">
+        <Border Name="bg" Height="32" CornerRadius="10" Margin="4,0" Padding="12,0,16,0" Background="{TemplateBinding Background}">
           <Grid ColumnDefinitions="*,Auto">
             <ContentPresenter Content="{TemplateBinding Content}" VerticalAlignment="Center" />
             <p:Icon Name="check" Grid.Column="1" Kind="check" Size="20" IsVisible="False" Margin="12,0,0,0" VerticalAlignment="Center" />

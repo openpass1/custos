@@ -126,10 +126,10 @@ internal sealed class BasicPage : EditorPage
         _differential = Add(new RadioItem(_types, Strings.TypeDifferentialTitle, Strings.TypeDifferentialHint));
         _mirror = Add(new RadioItem(_types, Strings.TypeMirrorTitle, Strings.TypeMirrorHint));
         _mirrorLocked = Note(string.Empty, Tone.Caution, 52, visible: false);
-        _mirrorExact = Add(new RadioItem(_mirrorModes, Strings.MirrorExact) { Indent = 40 });
+        _mirrorExact = Add(new RadioItem(_mirrorModes, Strings.MirrorExact) { Indent = 30 });
         _mirrorSafe = new RadioItem(_mirrorModes, Strings.MirrorSafe, inline: true);
-        _mirrorSafeRow = Add(new RowItem(_mirrorSafe, _safeDays, new LabelItem(Strings.MirrorSafeDays)) { Indent = 40 });
-        _mirrorNote = Note(Strings.MirrorNote, indent: 52);
+        _mirrorSafeRow = Add(new RowItem(_mirrorSafe, _safeDays, new LabelItem(Strings.MirrorSafeDays)) { Indent = 30 });
+        _mirrorNote = Note(Strings.MirrorNote, indent: 30);
 
         _forceHeading = Heading(Strings.EditorForceFull);
         _forceRows =
@@ -306,19 +306,19 @@ internal sealed class SourcesPage : EditorPage
     private readonly ButtonItem _addLinux;
     private readonly NoteItem _remoteNote;
     private readonly SwitchItem _keepTopDir = new(Strings.KeepTopDir, Lines(Strings.KeepTopDirHelp));
-    private readonly TextItem _exclude = new(L(Strings.FilterExclude), width: 560) { Hint = Strings.FilterExcludeHelp };
+    private readonly TextItem _exclude = new(L(Strings.FilterExclude), width: 500) { Hint = Strings.FilterExcludeHelp };
     private readonly TextItem _excludeDirs;
     private readonly CheckItem _skipHidden = new(Strings.SkipHidden);
     private readonly CheckItem _skipSystem = new(Strings.SkipSystem);
     private readonly CheckItem _skipTemp = new(Strings.SkipTemp, description: Strings.SkipTempHelp);
-    private readonly TextItem _include = new(L(Strings.FilterInclude), width: 560) { Hint = Strings.FilterIncludeHelp };
+    private readonly TextItem _include = new(L(Strings.FilterInclude), width: 500) { Hint = Strings.FilterIncludeHelp };
     private readonly FormItem[] _fileOptions;
     private readonly List<TaskSource> _sources = [];
 
     public SourcesPage(EditorContext context)
         : base(context, Strings.PageSources, "folder", Strings.SourcesNote)
     {
-        _excludeDirs = new TextItem(L(Strings.FilterExcludeDirs), width: 560)
+        _excludeDirs = new TextItem(L(Strings.FilterExcludeDirs), width: 500)
         {
             Multiline = true,
             Lines = 3,
@@ -893,7 +893,7 @@ internal sealed class SchedulePage : EditorPage
     private readonly ChipsItem _days;
     private readonly ChipsItem _monthDays;
     private readonly NoteItem _monthNote;
-    private readonly TextItem _times = new(L(Strings.ScheduleTimes), width: 360) { Hint = Strings.ScheduleTimesHelp };
+    private readonly TextItem _times = new(L(Strings.ScheduleTimes), width: 240) { Hint = Strings.ScheduleTimesHelp };
     private readonly NumberItem _interval = new(null, 60, 1, 1440, 90) { Compact = true };
     private readonly RowItem _intervalRow;
     private readonly SwitchItem _catchUp = new(Strings.ScheduleCatchUp, Strings.ScheduleCatchUpHelp, card: true);
@@ -1082,7 +1082,7 @@ internal sealed class ArchivePage : EditorPage
     private readonly NoteItem _sevenZipProblem;
     private readonly NoteItem _sevenZipStream;
     private readonly ChoiceItem _level;
-    private readonly CheckItem _split = new(Strings.ArchiveSplit.TrimEnd(), on: false) { Inline = true };
+    private readonly CheckItem _split = new(Strings.ArchiveSplit.TrimEnd(), on: false, description: Strings.ArchiveSplitHelp) { Inline = true };
     private readonly ChoiceItem _volume = new(null, [Strings.ArchiveVolume700, Strings.ArchiveVolumeFat32, Strings.ArchiveVolumeDvd, Strings.ArchiveVolumeCustom], 0, 240)
     {
         Compact = true,
@@ -1094,9 +1094,9 @@ internal sealed class ArchivePage : EditorPage
     private readonly NoteItem _splitNote;
     private readonly SwitchItem _encrypt = new(Strings.ArchiveEncrypt);
     private readonly ButtonItem _setPassword;
-    private readonly CheckItem _encryptNames = new(Strings.ArchiveEncryptNames, description: Strings.ArchiveEncryptNamesHelp) { Indent = 0 };
-    private readonly NumberItem _verifyRuns = new(L(Strings.VerifyEveryRuns), 0, 0, 1000, 200) { Hint = Strings.VerifyEveryRunsHelp };
-    private readonly NumberItem _verifyDays = new(L(Strings.VerifyStoredDays), 0, 0, 3650, 200) { Hint = Strings.VerifyStoredDaysHelp };
+    private readonly CheckItem _encryptNames = new(Strings.ArchiveEncryptNames, description: Strings.ArchiveEncryptNamesHelp) { Indent = 30 };
+    private readonly NumberItem _verifyRuns = new(L(Strings.VerifyEveryRuns), 0, 0, 1000, 80) { Hint = Strings.VerifyEveryRunsHelp };
+    private readonly NumberItem _verifyDays = new(L(Strings.VerifyStoredDays), 0, 0, 3650, 80) { Hint = Strings.VerifyStoredDaysHelp };
     private string? _passwordId;
     private bool _passwordSaved;
     private string _taskName = string.Empty;
@@ -1111,23 +1111,23 @@ internal sealed class ArchivePage : EditorPage
             5 => Strings.ArchiveLevel5,
             9 => Strings.ArchiveLevel9,
             _ => level.ToString(CultureInfo.CurrentCulture),
-        })], 5, 360) { Help = Lines(Strings.ArchiveLevelHelp) };
+        })], 5, 260) { Help = Lines(Strings.ArchiveLevelHelp) };
         _setPassword = ButtonItem.Of("key", Strings.ArchiveSetPassword.TrimEnd('…', '.') + "…", () => Safe.Run(SetPasswordAsync), ButtonLook.Outlined);
 
         Heading(Strings.ArchiveFormat);
         _mirrorNote = Note(Strings.ArchiveMirrorNote, Tone.Caution, visible: false);
-        _none = Add(new RadioItem(_formats, Strings.ArchiveNone));
-        _zip = Add(new RadioItem(_formats, Strings.ArchiveZip, Strings.ArchiveZipHelp));
-        _sevenZip = Add(new RadioItem(_formats, Strings.ArchiveSevenZip, Strings.ArchiveSevenZipHelp));
+        _none = new RadioItem(_formats, Strings.ArchiveNone);
+        _zip = new RadioItem(_formats, Strings.ArchiveZip, Strings.ArchiveZipHelp);
+        _sevenZip = new RadioItem(_formats, Strings.ArchiveSevenZip, Strings.ArchiveSevenZipHelp);
+        Add(new RowItem(_none, _zip, _sevenZip));
         _sevenZipProblem = Note(string.Empty, Tone.Caution, 52, visible: false);
         _sevenZipStream = Note(string.Empty, Tone.Caution, 52, visible: false);
         Add(_level);
         _volumes = Add(new RowItem(_split, _volume, _volumeMb, _volumeUnit));
-        _splitNote = Note(Strings.ArchiveSplitHelp, indent: 52);
+        _splitNote = new NoteItem(Strings.ArchiveSplitHelp);
 
         Heading(Strings.ArchiveEncryption);
-        Add(_encrypt);
-        Add(_setPassword);
+        Add(new RowItem(_encrypt, _setPassword));
         Add(_encryptNames);
         Note(Strings.ArchivePasswordWarning, Tone.Warning);
 
@@ -1292,20 +1292,17 @@ internal sealed class RetentionPage : EditorPage
             Tone.Caution, visible: false);
         _keepAll = Add(new RadioItem(_modes, Strings.RetentionNone));
         _byCount = new RadioItem(_modes, Strings.RetentionCount, inline: true);
-        Add(new RowItem(_byCount, _keepFull, new LabelItem(Strings.RetentionCountSuffix)));
-        Note(Strings.RetentionCountHint, indent: 52);
+        Add(new RowItem(_byCount, _keepFull, new LabelItem(Strings.RetentionCountSuffix) { Help = Strings.RetentionCountHint }));
         _byAge = new RadioItem(_modes, Strings.RetentionAge, inline: true);
-        Add(new RowItem(_byAge, _maxAge, new LabelItem(Strings.RetentionAgeSuffix)));
-        Note(Strings.RetentionAgeHint, indent: 52);
-        _gfs = Add(new RadioItem(_modes, Strings.RetentionGfs));
+        Add(new RowItem(_byAge, _maxAge, new LabelItem(Strings.RetentionAgeSuffix) { Help = Strings.RetentionAgeHint }));
+        _gfs = Add(new RadioItem(_modes, Strings.RetentionGfs, Strings.RetentionGfsHint));
         _gfsCounts = Add(new RowItem(
             new LabelItem(L(Strings.GfsDaily)), _daily,
             new LabelItem(L(Strings.GfsWeekly)) { Indent = 8 }, _weekly,
             new LabelItem(L(Strings.GfsMonthly)) { Indent = 8 }, _monthly)
         {
-            Indent = 52,
+            Indent = 30,
         });
-        Note(Strings.RetentionGfsHint, indent: 52);
         _noFullWarning = Note(Strings.RetentionNoFullWarning, Tone.Warning, visible: false);
         _wormNote = Note(string.Empty, Tone.Warning, visible: false);
         Heading(Strings.RetentionRules);

@@ -25,7 +25,7 @@ internal sealed class CobianImportDialog : FormDialog
         : base(Strings.ImportTitle, 820, sizable: true)
     {
         _monitor = monitor;
-        _file = new TextItem(L(Strings.ImportFile), GuessListFile() ?? string.Empty, 560)
+        _file = new TextItem(L(Strings.ImportFile), GuessListFile() ?? string.Empty, 400)
         {
             ActionIcon = "folder_open",
             ActionTip = Strings.ButtonBrowse,
@@ -35,7 +35,7 @@ internal sealed class CobianImportDialog : FormDialog
         {
             ReadList();
             return Task.CompletedTask;
-        }) { ByField = true }));
+        })));
         Items.Add(new NoteItem(Strings.ImportNote));
         Items.Add(_found);
         Items.Add(_accountsHeading);

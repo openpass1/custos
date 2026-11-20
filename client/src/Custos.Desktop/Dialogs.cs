@@ -24,11 +24,11 @@ internal class DialogWindow : Window
         Body = new StackPanel { Spacing = 8 };
         Content = new DockPanel
         {
-            Margin = new Thickness(22, 16, 22, 14),
+            Margin = new Thickness(18, 12, 18, 10),
             Children =
             {
-                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(0, 0, 0, 10), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
-                Dock(new Border { Child = _buttons, Margin = new Thickness(0, 14, 0, 0) }, Avalonia.Controls.Dock.Bottom),
+                Dock(new TextBlock { Text = title, Classes = { "headline" }, Margin = new Thickness(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap }, Avalonia.Controls.Dock.Top),
+                Dock(new Border { Child = _buttons, Margin = new Thickness(0, 10, 0, 0) }, Avalonia.Controls.Dock.Bottom),
                 Body,
             },
         };

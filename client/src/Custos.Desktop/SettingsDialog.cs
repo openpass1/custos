@@ -40,15 +40,15 @@ internal sealed class SettingsDialog : FormDialog
     private readonly NoteItem _passwordState = new(string.Empty);
     private readonly ButtonItem _passwordSet;
     private readonly ButtonItem _passwordRemove;
-    private readonly ChoiceItem _logLevel = new(L(Strings.DefaultLogLevel), [Strings.LogLevelSummary, Strings.LogLevelFiles], 0, 360)
+    private readonly ChoiceItem _logLevel = new(L(Strings.DefaultLogLevel), [Strings.LogLevelSummary, Strings.LogLevelFiles], 0, 300)
     {
         Help = Strings.DefaultLogLevelHelp,
     };
 
-    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 200) { Help = Strings.LogRetentionHelp };
-    private readonly NumberItem _historyRetention = new(L(Strings.HistoryRetention), 365, 1, 3650, 200) { Help = Strings.HistoryRetentionHelp };
-    private readonly ChoiceItem _priority = new(L(Strings.CopyPriority), [Strings.PriorityLow, Strings.PriorityNormal], 0, 360) { Help = Strings.CopyPriorityHelp };
-    private readonly ChoiceItem _language = new(L(Strings.ServiceLanguage), [Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish], 0, 360)
+    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 120) { Help = Strings.LogRetentionHelp };
+    private readonly NumberItem _historyRetention = new(L(Strings.HistoryRetention), 365, 1, 3650, 120) { Help = Strings.HistoryRetentionHelp };
+    private readonly ChoiceItem _priority = new(L(Strings.CopyPriority), [Strings.PriorityLow, Strings.PriorityNormal], 0, 300) { Help = Strings.CopyPriorityHelp };
+    private readonly ChoiceItem _language = new(L(Strings.ServiceLanguage), [Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish], 0, 300)
     {
         Help = Strings.ServiceLanguageHelp,
     };
@@ -112,7 +112,8 @@ internal sealed class SettingsDialog : FormDialog
 
         Items.Add(new HeadingItem(Strings.SettingsLogs));
         Items.Add(_logLevel);
-        Items.Add(new RowItem(_retention, _historyRetention));
+        Items.Add(_retention);
+        Items.Add(_historyRetention);
         Items.Add(_priority);
         Items.Add(_language);
 

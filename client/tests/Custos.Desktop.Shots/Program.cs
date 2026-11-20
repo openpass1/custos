@@ -75,6 +75,9 @@ internal static class Program
         EditorShot(folder, "11-zadanie-szhatie-svetloe", "light", "Accounting", Strings.PageArchive);
         EditorShot(folder, "12-zadanie-raspisanie-ezhednevno-tyomnoe", "dark", "Documents", Strings.PageSchedule);
 
+        // The size of the window of the classic editor: a page fits in it whole.
+        EditorShot(folder, "26-zadanie-szhatie-846x654-svetloe", "light", "Accounting", Strings.PageArchive, height: 654, width: 846);
+
         // The windows of the editor pages.
         DialogShot(folder, "14-okno-istochnik-svetloe", "light", c => new SourceDialog(c, Task("Documents").Sources[1]));
         DialogShot(folder, "15-okno-naznachenie-sftp-tyomnoe", "dark", c => new DestinationDialog(c, Task("Documents").Destinations[2], isNew: false));
@@ -160,7 +163,7 @@ internal static class Program
         Close(window);
     }
 
-    private static void EditorShot(string folder, string name, string theme, string task, string page, double height = 0, string color = Palettes.Default)
+    private static void EditorShot(string folder, string name, string theme, string task, string page, double height = 0, string color = Palettes.Default, double width = 0)
     {
         var window = App.CreateMainWindow(demo: true);
         var vm = window.ViewModel;
@@ -176,6 +179,12 @@ internal static class Program
         if (height > 0)
         {
             editor.Height = height;
+        }
+
+        if (width > 0)
+        {
+            editor.MinWidth = Math.Min(editor.MinWidth, width);
+            editor.Width = width;
         }
 
         editor.Show(window);

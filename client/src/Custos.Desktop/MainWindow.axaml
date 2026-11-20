@@ -14,19 +14,19 @@
     <DockPanel>
 
       <!-- Toolbar: «Создать» as an extended FAB, the rest as icon-over-label items (docs/client-ui.md, 2.1). -->
-      <Grid Name="Toolbar" DockPanel.Dock="Top" Height="68" Margin="12,2,12,2" ColumnDefinitions="Auto,*,Auto">
+      <Grid Name="Toolbar" DockPanel.Dock="Top" Height="56" Margin="10,0,10,0" ColumnDefinitions="Auto,*,Auto">
         <StackPanel Name="ToolbarStart" Orientation="Horizontal" VerticalAlignment="Center">
-          <Panel Name="FabPanel" Margin="0,0,12,0">
+          <Panel Name="FabPanel" Margin="0,0,10,0">
           <Border Classes="fabshadow" />
           <Border Classes="fab">
             <StackPanel Orientation="Horizontal">
               <Button Theme="{StaticResource FabPart}" Click="OnCreate" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{x:Static g:Strings.ToolCreate}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <p:Icon Kind="add" />
-                  <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="15" FontWeight="Medium" VerticalAlignment="Center" />
+                  <TextBlock Text="{x:Static g:Strings.ToolCreate}" FontSize="14" FontWeight="Medium" VerticalAlignment="Center" />
                 </StackPanel>
               </Button>
-              <Border Width="1" Margin="0,10" Background="{DynamicResource OutlineVariant}" />
+              <Border Width="1" Margin="0,8" Background="{DynamicResource OutlineVariant}" />
               <Button Theme="{StaticResource FabPart}" Padding="8,0" IsEnabled="{Binding CanEdit}">
                 <p:Icon Kind="arrow_drop_down" />
                 <Button.Flyout>
@@ -119,7 +119,7 @@
       </Border>
 
       <!-- Status bar. -->
-      <Grid DockPanel.Dock="Bottom" Height="32" Margin="18,0,12,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+      <Grid DockPanel.Dock="Bottom" Height="26" Margin="14,0,10,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,20,0">
           <Ellipse Classes="dot" Classes.ok="{Binding ServiceOk}" />
           <TextBlock Classes="small var" Text="{Binding ServiceText}" />
@@ -145,27 +145,27 @@
       <Grid Name="Body" Margin="12,0,12,0">
         <Grid.RowDefinitions>
           <RowDefinition Height="*" MinHeight="160" />
-          <RowDefinition Height="10" />
+          <RowDefinition Height="8" />
           <RowDefinition Height="230" MinHeight="120" />
         </Grid.RowDefinitions>
         <Grid Name="Top">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" MinWidth="340" />
-            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="8" />
             <ColumnDefinition Width="350" MinWidth="280" />
           </Grid.ColumnDefinitions>
 
           <!-- Task list -->
           <Border Classes="pane">
             <DockPanel>
-              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="20,10,18,2">
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="16,6,14,0">
                 <TextBlock Classes="title" Text="{x:Static p:DesktopStrings.Tasks}" VerticalAlignment="Center" />
                 <Border Classes="countpill" IsVisible="{Binding HasSnapshot}"><TextBlock Text="{Binding TaskCount}" /></Border>
               </StackPanel>
               <Panel>
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="8,0,8,6" IsVisible="{Binding HasSnapshot}">
                   <DockPanel MinWidth="930">
-                    <Border DockPanel.Dock="Top" Classes="divider" Height="34" Margin="0,0,0,2">
+                    <Border DockPanel.Dock="Top" Classes="divider" Height="28" Margin="0,0,0,2">
                       <Grid Name="Header" ColumnDefinitions="160,130,170,150,200,*" />
                     </Border>
                     <ListBox Name="TaskList" Theme="{StaticResource M3List}" ItemsSource="{Binding Tasks}" SelectionMode="Multiple"
@@ -203,7 +203,7 @@
                       </ListBox.ContextFlyout>
                       <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="p:TaskRow">
-                          <Grid Height="40" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">
+                          <Grid Height="30" ColumnDefinitions="160,130,170,150,200,*" Background="Transparent">
                             <Grid ColumnDefinitions="Auto,*" Margin="12,0">
                               <p:Icon Classes="state" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
                                       Classes.run="{Binding IsRun}" Classes.none="{Binding IsNone}" Kind="{Binding StateIcon}" VerticalAlignment="Center" />
@@ -242,7 +242,7 @@
           <Border Name="CardPane" Grid.Column="2" Classes="pane">
             <Panel>
               <ScrollViewer IsVisible="{Binding HasCard}" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="16,12,16,12" DataContext="{Binding Card}" x:DataType="p:CardModel">
+                <StackPanel Margin="12,10,12,10" DataContext="{Binding Card}" x:DataType="p:CardModel">
                   <Grid ColumnDefinitions="Auto,*">
                     <Border Classes="lead" Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}" Classes.run="{Binding IsRun}">
                       <p:Icon Kind="{Binding StateIcon}" Filled="True" HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -267,7 +267,7 @@
                   <ItemsControl ItemsSource="{Binding Rows}" Margin="0,6,0,0">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="p:CardRow">
-                        <Border Classes="divider" Padding="0,7,0,7">
+                        <Border Classes="divider" Padding="0,4,0,4">
                           <StackPanel>
                             <TextBlock Classes="key" Text="{Binding Key}" />
                             <TextBlock Classes="value" Classes.accent="{Binding Accent}" Text="{Binding Value}" />
@@ -326,7 +326,7 @@
               <ListBox Theme="{StaticResource M3List}" ItemsSource="{Binding Log}" IsVisible="{Binding IsLogTab}" Margin="8,4,8,4">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="p:LogRow">
-                    <Grid Height="28" ColumnDefinitions="150,30,*" Margin="12,0,12,0" Background="Transparent">
+                    <Grid Height="22" ColumnDefinitions="150,30,*" Margin="10,0,10,0" Background="Transparent">
                       <TextBlock Classes="var num" Text="{Binding Time}" VerticalAlignment="Center" FontSize="13.5" />
                       <p:Icon Grid.Column="1" Classes="level" Classes.info="{Binding IsInfo}" Classes.warn="{Binding IsWarn}" Classes.bad="{Binding IsBad}"
                               Kind="{Binding Icon}" VerticalAlignment="Center" HorizontalAlignment="Left" />
@@ -340,7 +340,7 @@
 
               <!-- History of the selected task -->
               <DockPanel IsVisible="{Binding IsHistoryTab}" Margin="8,0,8,4">
-                <Border DockPanel.Dock="Top" Classes="divider" Height="36">
+                <Border DockPanel.Dock="Top" Classes="divider" Height="28">
                   <Grid ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0">
                     <TextBlock Classes="key" Text="{x:Static g:Strings.ColumnStarted}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="key" Text="{x:Static g:Strings.ColumnDuration}" VerticalAlignment="Center" />
@@ -356,7 +356,7 @@
                          KeyDown="OnHistoryKey" ToolTip.Tip="{x:Static p:DesktopStrings.HistoryOpenLog}" ToolTip.ShowDelay="1200">
                   <ListBox.ItemTemplate>
                     <DataTemplate x:DataType="p:HistoryRow">
-                      <Grid Height="30" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
+                      <Grid Height="24" ColumnDefinitions="150,110,150,190,90,100,180,*" Margin="12,0,12,0" Background="Transparent">
                         <TextBlock Classes="num" Text="{Binding Started}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="1" Classes="num" Text="{Binding Duration}" VerticalAlignment="Center" FontSize="13.5" />
                         <TextBlock Grid.Column="2" Text="{Binding Type}" VerticalAlignment="Center" FontSize="13.5" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />

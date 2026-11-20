@@ -257,4 +257,55 @@ internal sealed class Field : ContentControl
         get => GetValue(TrailingIconProperty);
         set => SetValue(TrailingIconProperty, value);
     }
+
+    /// <summary>The label on the left of the frame, this wide (NaN = as wide as its text), as in the classic forms.</summary>
+    public static readonly StyledProperty<double> LabelWidthProperty = AvaloniaProperty.Register<Field, double>(nameof(LabelWidth), double.NaN);
+
+    /// <summary>The width of the frame alone, at most the rest of the line; NaN = the rest of the line.</summary>
+    public static readonly StyledProperty<double> FrameWidthProperty = AvaloniaProperty.Register<Field, double>(nameof(FrameWidth), double.NaN);
+
+    public double LabelWidth
+    {
+        get => GetValue(LabelWidthProperty);
+        set => SetValue(LabelWidthProperty, value);
+    }
+
+    public double FrameWidth
+    {
+        get => GetValue(FrameWidthProperty);
+        set => SetValue(FrameWidthProperty, value);
+    }
+}
+
+/// <summary>
+/// Holds the frame of a <see cref="Field"/>: <see cref="Limit"/> wide on the left of its line, or narrower when the line
+/// is shorter (a narrow dialog), so that a frame never goes past the edge; NaN = the whole line.
+/// </summary>
+internal sealed class FrameBox : Decorator
+{
+    public static readonly StyledProperty<double> LimitProperty = AvaloniaProperty.Register<FrameBox, double>(nameof(Limit), double.NaN);
+
+    static FrameBox() => AffectsMeasure<FrameBox>(LimitProperty);
+
+    public double Limit
+    {
+        get => GetValue(LimitProperty);
+        set => SetValue(LimitProperty, value);
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        double width = FrameWidthIn(availableSize.Width);
+        Child?.Measure(new Size(width, availableSize.Height));
+        var desired = Child?.DesiredSize ?? default;
+        return new Size(double.IsNaN(Limit) ? desired.Width : width, desired.Height);
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        Child?.Arrange(new Rect(0, 0, FrameWidthIn(finalSize.Width), finalSize.Height));
+        return finalSize;
+    }
+
+    private double FrameWidthIn(double line) => double.IsNaN(Limit) ? line : Math.Min(line, Limit);
 }

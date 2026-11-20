@@ -141,8 +141,8 @@ internal sealed class DestinationDialog : FormDialog
     private readonly TaskDestination _original;
     private readonly bool _supported;
     private readonly ChoiceItem _kind;
-    private readonly TextItem _host = new(L(Strings.DestinationHost), width: 420);
-    private readonly TextItem _port = new(L(Strings.DestinationPort), width: 110) { MaxLength = 5 };
+    private readonly TextItem _host = new(L(Strings.DestinationHost), width: 300);
+    private readonly TextItem _port = new(L(Strings.DestinationPort), width: 70) { MaxLength = 5 };
     private readonly RowItem _hostRow;
     private readonly TextItem _endpoint = new(L(Strings.DestinationEndpoint)) { Help = Strings.DestinationEndpointHelp };
     private readonly TextItem _bucket = new(L(Strings.DestinationBucket)) { Help = Strings.DestinationBucketHelp };
@@ -191,7 +191,7 @@ internal sealed class DestinationDialog : FormDialog
             kinds.Add(DestinationsPage.KindText(destination.Kind));
         }
 
-        _kind = new ChoiceItem(L(Strings.DestinationKind), kinds, 0, 360) { Help = Strings.DestinationKindHelp };
+        _kind = new ChoiceItem(L(Strings.DestinationKind), kinds, 0, 300) { Help = Strings.DestinationKindHelp };
         _hostRow = new RowItem(_host, _port);
         _path = new TextItem(L(Strings.DestinationFolder)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = BrowseAsync };
         _account = new AccountPicker(context, () => this, L(Strings.DestinationAccount));

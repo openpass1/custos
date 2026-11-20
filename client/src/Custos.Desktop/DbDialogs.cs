@@ -20,10 +20,10 @@ internal sealed class DbServerDialog : FormDialog
     private readonly Credential? _credential;
     private readonly ChoiceItem _engine = new(L(Strings.DbEngine), [.. Engines.Select(DbEngines.Title)], 0, 260);
     private readonly TextItem _binDir;
-    private readonly TextItem _host = new(L(Strings.DbHost), width: 420) { Help = Strings.DbHostHelp };
-    private readonly NumberItem _port = new(L(Strings.DbPort), 3306, 1, 65535, 120);
-    private readonly TextItem _user = new(L(Strings.DbUser), width: 300);
-    private readonly TextItem _password = new(L(Strings.DbPassword), width: 300) { Secret = true };
+    private readonly TextItem _host = new(L(Strings.DbHost), width: 240) { Help = Strings.DbHostHelp };
+    private readonly NumberItem _port = new(L(Strings.DbPort), 3306, 1, 65535, 80);
+    private readonly TextItem _user = new(L(Strings.DbUser), width: 240);
+    private readonly TextItem _password = new(L(Strings.DbPassword), width: 240) { Secret = true };
     private readonly CheckItem _noPassword = new(Strings.DbNoPassword);
     private readonly RadioGroup _choice = new();
     private readonly RadioItem _all;
@@ -41,13 +41,13 @@ internal sealed class DbServerDialog : FormDialog
         _context = context;
         _original = server;
         _credential = context.FindCredential(server.CredentialId);
-        _binDir = new TextItem(L(Strings.DbBinDir), width: 470)
+        _binDir = new TextItem(L(Strings.DbBinDir), width: 330)
         {
             ActionIcon = "folder_open",
             ActionTip = Strings.ButtonBrowse,
             Action = BrowseAsync,
         };
-        var find = new ButtonItem("search", Strings.DbFind, FindAsync) { ByField = true };
+        var find = new ButtonItem("search", Strings.DbFind, FindAsync);
         _all = new RadioItem(_choice, Strings.DbChoiceAll);
         _only = new RadioItem(_choice, Strings.DbChoiceOnly);
         _test = new ButtonItem("network_check", Strings.ButtonTestConnection, TestAsync) { Failed = ex => _testResult.Show(ex.Message, Tone.Error) };
@@ -56,11 +56,11 @@ internal sealed class DbServerDialog : FormDialog
         Items.Add(new RowItem(_binDir, find));
         Items.Add(new NoteItem(Strings.DbBinDirHelp));
         Items.Add(new RowItem(_host, _port));
-        Items.Add(new RowItem(_user, _password));
+        Items.Add(_user);
+        Items.Add(_password);
         Items.Add(_noPassword);
         Items.Add(new NoteItem(_credential is null ? Strings.DbAccountNote : Strings.DbAccountNote + " " + Strings.DbKeepPasswordNote));
-        Items.Add(_all);
-        Items.Add(_only);
+        Items.Add(new RowItem(_all, _only));
         Items.Add(_databases);
         Items.Add(new NoteItem(Strings.DbListNote));
         Items.Add(_test);

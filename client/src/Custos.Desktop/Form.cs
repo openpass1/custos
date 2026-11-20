@@ -130,6 +130,14 @@ internal sealed class LabelItem(string text, bool strong = false) : FormItem
     }
 
     public bool Strong { get; } = strong;
+
+    /// <summary>The width of the text: the width of the label column of the fields lines it up with them.</summary>
+    public double Width { get; init; } = double.NaN;
+
+    /// <summary>An explanation behind a (?) after the text: a line ending in a field keeps its hint off the page.</summary>
+    public string? Help { get; init; }
+
+    public bool HasHelp => Help is not null;
 }
 
 /// <summary>Several pieces on one line.</summary>
@@ -166,6 +174,8 @@ internal abstract class FieldBase : FormItem
             if (Set(ref _hint, value))
             {
                 Changed(nameof(ShownHint));
+                Changed(nameof(Tip));
+                Changed(nameof(HasHelp));
             }
         }
     }
@@ -186,7 +196,11 @@ internal abstract class FieldBase : FormItem
 
     public bool HasError => _error is not null;
 
-    public string? ShownHint => _error ?? _hint;
+    /// <summary>Under the field only what is wrong; the hint goes behind the «?» (<see cref="Tip"/>).</summary>
+    public string? ShownHint => _error;
+
+    /// <summary>The explanation and the hint, behind the «?» beside the field.</summary>
+    public string? Tip => _help is null ? _hint : _hint is null ? _help : _help + "\n\n" + _hint;
 
     /// <summary>The width of the frame; NaN = the whole width of the form.</summary>
     public double Width { get; }
@@ -205,11 +219,12 @@ internal abstract class FieldBase : FormItem
             if (Set(ref _help, value))
             {
                 Changed(nameof(HasHelp));
+                Changed(nameof(Tip));
             }
         }
     }
 
-    public bool HasHelp => _help is not null;
+    public bool HasHelp => _help is not null || _hint is not null;
 
     /// <summary>Called when the user changed the value (not when the form set it).</summary>
     public Action? OnChange { get; set; }
@@ -483,11 +498,23 @@ internal sealed class SwitchItem(string title, string? description = null, bool 
             if (Set(ref _description, value))
             {
                 Changed(nameof(HasDescription));
+                Changed(nameof(Short));
+                Changed(nameof(Long));
+                Changed(nameof(HasShort));
+                Changed(nameof(HasLong));
             }
         }
     }
 
     public bool HasDescription => !string.IsNullOrEmpty(_description);
+
+    public string? Short => HasDescription && _description!.Length <= 40 ? _description : null;
+
+    public string? Long => HasDescription && _description!.Length > 40 ? _description : null;
+
+    public bool HasShort => Short is not null;
+
+    public bool HasLong => Long is not null;
 
     public bool Card { get; } = card;
 
@@ -527,11 +554,23 @@ internal sealed class CheckItem(string title, bool on = false, string? descripti
             if (Set(ref _description, value))
             {
                 Changed(nameof(HasDescription));
+                Changed(nameof(Short));
+                Changed(nameof(Long));
+                Changed(nameof(HasShort));
+                Changed(nameof(HasLong));
             }
         }
     }
 
     public bool HasDescription => !string.IsNullOrEmpty(_description);
+
+    public string? Short => HasDescription && _description!.Length <= 40 ? _description : null;
+
+    public string? Long => HasDescription && _description!.Length > 40 ? _description : null;
+
+    public bool HasShort => Short is not null;
+
+    public bool HasLong => Long is not null;
 
     /// <summary>On one line with a field: the text in the middle of the line.</summary>
     public bool Inline { get; init; }
@@ -615,11 +654,14 @@ internal sealed class RadioItem : FormItem
             if (Set(ref _hint, value))
             {
                 Changed(nameof(HasHint));
+                Changed(nameof(HasLong));
             }
         }
     }
 
     public bool HasHint => !string.IsNullOrEmpty(_hint);
+
+    public bool HasLong => HasHint;
 
     public bool Inline { get; }
 
@@ -895,11 +937,6 @@ internal sealed class ButtonItem(string? icon, string text, Func<Task> action, B
     public bool IsText => Look == ButtonLook.Text;
 
     public bool IsFilled => Look == ButtonLook.Filled;
-
-    /// <summary>Beside a field: the button sits on the middle of the frame, under the label.</summary>
-    public bool ByField { get; init; }
-
-    public Thickness Margin => ByField ? new Thickness(0, 8, 0, 0) : default;
 
     public bool IsBusy
     {

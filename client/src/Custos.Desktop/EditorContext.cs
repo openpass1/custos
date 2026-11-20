@@ -231,7 +231,7 @@ internal sealed class AccountPicker
     {
         _context = context;
         _owner = owner;
-        Choice = new ChoiceItem(label, [], 0, width: 400) { Help = help };
+        Choice = new ChoiceItem(label, [], 0, width: 260) { Help = help };
         Choice.OnChange = () =>
         {
             if (!_filling && Choice.Selected >= 0 && Choice.Selected < _ids.Count)
@@ -240,7 +240,7 @@ internal sealed class AccountPicker
                 SelectionChanged?.Invoke();
             }
         };
-        Add = new ButtonItem("person_add", Strings.ButtonAddAccount, AddAsync) { ByField = true };
+        Add = new ButtonItem("person_add", Strings.ButtonAddAccount, AddAsync);
         Row = new RowItem(Choice, Add);
         context.CredentialsChanged += (_, _) => Fill();
         Fill();
