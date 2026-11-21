@@ -19,10 +19,10 @@ use Custos\Infra\Time;
  *   macos   tag client-vX.Y.Z (the same releases as the program for Windows), package custos-macos-X.Y.Z.zip: the
  *           same for CUSTOS for macOS (kind macos), likewise only while the site has any of it;
  *   linux   tag client-vX.Y.Z as well, package custos-linux-X.Y.Z.zip: the same for CUSTOS for Linux (kind linux),
- *           likewise only while the site has any of it.
+ *           available for download before the first Linux installation.
  * A bell notice tells once per version when the site is older, or when the program is newer than every agent
- * package of its edition on the server. Drafts and pre-releases are skipped. The check can be turned off (server
- * without internet).
+ * package of its edition on the server. Other than the standard program, only editions in use produce notices.
+ * Drafts and pre-releases are skipped. The check can be turned off (server without internet).
  *
  * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server, release_client,
  * release_legacy, release_macos and release_linux (JSON of the release found, see pick()), release_*_notified
@@ -70,6 +70,9 @@ final class Releases
             $stats['site'] = $site['version'];
         }
         foreach (self::PROGRAM_PARTS as $part) {
+            if ($part !== 'client' && !$this->packages->inUse(self::kind($part))) {
+                continue;
+            }
             $client = $this->newerClient($part);
             if ($client !== null && $this->settings->get("release_{$part}_notified") !== $client['version']) {
                 $this->notices->add("$part.release", null, null, ['version' => $client['version']]);
@@ -172,12 +175,12 @@ final class Releases
 
     /**
      * The newest program release of an edition ($part client, legacy, macos or linux) when it is newer than every package of
-     * that edition on the server. The editions other than the standard one count only while the site has any of them.
+     * that edition on the server.
      */
     public function newerClient(string $part = 'client'): ?array
     {
         $latest = $this->latest($part);
-        if ($latest === null || ($part !== 'client' && !$this->packages->inUse(self::kind($part)))) {
+        if ($latest === null) {
             return null;
         }
         $stored = $this->packages->all(self::kind($part))[0]['version'] ?? null;
