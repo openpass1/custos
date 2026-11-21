@@ -12,6 +12,11 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
+## 1.4.2
+
+### Fixed
+- Improve text and button contrast for pending machines in the Graphite and Blue colour schemes.
+
 ## 1.4.1
 
 ### Fixed
