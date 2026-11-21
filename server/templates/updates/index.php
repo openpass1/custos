@@ -265,7 +265,6 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 
 <?php foreach ($editions as $kind => $ed): ?>
 <?php if ($ed['on']): ?>
-<?php /* Only while the site has a machine or a package of the edition (Windows 7 and 8.1, macOS). */ ?>
 <section class="panel">
     <h2><?= e(t('updates.' . $kind)) ?></h2>
     <p class="hint"><?= e(t('updates.' . $kind . '.hint')) ?></p>

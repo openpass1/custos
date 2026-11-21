@@ -230,7 +230,7 @@ final class Install
           work=$(mktemp -d)
           # The folder is named now: the trap runs after main(), when its local variables are gone.
           trap "rm -rf -- '$work'" EXIT
-          local url="$site/install/linux/$token/custos-linux-$arch.tar.gz"
+          local url="$site/install/linux/$token/$arch"
           say "Downloading CUSTOS $version for Linux ($arch) from $site" "Скачиваю CUSTOS $version для Linux ($arch) с $site"
           if command -v curl > /dev/null; then
             curl -fSL --progress-bar --retry 3 -o "$work/custos.tar.gz" "$url" || fail "could not download $url" "не удалось скачать $url"

@@ -213,10 +213,7 @@ final class Packages
         });
     }
 
-    /**
-     * Whether the site has anything of an edition ($kind legacy, macos or linux): such a machine or such a package. The
-     * sections and notices of an edition show only then.
-     */
+    /** Whether the site has anything of an edition ($kind legacy, macos or linux): such a machine or such a package. */
     public function inUse(string $kind): bool
     {
         return $this->db->one('SELECT 1 AS x FROM agents WHERE edition = ? LIMIT 1', [$kind]) !== null

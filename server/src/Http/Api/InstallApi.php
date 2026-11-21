@@ -14,13 +14,14 @@ use Custos\Infra\Log;
 /**
  * The addresses of the install command for Linux (page "Install", Install):
  *   GET /install/linux/<token>                              the script the command runs
- *   GET /install/linux/<token>/custos-linux-<arch>.tar.gz   the program it downloads, from the current package
+ *   GET /install/linux/<token>/<arch>                       the program it downloads, from the current package
  * No login: the server being installed has none. The token stands for the registration key, and the agents
  * allow-list applies, as to the agents. A wrong token answers 404, like an address that does not exist.
  */
 final class InstallApi
 {
-    private const PATH = '#^/install/linux/([0-9a-fA-F]{32})(?:/custos-linux-(x64|arm64)\.tar\.gz)?$#';
+    // Some nginx configurations treat .gz URLs as static files. Keep the old route for scripts already fetched.
+    private const PATH = '#^/install/linux/([0-9a-fA-F]{32})(?:/(x64|arm64)|/custos-linux-(x64|arm64)\.tar\.gz)?$#';
 
     public function __construct(private readonly App $app)
     {
@@ -48,7 +49,7 @@ final class InstallApi
         if ($request->method !== 'GET' && $request->method !== 'HEAD') {
             return Response::text("Error: only GET\n", 405);
         }
-        if (!preg_match(self::PATH, $request->path(), $m)) {
+        if (!preg_match(self::PATH, $request->path(), $m, PREG_UNMATCHED_AS_NULL)) {
             return Response::text("Error: not found\n", 404);
         }
         if (!Cidr::allows($request->ip, Cidr::fromStored($this->app->settings()->get('ip_allow_agents')))) {
@@ -58,8 +59,8 @@ final class InstallApi
         if (!$install->tokenMatches($m[1])) {
             return Response::text("Error: this install command is not valid any more: copy it again from the page Install of the site\n", 404);
         }
-        $arch = $m[2] ?? '';
-        if ($arch === '') {
+        $arch = $m[2] ?? $m[3] ?? null;
+        if ($arch === null) {
             $response = Response::text($install->script());
             $response->headers['Content-Type'] = 'text/x-shellscript; charset=utf-8';
             return $response;

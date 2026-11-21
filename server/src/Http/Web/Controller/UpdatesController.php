@@ -15,8 +15,8 @@ use Custos\Http\Web\Controller;
  * update packages (upload or download of the newest program release, current version, update machines) and 7-Zip
  * (the daily check of the newest release, download or upload of the installer, update of 7z.dll on machines).
  * The editions for Windows 7 and 8.1, macOS and Linux have packages of their own (kind legacy, macos, linux) and their
- * own current versions; the section of each shows only while the site has any of it, and their machines are never
- * offered another edition or 7-Zip.
+ * own current versions. Linux also appears before any packages or agents exist, so an admin can download its first
+ * package. Machines of these editions are never offered another edition or 7-Zip.
  */
 final class UpdatesController extends Controller
 {
@@ -37,10 +37,11 @@ final class UpdatesController extends Controller
         foreach (Agents::EDITIONS as $kind) {
             $editionCurrent = $packages->current($kind);
             $machines = Packages::fitting($kind, $agents);
+            $show = $kind === Agents::LINUX || $packages->inUse($kind);
             $editions[$kind] = [
-                'on' => $packages->inUse($kind),
+                'on' => $show,
                 'latest' => $releases->latest($kind),
-                'newer' => $releases->newerClient($kind),
+                'newer' => $show ? $releases->newerClient($kind) : null,
                 'packages' => $packages->all($kind),
                 'current' => $editionCurrent,
                 'machines' => $machines !== [],

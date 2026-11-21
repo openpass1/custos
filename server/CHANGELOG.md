@@ -12,6 +12,12 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
+## 1.4.1
+
+### Fixed
+- The Linux package can be downloaded from GitHub under Updates before adding the first Linux machine.
+- The Linux install command downloads the archive on CloudPanel and other nginx setups that serve .gz URLs as static files.
+
 ## 1.4.0
 
 ### Added

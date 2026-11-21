@@ -65,9 +65,15 @@ final class WebTest extends TestCase
         // skipped), each with SHA256SUMS.txt; the program package is a real agent update package.
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.3', "--out=$dir/custos-1.2.3.zip"]);
         $this->assertSame(0, $code, $output);
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.3', '--edition=linux', "--out=$dir/custos-linux-1.2.3.zip"]);
+        $this->assertSame(0, $code, $output);
         file_put_contents("$dir/custos-server-9.9.0.zip", 'not used: the site under test never updates itself');
         $sha = fn(string $file) => hash_file('sha256', "$dir/$file");
-        file_put_contents("$dir/SHA256SUMS.txt", $sha('custos-1.2.3.zip') . "  custos-1.2.3.zip\n" . $sha('custos-server-9.9.0.zip') . "  custos-server-9.9.0.zip\n");
+        $sums = '';
+        foreach (['custos-1.2.3.zip', 'custos-linux-1.2.3.zip', 'custos-server-9.9.0.zip'] as $file) {
+            $sums .= $sha($file) . "  $file\n";
+        }
+        file_put_contents("$dir/SHA256SUMS.txt", $sums);
         $asset = fn(string $name, bool $digest = true) => ['name' => $name, 'browser_download_url' => "http://127.0.0.1:$port/$name", 'size' => filesize("$dir/$name")]
             + ($digest ? ['digest' => 'sha256:' . $sha($name)] : []);
         file_put_contents("$dir/custos-releases.json", json_encode([
@@ -76,7 +82,7 @@ final class WebTest extends TestCase
             ['tag_name' => 'server-v9.9.0', 'html_url' => 'https://github.example/releases/server-v9.9.0', 'published_at' => '2026-11-14T10:00:00Z',
              'assets' => [$asset('custos-server-9.9.0.zip'), $asset('SHA256SUMS.txt', false)]],
             ['tag_name' => 'client-v1.2.3', 'html_url' => 'https://github.example/releases/client-v1.2.3', 'published_at' => '2026-11-14T09:00:00Z',
-             'assets' => [$asset('custos-1.2.3.zip'), $asset('SHA256SUMS.txt', false)]],
+             'assets' => [$asset('custos-1.2.3.zip'), $asset('custos-linux-1.2.3.zip'), $asset('SHA256SUMS.txt', false)]],
         ]));
         file_put_contents("$dir/router.php", <<<'PHP'
             <?php
@@ -91,7 +97,7 @@ final class WebTest extends TestCase
                 readfile(__DIR__ . '/custos-releases.json');
                 return;
             }
-            if (preg_match('#^/(custos-[0-9.]+\.zip|custos-server-[0-9.]+\.zip|SHA256SUMS\.txt)$#', $path, $m)) {
+            if (preg_match('#^/(custos-(?:(?:server|linux)-)?[0-9.]+\.zip|SHA256SUMS\.txt)$#', $path, $m)) {
                 header('Content-Type: application/octet-stream');
                 readfile(__DIR__ . '/' . $m[1]);
                 return;
@@ -593,15 +599,22 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('Обновить сайт до 9.9.0', $updates);
         $this->assertStringContainsString('https://github.example/releases/server-v9.9.0', $updates);
         $this->assertStringNotContainsString('9.10.0', $updates, 'pre-releases are skipped');
-        $this->assertStringContainsString('Скачать 1.2.3 на сервер', $updates);
+        $this->assertStringContainsString('action="/updates/releases/client"', $updates);
+        $this->assertStringContainsString('action="/updates/releases/linux"', $updates, 'the first Linux agent needs a package too');
         $this->assertStringNotContainsString('1.2.4', $updates, 'drafts are skipped');
 
         [$status] = $this->post('/updates/releases/client', []);
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Программа 1.2.3 скачана с GitHub, проверена и подписана.', $updates);
-        $this->assertStringNotContainsString('Скачать 1.2.3 на сервер', $updates, 'the package is on the server now');
+        $this->assertStringNotContainsString('action="/updates/releases/client"', $updates, 'the Windows package is on the server now');
         $this->assertStringContainsString('Обновить CUSTOS до 1.0.1', $updates, 'a downloaded package does not become current by itself');
+
+        $this->assertSame(303, $this->post('/updates/releases/linux', [])[0]);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringNotContainsString('action="/updates/releases/linux"', $updates, 'the Linux package is on the server now');
+        $this->assertStringContainsString('Будет установлена версия 1.2.3, самая новая на сайте', $this->http('GET', '/install')[1]);
+        $this->assertSame(303, $this->post('/updates/linux/1.2.3/delete', [])[0]);
 
         [$status] = $this->post('/updates/releases/check', []);
         $this->assertSame(303, $status);
@@ -946,7 +959,7 @@ final class WebTest extends TestCase
         $this->assertStringStartsWith('#!/bin/bash', $script);
         $this->assertSame('no-store', $headers['cache-control']);
         $this->assertSame(404, $curl('/install/linux/' . str_repeat('0', 32))[0], 'a wrong token is no address');
-        $this->assertSame(404, $curl("$path/custos-linux-x64.tar.gz")[0], 'no package, no archive');
+        $this->assertSame(404, $curl("$path/x64")[0], 'no package, no archive');
         $this->assertSame(405, $curl($path, 'POST')[0]);
 
         // The package for Linux, not current yet: the newest one is installed.
@@ -968,19 +981,22 @@ final class WebTest extends TestCase
         $this->assertStringContainsString("local version='1.0.1'", $script);
         $this->assertStringContainsString("local sha_x64='" . hash('sha256', $archive) . "'", $script);
         $this->assertStringContainsString("local line='" . $this->connectionString() . "'", $script);
-        [$status, $body, $headers] = $curl("$path/custos-linux-x64.tar.gz");
+        [$status, $body, $headers] = $curl("$path/x64");
         $this->assertSame(200, $status);
         $this->assertSame($archive, $body, 'the archive of the package, as it is');
         $this->assertSame('application/gzip', $headers['content-type']);
         $this->assertSame((string) strlen($archive), $headers['content-length']);
-        $this->assertSame((string) $zip->read('custos-linux-arm64.tar.gz'), $curl("$path/custos-linux-arm64.tar.gz")[1]);
+        $this->assertSame((string) $zip->read('custos-linux-arm64.tar.gz'), $curl("$path/arm64")[1]);
+        $this->assertSame($archive, $curl("$path/custos-linux-x64.tar.gz")[1], 'the original URL still works when routed to PHP');
 
         // The script itself, run by bash: as root (a fake id), downloading from the site under test (curl is told
         // the address of custos.test), the archive's install.sh writes the arguments it got.
         $bin = TestEnv::dir() . '/install-bin';
         @mkdir($bin);
         file_put_contents("$bin/id", "#!/bin/sh\n[ \"\$1\" = -u ] && echo 0 || exec /usr/bin/id \"\$@\"\n");
-        file_put_contents("$bin/curl", "#!/bin/bash\nargs=()\nfor a in \"\$@\"; do args+=(\"\${a/http:\\/\\/custos.test/\$TEST_SITE}\"); done\n"
+        file_put_contents("$bin/curl", "#!/bin/bash\nargs=()\nfor a in \"\$@\"; do\n"
+            . "  [[ \$a != http://*.tar.gz ]] || exit 22\n"  // A static-file rule in nginx keeps these URLs out of PHP.
+            . "  args+=(\"\${a/http:\\/\\/custos.test/\$TEST_SITE}\")\ndone\n"
             . "\"\$REAL_CURL\" --noproxy '*' \"\${args[@]}\" || exit \$?\n"
             . "[ -z \"\${DAMAGE:-}\" ] || for a in \"\$@\"; do [ \"\$prev\" = -o ] && printf x >> \"\$a\"; prev=\$a; done\n");
         chmod("$bin/id", 0755);
