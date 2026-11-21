@@ -154,7 +154,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
         var settings = _config.GetSettings();
         bool passwordSet = settings.ProgramPasswordHash is not null;
         settings.ProgramPasswordHash = null;
-        return new AgentSnapshot
+        var snapshot = new AgentSnapshot
         {
             ProgramPasswordSet = passwordSet,
             Version = version,
@@ -184,7 +184,15 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             Server = _link?.Describe() ?? new ServerLinkInfo(),
             ProgramUpdate = DescribeProgramUpdate(),
         };
+        AddPlatformState(snapshot);
+        return snapshot;
     }
+
+    /// <summary>What only one system adds to the state of the service (Linux: whether snapshots can be made).</summary>
+    partial void AddPlatformState(AgentSnapshot snapshot);
+
+    /// <summary>Called on the thread of the runs when a run has ended, before it is reported.</summary>
+    partial void AfterRun(TaskDefinition task);
 
     public List<LogLine> GetRecentLog() => _liveLog.Recent();
 
@@ -1240,6 +1248,7 @@ internal sealed partial class AgentService(ServiceInfo info, AgentEvents events,
             _ => RunLogLevel.Error,
         }, Messages.Format(Messages.RunFinished, task.Name, Words.Status(result.Status), result.FilesProcessed,
             Sizes.Format(result.BytesWritten), Sizes.FormatDuration(finishedAt - startedAt)));
+        AfterRun(task);
         ReportRunFinish(record, result, file.Path);
         ReportToEventLog(task, result);
         NotePowerAction(task, result);

@@ -71,6 +71,11 @@ final class FakeAgent
             // CUSTOS for macOS (A.3, A.4): its own packages, 7-Zip inside the program.
             $this->state['edition'] = 'macos';
         }
+        if (!empty($options['linux'])) {
+            // CUSTOS for Linux (A.3, A.4): its own packages, 7-Zip inside the program, snapshots in the inventory (A.8).
+            $this->state['edition'] = 'linux';
+            $this->state['sevenzip_version'] = null;
+        }
         if (array_key_exists('sevenzip', $options)) {
             $this->state['sevenzip_version'] = $options['sevenzip'];
         }
@@ -210,6 +215,7 @@ final class FakeAgent
             'os' => match ($this->state['edition']) {
                 'legacy' => 'Windows 7 Professional SP1 (7601)',
                 'macos' => 'macOS 15.5 (24F74)',
+                'linux' => 'Ubuntu 24.04.1 LTS (6.8.0-49-generic)',
                 default => 'Windows 11 Pro 24H2 (26100)',
             },
             'agent_version' => $this->state['agent_version'] ?? self::VERSION,
@@ -794,6 +800,9 @@ final class FakeAgent
         if ($sevenZip && $this->state['edition'] === 'macos') {
             return ['rejected', '7-Zip comes inside CUSTOS for macOS'];
         }
+        if ($sevenZip && $this->state['edition'] === 'linux') {
+            return ['rejected', '7-Zip comes inside CUSTOS for Linux'];
+        }
         $signed = $sevenZip ? $this->client->verifySevenZip($version, $sha256, $signature)
             : $this->client->verifyUpdate($version, $sha256, $signature, $this->state['edition']);
         if (!$signed || !preg_match('/^[0-9A-Za-z.+-]{1,32}$/', $version)) {
@@ -816,7 +825,7 @@ final class FakeAgent
         return ['done', sprintf('%s %s installed (%s)', $sevenZip ? '7-Zip' : 'CUSTOS', $version, self::size(strlen($download['body'])))];
     }
 
-    /** The edition field of the registration and the heartbeat: sent only by the editions for Windows 7 and 8.1 and for macOS. */
+    /** The edition field of the registration and the heartbeat: sent only by the editions other than the standard one. */
     private function edition(): array
     {
         return $this->state['edition'] === '' ? [] : ['edition' => $this->state['edition']];
@@ -839,7 +848,7 @@ final class FakeAgent
     {
         $key = openssl_pkey_new(['private_key_bits' => self::KEY_BITS, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
         openssl_pkey_export($key, $private);
-        $sample = SampleTasks::make('local:OFFICE\\admin');
+        $sample = SampleTasks::make('local:OFFICE\\admin', !empty($this->options['linux']));
         return [
             'private_key' => $private,
             'agent_id' => null,
@@ -922,7 +931,39 @@ final class FakeAgent
                 ];
             }
         }
-        return ['destinations' => $destinations];
+        return ['destinations' => $destinations] + ($this->state['edition'] === 'linux' ? ['snapshots' => $this->snapshots()] : []);
+    }
+
+    /**
+     * The snapshots of the one volume of a fake Linux server (A.8): /, on LVM, holding the sources of every task; its
+     * state is --snapshot. The real agent lists every volume of the tasks with snapshots on, after each run too.
+     */
+    private function snapshots(): array
+    {
+        $state = (string) ($this->options['snapshot'] ?? 'no_space');
+        $gb = 1_073_741_824;
+        $lvm = $state !== 'unsupported';
+        $last = in_array($state, ['ok', 'low_space', 'overflowed'], true);
+        return [[
+            'mount' => '/',
+            'device' => $lvm ? '/dev/mapper/ubuntu--vg-ubuntu--lv' : '/dev/sda2',
+            'file_system' => 'ext4',
+            'method' => $lvm ? 'lvm' : 'none',
+            'state' => $state,
+            'volume_group' => $lvm ? 'ubuntu-vg' : null,
+            'logical_volume' => $lvm ? 'ubuntu-lv' : null,
+            'free_bytes' => $lvm ? match ($state) { 'ok' => 20 * $gb, 'low_space' => 2 * $gb, default => 0 } : null,
+            'volume_bytes' => 100 * $gb,
+            'last_size_bytes' => $last ? 5 * $gb : null,
+            'last_used_bytes' => $last ? ($state === 'overflowed' ? 5 * $gb : 2 * $gb) : null,
+            'last_run_at' => $last ? self::iso(time() - 3600) : null,
+            'detail' => match ($state) {
+                'ok' => null,
+                'unsupported' => 'The volume / is a plain partition: it cannot have snapshots, the files are read as they are.',
+                default => 'The volume group ubuntu-vg has no room for a snapshot of /: add a disk to it, pvcreate /dev/sdX && vgextend ubuntu-vg /dev/sdX.',
+            },
+            'task_ids' => array_column($this->state['tasks'], 'id'),
+        ]];
     }
 
     private function totalBytes(array $destination): int

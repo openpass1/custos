@@ -63,13 +63,17 @@ public static class SourceScanner
     /// <param name="index">Its position in the task.</param>
     /// <param name="readRoot">Where to read it: the source path itself or its location inside a shadow copy.</param>
     /// <param name="onProblem">Called for a folder or file that cannot be read: path and reason.</param>
+    /// <param name="skipFolder">Why a folder below the source is not read at all (<see cref="IBackupPlatform.SkipFolder"/>), or null.</param>
+    /// <param name="onSkipped">Called for such a folder: path and reason.</param>
     public static SourceScan Scan(
         TaskSource source,
         int index,
         string readRoot,
         FileFilter filter,
         Action<string, string> onProblem,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, string?>? skipFolder = null,
+        Action<string, string>? onSkipped = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(readRoot);
@@ -133,6 +137,12 @@ public static class SourceScanner
                         continue;
                     }
 
+                    if (skipFolder?.Invoke(entry.FullName) is { } skipped)
+                    {
+                        onSkipped?.Invoke(original, skipped);
+                        continue;
+                    }
+
                     folders.Add(relative);
                     pending.Push((entry.FullName, relative));
                 }
@@ -150,8 +160,8 @@ public static class SourceScanner
             }
         }
 
-        files.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.RelativePath, b.RelativePath));
-        folders.Sort(StringComparer.OrdinalIgnoreCase);
+        files.Sort((a, b) => PathNames.Comparer.Compare(a.RelativePath, b.RelativePath));
+        folders.Sort(PathNames.Comparer);
         return new SourceScan { Found = true, IsFile = false, Files = files, Folders = folders, UnreadableFolders = unreadable };
     }
 

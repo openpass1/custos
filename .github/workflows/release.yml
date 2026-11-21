@@ -14,7 +14,8 @@ name: Release
 # A client release is one version for Windows, macOS and Linux (client/CHANGELOG.md, tag client-v<version>), but it
 # carries only the files of the systems ticked when it is run: a fix for the Mac alone is a release with the Mac files
 # only. Each program and the monitoring site look for their own package and pass over a release without it. CUSTOS for
-# macOS is built on a Mac of GitHub by client/mac/build-mac.sh.
+# macOS is built on a Mac of GitHub by client/mac/build-mac.sh, CUSTOS for Linux on an x86_64 and an ARM machine of
+# GitHub by client/linux/build-linux.sh.
 #
 # A pull request that changes this file or release-notes.sh builds every part with a test version and publishes
 # nothing. The changelogs themselves are checked by changelog.yml.
@@ -265,6 +266,76 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # CUSTOS for Linux: the archive of the program for each processor, built on a machine of that processor (7z.so and
+  # SQLite in AlmaLinux 8, so that glibc 2.28 is enough). The "Linux agent" workflow tests the same files.
+  linux:
+    name: linux (${{ matrix.arch }})
+    needs: check
+    if: needs.check.outputs.linux == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build the archive of the program
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/linux/build-native-linux.sh client/artifacts-linux/native-${{ matrix.arch }}
+          bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-${{ matrix.arch }}
+          path: client/artifacts-linux/custos-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  # The update package of CUSTOS for Linux holds both archives; the release has them on their own too (install.sh
+  # without a site downloads the one of its processor).
+  linux-package:
+    needs: [check, linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: linux-*
+          path: client/artifacts-linux
+          merge-multiple: true
+
+      - name: Make the update package
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash client/linux/build-linux.sh package "$VERSION" client/artifacts-linux
+          mkdir -p out
+          cp client/artifacts-linux/custos-linux-x64.tar.gz client/artifacts-linux/custos-linux-arm64.tar.gz \
+            "client/artifacts-linux/custos-linux-$VERSION.zip" out/
+          ls -l out
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-linux
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
   server:
     needs: check
     if: needs.check.outputs.server == 'true'
@@ -310,13 +381,13 @@ jobs:
           retention-days: 7
 
   publish:
-    needs: [check, client, legacy, macos, server]
+    needs: [check, client, legacy, macos, linux-package, server]
     if: >-
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
-      (needs.client.result == 'success' || needs.macos.result == 'success' || needs.legacy.result == 'success' ||
-      needs.server.result == 'success') &&
+      (needs.client.result == 'success' || needs.macos.result == 'success' || needs.linux-package.result == 'success' ||
+      needs.legacy.result == 'success' || needs.server.result == 'success') &&
       needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.macos.result != 'failure' &&
-      needs.server.result != 'failure'
+      needs.linux-package.result != 'failure' && needs.server.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -353,6 +424,9 @@ jobs:
               fi
               if compgen -G "Custos-*.pkg" > /dev/null; then
                 systems+=(macOS); install+=("macOS: [guide]($blob/client/README.md#macos)")
+              fi
+              if compgen -G "custos-linux-*.tar.gz" > /dev/null; then
+                systems+=(Linux); install+=("Linux: [guide]($blob/client/README.md#custos-for-linux)")
               fi
               case ${#systems[@]} in
                 0) echo "::error::No files of any system were built."; exit 1 ;;

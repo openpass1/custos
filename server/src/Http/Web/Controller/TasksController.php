@@ -175,7 +175,7 @@ final class TasksController extends Controller
             $this->session->flash('error', $error);
             return $this->redirect('/agents/' . $agent['id'] . '/tasks/' . $taskId . '/edit');
         }
-        $form = TaskForm::parse($current['task'], $this->request->post, TaskEdits::credentials($agent), false, Agents::isLegacy($agent));
+        $form = TaskForm::parse($current['task'], $this->request->post, TaskEdits::credentials($agent), false, Agents::withoutCloud($agent));
         if (!$form->valid()) {
             return $this->editor($agent, $form->view, $form->errors, $current['pending'], false, 422);
         }
@@ -193,7 +193,7 @@ final class TasksController extends Controller
         if ($agent === null) {
             return $this->notFound();
         }
-        $task = TaskForm::defaults();
+        $task = TaskForm::defaults($agent);
         $from = strtolower($this->query('from'));
         if ($from !== '') {
             $current = $this->app->taskEdits()->current($agent, $from);
@@ -216,11 +216,11 @@ final class TasksController extends Controller
             return $this->redirect('/agents/' . $agent['id']);
         }
         // The new task travels in the form, so that a copy keeps the fields this editor does not show.
-        $base = self::decodeBase($this->post('_base')) ?? TaskForm::defaults();
+        $base = self::decodeBase($this->post('_base')) ?? TaskForm::defaults($agent);
         if ($this->app->tasks()->find($agent['id'], (string) $base['id']) !== null) {
             $base['id'] = TaskForm::defaults()['id'];
         }
-        $form = TaskForm::parse($base, $this->request->post, TaskEdits::credentials($agent), false, Agents::isLegacy($agent));
+        $form = TaskForm::parse($base, $this->request->post, TaskEdits::credentials($agent), false, Agents::withoutCloud($agent));
         if (!$form->valid()) {
             return $this->editor($agent, $form->view, $form->errors, null, true, 422);
         }

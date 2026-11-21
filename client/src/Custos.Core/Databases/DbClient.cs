@@ -58,12 +58,24 @@ public sealed class DbException : Exception
 }
 
 /// <summary>
+/// How a database server of this computer is reached without a password, as a script run by root does on Linux: MySQL
+/// and MariaDB through their socket as the account root (unix_socket or auth_socket), PostgreSQL through its socket as
+/// the system account of the server (peer authentication).
+/// </summary>
+/// <param name="Socket">The socket file of MySQL and MariaDB, or the folder of the socket of PostgreSQL; null = the
+/// default of the programs.</param>
+/// <param name="RunAs">The system account the programs run as ("postgres"), or null for the account of the service.</param>
+/// <param name="RunUser">The program that switches to it (/usr/sbin/runuser).</param>
+public sealed record DbLocalAccess(string? Socket, string? RunAs = null, string? RunUser = null);
+
+/// <summary>
 /// The client programs of MySQL, MariaDB and PostgreSQL, run without a window. The dump parameters are those of
 /// custos-helper (section 3.3 of CUSTOS-remote-pull.md). The password goes to the program through an environment
 /// variable (<c>MYSQL_PWD</c>, <c>PGPASSWORD</c>), never on its command line; nothing is ever typed in, so a program
 /// that would ask for a password fails instead of waiting.
 /// </summary>
-public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? account, Encoding? consoleEncoding = null) : IDbClient
+/// <param name="local">A server of this computer reached without a password (Linux), or null for host and port.</param>
+public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? account, Encoding? consoleEncoding = null, DbLocalAccess? local = null) : IDbClient
 {
     /// <summary>Longest a connection check or the list of users may take.</summary>
     public static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(60);
@@ -137,11 +149,11 @@ public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? accoun
             if (database is null)
             {
                 string all = DbTools.DumpAllTool(_server.BinDir) ?? throw Missing("pg_dumpall");
-                return ProcessDump.Start(all, [.. PostgresConnection(null), "--globals-only"], Environment(), consoleEncoding, cancellationToken);
+                return Launch(all, [.. PostgresConnection(null), "--globals-only"], Environment(), cancellationToken);
             }
 
             string pgDump = DbTools.DumpTool(_server.BinDir, _server.Engine) ?? throw Missing("pg_dump");
-            return ProcessDump.Start(pgDump, [.. PostgresConnection(null), database], Environment(), consoleEncoding, cancellationToken);
+            return Launch(pgDump, [.. PostgresConnection(null), database], Environment(), cancellationToken);
         }
 
         // A MariaDB set up as MySQL still has --system=users (and roles SHOW CREATE USER does not take).
@@ -154,7 +166,7 @@ public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? accoun
         List<string> arguments = database is null
             ? [.. MySqlConnection(), "--comments", "--system=users", "--insert-ignore"]
             : [.. MySqlConnection(), "--single-transaction", "--quick", "--routines", "--triggers", "--events", "--hex-blob", "--comments", database];
-        return ProcessDump.Start(dump, arguments, Environment(), consoleEncoding, cancellationToken);
+        return Launch(dump, arguments, Environment(), cancellationToken);
     }
 
     /// <summary>
@@ -218,9 +230,18 @@ public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? accoun
     private DbException Missing(string tool) =>
         new(Messages.Format(Messages.DbToolMissing, DbTools.ExeName(tool), _server.BinDir.Length == 0 ? "?" : _server.BinDir, DbTools.NeededTools(_server.Engine)));
 
+    /// <summary>Starts a program of the server; with <see cref="DbLocalAccess.RunAs"/> as that system account (runuser).</summary>
+    private ProcessDump Launch(string tool, List<string> arguments, Dictionary<string, string?> environment, CancellationToken cancellationToken) =>
+        local is { RunAs: { } user, RunUser: { } runuser }
+            ? ProcessDump.Start(runuser, ["-u", user, "--", tool, .. arguments], environment, consoleEncoding, cancellationToken)
+            : ProcessDump.Start(tool, arguments, environment, consoleEncoding, cancellationToken);
+
     private List<string> MySqlConnection()
     {
-        var arguments = new List<string> { $"--host={_server.Host}", $"--port={Port.ToString(CultureInfo.InvariantCulture)}" };
+        // "localhost" makes the programs of MySQL and MariaDB use the socket of the server.
+        List<string> arguments = local is null ? [$"--host={_server.Host}", $"--port={Port.ToString(CultureInfo.InvariantCulture)}"]
+            : local.Socket is { } socket ? ["--host=localhost", $"--socket={socket}"]
+            : ["--host=localhost"];
         if (account is { User.Length: > 0 })
         {
             arguments.Add($"--user={account.User}");
@@ -232,7 +253,8 @@ public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? accoun
 
     private List<string> PostgresConnection(string? database)
     {
-        var arguments = new List<string> { "--no-password", $"--host={_server.Host}", $"--port={Port.ToString(CultureInfo.InvariantCulture)}" };
+        // A folder as the host is where PostgreSQL keeps its socket.
+        var arguments = new List<string> { "--no-password", $"--host={local?.Socket ?? _server.Host}", $"--port={Port.ToString(CultureInfo.InvariantCulture)}" };
         if (account is { User.Length: > 0 })
         {
             arguments.Add($"--username={account.User}");
@@ -278,7 +300,7 @@ public sealed class ProcessDbClient(TaskDatabaseServer server, DbAccount? accoun
             environment["PGCLIENTENCODING"] = "UTF8";
         }
 
-        using var dump = ProcessDump.Start(tool, arguments, environment, consoleEncoding, cancellationToken);
+        using var dump = Launch(tool, arguments, environment, cancellationToken);
         using var buffer = new MemoryStream();
         var copy = dump.Output.CopyToAsync(buffer, cancellationToken);
         try

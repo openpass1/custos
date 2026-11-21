@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests of CUSTOS for Linux (src/Custos.Linux): its platform classes and the service itself, started inside the test
+    process with its data in a folder of its own and its socket in /tmp. As root they also make real snapshots of LVM,
+    XFS and btrfs volumes on loop devices (.github/workflows/linux.yml runs them so); as a user those are skipped.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>Custos.Linux.Tests</RootNamespace>
+    <!-- Test names describe behaviour with underscores; async tests need no ConfigureAwait. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Custos.Linux\Custos.Linux.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

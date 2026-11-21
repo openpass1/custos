@@ -174,6 +174,13 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
 <?php endif ?>
 </div>
 
+<?php /* CUSTOS for Linux: whether the volumes of the sources can have snapshots, with the fix when they cannot. */ ?>
+<div data-part="snapshots">
+<?php if ($snapshots !== null): ?>
+    <?php include __DIR__ . '/_snapshots.php' ?>
+<?php endif ?>
+</div>
+
 <div data-part="runs">
 <?php if ($runs === []): ?>
     <section class="panel panel-empty">

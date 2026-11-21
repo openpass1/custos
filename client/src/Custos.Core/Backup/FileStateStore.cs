@@ -62,8 +62,8 @@ public sealed class MemoryFileStateStore : IFileStateStore
         lock (_lock)
         {
             return _files.TryGetValue((taskId, baseFull), out var files)
-                ? new Dictionary<string, FileStamp>(files, StringComparer.OrdinalIgnoreCase)
-                : new Dictionary<string, FileStamp>(StringComparer.OrdinalIgnoreCase);
+                ? new Dictionary<string, FileStamp>(files, PathNames.Comparer)
+                : new Dictionary<string, FileStamp>(PathNames.Comparer);
         }
     }
 
@@ -72,7 +72,7 @@ public sealed class MemoryFileStateStore : IFileStateStore
         ArgumentNullException.ThrowIfNull(run);
         lock (_lock)
         {
-            var copy = new Dictionary<string, FileStamp>(files, StringComparer.OrdinalIgnoreCase);
+            var copy = new Dictionary<string, FileStamp>(files, PathNames.Comparer);
             _files[(taskId, false)] = copy;
             var state = _states.TryGetValue(taskId, out var current) ? current : TaskBackupState.Empty;
             state = state with
@@ -83,7 +83,7 @@ public sealed class MemoryFileStateStore : IFileStateStore
             };
             if (run.BackupType == Model.BackupTypes.Full)
             {
-                _files[(taskId, true)] = new Dictionary<string, FileStamp>(copy, StringComparer.OrdinalIgnoreCase);
+                _files[(taskId, true)] = new Dictionary<string, FileStamp>(copy, PathNames.Comparer);
                 _states[taskId] = state with { FullRunId = run.RunId, FullSetName = run.SetName, FullAt = run.StartedAt, RunsSinceFull = 0 };
             }
             else

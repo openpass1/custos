@@ -63,7 +63,7 @@ public sealed class AgentDatabase : IFileStateStore
 
     public Dictionary<string, FileStamp> LoadFileState(string taskId, bool baseFull)
     {
-        var files = new Dictionary<string, FileStamp>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, FileStamp>(PathNames.Comparer);
         using var connection = Open();
         using var command = Command(connection, "SELECT path, size, mtime FROM file_state WHERE task_id = $task AND base = $base");
         command.Parameters.AddWithValue("$task", taskId);
@@ -522,11 +522,14 @@ public sealed class AgentDatabase : IFileStateStore
             alter.ExecuteNonQuery();
         }
 
-        using (var create = Command(connection, """
+        // Paths of files compare as the file systems of the edition do (PathNames): two names that differ only in case
+        // are two rows on Linux. The table is made once, in a new database.
+        string pathCollation = CustosEdition.IsLinux ? "BINARY" : "NOCASE";
+        using (var create = Command(connection, $$"""
             CREATE TABLE IF NOT EXISTS file_state (
                 task_id TEXT NOT NULL,
                 base INTEGER NOT NULL,
-                path TEXT NOT NULL COLLATE NOCASE,
+                path TEXT NOT NULL COLLATE {{pathCollation}},
                 size INTEGER NOT NULL,
                 mtime INTEGER NOT NULL,
                 PRIMARY KEY (task_id, base, path)

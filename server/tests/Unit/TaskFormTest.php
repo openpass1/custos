@@ -286,12 +286,16 @@ final class TaskFormTest extends TestCase
         $post = self::formFor($task);
         $post['destinations'][] = ['id' => '', 'kind' => 'yadisk', 'path' => 'office', 'credential' => self::CLOUD, 'part_mb' => '0', 'speed_limit_mbps' => '0'];
         $this->assertSame([], TaskForm::parse($task, $post, $this->credentials())->errors);
-        $form = TaskForm::parse($task, $post, $this->credentials(), legacy: true);
+        $form = TaskForm::parse($task, $post, $this->credentials(), withoutCloud: 'legacy');
         $this->assertContains('task_form.error.cloud_legacy', array_column($form->errors, 'key'));
-        $this->assertSame([], TaskForm::parse($task, self::formFor($task), $this->credentials(), legacy: true)->errors, 'other destinations stay');
+        $this->assertSame([], TaskForm::parse($task, self::formFor($task), $this->credentials(), withoutCloud: 'legacy')->errors, 'other destinations stay');
+        // CUSTOS for Linux has none either, and says so in its own words.
+        $form = TaskForm::parse($task, $post, $this->credentials(), withoutCloud: 'linux');
+        $this->assertContains('task_form.error.cloud_linux', array_column($form->errors, 'key'));
 
-        $this->assertSame(TaskForm::DESTINATION_KINDS, TaskForm::destinationKinds(false));
-        $this->assertSame(['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav'], TaskForm::destinationKinds(true));
+        $this->assertSame(TaskForm::DESTINATION_KINDS, TaskForm::destinationKinds(null));
+        $this->assertSame(['local', 'unc', 'usb', 'ftp', 'ftps', 'sftp', 's3', 'webdav'], TaskForm::destinationKinds('legacy'));
+        $this->assertSame(TaskForm::destinationKinds('legacy'), TaskForm::destinationKinds('linux'));
         $this->assertSame(['yadisk'], TaskForm::cloudKinds($form->view));
         $this->assertSame([], TaskForm::cloudKinds($task));
     }

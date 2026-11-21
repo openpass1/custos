@@ -9,7 +9,12 @@
  */
 use Custos\Domain\Agents;
 ?>
-<h1><?= e(t('agents.title')) ?></h1>
+<div class="page-head">
+    <h1><?= e(t('agents.title')) ?></h1>
+    <div class="page-tools">
+        <a class="button-link primary" href="<?= e(url('/install')) ?>"><?= icon('plus') ?><?= e(t('agents.action.add')) ?></a>
+    </div>
+</div>
 
 <div data-part="pending">
 <?php if ($pending !== []): ?>
@@ -71,7 +76,7 @@ use Custos\Domain\Agents;
 
 <?php if (!$hasAgents): ?>
     <div data-part="list">
-        <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/settings')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
+        <p class="empty"><?= e(t('agents.empty')) ?> <a href="<?= e(url('/install')) ?>"><?= e(t('agents.empty.link')) ?></a></p>
     </div>
 <?php else: ?>
     <?php

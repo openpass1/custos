@@ -11,8 +11,11 @@ namespace Custos\Tools;
  */
 final class SampleTasks
 {
-    /** @return array{tasks: list<array>, credentials: list<array>} */
-    public static function make(string $updatedBy): array
+    /**
+     * @param bool $linux the paths of a Linux server instead of a Windows computer
+     * @return array{tasks: list<array>, credentials: list<array>}
+     */
+    public static function make(string $updatedBy, bool $linux = false): array
     {
         $credential = ['id' => self::uuid(), 'kind' => 'windows', 'user' => 'svc-backup', 'domain' => '.', 'has_secret' => true];
         $share = fn(string $path) => ['kind' => 'unc', 'path' => $path, 'credential_id' => $credential['id']];
@@ -52,6 +55,27 @@ final class SampleTasks
                 'schedule' => ['type' => 'interval', 'times' => [], 'interval_minutes' => 15],
             ]),
         ];
+        if ($linux) {
+            $paths = ['D:\\Data' => '/srv/data', 'D:\\Accounting' => '/srv/accounting', 'D:\\Projects' => '/srv/projects',
+                      'E:\\Backup\\Projects' => '/mnt/backup/projects', '%USERPROFILE%\\Desktop' => '/home/admin/Desktop'];
+            foreach ($tasks as &$task) {
+                foreach (['sources', 'destinations'] as $list) {
+                    foreach ($task[$list] as &$item) {
+                        $item['path'] = $paths[$item['path'] ?? ''] ?? $item['path'];
+                    }
+                    unset($item);
+                }
+                // A Linux server has no Windows services: the events of Accounting stop and start a systemd unit.
+                foreach (['pre', 'post'] as $when) {
+                    foreach ($task['events'][$when] ?? [] as $n => $event) {
+                        if (($event['service'] ?? null) === 'AccountingSrv') {
+                            $task['events'][$when][$n]['service'] = 'accounting';
+                        }
+                    }
+                }
+            }
+            unset($task);
+        }
         return ['tasks' => $tasks, 'credentials' => [$credential]];
     }
 

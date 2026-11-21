@@ -1,0 +1,63 @@
+# Texts of CUSTOS for Linux only (snapshots, network folders, the command custos); the others come from
+# src/Custos.Core/Resources/Messages.tsv. Run tools/make-strings.py after a change.
+NoteNoSnapshot	Volume {0} is read without a snapshot: {1}.	Том {0} читается без снимка: {1}.
+ReasonNoFreeRoom	volume group {0} has no free room for a snapshot (free: {1})	в группе томов {0} нет свободного места для снимка (свободно: {1})
+ReasonToolMissing	the package {0} is not installed	не установлен пакет {0}
+ReasonIsSnapshot	{0} is itself a snapshot	{0} сам является снимком
+ReasonSystemFs	{0} is a file system in memory	{0} — файловая система в памяти
+ReasonPlain	{0} ({1}) is not on LVM, btrfs or ZFS	{0} ({1}) не на LVM, btrfs или ZFS
+ReasonNotSubvolume	not a btrfs subvolume ({0})	это не подтом btrfs ({0})
+ReasonMountFailed	the snapshot could not be mounted: {0}	снимок не удалось подключить: {0}
+ReasonNoFolder	there is no folder {0} in the snapshot	в снимке нет папки {0}
+NestedSubvolumes	(+{0} nested subvolumes read as they are)	(ещё вложенных подтомов без снимка: {0})
+SnapshotOverflowed	The LVM snapshot of {0} ran out of room ({1}) while the files were read, so what was read cannot be trusted. Give volume group {2} more free room: see custos snapshots.	Снимку LVM тома {0} не хватило места ({1}), пока читались файлы, поэтому прочитанному нельзя доверять. Дайте группе томов {2} больше свободного места: см. custos snapshots.
+DetailUnsupported	{0} cannot have a snapshot: {1}. Its files are read as they are, so files that change during a run may be copied half-written. Databases are copied consistently through their dumps (the Databases section of the task).	Для {0} снимок невозможен: {1}. Файлы читаются как есть, поэтому файлы, которые меняются во время копирования, могут попасть в копию недописанными. Базы данных копируются согласованно через выгрузку (раздел «Базы данных» в задании).
+DetailNoSpace	Volume group {0} has no free room ({2}), so {1} gets no snapshot and is read as it is. Add a disk of 10–20 GB to the server and put it into the group, the volume itself need not shrink: pvcreate /dev/sdX && vgextend {0} /dev/sdX (replace sdX with the new disk, see lsblk).	В группе томов {0} нет свободного места ({2}), поэтому снимок {1} не делается и том читается как есть. Добавьте в сервер диск на 10–20 ГБ и включите его в группу, уменьшать сам том не нужно: pvcreate /dev/sdX && vgextend {0} /dev/sdX (вместо sdX — новый диск, см. lsblk).
+DetailLowSpace	Volume group {0} has {1} free, and the snapshot of the last run needed {2}. If the changes made to {3} during a run outgrow the free room, the run fails. Add a disk to the group: pvcreate /dev/sdX && vgextend {0} /dev/sdX.	В группе томов {0} свободно {1}, а снимку прошлого запуска понадобилось {2}. Если изменения на {3} во время копирования превысят свободное место, запуск завершится ошибкой. Добавьте в группу диск: pvcreate /dev/sdX && vgextend {0} /dev/sdX.
+DetailLowSpaceUnknown	Volume group {0} has only {1} free for the snapshot of {2}: a run during heavy writing may run out of it. 10–20 GB free is recommended: pvcreate /dev/sdX && vgextend {0} /dev/sdX.	В группе томов {0} для снимка {2} свободно только {1}: при активной записи во время копирования места может не хватить. Рекомендуется 10–20 ГБ свободного места: pvcreate /dev/sdX && vgextend {0} /dev/sdX.
+DetailOverflowed	The snapshot of {0} ran out of room during the last run ({1}), and that run failed. Give volume group {2} more free room: pvcreate /dev/sdX && vgextend {2} /dev/sdX.	Снимку {0} не хватило места в прошлом запуске ({1}), и запуск завершился ошибкой. Дайте группе томов {2} больше свободного места: pvcreate /dev/sdX && vgextend {2} /dev/sdX.
+ShareAccessDenied	access denied (user or password)	доступ запрещён (имя или пароль)
+ShareNotFound	server not found or share missing	сервер не найден или нет такой папки
+SkipCustos	a folder of CUSTOS snapshots	это папка снимков CUSTOS
+SkipSystem	a file system of the system ({0})	это системная файловая система ({0})
+SkipNetwork	a network folder ({0} {1})	это сетевая папка ({0} {1})
+# The command custos
+CliHelp	CUSTOS for Linux {0}\n\nUsage:\n  custos status            the service, the tasks and the connection to the site\n  custos run <task>        start a task now (its name or id); custos run --all starts every task\n  custos stop [<task>]     stop the run in progress (or the run of that task)\n  custos log [-f] [-n N]   the last lines of the journal; -f keeps showing new ones\n  custos snapshots         whether the volumes of the tasks can have snapshots, and what to do if not\n  custos connect '<line>'  connect to the monitoring site (the connection line from the site)\n  custos disconnect        disconnect from the site\n  custos version           the version\n\nTasks are created and changed on the monitoring site. Service log: /var/log/custos.	CUSTOS для Linux {0}\n\nКоманды:\n  custos status            служба, задания и связь с сайтом\n  custos run <задание>     запустить задание сейчас (имя или id); custos run --all запускает все\n  custos stop [<задание>]  остановить текущий запуск (или запуск этого задания)\n  custos log [-f] [-n N]   последние строки журнала; -f показывает новые по мере появления\n  custos snapshots         можно ли делать снимки томов заданий и что сделать, если нельзя\n  custos connect '<строка>'  подключиться к сайту мониторинга (строка подключения с сайта)\n  custos disconnect        отключиться от сайта\n  custos version           версия\n\nЗадания создаются и меняются на сайте мониторинга. Журнал службы: /var/log/custos.
+CliUnknownCommand	unknown command «{0}»; custos help lists them	неизвестная команда «{0}»; список: custos help
+CliServiceDown	the service is not running: systemctl status custos	служба не запущена: systemctl status custos
+CliConnectionLost	the connection to the service broke: {0}	связь со службой прервалась: {0}
+CliForbidden	only root or a member of sudo (wheel) may do that: run it with sudo	это может только root или участник sudo (wheel): запустите через sudo
+CliStatusService	CUSTOS {0}, the service runs since {1}	CUSTOS {0}, служба работает с {1}
+CliStatusSite	Monitoring site: {0}	Сайт мониторинга: {0}
+CliNoTasks	No tasks yet: create them on the monitoring site.	Заданий пока нет: создайте их на сайте мониторинга.
+CliTasks	Tasks (last run → next run):	Задания (последний запуск → следующий):
+CliNever	never run	не запускалось
+CliDisabled	off	выключено
+CliTaskLine	  {0} {1}: {2} → {3}	  {0} {1}: {2} → {3}
+CliRunning	Running: {0} {1}	Идёт: {0} {1}
+CliSnapshotWarning	! Snapshot of {0}: {1}	! Снимок {0}: {1}
+CliSnapshotsMore	  What to do: custos snapshots	  Что сделать: custos snapshots
+CliNoSnapshotTasks	No enabled task has snapshots on.	Ни у одного включённого задания снимки не включены.
+CliSnapshotRoom	free in the volume group: {0}; the last snapshot took: {1}	свободно в группе томов: {0}; прошлый снимок занял: {1}
+CliSnapshotTasks	tasks: {0}	задания: {0}
+CliRunWhich	which task? custos run <name or id>, or custos run --all	какое задание? custos run <имя или id> или custos run --all
+CliQueued	Queued.	Поставлено в очередь.
+CliNoSuchTask	no task «{0}»: custos status lists them	нет задания «{0}», список: custos status
+CliTaskQueued	«{0}» is queued: custos log -f shows how it goes.	«{0}» поставлено в очередь, ход: custos log -f
+CliStopping	Stopping.	Останавливаю.
+CliConnectWhat	give the connection line from the site: custos connect '<line>'	укажите строку подключения с сайта: custos connect '<строка>'
+CliConnectBadLine	this is not a connection line of the site (address#key#fingerprint); copy it again from the site	это не строка подключения сайта (адрес#ключ#отпечаток); скопируйте её с сайта ещё раз
+CliConnectPending	Approve the computer on the site (Computers), then it gets its tasks.	Одобрите компьютер на сайте (раздел «Компьютеры»), после этого он получит задания.
+CliDisconnected	Disconnected from the site.	Отключено от сайта.
+CliSiteOff	not connected	не подключён
+CliSiteApproved	connected	подключён
+CliSitePending	waiting for approval on the site	ждёт одобрения на сайте
+CliSiteConnecting	connecting	подключается
+CliSiteOffline	no answer	нет ответа
+CliSiteContact	last contact {0}	последняя связь {0}
+CliSnapOk	all right	всё в порядке
+CliSnapLow	little free room	мало свободного места
+CliSnapNoSpace	no free room, read without a snapshot	нет свободного места, читается без снимка
+CliSnapOverflowed	the snapshot ran out of room in the last run	снимку не хватило места в прошлом запуске
+CliSnapUnsupported	no snapshots possible, read as it is	снимки невозможны, читается как есть
+CliSnapNone	no snapshots	без снимков

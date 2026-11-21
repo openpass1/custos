@@ -87,7 +87,7 @@ public sealed partial class BackupEngine
 
     private void VerifyNewArchiveCore(RunContext run, Target target)
     {
-        var expected = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var expected = new Dictionary<string, string>(PathNames.Comparer);
         foreach (var (context, file) in run.ToCopy)
         {
             if (run.Copied.TryGetValue(file.OriginalPath, out string? hash))
@@ -201,7 +201,7 @@ public sealed partial class BackupEngine
             files = [];
             if (set.Storage == SetStorage.Archive)
             {
-                var expectedDumps = dumps.ToDictionary(d => ArchivePaths.ToWindows(d.File!), d => d.Sha256!, StringComparer.OrdinalIgnoreCase);
+                var expectedDumps = dumps.ToDictionary(d => ArchivePaths.ToWindows(d.File!), d => d.Sha256!, PathNames.Comparer);
                 return CheckArchive(run, access!, set.Format ?? ArchiveFormats.SevenZip, set.Parts, expectedDumps, inTar);
             }
 
@@ -213,7 +213,7 @@ public sealed partial class BackupEngine
         else if (set.Storage == SetStorage.Archive)
         {
             var expected = files.Where(f => f.InSet && f.Sha256 is not null)
-                .ToDictionary(f => ArchivePaths.ToWindows(f.Path), f => f.Sha256!, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(f => ArchivePaths.ToWindows(f.Path), f => f.Sha256!, PathNames.Comparer);
             foreach (var dump in dumps)
             {
                 expected[ArchivePaths.ToWindows(dump.File!)] = dump.Sha256!;
@@ -319,7 +319,7 @@ public sealed partial class BackupEngine
         {
             using var reader = access.Open(format, parts);
             var sinks = new Dictionary<int, Stream>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seen = new HashSet<string>(PathNames.Comparer);
             string? problem = null;
             bool tarSeen = false;
             try

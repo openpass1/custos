@@ -50,8 +50,8 @@ public sealed partial class BackupEngine
     }
 
     private static bool IsSameOrBelow(string path, string folder) =>
-        string.Equals(path, folder, StringComparison.OrdinalIgnoreCase)
-        || path.StartsWith(folder.EndsWith(Path.DirectorySeparatorChar) ? folder : folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        string.Equals(path, folder, PathNames.Comparison)
+        || path.StartsWith(folder.EndsWith(Path.DirectorySeparatorChar) ? folder : folder + Path.DirectorySeparatorChar, PathNames.Comparison);
 
     /// <summary>A path of the destination as the manifest has it: below the mirror, with the separators of this system.</summary>
     private static string MirrorPath(DestinationStore store, string root, string path)
@@ -153,8 +153,8 @@ public sealed partial class BackupEngine
 
         // Every file and folder the sources have now, under its path in the mirror (also files gone since the scan:
         // they are still in the mirror and listed, so the next run deletes them).
-        var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var present = new HashSet<string>(PathNames.Comparer);
+        var folders = new HashSet<string>(PathNames.Comparer);
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
             foreach (var file in context.Scan!.Files)
@@ -244,7 +244,7 @@ public sealed partial class BackupEngine
     private static List<ManifestFile> MirrorFiles(RunContext run, Target target)
     {
         var files = new List<ManifestFile>();
-        var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var listed = new HashSet<string>(PathNames.Comparer);
         foreach (var context in run.Sources.Where(s => s.Scan is { Found: true }))
         {
             foreach (var file in context.Scan!.Files)

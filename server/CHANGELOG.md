@@ -12,16 +12,21 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
-## 1.3.0
+## 1.4.0
 
 ### Added
-- Machines with CUSTOS for macOS are marked **macOS** across the site.
-- **Updates** take packages of CUSTOS for macOS, uploaded or found on GitHub, in a section of their own.
-- A Mac is offered only its own update packages and never 7-Zip.
-- The task editor of a Mac shows Mac paths and an **APFS snapshot** instead of VSS.
+- **Install** page and **Add a machine** button: how to connect a new Windows, Mac or Linux machine.
+- Linux servers install CUSTOS with one command copied from **Install**: it downloads the program from this site and connects it.
+- Machines with CUSTOS for macOS or Linux are marked **macOS** or **Linux** across the site.
+- **Updates** take packages of CUSTOS for macOS and for Linux, uploaded or found on GitHub, each in a section of its own.
+- A Mac or a Linux server is offered only its own update packages and never 7-Zip.
+- The task editor of a Mac or a Linux server shows its own paths and its own snapshot: APFS, or LVM, btrfs and ZFS.
+- **Snapshots** block on the page of a Linux machine, with the command to fix a volume group without room.
+- A problem and a notification when a Linux volume has no room for a snapshot; it closes once snapshots work again.
 
 ### Improved
 - A network folder may also be written as `//server/share`, as macOS writes it.
+- The settings of a Linux machine leave out the program password, the tray icon and other users, which it does not have.
 
 ## 1.2.1
 

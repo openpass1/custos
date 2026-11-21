@@ -1,7 +1,7 @@
 <?php
 /**
  * @var list<array{version: ?string, edition: string, n: int}> $versions @var list<array{version: string, n: int}> $sevenZipVersions
- * @var ?string $currentVersion @var array<string, ?string> $editionVersions current version of each other edition (legacy, macos)
+ * @var ?string $currentVersion @var array<string, ?string> $editionVersions current version of each other edition (legacy, macos, linux)
  * @var ?string $latestSevenZip
  */
 use Custos\Domain\Packages;

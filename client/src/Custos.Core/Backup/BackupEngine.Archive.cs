@@ -419,7 +419,7 @@ public sealed partial class BackupEngine
     {
         lock (_sync)
         {
-            var pending = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var pending = new HashSet<string>(PathNames.Comparer);
             long pendingBytes = 0;
             foreach (var (_, file) in run.ToCopy)
             {

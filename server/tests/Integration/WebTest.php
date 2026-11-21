@@ -6,6 +6,7 @@ namespace Custos\Tests\Integration;
 
 use Custos\Http\Web\Controller\AgentsController;
 use Custos\Http\Web\Controller\TasksController;
+use Custos\Domain\Settings;
 use Custos\Infra\Db;
 use Custos\Tests\TestEnv;
 use PHPUnit\Framework\Attributes\Depends;
@@ -906,6 +907,157 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('macOS', $this->http('GET', '/')[1], 'the dashboard marks the Mac version');
     }
 
+    /**
+     * A Linux server: the page Install gives a command made from the registration key; the script it fetches from the
+     * site downloads the archive of the current package for Linux, checks it and runs its install.sh with the
+     * connection string. Then the fake agent of a Linux server reports a volume group without room for snapshots.
+     */
+    #[Depends('testMachineWithCustosForMac')]
+    public function testServerWithCustosForLinux(): void
+    {
+        [$status, $install] = $this->http('GET', '/install');
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('data-nav="install" class="nav-item active"', $install);
+        $this->assertSame(1, preg_match("~id=\"install-curl\"[^>]*value=\"curl -fsSL &#039;(http://custos\.test/install/linux/([0-9a-f]{32}))&#039; \| sudo bash\"~", $install, $m), 'the curl command');
+        [, $scriptUrl, $token] = $m;
+        $this->assertStringContainsString("wget -qO- &#039;$scriptUrl&#039; | sudo bash", $install);
+        $this->assertStringContainsString('На сайте ещё нет CUSTOS для Linux', $install);
+        $this->assertStringContainsString('value="' . htmlspecialchars($this->connectionString()) . '"', $install, 'the connection string for Windows and macOS');
+        $this->assertStringContainsString('href="/install"', $this->http('GET', '/agents')[1], 'Machines: Add a machine');
+
+        // Each installer comes from the newest release of its own system: here the newest client-v carries only the Mac files.
+        $settings = new Settings($this->db());
+        $settings->set('release_client', (string) json_encode(['version' => '2.4.0', 'installers' => [
+            'CUSTOS-Setup-2.4.0.exe' => 'https://example.test/CUSTOS-Setup-2.4.0.exe', 'Custos-2.4.0.pkg' => 'https://example.test/Custos-2.4.0.pkg']]));
+        $settings->set('release_macos', (string) json_encode(['version' => '2.5.0', 'installers' => [
+            'Custos-2.5.0.pkg' => 'https://example.test/Custos-2.5.0.pkg']]));
+        $links = $this->http('GET', '/install')[1];
+        $this->assertStringContainsString('href="https://example.test/CUSTOS-Setup-2.4.0.exe"', $links, 'Windows: from its own newest release');
+        $this->assertStringContainsString('href="https://example.test/Custos-2.5.0.pkg"', $links, 'macOS: from the newest release with the Mac files');
+        $this->assertStringNotContainsString('Custos-2.4.0.pkg', $links);
+        $this->db()->exec("DELETE FROM settings WHERE name IN ('release_client', 'release_macos')");
+        $path = "/install/linux/$token";
+
+        // No login, no session: the script says there is nothing to install yet.
+        $curl = fn(string $url, string $method = 'GET') => $this->anonymous($method, $url);
+        [$status, $script, $headers] = $curl($path);
+        $this->assertSame(200, $status);
+        $this->assertStringContainsString('no CUSTOS for Linux yet', $script);
+        $this->assertStringStartsWith('#!/bin/bash', $script);
+        $this->assertSame('no-store', $headers['cache-control']);
+        $this->assertSame(404, $curl('/install/linux/' . str_repeat('0', 32))[0], 'a wrong token is no address');
+        $this->assertSame(404, $curl("$path/custos-linux-x64.tar.gz")[0], 'no package, no archive');
+        $this->assertSame(405, $curl($path, 'POST')[0]);
+
+        // The package for Linux, not current yet: the newest one is installed.
+        $package = TestEnv::dir() . '/custos-linux-1.0.1.zip';
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=linux', '--out=' . $package]);
+        $this->assertSame(0, $code, $output);
+        [, $updates] = $this->http('GET', '/updates');
+        preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
+        [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-linux-1.0.1.zip')]);
+        $this->assertSame(303, $status);
+        $this->assertStringContainsString('Пакет 1.0.1 для Linux загружен.', $this->http('GET', '/updates')[1]);
+        $this->assertStringContainsString('Будет установлена версия 1.0.1, самая новая на сайте', $this->http('GET', '/install')[1]);
+
+        [$status, $script] = $curl($path);
+        $this->assertSame(200, $status);
+        $zip = \Custos\Infra\ZipReader::open($package);
+        $archive = (string) $zip->read('custos-linux-x64.tar.gz');
+        $this->assertStringContainsString("local token='$token'", $script);
+        $this->assertStringContainsString("local version='1.0.1'", $script);
+        $this->assertStringContainsString("local sha_x64='" . hash('sha256', $archive) . "'", $script);
+        $this->assertStringContainsString("local line='" . $this->connectionString() . "'", $script);
+        [$status, $body, $headers] = $curl("$path/custos-linux-x64.tar.gz");
+        $this->assertSame(200, $status);
+        $this->assertSame($archive, $body, 'the archive of the package, as it is');
+        $this->assertSame('application/gzip', $headers['content-type']);
+        $this->assertSame((string) strlen($archive), $headers['content-length']);
+        $this->assertSame((string) $zip->read('custos-linux-arm64.tar.gz'), $curl("$path/custos-linux-arm64.tar.gz")[1]);
+
+        // The script itself, run by bash: as root (a fake id), downloading from the site under test (curl is told
+        // the address of custos.test), the archive's install.sh writes the arguments it got.
+        $bin = TestEnv::dir() . '/install-bin';
+        @mkdir($bin);
+        file_put_contents("$bin/id", "#!/bin/sh\n[ \"\$1\" = -u ] && echo 0 || exec /usr/bin/id \"\$@\"\n");
+        file_put_contents("$bin/curl", "#!/bin/bash\nargs=()\nfor a in \"\$@\"; do args+=(\"\${a/http:\\/\\/custos.test/\$TEST_SITE}\"); done\n"
+            . "\"\$REAL_CURL\" --noproxy '*' \"\${args[@]}\" || exit \$?\n"
+            . "[ -z \"\${DAMAGE:-}\" ] || for a in \"\$@\"; do [ \"\$prev\" = -o ] && printf x >> \"\$a\"; prev=\$a; done\n");
+        chmod("$bin/id", 0755);
+        chmod("$bin/curl", 0755);
+        file_put_contents("$bin/script.sh", $script);
+        $log = TestEnv::dir() . '/install-args.txt';
+        $run = function (array $env) use ($bin, $log): array {
+            @unlink($log);
+            $process = proc_open(['bash', "$bin/script.sh"], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['redirect', 1]], $pipes, $bin, $env + [
+                'PATH' => "$bin:" . getenv('PATH'), 'REAL_CURL' => trim((string) shell_exec('command -v curl')), 'TEST_SITE' => self::$base,
+                'CUSTOS_FAKE_INSTALL_LOG' => $log, 'LANG' => 'C', 'HOME' => $bin,
+            ]);
+            fclose($pipes[0]);
+            $output = (string) stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+            return [proc_close($process), $output];
+        };
+        [$exit, $output] = $run([]);
+        $this->assertSame(0, $exit, $output);
+        $this->assertMatchesRegularExpression('/Downloading CUSTOS 1\.0\.1 for Linux \((x64|arm64)\) from http:\/\/custos\.test/', $output);
+        $this->assertMatchesRegularExpression('/fake CUSTOS 1\.0\.1 \((x64|arm64)\) installed/', $output);
+        $this->assertStringContainsString('A new machine waits for approval on the site: http://custos.test/agents', $output);
+        $args = file($log, FILE_IGNORE_NEW_LINES);
+        $this->assertCount(3, $args, $output);
+        $this->assertSame('--archive', $args[0]);
+        $this->assertStringEndsWith('/custos.tar.gz', $args[1]);
+        $this->assertFileDoesNotExist($args[1], 'the download is removed afterwards');
+        $this->assertSame($this->connectionString(), $args[2]);
+        [$exit, $output] = $run(['DAMAGE' => '1']);
+        $this->assertSame(1, $exit, $output);
+        $this->assertStringContainsString('the downloaded program is damaged', $output);
+        $this->assertFileDoesNotExist($log, 'a damaged program is never run');
+
+        // Current: the page says so. The Linux server registers, is approved and sends its snapshots.
+        $this->assertSame(303, $this->post('/updates/linux/1.0.1/current', [])[0]);
+        $this->assertStringContainsString('Будет установлена версия 1.0.1, текущая для Linux', $this->http('GET', '/install')[1]);
+        [$exit, $output] = $this->fakeAgent(['--name=WEB-SRV', '--linux', '--connect=' . $this->connectionString(), '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        [, $agents] = $this->http('GET', '/agents');
+        $this->assertSame(1, preg_match('#/agents/([0-9a-f-]{36})/approve#', $agents, $id));
+        $agentUrl = "/agents/{$id[1]}";
+        $this->post("$agentUrl/approve", ['back' => 'list']);
+        [$exit, $output] = $this->fakeAgent(['--name=WEB-SRV', '--linux', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+
+        [, $page] = $this->http('GET', $agentUrl);
+        $this->assertStringContainsString('для Linux', $page);
+        $this->assertStringContainsString('Снимки дисков', $page);
+        $this->assertStringContainsString('В группе томов ubuntu-vg нет свободного места', $page);
+        $this->assertStringContainsString('value="pvcreate /dev/sdX &amp;&amp; vgextend ubuntu-vg /dev/sdX"', $page);
+        $this->assertStringNotContainsString('Доступен 7-Zip', $page);
+        $open = fn() => (int) $this->db()->value("SELECT COUNT(*) FROM problems WHERE agent_id = ? AND kind = 'snapshot' AND closed_at IS NULL", [$id[1]]);
+        $this->assertSame(4, $open(), 'one problem for each task on the volume');
+        $this->assertStringContainsString('Снимок тома / не делается: в группе томов ubuntu-vg нет свободного места', $this->http('GET', '/problems')[1]);
+
+        [, $editor] = $this->http('GET', "$agentUrl/tasks/new");
+        $this->assertStringContainsString('снимок тома (LVM, btrfs, ZFS) для открытых файлов', $editor);
+        $this->assertStringContainsString('сохранять владельцев и права', $editor);
+        $this->assertStringContainsString('/var/www', $editor);
+        $this->assertStringNotContainsString('value="gdrive"', $editor, 'no cloud drives on Linux');
+        [, $settings] = $this->http('GET', "$agentUrl/settings");
+        $this->assertStringNotContainsString('Значок в трее', $settings, 'a server has no tray');
+
+        // A disk added to the group: the agent says the volume is fine, and the problems close.
+        [$exit, $output] = $this->fakeAgent(['--name=WEB-SRV', '--linux', '--snapshot=ok', '--result=success', '--skip-schedule']);
+        $this->assertSame(0, $exit, $output);
+        $this->assertSame(0, $open());
+        $this->assertSame(4, (int) $this->db()->value("SELECT COUNT(*) FROM problems WHERE agent_id = ? AND kind = 'snapshot' AND closed_by = 'snapshot_ok'", [$id[1]]));
+
+        // A new registration key: the old command stops working, the page shows a new one.
+        $this->assertSame(303, $this->post('/settings/registration-key', [])[0]);
+        $this->assertSame(404, $curl($path)[0]);
+        $this->assertSame(1, preg_match('#/install/linux/([0-9a-f]{32})#', $this->http('GET', '/install')[1], $m));
+        $this->assertNotSame($token, $m[1]);
+        $this->assertSame(200, $curl("/install/linux/{$m[1]}")[0]);
+    }
+
     // ---- helpers ----
 
     private function settings(array $overrides): array
@@ -1035,6 +1187,32 @@ final class WebTest extends TestCase
         });
         $body = (string) curl_exec($curl);
         return [(int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE), $body, $headers];
+    }
+
+    /** A request without the cookies of the signed-in user, as a server being installed makes it. */
+    private function anonymous(string $method, string $path): array
+    {
+        $headers = [];
+        $curl = curl_init(self::$base . $path);
+        curl_setopt_array($curl, [
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_PROXY => '',
+            CURLOPT_HEADERFUNCTION => function ($curl, string $line) use (&$headers): int {
+                if (str_contains($line, ':')) {
+                    [$name, $value] = explode(':', $line, 2);
+                    $headers[strtolower(trim($name))] = trim($value);
+                }
+                return strlen($line);
+            },
+        ]);
+        $body = (string) curl_exec($curl);
+        return [(int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE), $body, $headers];
+    }
+
+    private function db(): Db
+    {
+        return Db::connect(TestEnv::db());
     }
 
     private static function freePort(): int

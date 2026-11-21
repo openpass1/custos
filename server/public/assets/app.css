@@ -809,6 +809,9 @@ form.stack label.check, form.stack label .check { flex-direction: row; }
 .copy-row { display: inline-flex; flex-wrap: wrap; gap: 8px; max-width: 100%; }
 .copy-row input { max-width: 100%; min-width: 0; }
 .copy-row + .note { margin-top: 6px; }
+/* The steps after a command (page Install). */
+ol.steps { margin: 16px 0 12px; padding-left: 22px; }
+ol.steps li { margin: 4px 0; }
 code.fingerprint { letter-spacing: .05em; }
 dialog.modal input[type="password"] { width: 100%; }
 

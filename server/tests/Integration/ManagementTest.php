@@ -359,6 +359,64 @@ final class ManagementTest extends TestCase
         $this->assertSame(1, (int) $this->app->db()->value("SELECT COUNT(*) FROM notices WHERE kind = 'macos.outdated'"));
     }
 
+    public function testCustosForLinuxPackagesSnapshotsAndProblems(): void
+    {
+        $agent = $this->approvedAgent(['linux' => true]);
+        $this->assertSame('linux', $agent['edition']);
+        $this->assertStringStartsWith('Ubuntu', $agent['os']);
+        $this->assertNull($agent['sevenzip_version'], '7-Zip is inside the program');
+
+        // A package for Linux must hold the archive of the program; the test tool makes both.
+        $packages = $this->app->packages();
+        $bad = TestEnv::dir() . '/custos-linux-bad-' . uniqid() . '.zip';
+        \Custos\Tests\ZipWriter::write($bad, [
+            'manifest.json' => json_encode(['version' => '1.0.1', 'edition' => 'linux', 'min_protocol' => 1, 'files' => [['path' => 'custos', 'sha256' => str_repeat('0', 64)]]]),
+            'custos' => 'not an archive',
+        ]);
+        try {
+            $packages->addAgent($bad, 'admin');
+            $this->fail('a package for Linux without the archive is refused');
+        } catch (\InvalidArgumentException $e) {
+            $this->assertSame('updates.error.linux_archive', $e->getMessage());
+        }
+        $linux = $packages->addAgent($this->package('1.0.1', 1, 'linux'), 'admin');
+        $this->assertSame(['linux', 'custos-linux-1.0.1.zip'], [$linux['kind'], $linux['file_name']]);
+        $install = $this->app->install();
+        $this->assertSame('1.0.1', $install->package()['version'], 'the newest one before any is current');
+        $this->assertSame(['x64', 'arm64'], array_keys(\Custos\Domain\Install::archiveSums($linux)));
+        [$zip, $name, $size] = $install->archive('arm64');
+        $this->assertSame(['custos-linux-arm64.tar.gz', $zip->size($name)], [$name, $size]);
+        $this->assertNull($install->archive('x86'));
+        $packages->setCurrent('1.0.1', 'linux');
+        $this->assertSame([], $packages->install('linux', '1.0.1', [['edition' => 'macos'] + $agent], self::USER)['queued'], 'only Linux machines');
+        $this->assertCount(1, $packages->install('linux', '1.0.1', [$agent], self::USER)['queued']);
+
+        // A pass with a run: the update is installed, and the inventory after the run says / has no room for a snapshot.
+        $this->agentPass(['linux' => true, 'once_run' => true]);
+        $agent = $this->app->agents()->find($agent['id']);
+        $this->assertSame('1.0.1', $agent['agent_version']);
+        $volumes = \Custos\Domain\Snapshots::of($agent);
+        $this->assertSame(['/', 'no_space', 'ubuntu-vg'], [$volumes[0]['mount'], $volumes[0]['state'], $volumes[0]['volume_group']]);
+        $problems = fn() => $this->app->db()->all(
+            "SELECT p.*, a.hostname, a.display_name, a.time_zone, t.name AS task_name FROM problems p
+             JOIN agents a ON a.id = p.agent_id LEFT JOIN tasks t ON t.agent_id = p.agent_id AND t.id = p.task_id
+             WHERE p.agent_id = ? AND p.kind = 'snapshot' AND p.closed_at IS NULL ORDER BY t.name", [$agent['id']]);
+        $open = $problems();
+        $this->assertCount(4, $open, 'one for each task on the volume');
+        [, $body] = $this->app->notifier()->compose($open);
+        $this->assertStringContainsString('pvcreate /dev/sdX && vgextend ubuntu-vg /dev/sdX', $body, 'the message says how to fix it');
+        $this->assertStringContainsString('Accounting', $body);
+
+        // The next inventory keeps the problems open (no new rows); an overflowed snapshot changes their message.
+        $this->agentPass(['linux' => true, 'once_run' => true, 'snapshot' => 'overflowed']);
+        $again = $problems();
+        $this->assertSame(array_column($open, 'id'), array_column($again, 'id'));
+        $this->assertSame('overflowed', \Custos\Domain\Snapshots::problem($again[0]['message'])['state']);
+        $this->agentPass(['linux' => true, 'once_run' => true, 'snapshot' => 'low_space']);
+        $this->assertSame([], $problems(), 'little room is only shown on the machine page');
+        $this->assertSame(4, (int) $this->app->db()->value("SELECT COUNT(*) FROM problems WHERE agent_id = ? AND closed_by = 'snapshot_ok'", [$agent['id']]));
+    }
+
     public function testSevenZipReleasesOnGitHub(): void
     {
         $agent = $this->approvedAgent(['sevenzip' => '23.01']);

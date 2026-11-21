@@ -1927,8 +1927,29 @@
   <data name="MacOwnerNotSet" xml:space="preserve">
     <value>Не удалось восстановить владельца и права {0}: {1}</value>
   </data>
+  <data name="MonitorPackageNotLinux" xml:space="preserve">
+    <value>Это не пакет CUSTOS для Linux, а Linux-сервер ставит только свои пакеты (custos-linux-….zip).</value>
+  </data>
+  <data name="MonitorPackageLinux" xml:space="preserve">
+    <value>Это пакет CUSTOS для Linux, здесь он не ставится.</value>
+  </data>
+  <data name="LinuxSnapshotCreated" xml:space="preserve">
+    <value>Снимок сделан ({0}): файлы читаются из него.</value>
+  </data>
+  <data name="LinuxSnapshotFailedContinue" xml:space="preserve">
+    <value>Снимок не сделан: {0}. Копирую без него: файлы, которые меняются во время копирования, могут попасть в копию недописанными.</value>
+  </data>
+  <data name="LinuxSnapshotFailedAbort" xml:space="preserve">
+    <value>Снимок не сделан: {0}. По настройке задания копирование отменено.</value>
+  </data>
+  <data name="LinuxSnapshotPartialAbort" xml:space="preserve">
+    <value>Не для всех томов источников сделан снимок. {0} По настройке задания копирование отменено.</value>
+  </data>
+  <data name="FolderSkippedMount" xml:space="preserve">
+    <value>Папка {0} пропущена: {1}.</value>
+  </data>
   <data name="SevenZipMacBundled" xml:space="preserve">
-    <value>В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.</value>
+    <value>В macOS и Linux 7-Zip входит в CUSTOS и обновляется вместе с программой.</value>
   </data>
   <data name="MacUpdateFailed" xml:space="preserve">
     <value>Установщик macOS не установил обновление: {0}</value>

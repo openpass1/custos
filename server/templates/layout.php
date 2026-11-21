@@ -13,13 +13,13 @@ $app = $view->app;
 $serverName = $app->settings()->get('server_name');
 $counts = $user === null ? [] : $app->navCounts();
 $unread = $user === null ? 0 : $app->notices()->unreadCount();
-$nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'templates' => '/templates',
-        'updates' => '/updates', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
+$nav = ['dashboard' => '/', 'agents' => '/agents', 'problems' => '/problems', 'runs' => '/runs', 'install' => '/install',
+        'templates' => '/templates', 'updates' => '/updates', 'users' => '/users', 'audit' => '/audit', 'settings' => '/settings'];
 $theme = $view->theme();
 $color = $view->color();
 // The rarer sections stand under the heading "Manage" in the rail and behind "More" in the phone's bottom bar.
-$rare = ['templates', 'updates', 'users', 'audit', 'settings'];
-$filled = ['dashboard', 'agents', 'problems', 'templates', 'users', 'audit', 'settings'];
+$rare = ['install', 'templates', 'updates', 'users', 'audit', 'settings'];
+$filled = ['dashboard', 'agents', 'problems', 'install', 'templates', 'users', 'audit', 'settings'];
 $navLink = function (string $key, string $class) use ($nav, $section, $counts, $filled): string {
     $active = $section === $key;
     // A counter is always there (hidden at 0), so that a live page can show it when a machine or a problem appears.

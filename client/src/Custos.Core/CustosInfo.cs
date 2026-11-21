@@ -12,6 +12,9 @@ public static class CustosInfo
     /// identifier of Custos.app.</summary>
     public const string MacServiceLabel = "org.custos.agent";
 
+    /// <summary>The systemd unit of the service of CUSTOS for Linux (/etc/systemd/system/custos.service).</summary>
+    public const string LinuxServiceUnit = "custos";
+
     /// <summary>Source name in the Windows Application event log.</summary>
     public const string EventLogSource = "CUSTOS";
 
@@ -33,13 +36,16 @@ public static class CustosInfo
 
     /// <summary>
     /// <c>C:\ProgramData\CUSTOS</c>: settings, database and logs of the service; on macOS
-    /// <c>/Library/Application Support/CUSTOS</c>. Outside Windows the variable CUSTOS_DATA_DIR can point elsewhere
-    /// (tests of the macOS service without root).
+    /// <c>/Library/Application Support/CUSTOS</c>, on Linux <c>/var/lib/custos</c>. Outside Windows the variable
+    /// CUSTOS_DATA_DIR can point elsewhere (tests of the services of macOS and Linux without root).
     /// </summary>
     public static string DataDirectory { get; } = ReadDataDirectory();
 
-    /// <summary><c>C:\ProgramData\CUSTOS\logs</c>.</summary>
-    public static string LogsDirectory { get; } = Path.Combine(DataDirectory, "logs");
+    /// <summary><c>C:\ProgramData\CUSTOS\logs</c>; on Linux <c>/var/log/custos</c>, where logs belong there (inside the
+    /// data folder when CUSTOS_DATA_DIR points elsewhere).</summary>
+    public static string LogsDirectory { get; } = OperatingSystem.IsLinux() && !CustomDataDirectory
+        ? "/var/log/custos"
+        : Path.Combine(DataDirectory, "logs");
 
     /// <summary><c>C:\ProgramData\CUSTOS\logs\journal</c>: the journal of each day (section 6.10).</summary>
     public static string JournalDirectory { get; } = Path.Combine(LogsDirectory, "journal");
@@ -56,10 +62,11 @@ public static class CustosInfo
             return Path.GetFullPath(custom);
         }
 
-        return OperatingSystem.IsMacOS()
-            ? "/Library/Application Support/CUSTOS"
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "CUSTOS");
+        return OperatingSystem.IsMacOS() ? "/Library/Application Support/CUSTOS" : "/var/lib/custos";
     }
+
+    private static bool CustomDataDirectory =>
+        !OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("CUSTOS_DATA_DIR") is { Length: > 0 };
 
     private static string ReadVersion()
     {

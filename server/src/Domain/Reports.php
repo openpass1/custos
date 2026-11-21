@@ -163,9 +163,13 @@ final class Reports
         $this->storeLog($runId, $log, 'fetch');
     }
 
-    /** inventory: free space history and the sets that are in each destination now. */
+    /**
+     * inventory: free space history and the sets that are in each destination now; from CUSTOS for Linux also whether
+     * the volumes of the sources can have snapshots (Snapshots).
+     */
     public function inventory(string $agentId, Input $in): void
     {
+        $snapshots = Snapshots::read($in);
         $destinations = [];
         foreach ($in->objects('destinations') as $d) {
             $sets = [];
@@ -211,6 +215,9 @@ final class Reports
                 }
             }
         });
+        if ($snapshots !== null) {
+            (new Snapshots($this->db))->store($agentId, $snapshots, Time::unix($now));
+        }
     }
 
     /** Returns the run if it exists and belongs to this agent and task, null if it does not exist. */

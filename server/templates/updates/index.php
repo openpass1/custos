@@ -7,7 +7,7 @@
  * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
  * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
  * @var array<string, array{on: bool, latest: ?array, newer: ?array, packages: list<array>, current: ?array, machines: bool,
- *     outdated: array<string, array>}> $editions the editions for Windows 7 and 8.1 (legacy) and for macOS (macos)
+ *     outdated: array<string, array>}> $editions the editions for Windows 7 and 8.1 (legacy), macOS (macos) and Linux (linux)
  */
 use Custos\Domain\Agents;
 use Custos\Domain\Packages;
@@ -29,7 +29,7 @@ $editionOutdated = [];
 foreach ($editions as $ed) {
     $editionOutdated += $ed['outdated'];
 }
-// The packages of one edition, with "current" and "delete"; $kind is agent, legacy or macos.
+// The packages of one edition, with "current" and "delete"; $kind is agent, legacy, macos or linux.
 $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <div class="table-wrap gap-top">
             <table>

@@ -583,6 +583,7 @@ internal sealed partial class AgentService : IMonitorHost
                     body.Destinations.AddRange(InventoryOf(task));
                 }
 
+                AddPlatformInventory(body);
                 if (taskId is null || body.Destinations.Count > 0)
                 {
                     Queue(ServerLink.InventoryPath, JsonSerializer.SerializeToUtf8Bytes(body, MonitorJsonContext.Default.InventoryBody),
@@ -604,6 +605,9 @@ internal sealed partial class AgentService : IMonitorHost
             }
         }, CancellationToken.None);
     }
+
+    /// <summary>What only one system adds to the inventory (Linux: whether snapshots can be made, A.8).</summary>
+    partial void AddPlatformInventory(InventoryBody body);
 
     /// <summary>
     /// The destinations of a task with their sets and free space. A destination that cannot be reached now is left
@@ -705,7 +709,7 @@ internal sealed partial class AgentService : IMonitorHost
 
         if (!OperatingSystem.IsWindows())
         {
-            // The 7z.so of macOS comes with CUSTOS: nothing to download (the site 1.3.0 and newer sends no such command).
+            // The 7z.so of macOS and Linux comes with CUSTOS: nothing to download (the site sends no such command to them).
             return CommandOutcome.Rejected(Messages.SevenZipMacBundled);
         }
 

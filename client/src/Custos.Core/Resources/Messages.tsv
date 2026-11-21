@@ -655,5 +655,12 @@ MacSnapshotFailedContinue	APFS snapshot failed: {0}. Copying without it: files t
 MacSnapshotFailedAbort	APFS snapshot failed: {0}. The task is set to stop in that case.	Не удалось сделать снимок APFS: {0}. По настройке задания копирование отменено.
 MacShareFailed	Network folder {0} could not be connected: {1}	Не удалось подключить сетевую папку {0}: {1}
 MacOwnerNotSet	Owner and permissions of {0} were not restored: {1}	Не удалось восстановить владельца и права {0}: {1}
-SevenZipMacBundled	On macOS 7-Zip comes inside CUSTOS and is updated together with the program.	В macOS 7-Zip входит в CUSTOS и обновляется вместе с программой.
+MonitorPackageNotLinux	This package is not CUSTOS for Linux; a Linux server installs only its own packages (custos-linux-….zip).	Это не пакет CUSTOS для Linux, а Linux-сервер ставит только свои пакеты (custos-linux-….zip).
+MonitorPackageLinux	This package is CUSTOS for Linux; it is not installed here.	Это пакет CUSTOS для Linux, здесь он не ставится.
+LinuxSnapshotCreated	Snapshot made ({0}): the files are read from it.	Снимок сделан ({0}): файлы читаются из него.
+LinuxSnapshotFailedContinue	No snapshot: {0}. Copying without it: files that change during the copy may be copied half-written.	Снимок не сделан: {0}. Копирую без него: файлы, которые меняются во время копирования, могут попасть в копию недописанными.
+LinuxSnapshotFailedAbort	No snapshot: {0}. The task is set to stop in that case.	Снимок не сделан: {0}. По настройке задания копирование отменено.
+LinuxSnapshotPartialAbort	Not every volume of the sources got a snapshot. {0} The task is set to stop in that case.	Не для всех томов источников сделан снимок. {0} По настройке задания копирование отменено.
+FolderSkippedMount	Folder {0} skipped: {1}.	Папка {0} пропущена: {1}.
+SevenZipMacBundled	On macOS and Linux 7-Zip comes inside CUSTOS and is updated together with the program.	В macOS и Linux 7-Zip входит в CUSTOS и обновляется вместе с программой.
 MacUpdateFailed	The installer of macOS did not install the update: {0}	Установщик macOS не установил обновление: {0}

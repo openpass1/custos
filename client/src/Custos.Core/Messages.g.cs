@@ -1907,7 +1907,28 @@ static partial class Messages
     /// <summary>Owner and permissions of {0} were not restored: {1}</summary>
     public static string MacOwnerNotSet => Get(nameof(MacOwnerNotSet));
 
-    /// <summary>On macOS 7-Zip comes inside CUSTOS and is updated together with the program.</summary>
+    /// <summary>This package is not CUSTOS for Linux; a Linux server installs only its own packages (custos-linux-….zip).</summary>
+    public static string MonitorPackageNotLinux => Get(nameof(MonitorPackageNotLinux));
+
+    /// <summary>This package is CUSTOS for Linux; it is not installed here.</summary>
+    public static string MonitorPackageLinux => Get(nameof(MonitorPackageLinux));
+
+    /// <summary>Snapshot made ({0}): the files are read from it.</summary>
+    public static string LinuxSnapshotCreated => Get(nameof(LinuxSnapshotCreated));
+
+    /// <summary>No snapshot: {0}. Copying without it: files that change during the copy may be copied half-written.</summary>
+    public static string LinuxSnapshotFailedContinue => Get(nameof(LinuxSnapshotFailedContinue));
+
+    /// <summary>No snapshot: {0}. The task is set to stop in that case.</summary>
+    public static string LinuxSnapshotFailedAbort => Get(nameof(LinuxSnapshotFailedAbort));
+
+    /// <summary>Not every volume of the sources got a snapshot. {0} The task is set to stop in that case.</summary>
+    public static string LinuxSnapshotPartialAbort => Get(nameof(LinuxSnapshotPartialAbort));
+
+    /// <summary>Folder {0} skipped: {1}.</summary>
+    public static string FolderSkippedMount => Get(nameof(FolderSkippedMount));
+
+    /// <summary>On macOS and Linux 7-Zip comes inside CUSTOS and is updated together with the program.</summary>
     public static string SevenZipMacBundled => Get(nameof(SevenZipMacBundled));
 
     /// <summary>The installer of macOS did not install the update: {0}</summary>

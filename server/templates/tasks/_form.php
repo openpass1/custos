@@ -12,11 +12,15 @@
 use Custos\Domain\Agents;
 use Custos\Domain\TaskForm;
 
-// The edition for Windows 7 and 8.1 has no cloud drives: they are not offered for its machines.
-$legacy = !$templateMode && isset($agent) && is_array($agent) && Agents::isLegacy($agent);
+$machine = !$templateMode && isset($agent) && is_array($agent) ? $agent : null;
+// The edition for Windows 7 and 8.1 and CUSTOS for Linux have no cloud drives: they are not offered for their machines.
+$withoutCloud = $machine === null ? null : Agents::withoutCloud($machine);
 // CUSTOS for macOS: Mac paths in the examples, and an APFS snapshot where Windows takes a VSS shadow copy.
-$mac = !$templateMode && isset($agent) && is_array($agent) && Agents::isMac($agent);
-$vssText = fn(string $key): string => t($mac ? $key . '_mac' : $key);
+$mac = $machine !== null && Agents::isMac($machine);
+// CUSTOS for Linux: Linux paths, a snapshot of the LVM, btrfs or ZFS volume, owners and permissions instead of NTFS.
+$linux = $machine !== null && Agents::isLinux($machine);
+$vssText = fn(string $key): string => t($mac ? $key . '_mac' : ($linux ? $key . '_linux' : $key));
+$aclText = fn(string $key): string => t($linux ? $key . '_linux' : $key);
 
 $sub = function (string $key) use ($task): array {
     $value = $task[$key] ?? [];
@@ -92,6 +96,11 @@ if ($mac) {
     $pathExamples['source']['file'] = '/Users/Shared/Data/report.xlsx';
     $pathExamples['destination']['local'] = '/Volumes/Backup';
 }
+if ($linux) {
+    $pathExamples['source']['folder'] = '/var/www';
+    $pathExamples['source']['file'] = '/etc/nginx/nginx.conf';
+    $pathExamples['destination']['local'] = '/mnt/backup';
+}
 $pathExample = fn(string $side, string $kind): string =>
     ' placeholder="' . e($pathExamples[$side][$kind] ?? '') . '" data-placeholders="' . e(json_encode($pathExamples[$side], JSON_UNESCAPED_SLASHES)) . '"';
 
@@ -128,7 +137,7 @@ $sourceRow = function (string $i, array $item) use ($credentialField, $pathExamp
     <?php return (string) ob_get_clean();
 };
 
-$destinationRow = function (string $i, array $item) use ($credentialField, $pathExample, $legacy): string {
+$destinationRow = function (string $i, array $item) use ($credentialField, $pathExample, $withoutCloud): string {
     $prefix = "destinations[$i]";
     $kind = (string) ($item['kind'] ?? 'local');
     $field = fn(string $name) => e((string) ($item[$name] ?? ''));
@@ -139,7 +148,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
             <label><?= e(t('task_form.kind')) ?>
                 <select name="<?= e($prefix) ?>[kind]" data-destination-kind>
                     <?php foreach (TaskForm::DESTINATION_KINDS as $k): ?>
-                        <?php if (!in_array($k, TaskForm::destinationKinds($legacy), true) && $k !== $kind) { continue; } ?>
+                        <?php if (!in_array($k, TaskForm::destinationKinds($withoutCloud), true) && $k !== $kind) { continue; } ?>
                         <option value="<?= e($k) ?>"<?= selected($k, $kind) ?>><?= e(t('task_form.destination.kind.' . $k)) ?></option>
                     <?php endforeach ?>
                 </select>
@@ -189,7 +198,7 @@ $destinationRow = function (string $i, array $item) use ($credentialField, $path
     <?php return (string) ob_get_clean();
 };
 
-$eventRow = function (string $when, string $i, array $item) use ($mac): string {
+$eventRow = function (string $when, string $i, array $item) use ($mac, $linux): string {
     $prefix = "events[$when][$i]";
     $kind = (string) ($item['kind'] ?? 'run');
     ob_start(); ?>
@@ -204,13 +213,13 @@ $eventRow = function (string $when, string $i, array $item) use ($mac): string {
             </label>
             <label class="grow" data-show-if="kind=run"><?= e(t('task_form.event.command')) ?>
                 <input type="text" name="<?= e($prefix) ?>[command]" value="<?= e((string) ($item['command'] ?? '')) ?>" class="mono"
-                       placeholder="<?= $mac ? '/usr/local/bin/dump.sh' : 'C:\scripts\dump.cmd' ?>" maxlength="1000">
+                       placeholder="<?= $mac || $linux ? '/usr/local/bin/dump.sh' : 'C:\scripts\dump.cmd' ?>" maxlength="1000">
             </label>
             <label data-show-if="kind=run"><?= e(t('task_form.event.args')) ?>
                 <input type="text" name="<?= e($prefix) ?>[args]" value="<?= e((string) ($item['args'] ?? '')) ?>" class="mono" maxlength="1000">
             </label>
             <label class="grow" data-show-if="kind=service_stop|service_start"><?= e(t('task_form.event.service')) ?>
-                <input type="text" name="<?= e($prefix) ?>[service]" value="<?= e((string) ($item['service'] ?? '')) ?>" maxlength="255" placeholder="MSSQLSERVER">
+                <input type="text" name="<?= e($prefix) ?>[service]" value="<?= e((string) ($item['service'] ?? '')) ?>" maxlength="255" placeholder="<?= $linux ? 'mariadb' : 'MSSQLSERVER' ?>">
             </label>
             <label><?= e(t('task_form.event.timeout')) ?>
                 <input type="number" name="<?= e($prefix) ?>[timeout_s]" value="<?= (int) ($item['timeout_s'] ?? 3600) ?>" min="1" max="86400" class="short">
@@ -240,7 +249,7 @@ $archiveSummary[] = (int) ($verify['every_runs'] ?? 0) > 0 || (int) ($verify['st
     ? t('task_form.fold.verify') : t('task_form.fold.no_verify');
 $reliabilitySummary = [
     $vssText(!empty($vss['enabled'] ?? true) ? 'task_form.fold.vss' : 'task_form.fold.no_vss'),
-    t(!empty($copy['preserve_acl'] ?? true) ? 'task_form.fold.acl' : 'task_form.fold.no_acl'),
+    $aclText(!empty($copy['preserve_acl'] ?? true) ? 'task_form.fold.acl' : 'task_form.fold.no_acl'),
     t('task_form.fold.log', ['level' => t('task_form.log_level.' . (string) ($task['log_level'] ?? 'inherit'))]),
 ];
 $eventCount = fn(string $when): int => count(array_filter((array) ($events[$when] ?? []), 'is_array'));
@@ -532,8 +541,9 @@ foreach ($errors as $error) {
                 </select>
             </label>
         </div>
+        <?php if ($linux): ?><p class="note" data-show-if="vss[enabled]=1"><?= e(t('task_form.vss.hint_linux')) ?></p><?php endif ?>
         <div class="row-fields">
-            <label class="check"><input type="checkbox" name="copy[preserve_acl]" value="1"<?= checked((bool) ($copy['preserve_acl'] ?? true)) ?>> <?= e(t('task_form.copy.preserve_acl')) ?></label>
+            <label class="check"><input type="checkbox" name="copy[preserve_acl]" value="1"<?= checked((bool) ($copy['preserve_acl'] ?? true)) ?>> <?= e($aclText('task_form.copy.preserve_acl')) ?></label>
             <label><?= e(t('task_form.copy.read_retries')) ?>
                 <input type="number" name="copy[read_retries]" value="<?= (int) ($copy['read_retries'] ?? 1) ?>" min="0" max="5" class="short"></label>
             <label><?= e(t('task_form.log_level')) ?>

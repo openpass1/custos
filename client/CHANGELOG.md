@@ -1,4 +1,4 @@
-# Changelog: CUSTOS for Windows and macOS
+# Changelog: CUSTOS for Windows, macOS and Linux
 
 One section per release, newest first. The section of a version is the text of its `client-v…` release on the
 [Releases](https://github.com/openpass1/custos/releases) page, word for word.
@@ -15,6 +15,17 @@ How to write it:
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
+
+## 1.3.0
+
+### Added
+- Linux: CUSTOS for Linux servers (x86_64 and ARM), a service without a window that a monitoring site manages.
+- Linux: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux, Rocky and Oracle Linux 8+, openSUSE 15+.
+- Linux: one command from the **Install** page of a monitoring site 1.4.0 or newer installs and connects it.
+- Linux: files are read from an LVM, btrfs or ZFS snapshot; the site says which disk to add when there is no room for one.
+
+### Fixed
+- Windows: the service no longer logs «CUSTOS service terminated unexpectedly» each time it is stopped normally.
 
 ## 1.2.0
 

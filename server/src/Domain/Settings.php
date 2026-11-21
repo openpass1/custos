@@ -60,6 +60,7 @@ final class Settings
         'agent_outdated_notified' => '',
         'legacy_outdated_notified' => '',
         'macos_outdated_notified' => '',
+        'linux_outdated_notified' => '',
         // CUSTOS releases on GitHub (section 8): the daily check of the site and the program releases, the
         // releases found (JSON) and the versions a notice was given for. See Domain\Releases.
         'releases_check' => '1',
@@ -73,6 +74,8 @@ final class Settings
         'release_legacy_notified' => '',
         'release_macos' => '',
         'release_macos_notified' => '',
+        'release_linux' => '',
+        'release_linux_notified' => '',
     ];
 
     private ?array $values = null;

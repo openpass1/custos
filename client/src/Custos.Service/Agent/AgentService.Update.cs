@@ -24,7 +24,7 @@ internal sealed partial class AgentService
     /// <summary>What Custos.Updater did (written by it).</summary>
     private static readonly string UpdateResultFile = Path.Combine(DataFolders.Config, "update-result.json");
 
-#if !CUSTOS_MAC
+#if !CUSTOS_MAC && !CUSTOS_LINUX
     /// <summary>The files Custos.Updater needs to run (it is a .NET program without other references).</summary>
     private static readonly string[] UpdaterFiles = ["Custos.Updater.exe", "Custos.Updater.dll", "Custos.Updater.runtimeconfig.json", "Custos.Updater.deps.json"];
 
@@ -186,7 +186,7 @@ internal sealed partial class AgentService
         }
     }
 
-#if !CUSTOS_MAC
+#if !CUSTOS_MAC && !CUSTOS_LINUX
     /// <summary>Custos.Updater runs from a copy: the program folder is what it replaces.</summary>
     private static void PrepareUpdater(string staging, string updaterFolder)
     {

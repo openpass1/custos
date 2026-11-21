@@ -7,7 +7,7 @@
         <ul class="problems">
             <?php foreach ($problems as $p): ?>
                 <li class="problem problem-<?= e($p['kind']) ?>" data-key="p<?= (int) $p['id'] ?>">
-                    <span class="lead lead-<?= $p['kind'] === 'space' ? 'warn' : 'bad' ?>"><?= icon(['missed' => 'event-busy', 'space' => 'hdd'][$p['kind']] ?? 'error-fill') ?></span>
+                    <span class="lead lead-<?= in_array($p['kind'], ['space', 'snapshot'], true) ? 'warn' : 'bad' ?>"><?= icon(['missed' => 'event-busy', 'space' => 'hdd', 'snapshot' => 'snapshot'][$p['kind']] ?? 'error-fill') ?></span>
                     <div class="problem-body">
                         <div class="problem-head"><a href="<?= e(url('/agents/' . $p['agent_id'] . '/tasks/' . $p['task_id'])) ?>"><strong><?= e($p['task_name'] ?? t('runs.unknown_task')) ?></strong></a>
                             <?= badge($p['kind']) ?></div>

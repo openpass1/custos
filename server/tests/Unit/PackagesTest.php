@@ -52,6 +52,26 @@ final class PackagesTest extends TestCase
         $this->assertSame(['m'], array_column(Packages::fitting('macos', $all), 'id'));
         $this->assertSame(['s'], array_column(Packages::fitting('agent', $all), 'id'));
         $this->assertSame(['s'], array_column(Packages::fitting('7zip', $all), 'id'), '7-Zip is inside the program on a Mac');
-        $this->assertSame(['agent', 'legacy', 'macos'], Packages::PROGRAM_KINDS);
+        $this->assertSame(['agent', 'legacy', 'macos', 'linux'], Packages::PROGRAM_KINDS);
+    }
+
+    public function testALinuxServerTakesOnlyLinuxPackagesAndNo7Zip(): void
+    {
+        $standard = ['id' => 's', 'status' => 'approved', 'agent_version' => '1.0.0', 'edition' => ''];
+        $mac = ['id' => 'm', 'status' => 'approved', 'agent_version' => '1.0.0', 'edition' => 'macos'];
+        $linux = ['id' => 'x', 'status' => 'approved', 'agent_version' => '1.0.0', 'edition' => 'linux'];
+        $all = [$standard, $mac, $linux];
+
+        $this->assertSame('linux', Packages::agentKind($linux));
+        $this->assertSame('linux', Agents::edition('linux'));
+        $this->assertTrue(Agents::isLinux($linux));
+        $this->assertFalse(Agents::isLinux($mac));
+        $this->assertSame(['x'], array_column(Packages::fitting('linux', $all), 'id'));
+        $this->assertSame(['s'], array_column(Packages::fitting('7zip', $all), 'id'), '7-Zip is inside the program on Linux');
+        // Neither Windows 7 nor Linux has cloud drives: the task form leaves them out, in the words of each.
+        $this->assertSame('linux', Agents::withoutCloud($linux));
+        $this->assertSame('legacy', Agents::withoutCloud(['edition' => 'legacy']));
+        $this->assertNull(Agents::withoutCloud($mac));
+        $this->assertNull(Agents::withoutCloud($standard));
     }
 }

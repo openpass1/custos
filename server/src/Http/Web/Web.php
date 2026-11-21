@@ -12,6 +12,7 @@ use Custos\Http\Web\Controller\AuditController;
 use Custos\Http\Web\Controller\AuthController;
 use Custos\Http\Web\Controller\DashboardController;
 use Custos\Http\Web\Controller\GroupsController;
+use Custos\Http\Web\Controller\InstallController;
 use Custos\Http\Web\Controller\IntegrationsController;
 use Custos\Http\Web\Controller\NoticesController;
 use Custos\Http\Web\Controller\NotificationsController;
@@ -50,6 +51,7 @@ final class Web
         ['POST', '#^/login$#', AuthController::class, 'login', 'public'],
         ['POST', '#^/logout$#', AuthController::class, 'logout', 'user'],
         ['GET', '#^/agents$#', AgentsController::class, 'index', 'user'],
+        ['GET', '#^/install$#', InstallController::class, 'index', 'user'],
         ['GET', '#^/tasks$#', TasksController::class, 'index', 'user'],
         ['GET', '#^/search$#', SearchController::class, 'index', 'user'],
         ['GET', '#^/search/suggest$#', SearchController::class, 'suggest', 'live'],
@@ -83,12 +85,12 @@ final class Web
         ['POST', '#^/updates/sevenzip/settings$#', UpdatesController::class, 'sevenZipSettings', 'user'],
         ['POST', '#^/updates/releases/check$#', UpdatesController::class, 'releasesCheck', 'user'],
         ['POST', '#^/updates/releases/settings$#', UpdatesController::class, 'releasesSettings', 'user'],
-        ['POST', '#^/updates/releases/(client|legacy|macos)$#', UpdatesController::class, 'clientDownload', 'user'],
+        ['POST', '#^/updates/releases/(client|legacy|macos|linux)$#', UpdatesController::class, 'clientDownload', 'user'],
         ['POST', '#^/updates/site/install$#', UpdatesController::class, 'siteInstall', 'user'],
         ['POST', '#^/updates/site/upload$#', UpdatesController::class, 'siteUpload', 'user'],
         ['POST', '#^/updates/site/cancel$#', UpdatesController::class, 'siteCancel', 'user'],
-        ['POST', '#^/updates/(agent|legacy|macos)/([0-9A-Za-z.+-]{1,32})/current$#', UpdatesController::class, 'current', 'user'],
-        ['POST', '#^/updates/(agent|legacy|macos|7zip)/([0-9A-Za-z.+-]{1,32})/delete$#', UpdatesController::class, 'delete', 'user'],
+        ['POST', '#^/updates/(agent|legacy|macos|linux)/([0-9A-Za-z.+-]{1,32})/current$#', UpdatesController::class, 'current', 'user'],
+        ['POST', '#^/updates/(agent|legacy|macos|linux|7zip)/([0-9A-Za-z.+-]{1,32})/delete$#', UpdatesController::class, 'delete', 'user'],
         ['GET', '#^/groups$#', GroupsController::class, 'index', 'user'],
         ['POST', '#^/groups$#', GroupsController::class, 'create', 'user'],
         ['POST', '#^/groups/(\d+)/(rename|delete)$#', GroupsController::class, 'action', 'user'],
