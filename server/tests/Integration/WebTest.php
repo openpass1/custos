@@ -1044,6 +1044,7 @@ final class WebTest extends TestCase
 
         [, $page] = $this->http('GET', $agentUrl);
         $this->assertStringContainsString('для Linux', $page);
+        $this->assertStringContainsString('Обновите Linux-агент, чтобы использовать облачные диски.', $page);
         $this->assertStringContainsString('Снимки дисков', $page);
         $this->assertStringContainsString('В группе томов ubuntu-vg нет свободного места', $page);
         $this->assertStringContainsString('value="pvcreate /dev/sdX &amp;&amp; vgextend ubuntu-vg /dev/sdX"', $page);
@@ -1058,6 +1059,9 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('/var/www', $editor);
         $this->assertStringNotContainsString('value="gdrive"', $editor, 'no cloud drives until the Linux agent reports support');
         $this->db()->exec("UPDATE agents SET cloud_destinations = 1 WHERE id = ?", [$id[1]]);
+        [, $cloudPage] = $this->http('GET', $agentUrl);
+        $this->assertStringContainsString('sudo custos cloud login', $cloudPage);
+        $this->assertStringNotContainsString('Обновите Linux-агент, чтобы использовать облачные диски.', $cloudPage);
         $cloudEditor = $this->http('GET', "$agentUrl/tasks/new")[1];
         foreach (['gdrive', 'yadisk', 'dropbox'] as $provider) {
             $this->assertStringContainsString('value="' . $provider . '"', $cloudEditor);

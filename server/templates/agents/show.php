@@ -124,8 +124,16 @@ $post = function (string $action, string $label, string $class, ?string $iconNam
         <dt><?= e(t('agent.group')) ?></dt><dd><?= e($groupName ?? t('groups.none')) ?></dd>
         <dt><?= e(t('agent.ip')) ?></dt><dd><?= e($agent['last_ip'] ?? '—') ?></dd>
         <dt><?= e(t('agent.os')) ?></dt><dd><?= e($agent['os']) ?></dd>
-        <dt><?= e(t('agent.version')) ?></dt><dd><?= e($agent['agent_version']) ?><?= edition_badge($agent) ?>
-            <?php if (Agents::edition((string) $agent['edition']) !== ''): ?><div class="note"><?= e(t('agent.edition.' . $agent['edition'] . '_hint')) ?></div><?php endif ?></dd>
+        <dt><?= e(t('agent.version')) ?></dt>
+        <dd><?= e($agent['agent_version']) ?><?= edition_badge($agent) ?>
+            <?php if (Agents::edition((string) $agent['edition']) !== ''): ?>
+                <div class="note"><?= e(t('agent.edition.' . $agent['edition'] . '_hint')) ?></div>
+            <?php endif ?>
+            <?php if (Agents::isLinux($agent)): ?>
+                <div class="note"><?= e(t(Agents::withoutCloud($agent) === null
+                    ? 'agent.edition.linux_cloud' : 'agent.edition.linux_cloud_update')) ?></div>
+            <?php endif ?>
+        </dd>
         <dt><?= e(t('agent.sevenzip')) ?></dt><dd><?= e($agent['sevenzip_version'] ?? t('agent.sevenzip.unknown')) ?></dd>
         <dt><?= e(t('agent.time_zone')) ?></dt><dd><?= e($agent['time_zone']) ?></dd>
         <dt><?= e(t('agent.first_seen')) ?></dt><dd><?= e(fmt_time($agent['first_seen_at'])) ?></dd>
