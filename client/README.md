@@ -242,6 +242,17 @@ restores to the selected date and leaves existing files alone by default. Use `-
 locations. `--dumps-to /srv/dumps` puts saved database dumps in a separate folder. Use `custos restore help` for encrypted
 archives and the exit codes. `start` shows progress until the restore finishes. Ctrl+C requests cancellation of that restore.
 
+**Restore from the monitoring site.** With Linux client 1.4.0+ and CUSTOS Monitor 1.4.2+, open an existing task on
+an approved Linux machine. Choose **More** → **Restore backup files** → **Find available backups**, then select a backup
+set and choose **Restore**. The agent must allow the site to change tasks. Use **Request status** to get the current
+progress or result and **Stop restore** to request cancellation.
+
+Each restore puts its files in a new private directory on the Linux machine, `/var/lib/custos/restores/<job_id>` by default.
+The site shows the job state, output directory and file counts. Stopping a restore leaves any files already written
+in that directory. The agent uses the task's saved account and archive password, if any. Use
+`sudo custos restore` locally to choose a destination, restore to the original paths, change the overwrite mode, or
+enter a password for this restore.
+
 **Cloud drives.** Connect each account on the Linux server, then select it as a destination in CUSTOS Monitor 1.4.2
 or newer. `custos cloud list` shows the connected accounts and their IDs. To renew access without changing tasks,
 pass `--account <id>` to the login command.

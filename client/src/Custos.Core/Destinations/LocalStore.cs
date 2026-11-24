@@ -37,7 +37,7 @@ public sealed class LocalStore : DestinationStore
 
     public override string? Account => _session.Account;
 
-    public override string CacheKey => "file";
+    public override string CacheKey => OpenConfinedFile is null ? "file" : "confined-file";
 
     public override bool CanSeek => true;
 
@@ -47,6 +47,9 @@ public sealed class LocalStore : DestinationStore
 
     /// <summary>The logon the files are opened in.</summary>
     public INetworkSession Session => _session;
+
+    /// <summary>Optional regular-file reader for a confined restore. Set before scanning the destination.</summary>
+    public Func<string, FileStream>? OpenConfinedFile { private get; set; }
 
     /// <summary>The limit on writing to a share (section 6.3); null = none.</summary>
     public SpeedLimiter? Limiter { get; init; }
@@ -241,14 +244,20 @@ public sealed class LocalStore : DestinationStore
     }
 
     public override Stream OpenRead(string path) => Lowered(_session.Run(() =>
-        new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
+        OpenConfinedFile?.Invoke(path) ?? new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan)));
 
     /// <summary>Opens a file that is read here and there (an archive), not from its start to its end.</summary>
     public Stream OpenRandom(string path) => Lowered(_session.Run(() =>
-        new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.RandomAccess)));
+        OpenConfinedFile?.Invoke(path) ?? new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.RandomAccess)));
 
     public override long GetFileSize(string path) => _session.Run(() =>
     {
+        if (OpenConfinedFile is { } open)
+        {
+            using var stream = open(path);
+            return stream.Length;
+        }
+
         var file = new FileInfo(path);
         return file.Exists ? file.Length : throw new FileNotFoundException(null, path);
     });

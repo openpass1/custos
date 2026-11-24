@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace Custos.Service.Platform;
 
@@ -16,6 +17,7 @@ internal static unsafe partial class Native
     private const string LibC = "libc";
     private const int AtFdCwd = -100;
     private const int AtSymlinkNoFollow = 0x100;
+    private const int AtEmptyPath = 0x1000;
     private const uint StatxBasicStats = 0x7ff;
     private static readonly Lock PasswdLock = new();
 
@@ -27,6 +29,15 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
     public static partial int lchown(string path, uint owner, uint group);
+
+    [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+    public static partial int mkdir(string path, uint mode);
+
+    [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+    public static partial SafeFileHandle open(string path, int flags);
+
+    [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+    public static partial SafeFileHandle openat(SafeFileHandle directory, string path, int flags);
 
     [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8)]
     private static partial IntPtr getpwnam(string name);
@@ -133,12 +144,16 @@ internal static unsafe partial class Native
     }
 
     /// <summary>Owner, group and permission bits of a file or folder (not following a symbolic link), or null.</summary>
-    public static (uint Uid, uint Gid, uint Mode)? Stat(string path)
+    public static (uint Uid, uint Gid, uint Mode)? Stat(string path) => Stat(AtFdCwd, path, AtSymlinkNoFollow);
+
+    public static (uint Uid, uint Gid, uint Mode)? Stat(SafeFileHandle file) => Stat((int)file.DangerousGetHandle(), "", AtEmptyPath);
+
+    private static (uint Uid, uint Gid, uint Mode)? Stat(int directory, string path, int flags)
     {
         // struct statx (the same on every processor): stx_mask u32, stx_blksize u32, stx_attributes u64, stx_nlink u32,
         // stx_uid u32 (20), stx_gid u32 (24), stx_mode u16 (28) … 256 bytes in all.
         byte* buffer = stackalloc byte[256];
-        if (statx(AtFdCwd, path, AtSymlinkNoFollow, StatxBasicStats, buffer) != 0)
+        if (statx(directory, path, flags, StatxBasicStats, buffer) != 0)
         {
             return null;
         }

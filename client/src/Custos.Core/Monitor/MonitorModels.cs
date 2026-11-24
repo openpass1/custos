@@ -51,6 +51,9 @@ public sealed class RegisterBody
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? CloudDestinations { get; set; } = CustosEdition.IsLinux ? true : null;
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? RemoteRestore { get; set; } = CustosEdition.IsLinux ? true : null;
+
     public required string TimeZone { get; set; }
 
     public required string PublicKey { get; set; }
@@ -80,6 +83,9 @@ public sealed class HeartbeatBody
     /// <summary>Sent by Linux agents that support cloud drives (A.4).</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? CloudDestinations { get; set; } = CustosEdition.IsLinux ? true : null;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? RemoteRestore { get; set; } = CustosEdition.IsLinux ? true : null;
 
     public string? SevenzipVersion { get; set; }
 
@@ -137,6 +143,10 @@ public sealed class MonitorCommand
     public JsonElement Payload { get; set; }
 
     public DateTimeOffset? ExpiresAt { get; set; }
+
+    /// <summary>The local server binding at delivery, supplied by ServerLink rather than by the sender.</summary>
+    [JsonIgnore]
+    public string? RestoreBinding { get; set; }
 }
 
 /// <summary>Kinds of <see cref="MonitorCommand"/>.</summary>
@@ -155,11 +165,17 @@ public static class CommandKinds
     public const string InventoryRefresh = "inventory.refresh";
     public const string UpdateInstall = "update.install";
     public const string SevenZipUpdate = "sevenzip.update";
+    public const string RestoreList = "restore.list";
+    public const string RestoreStart = "restore.start";
+    public const string RestoreStatus = "restore.status";
+    public const string RestoreStop = "restore.stop";
+
+    public static bool IsRestore(string kind) => kind is RestoreList or RestoreStart or RestoreStatus or RestoreStop;
 
     /// <summary>Commands refused when «Allow the server to change tasks» is off (A.4).</summary>
     public static readonly IReadOnlySet<string> Edits = new HashSet<string>(StringComparer.Ordinal)
     {
-        TaskUpsert, TaskDelete, TaskEnable, TaskDisable, SettingsUpdate,
+        TaskUpsert, TaskDelete, TaskEnable, TaskDisable, SettingsUpdate, RestoreList, RestoreStart, RestoreStatus, RestoreStop,
     };
 }
 
@@ -177,6 +193,47 @@ public sealed class CommandResultBody
     public required string Status { get; set; }
 
     public string? Message { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public MonitorRestoreResult? Restore { get; set; }
+}
+
+/// <summary>Bounded metadata for a remote restore command. It carries neither paths nor credentials.</summary>
+public sealed class MonitorRestoreResult
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<MonitorRestoreSet>? Sets { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Truncated { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Partial { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public MonitorRestoreJob? Job { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Error { get; init; }
+}
+
+public sealed record MonitorRestoreSet(string SetRunId, string DestinationId, string Name, DateTimeOffset StartedAt,
+    string BackupType, string Storage, int Parts, long Bytes);
+
+public sealed record MonitorRestoreJob(string JobId, string State)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? FilesDone { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? FilesTotal { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? BytesDone { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? BytesTotal { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? FilesRestored { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? FilesSkipped { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? FilesFailed { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public long? Warnings { get; init; }
 }
 
 /// <summary>One account of <c>secrets</c> in <c>task.upsert</c> (A.4).</summary>

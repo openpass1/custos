@@ -21,6 +21,7 @@ The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGE
 ### Added
 - Linux: List and restore backup sets from the terminal, with progress, status and cancellation.
 - Linux: Sign in to Google Drive, Yandex Disk and Dropbox from the terminal for use as backup destinations.
+- Linux: Restore files from a task's backup set through CUSTOS Monitor 1.4.2 into a private directory on the agent.
 
 ## 1.3.0
 

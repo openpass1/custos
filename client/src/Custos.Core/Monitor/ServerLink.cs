@@ -9,6 +9,8 @@ namespace Custos.Core.Monitor;
 /// <summary>What became of a command of the server (A.4).</summary>
 public sealed record CommandOutcome(string Status, string? Message)
 {
+    public MonitorRestoreResult? Restore { get; init; }
+
     public static CommandOutcome Done(string? message = null) => new(CommandStatuses.Done, message);
 
     public static CommandOutcome Failed(string message) => new(CommandStatuses.Failed, message);
@@ -93,6 +95,7 @@ public sealed class ServerLink : IDisposable
     private static readonly HashSet<string> LongCommands = new(StringComparer.Ordinal)
     {
         CommandKinds.UpdateInstall, CommandKinds.SevenZipUpdate, CommandKinds.LogFetch, CommandKinds.InventoryRefresh,
+        CommandKinds.RestoreList, CommandKinds.RestoreStart,
     };
 
     private static readonly HashSet<string> KnownCommands = new(StringComparer.Ordinal)
@@ -100,6 +103,7 @@ public sealed class ServerLink : IDisposable
         CommandKinds.TaskRun, CommandKinds.TaskStop, CommandKinds.TaskPause, CommandKinds.TaskResume, CommandKinds.TaskEnable,
         CommandKinds.TaskDisable, CommandKinds.TaskUpsert, CommandKinds.TaskDelete, CommandKinds.SettingsUpdate,
         CommandKinds.LogFetch, CommandKinds.InventoryRefresh, CommandKinds.UpdateInstall, CommandKinds.SevenZipUpdate,
+        CommandKinds.RestoreList, CommandKinds.RestoreStart, CommandKinds.RestoreStatus, CommandKinds.RestoreStop,
     };
 
     private readonly LinkStore _store;
@@ -503,6 +507,7 @@ public sealed class ServerLink : IDisposable
     /// <summary>The heartbeat (A.4). False when the round should end here.</summary>
     private async Task<bool> HeartbeatAsync(CancellationToken cancellationToken)
     {
+        string? restoreBinding = RestoreBinding;
         var body = JsonSerializer.SerializeToUtf8Bytes(_host.DescribeState(), MonitorJsonContext.Default.HeartbeatBody);
         var answer = await CallAsync("agent/heartbeat", body, cancellationToken).ConfigureAwait(false);
         if (!answer.Ok)
@@ -547,12 +552,21 @@ public sealed class ServerLink : IDisposable
         {
             foreach (var command in beat.Commands)
             {
+                if (CommandKinds.IsRestore(command.Kind))
+                {
+                    command.RestoreBinding = restoreBinding;
+                }
+
                 Accept(command);
             }
         }
 
         return status == ServerLinkStates.Approved;
     }
+
+    /// <summary>Identity of the currently registered agent at a pinned monitoring server.</summary>
+    public string? RestoreBinding => _store.Get() is { AgentId: { } id, ServerPublicKey: { } key }
+        ? id + ":" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(key))) : null;
 
     /// <summary>Sends the queued reports in order (A.5, A.11). False when the round should end here.</summary>
     private async Task<bool> FlushAsync(CancellationToken cancellationToken)
@@ -785,7 +799,7 @@ public sealed class ServerLink : IDisposable
             outcome = CommandOutcome.Failed(Messages.Format(Messages.InternalError, ex.Message));
         }
 
-        if (outcome is not null)
+        if (outcome is not null && (!CommandKinds.IsRestore(command.Kind) || command.RestoreBinding == RestoreBinding))
         {
             Finish(command, outcome);
         }
@@ -812,7 +826,7 @@ public sealed class ServerLink : IDisposable
             return;
         }
 
-        var body = new CommandResultBody { Status = outcome.Status, Message = Limit(outcome.Message, 4000) };
+        var body = new CommandResultBody { Status = outcome.Status, Message = Limit(outcome.Message, 4000), Restore = outcome.Restore };
         Enqueue($"agent/commands/{commandId}/result", JsonSerializer.SerializeToUtf8Bytes(body, MonitorJsonContext.Default.CommandResultBody));
     }
 

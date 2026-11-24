@@ -223,6 +223,7 @@ final class AgentApi
                 'agent_version' => $in->string('agent_version', 32),
                 'edition' => Agents::edition($in->string('edition', 32, true)),
                 'cloud_destinations' => $in->bool('cloud_destinations', true) ?? false,
+                'remote_restore' => $in->bool('remote_restore', true) ?? false,
                 'time_zone' => self::timeZone($in),
             ];
             $publicKey = Crypto::loadPublicKey($in->string('public_key', 16384));
@@ -256,6 +257,7 @@ final class AgentApi
             'agent_version' => $in->string('agent_version', 32),
             'edition' => Agents::edition($in->string('edition', 32, true)),
             'cloud_destinations' => $in->bool('cloud_destinations', true) ?? false,
+            'remote_restore' => $in->bool('remote_restore', true) ?? false,
             'config_revision' => $in->int('config_revision', true),
             'time_zone' => self::timeZone($in),
             'service_started_at' => $in->time('service_started_at', true),
@@ -281,7 +283,7 @@ final class AgentApi
                 ? Monitor::DISABLED_HEARTBEAT_S
                 : $this->app->settings()->int('heartbeat_interval_s'),
             'want_config' => $wantConfig,
-            'commands' => $approved ? $this->app->commands()->deliver($agent['id']) : [],
+            'commands' => $approved ? $this->app->commands()->deliver($agent['id'], Agents::isLinux($hb) && $hb['remote_restore']) : [],
         ]);
     }
 

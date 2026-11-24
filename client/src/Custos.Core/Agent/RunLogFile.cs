@@ -10,7 +10,7 @@ namespace Custos.Core.Agent;
 /// each month, UTF-8, one line per message with the local time (<see cref="LogText"/>). A file that cannot be written
 /// does not stop the run.
 /// </summary>
-public sealed class RunLogFile : IDisposable
+public sealed class RunLogFile : IRunLog, IDisposable
 {
     private const string MonthFormat = "yyyy-MM";
 
@@ -44,6 +44,8 @@ public sealed class RunLogFile : IDisposable
             return new RunLogFile(path, null);
         }
     }
+
+    void IRunLog.Write(RunLogLevel level, string message) => Write(level, message);
 
     public void Write(RunLogLevel level, string text)
     {
