@@ -1,25 +1,47 @@
 # CUSTOS
 
-Резервное копирование компьютеров с Windows с централизованным мониторингом. Бесплатная замена Cobian Backup 11.
+Агенты резервного копирования для Windows, macOS и Linux-серверов с мониторингом на своём сервере. В Windows CUSTOS — бесплатная замена Cobian Backup 11.
 
 [English version](README.md)
 
-[![Клиент для Windows](https://img.shields.io/github/v/release/openpass1/custos?filter=client-v*&label=Windows%20client)](https://github.com/openpass1/custos/releases)
+[![Выпуски клиента](https://img.shields.io/github/v/release/openpass1/custos?filter=client-v*&label=Client%20releases)](https://github.com/openpass1/custos/releases)
 [![Сайт мониторинга](https://img.shields.io/github/v/release/openpass1/custos?filter=server-v*&label=Monitor)](https://github.com/openpass1/custos/releases)
 [![Client build](https://github.com/openpass1/custos/actions/workflows/build.yml/badge.svg)](https://github.com/openpass1/custos/actions/workflows/build.yml)
 [![Server](https://github.com/openpass1/custos/actions/workflows/server.yml/badge.svg)](https://github.com/openpass1/custos/actions/workflows/server.yml)
 [![Лицензия: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-CUSTOS состоит из двух частей. Программа для Windows делает копии и работает сама по себе. Сайт мониторинга не
-обязателен: он показывает все компьютеры в одном месте, предупреждает о проблемах и позволяет управлять заданиями
-удалённо.
+Агенты делают резервные копии на каждой машине. CUSTOS Monitor показывает ход копирования в одном месте, предупреждает
+о проблемах и позволяет управлять заданиями удалённо. Агенты для Windows и macOS можно настроить локально. У агента
+для Linux-серверов нет графического интерфейса, задания для него настраиваются в Monitor.
 
-| | CUSTOS для Windows | CUSTOS Monitor |
-|---|---|---|
-| Что это | Программа резервного копирования: служба Windows и значок в трее | Сайт: сводка, уведомления, удалённое управление |
-| Где работает | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64); отдельная 32-битная версия для Windows 7 SP1 и 8.1 ([подробнее](client/README.ru.md#версия-для-windows-7-и-81)) | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ |
-| Скачать | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS for Windows»: `CUSTOS-Setup-<версия>.exe` | [Releases](https://github.com/openpass1/custos/releases), «CUSTOS Monitor»: `custos-server-<версия>.zip` |
-| Инструкция | [client/README.ru.md](client/README.ru.md) | [server/INSTALL.md](server/INSTALL.md) |
+## Что установить
+
+| Компонент | Где работает | Скачать | Инструкция |
+|---|---|---|---|
+| Агент для Windows | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64) | [Выпуски](https://github.com/openpass1/custos/releases) · `CUSTOS-Setup-<версия>.exe` | [Windows](client/README.ru.md#windows) |
+| Windows legacy | Windows 7 SP1 и 8.1 (32-битная сборка) | [Предварительный выпуск](https://github.com/openpass1/custos/releases/tag/client-legacy-v1.0.1) · `CUSTOS-Legacy-Setup-<версия>.exe` | [Версия для старых Windows](client/README.ru.md#версия-для-windows-7-и-81) |
+| Агент для macOS | macOS 15+ (Apple silicon или Intel) | [Предварительный выпуск](https://github.com/openpass1/custos/releases/tag/client-v1.2.0) · `Custos-<версия>.pkg` | [macOS](client/README.ru.md#macos) |
+| Агент для Linux-серверов | Linux-серверы с systemd и glibc 2.28+ (x86_64 или ARM64) | [Выпуски](https://github.com/openpass1/custos/releases) · `custos-linux-x64.tar.gz` или `custos-linux-arm64.tar.gz` | [Агент Linux](client/README.ru.md#custos-для-linux) |
+| CUSTOS Monitor | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ | [Выпуски](https://github.com/openpass1/custos/releases) · `custos-server-<версия>.zip` | [Установка и обновление](server/INSTALL.md) |
+
+Откройте **Assets** в нужном выпуске и выберите установщик или архив для своей платформы. ZIP-пакеты обновления агентов
+предназначены для раздела **«Обновления»** в Monitor. Предварительные выпуски можно скачать вручную, а автоматическая
+проверка обновлений их пропускает.
+
+Графический клиент для рабочего стола Linux планируется. Установщика и объявленной даты выпуска пока нет.
+Скрипт [custos-helper](helper/README.md) позволяет агенту CUSTOS читать файлы и дампы баз на Linux-сервере по SSH.
+
+## Быстрый старт
+
+- **Windows.** Запустите установщик и [настройте первое задание](client/README.ru.md#windows). Чтобы подключиться к
+  Monitor, скопируйте строку подключения со страницы **«Установка»** и вставьте в программе в разделе
+  **«Настройки» → «Сервер мониторинга»**. Подтвердите машину в Monitor в разделе **«Машины»**.
+- **Windows legacy и macOS.** Системные требования и шаги установки описаны в инструкциях из таблицы.
+- **Linux-сервер.** В CUSTOS Monitor 1.4.1 или новее добавьте пакет `custos-linux-<версия>.zip` в
+  **«Обновлениях»**, скопируйте команду для Linux со страницы **«Установка»**, запустите её на Linux-машине и
+  подтвердите машину в разделе **«Машины»**. [Установка Linux-агента и команды](client/README.ru.md#custos-для-linux)
+- **Мониторинг.** Следуйте инструкции для [CloudPanel](server/INSTALL.md) или [Debian и Ubuntu без панели](server/INSTALL.md#debian-и-ubuntu-одной-командой).
+  В разделе [«Обновление»](server/INSTALL.md#обновление) описаны обновление через сайт и установка пакета без интернета.
 
 <img src="docs/screenshots/ru/client-main-window.png" alt="CUSTOS для Windows: главное окно со списком заданий и карточкой выбранного задания">
 
@@ -61,43 +83,27 @@ CUSTOS состоит из двух частей. Программа для Wind
 - Компьютер подтверждается на сайте по отпечатку ключа; каждый запрос и ответ подписаны.
 - Поиск машин и заданий; русский и английский язык, светлая и тёмная тема, работает на телефоне.
 
-## Быстрый старт
-
-1. **Сайт (по желанию).** На чистом сервере Debian 12 или 13, Ubuntu 24.04 или 26.04, от root (в Ubuntu перед `bash` добавьте `sudo`):
-   ```bash
-   wget https://raw.githubusercontent.com/openpass1/custos/main/server/install.sh
-   bash install.sh
-   ```
-   Скрипт ставит nginx, MariaDB и PHP, настраивает сайт и cron и в конце печатает строку подключения.
-   `bash install.sh --help` покажет его параметры; `bash install.sh --update` потом обновит сайт. Для CloudPanel
-   есть пошаговая инструкция [server/INSTALL.md](server/INSTALL.md).
-2. **Программа.** Запустите `CUSTOS-Setup-<версия>.exe` на каждом компьютере с Windows.
-3. **Подключить компьютер к сайту.** На сайте: «Настройки» → «Подключение агентов» → скопировать строку
-   подключения. В программе: «Настройки» → «Сервер мониторинга» → вставить её и нажать «Подключить». Затем
-   подтвердить компьютер на сайте (раздел «Машины»).
-
 ## Документация
 
 | Документ | Что в нём |
 |---|---|
-| [client/README.ru.md](client/README.ru.md) | Сборка клиента; базы данных, Linux-серверы, назначения на серверах, облачные диски, обновления, перенос заданий и переход с Cobian Backup, файлы на компьютере |
+| Руководства агентов | [Windows](client/README.ru.md#windows), [legacy](client/README.ru.md#версия-для-windows-7-и-81), [macOS](client/README.ru.md#macos), [Linux](client/README.ru.md#custos-для-linux). Резервное копирование, места хранения, обновления, перенос заданий и разработка. |
 | [server/INSTALL.md](server/INSTALL.md), [server/INSTALL.en.md](server/INSTALL.en.md) | Установка и обновление сайта на CloudPanel или на чистом nginx, Telegram, почта, Zabbix |
 | [server/README.md](server/README.md) | Устройство сайта, тесты, имитатор агента (на английском) |
-| [helper/README.md](helper/README.md) | custos-helper на Linux-серверах |
+| [helper/README.md](helper/README.md) | Как забирать данные через custos-helper по SSH |
 | [docs/](docs/) | Технические задания и [протокол](docs/protocol.md) между программой и сайтом |
 
 ## Проверка скачанного файла
 
 В каждом выпуске есть `SHA256SUMS.txt`. В Windows сравните его с тем, что выведет
-`certutil -hashfile CUSTOS-Setup-<версия>.exe SHA256`; в Linux выполните `sha256sum -c SHA256SUMS.txt` в папке с
+`certutil -hashfile CUSTOS-Setup-<версия>.exe SHA256`; в Linux выполните `sha256sum -c --ignore-missing SHA256SUMS.txt` в папке с
 файлами. Файлы для Windows пока не подписаны цифровой подписью: проект подал заявку на бесплатную подпись от
 SignPath Foundation, см. [политику подписи кода](CODE_SIGNING.md#по-русски).
 
 ## Подпись кода (Code signing policy) и конфиденциальность
 
-Бесплатную подпись кода предоставляет [SignPath.io](https://about.signpath.io/), сертификат выдан
-[SignPath Foundation](https://signpath.org/) (заявка подана, выпуски до 1.0.0 включительно не подписаны). Что
-подписывается, как и кем: [CODE_SIGNING.md](CODE_SIGNING.md#по-русски).
+Проект подал заявку на бесплатную подпись кода Windows в [SignPath Foundation](https://signpath.org/).
+Текущий статус и порядок подписи описаны в [политике подписи кода](CODE_SIGNING.md#по-русски).
 
 У CUSTOS нет телеметрии, авторам она ничего не отправляет. Единственное соединение, которое вы не настраиваете сами, —
 ежедневный вопрос к GitHub о новой версии, и его можно выключить: [PRIVACY.md](PRIVACY.md#по-русски).

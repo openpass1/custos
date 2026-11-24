@@ -1,20 +1,38 @@
-# CUSTOS для Windows и macOS
+# Агенты CUSTOS для Windows, macOS и Linux
 
 [English](README.md)
 
-C# / .NET 10, x64. Техническое задание: [`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), устройство интерфейса: [`docs/client-ui.md`](../docs/client-ui.md).
+[Windows](#windows) · [Windows legacy](#версия-для-windows-7-и-81) · [macOS](#macos) · [Агент Linux](#custos-для-linux)
+
+## Windows
+
+Скачайте `CUSTOS-Setup-<версия>.exe` из [выпуска](https://github.com/openpass1/custos/releases), в котором есть
+пакет для Windows, и запустите установщик от имени администратора. Для Windows 7 SP1 и 8.1 есть
+[отдельная сборка](#версия-для-windows-7-и-81).
+
+В главном окне создайте задание, добавьте источник и место хранения, затем выберите расписание. Сохраните задание,
+запустите его один раз и проверьте результат. Чтобы управлять машиной удалённо,
+[подключите её к CUSTOS Monitor](#сервер-мониторинга).
+
+## Проекты
+
+C# / .NET 10 для современных агентов, .NET 6 x86 для старых Windows. Техническое задание:
+[`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), устройство интерфейса: [`docs/client-ui.md`](../docs/client-ui.md).
 
 | Проект | Что получается | Что это |
 |---|---|---|
 | `src/Custos.Core` | `Custos.Core.dll` | Общий код: модель заданий, расписание, копирование, списки наборов, импорт из Cobian, протокол канала между интерфейсом и службой |
 | `src/Custos.Service` | `CustosService.exe` | Служба Windows (LocalSystem): вся работа — очередь, запуски, VSS, вход в сетевые папки, база |
-| `src/Custos.Gui` | `Custos.exe` | Интерфейс в трее, по одному на сеанс пользователя; только показывает состояние и передаёт команды |
+| `src/Custos.Windows`, `src/Custos.Desktop` | `Custos.exe` | Окно на Avalonia и значок в трее обычной сборки для Windows |
+| `src/Custos.Gui` | `Custos.exe` | Окно на Windows Forms и значок в трее сборки для старых Windows |
 | `src/Custos.Updater` | `Custos.Updater.exe` | Ставит обновление (с сервера мониторинга или с GitHub): останавливает службу, заменяет файлы, запускает её снова, при неудаче возвращает прежнюю версию |
 | `tests/Custos.Core.Tests` | | Тесты ядра на xUnit; в `tests/fixtures` файлы-образцы для них |
 | `tests/Custos.Gui.Tests` | | Тесты окон: открывают настоящие окна с придуманными данными (только на Windows) |
 | `src/Custos.Mac` | `Custos.app` | CUSTOS для macOS: одна программа — и служба (`Custos agent`, её запускает launchd от root), и окно со значком в строке меню (Avalonia). Служба — код `src/Custos.Service` со слоем для macOS. См. [macOS](#macos) |
 | `tests/Custos.Mac.Tests`, `tests/Custos.Mac.Shots` | | Тесты программы для macOS (её служба запускается внутри тестов, и тесты работают с ней через сокет) и картинки всех окон |
 | `mac/` | | Установщик для macOS: `build-mac.sh`, `build-7z.sh`, задания launchd, удаление |
+| `src/Custos.Linux`, `linux/` | `custos` | Служба systemd и клиент командной строки с пакетами для x86_64 и ARM64 |
+| `tests/Custos.Linux.Tests` | | Тесты агента и платформенного слоя Linux |
 | `installer/custos.iss` | | Скрипт Inno Setup |
 
 ## Сборка
@@ -177,8 +195,9 @@ CUSTOS для Linux — агент резервного копирования L
 x86_64 или ARM64 (aarch64), glibc 2.28 или новее и systemd: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux, Rocky и
 Oracle Linux 8+, openSUSE 15. На Alpine и CentOS 7 программа не работает.
 
-**Установка с сайта** (сайт мониторинга 1.4.0 или новее). На сайте откройте **«Установка»** (или **«Машины»** →
-**«Добавить машину»**), скопируйте команду для Linux и выполните её на сервере:
+**Установка из Monitor** (рекомендуется версия 1.4.1 или новее). Сначала скачайте или загрузите пакет обновления агента
+Linux в **«Обновлениях»**. Затем откройте **«Установка»** (или **«Машины»** → **«Добавить машину»**), скопируйте команду
+для Linux и выполните её на Linux-сервере:
 
 ```sh
 curl -fsSL 'https://backup.example.lan/install/linux/<метка>' | sudo bash
@@ -187,15 +206,20 @@ curl -fsSL 'https://backup.example.lan/install/linux/<метка>' | sudo bash
 (`wget -qO- '…' | sudo bash`, если curl нет.) Команда скачивает с сайта программу для процессора сервера (пакет для
 Linux в **«Обновлениях»**), проверяет её SHA-256, ставит в `/opt/custos`, запускает службу `custos` и подключает её к
 сайту, где машина ждёт одобрения в разделе **«Машины»**. Метка в адресе получена из ключа регистрации: после смены
-ключа старые команды перестают работать. На сайте должен быть пакет `custos-linux-<версия>.zip` в **«Обновлениях»**
-(загрузите его или скачайте там с GitHub). Сервер должен открывать сайт, а его адрес должен входить в сети,
+ключа старые команды перестают работать. Пакет обновления называется `custos-linux-<версия>.zip`. Сервер должен
+открывать сайт, а его адрес должен входить в сети,
 разрешённые для агентов. Нужные программе пакеты (libicu, OpenSSL, cifs-utils) ставятся сами, если их нет.
 
-**Установка с GitHub** (другой способ): `install.sh` скачивает архив для своего процессора из последнего выпуска,
-в котором есть CUSTOS для Linux, а строка подключения с сайта подключает его.
+**Установка из архива выпуска GitHub.** Скачайте `custos-linux-x64.tar.gz` или `custos-linux-arm64.tar.gz` и
+`SHA256SUMS.txt` из одного [выпуска](https://github.com/openpass1/custos/releases). В папке скачивания проверьте
+архив, извлеките установщик и передайте ему строку подключения со страницы **«Установка»** в Monitor.
+Для ARM64 замените имя архива в первой строке.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/openpass1/custos/main/client/linux/install.sh | sudo bash -s -- 'http://backup.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14'
+archive=custos-linux-x64.tar.gz
+awk -v name="$archive" '$2 == name' SHA256SUMS.txt | sha256sum --check - &&
+  tar -xzf "$archive" ./install.sh &&
+  sudo bash ./install.sh --archive "$archive" '<строка подключения из Monitor>'
 ```
 
 **Снимки вместо VSS.** «Читать файлы из снимка» на время запуска делает снимок LVM логического тома, снимок btrfs
