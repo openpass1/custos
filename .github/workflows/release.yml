@@ -288,13 +288,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Build the native Linux libraries
+        run: bash client/linux/build-native-linux.sh client/artifacts-linux/native-${{ matrix.arch }}
+
       - name: Build the archive of the program
         env:
           VERSION: ${{ needs.check.outputs.version }}
-        run: |
-          set -euo pipefail
-          bash client/linux/build-native-linux.sh client/artifacts-linux/native-${{ matrix.arch }}
-          bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
+          # The same Desktop app as Windows can receive the Google callback on a loopback address on Linux.
+          CUSTOS_GDRIVE_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_GDRIVE_CLIENT_ID || '' }}
+          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ github.event_name == 'workflow_dispatch' && secrets.CUSTOS_GDRIVE_CLIENT_SECRET || '' }}
+        run: bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
 
       - uses: actions/upload-artifact@v6
         with:

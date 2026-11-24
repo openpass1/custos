@@ -49,18 +49,21 @@ final class Agents
      * The same public key always maps to the same agent, so a repeated registration does not create duplicates.
      * A new key on a machine that is already known becomes a pending re-registration of that machine.
      *
-     * @param array{hostname: string, machine_guid: string, os: string, agent_version: string, edition?: string, time_zone: string} $info
+     * @param array{hostname: string, machine_guid: string, os: string, agent_version: string, edition?: string, cloud_destinations?: bool, time_zone: string} $info
      */
     public function register(array $info, OpenSSLAsymmetricKey $publicKey, string $ip): array
     {
         $sha = hash('sha256', Crypto::publicDer($publicKey));
         return $this->db->transaction(function () use ($info, $publicKey, $sha, $ip) {
+            $cloudDestinations = self::isLinux($info) && ($info['cloud_destinations'] ?? false);
             $existing = $this->db->one('SELECT id, status FROM agents WHERE key_sha256 = ? FOR UPDATE', [$sha]);
             if ($existing !== null) {
                 $this->db->exec(
-                    'UPDATE agents SET hostname = ?, machine_guid = ?, os = ?, agent_version = ?, edition = ?, time_zone = ?, last_ip = ?
+                    'UPDATE agents SET hostname = ?, machine_guid = ?, os = ?, agent_version = ?, edition = ?,
+                                       cloud_destinations = ?, time_zone = ?, last_ip = ?
                      WHERE id = ?',
-                    [$info['hostname'], $info['machine_guid'], $info['os'], $info['agent_version'], $info['edition'] ?? '', $info['time_zone'], $ip, $existing['id']]
+                    [$info['hostname'], $info['machine_guid'], $info['os'], $info['agent_version'], $info['edition'] ?? '',
+                     $cloudDestinations, $info['time_zone'], $ip, $existing['id']]
                 );
                 return $existing;
             }
@@ -71,12 +74,12 @@ final class Agents
             $id = Crypto::uuid4();
             $this->db->exec(
                 'INSERT INTO agents (id, status, hostname, machine_guid, public_key, key_sha256, key_fingerprint, reregistration_of,
-                                     os, agent_version, edition, time_zone, last_ip, first_seen_at)
-                 VALUES (?, \'pending\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                     os, agent_version, edition, cloud_destinations, time_zone, last_ip, first_seen_at)
+                 VALUES (?, \'pending\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     $id, $info['hostname'], $info['machine_guid'], Crypto::publicPem($publicKey), $sha,
                     Crypto::fingerprint($publicKey), $previous['id'] ?? null, $info['os'], $info['agent_version'], $info['edition'] ?? '',
-                    $info['time_zone'], $ip, Time::now(),
+                    $cloudDestinations, $info['time_zone'], $ip, Time::now(),
                 ]
             );
             if ($previous === null) {
@@ -91,17 +94,18 @@ final class Agents
     /**
      * Stores what the heartbeat says (A.4).
      *
-     * @param array{agent_version: string, edition?: string, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>, sevenzip_version?: ?string} $hb
+     * @param array{agent_version: string, edition?: string, cloud_destinations?: bool, time_zone: string, service_started_at: ?string, state: string, running: ?array, queue: list<string>, sevenzip_version?: ?string} $hb
      */
     public function heartbeat(string $id, array $hb, string $ip, string $status): void
     {
         $this->monitor->presence($id, $status, time());
         $this->db->exec(
-            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, edition = ?, sevenzip_version = ?, time_zone = ?,
-                               service_started_at = ?, state = ?, running = ?, queue = ?
+            'UPDATE agents SET last_heartbeat_at = ?, last_ip = ?, agent_version = ?, edition = ?, cloud_destinations = ?,
+                               sevenzip_version = ?, time_zone = ?, service_started_at = ?, state = ?, running = ?, queue = ?
              WHERE id = ?',
             [
-                Time::now(), $ip, $hb['agent_version'], $hb['edition'] ?? '', $hb['sevenzip_version'] ?? null, $hb['time_zone'],
+                Time::now(), $ip, $hb['agent_version'], $hb['edition'] ?? '', self::isLinux($hb) && ($hb['cloud_destinations'] ?? false),
+                $hb['sevenzip_version'] ?? null, $hb['time_zone'],
                 $hb['service_started_at'], $hb['state'],
                 $hb['running'] === null ? null : json_encode($hb['running'], JSON_UNESCAPED_SLASHES),
                 json_encode($hb['queue'], JSON_UNESCAPED_SLASHES),
@@ -126,8 +130,7 @@ final class Agents
     }
 
     /**
-     * Whether the machine runs CUSTOS for Linux: snapshots of LVM, btrfs or ZFS instead of VSS, 7-Zip inside the
-     * program, and no cloud drives yet (their sign-in needs the window of the program).
+     * Whether the machine runs CUSTOS for Linux: snapshots of LVM, btrfs or ZFS instead of VSS, and 7-Zip inside the program.
      */
     public static function isLinux(array $agent): bool
     {
@@ -135,13 +138,13 @@ final class Agents
     }
 
     /**
-     * Whether tasks of the machine may write to cloud drives: not with the edition for Windows 7 and 8.1, and not with
-     * CUSTOS for Linux, which has no window to sign in to an account. Null when they may, otherwise the edition (the
-     * messages say why by it).
+     * The edition of a machine without cloud drives, or null when tasks may use them.
+     * Linux agents must advertise support. The edition for Windows 7 and 8.1 never supports cloud drives.
      */
     public static function withoutCloud(array $agent): ?string
     {
-        return self::isLegacy($agent) || self::isLinux($agent) ? (string) $agent['edition'] : null;
+        return self::isLegacy($agent) || (self::isLinux($agent) && empty($agent['cloud_destinations']))
+            ? (string) $agent['edition'] : null;
     }
 
     /** The edition as stored: what the agent sent when the site knows it, otherwise the standard one (''). */
@@ -178,12 +181,13 @@ final class Agents
             $this->db->exec(
                 "UPDATE agents SET id = ?, status = 'approved', approved_at = ?, reregistration_of = NULL,
                         hostname = ?, machine_guid = ?, public_key = ?, key_sha256 = ?, key_fingerprint = ?, os = ?,
-                        agent_version = ?, edition = ?, time_zone = ?, last_ip = ?, last_heartbeat_at = ?, service_started_at = ?,
-                        state = ?, running = ?, queue = ?, config_revision = NULL
+                        agent_version = ?, edition = ?, cloud_destinations = ?, time_zone = ?, last_ip = ?, last_heartbeat_at = ?,
+                        service_started_at = ?, state = ?, running = ?, queue = ?, config_revision = NULL
                  WHERE id = ?",
                 [
                     $newId, Time::now(), $new['hostname'], $new['machine_guid'], $new['public_key'], $new['key_sha256'],
-                    $new['key_fingerprint'], $new['os'], $new['agent_version'], $new['edition'], $new['time_zone'], $new['last_ip'],
+                    $new['key_fingerprint'], $new['os'], $new['agent_version'], $new['edition'], $new['cloud_destinations'],
+                    $new['time_zone'], $new['last_ip'],
                     $new['last_heartbeat_at'], $new['service_started_at'], $new['state'], $new['running'], $new['queue'],
                     $oldId,
                 ]

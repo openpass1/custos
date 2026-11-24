@@ -496,11 +496,11 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.RestoreList =>
                 PipeMessage.Success(id, agent.ListRestoreSets(request.GetData(json.RestoreListRequest)), json.RestoreListResult),
             PipeProtocol.Methods.RestoreStart =>
-                Ok(id, agent.StartRestore(request.GetData(json.RestoreStartRequest), user)),
+                PipeMessage.Success(id, agent.StartRestore(request.GetData(json.RestoreStartRequest), user), json.RestoreStartResult),
             PipeProtocol.Methods.RestoreStatus =>
                 PipeMessage.Success(id, agent.GetRestoreStatus(), json.RestoreStatusResult),
             PipeProtocol.Methods.RestoreStop =>
-                Ok(id, agent.StopRestore(user)),
+                Ok(id, agent.StopRestore(request.GetData(json.RestoreStopRequest), user)),
             PipeProtocol.Methods.PowerCancel =>
                 Ok(id, agent.CancelPower(user)),
             PipeProtocol.Methods.ServerConnect => ServerConnect(id, request.GetData(json.ServerConnectRequest), user),
@@ -511,7 +511,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
             PipeProtocol.Methods.CloudAppsGet =>
                 PipeMessage.Success(id, agent.GetCloudApps(), json.CloudAppsResult),
             PipeProtocol.Methods.CloudAppsSave =>
-                Ok(id, agent.SaveCloudApps(request.GetData(json.CloudAppsSaveRequest).Apps, user)),
+                Ok(id, agent.SaveCloudApps(request.GetData(json.CloudAppsSaveRequest), user)),
             PipeProtocol.Methods.ServerReset =>
                 Ok(id, agent.ResetServer(user)),
             _ => PipeMessage.Failure(id, PipeProtocol.Errors.UnknownMethod, $"Unknown method '{request.Method}'."),

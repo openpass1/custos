@@ -1056,13 +1056,20 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('снимок тома (LVM, btrfs, ZFS) для открытых файлов', $editor);
         $this->assertStringContainsString('сохранять владельцев и права', $editor);
         $this->assertStringContainsString('/var/www', $editor);
-        $this->assertStringNotContainsString('value="gdrive"', $editor, 'no cloud drives on Linux');
+        $this->assertStringNotContainsString('value="gdrive"', $editor, 'no cloud drives until the Linux agent reports support');
+        $this->db()->exec("UPDATE agents SET cloud_destinations = 1 WHERE id = ?", [$id[1]]);
+        $cloudEditor = $this->http('GET', "$agentUrl/tasks/new")[1];
+        foreach (['gdrive', 'yadisk', 'dropbox'] as $provider) {
+            $this->assertStringContainsString('value="' . $provider . '"', $cloudEditor);
+        }
+        $this->assertStringContainsString('sudo custos cloud login', $cloudEditor);
         [, $settings] = $this->http('GET', "$agentUrl/settings");
         $this->assertStringNotContainsString('Значок в трее', $settings, 'a server has no tray');
 
         // A disk added to the group: the agent says the volume is fine, and the problems close.
         [$exit, $output] = $this->fakeAgent(['--name=WEB-SRV', '--linux', '--snapshot=ok', '--result=success', '--skip-schedule']);
         $this->assertSame(0, $exit, $output);
+        $this->assertStringNotContainsString('value="gdrive"', $this->http('GET', "$agentUrl/tasks/new")[1], 'older Linux heartbeat clears support');
         $this->assertSame(0, $open());
         $this->assertSame(4, (int) $this->db()->value("SELECT COUNT(*) FROM problems WHERE agent_id = ? AND kind = 'snapshot' AND closed_by = 'snapshot_ok'", [$id[1]]));
 

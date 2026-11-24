@@ -74,7 +74,8 @@ public sealed class LoopbackReceiver : IDisposable
     /// shows <paramref name="page"/> to the browser and returns the path with the query (<c>/?code=…</c>). Other
     /// requests (the icon of the page, a stray visit) get "not found" and the wait goes on.
     /// </summary>
-    public async Task<string> WaitAsync(string page, CancellationToken cancellationToken)
+    /// <param name="expectedState">When set, accept only callbacks carrying this OAuth state.</param>
+    public async Task<string> WaitAsync(string page, CancellationToken cancellationToken, string? expectedState = null)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stop.Token);
         var pending = new List<Task<TcpClient>>();
@@ -94,7 +95,7 @@ public sealed class LoopbackReceiver : IDisposable
             listeners.Remove(done);
             using (var client = await done.ConfigureAwait(false))
             {
-                string? target = await HandleAsync(client, page, linked.Token).ConfigureAwait(false);
+                string? target = await HandleAsync(client, page, expectedState, linked.Token).ConfigureAwait(false);
                 if (target is not null)
                 {
                     return target;
@@ -119,7 +120,7 @@ public sealed class LoopbackReceiver : IDisposable
     }
 
     /// <summary>Whether a request target is the answer of the service: the root with a code or an error.</summary>
-    internal static bool IsAnswer(string target)
+    internal static bool IsAnswer(string target, string? expectedState = null)
     {
         int query = target.IndexOf('?', StringComparison.Ordinal);
         if (query < 0 || target[..query] != "/")
@@ -127,10 +128,20 @@ public sealed class LoopbackReceiver : IDisposable
             return false;
         }
 
-        return target[(query + 1)..].Split('&').Any(p => p.StartsWith("code=", StringComparison.Ordinal) || p.StartsWith("error=", StringComparison.Ordinal));
+        string[] parts = target[(query + 1)..].Split('&');
+        if (!parts.Any(p => p.StartsWith("code=", StringComparison.Ordinal) || p.StartsWith("error=", StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        // Reject missing and duplicate state parameters, including percent-encoded names.
+        return expectedState is null || parts.Select(part => part.Split('=', 2))
+            .Where(pair => WebUtility.UrlDecode(pair[0]) == "state")
+            .Select(pair => pair.Length == 2 ? WebUtility.UrlDecode(pair[1]) : string.Empty)
+            .SequenceEqual([expectedState], StringComparer.Ordinal);
     }
 
-    private static async Task<string?> HandleAsync(TcpClient client, string page, CancellationToken cancellationToken)
+    private static async Task<string?> HandleAsync(TcpClient client, string page, string? expectedState, CancellationToken cancellationToken)
     {
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         limit.CancelAfter(TimeSpan.FromSeconds(15));
@@ -150,7 +161,7 @@ public sealed class LoopbackReceiver : IDisposable
             return null;
         }
 
-        bool answer = target is not null && IsAnswer(target);
+        bool answer = target is not null && IsAnswer(target, expectedState);
         try
         {
             byte[] body = Encoding.UTF8.GetBytes(answer
@@ -158,7 +169,7 @@ public sealed class LoopbackReceiver : IDisposable
                     + WebUtility.HtmlEncode(page) + "</p></body></html>"
                 : "Not found");
             string head = (answer ? "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n" : "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n")
-                + "Cache-Control: no-store\r\nConnection: close\r\nContent-Length: " + body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\r\n\r\n";
+                + "Cache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\nContent-Length: " + body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\r\n\r\n";
             await stream.WriteAsync(Encoding.ASCII.GetBytes(head), limit.Token).ConfigureAwait(false);
             await stream.WriteAsync(body, limit.Token).ConfigureAwait(false);
             await stream.FlushAsync(limit.Token).ConfigureAwait(false);

@@ -192,7 +192,6 @@ final class Templates
             } elseif (TaskEdits::remoteEditOff($agent)) {
                 $error = ['key' => 'templates.apply.remote_edit_off', 'params' => []];
             } elseif (($edition = Agents::withoutCloud($agent)) !== null && TaskForm::cloudKinds($template['task']) !== []) {
-                // The edition for Windows 7 and 8.1 and CUSTOS for Linux have no cloud drives.
                 $error = ['key' => 'templates.apply.cloud_' . $edition, 'params' => []];
             } else {
                 $task = self::machineTask($template, $agent['id']);

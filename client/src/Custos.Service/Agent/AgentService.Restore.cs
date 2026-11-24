@@ -53,6 +53,7 @@ internal sealed partial class AgentService
                     {
                         Location = set.Location,
                         Where = place.Label,
+                        DestinationId = place.DestinationId,
                         Header = set.Header,
                         Storage = set.Storage == SetStorage.Folder ? "folder" : set.Format ?? ArchiveFormats.SevenZip,
                         Bytes = set.Bytes,
@@ -66,7 +67,7 @@ internal sealed partial class AgentService
         return result;
     }
 
-    public OkResult StartRestore(RestoreStartRequest request, string user)
+    public RestoreStartResult StartRestore(RestoreStartRequest request, string user)
     {
         lock (_restoreLock)
         {
@@ -92,9 +93,11 @@ internal sealed partial class AgentService
         var problems = new List<string>();
         Place? found = null;
         StoredSet? set = null;
-        foreach (var place in Places(request, problems, request.Where))
+        foreach (var place in Places(request, problems, request.Where, request.DestinationId))
         {
-            var match = found is null ? place.Sets.FirstOrDefault(s => string.Equals(s.Location, request.Location, StringComparison.OrdinalIgnoreCase)) : null;
+            var match = found is null ? place.Sets.FirstOrDefault(s =>
+                string.Equals(s.Location, request.Location, PathNames.Comparison)
+                && (request.SetRunId is null || string.Equals(s.Header.RunId, request.SetRunId, StringComparison.OrdinalIgnoreCase))) : null;
             if (match is not null)
             {
                 found = place;
@@ -112,9 +115,10 @@ internal sealed partial class AgentService
         }
 
         var started = DateTimeOffset.UtcNow;
-        string runId = "restore-" + Guid.NewGuid().ToString("N")[..8];
-        var file = RunLogFile.Create(DataFolders.RunLogs, Messages.RestoreLogName, runId, started);
-        var job = new RestoreJob(set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
+        string jobId = Guid.NewGuid().ToString("N");
+        string runId = "restore-" + jobId;
+        var file = RunLogFile.Create(DataFolders.RunLogs, Messages.RestoreLogName, jobId, started);
+        var job = new RestoreJob(jobId, set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
         lock (_restoreLock)
         {
             if (_restore is { Running: true } || _sevenZipUpdating)
@@ -141,7 +145,7 @@ internal sealed partial class AgentService
         };
         var thread = new Thread(() => RunRestore(job, found, file, log, restoreRequest)) { Name = "CUSTOS restore", IsBackground = true };
         thread.Start();
-        return OkResult.Instance;
+        return new RestoreStartResult { JobId = job.Id, LogFile = file.Path };
     }
 
     public RestoreStatusResult GetRestoreStatus()
@@ -152,11 +156,11 @@ internal sealed partial class AgentService
         }
     }
 
-    public OkResult StopRestore(string user)
+    public OkResult StopRestore(RestoreStopRequest request, string user)
     {
         lock (_restoreLock)
         {
-            if (_restore is not { Running: true } job)
+            if (_restore is not { Running: true } job || (request.JobId is not null && request.JobId != job.Id))
             {
                 return new OkResult { Ok = false, Message = Messages.RestoreNotRunning };
             }
@@ -210,7 +214,8 @@ internal sealed partial class AgentService
 
     /// <summary>The places a restore looks in: every destination of the task, or the folder; with their sets.</summary>
     /// <param name="only">The place a set was found in (<see cref="RestoreSetInfo.Where"/>): the others are not opened.</param>
-    private List<Place> Places(RestoreSource request, List<string> problems, string? only = null)
+    /// <param name="destinationId">The id of the task destination if one was selected.</param>
+    private List<Place> Places(RestoreSource request, List<string> problems, string? only = null, string? destinationId = null)
     {
         var places = new List<Place>();
         if (request.TaskId is { } taskId)
@@ -232,6 +237,11 @@ internal sealed partial class AgentService
             var variables = PathVariables.For(Platform, task, DateTime.Now);
             foreach (var destination in task.Clone().Destinations)
             {
+                if (destinationId is not null && !string.Equals(destination.Id, destinationId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 // Variables in the path are filled in as for a run now; a date in the path finds this month's sets.
                 destination.Path = variables.Expand(destination.Path, out string? problem);
                 if (problem is not null)
@@ -246,7 +256,7 @@ internal sealed partial class AgentService
                     continue;
                 }
 
-                if (OpenPlace(label, () => Platform.OpenStore(destination), password, taskId, problems) is { } place)
+                if (OpenPlace(label, () => Platform.OpenStore(destination), password, taskId, problems, destination.Id) is { } place)
                 {
                     places.Add(place);
                 }
@@ -294,7 +304,7 @@ internal sealed partial class AgentService
         return places;
     }
 
-    private Place? OpenPlace(string label, Func<DestinationStore> open, string? password, string? taskId, List<string> problems)
+    private Place? OpenPlace(string label, Func<DestinationStore> open, string? password, string? taskId, List<string> problems, string? destinationId = null)
     {
         DestinationStore? store = null;
         try
@@ -308,7 +318,7 @@ internal sealed partial class AgentService
             var access = new ArchiveAccess(Platform.Archives, password, store);
             var sets = SetCatalog.Scan(store, store.Root, taskId, access,
                 (path, reason) => problems.Add(Messages.Format(Messages.ArchiveSkipped, path, reason)), mirror: true);
-            var place = new Place(label, store, access, sets);
+            var place = new Place(label, store, access, sets, destinationId);
             store = null;
             return place;
         }
@@ -324,9 +334,10 @@ internal sealed partial class AgentService
     }
 
     /// <summary>A destination opened for a restore: its logon or connection stays open until the restore is done.</summary>
-    private sealed class Place(string label, DestinationStore store, ArchiveAccess access, List<StoredSet> sets) : IDisposable
+    private sealed class Place(string label, DestinationStore store, ArchiveAccess access, List<StoredSet> sets, string? destinationId) : IDisposable
     {
         public string Label { get; } = label;
+        public string? DestinationId { get; } = destinationId;
 
         public ArchiveAccess Access { get; } = access;
 
@@ -336,10 +347,11 @@ internal sealed partial class AgentService
     }
 
     /// <summary>The restore in progress, or the last one.</summary>
-    private sealed class RestoreJob(string setName, string target, DateTimeOffset startedAt, string logFile) : IDisposable
+    private sealed class RestoreJob(string id, string setName, string target, DateTimeOffset startedAt, string logFile) : IDisposable
     {
         private readonly CancellationTokenSource _cancel = new();
 
+        public string Id { get; } = id;
         public string SetName { get; } = setName;
 
         public string Target { get; } = target;
@@ -369,6 +381,7 @@ internal sealed partial class AgentService
         public RestoreStatusResult Describe() => new()
         {
             Running = Running,
+            JobId = Id,
             SetName = SetName,
             Target = Target,
             StartedAt = startedAt,

@@ -222,6 +222,7 @@ final class AgentApi
                 'os' => $in->string('os'),
                 'agent_version' => $in->string('agent_version', 32),
                 'edition' => Agents::edition($in->string('edition', 32, true)),
+                'cloud_destinations' => $in->bool('cloud_destinations', true) ?? false,
                 'time_zone' => self::timeZone($in),
             ];
             $publicKey = Crypto::loadPublicKey($in->string('public_key', 16384));
@@ -254,6 +255,7 @@ final class AgentApi
         $hb = [
             'agent_version' => $in->string('agent_version', 32),
             'edition' => Agents::edition($in->string('edition', 32, true)),
+            'cloud_destinations' => $in->bool('cloud_destinations', true) ?? false,
             'config_revision' => $in->int('config_revision', true),
             'time_zone' => self::timeZone($in),
             'service_started_at' => $in->time('service_started_at', true),

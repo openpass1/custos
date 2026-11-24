@@ -16,6 +16,12 @@ How to write it:
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
+## 1.4.0
+
+### Added
+- Linux: List and restore backup sets from the terminal, with progress, status and cancellation.
+- Linux: Sign in to Google Drive, Yandex Disk and Dropbox from the terminal for use as backup destinations.
+
 ## 1.3.0
 
 ### Added

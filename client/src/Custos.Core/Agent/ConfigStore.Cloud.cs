@@ -20,12 +20,32 @@ public sealed partial class ConfigStore
     }
 
     /// <summary>Stores the own applications. Accounts connected before keep the application that issued their token.</summary>
-    public void SaveCloudApps(CloudAppsFile apps)
+    public void SaveCloudApps(CloudAppsFile apps, string? kind = null)
     {
         ArgumentNullException.ThrowIfNull(apps);
-        var clean = new CloudAppsFile { Gdrive = Clean(apps.Gdrive), Yadisk = Clean(apps.Yadisk), Dropbox = Clean(apps.Dropbox) };
+        if (kind is not null && !DestinationKinds.IsCloudDrive(kind))
+        {
+            throw new ConfigException(Messages.Format(Messages.DestinationKindNotSupported, kind));
+        }
+
         lock (_lock)
         {
+            var clean = kind is null ? new CloudAppsFile() : GetCloudApps();
+            if (kind is null or DestinationKinds.GDrive)
+            {
+                clean.Gdrive = Clean(apps.Gdrive);
+            }
+
+            if (kind is null or DestinationKinds.YaDisk)
+            {
+                clean.Yadisk = Clean(apps.Yadisk);
+            }
+
+            if (kind is null or DestinationKinds.Dropbox)
+            {
+                clean.Dropbox = Clean(apps.Dropbox);
+            }
+
             WriteJson(CloudAppsFileName, clean, ConfigJsonContext.Default.CloudAppsFile);
         }
 

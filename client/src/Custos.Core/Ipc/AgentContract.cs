@@ -489,6 +489,9 @@ public sealed class CloudAppsResult
 public sealed class CloudAppsSaveRequest
 {
     public required Cloud.CloudAppsFile Apps { get; set; }
+
+    /// <summary>Only change this provider's application. Null replaces all applications as before.</summary>
+    public string? Kind { get; set; }
 }
 
 public sealed class CredentialRequest
@@ -757,6 +760,9 @@ public sealed class RestoreSetInfo
     /// <summary>Where it was found, in words: the destination of the task or the folder.</summary>
     public string Where { get; set; } = string.Empty;
 
+    /// <summary>The task destination id, if the set was found through a task.</summary>
+    public string? DestinationId { get; set; }
+
     public required SetManifestHeader Header { get; set; }
 
     /// <summary><c>folder</c>, <c>zip</c> or <c>7z</c>.</summary>
@@ -784,9 +790,15 @@ public sealed class RestoreStartRequest : RestoreSource
     /// <summary><see cref="RestoreSetInfo.Location"/> of the set whose date to restore.</summary>
     public required string Location { get; set; }
 
+    /// <summary>If given, the set at <see cref="Location"/> must still have this run id.</summary>
+    public string? SetRunId { get; set; }
+
     /// <summary><see cref="RestoreSetInfo.Where"/> of that set: the destination it lies in. Tells apart sets of the
     /// same name on two servers and saves connecting to the others; null looks in every destination.</summary>
     public string? Where { get; set; }
+
+    /// <summary>When searching by task, open only this destination, even if several have the same label.</summary>
+    public string? DestinationId { get; set; }
 
     /// <summary>Folder to restore into; null = the original places.</summary>
     public string? TargetFolder { get; set; }
@@ -800,11 +812,26 @@ public sealed class RestoreStartRequest : RestoreSource
     public RestoreExisting Existing { get; set; } = RestoreExisting.Skip;
 }
 
+/// <summary>The restore accepted by the service. Older callers read it as <see cref="OkResult"/>.</summary>
+public sealed class RestoreStartResult
+{
+    public bool Ok { get; set; } = true;
+    public required string JobId { get; set; }
+    public required string LogFile { get; set; }
+}
+
+public sealed class RestoreStopRequest
+{
+    /// <summary>If given, stop only this restore. With no id, stop the restore currently running.</summary>
+    public string? JobId { get; set; }
+}
+
 /// <summary>The restore in progress or the last one (<see cref="PipeProtocol.Methods.RestoreStatus"/>).</summary>
 public sealed class RestoreStatusResult
 {
     public bool Running { get; set; }
 
+    public string? JobId { get; set; }
     public string? SetName { get; set; }
 
     public string? Target { get; set; }

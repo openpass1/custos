@@ -15,7 +15,7 @@ namespace Custos.Linux.Cli;
 /// through its socket as the window does, so it shows the same state and may do what the account may do (root and the
 /// members of sudo or wheel everything, the others look). Tasks are made and changed on the monitoring site.
 /// </summary>
-internal static class Commands
+internal static partial class Commands
 {
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(60);
@@ -33,6 +33,8 @@ internal static class Commands
                 "run" => await RunTaskAsync(rest).ConfigureAwait(false),
                 "stop" => await StopAsync(rest).ConfigureAwait(false),
                 "log" => await LogAsync(rest).ConfigureAwait(false),
+                "restore" => await RestoreAsync(rest).ConfigureAwait(false),
+                "cloud" => await CloudAsync(rest).ConfigureAwait(false),
                 "connect" => await ConnectAsync(rest).ConfigureAwait(false),
                 "disconnect" => await DisconnectAsync().ConfigureAwait(false),
                 "version" or "v" => Version(),
@@ -401,9 +403,21 @@ internal static class Commands
             }
         }
 
-        public Task<TResult> RequestAsync<TParams, TResult>(string method, TParams parameters,
-            System.Text.Json.Serialization.Metadata.JsonTypeInfo<TParams> parametersType, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> resultType) =>
-            _client.RequestAsync(method, parameters, parametersType, resultType, CancellationToken.None).WaitAsync(RequestTimeout);
+        public async Task<TResult> RequestAsync<TParams, TResult>(string method, TParams parameters,
+            System.Text.Json.Serialization.Metadata.JsonTypeInfo<TParams> parametersType, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResult> resultType,
+            TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+        {
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            limit.CancelAfter(timeout ?? RequestTimeout);
+            try
+            {
+                return await _client.RequestAsync(method, parameters, parametersType, resultType, limit.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && limit.IsCancellationRequested)
+            {
+                throw new TimeoutException();
+            }
+        }
 
         public Task<AgentSnapshot> SnapshotAsync() =>
             RequestAsync(PipeProtocol.Methods.Snapshot, EmptyRequest.Instance, IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.AgentSnapshot);

@@ -47,6 +47,10 @@ public sealed class RegisterBody
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Edition { get; set; } = CustosEdition.Wire;
 
+    /// <summary>Sent by Linux agents that support cloud drives (A.3).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? CloudDestinations { get; set; } = CustosEdition.IsLinux ? true : null;
+
     public required string TimeZone { get; set; }
 
     public required string PublicKey { get; set; }
@@ -72,6 +76,10 @@ public sealed class HeartbeatBody
     /// <summary><c>legacy</c> for the edition for Windows 7 and 8.1; not sent by the standard edition (A.4).</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Edition { get; set; } = CustosEdition.Wire;
+
+    /// <summary>Sent by Linux agents that support cloud drives (A.4).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? CloudDestinations { get; set; } = CustosEdition.IsLinux ? true : null;
 
     public string? SevenzipVersion { get; set; }
 

@@ -46,8 +46,7 @@ public sealed class CloudService
     /// </summary>
     public string? CodeOnScreen { get; private init; }
 
-    /// <summary>The service cannot do without the client secret (Google, even for desktop applications); the others
-    /// take one when the application has it.</summary>
+    /// <summary>The Linux command needs an app secret for Google sign-in and Yandex token renewal.</summary>
     public bool NeedsSecret { get; private init; }
 
     public static CloudService GDrive { get; } = new(DestinationKinds.GDrive)
@@ -71,6 +70,7 @@ public sealed class CloudService
         LoopbackPort = FixedPort,
         LoopbackHost = "localhost",
         CodeOnScreen = "https://oauth.yandex.ru/verification_code",
+        NeedsSecret = true,
     };
 
     public static CloudService Dropbox { get; } = new(DestinationKinds.Dropbox)

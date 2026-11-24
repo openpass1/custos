@@ -13,12 +13,12 @@ use Custos\Domain\Agents;
 use Custos\Domain\TaskForm;
 
 $machine = !$templateMode && isset($agent) && is_array($agent) ? $agent : null;
-// The edition for Windows 7 and 8.1 and CUSTOS for Linux have no cloud drives: they are not offered for their machines.
 $withoutCloud = $machine === null ? null : Agents::withoutCloud($machine);
 // CUSTOS for macOS: Mac paths in the examples, and an APFS snapshot where Windows takes a VSS shadow copy.
 $mac = $machine !== null && Agents::isMac($machine);
 // CUSTOS for Linux: Linux paths, a snapshot of the LVM, btrfs or ZFS volume, owners and permissions instead of NTFS.
 $linux = $machine !== null && Agents::isLinux($machine);
+$cloudNote = $templateMode ? 'task_form.cloud.note_template' : ($linux ? 'task_form.cloud.note_linux' : 'task_form.cloud.note');
 $vssText = fn(string $key): string => t($mac ? $key . '_mac' : ($linux ? $key . '_linux' : $key));
 $aclText = fn(string $key): string => t($linux ? $key . '_linux' : $key);
 
@@ -39,7 +39,7 @@ $force = $sub('force_full');
 $lines = fn($list) => implode("\n", array_map('strval', is_array($list) ? array_filter($list, 'is_scalar') : []));
 
 /** The account of a source or destination: none, an existing one of the right kind, or a new one typed in here. */
-$credentialField = function (string $prefix, array $item) use ($credentials, $templateMode): string {
+$credentialField = function (string $prefix, array $item) use ($credentials, $templateMode, $cloudNote): string {
     $current = $item['credential_id'] ?? null;
     $new = isset($item['_cred']);
     $typed = (array) ($item['_cred'] ?? []);
@@ -76,7 +76,7 @@ $credentialField = function (string $prefix, array $item) use ($credentials, $te
             <?php endif ?>
         </div>
         <?php if ($templateMode): ?><p class="note" data-show-if="credential=new"><?= e(t('task_form.cred_template')) ?></p><?php endif ?>
-        <p class="note" data-show-if="kind=<?= e($cloud) ?>"><?= e(t($templateMode ? 'task_form.cloud.note_template' : 'task_form.cloud.note')) ?></p>
+        <p class="note" data-show-if="kind=<?= e($cloud) ?>"><?= e(t($cloudNote)) ?></p>
     </div>
     <?php return (string) ob_get_clean();
 };

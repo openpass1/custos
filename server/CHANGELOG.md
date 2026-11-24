@@ -14,6 +14,9 @@ How to write it:
 
 ## 1.4.2
 
+### Added
+- Linux agents that support cloud drives can use Google Drive, Yandex Disk and Dropbox as task destinations.
+
 ### Fixed
 - Improve text and button contrast for pending machines in the Graphite and Blue colour schemes.
 
