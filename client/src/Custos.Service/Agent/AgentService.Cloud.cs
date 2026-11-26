@@ -38,8 +38,20 @@ internal sealed partial class AgentService
         }
 
         var service = CloudService.Of(request.Kind);
-        var app = CloudApps.ForConnect(request.Kind, _config.GetCloudApps())
-            ?? throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.CloudAppMissing, service.Name));
+        var app = CloudApps.ForConnect(request.Kind, _config.GetCloudApps());
+#if CUSTOS_LINUX
+        if (app is null || (service.NeedsSecret && string.IsNullOrWhiteSpace(app.ClientSecret)))
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Custos.Service.Platform.LinuxStrings.Format(
+                Custos.Service.Platform.LinuxStrings.CliCloudAppMissing, service.Name, service.Kind));
+        }
+#else
+        if (app is null)
+        {
+            throw new AgentRequestException(PipeProtocol.Errors.Invalid, Messages.Format(Messages.CloudAppMissing, service.Name));
+        }
+#endif
+
         var authorization = CloudAuthorization.Begin(service, app, request.RedirectUri);
         lock (_signIns)
         {
@@ -111,10 +123,18 @@ internal sealed partial class AgentService
         BuiltIn = [.. ((string[])[DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox]).Where(k => CloudApps.BuiltIn(k) is not null)],
     };
 
-    public OkResult SaveCloudApps(CloudAppsFile apps, string user)
+    public OkResult SaveCloudApps(CloudAppsSaveRequest request, string user)
     {
-        ArgumentNullException.ThrowIfNull(apps);
-        _config.SaveCloudApps(apps);
+        ArgumentNullException.ThrowIfNull(request);
+        try
+        {
+            _config.SaveCloudApps(request.Apps, request.Kind);
+        }
+        catch (Core.Agent.ConfigException ex)
+        {
+            throw Refused(ex);
+        }
+
         Log(LogLineLevels.Info, Messages.Format(Messages.CloudAppsSaved, user));
         return OkResult.Instance;
     }

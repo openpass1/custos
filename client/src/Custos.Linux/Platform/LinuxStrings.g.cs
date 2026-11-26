@@ -184,4 +184,91 @@ static partial class LinuxStrings
 
     /// <summary>no snapshots</summary>
     public static string CliSnapNone => Get(nameof(CliSnapNone));
+
+    /// <summary>Usage:</summary>
+    public static string CliRestoreHelp => Get(nameof(CliRestoreHelp));
+
+    /// <summary>redirect one archive password line to standard input when using --password-stdin</summary>
+    public static string CliRestorePasswordInput => Get(nameof(CliRestorePasswordInput));
+
+    /// <summary>no archive password was read from standard input</summary>
+    public static string CliRestorePasswordMissing => Get(nameof(CliRestorePasswordMissing));
+
+    /// <summary>No backup sets found.</summary>
+    public static string CliRestoreNoSets => Get(nameof(CliRestoreNoSets));
+
+    /// <summary>{0}  {1}  {2} [{3}]  {4}</summary>
+    public static string CliRestoreListLine => Get(nameof(CliRestoreListLine));
+
+    /// <summary>backup set «{0}» was not found: check custos restore list</summary>
+    public static string CliRestoreSetNotFound => Get(nameof(CliRestoreSetNotFound));
+
+    /// <summary>backup set «{0}» occurs at multiple destinations: choose its id with --destination</summary>
+    public static string CliRestoreSetAmbiguous => Get(nameof(CliRestoreSetAmbiguous));
+
+    /// <summary>the service did not confirm the start; check custos restore status before retrying: {0}</summary>
+    public static string CliRestoreStartUnknown => Get(nameof(CliRestoreStartUnknown));
+
+    /// <summary>Restoring «{0}» to {1}.</summary>
+    public static string CliRestoreStarted => Get(nameof(CliRestoreStarted));
+
+    /// <summary>Stopping the restore.</summary>
+    public static string CliRestoreStopping => Get(nameof(CliRestoreStopping));
+
+    /// <summary>the status is no longer available for this restore: see {0}</summary>
+    public static string CliRestoreStatusReplaced => Get(nameof(CliRestoreStatusReplaced));
+
+    /// <summary>Restoring «{0}»: {1}/{2} files, {3:0}% ({4})</summary>
+    public static string CliRestoreProgress => Get(nameof(CliRestoreProgress));
+
+    /// <summary>Restore {0}: {1} restored, {2} skipped, {3} failed, {4} warnings.</summary>
+    public static string CliRestoreResult => Get(nameof(CliRestoreResult));
+
+    /// <summary>Log: {0}</summary>
+    public static string CliRestoreLog => Get(nameof(CliRestoreLog));
+
+    /// <summary>Usage:</summary>
+    public static string CliCloudUsage => Get(nameof(CliCloudUsage));
+
+    /// <summary>No connected cloud accounts.</summary>
+    public static string CliCloudNoAccounts => Get(nameof(CliCloudNoAccounts));
+
+    /// <summary>could not open a local port for Google Drive sign-in</summary>
+    public static string CliCloudNoPort => Get(nameof(CliCloudNoPort));
+
+    /// <summary>If the browser is on another computer, open a separate terminal there and run the command below first. Repl...</summary>
+    public static string CliCloudForward => Get(nameof(CliCloudForward));
+
+    /// <summary>Open this link in your browser and allow access.</summary>
+    public static string CliCloudOpenBrowser => Get(nameof(CliCloudOpenBrowser));
+
+    /// <summary>Paste the code from the browser and press Enter (input is hidden):</summary>
+    public static string CliCloudCode => Get(nameof(CliCloudCode));
+
+    /// <summary>CUSTOS received the browser response. Return to the terminal to see the result.</summary>
+    public static string CliCloudBrowserReceived => Get(nameof(CliCloudBrowserReceived));
+
+    /// <summary>the sign-in timed out. Run the login command again</summary>
+    public static string CliCloudTimedOut => Get(nameof(CliCloudTimedOut));
+
+    /// <summary>operation cancelled</summary>
+    public static string CliCloudCancelled => Get(nameof(CliCloudCancelled));
+
+    /// <summary>Connected «{0}» (account ID {1}).</summary>
+    public static string CliCloudConnected => Get(nameof(CliCloudConnected));
+
+    /// <summary>Application client ID:</summary>
+    public static string CliCloudClientId => Get(nameof(CliCloudClientId));
+
+    /// <summary>Application secret (input is hidden):</summary>
+    public static string CliCloudClientSecret => Get(nameof(CliCloudClientSecret));
+
+    /// <summary>Application secret (input is hidden, leave blank if not required):</summary>
+    public static string CliCloudClientSecretOptional => Get(nameof(CliCloudClientSecretOptional));
+
+    /// <summary>Application saved for {0}.</summary>
+    public static string CliCloudAppSaved => Get(nameof(CliCloudAppSaved));
+
+    /// <summary>{0}: no usable CUSTOS application is configured. Set up your own with sudo custos cloud app {1}.</summary>
+    public static string CliCloudAppMissing => Get(nameof(CliCloudAppMissing));
 }

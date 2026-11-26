@@ -84,6 +84,8 @@
   custos run &lt;задание&gt;     запустить задание сейчас (имя или id); custos run --all запускает все
   custos stop [&lt;задание&gt;]  остановить текущий запуск (или запуск этого задания)
   custos log [-f] [-n N]   последние строки журнала; -f показывает новые по мере появления
+  custos restore help      список наборов и восстановление
+  custos cloud help        подключение облачных дисков
   custos snapshots         можно ли делать снимки томов заданий и что сделать, если нельзя
   custos connect '&lt;строка&gt;'  подключиться к сайту мониторинга (строка подключения с сайта)
   custos disconnect        отключиться от сайта
@@ -204,5 +206,110 @@
   </data>
   <data name="CliSnapNone" xml:space="preserve">
     <value>без снимков</value>
+  </data>
+  <data name="CliRestoreHelp" xml:space="preserve">
+    <value>Команды:
+  custos restore list (--task ИМЯ_ИЛИ_ID | --from ПАПКА) [--account ID] [--password-stdin]
+  custos restore start (--task ИМЯ_ИЛИ_ID | --from ПАПКА) --set ID [--destination ID_НАЗНАЧЕНИЯ]
+        (--to ПАПКА | --original) [--dumps-to ПАПКА] [--existing skip|overwrite-older|overwrite]
+        [--account ID] [--password-stdin]
+  custos restore status
+  custos restore stop
+
+'list' показывает ID для --set. Указывайте полные пути к папкам. --account задаёт сохранённую учётную запись для сетевой папки --from.
+--password-stdin читает одну строку из перенаправленного ввода. По умолчанию используется пароль задания.
+'start' ждёт завершения. Ctrl+C запрашивает остановку. Коды завершения: 0 успех, 1 предупреждение или ошибка, 130 отмена.</value>
+  </data>
+  <data name="CliRestorePasswordInput" xml:space="preserve">
+    <value>при --password-stdin передайте одну строку с паролем архива через перенаправление ввода</value>
+  </data>
+  <data name="CliRestorePasswordMissing" xml:space="preserve">
+    <value>пароль архива не прочитан из стандартного ввода</value>
+  </data>
+  <data name="CliRestoreNoSets" xml:space="preserve">
+    <value>Наборы резервных копий не найдены.</value>
+  </data>
+  <data name="CliRestoreListLine" xml:space="preserve">
+    <value>{0}  {1}  {2} [{3}]  {4}</value>
+  </data>
+  <data name="CliRestoreSetNotFound" xml:space="preserve">
+    <value>набор «{0}» не найден, см. custos restore list</value>
+  </data>
+  <data name="CliRestoreSetAmbiguous" xml:space="preserve">
+    <value>набор «{0}» есть в нескольких назначениях, укажите ID через --destination</value>
+  </data>
+  <data name="CliRestoreStartUnknown" xml:space="preserve">
+    <value>служба не подтвердила запуск, перед повтором проверьте custos restore status: {0}</value>
+  </data>
+  <data name="CliRestoreStarted" xml:space="preserve">
+    <value>Восстановление «{0}», куда: {1}.</value>
+  </data>
+  <data name="CliRestoreStopping" xml:space="preserve">
+    <value>Останавливаю восстановление.</value>
+  </data>
+  <data name="CliRestoreStatusReplaced" xml:space="preserve">
+    <value>состояние этого восстановления больше недоступно, см. {0}</value>
+  </data>
+  <data name="CliRestoreProgress" xml:space="preserve">
+    <value>Восстановление «{0}»: {1}/{2} файлов, {3:0}% ({4})</value>
+  </data>
+  <data name="CliRestoreResult" xml:space="preserve">
+    <value>Итог восстановления — {0}: восстановлено {1}, пропущено {2}, с ошибкой {3}, предупреждений {4}.</value>
+  </data>
+  <data name="CliRestoreLog" xml:space="preserve">
+    <value>Журнал: {0}</value>
+  </data>
+  <data name="CliCloudUsage" xml:space="preserve">
+    <value>Команды:
+  sudo custos cloud list
+  sudo custos cloud login &lt;gdrive|yadisk|dropbox&gt; [--account &lt;id&gt;]
+  sudo custos cloud app &lt;gdrive|yadisk|dropbox&gt;
+
+Откройте ссылку для входа в браузере. Для Google Диска локальный порт можно пробросить через SSH. Яндекс Диск и Dropbox покажут код для ввода в терминале.</value>
+  </data>
+  <data name="CliCloudNoAccounts" xml:space="preserve">
+    <value>Подключённых облачных аккаунтов нет.</value>
+  </data>
+  <data name="CliCloudNoPort" xml:space="preserve">
+    <value>не удалось открыть локальный порт для входа в Google Диск</value>
+  </data>
+  <data name="CliCloudForward" xml:space="preserve">
+    <value>Если браузер на другом компьютере, откройте там отдельный терминал и сначала выполните команду ниже. Вместо USER@SERVER укажите пользователя SSH и адрес сервера. Оставьте SSH-подключение открытым до завершения входа.
+
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:{0}:127.0.0.1:{0} USER@SERVER
+</value>
+  </data>
+  <data name="CliCloudOpenBrowser" xml:space="preserve">
+    <value>Откройте эту ссылку в браузере и разрешите доступ.</value>
+  </data>
+  <data name="CliCloudCode" xml:space="preserve">
+    <value>Вставьте код из браузера и нажмите Enter (ввод скрыт):</value>
+  </data>
+  <data name="CliCloudBrowserReceived" xml:space="preserve">
+    <value>CUSTOS получил ответ браузера. Вернитесь в терминал, чтобы увидеть результат.</value>
+  </data>
+  <data name="CliCloudTimedOut" xml:space="preserve">
+    <value>время ожидания входа истекло. Запустите команду входа снова</value>
+  </data>
+  <data name="CliCloudCancelled" xml:space="preserve">
+    <value>операция отменена</value>
+  </data>
+  <data name="CliCloudConnected" xml:space="preserve">
+    <value>Подключён аккаунт «{0}» (ID {1}).</value>
+  </data>
+  <data name="CliCloudClientId" xml:space="preserve">
+    <value>ID приложения (Client ID):</value>
+  </data>
+  <data name="CliCloudClientSecret" xml:space="preserve">
+    <value>Секрет приложения (ввод скрыт):</value>
+  </data>
+  <data name="CliCloudClientSecretOptional" xml:space="preserve">
+    <value>Секрет приложения (ввод скрыт, оставьте пустым, если он не нужен):</value>
+  </data>
+  <data name="CliCloudAppSaved" xml:space="preserve">
+    <value>Приложение сохранено для {0}.</value>
+  </data>
+  <data name="CliCloudAppMissing" xml:space="preserve">
+    <value>{0}: приложение CUSTOS не настроено. Укажите своё приложение командой sudo custos cloud app {1}.</value>
   </data>
 </root>

@@ -191,8 +191,8 @@ installer, the update package and the pictures of the windows for 14 days.
 ## CUSTOS for Linux
 
 CUSTOS for Linux is the backup agent of a Linux server: a systemd service without a window, run from a monitoring
-site. It does the same work as the service on Windows (copies and archives, schedules, keeping copies, checks, the
-same destinations except cloud drives) and is set up on the site: the tasks of the server are made and changed there.
+site. It does the same work as the service on Windows (copies and archives, schedules, keeping copies, checks,
+and destinations including cloud drives). Make and change the server's tasks on the monitoring site.
 It needs x86_64 or ARM64 (aarch64), glibc 2.28 or newer and systemd: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux,
 Rocky and Oracle Linux 8+, openSUSE 15. Alpine and CentOS 7 cannot run it.
 
@@ -243,11 +243,51 @@ custos snapshots                                 # the volumes and their state
   with the stored account for the run (cifs-utils) and unmounted after it.
 - «Owners and permissions» are copied instead of NTFS rights.
 - Scripts before and after a run are run as root by `/bin/sh`; a service to stop is a systemd unit (`mariadb`).
-- No cloud drives. 7-Zip comes inside the program (`7z.so`); the site does not update it.
+- 7-Zip comes inside the program (`7z.so`) and is updated together with it.
 - No window and no program password: the service is used with the commands of the terminal and from the site.
 
 **Commands:** `custos status` (the service, the tasks, the connection), `custos run <task>`, `custos stop`,
 `custos log -f`, `custos snapshots`, `custos connect '<line>'`, `custos disconnect`, `custos version`, `custos help`.
+
+**Restore.** Use an administrator account to list the available backup sets and choose the ID shown in the first column.
+Use `--task` to search a task's destinations, or `--from /mnt/backup` to search a folder, including copies from another machine.
+
+```sh
+sudo custos restore list --task 'Documents'
+sudo custos restore start --task 'Documents' --set RUN_ID --to /srv/restored
+sudo custos restore status
+sudo custos restore stop
+```
+
+If the set appears at multiple destinations, pass `--destination DEST_ID` with the destination ID shown in the list. The service
+restores to the selected date and leaves existing files alone by default. Use `--existing overwrite-older` or
+`--existing overwrite` to replace files. Use `--original` instead of `--to` to put the files back in their original
+locations. `--dumps-to /srv/dumps` puts saved database dumps in a separate folder. Use `custos restore help` for encrypted
+archives and the exit codes. `start` shows progress until the restore finishes. Ctrl+C requests cancellation of that restore.
+
+**Cloud drives.** Connect each account on the Linux server, then select it as a destination in CUSTOS Monitor 1.4.2
+or newer. `custos cloud list` shows the connected accounts and their IDs. To renew access without changing tasks,
+pass `--account <id>` to the login command.
+
+```sh
+sudo custos cloud login gdrive
+sudo custos cloud login yadisk
+sudo custos cloud login dropbox
+sudo custos cloud list
+```
+
+- **Google Drive.** Use the link printed by the command. If the browser is on your workstation, first run the SSH
+  port-forward command printed by CUSTOS in another terminal on that workstation. Replace `USER@SERVER` with the
+  SSH account and host and keep the connection open until authentication finishes. Google sends the response to
+  the local port through that connection.
+- **Yandex Disk and Dropbox.** Open the printed link in your browser, then paste the authorization code the service
+  displays into the CUSTOS prompt. Yandex needs the registered redirect `https://oauth.yandex.ru/verification_code`.
+  Dropbox displays the code without a redirect.
+
+The official release uses the project's Google Desktop app if configured at build time. If a provider needs your own
+application, follow the [registration steps](#custos-applications-at-the-services), then enter its client ID and secret
+with `sudo custos cloud app gdrive` (or `yadisk` or `dropbox`). Google Drive and Yandex Disk require the app secret.
+The terminal hides the code and secret as you type. The service keeps the account tokens on the Linux server.
 
 **Updates.** On the site, **Updates** has a section for CUSTOS for Linux: the package `custos-linux-<version>.zip`
 (both processors in one) goes only to Linux machines. The service replaces the program itself and puts the old one back

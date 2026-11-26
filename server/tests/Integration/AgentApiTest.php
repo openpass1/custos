@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Custos\Tests\Integration;
 
 use Custos\App;
+use Custos\Domain\Agents;
 use Custos\Domain\Monitor;
 use Custos\Domain\RegistrationKey;
 use Custos\Http\Request;
@@ -88,6 +89,39 @@ final class AgentApiTest extends TestCase
         $this->assertTrue($start->signed, 'errors are signed too');
         $this->assertSame(403, $start->status);
         $this->assertSame('pending', $start->error());
+    }
+
+    public function testCloudDestinationsFollowTheLinuxAgentThroughRegistrationAndHeartbeat(): void
+    {
+        $old = $this->client(1);
+        $oldInfo = ['edition' => 'linux'] + $this->info();
+        $newInfo = ['cloud_destinations' => true] + $oldInfo;
+        $withoutCloud = fn(AgentClient $client) => Agents::withoutCloud($this->app->agents()->find($client->agentId));
+
+        $result = $old->register($this->code(), $oldInfo);
+        $this->assertTrue($result['ok'], $result['reason']);
+        $this->assertSame('linux', $withoutCloud($old), 'an agent that omits the field has no cloud drives');
+        $this->app->agents()->approve($old->agentId);
+
+        $this->assertOk($old->call('POST', 'agent/heartbeat', $this->heartbeat(['edition' => 'linux', 'cloud_destinations' => true])));
+        $this->assertNull($withoutCloud($old), 'an agent can advertise support after updating in place');
+        $this->assertOk($old->call('POST', 'agent/heartbeat', $this->heartbeat(['edition' => 'linux'])));
+        $this->assertSame('linux', $withoutCloud($old), 'an older agent reporting again clears the flag');
+
+        $result = $old->register($this->code(), $newInfo);
+        $this->assertTrue($result['ok'], $result['reason']);
+        $this->assertNull($withoutCloud($old), 'registration with a known key also refreshes the flag');
+
+        $new = $this->client(2);
+        $result = $new->register($this->code(), $oldInfo);
+        $this->assertTrue($result['ok'], $result['reason']);
+        $this->assertSame('linux', $withoutCloud($new));
+        $this->assertSame($old->agentId, $this->app->agents()->replace($new->agentId));
+        $this->assertSame('linux', $withoutCloud($new), 'reinstalling with an older agent does not inherit support');
+
+        $result = $old->register($this->code(), $newInfo);
+        $this->assertTrue($result['ok'], $result['reason']);
+        $this->assertNull($withoutCloud($old), 'new registrations can advertise support before their first heartbeat');
     }
 
     public function testReportsAreStored(): void

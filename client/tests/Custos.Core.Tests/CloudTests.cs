@@ -417,18 +417,38 @@ public sealed class CloudTests : IDisposable
     }
 
     [Fact]
+    public void Changing_one_cloud_application_keeps_the_other_applications()
+    {
+        var store = new ConfigStore(_temp.Combine("config"), new XorProtector());
+        store.Load();
+        store.SaveCloudApps(new CloudAppsFile
+        {
+            Gdrive = new CloudApp { ClientId = "google", ClientSecret = "google-secret" },
+            Yadisk = new CloudApp { ClientId = "yandex" },
+        });
+
+        store.SaveCloudApps(new CloudAppsFile { Dropbox = new CloudApp { ClientId = " dropbox " } }, DestinationKinds.Dropbox);
+
+        var saved = store.GetCloudApps();
+        Assert.Equal("google-secret", saved.Gdrive?.ClientSecret);
+        Assert.Equal("yandex", saved.Yadisk?.ClientId);
+        Assert.Equal("dropbox", saved.Dropbox?.ClientId);
+    }
+
+    [Fact]
     public async Task The_browser_comes_back_to_a_loopback_port_with_the_code()
     {
         using var receiver = LoopbackReceiver.TryStart(0);
         Assert.NotNull(receiver);
-        var wait = receiver.WaitAsync("Done, close the tab.", TestContext.Current.CancellationToken);
+        var wait = receiver.WaitAsync("Done, close the tab.", TestContext.Current.CancellationToken, "xyz");
         using var http = new HttpClient();
         string root = "http://127.0.0.1:" + receiver.Port + "/";
 
-        // The icon of the page is no answer.
-        using (var icon = await http.GetAsync(root + "favicon.ico", TestContext.Current.CancellationToken))
+        // Requests without the expected state must not consume the callback.
+        foreach (string target in new[] { "favicon.ico", "?code=abc", "?code=abc&state=wrong", "?code=abc&state=xyz&st%61te=xyz" })
         {
-            Assert.Equal(HttpStatusCode.NotFound, icon.StatusCode);
+            using var skipped = await http.GetAsync(root + target, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.NotFound, skipped.StatusCode);
         }
 
         Assert.False(wait.IsCompleted);
@@ -440,6 +460,23 @@ public sealed class CloudTests : IDisposable
         using var busy = new TcpListener(IPAddress.Loopback, 0);
         busy.Start();
         Assert.Null(LoopbackReceiver.TryStart(((IPEndPoint)busy.LocalEndpoint).Port));
+    }
+
+    [Theory]
+    [InlineData(DestinationKinds.YaDisk, "https://oauth.yandex.ru/verification_code")]
+    [InlineData(DestinationKinds.Dropbox, null)]
+    public void A_pasted_code_uses_the_same_redirect_at_the_token_endpoint(string kind, string? redirect)
+    {
+        var sign = CloudAuthorization.Begin(CloudService.Of(kind), new CloudApp { ClientId = "app-id" }, null);
+        var token = new TokenServer(_ => (HttpStatusCode.OK, "{\"access_token\":\"access\",\"refresh_token\":\"refresh\",\"expires_in\":3599}"));
+
+        var grant = sign.Finish(sign.ReadCode(" pasted-code ")!, token, TestContext.Current.CancellationToken);
+
+        var form = Assert.Single(token.Forms);
+        Assert.Equal("refresh", grant.RefreshToken);
+        Assert.Equal("pasted-code", form["code"]);
+        Assert.Equal(redirect, form.GetValueOrDefault("redirect_uri"));
+        Assert.Equal(QueryOf(new Uri(sign.Url))["code_challenge"], CloudAuthorization.Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(form["code_verifier"]))));
     }
 
     private static byte[] RandomBytes(int length)

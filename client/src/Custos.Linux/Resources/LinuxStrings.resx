@@ -84,6 +84,8 @@ Usage:
   custos run &lt;task&gt;        start a task now (its name or id); custos run --all starts every task
   custos stop [&lt;task&gt;]     stop the run in progress (or the run of that task)
   custos log [-f] [-n N]   the last lines of the journal; -f keeps showing new ones
+  custos restore help      list and restore backup sets
+  custos cloud help        connect to cloud drives
   custos snapshots         whether the volumes of the tasks can have snapshots, and what to do if not
   custos connect '&lt;line&gt;'  connect to the monitoring site (the connection line from the site)
   custos disconnect        disconnect from the site
@@ -204,5 +206,110 @@ Tasks are created and changed on the monitoring site. Service log: /var/log/cust
   </data>
   <data name="CliSnapNone" xml:space="preserve">
     <value>no snapshots</value>
+  </data>
+  <data name="CliRestoreHelp" xml:space="preserve">
+    <value>Usage:
+  custos restore list (--task NAME_OR_ID | --from FOLDER) [--account ID] [--password-stdin]
+  custos restore start (--task NAME_OR_ID | --from FOLDER) --set ID [--destination DEST_ID]
+        (--to FOLDER | --original) [--dumps-to FOLDER] [--existing skip|overwrite-older|overwrite]
+        [--account ID] [--password-stdin]
+  custos restore status
+  custos restore stop
+
+'list' shows the ID to use with --set. Use absolute paths for folders. --account is a saved account for --from on a share.
+--password-stdin reads one line from redirected input. The task's saved password is used by default.
+'start' waits for the restore. Ctrl+C requests cancellation. Exit codes: 0 success, 1 warning or error, 130 cancelled.</value>
+  </data>
+  <data name="CliRestorePasswordInput" xml:space="preserve">
+    <value>redirect one archive password line to standard input when using --password-stdin</value>
+  </data>
+  <data name="CliRestorePasswordMissing" xml:space="preserve">
+    <value>no archive password was read from standard input</value>
+  </data>
+  <data name="CliRestoreNoSets" xml:space="preserve">
+    <value>No backup sets found.</value>
+  </data>
+  <data name="CliRestoreListLine" xml:space="preserve">
+    <value>{0}  {1}  {2} [{3}]  {4}</value>
+  </data>
+  <data name="CliRestoreSetNotFound" xml:space="preserve">
+    <value>backup set «{0}» was not found: check custos restore list</value>
+  </data>
+  <data name="CliRestoreSetAmbiguous" xml:space="preserve">
+    <value>backup set «{0}» occurs at multiple destinations: choose its id with --destination</value>
+  </data>
+  <data name="CliRestoreStartUnknown" xml:space="preserve">
+    <value>the service did not confirm the start; check custos restore status before retrying: {0}</value>
+  </data>
+  <data name="CliRestoreStarted" xml:space="preserve">
+    <value>Restoring «{0}» to {1}.</value>
+  </data>
+  <data name="CliRestoreStopping" xml:space="preserve">
+    <value>Stopping the restore.</value>
+  </data>
+  <data name="CliRestoreStatusReplaced" xml:space="preserve">
+    <value>the status is no longer available for this restore: see {0}</value>
+  </data>
+  <data name="CliRestoreProgress" xml:space="preserve">
+    <value>Restoring «{0}»: {1}/{2} files, {3:0}% ({4})</value>
+  </data>
+  <data name="CliRestoreResult" xml:space="preserve">
+    <value>Restore {0}: {1} restored, {2} skipped, {3} failed, {4} warnings.</value>
+  </data>
+  <data name="CliRestoreLog" xml:space="preserve">
+    <value>Log: {0}</value>
+  </data>
+  <data name="CliCloudUsage" xml:space="preserve">
+    <value>Usage:
+  sudo custos cloud list
+  sudo custos cloud login &lt;gdrive|yadisk|dropbox&gt; [--account &lt;id&gt;]
+  sudo custos cloud app &lt;gdrive|yadisk|dropbox&gt;
+
+The sign-in link opens in your browser. Google Drive uses a local callback, which can be forwarded over SSH. Yandex Disk and Dropbox show a code to paste into the terminal.</value>
+  </data>
+  <data name="CliCloudNoAccounts" xml:space="preserve">
+    <value>No connected cloud accounts.</value>
+  </data>
+  <data name="CliCloudNoPort" xml:space="preserve">
+    <value>could not open a local port for Google Drive sign-in</value>
+  </data>
+  <data name="CliCloudForward" xml:space="preserve">
+    <value>If the browser is on another computer, open a separate terminal there and run the command below first. Replace USER@SERVER with the SSH user and server address. Leave the SSH session open until sign-in finishes.
+
+ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:{0}:127.0.0.1:{0} USER@SERVER
+</value>
+  </data>
+  <data name="CliCloudOpenBrowser" xml:space="preserve">
+    <value>Open this link in your browser and allow access.</value>
+  </data>
+  <data name="CliCloudCode" xml:space="preserve">
+    <value>Paste the code from the browser and press Enter (input is hidden):</value>
+  </data>
+  <data name="CliCloudBrowserReceived" xml:space="preserve">
+    <value>CUSTOS received the browser response. Return to the terminal to see the result.</value>
+  </data>
+  <data name="CliCloudTimedOut" xml:space="preserve">
+    <value>the sign-in timed out. Run the login command again</value>
+  </data>
+  <data name="CliCloudCancelled" xml:space="preserve">
+    <value>operation cancelled</value>
+  </data>
+  <data name="CliCloudConnected" xml:space="preserve">
+    <value>Connected «{0}» (account ID {1}).</value>
+  </data>
+  <data name="CliCloudClientId" xml:space="preserve">
+    <value>Application client ID:</value>
+  </data>
+  <data name="CliCloudClientSecret" xml:space="preserve">
+    <value>Application secret (input is hidden):</value>
+  </data>
+  <data name="CliCloudClientSecretOptional" xml:space="preserve">
+    <value>Application secret (input is hidden, leave blank if not required):</value>
+  </data>
+  <data name="CliCloudAppSaved" xml:space="preserve">
+    <value>Application saved for {0}.</value>
+  </data>
+  <data name="CliCloudAppMissing" xml:space="preserve">
+    <value>{0}: no usable CUSTOS application is configured. Set up your own with sudo custos cloud app {1}.</value>
   </data>
 </root>

@@ -133,13 +133,13 @@ public static class PipeProtocol
         /// <summary>Administrators only, always. Sets to restore: <see cref="RestoreListRequest"/> → <see cref="RestoreListResult"/>.</summary>
         public const string RestoreList = "restore.list";
 
-        /// <summary>Administrators only, always. <see cref="RestoreStartRequest"/> → <see cref="OkResult"/>.</summary>
+        /// <summary>Administrators only, always. <see cref="RestoreStartRequest"/> → <see cref="RestoreStartResult"/>.</summary>
         public const string RestoreStart = "restore.start";
 
         /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="RestoreStatusResult"/>.</summary>
         public const string RestoreStatus = "restore.status";
 
-        /// <summary>Administrators only, always. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
+        /// <summary>Administrators only, always. <see cref="RestoreStopRequest"/> → <see cref="OkResult"/>.</summary>
         public const string RestoreStop = "restore.stop";
 
         /// <summary>Everyone: whoever sits at the computer may keep it on. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>

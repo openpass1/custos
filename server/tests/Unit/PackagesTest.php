@@ -68,9 +68,10 @@ final class PackagesTest extends TestCase
         $this->assertFalse(Agents::isLinux($mac));
         $this->assertSame(['x'], array_column(Packages::fitting('linux', $all), 'id'));
         $this->assertSame(['s'], array_column(Packages::fitting('7zip', $all), 'id'), '7-Zip is inside the program on Linux');
-        // Neither Windows 7 nor Linux has cloud drives: the task form leaves them out, in the words of each.
+        // Linux can advertise cloud drives. Windows 7 keeps them unavailable.
         $this->assertSame('linux', Agents::withoutCloud($linux));
-        $this->assertSame('legacy', Agents::withoutCloud(['edition' => 'legacy']));
+        $this->assertNull(Agents::withoutCloud(['cloud_destinations' => 1] + $linux));
+        $this->assertSame('legacy', Agents::withoutCloud(['edition' => 'legacy', 'cloud_destinations' => 1]));
         $this->assertNull(Agents::withoutCloud($mac));
         $this->assertNull(Agents::withoutCloud($standard));
     }

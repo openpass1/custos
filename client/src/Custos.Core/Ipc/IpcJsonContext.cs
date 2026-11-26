@@ -55,5 +55,7 @@ namespace Custos.Core.Ipc;
 [JsonSerializable(typeof(RestoreListRequest))]
 [JsonSerializable(typeof(RestoreListResult))]
 [JsonSerializable(typeof(RestoreStartRequest))]
+[JsonSerializable(typeof(RestoreStartResult))]
+[JsonSerializable(typeof(RestoreStopRequest))]
 [JsonSerializable(typeof(RestoreStatusResult))]
 public sealed partial class IpcJsonContext : JsonSerializerContext;
