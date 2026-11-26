@@ -14,6 +14,20 @@ The agents make backups on each machine. CUSTOS Monitor shows their progress in 
 manage tasks remotely. Windows and macOS can be set up locally. The headless Linux agent uses Monitor to configure
 its backup tasks.
 
+## Backup destinations
+
+- **Folders and drives** include local folders, USB drives and SMB network shares such as a NAS.
+- **File servers** use SFTP, FTP, FTPS or WebDAV. See the [server destination guide](client/README.md#backups-on-servers-sftp-ftp-webdav-s3).
+- **Object storage** includes Amazon S3 and compatible services such as MinIO. [Object Lock](client/README.md#s3-rights-of-the-key-and-protection-from-deletion-object-lock)
+  can protect backups against deletion on buckets that support it.
+- **[Cloud drives](client/README.md#cloud-drives-google-drive-yandex-disk-dropbox)** include Google Drive, Yandex Disk
+  and Dropbox for ZIP archives or backups without compression. Connect accounts in the standard Windows edition
+  or on Linux starting with the [1.4.0 preview](https://github.com/openpass1/custos/releases/tag/client-v1.4.0).
+  On Linux, configure cloud destinations in Monitor 1.4.2 or later. The [macOS 1.2.0 preview](client/README.md#macos)
+  keeps cloud destinations in imported tasks. Its settings lack cloud account setup.
+
+One task can write to several destinations in the same run.
+
 ## Choose what to install
 
 | Component | Runs on | Download | Guide |
@@ -51,13 +65,7 @@ from a Linux server over SSH.
 
 - Full, incremental, differential and mirror backups (exact, or safe with deleted files kept for a while). Schedules
   by day, week, month or timer; a run missed while the computer was off is made after it starts.
-- Writes straight to the destination, without a temporary copy on the local disk. Destinations: a local folder, a
-  network share with its own account, a USB disk found by its volume label, SFTP, FTP and FTPS, WebDAV, S3 (with
-  Object Lock against deletion), Google Drive, Yandex Disk and Dropbox. One task can write to several destinations at
-  once.
-- Google Drive works in the released program as it is. For Yandex Disk and Dropbox, register a free application of
-  your own with the service and enter it under Settings → Cloud drives → Own applications…
-  ([steps](client/README.md#custos-applications-at-the-services)).
+- Writes straight to the destination without a temporary copy on the local disk. Finds USB drives by volume label.
 - 7z or ZIP archives with AES-256 encryption, 7z volumes, verification of new and stored copies.
 - Retention by count, by age or grandfather-father-son (GFS). A set is deleted only as a whole, never after a failed
   run, and the last good full copy is always kept.
