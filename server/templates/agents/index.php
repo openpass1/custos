@@ -18,7 +18,7 @@ use Custos\Domain\Agents;
 
 <div data-part="pending">
 <?php if ($pending !== []): ?>
-    <section class="panel attention">
+    <section class="panel attention pending-agents">
         <h2><?= e(t('agents.pending.title')) ?></h2>
         <p class="hint"><?= e(t('agents.pending.hint')) ?></p>
         <div class="table-wrap">
