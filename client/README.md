@@ -1,20 +1,37 @@
-# CUSTOS client for Windows and macOS
+# CUSTOS backup agents for Windows, macOS and Linux
 
 [По-русски](README.ru.md)
 
-C# / .NET 10, x64. Specification: [`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), interface design: [`docs/client-ui.md`](../docs/client-ui.md) (both in Russian).
+[Windows](#windows) · [Windows legacy](#edition-for-windows-7-and-81) · [macOS](#macos) · [Linux agent](#custos-for-linux)
+
+## Windows
+
+Download `CUSTOS-Setup-<version>.exe` from a [release](https://github.com/openpass1/custos/releases) that
+includes Windows and run it as an administrator. For Windows 7 SP1 and 8.1, see the
+[legacy edition](#edition-for-windows-7-and-81).
+
+In the main window, create a task, add a source and a destination, then choose a schedule. Save the task, run it once
+and check the result. [Connect to CUSTOS Monitor](#monitoring-server) if you want to manage the machine remotely.
+
+## Projects
+
+C# / .NET 10 for the current agents, and .NET 6 x86 for legacy Windows. Specification:
+[`docs/CUSTOS-client.md`](../docs/CUSTOS-client.md), interface design: [`docs/client-ui.md`](../docs/client-ui.md) (both in Russian).
 
 | Project | Output | What it is |
 |---|---|---|
 | `src/Custos.Core` | `Custos.Core.dll` | Shared code: task model, schedule, copy engine, set manifests, Cobian import, the interface/service pipe protocol |
 | `src/Custos.Service` | `CustosService.exe` | Windows service (LocalSystem): does all the work — queue, runs, VSS, share logons, database |
-| `src/Custos.Gui` | `Custos.exe` | Tray interface, one per user session; only shows state and sends commands |
+| `src/Custos.Windows`, `src/Custos.Desktop` | `Custos.exe` | Avalonia window and tray interface of the current Windows edition |
+| `src/Custos.Gui` | `Custos.exe` | Windows Forms tray interface of the legacy edition |
 | `src/Custos.Updater` | `Custos.Updater.exe` | Installs an update (from the monitoring server or GitHub): stops the service, replaces the files, starts it again, rolls back on failure |
 | `tests/Custos.Core.Tests` | | xUnit tests of the core; `tests/fixtures` holds sample files for them |
 | `tests/Custos.Gui.Tests` | | Window tests: open the real windows with made-up data (run on Windows only) |
 | `src/Custos.Mac` | `Custos.app` | CUSTOS for macOS: one program that is both the service (`Custos agent`, started by launchd as root) and the window with the menu bar icon (Avalonia). The service is the code of `src/Custos.Service` with a macOS platform layer. See [macOS](#macos) |
 | `tests/Custos.Mac.Tests`, `tests/Custos.Mac.Shots` | | Tests of the macOS program (its service started inside the tests and driven over its socket) and pictures of every window |
 | `mac/` | | The macOS installer: `build-mac.sh`, `build-7z.sh`, the launchd jobs, the uninstaller |
+| `src/Custos.Linux`, `linux/` | `custos` | Linux systemd service and command-line client, with x86_64 and ARM64 packages |
+| `tests/Custos.Linux.Tests` | | Linux agent and platform tests |
 | `installer/custos.iss` | | Inno Setup script |
 
 ## Build
@@ -179,8 +196,9 @@ same destinations except cloud drives) and is set up on the site: the tasks of t
 It needs x86_64 or ARM64 (aarch64), glibc 2.28 or newer and systemd: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux,
 Rocky and Oracle Linux 8+, openSUSE 15. Alpine and CentOS 7 cannot run it.
 
-**Install from the site** (a monitoring site 1.4.0 or newer). On the site open **Install** (or **Machines** → **Add a
-machine**), copy the command for Linux and run it on the server:
+**Install from Monitor** (1.4.1 or newer recommended). First download or upload the Linux update package under
+**Updates**. Then open **Install** (or **Machines** → **Add a machine**), copy the command for Linux and run it on the
+Linux machine:
 
 ```sh
 curl -fsSL 'https://backup.example.lan/install/linux/<token>' | sudo bash
@@ -189,16 +207,21 @@ curl -fsSL 'https://backup.example.lan/install/linux/<token>' | sudo bash
 (`wget -qO- '…' | sudo bash` where curl is missing.) The command downloads the program for the processor of the
 server from the site (the package for Linux under **Updates**), checks its SHA-256, installs it into `/opt/custos`,
 starts the service `custos` and connects it to the site, where the machine waits for approval under **Machines**. The
-token in the address is made from the registration key: after a new key the old commands stop working. The site needs
-the package `custos-linux-<version>.zip` under **Updates** (upload it, or download it there from GitHub). The server
-must reach the site, and its address must be in the networks allowed for agents. The packages the program needs
+token in the address is made from the registration key: after a new key the old commands stop working. The update
+package is named `custos-linux-<version>.zip`. The server must reach the site, and its address must be in the networks
+allowed for agents. The packages the program needs
 (libicu, OpenSSL, cifs-utils) are installed when they are missing.
 
-**Install from GitHub** (another way): `install.sh` downloads the archive of its processor from the newest release
-that has CUSTOS for Linux; the connection line from the site connects it.
+**Install from a GitHub release archive.** Download `custos-linux-x64.tar.gz` or `custos-linux-arm64.tar.gz` and
+`SHA256SUMS.txt` from the same [release](https://github.com/openpass1/custos/releases). In the download directory,
+check the archive, extract its installer and give it the connection string copied from **Install** in Monitor.
+For ARM64, change the archive name in the first line.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/openpass1/custos/main/client/linux/install.sh | sudo bash -s -- 'http://backup.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14'
+archive=custos-linux-x64.tar.gz
+awk -v name="$archive" '$2 == name' SHA256SUMS.txt | sha256sum --check - &&
+  tar -xzf "$archive" ./install.sh &&
+  sudo bash ./install.sh --archive "$archive" '<connection string from Monitor>'
 ```
 
 **Snapshots instead of VSS.** «Read files from a snapshot» takes an LVM snapshot of the logical volume, a btrfs snapshot

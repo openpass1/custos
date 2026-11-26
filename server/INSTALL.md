@@ -260,6 +260,12 @@ nginx -T 2>/dev/null | grep client_max_body_size
 
 ✅ Значение не меньше `10m` (например `client_max_body_size 64m;`). Если команда ничего не вывела, у nginx лимит 1 МБ: в сайте вкладка **Vhost**, внутри блока `server { ... }` добавьте строку `client_max_body_size 100m;` и нажмите **Save** (агентам хватает 10 МБ, больше нужно для загрузки пакетов обновления через сайт).
 
+**Подключение агента.** В Monitor откройте страницу **«Установка»** (она также доступна через **«Машины» →
+«Добавить машину»**). Для Windows и macOS скопируйте строку подключения в настройки мониторинга агента. Для
+Linux-сервера используйте Monitor 1.4.1 или новее. Добавьте пакет `custos-linux-<версия>.zip` в **«Обновлениях»** и
+выполните на Linux-сервере команду со страницы **«Установка»**. Подтвердите машину в разделе **«Машины»**.
+[Требования и команды Linux-агента](../client/README.ru.md#custos-для-linux)
+
 ---
 
 ## Часть 9. Уведомления в Telegram и на почту (по желанию)
@@ -536,11 +542,11 @@ php8.4 bin/update.php
 
 ### Debian и Ubuntu: одной командой
 
-На чистом сервере Debian 12, Debian 13, Ubuntu 24.04 или Ubuntu 26.04 (подойдёт и версия для рабочего стола) всё ставит скрипт `install.sh`: nginx, MariaDB, PHP, пользователя сайта `custos`, базу данных со случайным паролем, `config.php`, сайт в nginx и cron. Запускать под root; в Ubuntu через `sudo`, в Debian войдите как root (`su -`) и пишите команды без `sudo`:
+На чистом сервере Debian 12, Debian 13, Ubuntu 24.04 или Ubuntu 26.04 (подойдёт и версия для рабочего стола) всё ставит скрипт `install.sh`: nginx, MariaDB, PHP, пользователя сайта `custos`, базу данных со случайным паролем, `config.php`, сайт в nginx и cron. Скачайте `install.sh` и `SHA256SUMS.txt` из одного актуального [выпуска](https://github.com/openpass1/custos/releases) **CUSTOS Monitor**. На Debian войдите как root (`su -`), затем перейдите в папку скачивания и выполните команды без `sudo`. В Ubuntu перейдите в папку скачивания и используйте `sudo`, как показано ниже:
 
 ```bash
-wget https://raw.githubusercontent.com/openpass1/custos/main/server/install.sh
-sudo bash install.sh
+awk '$2 == "install.sh"' SHA256SUMS.txt | sha256sum --check - &&
+  sudo bash install.sh
 ```
 
 Скрипт спросит адрес сайта (предложит `http://IP-сервера`), логин и пароль первого администратора.

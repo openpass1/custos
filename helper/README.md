@@ -33,7 +33,13 @@ type "%USERPROFILE%\.ssh\custos_test.pub"
 
 ### 2. Скачать custos-helper
 
-Готовый скрипт собирает GitHub Actions. В репозитории откройте **Actions**, выберите последний успешный запуск **custos-helper** для нужной ветки и внизу в разделе **Artifacts** скачайте `custos-helper`. Распакуйте zip в папку `C:\custos-helper`. В ней два файла: сам скрипт `custos-helper` и его контрольная сумма `custos-helper.sha256`.
+В [Releases](https://github.com/openpass1/custos/releases) выберите выпуск клиента, у которого в **Assets** есть
+`custos-helper`. Скачайте этот файл и `SHA256SUMS.txt` из того же выпуска в папку `C:\custos-helper`.
+
+Для проверки изменений из рабочей ветки можно скачать пробную сборку в
+[Actions → custos-helper](https://github.com/openpass1/custos/actions/workflows/helper.yml). В успешном запуске нужной
+ветки скачайте артефакт `custos-helper` и распакуйте его в ту же папку. Для этой сборки сумма лежит в
+`custos-helper.sha256`.
 
 Не открывайте скрипт в Блокноте и не сохраняйте его заново: Windows может заменить переводы строк, и скрипт перестанет работать. Контрольная сумма в шаге 3 это поймает.
 
@@ -43,7 +49,7 @@ type "%USERPROFILE%\.ssh\custos_test.pub"
 
 ```bat
 cd /d C:\custos-helper
-type custos-helper.sha256
+findstr /e /c:"  custos-helper" SHA256SUMS.txt
 scp custos-helper admin@vps.example.org:/tmp/custos-helper
 ```
 
@@ -60,7 +66,8 @@ sudo -i
 sha256sum /tmp/custos-helper
 ```
 
-Число из `sha256sum` должно совпасть с числом из `custos-helper.sha256`. Если не совпадает, скачайте артефакт заново.
+Число из `sha256sum` должно совпасть с суммой, напечатанной на компьютере. Для пробной сборки сумму на компьютере
+можно посмотреть командой `type custos-helper.sha256`. Если суммы различаются, скачайте файл заново.
 
 ### 4. Установить
 
@@ -327,7 +334,7 @@ sed -i 's/,from="[^"]*"//' ~custos/.ssh/authorized_keys
 
 ## Обновление
 
-Скачайте новый артефакт (шаг 2), скопируйте скрипт на сервер (шаг 3), сверьте `sha256sum` и замените только скрипт. Конфиг, пользователь и ключ остаются.
+Скачайте новый скрипт и контрольную сумму (шаг 2), скопируйте скрипт на сервер (шаг 3), сверьте `sha256sum` и замените только скрипт. Конфиг, пользователь и ключ остаются.
 
 ```bash
 install -m 0755 /tmp/custos-helper /usr/local/sbin/custos-helper

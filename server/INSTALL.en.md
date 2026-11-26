@@ -261,6 +261,11 @@ nginx -T 2>/dev/null | grep client_max_body_size
 
 ✅ The value is at least `10m` (for example `client_max_body_size 64m;`). If the command prints nothing, nginx allows only 1 MB: in the site, **Vhost** tab, inside the `server { ... }` block add the line `client_max_body_size 100m;` and press **Save** (agents need 10 MB; more is needed to upload update packages through the site).
 
+**Connect an agent.** Open **Install** in Monitor (also available from **Machines → Add a machine**). For Windows and
+macOS, copy the connection string into the agent's monitoring settings. For a Linux server, use Monitor 1.4.1 or
+newer, add the `custos-linux-<version>.zip` package under **Updates**, then run the Linux command from **Install** on
+that server. Approve the machine under **Machines**. [Linux agent requirements and commands](../client/README.md#custos-for-linux)
+
 ---
 
 ## Part 9. Telegram and email notifications (optional)
@@ -537,11 +542,11 @@ Also in this version: the logout after inactivity is set on the site, Settings �
 
 ### Debian and Ubuntu: one command
 
-On a clean Debian 12, Debian 13, Ubuntu 24.04 or Ubuntu 26.04 server (the desktop edition works too), the script `install.sh` installs everything: nginx, MariaDB, PHP, the site user `custos`, the database with a random password, `config.php`, the nginx site and cron. Run it as root; on Ubuntu with `sudo`, on Debian log in as root (`su -`) and type the commands without `sudo`:
+On a clean Debian 12, Debian 13, Ubuntu 24.04 or Ubuntu 26.04 server (the desktop edition works too), the script `install.sh` installs everything: nginx, MariaDB, PHP, the site user `custos`, the database with a random password, `config.php`, the nginx site and cron. Download `install.sh` and `SHA256SUMS.txt` from the same current **CUSTOS Monitor** [release](https://github.com/openpass1/custos/releases). On Debian, log in as root (`su -`) before entering the download directory and omit `sudo`. On Ubuntu, enter the download directory and use `sudo` as shown:
 
 ```bash
-wget https://raw.githubusercontent.com/openpass1/custos/main/server/install.sh
-sudo bash install.sh
+awk '$2 == "install.sh"' SHA256SUMS.txt | sha256sum --check - &&
+  sudo bash install.sh
 ```
 
 The script asks for the site address (it suggests `http://server-IP`) and the login and password of the first administrator.
