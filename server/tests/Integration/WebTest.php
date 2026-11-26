@@ -8,7 +8,9 @@ use Custos\Http\Web\Controller\AgentsController;
 use Custos\Http\Web\Controller\TasksController;
 use Custos\Domain\Settings;
 use Custos\Infra\Db;
+use Custos\Infra\Crypto;
 use Custos\Tests\TestEnv;
+use Custos\Tools\AgentClient;
 use PHPUnit\Framework\Attributes\Depends;
 use PHPUnit\Framework\TestCase;
 
@@ -1100,6 +1102,126 @@ final class WebTest extends TestCase
         $data = (string) file_get_contents($file);
         $this->assertMatchesRegularExpression('/last_activity\|i:\d+;/', $data);
         file_put_contents($file, preg_replace('/last_activity\|i:\d+;/', 'last_activity|i:' . (time() - $seconds) . ';', $data));
+    }
+
+    #[Depends('testServerWithCustosForLinux')]
+    public function testRestoreBackupFilesFromAnApprovedLinuxTask(): void
+    {
+        $client = new AgentClient(self::$base, TestEnv::agentKey(9));
+        $code = explode('#', $this->connectionString(), 2)[1];
+        $registrationInfo = [
+            'hostname' => 'RESTORE-LINUX', 'machine_guid' => Crypto::uuid4(), 'os' => 'Linux', 'agent_version' => '1.4.0',
+            'edition' => 'linux', 'remote_restore' => true, 'time_zone' => 'UTC',
+        ];
+        $registration = $client->register($code, $registrationInfo);
+        $this->assertTrue($registration['ok'], $registration['reason']);
+        $agent = $client->agentId;
+        $task = Crypto::uuid4();
+        $otherTask = Crypto::uuid4();
+        $destination = Crypto::uuid4();
+        $otherDestination = Crypto::uuid4();
+        $run = Crypto::uuid4();
+        $taskUrl = "/agents/$agent/tasks/$task";
+        $url = "$taskUrl/backup-restore";
+        $this->assertSame(404, $this->http('GET', $url)[0]);
+        $this->assertSame(303, $this->post("/agents/$agent/approve", [])[0]);
+
+        $beat = ['agent_version' => '1.4.0', 'edition' => 'linux', 'time_zone' => 'UTC', 'state' => 'idle', 'queue' => [],
+            'config_revision' => 1];
+        $heartbeat = fn(bool $capable = true) => $client->call('POST', 'agent/heartbeat', $beat + ($capable ? ['remote_restore' => true] : []));
+        $result = function (array $command, array $restore) use ($client): void {
+            $reply = $client->call('POST', 'agent/commands/' . $command['id'] . '/result', ['status' => 'done', 'restore' => $restore]);
+            $this->assertSame(200, $reply->status, $reply->body);
+        };
+        $this->assertSame(200, $heartbeat(false)->status, 'an older agent omits remote_restore');
+        $definition = ['name' => 'Restore fixture', 'enabled' => true, 'revision' => 1, 'updated_at' => '2026-11-21T08:00:00Z',
+            'updated_by' => 'local:test', 'backup_type' => 'full', 'schedule' => ['type' => 'daily', 'times' => ['07:00']],
+            'destinations' => [['id' => $destination, 'kind' => 'local', 'path' => '/private/backup'],
+                ['id' => $otherDestination, 'kind' => 'local', 'path' => '/private/second']]];
+        $config = $client->call('POST', 'agent/config', ['config_revision' => 1, 'changed' => [], 'settings' => [], 'credentials' => [],
+            'tasks' => [['id' => $task] + $definition, ['id' => $otherTask] + $definition], 'deleted_task_ids' => [], 'overwritten' => []]);
+        $this->assertSame(200, $config->status, $config->body);
+        $this->assertSame(404, $this->http('GET', $url)[0]);
+        $this->assertStringNotContainsString($url, $this->http('GET', $taskUrl)[1]);
+        $this->assertSame(200, $heartbeat()->status);
+        $this->assertStringContainsString($url, $this->http('GET', $taskUrl)[1]);
+        $this->assertSame(303, $this->anonymous('GET', $url)[0]);
+        $this->assertSame(400, $this->http('POST', "$url/list", [])[0]);
+        $this->assertSame(303, $this->post("$url/list", [])[0]);
+        $list = $heartbeat()->data()['commands'][0];
+        $this->assertSame(['restore.list', ['task_id' => $task]], [$list['kind'], $list['payload']]);
+
+        $set = ['set_run_id' => $run, 'destination_id' => $destination, 'name' => 'Backup <fixture>',
+            'started_at' => '2026-11-21T08:00:00Z', 'backup_type' => 'full', 'storage' => 'zip', 'parts' => 1, 'bytes' => 4096];
+        $result($list, ['sets' => [$set, ['destination_id' => $otherDestination] + $set], 'partial' => false, 'truncated' => false]);
+        [, $page] = $this->http('GET', $url);
+        $this->assertStringContainsString('Backup &lt;fixture&gt;', $page);
+        $this->assertStringNotContainsString('/private/', $page);
+        $this->post("$url/start", ['list_id' => $list['id'], 'set' => "$run:" . Crypto::uuid4()]);
+        $this->post("/agents/$agent/tasks/$otherTask/backup-restore/start", ['list_id' => $list['id'], 'set' => "$run:$destination"]);
+        $this->assertSame([], $heartbeat()->data()['commands']);
+
+        $this->assertSame(303, $this->post("$url/start", ['list_id' => $list['id'], 'set' => "$run:$otherDestination",
+            'target_folder' => '/ignored', 'password' => 'ignored'])[0]);
+        $this->post("$url/start", ['list_id' => $list['id'], 'set' => "$run:$destination"]);
+        $starts = $heartbeat()->data()['commands'];
+        $this->assertCount(1, $starts, 'a pending start prevents another start for the same task');
+        $start = $starts[0];
+        $this->assertSame(['restore.start', ['task_id' => $task, 'set_run_id' => $run, 'destination_id' => $otherDestination]], [$start['kind'], $start['payload']]);
+        [, $delivered] = $this->http('GET', $url);
+        $this->assertStringNotContainsString('action="' . $url . '/status"', $delivered);
+        $this->assertStringNotContainsString('action="' . $url . '/stop"', $delivered);
+        $this->post("$url/status", ['job_id' => $start['id']]);
+        $this->post("$url/stop", ['job_id' => $start['id']]);
+        $this->assertSame([], $heartbeat()->data()['commands'], 'do not query a restore until the agent acknowledges startup');
+        $job = ['job_id' => $start['id'], 'state' => 'running'];
+        $result($start, ['job' => $job]);
+        $this->assertStringContainsString('restores/' . $job['job_id'], $this->http('GET', $url)[1]);
+        $this->post("$url/stop", ['job_id' => Crypto::uuid4()]);
+        $this->assertSame([], $heartbeat()->data()['commands']);
+
+        $this->assertSame(303, $this->post("$url/status", ['job_id' => $job['job_id']])[0]);
+        $status = $heartbeat()->data()['commands'][0];
+        $this->assertSame(['restore.status', ['task_id' => $task, 'job_id' => $job['job_id']]], [$status['kind'], $status['payload']]);
+        $result($status, ['job' => $job + ['files_done' => 2, 'files_total' => 3]]);
+        $this->assertSame(303, $this->post("$url/stop", ['job_id' => $job['job_id']])[0]);
+        $stop = $heartbeat()->data()['commands'][0];
+        $this->assertSame('restore.stop', $stop['kind']);
+        $this->assertSame($job['job_id'], $stop['payload']['job_id']);
+        $result($stop, ['job' => ['state' => 'aborted', 'files_restored' => 2, 'files_skipped' => 0, 'files_failed' => 0, 'warnings' => 0] + $job]);
+        [, $finished] = $this->http('GET', $url);
+        $this->assertStringContainsString('restores/' . $job['job_id'], $finished);
+        $this->assertStringNotContainsString('action="' . $url . '/stop"', $finished);
+        $this->assertStringContainsString('action="' . $url . '/start"', $finished);
+
+        $this->post("$url/start", ['list_id' => $list['id'], 'set' => "$run:$destination"]);
+        $nextStart = $heartbeat()->data()['commands'][0];
+        $nextJob = ['job_id' => $nextStart['id'], 'state' => 'running'];
+        $result($nextStart, ['job' => $nextJob]);
+        $this->post("$url/status", ['job_id' => $nextStart['id']]);
+        $nextStatus = $heartbeat()->data()['commands'][0];
+        $result($nextStatus, ['job' => ['state' => 'success', 'files_restored' => 3, 'files_skipped' => 0, 'files_failed' => 0, 'warnings' => 0] + $nextJob]);
+        [, $completed] = $this->http('GET', $url);
+        $this->assertStringContainsString('restores/' . $nextJob['job_id'], $completed);
+        $this->assertStringNotContainsString('restores/' . $job['job_id'], $completed);
+        $this->assertStringContainsString('Восстановлено 3', $completed);
+
+        $this->post("$url/list", []);
+        $this->post("$taskUrl/run", []);
+        $replacement = new AgentClient(self::$base, TestEnv::agentKey(10));
+        $this->assertTrue($replacement->register($code, $registrationInfo)['ok']);
+        $this->assertSame(303, $this->post('/agents/' . $replacement->agentId . '/replace', [])[0]);
+        $replacementUrl = '/agents/' . $replacement->agentId . "/tasks/$task/backup-restore";
+        [$status, $afterReplace] = $this->http('GET', $replacementUrl);
+        $this->assertSame(200, $status);
+        $this->assertStringNotContainsString('Backup &lt;fixture&gt;', $afterReplace);
+        $this->assertStringNotContainsString('restores/', $afterReplace);
+        $this->post("$replacementUrl/start", ['list_id' => $list['id'], 'set' => "$run:$destination"]);
+        $newCommands = $replacement->call('POST', 'agent/heartbeat', $beat + ['remote_restore' => true])->data()['commands'];
+        $this->assertSame(['task.run'], array_column($newCommands, 'kind'));
+        $oldList = $this->db()->one('SELECT result_data, restore_obsolete FROM commands WHERE id = ?', [$list['id']]);
+        $this->assertSame(1, (int) $oldList['restore_obsolete']);
+        $this->assertNotNull($oldList['result_data']);
     }
 
     /** The connection string of the settings page: the site address, "#" and the registration code. */

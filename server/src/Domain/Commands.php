@@ -38,11 +38,15 @@ final class Commands
         'inventory.refresh' => self::DAY,
         'update.install' => 3 * self::DAY,
         'sevenzip.update' => 3 * self::DAY,
+        RemoteRestore::LIST => 600,
+        RemoteRestore::START => 600,
+        RemoteRestore::STATUS => 600,
+        RemoteRestore::STOP => 600,
     ];
 
     /** Commands that only flip something on the agent: a second identical one while the first waits is pointless. */
     private const IDEMPOTENT = ['task.run', 'task.stop', 'task.pause', 'task.resume', 'task.enable', 'task.disable',
-                                'task.delete', 'log.fetch', 'inventory.refresh'];
+                                'task.delete', 'log.fetch', 'inventory.refresh', ...RemoteRestore::COMMANDS];
 
     private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
@@ -199,13 +203,13 @@ final class Commands
      *
      * @return list<array{id: string, kind: string, payload: object, expires_at: string}>
      */
-    public function deliver(string $agentId): array
+    public function deliver(string $agentId, bool $remoteRestore = false): array
     {
-        return $this->db->transaction(function () use ($agentId) {
+        return $this->db->transaction(function () use ($agentId, $remoteRestore) {
             $rows = $this->db->all(
                 "SELECT id, kind, payload, expires_at FROM commands
-                 WHERE agent_id = ? AND status = 'queued' AND expires_at > ?
-                 ORDER BY created_at, id FOR UPDATE",
+                 WHERE agent_id = ? AND status = 'queued' AND expires_at > ? AND restore_obsolete = 0"
+                 . ($remoteRestore ? '' : " AND kind NOT LIKE 'restore.%'") . ' ORDER BY created_at, id FOR UPDATE',
                 [$agentId, Time::now()]
             );
             $now = Time::now();
@@ -226,20 +230,28 @@ final class Commands
     public function result(string $agentId, string $commandId, Input $in): void
     {
         $status = $in->enum('status', self::RESULT_STATUSES);
-        $message = $in->string('message', 65535, true);
-        $command = $this->db->one('SELECT agent_id, kind, task_id, payload, status FROM commands WHERE id = ?', [strtolower($commandId)]);
+        $command = $this->db->one('SELECT agent_id, kind, task_id, payload, status, delivered_at, restore_obsolete FROM commands WHERE id = ?', [strtolower($commandId)]);
         if ($command === null || $command['agent_id'] !== $agentId) {
             throw new InvalidInput("command $commandId is not known for this agent");
+        }
+        $restore = in_array($command['kind'], RemoteRestore::COMMANDS, true);
+        if ($restore && ($command['delivered_at'] === null || !empty($command['restore_obsolete']))) {
+            throw new InvalidInput('restore command was not delivered to this registration');
         }
         if (in_array($command['status'], ['done', 'failed', 'rejected'], true)) {
             return;
         }
-        $this->db->exec(
-            'UPDATE commands SET status = ?, result_message = ?, result_at = ? WHERE id = ?',
-            [$status, $message, Time::now(), strtolower($commandId)]
+        $payload = json_decode($command['payload'], true);
+        $data = $restore ? RemoteRestore::result($command['kind'], $command['kind'] === RemoteRestore::START
+            ? strtolower($commandId) : ($payload['job_id'] ?? null), $status, $in) : null;
+        $message = $restore ? null : $in->string('message', 65535, true);
+        $changed = $this->db->exec(
+            "UPDATE commands SET status = ?, result_message = ?, result_data = ?, result_at = ?
+             WHERE id = ? AND restore_obsolete = 0 AND status NOT IN ('done', 'failed', 'rejected')",
+            [$status, $message, $data === null ? null : json_encode($data, self::JSON_FLAGS), Time::now(), strtolower($commandId)]
         );
-        if ($status !== 'done') {
-            $taskId = $command['task_id'] ?? (json_decode($command['payload'], true)['task_id'] ?? null);
+        if ($changed !== 0 && $status !== 'done') {
+            $taskId = $command['task_id'] ?? ($payload['task_id'] ?? null);
             $this->notices->add('command.failed', $agentId, is_string($taskId) ? $taskId : null,
                 ['kind' => $command['kind'], 'status' => $status, 'message' => (string) $message]);
         }

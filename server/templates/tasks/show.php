@@ -44,6 +44,9 @@ $command = function (string $action, string $class, string $iconName, ?string $c
                     <div class="dropdown-menu">
                         <?= !empty($def['enabled']) ? $command('disable', 'menu-item', 'power', t('task.confirm.disable')) : $command('enable', 'menu-item', 'power') ?>
                         <a class="menu-item" href="<?= e(url('/agents/' . $agent['id'] . '/tasks/new', ['from' => $task['id']])) ?>"><?= icon('copy') ?><?= e(t('task.action.clone')) ?></a>
+                        <?php if (\Custos\Domain\Agents::canRemoteRestore($agent)): ?>
+                            <a class="menu-item" href="<?= e(url($taskUrl . '/backup-restore')) ?>"><?= icon('restore') ?><?= e(t('restore.title')) ?></a>
+                        <?php endif ?>
                         <a class="menu-item" href="<?= e(url('/templates/new', ['agent' => $agent['id'], 'task' => $task['id']])) ?>"><?= icon('template') ?><?= e(t('task.action.template')) ?></a>
                         <?php if ($versionCount > 0): ?>
                             <a class="menu-item" href="<?= e(url($taskUrl . '/versions')) ?>"><?= icon('clock') ?><?= e(t('task.action.history')) ?></a>

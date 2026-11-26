@@ -35,6 +35,9 @@ public sealed class RestoreRequest
 
     public RestoreExisting Existing { get; init; } = RestoreExisting.Skip;
 
+    /// <summary>Require the source paths in the manifest to be relative and normalize them before reading.</summary>
+    public bool ConfinedSource { get; init; }
+
     /// <summary>Where the folder «db» with the database dumps and their README.txt goes (section 6.2); null =
     /// <see cref="TargetFolder"/>. With both null the dumps are not restored.</summary>
     public string? DumpsFolder { get; init; }
@@ -168,7 +171,8 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
                 continue;
             }
 
-            string? destination = Destination(request.Set.Header, file.Path, request.TargetFolder);
+            string? destination = request.ConfinedSource && !SafeSourcePath(file.Path) ? null
+                : Destination(request.Set.Header, file.Path, request.TargetFolder);
             if (destination is null)
             {
                 Failed(result, Messages.Format(Messages.RestoreNoPlace, file.Path));
@@ -301,7 +305,19 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
         try
         {
             var store = request.Access.Store;
-            using var input = store.OpenRead(store.Combine(set.Location, planned.File.Path));
+            string path = planned.File.Path;
+            if (request.ConfinedSource)
+            {
+                if (!SafeSourcePath(path))
+                {
+                    Failed(result, Messages.Format(Messages.RestoreNoPlace, path));
+                    return;
+                }
+
+                path = ArchivePaths.ToZip(path);
+            }
+
+            using var input = store.OpenRead(store.Combine(set.Location, path));
             output = Output.Create(request.WriteSession, planned.Destination);
             var buffer = new byte[BufferSize];
             int read;
@@ -483,6 +499,9 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
     /// <summary>A "\"-separated path for this system.</summary>
     private static string Local(string windowsPath) => windowsPath.Replace('\\', Path.DirectorySeparatorChar);
 
+    private static bool SafeSourcePath(string path) => path.Length != 0 && path[0] is not ('/' or '\\')
+        && ArchivePaths.IsSafeRelative(path);
+
     /// <summary>The dumps of the chosen set (each set has whole dumps, so only that set matters), into
     /// <c>&lt;folder&gt;\db\…</c>.</summary>
     private List<Planned> PlanDumps(RestoreRequest request, RestoreResult result)
@@ -504,7 +523,7 @@ public sealed partial class RestoreEngine(IRunLog log, Action<RestoreProgress>? 
         var planned = new List<Planned>();
         foreach (var database in databases)
         {
-            if (database.File is null || !ArchivePaths.IsSafeRelative(database.File))
+            if (database.File is null || (request.ConfinedSource ? !SafeSourcePath(database.File) : !ArchivePaths.IsSafeRelative(database.File)))
             {
                 continue;
             }

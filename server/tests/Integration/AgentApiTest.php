@@ -247,6 +247,50 @@ final class AgentApiTest extends TestCase
         $this->assertSame(400, $client->call('POST', 'agent/commands/' . Crypto::uuid4() . '/result', ['status' => 'done'])->status);
     }
 
+    public function testRemoteRestoreCommandsAndResultsBelongToTheApprovedCapableAgent(): void
+    {
+        $client = $this->client(1);
+        $this->assertTrue($client->register($this->code(), $this->info() + ['edition' => 'linux', 'remote_restore' => true])['ok']);
+        $commands = $this->app->commands();
+        $id = $commands->queue($client->agentId, 'restore.start', [
+            'task_id' => Crypto::uuid4(), 'set_run_id' => Crypto::uuid4(), 'destination_id' => Crypto::uuid4(),
+        ], null);
+        $beat = $this->heartbeat(['edition' => 'linux']);
+        $capable = $beat + ['remote_restore' => true];
+        $resultPath = "agent/commands/$id/result";
+        $finish = ['status' => 'done', 'message' => 'private detail', 'restore' => ['job' => [
+            'job_id' => $id, 'state' => 'running', 'files_done' => 0, 'path' => '/private/path',
+        ]]];
+
+        $this->assertSame([], $client->call('POST', 'agent/heartbeat', $capable)->data()['commands']);
+        $this->assertSame(403, $client->call('POST', $resultPath, $finish)->status);
+
+        $this->app->agents()->approve($client->agentId);
+        $this->assertSame([], $client->call('POST', 'agent/heartbeat', $beat)->data()['commands']);
+        $this->assertFalse(Agents::canRemoteRestore($this->app->agents()->find($client->agentId)));
+        $this->assertSame(400, $client->call('POST', $resultPath, $finish)->status, 'result requires a delivered command');
+        $this->assertSame([$id], array_column($client->call('POST', 'agent/heartbeat', $capable)->data()['commands'], 'id'));
+        $this->assertTrue(Agents::canRemoteRestore($this->app->agents()->find($client->agentId)));
+
+        $other = $this->approved(2);
+        $this->assertSame(400, $other->call('POST', $resultPath, $finish)->status);
+        $wrong = $finish;
+        $wrong['restore']['job']['job_id'] = Crypto::uuid4();
+        $this->assertSame(400, $client->call('POST', $resultPath, $wrong)->status);
+        $this->assertSame('delivered', $commands->find($id)['status']);
+        $this->assertOk($client->call('POST', $resultPath, $finish));
+        $stored = $commands->find($id);
+        $this->assertSame('done', $stored['status']);
+        $this->assertNull($stored['result_message']);
+        $this->assertSame(['job' => ['job_id' => $id, 'state' => 'running', 'files_done' => 0]], json_decode($stored['result_data'], true));
+
+        $replayed = $commands->queue($client->agentId, 'restore.start', ['task_id' => Crypto::uuid4()], null);
+        $this->assertSame([$replayed], array_column($client->call('POST', 'agent/heartbeat', $capable)->data()['commands'], 'id'));
+        $job = ['job_id' => $replayed, 'state' => 'interrupted'];
+        $this->assertOk($client->call('POST', "agent/commands/$replayed/result", ['status' => 'done', 'restore' => ['job' => $job]]));
+        $this->assertSame(['job' => $job], json_decode($commands->find($replayed)['result_data'], true));
+    }
+
     public function testSignatureTimeAndReplayChecks(): void
     {
         $client = $this->registered(1);

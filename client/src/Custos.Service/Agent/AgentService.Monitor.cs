@@ -308,6 +308,10 @@ internal sealed partial class AgentService : IMonitorHost
         CommandKinds.InventoryRefresh => Sync(() => RemoteInventory()),
         CommandKinds.UpdateInstall => InstallUpdateAsync(command, cancellationToken),
         CommandKinds.SevenZipUpdate => RemoteSevenZipAsync(command, cancellationToken),
+#if CUSTOS_LINUX
+        CommandKinds.RestoreList or CommandKinds.RestoreStart or CommandKinds.RestoreStatus or CommandKinds.RestoreStop =>
+            Sync(() => ExecuteMonitorRestore(command, cancellationToken)),
+#endif
         _ => Sync(() => CommandOutcome.Rejected(Messages.Format(Messages.MonitorCommandUnknown, command.Kind))),
     };
 

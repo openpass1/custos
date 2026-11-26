@@ -40,10 +40,12 @@ internal sealed partial class AgentService
         }
     }
 
-    public RestoreListResult ListRestoreSets(RestoreListRequest request)
+    public RestoreListResult ListRestoreSets(RestoreListRequest request) => ListRestoreSets(request, null);
+
+    private RestoreListResult ListRestoreSets(RestoreListRequest request, Action<DestinationStore>? prepareStore)
     {
         var result = new RestoreListResult();
-        foreach (var place in Places(request, result.Problems))
+        foreach (var place in Places(request, result.Problems, prepareStore: prepareStore))
         {
             using (place)
             {
@@ -67,7 +69,9 @@ internal sealed partial class AgentService
         return result;
     }
 
-    public RestoreStartResult StartRestore(RestoreStartRequest request, string user)
+    public RestoreStartResult StartRestore(RestoreStartRequest request, string user) => StartRestore(request, user, null);
+
+    private RestoreStartResult StartRestore(RestoreStartRequest request, string user, ManagedRestore? managed)
     {
         lock (_restoreLock)
         {
@@ -93,12 +97,14 @@ internal sealed partial class AgentService
         var problems = new List<string>();
         Place? found = null;
         StoredSet? set = null;
-        foreach (var place in Places(request, problems, request.Where, request.DestinationId))
+        bool ambiguous = false;
+        foreach (var place in Places(request, problems, request.Where, request.DestinationId, managed?.PrepareStore))
         {
-            var match = found is null ? place.Sets.FirstOrDefault(s =>
-                string.Equals(s.Location, request.Location, PathNames.Comparison)
-                && (request.SetRunId is null || string.Equals(s.Header.RunId, request.SetRunId, StringComparison.OrdinalIgnoreCase))) : null;
-            if (match is not null)
+            var matches = place.Sets.Where(s => (managed is not null || string.Equals(s.Location, request.Location, PathNames.Comparison))
+                && (request.SetRunId is null || string.Equals(s.Header.RunId, request.SetRunId, StringComparison.OrdinalIgnoreCase)));
+            var match = found is null || managed is not null ? matches.FirstOrDefault() : null;
+            ambiguous |= managed is not null && match is not null && (found is not null || matches.Skip(1).Any());
+            if (found is null && match is not null)
             {
                 found = place;
                 set = match;
@@ -109,31 +115,49 @@ internal sealed partial class AgentService
             }
         }
 
-        if (found is null || set is null)
+        if (ambiguous || found is null || set is null)
         {
-            throw new AgentRequestException(PipeProtocol.Errors.NotFound, problems.FirstOrDefault() ?? Messages.Format(Messages.RestoreSetGone, request.Location));
+            found?.Dispose();
+            throw new AgentRequestException(PipeProtocol.Errors.NotFound, problems.FirstOrDefault()
+                ?? Messages.Format(Messages.RestoreSetGone, request.SetRunId ?? request.Location));
         }
 
         var started = DateTimeOffset.UtcNow;
-        string jobId = Guid.NewGuid().ToString("N");
+        string jobId = managed?.JobId ?? Guid.NewGuid().ToString("N");
         string runId = "restore-" + jobId;
-        var file = RunLogFile.Create(DataFolders.RunLogs, Messages.RestoreLogName, jobId, started);
-        var job = new RestoreJob(jobId, set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
+        RunLogFile file;
+        RestoreJob job;
         lock (_restoreLock)
         {
             if (_restore is { Running: true } || _sevenZipUpdating)
             {
                 found.Dispose();
-                file.Dispose();
                 throw new AgentRequestException(PipeProtocol.Errors.Invalid, _sevenZipUpdating ? Messages.SevenZipBusyUpdate : Messages.RestoreAlreadyRunning);
             }
 
+            try
+            {
+                managed?.Reserve();
+                file = RunLogFile.Create(managed?.LogDirectory ?? DataFolders.RunLogs, Messages.RestoreLogName, jobId, started);
+            }
+            catch
+            {
+                found.Dispose();
+                throw;
+            }
+
+            job = new RestoreJob(jobId, set.Header.SetName, request.TargetFolder ?? Messages.RestoreToOriginal, started, file.Path);
             _restore?.Dispose();
             _restore = job;
         }
 
-        ServiceLog.RestoreStarted(logger, set.Header.SetName, job.Target, user);
-        var log = new RunLog(this, file, set.Header.TaskId, _config.GetTaskName(set.Header.TaskId), runId);
+        IRunLog log = file;
+        if (managed is null)
+        {
+            ServiceLog.RestoreStarted(logger, set.Header.SetName, job.Target, user);
+            log = new RunLog(this, file, set.Header.TaskId, _config.GetTaskName(set.Header.TaskId), runId);
+        }
+
         var restoreRequest = new RestoreRequest
         {
             Sets = found.Sets,
@@ -141,9 +165,10 @@ internal sealed partial class AgentService
             TargetFolder = request.TargetFolder,
             DumpsFolder = request.DumpsFolder,
             Existing = request.Existing,
+            ConfinedSource = managed is not null,
             Access = found.Access,
         };
-        var thread = new Thread(() => RunRestore(job, found, file, log, restoreRequest)) { Name = "CUSTOS restore", IsBackground = true };
+        var thread = new Thread(() => RunRestore(job, found, file, log, restoreRequest, managed?.Completed)) { Name = "CUSTOS restore", IsBackground = true };
         thread.Start();
         return new RestoreStartResult { JobId = job.Id, LogFile = file.Path };
     }
@@ -172,7 +197,7 @@ internal sealed partial class AgentService
         return OkResult.Instance;
     }
 
-    private void RunRestore(RestoreJob job, Place place, RunLogFile file, RunLog log, RestoreRequest request)
+    private void RunRestore(RestoreJob job, Place place, RunLogFile file, IRunLog log, RestoreRequest request, Action<RestoreStatusResult>? completed)
     {
         RestoreResult result;
         try
@@ -196,7 +221,10 @@ internal sealed partial class AgentService
         {
             result = new RestoreResult { Status = RunStatuses.Error, ErrorMessage = Messages.Format(Messages.InternalError, ex.Message) };
             log.Write(RunLogLevel.Error, result.ErrorMessage);
-            ServiceLog.RunCrashed(logger, ex, Messages.RestoreLogName);
+            if (completed is null)
+            {
+                ServiceLog.RunCrashed(logger, ex, Messages.RestoreLogName);
+            }
         }
         finally
         {
@@ -207,15 +235,24 @@ internal sealed partial class AgentService
         lock (_restoreLock)
         {
             job.Finish(result);
+            completed?.Invoke(job.Describe());
         }
 
-        ServiceLog.RestoreFinished(logger, job.SetName, result.Status, result.FilesRestored, result.FilesFailed);
+        if (completed is null)
+        {
+            ServiceLog.RestoreFinished(logger, job.SetName, result.Status, result.FilesRestored, result.FilesFailed);
+        }
     }
+
+    private sealed record ManagedRestore(string JobId, string LogDirectory, Action<DestinationStore> PrepareStore, Action Reserve,
+        Action<RestoreStatusResult> Completed);
 
     /// <summary>The places a restore looks in: every destination of the task, or the folder; with their sets.</summary>
     /// <param name="only">The place a set was found in (<see cref="RestoreSetInfo.Where"/>): the others are not opened.</param>
     /// <param name="destinationId">The id of the task destination if one was selected.</param>
-    private List<Place> Places(RestoreSource request, List<string> problems, string? only = null, string? destinationId = null)
+    /// <param name="prepareStore">Applies source restrictions before any backup sets are read.</param>
+    private List<Place> Places(RestoreSource request, List<string> problems, string? only = null, string? destinationId = null,
+        Action<DestinationStore>? prepareStore = null)
     {
         var places = new List<Place>();
         if (request.TaskId is { } taskId)
@@ -256,7 +293,7 @@ internal sealed partial class AgentService
                     continue;
                 }
 
-                if (OpenPlace(label, () => Platform.OpenStore(destination), password, taskId, problems, destination.Id) is { } place)
+                if (OpenPlace(label, () => Platform.OpenStore(destination), password, taskId, problems, destination.Id, prepareStore) is { } place)
                 {
                     places.Add(place);
                 }
@@ -304,12 +341,14 @@ internal sealed partial class AgentService
         return places;
     }
 
-    private Place? OpenPlace(string label, Func<DestinationStore> open, string? password, string? taskId, List<string> problems, string? destinationId = null)
+    private Place? OpenPlace(string label, Func<DestinationStore> open, string? password, string? taskId, List<string> problems, string? destinationId = null,
+        Action<DestinationStore>? prepareStore = null)
     {
         DestinationStore? store = null;
         try
         {
             store = open();
+            prepareStore?.Invoke(store);
             if (store.HasFolders && !store.FolderExists(store.Root))
             {
                 throw new DirectoryNotFoundException(Messages.Format(Messages.RestoreFolderMissing, store.Root));

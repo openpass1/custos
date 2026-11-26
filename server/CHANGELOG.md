@@ -16,6 +16,7 @@ How to write it:
 
 ### Added
 - Linux agents that support cloud drives can use Google Drive, Yandex Disk and Dropbox as task destinations.
+- Find a Linux task's backup sets, restore files to the agent, request status and stop the restore from the site.
 
 ### Fixed
 - Improve text and button contrast for pending machines in the Graphite and Blue colour schemes.

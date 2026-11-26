@@ -17,6 +17,7 @@ use Custos\Http\Web\Controller\IntegrationsController;
 use Custos\Http\Web\Controller\NoticesController;
 use Custos\Http\Web\Controller\NotificationsController;
 use Custos\Http\Web\Controller\ProblemsController;
+use Custos\Http\Web\Controller\RemoteRestoreController;
 use Custos\Http\Web\Controller\ProfileController;
 use Custos\Http\Web\Controller\RunsController;
 use Custos\Http\Web\Controller\SearchController;
@@ -68,6 +69,8 @@ final class Web
         ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/edit$#', TasksController::class, 'save', 'user'],
         ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/versions$#', TasksController::class, 'versions', 'user'],
         ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/versions/(\d{1,18})/restore$#', TasksController::class, 'restore', 'user'],
+        ['GET', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/backup-restore$#', RemoteRestoreController::class, 'show', 'user'],
+        ['POST', '#^/agents/' . self::ID . '/tasks/' . self::ID . '/backup-restore/(list|start|status|stop)$#', RemoteRestoreController::class, 'command', 'user'],
         ['GET', '#^/templates$#', TemplatesController::class, 'index', 'user'],
         ['GET', '#^/templates/new$#', TemplatesController::class, 'create', 'user'],
         ['POST', '#^/templates/new$#', TemplatesController::class, 'store', 'user'],
