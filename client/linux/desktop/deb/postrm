@@ -2,7 +2,7 @@ case "$1" in
   remove|purge)
     clear_install_marker
     if [ -L "$enable_link" ]; then
-      enabled_unit=$(readlink -- "$enable_link")
+      enabled_unit=$(readlink -m -- "$enable_link")
       case "$enabled_unit" in
         "$unit_path"|"/lib/systemd/system/$unit")
           # An external installer can keep the link when switching the same service name to its own unit.
