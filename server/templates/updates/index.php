@@ -5,12 +5,14 @@
  * @var ?array $github @var string $checkedAt @var string $checkError @var bool $checkOn @var array<string, array> $waitingAgent
  * @var array<string, array> $waitingSevenZip @var int $uploadLimit
  * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
+ * @var string $releaseChannel
  * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
  * @var array<string, array{on: bool, latest: ?array, newer: ?array, packages: list<array>, current: ?array, machines: bool,
  *     outdated: array<string, array>}> $editions the editions for Windows 7 and 8.1 (legacy), macOS (macos) and Linux (linux)
  */
 use Custos\Domain\Agents;
 use Custos\Domain\Packages;
+use Custos\Domain\Releases;
 
 $storedSevenZip = $sevenZipPackages[0] ?? null;
 $canDownload = is_array($github) && isset($github['version'])
@@ -18,6 +20,8 @@ $canDownload = is_array($github) && isset($github['version'])
 $short = fn(string $sha) => substr($sha, 0, 16) . '…';
 $published = fn(?array $release) => !empty($release['published_at'])
     ? t('releases.published', ['time' => fmt_time(gmdate('Y-m-d H:i:s', (int) strtotime((string) $release['published_at'])))]) : '';
+$preview = fn(array $release) => empty($release['prerelease']) ? '' : badge('warning', t('releases.channel.preview'));
+$selection = fn(array $release) => e(Releases::selection($releaseChannel, $release));
 $siteStatus = (string) ($siteState['status'] ?? '');
 $siteBusy = in_array($siteStatus, ['queued', 'running'], true);
 $stateTime = fn(string $field) => isset($siteState[$field]) ? fmt_time((string) $siteState[$field]) : '';
@@ -66,6 +70,17 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 <section class="panel">
     <h2><?= e(t('site.title')) ?></h2>
     <p class="hint"><?= e(t('site.hint')) ?></p>
+    <form method="post" action="<?= e(url('/updates/releases/channel')) ?>" class="stack gap-top">
+        <?= csrf_field() ?>
+        <label><?= e(t('releases.channel')) ?>
+            <select name="releases_channel" aria-describedby="releases-channel-hint">
+                <option value="stable"<?= selected(Releases::STABLE, $releaseChannel) ?>><?= e(t('releases.channel.stable')) ?></option>
+                <option value="preview"<?= selected(Releases::PREVIEW, $releaseChannel) ?>><?= e(t('releases.channel.preview')) ?></option>
+            </select>
+        </label>
+        <p class="note" id="releases-channel-hint"><?= e(t('releases.channel.hint')) ?></p>
+        <div><button type="submit" class="secondary"><?= e(t('releases.channel.save')) ?></button></div>
+    </form>
     <?php /* Live part: the state of an update and the release found change by themselves (cron). */ ?>
     <div data-part="site">
     <dl class="props">
@@ -73,7 +88,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <dd><strong><?= e(\Custos\App::VERSION) ?></strong></dd>
         <dt><?= e(t('site.latest')) ?></dt>
         <dd><?php if ($siteLatest !== null): ?>
-                <strong><?= e($siteLatest['version']) ?></strong>
+                <strong><?= e($siteLatest['version']) ?></strong> <?= $preview($siteLatest) ?>
                 <?php if ($siteNewer !== null): ?><?= badge('warning', t('site.newer')) ?><?php else: ?><span class="note"><?= e(t('site.up_to_date')) ?></span><?php endif ?>
                 <span class="note"><?= e($published($siteLatest)) ?></span>
                 <?php if (($siteLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($siteLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
@@ -109,6 +124,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <p class="gap-top"><?= e(t('site.state.rolled_back', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
     <?php elseif ($siteStatus === 'cancelled'): ?>
         <p class="gap-top note"><?= e(t('site.state.cancelled', ['version' => (string) ($siteState['to'] ?? ''), 'time' => $stateTime('finished_at')])) ?></p>
+        <?php if (isset($siteState['error'])): ?><p class="note"><?= e($stateError($siteState['error'])) ?></p><?php endif ?>
     <?php endif ?>
     <?php if (in_array($siteStatus, ['running', 'done', 'failed'], true) && ($siteState['steps'] ?? []) !== []): ?>
         <details class="gap-top"<?= in_array($siteStatus, ['running', 'failed'], true) ? ' open' : '' ?> data-key="site-steps">
@@ -129,7 +145,8 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     <div class="buttons gap-top">
         <?php if ($siteNewer !== null && !$siteBusy): ?>
             <form method="post" action="<?= e(url('/updates/site/install')) ?>" data-confirm="<?= e(t('site.confirm.install', ['version' => $siteNewer['version']])) ?>">
-                <?= csrf_field() ?><button type="submit"><?= e(t('site.action.install', ['version' => $siteNewer['version']])) ?></button>
+                <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($siteNewer) ?>">
+                <button type="submit"><?= e(t('site.action.install', ['version' => $siteNewer['version']])) ?></button>
             </form>
         <?php endif ?>
         <form method="post" action="<?= e(url('/updates/releases/check')) ?>">
@@ -168,7 +185,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     <dl class="props">
         <dt><?= e(t('client.github')) ?></dt>
         <dd><?php if ($clientLatest !== null): ?>
-                <strong><?= e($clientLatest['version']) ?></strong>
+                <strong><?= e($clientLatest['version']) ?></strong> <?= $preview($clientLatest) ?>
                 <span class="note"><?= e($published($clientLatest)) ?></span>
                 <?php if (($clientLatest['url'] ?? '') !== ''): ?> · <a href="<?= e($clientLatest['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
                 <?php if ($clientNewer === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
@@ -176,7 +193,8 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </dl>
     <?php if ($clientNewer !== null): ?>
         <form method="post" action="<?= e(url('/updates/releases/client')) ?>" class="gap-top">
-            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $clientNewer['version']])) ?></button>
+            <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($clientNewer) ?>">
+            <button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $clientNewer['version']])) ?></button>
         </form>
     <?php endif ?>
     <form method="post" action="<?= e(url('/updates/upload')) ?>" enctype="multipart/form-data" class="stack gap-top">
@@ -272,7 +290,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     <dl class="props">
         <dt><?= e(t('client.github')) ?></dt>
         <dd><?php if ($ed['latest'] !== null): ?>
-                <strong><?= e($ed['latest']['version']) ?></strong>
+                <strong><?= e($ed['latest']['version']) ?></strong> <?= $preview($ed['latest']) ?>
                 <span class="note"><?= e($published($ed['latest'])) ?></span>
                 <?php if (($ed['latest']['url'] ?? '') !== ''): ?> · <a href="<?= e($ed['latest']['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('releases.notes')) ?></a><?php endif ?>
                 <?php if ($ed['newer'] === null): ?><div class="note"><?= e(t('client.github.stored')) ?></div><?php endif ?>
@@ -280,7 +298,8 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </dl>
     <?php if ($ed['newer'] !== null): ?>
         <form method="post" action="<?= e(url('/updates/releases/' . $kind)) ?>" class="gap-top">
-            <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $ed['newer']['version']])) ?></button>
+            <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($ed['newer']) ?>">
+            <button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $ed['newer']['version']])) ?></button>
         </form>
     <?php endif ?>
     <?php if ($ed['packages'] !== []): ?><?php $packageTable($ed['packages'], $kind) ?><?php endif ?>

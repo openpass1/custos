@@ -83,6 +83,14 @@ final class Notices
         $this->db->exec("UPDATE notices SET read_at = ? WHERE kind IN ($marks) AND read_at IS NULL", [Time::now(), ...$kinds]);
     }
 
+    /** Retires unread GitHub pre-release notices when the stable channel is selected. */
+    public function settlePreviewReleases(): void
+    {
+        $this->db->exec("UPDATE notices SET read_at = ? WHERE read_at IS NULL
+            AND kind IN ('site.update', 'client.release', 'legacy.release', 'macos.release', 'linux.release')
+            AND JSON_UNQUOTE(JSON_EXTRACT(params, '$.prerelease')) = 'true'", [Time::now()]);
+    }
+
     public function markRead(?int $id, int $userId): void
     {
         if ($id === null) {

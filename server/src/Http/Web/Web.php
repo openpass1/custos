@@ -88,6 +88,7 @@ final class Web
         ['POST', '#^/updates/sevenzip/settings$#', UpdatesController::class, 'sevenZipSettings', 'user'],
         ['POST', '#^/updates/releases/check$#', UpdatesController::class, 'releasesCheck', 'user'],
         ['POST', '#^/updates/releases/settings$#', UpdatesController::class, 'releasesSettings', 'user'],
+        ['POST', '#^/updates/releases/channel$#', UpdatesController::class, 'releasesChannel', 'user'],
         ['POST', '#^/updates/releases/(client|legacy|macos|linux)$#', UpdatesController::class, 'clientDownload', 'user'],
         ['POST', '#^/updates/site/install$#', UpdatesController::class, 'siteInstall', 'user'],
         ['POST', '#^/updates/site/upload$#', UpdatesController::class, 'siteUpload', 'user'],

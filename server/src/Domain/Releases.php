@@ -15,23 +15,26 @@ use Custos\Infra\Time;
  *   client  tag client-vX.Y.Z, package custos-X.Y.Z.zip: the agent update package (A.10), which the site downloads
  *           on request, checks and signs like an uploaded one;
  *   legacy  tag client-legacy-vX.Y.Z, package custos-legacy-X.Y.Z.zip: the same for the edition for Windows 7 and
- *           8.1 (its packages are of kind legacy). Shown and noticed only while the site has any of that edition;
+ *           8.1 (its packages are of kind legacy);
  *   macos   tag client-vX.Y.Z (the same releases as the program for Windows), package custos-macos-X.Y.Z.zip: the
- *           same for CUSTOS for macOS (kind macos), likewise only while the site has any of it;
+ *           same for CUSTOS for macOS (kind macos);
  *   linux   tag client-vX.Y.Z as well, package custos-linux-X.Y.Z.zip: the same for CUSTOS for Linux (kind linux),
  *           available for download before the first Linux installation.
  * A bell notice tells once per version when the site is older, or when the program is newer than every agent
  * package of its edition on the server. Other than the standard program, only editions in use produce notices.
- * Drafts and pre-releases are skipped. The check can be turned off (server without internet).
+ * Drafts are skipped. The stable channel skips pre-releases and the preview channel considers both. The check
+ * can be turned off (server without internet).
  *
  * Settings: releases_check ('0' = off), releases_checked_at, releases_check_error, release_server, release_client,
- * release_legacy, release_macos and release_linux (JSON of the release found, see pick()), release_*_notified
- * (versions noticed).
+ * release_legacy, release_macos and release_linux (JSON of the stable release found, see pick()),
+ * releases_channel, release_*_preview and release_*[_preview]_notified (versions noticed).
  */
 final class Releases
 {
     public const CHECK_EVERY_S = 86400;
     public const DEFAULT_REPO = 'openpass1/custos';
+    public const STABLE = 'stable';
+    public const PREVIEW = 'preview';
     public const PARTS = ['server', 'client', 'legacy', 'macos', 'linux'];
     /** The program parts: the standard edition (client) and the others, named like their package kind. */
     public const PROGRAM_PARTS = ['client', 'legacy', 'macos', 'linux'];
@@ -63,24 +66,58 @@ final class Releases
                 $stats['check'] = $this->check($now) ? 'ok' : 'failed';
             }
         }
-        $site = $this->newerSite();
-        if ($site !== null && $this->settings->get('release_server_notified') !== $site['version']) {
-            $this->notices->add('site.update', null, null, ['version' => $site['version'], 'current' => App::VERSION]);
-            $this->settings->set('release_server_notified', $site['version']);
-            $stats['site'] = $site['version'];
-        }
-        foreach (self::PROGRAM_PARTS as $part) {
-            if ($part !== 'client' && !$this->packages->inUse(self::kind($part))) {
+        foreach (self::PARTS as $part) {
+            if (!in_array($part, ['server', 'client'], true) && !$this->packages->inUse(self::kind($part))) {
                 continue;
             }
-            $client = $this->newerClient($part);
-            if ($client !== null && $this->settings->get("release_{$part}_notified") !== $client['version']) {
-                $this->notices->add("$part.release", null, null, ['version' => $client['version']]);
-                $this->settings->set("release_{$part}_notified", $client['version']);
-                $stats[$part] = $client['version'];
+            $site = $part === 'server';
+            $release = $site ? $this->newerSite() : $this->newerClient($part);
+            if ($release === null) {
+                continue;
             }
+            $preview = !empty($release['prerelease']);
+            $key = $preview ? "release_{$part}_preview_notified" : "release_{$part}_notified";
+            if ($this->settings->get($key) === $release['version'] || ($preview && !$this->allowsPreview())) {
+                continue;
+            }
+            $params = ['version' => $release['version']];
+            if ($site) {
+                $params['current'] = App::VERSION;
+            }
+            if ($preview) {
+                $params['prerelease'] = true;
+            }
+            $this->notices->add($site ? 'site.update' : "$part.release", null, null, $params);
+            if ($preview && !$this->allowsPreview()) {
+                $this->notices->settlePreviewReleases();
+            }
+            $this->settings->set($key, $release['version']);
+            $stats[$site ? 'site' : $part] = $release['version'];
         }
         return $stats;
+    }
+
+    public function channel(): string
+    {
+        return $this->settings->get('releases_channel') === self::PREVIEW ? self::PREVIEW : self::STABLE;
+    }
+
+    public function allowsPreview(): bool
+    {
+        return $this->settings->fresh('releases_channel') === self::PREVIEW;
+    }
+
+    public function setChannel(string $channel): void
+    {
+        if (!in_array($channel, [self::STABLE, self::PREVIEW], true)) {
+            throw new \InvalidArgumentException('releases.error.channel');
+        }
+        $this->settings->set('releases_channel', $channel);
+        if ($channel === self::STABLE) {
+            $this->notices->settlePreviewReleases();
+        } elseif ($this->checkOn() && $this->settings->get('releases_channels_checked') === '') {
+            $this->check(time());
+        }
     }
 
     public function checkOn(): bool
@@ -94,36 +131,57 @@ final class Releases
         $this->settings->set('releases_checked_at', Time::db($now));
         [$status, $body, $error] = ($this->http)($this->apiUrl . '/repos/' . $this->repo . '/releases?per_page=50', 4 * 1024 * 1024);
         $releases = json_decode($body, true);
-        if ($status !== 200 || !is_array($releases)) {
+        if ($status !== 200 || !is_array($releases) || !str_starts_with(ltrim($body), '[')) {
             $this->settings->set('releases_check_error', $error !== '' ? $error : "HTTP $status");
             return false;
         }
+        $preview = array_filter($releases, static fn($release) => is_array($release) && !empty($release['prerelease']));
+        $tags = array_column($releases, 'tag_name');
         foreach (self::PARTS as $part) {
-            $found = self::pick($releases, $part);
-            // A part without a release keeps what was found before (a release can be taken down for a while).
-            if ($found !== null) {
-                $this->settings->set('release_' . $part, json_encode($found, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-            }
+            $this->rememberStable('release_' . $part, self::pick($releases, $part), $tags);
+            $candidate = self::pick($preview, $part, true);
+            $this->settings->set('release_' . $part . '_preview', $candidate === null ? '' : $this->encode($candidate));
         }
+        $this->settings->set('releases_channels_checked', '1');
         $this->settings->set('releases_check_error', '');
         return true;
     }
 
+    private function rememberStable(string $key, ?array $release, array $tags): void
+    {
+        if ($release !== null) {
+            $this->settings->set($key, $this->encode($release));
+            return;
+        }
+        // Keep a release absent from the list as before. Drop a cached tag that is now ineligible for this cache.
+        $cached = $this->cached($key);
+        if (isset($cached['tag']) && in_array($cached['tag'], $tags, true)) {
+            $this->settings->set($key, '');
+        }
+    }
+
+    private function encode(array $release): string
+    {
+        return json_encode($release, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+
     /**
      * The newest release of a part in GitHub's list: version, tag, url (the release page), published_at, the package
-     * (zip_name, zip_url, zip_size), sha256 (GitHub's digest of the package, when given), sums_url (the release's
+     * (zip_name, zip_url, zip_size), prerelease, sha256 (GitHub's digest of the package, when given), sums_url (the release's
      * SHA256SUMS.txt, when present) and installers (name => address of each .exe and .pkg, for the page "Install").
      */
-    public static function pick(array $releases, string $part): ?array
+    public static function pick(array $releases, string $part, bool $includePreview = false): ?array
     {
         $best = null;
         foreach ($releases as $release) {
-            if (!is_array($release) || !empty($release['draft']) || !empty($release['prerelease'])
+            if (!is_array($release) || !empty($release['draft']) || (!$includePreview && !empty($release['prerelease']))
                 || !preg_match('/^' . preg_quote(self::TAGS[$part], '/') . '(\d+\.\d+\.\d+)$/', (string) ($release['tag_name'] ?? ''), $m)) {
                 continue;
             }
             $version = $m[1];
-            if ($best !== null && version_compare($version, $best['version'], '<=')) {
+            $prerelease = !empty($release['prerelease']);
+            if ($best !== null && (version_compare($version, $best['version'], '<')
+                || ($version === $best['version'] && ($prerelease || !$best['prerelease'])))) {
                 continue;
             }
             $zipName = self::ZIPS[$part] . "$version.zip";
@@ -146,6 +204,7 @@ final class Releases
             $best = [
                 'version' => $version,
                 'tag' => (string) $release['tag_name'],
+                'prerelease' => $prerelease,
                 'url' => (string) ($release['html_url'] ?? ''),
                 'published_at' => $release['published_at'] ?? null,
                 'zip_name' => $zipName,
@@ -162,8 +221,31 @@ final class Releases
     /** The newest release of a part found by the last check. */
     public function latest(string $part): ?array
     {
-        $latest = json_decode($this->settings->get('release_' . $part), true);
+        $stable = $this->cached('release_' . $part);
+        if ($this->channel() !== self::PREVIEW) {
+            return $stable;
+        }
+        $preview = $this->cached('release_' . $part . '_preview');
+        return $preview !== null && ($stable === null || version_compare($preview['version'], $stable['version'], '>'))
+            ? $preview : $stable;
+    }
+
+    private function cached(string $key): ?array
+    {
+        $latest = json_decode($this->settings->get($key), true);
         return is_array($latest) && isset($latest['version']) ? $latest : null;
+    }
+
+    public static function selection(string $channel, array $release): string
+    {
+        return $channel . ':' . $release['version'] . ':' . (empty($release['prerelease']) ? self::STABLE : self::PREVIEW);
+    }
+
+    public function checkSelection(?string $selection, ?array $release): void
+    {
+        if ($selection !== null && ($release === null || $selection !== self::selection($this->channel(), $release))) {
+            throw new \InvalidArgumentException('releases.error.selection_changed');
+        }
     }
 
     /** The newest site release when it is newer than this site. */
@@ -193,12 +275,16 @@ final class Releases
      *
      * @throws \InvalidArgumentException with a lang key; $params fills it
      */
-    public function downloadClient(string $login, ?array &$params = null, string $part = 'client'): array
+    public function downloadClient(string $login, ?array &$params = null, string $part = 'client', ?string $selection = null): array
     {
         $params = [];
         $release = $this->latest($part);
+        $this->checkSelection($selection, $release);
         if ($release === null) {
             throw new \InvalidArgumentException('releases.error.not_checked');
+        }
+        if (!empty($release['prerelease']) && !$this->allowsPreview()) {
+            throw new \InvalidArgumentException('releases.error.selection_changed');
         }
         $existing = $this->packages->find(self::kind($part), $release['version']);
         if ($existing !== null) {
@@ -224,6 +310,9 @@ final class Releases
         try {
             file_put_contents($tmp, $body);
             unset($body);
+            if (!empty($release['prerelease']) && !$this->allowsPreview()) {
+                throw new \InvalidArgumentException('releases.error.selection_changed');
+            }
             $package = $this->packages->addAgent($tmp, $login, $params);
             if ($package['kind'] !== self::kind($part)) {
                 // The release of one edition holds a package of the other: not for this button.

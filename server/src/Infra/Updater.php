@@ -141,11 +141,18 @@ final class Updater
     // -------------------------------------------------------------------------------------------------------------
     // Runs
 
-    /** Runs the update an administrator asked for on the site. Null when nothing is queued. */
-    public function runQueued(): ?bool
+    /** Runs the queued site update. Null when nothing can run. @param \Closure(): bool $allowsPreview */
+    public function runQueued(\Closure $allowsPreview): ?bool
     {
         $state = self::readState($this->varDir);
         if (($state['status'] ?? null) !== 'queued') {
+            return null;
+        }
+        if (($state['source'] ?? '') === 'github' && !empty($state['release']['prerelease']) && !$allowsPreview()) {
+            $state['status'] = 'cancelled';
+            $state['finished_at'] = Time::now();
+            $state['error'] = ['key' => 'site.state.stable_channel', 'params' => []];
+            self::writeState($this->varDir, $state);
             return null;
         }
         return $this->run($state);

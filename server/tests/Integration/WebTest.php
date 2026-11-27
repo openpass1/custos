@@ -63,13 +63,16 @@ final class WebTest extends TestCase
             ]]],
             ['tag_name' => '24.09', 'assets' => []],
         ]));
-        // CUSTOS releases: the site 9.9.0 (a pre-release 9.10.0 is skipped) and the program 1.2.3 (a draft 1.2.4 is
-        // skipped), each with SHA256SUMS.txt; the program package is a real agent update package.
+        // Stable and preview releases for the site and several editions. Linux and Windows have real packages.
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.3', "--out=$dir/custos-1.2.3.zip"]);
         $this->assertSame(0, $code, $output);
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.3', '--edition=linux', "--out=$dir/custos-linux-1.2.3.zip"]);
         $this->assertSame(0, $code, $output);
-        file_put_contents("$dir/custos-server-9.9.0.zip", 'not used: the site under test never updates itself');
+        [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.2.5', '--edition=linux', "--out=$dir/custos-linux-1.2.5.zip"]);
+        $this->assertSame(0, $code, $output);
+        foreach (['custos-server-9.9.0.zip', 'custos-server-9.10.0.zip', 'custos-macos-1.2.5.zip', 'custos-legacy-1.0.3.zip', 'custos-9.9.9.zip'] as $file) {
+            file_put_contents("$dir/$file", 'not downloaded by these tests');
+        }
         $sha = fn(string $file) => hash_file('sha256', "$dir/$file");
         $sums = '';
         foreach (['custos-1.2.3.zip', 'custos-linux-1.2.3.zip', 'custos-server-9.9.0.zip'] as $file) {
@@ -79,8 +82,10 @@ final class WebTest extends TestCase
         $asset = fn(string $name, bool $digest = true) => ['name' => $name, 'browser_download_url' => "http://127.0.0.1:$port/$name", 'size' => filesize("$dir/$name")]
             + ($digest ? ['digest' => 'sha256:' . $sha($name)] : []);
         file_put_contents("$dir/custos-releases.json", json_encode([
-            ['tag_name' => 'client-v1.2.4', 'draft' => true, 'assets' => []],
-            ['tag_name' => 'server-v9.10.0', 'prerelease' => true, 'assets' => [$asset('custos-server-9.9.0.zip')]],
+            ['tag_name' => 'client-v9.9.9', 'draft' => true, 'prerelease' => true, 'assets' => [$asset('custos-9.9.9.zip')]],
+            ['tag_name' => 'client-v1.2.5', 'prerelease' => true, 'assets' => [$asset('custos-linux-1.2.5.zip'), $asset('custos-macos-1.2.5.zip')]],
+            ['tag_name' => 'client-legacy-v1.0.3', 'prerelease' => true, 'assets' => [$asset('custos-legacy-1.0.3.zip')]],
+            ['tag_name' => 'server-v9.10.0', 'prerelease' => true, 'assets' => [$asset('custos-server-9.10.0.zip')]],
             ['tag_name' => 'server-v9.9.0', 'html_url' => 'https://github.example/releases/server-v9.9.0', 'published_at' => '2026-11-14T10:00:00Z',
              'assets' => [$asset('custos-server-9.9.0.zip'), $asset('SHA256SUMS.txt', false)]],
             ['tag_name' => 'client-v1.2.3', 'html_url' => 'https://github.example/releases/client-v1.2.3', 'published_at' => '2026-11-14T09:00:00Z',
@@ -603,16 +608,17 @@ final class WebTest extends TestCase
         $this->assertStringNotContainsString('9.10.0', $updates, 'pre-releases are skipped');
         $this->assertStringContainsString('action="/updates/releases/client"', $updates);
         $this->assertStringContainsString('action="/updates/releases/linux"', $updates, 'the first Linux agent needs a package too');
-        $this->assertStringNotContainsString('1.2.4', $updates, 'drafts are skipped');
+        $this->assertStringNotContainsString('9.9.9', $updates, 'drafts are skipped');
+        $this->assertStringContainsString('value="stable" selected', $updates);
 
-        [$status] = $this->post('/updates/releases/client', []);
+        [$status] = $this->post('/updates/releases/client', ['release_selection' => 'stable:1.2.3:stable']);
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Программа 1.2.3 скачана с GitHub, проверена и подписана.', $updates);
         $this->assertStringNotContainsString('action="/updates/releases/client"', $updates, 'the Windows package is on the server now');
         $this->assertStringContainsString('Обновить CUSTOS до 1.0.1', $updates, 'a downloaded package does not become current by itself');
 
-        $this->assertSame(303, $this->post('/updates/releases/linux', [])[0]);
+        $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'stable:1.2.3:stable'])[0]);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringNotContainsString('action="/updates/releases/linux"', $updates, 'the Linux package is on the server now');
         $this->assertStringContainsString('Будет установлена версия 1.2.3, самая новая на сайте', $this->http('GET', '/install')[1]);
@@ -623,7 +629,7 @@ final class WebTest extends TestCase
         $this->assertStringContainsString('Вышла версия сайта 9.9.0.', $this->http('GET', '/updates')[1]);
 
         // Queued, shown, and taken back before any cron pass could run it.
-        [$status] = $this->post('/updates/site/install', []);
+        [$status] = $this->post('/updates/site/install', ['release_selection' => 'stable:9.9.0:stable']);
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Обновление до 9.9.0 начнётся в течение минуты.', $updates);
@@ -665,6 +671,51 @@ final class WebTest extends TestCase
             @unlink("$dir/maintenance.json");
         }
         $this->assertSame(200, $this->http('GET', '/updates')[0]);
+    }
+
+    #[Depends('testReleasesFromTheSite')]
+    public function testPreviewReleaseChannel(): void
+    {
+        $this->assertSame(303, $this->post('/updates/releases/channel', ['releases_channel' => 'preview'])[0]);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('value="preview" selected', $updates);
+        $this->assertStringContainsString('preview:9.10.0:preview', $updates);
+        $this->assertStringContainsString('preview:1.2.5:preview', $updates);
+        $this->assertStringContainsString('action="/updates/releases/macos"', $updates);
+        $this->assertStringContainsString('action="/updates/releases/legacy"', $updates);
+        $this->assertStringNotContainsString('9.9.9', $updates, 'drafts stay excluded in Preview');
+
+        $changed = 'Канал или доступный выпуск изменился.';
+        $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'stable:1.2.3:stable'])[0]);
+        $this->assertStringContainsString($changed, $this->http('GET', '/updates')[1]);
+        $this->assertSame(303, $this->post('/updates/site/install', [])[0]);
+        $this->assertStringContainsString($changed, $this->http('GET', '/updates')[1]);
+
+        // Cron emits a preview notice, then a later pass disallows the queued preview after the channel changes.
+        [$code, $output] = self::php(['bin/cron.php', '--verbose']);
+        $this->assertSame(0, $code, $output);
+        $this->assertStringContainsString('"site": "9.10.0"', $output);
+        $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'preview:1.2.5:preview'])[0]);
+        $this->assertStringContainsString('Программа 1.2.5 для Linux скачана', $this->http('GET', '/updates')[1]);
+        $this->assertSame(303, $this->post('/updates/site/install', ['release_selection' => 'preview:9.10.0:preview'])[0]);
+        $this->assertStringContainsString('Обновление до 9.10.0 ждёт запуска', $this->http('GET', '/updates')[1]);
+        $this->assertSame(303, $this->post('/updates/releases/channel', ['releases_channel' => 'stable'])[0]);
+        [$code, $output] = self::php(['bin/cron.php', '--verbose']);
+        $this->assertSame(0, $code, $output);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Выбран стабильный канал выпусков GitHub.', $updates);
+        $this->assertStringContainsString('Обновить сайт до 9.9.0', $updates);
+        $this->assertStringNotContainsString('action="/updates/releases/linux"', $updates, 'do not offer a downgrade');
+        $this->assertStringNotContainsString('action="/updates/releases/macos"', $updates);
+        $this->assertStringNotContainsString('action="/updates/releases/legacy"', $updates);
+        $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'preview:1.2.5:preview'])[0]);
+        $this->assertStringContainsString($changed, $this->http('GET', '/updates')[1]);
+
+        $notices = $this->db()->all("SELECT params, read_at FROM notices WHERE kind = 'site.update' ORDER BY id");
+        $this->assertSame(['9.9.0', '9.10.0'], array_map(fn(array $row) => json_decode($row['params'], true)['version'], $notices));
+        $this->assertNull($notices[0]['read_at'], 'a stable notice stays unread');
+        $this->assertNotNull($notices[1]['read_at'], 'a preview notice is settled');
+        $this->assertSame(303, $this->post('/updates/linux/1.2.5/delete', [])[0]);
     }
 
     /** Stage 4 through the pages: icons, heat map, charts, storages, CSV, profile (English, dark), Zabbix and the wall. */

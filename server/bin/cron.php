@@ -36,7 +36,7 @@ try {
     } : null);
     $work = $updater->pending();
     if ($work !== null) {
-        exit(($work === 'queued' ? $updater->runQueued() : $updater->recover()) === false ? 1 : 0);
+        exit(($work === 'queued' ? $updater->runQueued($app->releases()->allowsPreview(...)) : $updater->recover()) === false ? 1 : 0);
     }
 
     $result = (new Cron($app))->run(time());
