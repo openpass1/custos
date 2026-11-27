@@ -331,6 +331,8 @@ every change under `client/` (workflow `Linux agent`): on an x86_64 and an ARM m
 with LVM, btrfs and XFS on loop disks), installs the program with `install.sh`, tests the installed service and removes
 it; then it starts the program on other distributions in containers and makes the update package.
 
+For local desktop testing, build the optional [Linux desktop preview](linux/desktop/README.md).
+
 ## Archives
 
 A task can pack each set into one 7z or ZIP archive (the "Compression and checks" page of the task). They are ordinary

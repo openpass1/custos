@@ -57,6 +57,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         _monitor = monitor;
         _demo = demo;
         _knownTheme = knownTheme;
+        ShowsManagement = DesktopPlatform.Current.SupportsManagement;
         _colorChoice = Palettes.Known(Ui.Color);
         ApplyColor();
         _monitor.StatusChanged += (_, _) => ShowStatus();
@@ -218,7 +219,7 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     private void ShowUpdate(ProgramUpdateInfo? update)
     {
-        UpdateVisible = update is { Available: true, Latest: not null };
+        UpdateVisible = ShowsManagement && update is { Available: true, Latest: not null };
         if (!UpdateVisible)
         {
             return;
@@ -239,11 +240,13 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public bool IsConnected => _demo || (_monitor.IsConnected && _monitor.Snapshot is not null);
 
+    public bool ShowsManagement { get; }
+
     /// <summary>This user may change tasks: an administrator, or everybody when the settings allow it.</summary>
-    public bool CanEdit => _demo || _monitor.CanEdit;
+    public bool CanEdit => ShowsManagement && (_demo || _monitor.CanEdit);
 
     /// <summary>«Изменение — только для администраторов» next to the toolbar.</summary>
-    public bool ShowAdminsOnly => IsConnected && !CanEdit;
+    public bool ShowAdminsOnly => ShowsManagement && IsConnected && !CanEdit;
 
     public bool CanEditOne => CanEdit && _selection.Count == 1;
 
@@ -278,7 +281,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     public string PauseIcon => IsPaused ? "play_circle" : "pause";
 
     /// <summary>Restoring writes anywhere on the computer: administrators only (section 4).</summary>
-    public bool CanRestore => _demo || (_monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true);
+    public bool CanRestore => ShowsManagement && (_demo || (_monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true));
 
     /// <summary>The task of <see cref="SelectedTask"/> as the service has it now.</summary>
     public TaskDefinition? SelectedDefinition =>

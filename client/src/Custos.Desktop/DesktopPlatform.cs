@@ -21,6 +21,12 @@ internal class DesktopPlatform
 {
     public static DesktopPlatform Current { get; set; } = new();
 
+    /// <summary>Closing the main window can leave the interface available in the tray.</summary>
+    public virtual bool UsesTray => true;
+
+    /// <summary>The host supports task editing, restore, settings and updates from the interface.</summary>
+    public virtual bool SupportsManagement => true;
+
     /// <summary>The icon of the tray for a state; null = no icon at all.</summary>
     public virtual WindowIcon? TrayIcon(TrayState state) => null;
 

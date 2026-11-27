@@ -174,6 +174,11 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// </summary>
     public async Task SetThemeAsync(string theme)
     {
+        if (!vm.ShowsManagement)
+        {
+            return;
+        }
+
         if (vm.IsDemo)
         {
             vm.SetDemoTheme(theme);
@@ -293,6 +298,11 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// passwords leave the service only this way: administrators only (section 9a).</summary>
     public async Task ExportAsync()
     {
+        if (!vm.ShowsManagement)
+        {
+            return;
+        }
+
         if (Monitor.Status.Hello?.IsAdmin != true || Monitor.Snapshot is not { } snapshot || !await Monitor.EnsureUnlockedAsync())
         {
             if (Monitor.IsConnected && Monitor.Status.Hello?.IsAdmin != true)
@@ -361,7 +371,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Восстановить»: administrators only, with the program password when one is set (section 6.11).</summary>
     public async Task RestoreAsync()
     {
-        if (!vm.IsDemo && (Monitor.Status.Hello?.IsAdmin != true || !await Monitor.EnsureUnlockedAsync()))
+        if (!vm.CanRestore || (!vm.IsDemo && !await Monitor.EnsureUnlockedAsync()))
         {
             return;
         }
@@ -372,7 +382,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Обновить»: the service downloads the version from GitHub, checks it and installs it.</summary>
     public async Task InstallUpdateAsync()
     {
-        if (Monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
+        if (!vm.ShowsManagement || Monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
             || !await Dialogs.Ask(window, Strings.Format(Strings.UpdateAsk, version), Strings.UpdateInstall, Strings.ButtonCancel)
             || !await Monitor.EnsureUnlockedAsync())
         {
@@ -387,7 +397,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Все настройки»: everyone may look; the window asks for the program password before a change is sent.</summary>
     public async Task SettingsAsync()
     {
-        if (!Monitor.IsConnected)
+        if (!vm.ShowsManagement || !Monitor.IsConnected)
         {
             return;
         }

@@ -57,28 +57,29 @@ internal sealed partial class App : Application, IDisposable
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Closing the window leaves the program in the tray; only «Закрыть интерфейс» ends it.
-            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            bool usesTray = DesktopPlatform.Current.UsesTray;
+            desktop.ShutdownMode = usesTray ? ShutdownMode.OnExplicitShutdown : ShutdownMode.OnMainWindowClose;
             var window = CreateMainWindow(Demo, _lastKnown.Theme);
             _window = window;
             var monitor = window.ViewModel.Monitor;
             monitor.AskPassword = () => AskPasswordAsync(monitor);
-            monitor.StatusChanged += (_, _) =>
+            if (usesTray)
             {
-                OnServiceChanged();
-                UpdatePower();
-            };
-            monitor.SnapshotChanged += (_, _) =>
+                monitor.StatusChanged += (_, _) => OnAgentChanged();
+                monitor.SnapshotChanged += (_, _) => OnAgentChanged();
+                monitor.ProgressChanged += (_, _) => UpdateTray();
+                desktop.ShutdownRequested += (_, _) => window.Quitting = true;
+                CreateTray();
+            }
+            else
             {
-                OnServiceChanged();
-                UpdatePower();
-            };
-            monitor.ProgressChanged += (_, _) => UpdateTray();
-            desktop.ShutdownRequested += (_, _) => window.Quitting = true;
-            CreateTray();
+                desktop.MainWindow = window;
+                window.Closed += (_, _) => window.ViewModel.Dispose();
+            }
+
             window.ViewModel.Start();
             UpdateTray();
-            if (!StartHidden)
+            if (usesTray && !StartHidden)
             {
                 ShowWindow();
             }
@@ -91,6 +92,12 @@ internal sealed partial class App : Application, IDisposable
     public static void Activate() => Dispatcher.UIThread.Post(() => (Current as App)?.ShowWindow());
 
     public void Dispose() => _tray?.Dispose();
+
+    private void OnAgentChanged()
+    {
+        OnServiceChanged();
+        UpdatePower();
+    }
 
     /// <summary>The window with its connection to the service, or with the made-up tasks.</summary>
     public static MainWindow CreateMainWindow(bool demo, string? knownTheme = null)

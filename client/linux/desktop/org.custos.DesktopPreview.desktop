@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=CUSTOS Desktop Preview
+Name[ru]=CUSTOS для рабочего стола (предварительная версия)
+Comment=Open the local CUSTOS backup agent
+Comment[ru]=Открыть локальный агент резервного копирования CUSTOS
+Exec=custos-gui
+Icon=custos-gui
+Terminal=false
+Categories=Utility;Archiving;
+StartupWMClass=custos-gui

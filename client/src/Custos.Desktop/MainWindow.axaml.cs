@@ -37,6 +37,11 @@ internal sealed partial class MainWindow : Window
         _actions = new MainActions(this, vm);
         DataContext = vm;
         InitializeComponent();
+        if (!vm.ShowsManagement)
+        {
+            MinWidth = 640;
+        }
+
         RestoreLayout();
         BuildHeader();
         ShowCardColumn();
@@ -81,7 +86,7 @@ internal sealed partial class MainWindow : Window
     /// </summary>
     private void FitToolbar()
     {
-        if (_fitting || !IsVisible)
+        if (!_vm.ShowsManagement || _fitting || !IsVisible)
         {
             return;
         }
@@ -130,7 +135,7 @@ internal sealed partial class MainWindow : Window
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         SaveLayout();
-        if (!Quitting)
+        if (!Quitting && DesktopPlatform.Current.UsesTray)
         {
             e.Cancel = true;
             Hide();
@@ -360,20 +365,23 @@ internal sealed partial class MainWindow : Window
     {
         var theme = this.FindResource("Swatch") as ControlTheme;
         ThemeMenu.Children.Clear();
-        foreach (var (id, icon, text) in (ReadOnlySpan<(string, string, string)>)[
-            (Core.Model.Themes.Auto, "brightness_auto", DesktopPlatform.Current.ThemeAuto),
-            (Core.Model.Themes.Light, "light_mode", Strings.ThemeLight),
-            (Core.Model.Themes.Dark, "dark_mode", Strings.ThemeDark)])
+        if (_vm.ShowsManagement)
         {
-            var item = MenuChoice(theme, "theme", id == _vm.ThemeNow, new Icon { Kind = icon }, text);
-            string chosen = id;
-            item.Click += (_, _) =>
+            foreach (var (id, icon, text) in (ReadOnlySpan<(string, string, string)>)[
+                (Core.Model.Themes.Auto, "brightness_auto", DesktopPlatform.Current.ThemeAuto),
+                (Core.Model.Themes.Light, "light_mode", Strings.ThemeLight),
+                (Core.Model.Themes.Dark, "dark_mode", Strings.ThemeDark)])
             {
-                CloseMenu(item);
-                Safe.Run(() => _actions.SetThemeAsync(chosen), ShowProblem);
-                BuildSettingsMenu();
-            };
-            ThemeMenu.Children.Add(item);
+                var item = MenuChoice(theme, "theme", id == _vm.ThemeNow, new Icon { Kind = icon }, text);
+                string chosen = id;
+                item.Click += (_, _) =>
+                {
+                    CloseMenu(item);
+                    Safe.Run(() => _actions.SetThemeAsync(chosen), ShowProblem);
+                    BuildSettingsMenu();
+                };
+                ThemeMenu.Children.Add(item);
+            }
         }
 
         ColorMenu.Children.Clear();

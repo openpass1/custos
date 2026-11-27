@@ -1,0 +1,68 @@
+name: Linux desktop preview
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/linux-desktop-preview.yml'
+      - 'LICENSE'
+      - 'client/Directory.Build.props'
+      - 'client/Directory.Packages.props'
+      - 'client/global.json'
+      - 'client/THIRD-PARTY-NOTICES.txt'
+      - 'client/linux/build-desktop-preview.sh'
+      - 'client/linux/desktop/**'
+      - 'client/src/Custos.Core/**'
+      - 'client/src/Custos.Desktop/**'
+      - 'client/src/Custos.Gui/**'
+      - 'client/src/Custos.Linux.Desktop/**'
+      - 'client/src/Custos.Windows/THIRD-PARTY-NOTICES-AVALONIA.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-desktop-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: desktop preview (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and smoke-test the archive
+        working-directory: client
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          output="$RUNNER_TEMP/custos-desktop"
+          name="custos-linux-desktop-preview-$ARCH"
+          bash linux/build-desktop-preview.sh "$ARCH" "$output"
+          unpacked=$(mktemp -d "$RUNNER_TEMP/custos-desktop-test.XXXXXX")
+          tar -xzf "$output/$name.tar.gz" -C "$unpacked"
+          "$unpacked/$name/custos-gui" --help
+
+      - name: Upload the archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-linux-desktop-preview-${{ matrix.arch }}
+          path: ${{ runner.temp }}/custos-desktop/custos-linux-desktop-preview-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
