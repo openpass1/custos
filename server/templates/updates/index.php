@@ -35,7 +35,7 @@ foreach ($editions as $ed) {
 }
 // The packages of one edition, with "current" and "delete"; $kind is agent, legacy, macos or linux.
 $packageTable = function (array $packages, string $kind) use ($short): void { ?>
-        <div class="table-wrap gap-top">
+        <div class="table-wrap">
             <table>
                 <thead><tr><th><?= e(t('updates.col.version')) ?></th><th><?= e(t('updates.col.file')) ?></th><th><?= e(t('updates.col.uploaded')) ?></th><th></th></tr></thead>
                 <tbody>
@@ -67,10 +67,10 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 <h1><?= e(t('updates.title')) ?></h1>
 <p class="hint"><?= e(t('updates.hint')) ?></p>
 
-<section class="panel">
+<section class="panel updates-panel">
     <h2><?= e(t('site.title')) ?></h2>
     <p class="hint"><?= e(t('site.hint')) ?></p>
-    <form method="post" action="<?= e(url('/updates/releases/channel')) ?>" class="stack gap-top">
+    <form method="post" action="<?= e(url('/updates/releases/channel')) ?>" class="stack">
         <?= csrf_field() ?>
         <label><?= e(t('releases.channel')) ?>
             <select name="releases_channel" aria-describedby="releases-channel-hint">
@@ -82,7 +82,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <div><button type="submit" class="secondary"><?= e(t('releases.channel.save')) ?></button></div>
     </form>
     <?php /* Live part: the state of an update and the release found change by themselves (cron). */ ?>
-    <div data-part="site">
+    <div class="updates-flow" data-part="site">
     <dl class="props">
         <dt><?= e(t('site.installed')) ?></dt>
         <dd><strong><?= e(\Custos\App::VERSION) ?></strong></dd>
@@ -99,7 +99,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </dl>
 
     <?php if ($siteStatus === 'queued'): ?>
-        <div class="stack gap-top">
+        <div class="updates-flow">
             <p><?= badge('queued') ?> <?= e(t('site.state.queued', ['version' => (string) $siteState['to'], 'by' => (string) $siteState['by'], 'time' => $stateTime('requested_at')])) ?></p>
             <?php if ($cronAge === null || $cronAge > 180): ?>
                 <p class="bad-text"><?= e($cronAge === null ? t('site.state.cron_never') : t('site.state.cron_stale', ['time' => fmt_time($cronLastRun)])) ?></p>
@@ -109,40 +109,42 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
             </form>
         </div>
     <?php elseif ($siteStatus === 'running'): ?>
-        <p class="gap-top"><?= badge('running') ?> <?= e(t('site.state.running', ['version' => (string) ($siteState['to'] ?? '')])) ?></p>
+        <p><?= badge('running') ?> <?= e(t('site.state.running', ['version' => (string) ($siteState['to'] ?? '')])) ?></p>
     <?php elseif ($siteStatus === 'done'): ?>
-        <p class="gap-top"><?= badge('ok', t('status.done')) ?> <?= e(t('site.state.done', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
+        <p><?= badge('ok', t('status.done')) ?> <?= e(t('site.state.done', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
         <p class="note"><?= e(t('site.state.done.hint')) ?></p>
     <?php elseif ($siteStatus === 'failed'): ?>
-        <p class="gap-top bad-text"><?= e(t('site.state.failed', ['version' => (string) ($siteState['to'] ?? '?'), 'time' => $stateTime('finished_at'), 'error' => $stateError($siteState['error'] ?? null)])) ?></p>
+        <p class="bad-text"><?= e(t('site.state.failed', ['version' => (string) ($siteState['to'] ?? '?'), 'time' => $stateTime('finished_at'), 'error' => $stateError($siteState['error'] ?? null)])) ?></p>
         <?php if (isset($siteState['rollback_error'])): ?>
             <p class="bad-text"><?= e($stateError($siteState['rollback_error'])) ?></p>
         <?php else: ?>
             <p><?= e(!empty($siteState['rolled_back']) ? t('site.state.failed.back', ['version' => (string) ($siteState['from'] ?? '')]) : t('site.state.failed.nothing')) ?></p>
         <?php endif ?>
     <?php elseif ($siteStatus === 'rolled_back'): ?>
-        <p class="gap-top"><?= e(t('site.state.rolled_back', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
+        <p><?= e(t('site.state.rolled_back', ['from' => (string) $siteState['from'], 'to' => (string) $siteState['to'], 'time' => $stateTime('finished_at'), 'by' => (string) $siteState['by']])) ?></p>
     <?php elseif ($siteStatus === 'cancelled'): ?>
-        <p class="gap-top note"><?= e(t('site.state.cancelled', ['version' => (string) ($siteState['to'] ?? ''), 'time' => $stateTime('finished_at')])) ?></p>
+        <p class="note"><?= e(t('site.state.cancelled', ['version' => (string) ($siteState['to'] ?? ''), 'time' => $stateTime('finished_at')])) ?></p>
         <?php if (isset($siteState['error'])): ?><p class="note"><?= e($stateError($siteState['error'])) ?></p><?php endif ?>
     <?php endif ?>
     <?php if (in_array($siteStatus, ['running', 'done', 'failed'], true) && ($siteState['steps'] ?? []) !== []): ?>
-        <details class="gap-top"<?= in_array($siteStatus, ['running', 'failed'], true) ? ' open' : '' ?> data-key="site-steps">
+        <details<?= in_array($siteStatus, ['running', 'failed'], true) ? ' open' : '' ?> data-key="site-steps">
             <summary><?= e(t('site.state.steps')) ?></summary>
-            <ol class="gap-top">
-                <?php foreach ($siteState['steps'] as $step): ?>
-                    <li><span class="note nowrap"><?= e(fmt_time((string) $step['at'])) ?></span>
-                        <?= e(t('site.step.' . $step['step'], (array) ($step['params'] ?? []) + ['to' => (string) ($siteState['to'] ?? '')])) ?></li>
-                <?php endforeach ?>
-            </ol>
-            <?php if (($siteState['output'] ?? '') !== ''): ?>
-                <p class="note"><?= e(t('site.state.output')) ?></p>
-                <pre class="log"><?= e((string) $siteState['output']) ?></pre>
-            <?php endif ?>
+            <div class="updates-flow">
+                <ol>
+                    <?php foreach ($siteState['steps'] as $step): ?>
+                        <li><span class="note nowrap"><?= e(fmt_time((string) $step['at'])) ?></span>
+                            <?= e(t('site.step.' . $step['step'], (array) ($step['params'] ?? []) + ['to' => (string) ($siteState['to'] ?? '')])) ?></li>
+                    <?php endforeach ?>
+                </ol>
+                <?php if (($siteState['output'] ?? '') !== ''): ?>
+                    <p class="note"><?= e(t('site.state.output')) ?></p>
+                    <pre class="log"><?= e((string) $siteState['output']) ?></pre>
+                <?php endif ?>
+            </div>
         </details>
     <?php endif ?>
 
-    <div class="buttons gap-top">
+    <div class="buttons wrap-actions">
         <?php if ($siteNewer !== null && !$siteBusy): ?>
             <form method="post" action="<?= e(url('/updates/site/install')) ?>" data-confirm="<?= e(t('site.confirm.install', ['version' => $siteNewer['version']])) ?>">
                 <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($siteNewer) ?>">
@@ -162,9 +164,9 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </div>
 
     <?php if (!$siteBusy): ?>
-    <details class="gap-top">
+    <details>
         <summary><?= e(t('site.upload')) ?></summary>
-        <form method="post" action="<?= e(url('/updates/site/upload')) ?>" enctype="multipart/form-data" class="stack gap-top"
+        <form method="post" action="<?= e(url('/updates/site/upload')) ?>" enctype="multipart/form-data" class="stack"
               data-confirm="<?= e(t('site.upload.confirm')) ?>">
             <?= csrf_field() ?>
             <p class="note"><?= e(t('site.upload.hint')) ?></p>
@@ -179,7 +181,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 </section>
 
 <div class="columns">
-<section class="panel">
+<section class="panel updates-panel">
     <h2><?= e(t('updates.agent')) ?></h2>
     <p><?= $current === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $current['version']])) ?></p>
     <dl class="props">
@@ -192,12 +194,12 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
             <?php else: ?><?= e(t('client.github.none')) ?><?php endif ?></dd>
     </dl>
     <?php if ($clientNewer !== null): ?>
-        <form method="post" action="<?= e(url('/updates/releases/client')) ?>" class="gap-top">
+        <form method="post" action="<?= e(url('/updates/releases/client')) ?>">
             <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($clientNewer) ?>">
             <button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $clientNewer['version']])) ?></button>
         </form>
     <?php endif ?>
-    <form method="post" action="<?= e(url('/updates/upload')) ?>" enctype="multipart/form-data" class="stack gap-top">
+    <form method="post" action="<?= e(url('/updates/upload')) ?>" enctype="multipart/form-data" class="stack">
         <?= csrf_field() ?>
         <label><?= e(t('updates.upload')) ?>
             <input type="file" name="package" accept=".zip,application/zip" required>
@@ -209,7 +211,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     <?php if ($agentPackages !== []): ?><?php $packageTable($agentPackages, 'agent') ?><?php endif ?>
 </section>
 
-<section class="panel">
+<section class="panel updates-panel">
     <h2>7-Zip</h2>
     <p class="hint"><?= e(t('sevenzip.hint')) ?></p>
     <dl class="props">
@@ -226,7 +228,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <dt><?= e(t('sevenzip.stored')) ?></dt>
         <dd><?= $storedSevenZip === null ? e(t('sevenzip.stored.none')) : '<strong>' . e($storedSevenZip['version']) . '</strong>' ?></dd>
     </dl>
-    <div class="buttons">
+    <div class="buttons wrap-actions">
         <form method="post" action="<?= e(url('/updates/sevenzip/check')) ?>">
             <?= csrf_field() ?><button type="submit" class="secondary"><?= e(t('sevenzip.action.check')) ?></button>
         </form>
@@ -243,9 +245,9 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </div>
     <p class="note"><?= e(t($checkOn ? 'sevenzip.check.on' : 'sevenzip.check.off')) ?></p>
 
-    <details class="gap-top">
+    <details>
         <summary><?= e(t('sevenzip.upload')) ?></summary>
-        <form method="post" action="<?= e(url('/updates/sevenzip/upload')) ?>" enctype="multipart/form-data" class="stack gap-top">
+        <form method="post" action="<?= e(url('/updates/sevenzip/upload')) ?>" enctype="multipart/form-data" class="stack">
             <?= csrf_field() ?>
             <p class="note"><?= e(t('sevenzip.upload.hint')) ?></p>
             <label><?= e(t('sevenzip.upload.file')) ?>
@@ -259,7 +261,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
     </details>
 
     <?php if ($sevenZipPackages !== []): ?>
-        <div class="table-wrap gap-top">
+        <div class="table-wrap">
             <table>
                 <thead><tr><th><?= e(t('updates.col.version')) ?></th><th><?= e(t('updates.col.file')) ?></th><th><?= e(t('updates.col.uploaded')) ?></th><th></th></tr></thead>
                 <tbody>
@@ -283,7 +285,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 
 <?php foreach ($editions as $kind => $ed): ?>
 <?php if ($ed['on']): ?>
-<section class="panel">
+<section class="panel updates-panel">
     <h2><?= e(t('updates.' . $kind)) ?></h2>
     <p class="hint"><?= e(t('updates.' . $kind . '.hint')) ?></p>
     <p><?= $ed['current'] === null ? e(t('updates.current.none')) : e(t('updates.current', ['version' => $ed['current']['version']])) ?></p>
@@ -297,7 +299,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
             <?php else: ?><?= e(t('client.github.none')) ?><?php endif ?></dd>
     </dl>
     <?php if ($ed['newer'] !== null): ?>
-        <form method="post" action="<?= e(url('/updates/releases/' . $kind)) ?>" class="gap-top">
+        <form method="post" action="<?= e(url('/updates/releases/' . $kind)) ?>">
             <?= csrf_field() ?><input type="hidden" name="release_selection" value="<?= $selection($ed['newer']) ?>">
             <button type="submit" class="secondary"><?= e(t('client.action.download', ['version' => $ed['newer']['version']])) ?></button>
         </form>
@@ -309,7 +311,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 
 <?php /* Live part: versions and updates on their way change by themselves (app.js) until a machine is ticked here. */ ?>
 <div data-part="machines">
-<section class="panel">
+<section class="panel updates-panel">
     <h2><?= e(t('updates.machines')) ?></h2>
     <?php if ($agents === []): ?>
         <p class="empty"><?= e(t('updates.machines.none')) ?></p>
@@ -353,7 +355,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
                 </select>
             </label>
         <?php endif ?>
-        <div class="buttons">
+        <div class="buttons wrap-actions">
             <?php if ($current !== null): ?>
                 <button type="submit" name="kind" value="agent"><?= e(t('updates.install.agent', ['version' => $current['version']])) ?></button>
             <?php endif ?>

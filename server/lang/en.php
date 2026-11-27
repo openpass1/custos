@@ -166,7 +166,7 @@ return [
     'problems.col.opened' => 'Opened',
     'problems.col.closed' => 'Closed',
     'problems.col.duration' => 'Lasts',
-    'problems.col.notify' => 'Message',
+    'problems.col.notify' => 'Notification',
     'notify.state.pending' => 'will be sent',
     'notify.state.queued' => 'sent',
     'notify.state.skipped' => 'not sent',

@@ -12,6 +12,15 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
+## 1.4.4
+
+### Improved
+- Group problem reports with the affected machine, task, dates and notification status on desktop and mobile.
+
+### Fixed
+- Give update buttons consistent spacing and keep long action labels visible on narrow screens.
+- Vertically align task details, status badges and actions in task and machine lists.
+
 ## 1.4.3
 
 ### Added

@@ -167,7 +167,7 @@ return [
     'problems.col.opened' => 'Открыта',
     'problems.col.closed' => 'Закрыта',
     'problems.col.duration' => 'Длится',
-    'problems.col.notify' => 'Сообщение',
+    'problems.col.notify' => 'Уведомление',
     'notify.state.pending' => 'будет отправлено',
     'notify.state.queued' => 'отправлено',
     'notify.state.skipped' => 'не отправлялось',

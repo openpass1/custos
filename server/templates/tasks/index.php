@@ -36,7 +36,7 @@ $dots = ['' => '', 'bad' => 'bad', 'warning' => 'warn', 'running' => 'info', 'ot
     <div data-part="list">
         <section class="panel" id="task-list">
             <div class="table-wrap">
-                <table class="row-links cards">
+                <table class="row-links cards align-middle">
                     <thead>
                     <tr>
                         <th><?= e(t('tasks.col.name')) ?></th>

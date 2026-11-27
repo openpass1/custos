@@ -35,7 +35,7 @@ $button = function (array $task, string $action, string $class, string $iconName
         <p class="empty"><?= e(t('agent.tasks.empty')) ?></p>
     <?php else: ?>
         <div class="table-wrap">
-            <table class="row-links cards">
+            <table class="row-links cards align-middle">
                 <thead>
                 <tr>
                     <th><?= e(t('tasks.col.name')) ?></th>

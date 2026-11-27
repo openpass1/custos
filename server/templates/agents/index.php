@@ -22,7 +22,7 @@ use Custos\Domain\Agents;
         <h2><?= e(t('agents.pending.title')) ?></h2>
         <p class="hint"><?= e(t('agents.pending.hint')) ?></p>
         <div class="table-wrap">
-            <table class="cards">
+            <table class="cards align-middle">
                 <thead>
                 <tr>
                     <th><?= e(t('agents.col.name')) ?></th>
