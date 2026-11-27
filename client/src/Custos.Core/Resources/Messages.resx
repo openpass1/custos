@@ -1696,6 +1696,9 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="ProgramManagedBySite" xml:space="preserve">
     <value>This computer is connected to a monitoring site: new versions of CUSTOS come from the site.</value>
   </data>
+  <data name="ProgramManagedByPackage" xml:space="preserve">
+    <value>Update CUSTOS using the system package manager.</value>
+  </data>
   <data name="ProgramNothingNewer" xml:space="preserve">
     <value>There is no newer version of CUSTOS on GitHub than {0}.</value>
   </data>

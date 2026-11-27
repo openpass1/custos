@@ -1,0 +1,3 @@
+if [ "$1" = remove ] && systemd_running && ! external_agent && package_unit_loaded; then
+  deb-systemd-invoke stop "$unit"
+fi

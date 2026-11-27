@@ -1676,6 +1676,9 @@ static partial class Messages
     /// <summary>This computer is connected to a monitoring site: new versions of CUSTOS come from the site.</summary>
     public static string ProgramManagedBySite => Get(nameof(ProgramManagedBySite));
 
+    /// <summary>Update CUSTOS using the system package manager.</summary>
+    public static string ProgramManagedByPackage => Get(nameof(ProgramManagedByPackage));
+
     /// <summary>There is no newer version of CUSTOS on GitHub than {0}.</summary>
     public static string ProgramNothingNewer => Get(nameof(ProgramNothingNewer));
 

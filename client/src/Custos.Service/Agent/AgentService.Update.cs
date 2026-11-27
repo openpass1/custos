@@ -37,6 +37,14 @@ internal sealed partial class AgentService
 
     private int _updateRunning;
 
+    // Debian packages keep this executable and its service unit under dpkg ownership.
+    private static bool ProgramManagedByPackage =>
+#if CUSTOS_PACKAGE_MANAGED
+        true;
+#else
+        false;
+#endif
+
     private async Task<CommandOutcome?> InstallUpdateAsync(MonitorCommand command, CancellationToken cancellationToken)
     {
         string? version = Text(command.Payload, "version");
@@ -50,6 +58,11 @@ internal sealed partial class AgentService
         if (!_link!.VerifyServerSignature(CustosEdition.PackageSignedString(version, sha256), signature))
         {
             return Rejected(version, Messages.MonitorPackageBadSignature);
+        }
+
+        if (ProgramManagedByPackage)
+        {
+            return CommandOutcome.Failed(Messages.ProgramManagedByPackage);
         }
 
         if (version == info.Version)
@@ -118,6 +131,11 @@ internal sealed partial class AgentService
     /// </summary>
     private async Task<HandOverProblem?> HandOverAsync(string package, string version, string? commandId, CancellationToken cancellationToken)
     {
+        if (ProgramManagedByPackage)
+        {
+            return new HandOverProblem(Messages.ProgramManagedByPackage, BadPackage: false);
+        }
+
         bool handedOver = false;
         string staging = Path.Combine(DataFolders.Updates, $"custos-{version}");
         try

@@ -35,7 +35,7 @@ internal sealed partial class AgentService
     private ProgramCheckState _programState = new();
 
     /// <summary>The daily check is on: the setting says so and no monitoring site is connected.</summary>
-    private bool ProgramChecking => _config.GetSettings().CheckUpdates && !ServerConfigured;
+    private bool ProgramChecking => !ProgramManagedByPackage && _config.GetSettings().CheckUpdates && !ServerConfigured;
 
     /// <summary>For the snapshot: what the program window shows about new versions.</summary>
     private ProgramUpdateInfo DescribeProgramUpdate()
@@ -46,13 +46,12 @@ internal sealed partial class AgentService
             state = _programState;
         }
 
-        bool site = ServerConfigured;
-        bool checking = _config.GetSettings().CheckUpdates && !site;
+        bool checking = ProgramChecking;
         var latest = state.Latest;
         return new ProgramUpdateInfo
         {
             Checking = checking,
-            ManagedBySite = site,
+            ManagedBySite = ServerConfigured && !ProgramManagedByPackage,
             CheckedAt = state.CheckedAt,
             Latest = latest?.Version,
             Available = checking && latest is not null && ProgramReleases.IsNewer(latest.Version, info.Version),
@@ -114,7 +113,7 @@ internal sealed partial class AgentService
     /// <summary>Asks GitHub now (the daily check and the button «Проверить сейчас»).</summary>
     public async Task<ProgramUpdateInfo> CheckProgramAsync(CancellationToken cancellationToken)
     {
-        if (ServerConfigured)
+        if (ProgramManagedByPackage || ServerConfigured)
         {
             return DescribeProgramUpdate();
         }
@@ -178,6 +177,11 @@ internal sealed partial class AgentService
     /// </summary>
     public async Task<OkResult> UpdateProgramAsync(string user, CancellationToken cancellationToken)
     {
+        if (ProgramManagedByPackage)
+        {
+            return ProgramRefused(Messages.ProgramManagedByPackage);
+        }
+
         if (ServerConfigured)
         {
             return ProgramRefused(Messages.ProgramManagedBySite);

@@ -1,0 +1,9 @@
+# Do not overwrite a vendor unit or binary left by an independent installation.
+if [ "$1" = install ]; then
+  for path in "$unit_path" "/lib/systemd/system/$unit" /usr/bin/custos /usr/bin/custos-gui; do
+    if path_exists "$path" && ! dpkg-query -S -- "$path" 2>/dev/null | grep -q '^custos-desktop-preview:'; then
+      printf 'Cannot install custos-desktop-preview over an existing file: %s\n' "$path" >&2
+      exit 1
+    fi
+  done
+fi

@@ -331,7 +331,7 @@ every change under `client/` (workflow `Linux agent`): on an x86_64 and an ARM m
 with LVM, btrfs and XFS on loop disks), installs the program with `install.sh`, tests the installed service and removes
 it; then it starts the program on other distributions in containers and makes the update package.
 
-For local desktop testing, build the optional [Linux desktop preview](linux/desktop/README.md).
+On a Debian, Ubuntu or Linux Mint desktop, install the agent and its graphical interface with the [desktop .deb package](linux/desktop/README.md).
 
 ## Archives
 

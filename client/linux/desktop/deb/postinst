@@ -1,0 +1,23 @@
+if [ "$1" != configure ] || external_agent; then
+  exit 0
+fi
+
+if systemd_running && { systemctl is-active --quiet "$unit" || [ -S /run/custos.sock ]; } && ! package_unit_loaded; then
+  exit 0
+fi
+
+if [ -z "${2:-}" ]; then
+  # A new install enables the service. On upgrades keep the administrator's enablement choice.
+  systemctl --no-reload enable "$unit"
+fi
+
+if systemd_running; then
+  systemctl daemon-reload
+  if package_unit_loaded; then
+    if [ -z "${2:-}" ]; then
+      deb-systemd-invoke start "$unit"
+    elif systemctl is-active --quiet "$unit"; then
+      deb-systemd-invoke restart "$unit"
+    fi
+  fi
+fi

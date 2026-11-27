@@ -1696,6 +1696,9 @@
   <data name="ProgramManagedBySite" xml:space="preserve">
     <value>Компьютер подключён к сайту мониторинга: новые версии CUSTOS приходят с сайта.</value>
   </data>
+  <data name="ProgramManagedByPackage" xml:space="preserve">
+    <value>Обновляйте CUSTOS через пакетный менеджер системы.</value>
+  </data>
   <data name="ProgramNothingNewer" xml:space="preserve">
     <value>На GitHub нет версии CUSTOS новее {0}.</value>
   </data>
