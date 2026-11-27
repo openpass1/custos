@@ -271,4 +271,46 @@ static partial class LinuxStrings
 
     /// <summary>{0}: no usable CUSTOS application is configured. Set up your own with sudo custos cloud app {1}.</summary>
     public static string CliCloudAppMissing => Get(nameof(CliCloudAppMissing));
+
+    /// <summary>Usage:</summary>
+    public static string CliUpdateUsage => Get(nameof(CliUpdateUsage));
+
+    /// <summary>GitHub update channel: {0}</summary>
+    public static string CliUpdateChannel => Get(nameof(CliUpdateChannel));
+
+    /// <summary>this version of the agent does not support changing the update channel</summary>
+    public static string CliUpdateChannelUnsupported => Get(nameof(CliUpdateChannelUnsupported));
+
+    /// <summary>the update channel could not be saved</summary>
+    public static string CliUpdateChangeFailed => Get(nameof(CliUpdateChangeFailed));
+
+    /// <summary>the check did not finish for the current channel. Run custos update check again</summary>
+    public static string CliUpdateCheckAgain => Get(nameof(CliUpdateCheckAgain));
+
+    /// <summary>CUSTOS {0} is available. Installed version: {1}. Run custos update install to install it.</summary>
+    public static string CliUpdateNewRelease => Get(nameof(CliUpdateNewRelease));
+
+    /// <summary>CUSTOS {0} is available as a pre-release. Installed version: {1}. Run custos update install to install it.</summary>
+    public static string CliUpdateNewPreview => Get(nameof(CliUpdateNewPreview));
+
+    /// <summary>There is no Linux release in the selected channel yet.</summary>
+    public static string CliUpdateNoRelease => Get(nameof(CliUpdateNoRelease));
+
+    /// <summary>There is no release newer than CUSTOS {0} in the selected channel.</summary>
+    public static string CliUpdateNoNewRelease => Get(nameof(CliUpdateNoNewRelease));
+
+    /// <summary>The agent accepted the update for installation.</summary>
+    public static string CliUpdateAccepted => Get(nameof(CliUpdateAccepted));
+
+    /// <summary>the agent could not start the update</summary>
+    public static string CliUpdateInstallFailed => Get(nameof(CliUpdateInstallFailed));
+
+    /// <summary>the program password is required. Run the command in an interactive terminal</summary>
+    public static string CliUpdatePasswordNeedsTerminal => Get(nameof(CliUpdatePasswordNeedsTerminal));
+
+    /// <summary>Program password (input is hidden):</summary>
+    public static string CliUpdatePasswordPrompt => Get(nameof(CliUpdatePasswordPrompt));
+
+    /// <summary>no program password was entered</summary>
+    public static string CliUpdatePasswordCancelled => Get(nameof(CliUpdatePasswordCancelled));
 }

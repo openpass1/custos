@@ -38,6 +38,9 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
     private readonly Credential? _existing;
     private readonly ButtonItem _open;
     private readonly ButtonItem _copy;
+    private readonly ButtonItem _configureApp;
+    private readonly LabelItem _instructions;
+    private readonly RowItem _signInActions;
     private readonly TextItem _answer;
     private readonly NoteItem _status = new(string.Empty);
     private readonly CancellationTokenSource _closing = new();
@@ -56,24 +59,36 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         _kind = kind;
         _existing = existing;
         OkButton.Content = Strings.CloudConnectButton;
+        OkButton.IsVisible = false;
         _open = ButtonItem.Of("open_in_new", Strings.CloudOpenPage, () => Safe.Run(OpenPageAsync));
         _copy = new ButtonItem("content_copy", Strings.CloudCopyLink, CopyLinkAsync, ButtonLook.Outlined) { Failed = ex => ShowStatus(ex.Message, error: true) };
         _open.IsEnabled = _copy.IsEnabled = false;
+        _configureApp = new ButtonItem("apps", Strings.SettingsCloudOwn, ConfigureAppAsync, ButtonLook.Outlined)
+        {
+            IsVisible = false, Failed = ex => ShowStatus(ex.Message, error: true),
+        };
         _answer = new TextItem(Strings.CloudAnswer.TrimEnd(':', ' '))
         {
             Secret = true, ActionIcon = "content_paste", ActionTip = Strings.CloudPasteTip, Action = PasteAsync,
+            IsVisible = false,
         };
+        _instructions = new LabelItem(Strings.Format(Strings.CloudConnectSteps, CloudNames.Name(kind), CloudNames.AppFolder(kind)))
+        {
+            IsVisible = false,
+        };
+        _signInActions = new RowItem(_open, _copy) { IsVisible = false };
 
         ClipboardText = ReadClipboardAsync;
-        Items.Add(new LabelItem(Strings.Format(Strings.CloudConnectSteps, CloudNames.Name(kind), CloudNames.AppFolder(kind))));
+        Items.Add(_instructions);
         if (existing is not null)
         {
             Items.Add(new NoteItem(Strings.Format(Strings.CloudReconnectNote, existing.User)));
         }
 
-        Items.Add(new RowItem(_open, _copy));
+        Items.Add(_signInActions);
         Items.Add(_answer);
         Items.Add(_status);
+        Items.Add(_configureApp);
 
         Opened += (_, _) => Safe.Run(() => BeginAsync(null), ex => ShowStatus(ex.Message, error: true));
         Closed += (_, _) => Dispose();
@@ -87,6 +102,8 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
 
     /// <summary>The page of the service, once the service prepared the sign-in.</summary>
     internal string? SignInUrl => _begun?.Url;
+
+    private bool CanConfigureApp => CustosEdition.IsLinux && _monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true;
 
     public void Dispose()
     {
@@ -118,6 +135,28 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
 
     private static string Join(string? first, string second) => first is null ? second : first + Environment.NewLine + second;
 
+    private Task<CloudAppsResult> GetAppsAsync() => _monitor.RequestAsync(PipeProtocol.Methods.CloudAppsGet, EmptyRequest.Instance,
+        IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.CloudAppsResult);
+
+    internal static bool HasUsableApp(CloudService service, CloudAppsResult apps) =>
+        apps.Own.Of(service.Kind) is { } own
+            ? !service.NeedsSecret || !string.IsNullOrWhiteSpace(own.ClientSecret)
+            : apps.BuiltIn.Contains(service.Kind);
+
+    private async Task ConfigureAppAsync()
+    {
+        if (!CanConfigureApp || !await _monitor.EnsureUnlockedAsync() || _closed)
+        {
+            return;
+        }
+
+        var apps = await GetAppsAsync();
+        if (!_closed && await new CloudAppsDialog(_monitor, apps).ShowAsync(this, _monitor))
+        {
+            await BeginAsync(null);
+        }
+    }
+
     /// <summary>Asks the service for a sign-in: a new one at the start and after a failed attempt.</summary>
     /// <param name="problem">What went wrong with the attempt before, shown in front of the new state.</param>
     private async Task BeginAsync(string? problem)
@@ -125,8 +164,35 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         var service = CloudService.Of(_kind);
         _begun = null;
         _open.IsEnabled = _copy.IsEnabled = false;
+        _instructions.IsVisible = _signInActions.IsVisible = _answer.IsVisible = OkButton.IsVisible = false;
+        _configureApp.IsVisible = false;
         ShowStatus(Strings.CloudPreparing, error: false);
         CloseReceiver();
+        if (CanConfigureApp)
+        {
+            try
+            {
+                var apps = await GetAppsAsync();
+                if (_closed)
+                {
+                    return;
+                }
+
+                if (!HasUsableApp(service, apps))
+                {
+                    _configureApp.IsVisible = true;
+                    var help = service.NeedsSecret ? DesktopStrings.LinuxCloudAppMissingWithSecret : DesktopStrings.LinuxCloudAppMissing;
+                    ShowStatus(Join(problem, Strings.Format(help, CloudNames.Name(_kind))), error: false);
+                    return;
+                }
+            }
+            catch (ServiceUnavailableException ex)
+            {
+                ShowStatus(Join(problem, ex.Message), error: true);
+                return;
+            }
+        }
+
         // Match the Linux CLI: Yandex Disk and Dropbox can return a code without registering a new redirect.
         if (!CustosEdition.IsLinux || service.CodeOnScreen is null)
         {
@@ -165,6 +231,7 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
 
         _begun = begun;
         _open.IsEnabled = _copy.IsEnabled = true;
+        _instructions.IsVisible = _signInActions.IsVisible = _answer.IsVisible = OkButton.IsVisible = true;
         string ready = _receiver is not null ? Strings.CloudReady
             : service.CodeOnScreen is null ? Strings.CloudReadyAddress
             : Strings.CloudReadyCode;

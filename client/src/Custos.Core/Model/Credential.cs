@@ -77,6 +77,10 @@ public sealed class AgentSettings
     /// with a site, the site decides about updates.</summary>
     public bool CheckUpdates { get; set; } = true;
 
+    /// <summary>Release channel for the standalone Linux agent. Null selects stable releases.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ProgramUpdateChannel { get; set; }
+
     public string? ServerUrl { get; set; }
 
     public int HeartbeatIntervalS { get; set; } = 60;

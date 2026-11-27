@@ -25,6 +25,9 @@
   <data name="SettingsAll" xml:space="preserve">
     <value>All settings…</value>
   </data>
+  <data name="MonitorChangeServer" xml:space="preserve">
+    <value>Change server…</value>
+  </data>
   <data name="MonitorSwitchConfirm" xml:space="preserve">
     <value>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</value>
   </data>
@@ -34,8 +37,59 @@
   <data name="InterfaceLanguage" xml:space="preserve">
     <value>Interface language</value>
   </data>
-  <data name="InterfaceLanguageRestart" xml:space="preserve">
-    <value>Close and reopen CUSTOS to apply the language. The backup service continues to run.</value>
+  <data name="InterfaceLanguageSaveFailed" xml:space="preserve">
+    <value>The interface language could not be saved in your CUSTOS settings.</value>
+  </data>
+  <data name="LinuxServiceSettingsReadOnly" xml:space="preserve">
+    <value>The service settings are read-only.</value>
+  </data>
+  <data name="LinuxDesktopUpdates" xml:space="preserve">
+    <value>Desktop updates</value>
+  </data>
+  <data name="LinuxDesktopUpdatesHelp" xml:space="preserve">
+    <value>Download the package from GitHub Releases and open it in your system package manager to install it.</value>
+  </data>
+  <data name="LinuxAgentUpdates" xml:space="preserve">
+    <value>Agent updates</value>
+  </data>
+  <data name="LinuxUpdateChannel" xml:space="preserve">
+    <value>Update channel</value>
+  </data>
+  <data name="LinuxUpdateStable" xml:space="preserve">
+    <value>Stable</value>
+  </data>
+  <data name="LinuxUpdatePreview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="LinuxUpdateInstalledVersion" xml:space="preserve">
+    <value>Installed package version is {0}.</value>
+  </data>
+  <data name="LinuxUpdateInstalledUnknown" xml:space="preserve">
+    <value>Could not read the installed version from the system package manager.</value>
+  </data>
+  <data name="LinuxUpdateNoPackage" xml:space="preserve">
+    <value>no matching package on GitHub for this channel</value>
+  </data>
+  <data name="LinuxUpdateNoNewerPackage" xml:space="preserve">
+    <value>no newer package for this channel</value>
+  </data>
+  <data name="LinuxUpdatePreviewAvailable" xml:space="preserve">
+    <value>CUSTOS {0} Preview is out</value>
+  </data>
+  <data name="LinuxUpdateReleaseNotes" xml:space="preserve">
+    <value>Release notes</value>
+  </data>
+  <data name="LinuxUpdateDownloadPackage" xml:space="preserve">
+    <value>Download package</value>
+  </data>
+  <data name="LinuxUpdateBrowserFailed" xml:space="preserve">
+    <value>Could not open GitHub Releases in the browser.</value>
+  </data>
+  <data name="LinuxUpdateChannelSaveFailed" xml:space="preserve">
+    <value>Could not save the desktop update channel.</value>
+  </data>
+  <data name="LinuxUpdateSaveAgentChannel" xml:space="preserve">
+    <value>Save settings to change the agent update channel, then check again.</value>
   </data>
   <data name="LinuxThemeAuto" xml:space="preserve">
     <value>Follow the system</value>
@@ -148,6 +202,12 @@
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} files · {1} · {2}</value>
   </data>
+  <data name="LinuxCloudAppMissing" xml:space="preserve">
+    <value>Enter the client ID of your application for {0}, then continue signing in here.</value>
+  </data>
+  <data name="LinuxCloudAppMissingWithSecret" xml:space="preserve">
+    <value>Enter the client ID and secret of your application for {0}, then continue signing in here.</value>
+  </data>
   <data name="LinuxCloudNoLoopback" xml:space="preserve">
     <value>Cannot open a local callback port for Google Drive. Close this window and try again.</value>
   </data>
@@ -226,5 +286,33 @@ Off: the contents of /srv/data go straight into &lt;backup&gt;/…</value>
   </data>
   <data name="LinuxEventHelp" xml:space="preserve">
     <value>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.</value>
+  </data>
+  <data name="SystemServiceHeading" xml:space="preserve">
+    <value>CUSTOS service</value>
+  </data>
+  <data name="SystemServiceRestart" xml:space="preserve">
+    <value>Restart the service</value>
+  </data>
+  <data name="SystemServiceRestartConfirm" xml:space="preserve">
+    <value>Restart the CUSTOS service?</value>
+  </data>
+  <data name="SystemServiceDone" xml:space="preserve">
+    <value>The CUSTOS service operation completed.</value>
+  </data>
+  <data name="SystemServiceFailed" xml:space="preserve">
+    <value>Could not control the CUSTOS service.
+{0}</value>
+  </data>
+  <data name="SystemServiceExitCode" xml:space="preserve">
+    <value>systemctl exited with code {0}.</value>
+  </data>
+  <data name="SystemServiceCustomSocket" xml:space="preserve">
+    <value>Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.</value>
+  </data>
+  <data name="SystemServiceUnavailable" xml:space="preserve">
+    <value>This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.</value>
+  </data>
+  <data name="SystemServiceTimeout" xml:space="preserve">
+    <value>The service operation could not be confirmed in time. Check the service status before retrying.</value>
   </data>
 </root>

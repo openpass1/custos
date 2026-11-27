@@ -1711,6 +1711,12 @@
   <data name="ProgramManagedByPackage" xml:space="preserve">
     <value>Обновляйте CUSTOS через пакетный менеджер системы.</value>
   </data>
+  <data name="ProgramUpdateChannelChanged" xml:space="preserve">
+    <value>Канал обновлений изменился. Проверьте наличие обновлений ещё раз.</value>
+  </data>
+  <data name="ProgramInvalidUpdateChannel" xml:space="preserve">
+    <value>Каналы stable и preview доступны для автономной службы Linux.</value>
+  </data>
   <data name="ProgramNothingNewer" xml:space="preserve">
     <value>На GitHub нет версии CUSTOS новее {0}.</value>
   </data>

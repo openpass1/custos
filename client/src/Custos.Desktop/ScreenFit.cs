@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using Avalonia.Threading;
+using Custos.Core;
 
 namespace Custos.Desktop;
 
@@ -19,21 +21,62 @@ internal static class ScreenFit
     {
         if ((owner.Screens.ScreenFromWindow(owner) ?? owner.Screens.Primary) is { } screen)
         {
-            Cap(window, screen.WorkingArea.Height / screen.Scaling);
+            LimitToScreen(window, screen);
         }
     }
 
     /// <summary>Once the window is open: no taller than its screen, and moved onto the free part of it.</summary>
     public static void Keep(Window window) => window.Opened += (_, _) =>
     {
-        if ((window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary) is { } screen)
+        var owner = window.Owner as Window;
+        var screen = CustosEdition.IsLinux && owner is not null
+            ? owner.Screens.ScreenFromWindow(owner) ?? owner.Screens.Primary
+            : window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary;
+        if (screen is not null)
         {
-            Cap(window, screen.WorkingArea.Height / screen.Scaling);
+            LimitToScreen(window, screen);
         }
 
         // After the layout, when the size of the frame is known.
-        Dispatcher.UIThread.Post(() => MoveOnto(window), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => MoveOnto(window, CustosEdition.IsLinux ? screen : null), DispatcherPriority.Background);
     };
+
+    private static void LimitToScreen(Window window, Screen screen)
+    {
+        if (CustosEdition.IsLinux)
+        {
+            LimitLinux(window, screen, window.MinWidth, window.MinHeight);
+        }
+        else
+        {
+            Cap(window, screen.WorkingArea.Height / screen.Scaling);
+        }
+    }
+
+    /// <summary>Leave room in the work area for decorations even before the window manager supplies frame extents.</summary>
+    public static void LimitLinux(Window window, Screen screen, double minimumWidth, double minimumHeight)
+    {
+        double width = Math.Max(1, Math.Floor(screen.WorkingArea.Width / screen.Scaling) - 16);
+        double height = Math.Max(1, Math.Floor(screen.WorkingArea.Height / screen.Scaling) - 44);
+        window.MinWidth = Math.Min(minimumWidth, width);
+        window.MinHeight = Math.Min(minimumHeight, height);
+        window.MaxWidth = width;
+        window.MaxHeight = height;
+        if (window.WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        if (window.Width > width)
+        {
+            window.Width = width;
+        }
+
+        if (window.Height > height)
+        {
+            window.Height = height;
+        }
+    }
 
     private static void Cap(Window window, double free)
     {
@@ -54,23 +97,27 @@ internal static class ScreenFit
         }
     }
 
-    private static void MoveOnto(Window window)
+    public static void MoveOnto(Window window, Screen? target = null)
     {
-        if (!window.IsVisible || (window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary) is not { } screen)
+        if (!window.IsVisible || window.WindowState != WindowState.Normal
+            || (target ?? window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary) is not { } screen)
         {
             return;
         }
 
+        var position = ClampPosition(window.Position, window.FrameSize ?? window.ClientSize, screen);
+        if (position != window.Position)
+        {
+            window.Position = position;
+        }
+    }
+
+    public static PixelPoint ClampPosition(PixelPoint position, Size frame, Screen screen)
+    {
         var area = screen.WorkingArea;
-        var frame = window.FrameSize ?? window.ClientSize;
         int width = (int)Math.Ceiling(frame.Width * screen.Scaling);
         int height = (int)Math.Ceiling(frame.Height * screen.Scaling);
-        var at = window.Position;
-        int x = Math.Max(area.X, Math.Min(at.X, area.Right - width));
-        int y = Math.Max(area.Y, Math.Min(at.Y, area.Bottom - height));
-        if (x != at.X || y != at.Y)
-        {
-            window.Position = new PixelPoint(x, y);
-        }
+        return new PixelPoint(Math.Max(area.X, Math.Min(position.X, area.Right - width)),
+            Math.Max(area.Y, Math.Min(position.Y, area.Bottom - height)));
     }
 }

@@ -86,6 +86,7 @@
   custos log [-f] [-n N]   последние строки журнала; -f показывает новые по мере появления
   custos restore help      список наборов и восстановление
   custos cloud help        подключение облачных дисков
+  custos update help       канал обновлений агента Linux
   custos snapshots         можно ли делать снимки томов заданий и что сделать, если нельзя
   custos connect '&lt;строка&gt;'  подключиться к сайту мониторинга (строка подключения с сайта)
   custos disconnect        отключиться от сайта
@@ -311,5 +312,53 @@ ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:{0}:127.0.0.1:{0} USER@SERVER
   </data>
   <data name="CliCloudAppMissing" xml:space="preserve">
     <value>{0}: приложение CUSTOS не настроено. Укажите своё приложение командой sudo custos cloud app {1}.</value>
+  </data>
+  <data name="CliUpdateUsage" xml:space="preserve">
+    <value>Команды:
+  custos update channel                   показать канал или кто управляет обновлениями
+  custos update channel stable|preview    выбрать стабильные выпуски или включить предвыпуски
+  custos update check                     проверить GitHub сейчас
+  custos update install                   установить обновление из выбранного канала
+
+Для изменения канала, проверки и установки нужны права локального администратора. Эти действия доступны при автономной установке Linux из архива.</value>
+  </data>
+  <data name="CliUpdateChannel" xml:space="preserve">
+    <value>Канал обновлений GitHub: {0}</value>
+  </data>
+  <data name="CliUpdateChannelUnsupported" xml:space="preserve">
+    <value>эта версия агента не поддерживает изменение канала обновлений</value>
+  </data>
+  <data name="CliUpdateChangeFailed" xml:space="preserve">
+    <value>не удалось сохранить канал обновлений</value>
+  </data>
+  <data name="CliUpdateCheckAgain" xml:space="preserve">
+    <value>проверка выбранного канала не завершилась. Повторите custos update check</value>
+  </data>
+  <data name="CliUpdateNewRelease" xml:space="preserve">
+    <value>Доступен CUSTOS {0}. Установленная версия: {1}. Для установки выполните custos update install.</value>
+  </data>
+  <data name="CliUpdateNewPreview" xml:space="preserve">
+    <value>Доступен предвыпуск CUSTOS {0}. Установленная версия: {1}. Для установки выполните custos update install.</value>
+  </data>
+  <data name="CliUpdateNoRelease" xml:space="preserve">
+    <value>В выбранном канале пока нет выпуска для Linux.</value>
+  </data>
+  <data name="CliUpdateNoNewRelease" xml:space="preserve">
+    <value>В выбранном канале нет выпуска новее CUSTOS {0}.</value>
+  </data>
+  <data name="CliUpdateAccepted" xml:space="preserve">
+    <value>Агент принял обновление к установке.</value>
+  </data>
+  <data name="CliUpdateInstallFailed" xml:space="preserve">
+    <value>агент не смог запустить обновление</value>
+  </data>
+  <data name="CliUpdatePasswordNeedsTerminal" xml:space="preserve">
+    <value>требуется пароль программы. Запустите команду в интерактивном терминале</value>
+  </data>
+  <data name="CliUpdatePasswordPrompt" xml:space="preserve">
+    <value>Пароль программы (ввод скрыт):</value>
+  </data>
+  <data name="CliUpdatePasswordCancelled" xml:space="preserve">
+    <value>пароль программы не введён</value>
   </data>
 </root>

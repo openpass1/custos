@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -50,11 +49,7 @@ internal static partial class Program
         CustosEdition.UseLinux();
         UiState.Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData,
             Environment.SpecialFolderOption.DoNotVerify), "CUSTOS");
-        string? language = UiState.Load().InterfaceLanguage;
-        if (language is "en" or "ru")
-        {
-            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
-        }
+        InterfaceLanguage.Apply(UiState.Load().InterfaceLanguage);
         DesktopPlatform.Current = new LinuxPlatform(StatusNotifier.HostRegisteredAsync().GetAwaiter().GetResult());
         App.Demo = args.Length > 0;
         return AppBuilder.Configure<App>()
@@ -75,6 +70,10 @@ internal static partial class Program
         public override bool UsesTray => hasTray;
 
         public override bool KeepsWindowInTray => false;
+
+        public override bool ControlsSystemService => true;
+
+        public override Task ControlSystemServiceAsync(SystemServiceAction action) => SystemdService.ControlAsync(action);
 
         public override string ThemeAuto => DesktopStrings.LinuxThemeAuto;
 
@@ -122,8 +121,6 @@ internal static partial class Program
         public override bool SupportsManagement => false;
 
         public override bool SupportsSettings => true;
-
-        public override bool SupportsMonitorSettings => true;
 
         public override bool SupportsTaskManagement => true;
 

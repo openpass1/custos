@@ -17,6 +17,9 @@ static partial class DesktopStrings
     /// <summary>All settings…</summary>
     public static string SettingsAll => Get(nameof(SettingsAll));
 
+    /// <summary>Change server…</summary>
+    public static string MonitorChangeServer => Get(nameof(MonitorChangeServer));
+
     /// <summary>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</summary>
     public static string MonitorSwitchConfirm => Get(nameof(MonitorSwitchConfirm));
 
@@ -26,8 +29,59 @@ static partial class DesktopStrings
     /// <summary>Interface language</summary>
     public static string InterfaceLanguage => Get(nameof(InterfaceLanguage));
 
-    /// <summary>Close and reopen CUSTOS to apply the language. The backup service continues to run.</summary>
-    public static string InterfaceLanguageRestart => Get(nameof(InterfaceLanguageRestart));
+    /// <summary>The interface language could not be saved in your CUSTOS settings.</summary>
+    public static string InterfaceLanguageSaveFailed => Get(nameof(InterfaceLanguageSaveFailed));
+
+    /// <summary>The service settings are read-only.</summary>
+    public static string LinuxServiceSettingsReadOnly => Get(nameof(LinuxServiceSettingsReadOnly));
+
+    /// <summary>Desktop updates</summary>
+    public static string LinuxDesktopUpdates => Get(nameof(LinuxDesktopUpdates));
+
+    /// <summary>Download the package from GitHub Releases and open it in your system package manager to install it.</summary>
+    public static string LinuxDesktopUpdatesHelp => Get(nameof(LinuxDesktopUpdatesHelp));
+
+    /// <summary>Agent updates</summary>
+    public static string LinuxAgentUpdates => Get(nameof(LinuxAgentUpdates));
+
+    /// <summary>Update channel</summary>
+    public static string LinuxUpdateChannel => Get(nameof(LinuxUpdateChannel));
+
+    /// <summary>Stable</summary>
+    public static string LinuxUpdateStable => Get(nameof(LinuxUpdateStable));
+
+    /// <summary>Preview</summary>
+    public static string LinuxUpdatePreview => Get(nameof(LinuxUpdatePreview));
+
+    /// <summary>Installed package version is {0}.</summary>
+    public static string LinuxUpdateInstalledVersion => Get(nameof(LinuxUpdateInstalledVersion));
+
+    /// <summary>Could not read the installed version from the system package manager.</summary>
+    public static string LinuxUpdateInstalledUnknown => Get(nameof(LinuxUpdateInstalledUnknown));
+
+    /// <summary>no matching package on GitHub for this channel</summary>
+    public static string LinuxUpdateNoPackage => Get(nameof(LinuxUpdateNoPackage));
+
+    /// <summary>no newer package for this channel</summary>
+    public static string LinuxUpdateNoNewerPackage => Get(nameof(LinuxUpdateNoNewerPackage));
+
+    /// <summary>CUSTOS {0} Preview is out</summary>
+    public static string LinuxUpdatePreviewAvailable => Get(nameof(LinuxUpdatePreviewAvailable));
+
+    /// <summary>Release notes</summary>
+    public static string LinuxUpdateReleaseNotes => Get(nameof(LinuxUpdateReleaseNotes));
+
+    /// <summary>Download package</summary>
+    public static string LinuxUpdateDownloadPackage => Get(nameof(LinuxUpdateDownloadPackage));
+
+    /// <summary>Could not open GitHub Releases in the browser.</summary>
+    public static string LinuxUpdateBrowserFailed => Get(nameof(LinuxUpdateBrowserFailed));
+
+    /// <summary>Could not save the desktop update channel.</summary>
+    public static string LinuxUpdateChannelSaveFailed => Get(nameof(LinuxUpdateChannelSaveFailed));
+
+    /// <summary>Save settings to change the agent update channel, then check again.</summary>
+    public static string LinuxUpdateSaveAgentChannel => Get(nameof(LinuxUpdateSaveAgentChannel));
 
     /// <summary>Follow the system</summary>
     public static string LinuxThemeAuto => Get(nameof(LinuxThemeAuto));
@@ -140,6 +194,12 @@ static partial class DesktopStrings
     /// <summary>{0} files · {1} · {2}</summary>
     public static string RestoreSetHint => Get(nameof(RestoreSetHint));
 
+    /// <summary>Enter the client ID of your application for {0}, then continue signing in here.</summary>
+    public static string LinuxCloudAppMissing => Get(nameof(LinuxCloudAppMissing));
+
+    /// <summary>Enter the client ID and secret of your application for {0}, then continue signing in here.</summary>
+    public static string LinuxCloudAppMissingWithSecret => Get(nameof(LinuxCloudAppMissingWithSecret));
+
     /// <summary>Cannot open a local callback port for Google Drive. Close this window and try again.</summary>
     public static string LinuxCloudNoLoopback => Get(nameof(LinuxCloudNoLoopback));
 
@@ -217,4 +277,31 @@ static partial class DesktopStrings
 
     /// <summary>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs progr...</summary>
     public static string LinuxEventHelp => Get(nameof(LinuxEventHelp));
+
+    /// <summary>CUSTOS service</summary>
+    public static string SystemServiceHeading => Get(nameof(SystemServiceHeading));
+
+    /// <summary>Restart the service</summary>
+    public static string SystemServiceRestart => Get(nameof(SystemServiceRestart));
+
+    /// <summary>Restart the CUSTOS service?</summary>
+    public static string SystemServiceRestartConfirm => Get(nameof(SystemServiceRestartConfirm));
+
+    /// <summary>The CUSTOS service operation completed.</summary>
+    public static string SystemServiceDone => Get(nameof(SystemServiceDone));
+
+    /// <summary>Could not control the CUSTOS service.</summary>
+    public static string SystemServiceFailed => Get(nameof(SystemServiceFailed));
+
+    /// <summary>systemctl exited with code {0}.</summary>
+    public static string SystemServiceExitCode => Get(nameof(SystemServiceExitCode));
+
+    /// <summary>Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.</summary>
+    public static string SystemServiceCustomSocket => Get(nameof(SystemServiceCustomSocket));
+
+    /// <summary>This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.</summary>
+    public static string SystemServiceUnavailable => Get(nameof(SystemServiceUnavailable));
+
+    /// <summary>The service operation could not be confirmed in time. Check the service status before retrying.</summary>
+    public static string SystemServiceTimeout => Get(nameof(SystemServiceTimeout));
 }

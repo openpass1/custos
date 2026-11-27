@@ -5,10 +5,28 @@ Tasks	Tasks	Задания
 Now	now	сейчас
 HistoryCount	{0}: {1} runs	{0}: запусков {1}
 SettingsAll	All settings…	Все настройки…
+MonitorChangeServer	Change server…	Сменить сервер…
 MonitorSwitchConfirm	Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.	Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.
 MonitorConnectionChanged	The monitoring connection changed. Review the current server and try again.	Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.
 InterfaceLanguage	Interface language	Язык интерфейса
-InterfaceLanguageRestart	Close and reopen CUSTOS to apply the language. The backup service continues to run.	Чтобы применить язык, закройте и снова откройте CUSTOS. Служба резервного копирования продолжит работу.
+InterfaceLanguageSaveFailed	The interface language could not be saved in your CUSTOS settings.	Не удалось сохранить язык интерфейса в ваших настройках CUSTOS.
+LinuxServiceSettingsReadOnly	The service settings are read-only.	Настройки службы доступны только для просмотра.
+LinuxDesktopUpdates	Desktop updates	Обновления рабочего стола
+LinuxDesktopUpdatesHelp	Download the package from GitHub Releases and open it in your system package manager to install it.	Скачайте пакет из GitHub Releases и откройте его в пакетном менеджере системы для установки.
+LinuxAgentUpdates	Agent updates	Обновления службы
+LinuxUpdateChannel	Update channel	Канал обновлений
+LinuxUpdateStable	Stable	Стабильный
+LinuxUpdatePreview	Preview	Предварительный
+LinuxUpdateInstalledVersion	Installed package version is {0}.	Установлен пакет версии {0}.
+LinuxUpdateInstalledUnknown	Could not read the installed version from the system package manager.	Не удалось прочитать установленную версию в пакетном менеджере системы.
+LinuxUpdateNoPackage	no matching package on GitHub for this channel	на GitHub нет подходящего пакета для этого канала
+LinuxUpdateNoNewerPackage	no newer package for this channel	для этого канала нет пакета новее установленного
+LinuxUpdatePreviewAvailable	CUSTOS {0} Preview is out	вышла предварительная версия CUSTOS {0}
+LinuxUpdateReleaseNotes	Release notes	О выпуске
+LinuxUpdateDownloadPackage	Download package	Скачать пакет
+LinuxUpdateBrowserFailed	Could not open GitHub Releases in the browser.	Не удалось открыть GitHub Releases в браузере.
+LinuxUpdateChannelSaveFailed	Could not save the desktop update channel.	Не удалось сохранить канал обновлений рабочего стола.
+LinuxUpdateSaveAgentChannel	Save settings to change the agent update channel, then check again.	Сохраните настройки, чтобы сменить канал обновлений службы, затем проверьте ещё раз.
 LinuxThemeAuto	Follow the system	Как в системе
 LinuxAllowAllUsersEditHelp	Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or run commands as root. Restore remains available only to administrators.	По умолчанию выключено. Служба резервного копирования работает от имени root. Каждый, кто может менять задания, может через них читать файлы и выполнять команды от имени root. Восстановление доступно только администраторам.
 LinuxAllowAllUsersEditWarning	Allow every local user to change tasks and run them with root privileges?	Разрешить всем локальным пользователям менять задания и запускать их с правами root?
@@ -50,6 +68,8 @@ HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок п
 RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}
 
 # ---- Cloud sign-in on Linux
+LinuxCloudAppMissing	Enter the client ID of your application for {0}, then continue signing in here.	Для входа в {0} укажите Client ID собственного приложения, затем продолжите вход в этом окне.
+LinuxCloudAppMissingWithSecret	Enter the client ID and secret of your application for {0}, then continue signing in here.	Для входа в {0} укажите Client ID и секрет собственного приложения, затем продолжите вход в этом окне.
 LinuxCloudNoLoopback	Cannot open a local callback port for Google Drive. Close this window and try again.	Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.
 LinuxCloudSecretNote	Google Drive and Yandex Disk require the client secret. Dropbox does not require one.	Для Google Диска и Яндекс Диска нужен секрет клиента. Для Dropbox он не нужен.
 LinuxCloudYandexSecretRequired	Yandex Disk needs the client secret together with the client ID.	Для Яндекс Диска нужен секрет клиента вместе с Client ID.
@@ -78,3 +98,12 @@ LinuxDbBinDirHelp	Enter the full path to the directory containing the database t
 LinuxEventUnitStop	Stop a systemd unit	Остановить службу systemd
 LinuxEventUnitStart	Start a systemd unit	Запустить службу systemd
 LinuxEventHelp	Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.	Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.
+SystemServiceHeading	CUSTOS service	Служба CUSTOS
+SystemServiceRestart	Restart the service	Перезапустить службу
+SystemServiceRestartConfirm	Restart the CUSTOS service?	Перезапустить службу CUSTOS?
+SystemServiceDone	The CUSTOS service operation completed.	Команда управления службой CUSTOS выполнена.
+SystemServiceFailed	Could not control the CUSTOS service.\n{0}	Не удалось выполнить команду управления службой CUSTOS.\n{0}
+SystemServiceExitCode	systemctl exited with code {0}.	systemctl завершился с кодом {0}.
+SystemServiceCustomSocket	Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.	Для управления службой нужен стандартный сокет CUSTOS. Управляйте агентом с другим сокетом отдельно.
+SystemServiceUnavailable	This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.	В этой системе нет systemctl. Для установки и управления службой CUSTOS нужна система с systemd.
+SystemServiceTimeout	The service operation could not be confirmed in time. Check the service status before retrying.	Не удалось вовремя подтвердить выполнение команды. Проверьте состояние службы перед повтором.

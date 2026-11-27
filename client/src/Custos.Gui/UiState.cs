@@ -80,16 +80,30 @@ internal sealed class UiState
         }
     }
 
-    public void Save()
+    public void Save() => TrySave();
+
+    public bool TrySave()
     {
+        string tempPath = Path.Combine(Folder, $".{FileName}.{Path.GetRandomFileName()}");
         try
         {
             Directory.CreateDirectory(Folder);
-            File.WriteAllBytes(FilePath, JsonSerializer.SerializeToUtf8Bytes(this, UiJsonContext.Default.UiState));
+            File.WriteAllBytes(tempPath, JsonSerializer.SerializeToUtf8Bytes(this, UiJsonContext.Default.UiState));
+            File.Move(tempPath, FilePath, overwrite: true);
+            return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Only the look of the window is lost.
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException)
+            {
+                // Leave the previously saved settings in place even if the temporary file cannot be removed.
+            }
+
+            return false;
         }
     }
 }

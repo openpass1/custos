@@ -73,6 +73,13 @@ public sealed class ProgramUpdateInfo
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ManagedByPackage { get; set; }
 
+    /// <summary>The selected channel for a Linux agent that checks GitHub directly.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Channel { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Prerelease { get; set; }
+
     /// <summary>When GitHub was last asked; null if never.</summary>
     public DateTimeOffset? CheckedAt { get; set; }
 
@@ -90,6 +97,12 @@ public sealed class ProgramUpdateInfo
 
     /// <summary>An update is being downloaded or installed (from GitHub or from the site).</summary>
     public bool Installing { get; set; }
+}
+
+/// <summary>Changes the release channel of a standalone Linux agent.</summary>
+public sealed class ProgramChannelRequest
+{
+    public string Channel { get; set; } = string.Empty;
 }
 
 /// <summary>The connection to the monitoring server as the program window shows it.</summary>

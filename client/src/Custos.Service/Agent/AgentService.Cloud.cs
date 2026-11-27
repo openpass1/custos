@@ -120,8 +120,18 @@ internal sealed partial class AgentService
     public CloudAppsResult GetCloudApps() => new()
     {
         Own = _config.GetCloudApps(),
-        BuiltIn = [.. ((string[])[DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox]).Where(k => CloudApps.BuiltIn(k) is not null)],
+        BuiltIn = [.. ((string[])[DestinationKinds.GDrive, DestinationKinds.YaDisk, DestinationKinds.Dropbox]).Where(HasBuiltInCloudApp)],
     };
+
+    private static bool HasBuiltInCloudApp(string kind)
+    {
+#if CUSTOS_LINUX
+        return CloudApps.BuiltIn(kind) is { } app
+            && (!CloudService.Of(kind).NeedsSecret || !string.IsNullOrWhiteSpace(app.ClientSecret));
+#else
+        return CloudApps.BuiltIn(kind) is not null;
+#endif
+    }
 
     public OkResult SaveCloudApps(CloudAppsSaveRequest request, string user)
     {

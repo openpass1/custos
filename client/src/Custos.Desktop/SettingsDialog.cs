@@ -2,6 +2,7 @@ using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
+using Custos.Core.Updates;
 using Custos.Gui;
 
 namespace Custos.Desktop;
@@ -18,6 +19,9 @@ internal sealed class SettingsDialog : FormDialog
     private static readonly string[] TrayModeValues = [TrayModes.Full, TrayModes.Status, TrayModes.Hidden];
 
     private readonly ServiceMonitor _monitor;
+    private readonly UiState? _ui;
+    private readonly ChoiceItem? _interfaceLanguage;
+    private AgentSettings _initialSettings;
     private readonly bool _canEdit;
     private readonly bool _isAdmin;
     private readonly bool _linux = CustosEdition.IsLinux;
@@ -50,6 +54,10 @@ internal sealed class SettingsDialog : FormDialog
     };
 
     private readonly CheckItem _checkUpdates = new(Strings.CheckUpdates, description: Strings.Format(Strings.CheckUpdatesHelp, CustosInfo.GitHubRepository));
+    private readonly ChoiceItem? _agentChannel;
+    private string _initialAgentChannel = ProgramReleases.StableChannel;
+    private readonly LinuxPackageUpdates? _packageUpdates;
+    private readonly HeadingItem? _agentUpdatesHeading;
     private readonly NoteItem _updatesState = new(string.Empty);
     private readonly ButtonItem _updatesCheck;
     private readonly NoteItem _archiver = new(string.Empty);
@@ -61,14 +69,22 @@ internal sealed class SettingsDialog : FormDialog
     private readonly List<ButtonItem> _connectCloud = [];
     private CloudAppsResult? _cloudAppsResult;
 
-    public SettingsDialog(ServiceMonitor monitor)
+    public SettingsDialog(ServiceMonitor monitor, UiState? ui = null)
         : base(Strings.SettingsTitle, 760, sizable: true)
     {
         _monitor = monitor;
+        _ui = ui;
         _canEdit = monitor.CanEdit;
         _isAdmin = monitor.Status.Hello?.IsAdmin == true;
         bool connected = monitor.IsConnected;
         var failed = (Action<Exception>)(ex => ShowError(ex.Message));
+
+        if (_linux && ui is not null)
+        {
+            _interfaceLanguage = InterfaceLanguage.Choice(ui.InterfaceLanguage);
+            Items.Add(new HeadingItem(Strings.SettingsLook));
+            Items.Add(_interfaceLanguage);
+        }
 
         _ = new MonitorSettingsSection(this, monitor, ShowError);
         Items.Add(_allowRemoteEdit);
@@ -100,7 +116,20 @@ internal sealed class SettingsDialog : FormDialog
         // New versions of the program on GitHub, for a computer without a monitoring site.
         _updatesCheck = new ButtonItem("update", Strings.UpdatesCheckNow, CheckUpdatesAsync) { Failed = failed };
         Items.Add(new HeadingItem(Strings.SettingsUpdates));
+        _packageUpdates = LinuxPackageUpdates.AddTo(this, failed);
+        if (_packageUpdates is not null)
+        {
+            _agentUpdatesHeading = new HeadingItem(DesktopStrings.LinuxAgentUpdates);
+            Items.Add(_agentUpdatesHeading);
+        }
         Items.Add(_checkUpdates);
+        if (_linux)
+        {
+            _initialAgentChannel = ProgramReleases.NormalizeChannel(monitor.Snapshot?.Settings.ProgramUpdateChannel);
+            _agentChannel = LinuxPackageUpdates.ChannelChoice(_initialAgentChannel);
+            _agentChannel.OnChange = ShowUpdates;
+            Items.Add(_agentChannel);
+        }
         Items.Add(_updatesState);
         Items.Add(_updatesCheck);
 
@@ -149,10 +178,10 @@ internal sealed class SettingsDialog : FormDialog
         Items.Add(new RowItem([.. accountButtons]));
         if (!_canEdit)
         {
-            Items.Add(new NoteItem(Strings.SettingsReadOnly));
+            Items.Add(new NoteItem(_interfaceLanguage is null ? Strings.SettingsReadOnly : DesktopStrings.LinuxServiceSettingsReadOnly));
         }
 
-        var settings = monitor.Snapshot?.Settings ?? new AgentSettings();
+        var settings = _initialSettings = monitor.Snapshot?.Settings ?? new AgentSettings();
         _logLevel.Load(settings.DefaultLogLevel == LogLevels.Files ? 1 : 0);
         _retention.Value = Math.Clamp(settings.LogRetentionDays, 1, 3650);
         _historyRetention.Value = Math.Clamp(settings.HistoryRetentionDays, 1, 3650);
@@ -189,8 +218,8 @@ internal sealed class SettingsDialog : FormDialog
             }
         };
 
-        OkButton.IsVisible = _canEdit;
-        CancelButton.Content = _canEdit ? Strings.ButtonCancel : Strings.ButtonClose;
+        OkButton.IsVisible = _canEdit || _interfaceLanguage is not null;
+        CancelButton.Content = OkButton.IsVisible ? Strings.ButtonCancel : Strings.ButtonClose;
         ShowAll();
         _monitor.SnapshotChanged += OnSnapshotChanged;
         Closed += (_, _) => _monitor.SnapshotChanged -= OnSnapshotChanged;
@@ -200,7 +229,81 @@ internal sealed class SettingsDialog : FormDialog
         }
     }
 
+    public bool LanguageChanged { get; private set; }
+
     protected override async Task<bool> OkAsync()
+    {
+        if (_interfaceLanguage is null || _ui is null)
+        {
+            return await SaveAgentSettingsAsync() && await SaveAgentChannelAsync();
+        }
+
+        if ((_canEdit && HasAgentChanges() && !await SaveAgentSettingsAsync()) || !await SaveAgentChannelAsync())
+        {
+            return false;
+        }
+
+        if (_packageUpdates?.SaveChannel() == false)
+        {
+            ShowError(DesktopStrings.LinuxUpdateChannelSaveFailed);
+            return false;
+        }
+
+        string? previous = _ui.InterfaceLanguage;
+        string? selected = InterfaceLanguage.Selected(_interfaceLanguage);
+        if (previous == selected)
+        {
+            return true;
+        }
+
+        _ui.InterfaceLanguage = selected;
+        if (!_ui.TrySave())
+        {
+            _ui.InterfaceLanguage = previous;
+            ShowError(DesktopStrings.InterfaceLanguageSaveFailed);
+            return false;
+        }
+
+        LanguageChanged = true;
+        return true;
+    }
+
+    private string SelectedLogLevel => _logLevel.Selected == 1 ? LogLevels.Files : LogLevels.Summary;
+    private string SelectedPriority => _priority.Selected == 1 ? "normal" : "low";
+    private string SelectedLogLanguage => Languages[Math.Max(0, _language.Selected)];
+
+    private bool HasAgentChanges() => !_retention.IsValid || !_historyRetention.IsValid
+        || SelectedLogLevel != _initialSettings.DefaultLogLevel || _retention.Value != _initialSettings.LogRetentionDays
+        || _historyRetention.Value != _initialSettings.HistoryRetentionDays || SelectedPriority != _initialSettings.ProcessPriority
+        || SelectedLogLanguage != _initialSettings.Language || _allowAll.On != _initialSettings.AllowAllUsersEdit
+        || _allowRemoteEdit.On != _initialSettings.AllowRemoteEdit || (_checkUpdates.IsEnabled && _checkUpdates.On != _initialSettings.CheckUpdates);
+
+    private async Task<bool> SaveAgentChannelAsync()
+    {
+        if (_agentChannel is not { IsEnabled: true } choice)
+        {
+            return true;
+        }
+
+        string channel = LinuxPackageUpdates.SelectedChannel(choice);
+        if (channel == _initialAgentChannel)
+        {
+            return true;
+        }
+
+        var result = await _monitor.RequestAsync(PipeProtocol.Methods.ProgramChannelSet, new ProgramChannelRequest { Channel = channel },
+            IpcJsonContext.Default.ProgramChannelRequest, IpcJsonContext.Default.OkResult);
+        if (!result.Ok)
+        {
+            ShowError(result.Message ?? Strings.ProblemNoAnswer);
+            return false;
+        }
+
+        _initialAgentChannel = channel;
+        return true;
+    }
+
+    private async Task<bool> SaveAgentSettingsAsync()
     {
         if (_monitor.Snapshot?.Settings is not { } current)
         {
@@ -223,31 +326,37 @@ internal sealed class SettingsDialog : FormDialog
         // A copy: the snapshot keeps what the service said until it says otherwise.
         var json = IpcJsonContext.Default.AgentSettings;
         var settings = System.Text.Json.JsonSerializer.Deserialize(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(current, json), json)!;
-        settings.DefaultLogLevel = _logLevel.Selected == 1 ? LogLevels.Files : LogLevels.Summary;
-        settings.LogRetentionDays = _retention.Value;
-        settings.HistoryRetentionDays = _historyRetention.Value;
-        settings.ProcessPriority = _priority.Selected == 1 ? "normal" : "low";
-        settings.Language = Languages[Math.Max(0, _language.Selected)];
+        settings.DefaultLogLevel = Edited(SelectedLogLevel, _initialSettings.DefaultLogLevel, current.DefaultLogLevel);
+        settings.LogRetentionDays = Edited(_retention.Value, _initialSettings.LogRetentionDays, current.LogRetentionDays);
+        settings.HistoryRetentionDays = Edited(_historyRetention.Value, _initialSettings.HistoryRetentionDays, current.HistoryRetentionDays);
+        settings.ProcessPriority = Edited(SelectedPriority, _initialSettings.ProcessPriority, current.ProcessPriority);
+        settings.Language = Edited(SelectedLogLanguage, _initialSettings.Language, current.Language);
         if (!_linux)
         {
             settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.Selected)];
         }
 
-        settings.AllowAllUsersEdit = _allowAll.On;
-        settings.AllowRemoteEdit = _allowRemoteEdit.On;
+        settings.AllowAllUsersEdit = Edited(_allowAll.On, _initialSettings.AllowAllUsersEdit, current.AllowAllUsersEdit);
+        settings.AllowRemoteEdit = Edited(_allowRemoteEdit.On, _initialSettings.AllowRemoteEdit, current.AllowRemoteEdit);
         if (_checkUpdates.IsEnabled)
         {
-            settings.CheckUpdates = _checkUpdates.On;
+            settings.CheckUpdates = Edited(_checkUpdates.On, _initialSettings.CheckUpdates, current.CheckUpdates);
         }
-
         var result = await _monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
             IpcJsonContext.Default.SettingsSaveRequest, IpcJsonContext.Default.OkResult);
         if (!result.Ok)
         {
             ShowError(result.Message ?? Strings.ProblemNoAnswer);
         }
+        else
+        {
+            _initialSettings = settings;
+        }
         return result.Ok;
     }
+
+    private T Edited<T>(T selected, T initial, T current) =>
+        _interfaceLanguage is not null && EqualityComparer<T>.Default.Equals(selected, initial) ? current : selected;
 
     private static string L(string label) => label.TrimEnd(':', ' ');
 
@@ -283,25 +392,44 @@ internal sealed class SettingsDialog : FormDialog
         var update = _monitor.Snapshot?.ProgramUpdate ?? new ProgramUpdateInfo();
         bool site = update.ManagedBySite;
         _checkUpdates.IsVisible = _updatesCheck.IsVisible = !update.ManagedByPackage;
+        if (_agentUpdatesHeading is not null)
+        {
+            _agentUpdatesHeading.IsVisible = !update.ManagedByPackage;
+        }
+
+        bool pendingChannel = false;
+        if (_agentChannel is not null)
+        {
+            _agentChannel.IsVisible = update.Channel is not null;
+            _agentChannel.IsEnabled = update.Channel is not null && _canEdit && _isAdmin && !update.Installing;
+            pendingChannel = _agentChannel.IsEnabled && LinuxPackageUpdates.SelectedChannel(_agentChannel) != update.Channel;
+        }
+
         if (update.ManagedByPackage)
         {
             _checkUpdates.IsEnabled = _updatesCheck.IsEnabled = false;
-            _updatesState.Show(Messages.ProgramManagedByPackage, Tone.Plain);
+            _updatesState.Show(_packageUpdates is null ? Messages.ProgramManagedByPackage : null, Tone.Plain);
             return;
         }
         _checkUpdates.IsEnabled = _canEdit && _isAdmin && !site;
 
         // Off (or a site decides): a check would show nowhere, so there is nothing to press.
-        _updatesCheck.IsEnabled = _isAdmin && _monitor.IsConnected && update.Checking;
+        _updatesCheck.IsEnabled = _isAdmin && _monitor.IsConnected && update.Checking && !pendingChannel;
         if (site)
         {
             _updatesState.Show(Strings.UpdatesManagedBySite, Tone.Plain);
             return;
         }
 
+        if (pendingChannel)
+        {
+            _updatesState.Show(DesktopStrings.LinuxUpdateSaveAgentChannel, Tone.Plain);
+            return;
+        }
+
         string found = update.Error
             ?? (update.Latest is null ? Strings.UpdatesNone
-                : update.Available ? Strings.Format(Strings.UpdatesAvailable, update.Latest)
+                : update.Available ? Strings.Format(update.Prerelease ? DesktopStrings.LinuxUpdatePreviewAvailable : Strings.UpdatesAvailable, update.Latest)
                 : Strings.Format(Strings.UpdatesLatest, CustosInfo.Version));
         _updatesState.Show(!update.Checking ? Strings.UpdatesOff
             : update.CheckedAt is { } at ? Strings.Format(Strings.UpdatesLastCheck, Describe.Time(at), found)

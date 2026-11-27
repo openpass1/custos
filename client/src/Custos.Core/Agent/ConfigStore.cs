@@ -318,6 +318,8 @@ public sealed partial class ConfigStore
             // The server address changes only with the registration code (server.connect, server.reset).
             copy.ServerUrl = _settings.ServerUrl;
             copy.HeartbeatIntervalS = _settings.HeartbeatIntervalS;
+            // Setting the update channel is a separate administrator request.
+            copy.ProgramUpdateChannel = _settings.ProgramUpdateChannel;
             if (copy.LogRetentionDays is < 1 or > 3650)
             {
                 throw new ConfigException(Messages.Format(Messages.ConfigBadRetentionDays, 1, 3650));
@@ -346,6 +348,29 @@ public sealed partial class ConfigStore
             WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
             _settings = copy;
             BumpRevision();
+        }
+    }
+
+    /// <summary>Changes the channel atomically with respect to other settings and to a site connection.</summary>
+    public bool TrySetProgramUpdateChannel(string channel)
+    {
+        lock (_lock)
+        {
+            if (_settings.ServerUrl is not null)
+            {
+                return false;
+            }
+
+            if (_settings.ProgramUpdateChannel != channel)
+            {
+                var copy = CopySettings(_settings);
+                copy.ProgramUpdateChannel = channel;
+                WriteJson(SettingsFileName, copy, ConfigJsonContext.Default.AgentSettings);
+                _settings = copy;
+                BumpRevision();
+            }
+
+            return true;
         }
     }
 

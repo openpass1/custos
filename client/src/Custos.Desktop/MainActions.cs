@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia;
 using Avalonia.Platform.Storage;
 using Custos.Core;
 using Custos.Core.Ipc;
@@ -15,6 +16,40 @@ namespace Custos.Desktop;
 internal sealed class MainActions(MainWindow window, MainViewModel vm)
 {
     private ServiceMonitor Monitor => vm.Monitor;
+
+    public async Task ControlSystemServiceAsync(SystemServiceAction action)
+    {
+        if (!vm.CanControlSystemService)
+        {
+            return;
+        }
+
+        vm.SystemServiceBusy = true;
+        try
+        {
+            if (action is SystemServiceAction.Stop or SystemServiceAction.Restart)
+            {
+                bool restart = action == SystemServiceAction.Restart;
+                string text = restart ? DesktopStrings.SystemServiceRestartConfirm : Strings.ServiceStopConfirm;
+                if (Monitor.IsConnected && Monitor.Snapshot?.Current is { } current)
+                {
+                    text += Environment.NewLine + Environment.NewLine + Strings.Format(Strings.ServiceStopRunning, current.TaskName);
+                }
+
+                if (!await Dialogs.Ask(window, text, restart ? DesktopStrings.SystemServiceRestart : Strings.MenuServiceStop))
+                {
+                    return;
+                }
+            }
+
+            await DesktopPlatform.Current.ControlSystemServiceAsync(action);
+            vm.Snack(DesktopStrings.SystemServiceDone);
+        }
+        finally
+        {
+            vm.SystemServiceBusy = false;
+        }
+    }
 
     // The windows for changes ask for the program password before they open, not after a whole task was filled in.
     public async Task CreateAsync()
@@ -465,7 +500,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Все настройки»: everyone may look; the window asks for the program password before a change is sent.</summary>
     public async Task SettingsAsync()
     {
-        if (!vm.ShowsSettings || !Monitor.IsConnected)
+        if (!vm.CanOpenSettings)
         {
             return;
         }
@@ -475,12 +510,21 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
             return;
         }
 
-        await new SettingsDialog(Monitor).ShowAsync(window, Monitor);
+        var dialog = new SettingsDialog(Monitor, vm.Ui);
+        if (await dialog.ShowAsync(window, Monitor) && dialog.LanguageChanged && Application.Current is App app)
+        {
+            app.RefreshInterfaceLanguage();
+        }
     }
 
     private async Task OpenEditorAsync(EditorModel model)
     {
         var editor = new EditorWindow(model);
+        if (Core.CustosEdition.IsLinux)
+        {
+            ScreenFit.Limit(editor, window);
+        }
+
         await editor.ShowDialog(window);
         if (editor.Saved is not { } saved)
         {

@@ -13,6 +13,13 @@ internal enum TrayState
     Down,
 }
 
+internal enum SystemServiceAction
+{
+    Start,
+    Stop,
+    Restart,
+}
+
 /// <summary>
 /// What the windows need from the operating system: set by the program (Custos.exe on Windows) before the window
 /// opens. This base class does nothing, which is what the pictures of CI and the tests need.
@@ -32,9 +39,6 @@ internal class DesktopPlatform
 
     public virtual bool SupportsSettings => SupportsManagement;
 
-    /// <summary>Shows the dedicated monitoring settings on hosts without the full settings window.</summary>
-    public virtual bool SupportsMonitorSettings => false;
-
     public virtual bool SupportsTaskManagement => SupportsManagement;
 
     public virtual bool SupportsRestore => SupportsManagement;
@@ -49,6 +53,11 @@ internal class DesktopPlatform
 
     /// <summary>The tray menu has «Запустить службу» and «Остановить службу» (Windows: with administrator rights).</summary>
     public virtual bool ControlsService => false;
+
+    /// <summary>The window and tray can request service operations through Linux systemd authorization.</summary>
+    public virtual bool ControlsSystemService => false;
+
+    public virtual Task ControlSystemServiceAsync(SystemServiceAction action) => throw new NotSupportedException();
 
     /// <summary>What the system says about the service: true = running, false = stopped, null = in between or unknown.</summary>
     public virtual bool? ServiceRunning() => null;

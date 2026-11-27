@@ -25,6 +25,9 @@
   <data name="SettingsAll" xml:space="preserve">
     <value>Все настройки…</value>
   </data>
+  <data name="MonitorChangeServer" xml:space="preserve">
+    <value>Сменить сервер…</value>
+  </data>
   <data name="MonitorSwitchConfirm" xml:space="preserve">
     <value>Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.</value>
   </data>
@@ -34,8 +37,59 @@
   <data name="InterfaceLanguage" xml:space="preserve">
     <value>Язык интерфейса</value>
   </data>
-  <data name="InterfaceLanguageRestart" xml:space="preserve">
-    <value>Чтобы применить язык, закройте и снова откройте CUSTOS. Служба резервного копирования продолжит работу.</value>
+  <data name="InterfaceLanguageSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить язык интерфейса в ваших настройках CUSTOS.</value>
+  </data>
+  <data name="LinuxServiceSettingsReadOnly" xml:space="preserve">
+    <value>Настройки службы доступны только для просмотра.</value>
+  </data>
+  <data name="LinuxDesktopUpdates" xml:space="preserve">
+    <value>Обновления рабочего стола</value>
+  </data>
+  <data name="LinuxDesktopUpdatesHelp" xml:space="preserve">
+    <value>Скачайте пакет из GitHub Releases и откройте его в пакетном менеджере системы для установки.</value>
+  </data>
+  <data name="LinuxAgentUpdates" xml:space="preserve">
+    <value>Обновления службы</value>
+  </data>
+  <data name="LinuxUpdateChannel" xml:space="preserve">
+    <value>Канал обновлений</value>
+  </data>
+  <data name="LinuxUpdateStable" xml:space="preserve">
+    <value>Стабильный</value>
+  </data>
+  <data name="LinuxUpdatePreview" xml:space="preserve">
+    <value>Предварительный</value>
+  </data>
+  <data name="LinuxUpdateInstalledVersion" xml:space="preserve">
+    <value>Установлен пакет версии {0}.</value>
+  </data>
+  <data name="LinuxUpdateInstalledUnknown" xml:space="preserve">
+    <value>Не удалось прочитать установленную версию в пакетном менеджере системы.</value>
+  </data>
+  <data name="LinuxUpdateNoPackage" xml:space="preserve">
+    <value>на GitHub нет подходящего пакета для этого канала</value>
+  </data>
+  <data name="LinuxUpdateNoNewerPackage" xml:space="preserve">
+    <value>для этого канала нет пакета новее установленного</value>
+  </data>
+  <data name="LinuxUpdatePreviewAvailable" xml:space="preserve">
+    <value>вышла предварительная версия CUSTOS {0}</value>
+  </data>
+  <data name="LinuxUpdateReleaseNotes" xml:space="preserve">
+    <value>О выпуске</value>
+  </data>
+  <data name="LinuxUpdateDownloadPackage" xml:space="preserve">
+    <value>Скачать пакет</value>
+  </data>
+  <data name="LinuxUpdateBrowserFailed" xml:space="preserve">
+    <value>Не удалось открыть GitHub Releases в браузере.</value>
+  </data>
+  <data name="LinuxUpdateChannelSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить канал обновлений рабочего стола.</value>
+  </data>
+  <data name="LinuxUpdateSaveAgentChannel" xml:space="preserve">
+    <value>Сохраните настройки, чтобы сменить канал обновлений службы, затем проверьте ещё раз.</value>
   </data>
   <data name="LinuxThemeAuto" xml:space="preserve">
     <value>Как в системе</value>
@@ -148,6 +202,12 @@
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} файлов · {1} · {2}</value>
   </data>
+  <data name="LinuxCloudAppMissing" xml:space="preserve">
+    <value>Для входа в {0} укажите Client ID собственного приложения, затем продолжите вход в этом окне.</value>
+  </data>
+  <data name="LinuxCloudAppMissingWithSecret" xml:space="preserve">
+    <value>Для входа в {0} укажите Client ID и секрет собственного приложения, затем продолжите вход в этом окне.</value>
+  </data>
   <data name="LinuxCloudNoLoopback" xml:space="preserve">
     <value>Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.</value>
   </data>
@@ -226,5 +286,33 @@
   </data>
   <data name="LinuxEventHelp" xml:space="preserve">
     <value>Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.</value>
+  </data>
+  <data name="SystemServiceHeading" xml:space="preserve">
+    <value>Служба CUSTOS</value>
+  </data>
+  <data name="SystemServiceRestart" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="SystemServiceRestartConfirm" xml:space="preserve">
+    <value>Перезапустить службу CUSTOS?</value>
+  </data>
+  <data name="SystemServiceDone" xml:space="preserve">
+    <value>Команда управления службой CUSTOS выполнена.</value>
+  </data>
+  <data name="SystemServiceFailed" xml:space="preserve">
+    <value>Не удалось выполнить команду управления службой CUSTOS.
+{0}</value>
+  </data>
+  <data name="SystemServiceExitCode" xml:space="preserve">
+    <value>systemctl завершился с кодом {0}.</value>
+  </data>
+  <data name="SystemServiceCustomSocket" xml:space="preserve">
+    <value>Для управления службой нужен стандартный сокет CUSTOS. Управляйте агентом с другим сокетом отдельно.</value>
+  </data>
+  <data name="SystemServiceUnavailable" xml:space="preserve">
+    <value>В этой системе нет systemctl. Для установки и управления службой CUSTOS нужна система с systemd.</value>
+  </data>
+  <data name="SystemServiceTimeout" xml:space="preserve">
+    <value>Не удалось вовремя подтвердить выполнение команды. Проверьте состояние службы перед повтором.</value>
   </data>
 </root>

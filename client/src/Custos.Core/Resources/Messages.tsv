@@ -577,6 +577,8 @@ ProgramUpdateStarted	CUSTOS {0} is being installed. The service restarts in abou
 ProgramNotAllowed	Only administrators may update CUSTOS.	Обновлять CUSTOS могут только администраторы.
 ProgramManagedBySite	This computer is connected to a monitoring site: new versions of CUSTOS come from the site.	Компьютер подключён к сайту мониторинга: новые версии CUSTOS приходят с сайта.
 ProgramManagedByPackage	Update CUSTOS using the system package manager.	Обновляйте CUSTOS через пакетный менеджер системы.
+ProgramUpdateChannelChanged	The update channel changed. Check for updates again.	Канал обновлений изменился. Проверьте наличие обновлений ещё раз.
+ProgramInvalidUpdateChannel	The stable and preview channels are available for a standalone Linux agent.	Каналы stable и preview доступны для автономной службы Linux.
 ProgramNothingNewer	There is no newer version of CUSTOS on GitHub than {0}.	На GitHub нет версии CUSTOS новее {0}.
 StoreFileShorter	The file in the destination is shorter than it should be.	Файл в назначении короче, чем должен быть.
 StoreFailed	{0}: {1}	{0}: {1}

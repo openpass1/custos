@@ -11,8 +11,12 @@ internal static partial class Strings
 {
     private static readonly ResourceManager Resources = new("Custos.Gui.Resources.Strings", typeof(Strings).Assembly);
 
+    public static CultureInfo? Culture { get; set; }
+
+    public static CultureInfo UiCulture => Culture ?? CultureInfo.CurrentUICulture;
+
     public static string Format(string format, params object?[] args) =>
         string.Format(CultureInfo.CurrentCulture, format, args);
 
-    private static string Get(string name) => Resources.GetString(name, CultureInfo.CurrentUICulture) ?? name;
+    private static string Get(string name) => Resources.GetString(name, UiCulture) ?? name;
 }

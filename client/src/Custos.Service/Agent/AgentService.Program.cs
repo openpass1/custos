@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text.Json;
 using Custos.Core;
 using Custos.Core.Ipc;
@@ -37,13 +36,48 @@ internal sealed partial class AgentService
     /// <summary>The daily check is on: the setting says so and no monitoring site is connected.</summary>
     private bool ProgramChecking => !ProgramManagedByPackage && _config.GetSettings().CheckUpdates && !ServerConfigured;
 
+    private string ProgramChannel => CustosEdition.IsLinux
+        ? ProgramReleases.NormalizeChannel(_config.GetSettings().ProgramUpdateChannel) : ProgramReleases.StableChannel;
+
+    public OkResult SetProgramChannel(string channel, string user)
+    {
+        if (!CustosEdition.IsLinux || channel is not (ProgramReleases.StableChannel or ProgramReleases.PreviewChannel))
+        {
+            return ProgramRefused(Messages.ProgramInvalidUpdateChannel);
+        }
+
+        if (ProgramManagedByPackage)
+        {
+            return ProgramRefused(Messages.ProgramManagedByPackage);
+        }
+
+        lock (_programLock)
+        {
+            if (channel != ProgramChannel && Volatile.Read(ref _updateRunning) == 1)
+            {
+                return ProgramRefused(Messages.MonitorUpdateBusy);
+            }
+
+            if (!_config.TrySetProgramUpdateChannel(channel))
+            {
+                return ProgramRefused(Messages.ProgramManagedBySite);
+            }
+        }
+
+        Log(LogLineLevels.Info, Messages.Format(Messages.SettingsChangedBy, user));
+        PublishSnapshot();
+        return OkResult.Instance;
+    }
+
     /// <summary>For the snapshot: what the program window shows about new versions.</summary>
     private ProgramUpdateInfo DescribeProgramUpdate()
     {
+        string channel;
         ProgramCheckState state;
         lock (_programLock)
         {
-            state = _programState;
+            channel = ProgramChannel;
+            state = _programState.ForChannel(channel);
         }
 
         bool checking = ProgramChecking;
@@ -53,6 +87,8 @@ internal sealed partial class AgentService
             Checking = checking,
             ManagedBySite = ServerConfigured && !ProgramManagedByPackage,
             ManagedByPackage = ProgramManagedByPackage,
+            Channel = CustosEdition.IsLinux && !ServerConfigured && !ProgramManagedByPackage ? channel : null,
+            Prerelease = latest?.Prerelease == true,
             CheckedAt = state.CheckedAt,
             Latest = latest?.Version,
             Available = checking && latest is not null && ProgramReleases.IsNewer(latest.Version, info.Version),
@@ -84,7 +120,7 @@ internal sealed partial class AgentService
             DateTimeOffset? checkedAt;
             lock (_programLock)
             {
-                checkedAt = _programState.CheckedAt;
+                checkedAt = _programState.ForChannel(ProgramChannel).CheckedAt;
             }
 
             var now = DateTimeOffset.UtcNow;
@@ -122,11 +158,17 @@ internal sealed partial class AgentService
         await _programCheckGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (ServerConfigured)
+            {
+                return DescribeProgramUpdate();
+            }
+
+            string channel = ProgramChannel;
             ProgramRelease? latest = null;
             string? error = null;
             try
             {
-                latest = await NewestProgramAsync(cancellationToken).ConfigureAwait(false);
+                latest = await ProgramReleases.CheckAsync(Http, channel, cancellationToken).ConfigureAwait(false);
             }
             catch (ReleaseCheckException ex)
             {
@@ -136,9 +178,15 @@ internal sealed partial class AgentService
             string? announce = null;
             lock (_programLock)
             {
-                var previous = _programState;
+                if (channel != ProgramChannel || ServerConfigured)
+                {
+                    return DescribeProgramUpdate();
+                }
+
+                var previous = _programState.ForChannel(channel);
                 var state = new ProgramCheckState
                 {
+                    Channel = CustosEdition.IsLinux ? channel : null,
                     CheckedAt = DateTimeOffset.UtcNow,
 
                     // Without an answer the last known release stays: the button still works when GitHub answers again.
@@ -193,10 +241,11 @@ internal sealed partial class AgentService
             return ProgramRefused(Messages.MonitorUpdateConsole);
         }
 
+        string channel = ProgramChannel;
         ProgramRelease? release;
         try
         {
-            release = await NewestProgramAsync(cancellationToken).ConfigureAwait(false);
+            release = await ProgramReleases.CheckAsync(Http, channel, cancellationToken).ConfigureAwait(false);
         }
         catch (ReleaseCheckException ex)
         {
@@ -208,9 +257,22 @@ internal sealed partial class AgentService
             return ProgramRefused(Messages.Format(Messages.ProgramNothingNewer, info.Version));
         }
 
-        if (Interlocked.CompareExchange(ref _updateRunning, 1, 0) == 1)
+        lock (_programLock)
         {
-            return ProgramRefused(Messages.MonitorUpdateBusy);
+            if (channel != ProgramChannel)
+            {
+                return ProgramRefused(Messages.ProgramUpdateChannelChanged);
+            }
+
+            if (ServerConfigured)
+            {
+                return ProgramRefused(Messages.ProgramManagedBySite);
+            }
+
+            if (Interlocked.CompareExchange(ref _updateRunning, 1, 0) == 1)
+            {
+                return ProgramRefused(Messages.MonitorUpdateBusy);
+            }
         }
 
         string version = release.Version;
@@ -292,41 +354,6 @@ internal sealed partial class AgentService
                 Interlocked.Exchange(ref _updateRunning, 0);
                 PublishSnapshot();
             }
-        }
-    }
-
-    /// <summary>The newest release that can be installed; null when GitHub has none (or the repository is private).</summary>
-    private static async Task<ProgramRelease?> NewestProgramAsync(CancellationToken cancellationToken)
-    {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(ProgramCheckTimeout);
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, ProgramReleases.ApiUrl);
-            request.Headers.Accept.ParseAdd("application/vnd.github+json");
-            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return null;
-            }
-
-            if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
-            {
-                throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, Messages.ProgramCheckLimited));
-            }
-
-            response.EnsureSuccessStatusCode();
-            var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-            await using (stream.ConfigureAwait(false))
-            {
-                return ProgramReleases.Newest(stream);
-            }
-        }
-        catch (Exception ex) when (ex is HttpRequestException or IOException
-            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
-        {
-            string reason = ex is OperationCanceledException ? Messages.Format(Messages.SevenZipNoAnswer, (int)ProgramCheckTimeout.TotalSeconds) : ex.Message;
-            throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, reason), ex);
         }
     }
 

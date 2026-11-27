@@ -142,6 +142,12 @@ public sealed class MonitorClient : IDisposable
             && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment) && !string.IsNullOrEmpty(uri.Host);
     }
 
+    /// <summary>Compares Monitor addresses as HTTP URLs. The scheme, host, and default port are canonicalized, but path case matters.</summary>
+    public static bool HaveSameServerUrl(string? first, string? second) =>
+        string.Equals(first, second, StringComparison.Ordinal)
+        || (IsValidServerUrl(first, out string normalizedFirst) && IsValidServerUrl(second, out string normalizedSecond)
+            && Uri.Compare(new Uri(normalizedFirst), new Uri(normalizedSecond), UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.Ordinal) == 0);
+
     /// <summary>A signed request; the answer is checked against <paramref name="serverKey"/>.</summary>
     public async Task<MonitorAnswer> CallAsync(string serverUrl, string method, string path, byte[]? body, string agentId, RSA agentKey, RSA? serverKey, CancellationToken cancellationToken)
     {

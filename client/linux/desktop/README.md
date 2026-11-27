@@ -22,6 +22,9 @@ the desired revision. Under **Artifacts**, download `custos-linux-desktop-previe
 `custos-linux-desktop-preview-deb-arm64` for Debian-based systems, or `custos-linux-desktop-preview-rpm-x86_64` or
 `custos-linux-desktop-preview-rpm-aarch64` for Fedora. Extract the package from the ZIP.
 
+A manual **Linux desktop preview** workflow run can include the project's Google Drive app when it is configured in
+the repository. With a pull request build, set up your own app for each cloud drive you use.
+
 Open the package in your graphical package installer and select **Install**. In a terminal, run the command for
 your distribution from the download folder, using the actual filename.
 
@@ -33,13 +36,27 @@ sudo dnf install ./filename.rpm  # Fedora
 Open **CUSTOS** from the applications menu as your own user. On a fresh installation the package starts the
 backup service. In a live session without persistence, the package and settings last until reboot.
 
-To change the window language, choose **Settings → Interface language** and reopen CUSTOS. A desktop panel with
-tray support can display the CUSTOS icon while the window is open.
+A desktop panel with tray support can display the CUSTOS icon while the window is open.
 
 ## Update or remove the package
 
-Install a newer package of the same format to update the window and its packaged agent. If Monitor installed the
-agent earlier, the window connects to that existing service, which Monitor can continue to update separately.
+Open **Settings → All settings… → Updates**. **Stable** checks stable releases. **Preview** also includes
+pre-releases.
+
+- For a `.deb` or `.rpm` installation, open **Desktop updates**, choose an **Update channel** and select **Check now**.
+  **Release notes** opens the release page. **Download package** opens the matching package for your system and
+  processor. Select **OK** to save the channel. Install the downloaded file with APT or DNF to update the window
+  and its packaged service.
+- For a separately installed service that checks for updates on its own, open **Agent updates**. Choose an
+  **Update channel** and select **OK** before checking for its Linux update ZIP.
+- If Monitor manages the separately installed service, update it from Monitor. The **Desktop updates** check for a
+  `.deb` or `.rpm` installation still works separately.
+
+`custos update channel` shows the service's current channel or which system manages its updates. For an agent that
+updates itself, use `sudo custos update channel stable` or `sudo custos update channel preview` to choose a channel,
+and `sudo custos update check` to look for an update. Use `sudo custos update install` when you're ready to install it.
+If you set a CUSTOS program password, the terminal asks for it when you change the channel or install an update.
+
 Use matching versions of the window and the agent for all desktop features. On Debian-based systems, the
 `custos-desktop` package replaces the earlier `custos-desktop-preview` package and keeps its data. The first
 install under the new name enables the service. To keep it stopped through this migration, first run
@@ -68,15 +85,34 @@ Select a task to edit, clone, switch on or off, or delete it. A clone starts swi
 **Create** imports and exports CUSTOS task files. Export requires a Linux administrator account. If an imported
 task has incompatible paths, CUSTOS keeps those paths for editing and switches the task off.
 
-In **Settings → All settings…** you can change service settings such as permissions, log retention and the
-program password. The service has a separate language setting for its logs.
+On a narrow screen, look under **More** for additional task actions. **Create** and **Settings** stay on the toolbar.
+
+To back up a hosting server, choose **Linux server…** under **Sources**. Use **Own lists** to enter the approved
+folders, exclusions and database engine. Follow the [SSH source guide](../../README.md#linux-servers-custos-helper-over-ssh)
+to configure `custos-helper` on the server.
+
+## Window and service settings
+
+To change the window language, open **Settings → All settings… → Look → Interface language**. Choose a language
+and select **OK** to apply it to the window and tray menu. This setting is available when the service is stopped.
+Other settings in this dialog include permissions, log retention, the program password and the separate language
+for service logs.
+
+Under **Settings → CUSTOS service**, choose **Start the service**, **Stop the service** or **Restart the service**.
+These actions control the standard `custos.service` systemd unit, even when the window is disconnected from it.
+CUSTOS asks for confirmation before a stop or restart. If Linux asks for authorization, approve it in your
+desktop's PolicyKit dialog. The same actions are available in the tray menu on desktops that display the icon.
 
 ## Connect to CUSTOS Monitor
 
-In CUSTOS, go to **Settings → Monitoring server**. Copy the connection string from **Install** in Monitor, paste it
-into the connection field and choose **Connect**. Monitor 1.4.2 shows the connection string under
-**Windows and macOS**. Once the machine registers, compare its key fingerprint with the one shown in Monitor and
-approve it under **Machines**.
+In CUSTOS, go to **Settings → All settings… → Monitoring server**. Copy the connection string from **Install** in
+Monitor. In the connection field, use **Paste from the clipboard**, then choose **Connect**. Monitor 1.4.2 shows
+the connection string under **Windows and macOS**. Once the machine registers, compare its key fingerprint with
+the one shown in Monitor and approve it under **Machines**.
+
+If the agent is already connected, **Monitoring server** shows the current address and key fingerprints. Choose
+**Change server…** to enter a new connection string. CUSTOS asks for confirmation before switching to a different
+server. Switching servers discards reports still waiting to be sent to the old server.
 
 ## Restore files
 
@@ -92,8 +128,10 @@ cloud drives**, choose Google Drive, Yandex Disk or Dropbox, and open the sign-i
 returns the result to CUSTOS. For Yandex Disk or Dropbox, paste the code shown in the browser into the CUSTOS dialog.
 Then select the connected account in the task's **Destinations**.
 
-If the build has no built-in app for the provider, register your own and add it under **Cloud drives → Own applications…**.
-See the [cloud drive guide](../../README.md#cloud-drives-google-drive-yandex-disk-dropbox) for supported formats and setup.
+If sign-in reports a missing app, select **Own applications…** in the dialog, save the app you registered for that
+provider and continue signing in from the same window. Google Drive and Yandex Disk require a client ID and a
+client secret. Dropbox requires a client ID. See the
+[cloud drive guide](../../README.md#cloud-drives-google-drive-yandex-disk-dropbox) for supported formats and app registration.
 
 ## Standalone GUI archive
 

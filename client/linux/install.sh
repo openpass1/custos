@@ -108,6 +108,9 @@ command -v mount.cifs > /dev/null || [ -x /sbin/mount.cifs ] || [ -x /usr/sbin/m
 command -v tar > /dev/null || missing+=(tar)
 command -v gzip > /dev/null || missing+=(gzip)
 command -v curl > /dev/null || [ -n "$archive" ] || $packages_only || missing+=(curl)
+if [ -z "$archive" ] && [ -z "$url" ] && ! $packages_only; then
+  command -v jq > /dev/null || missing+=(jq)
+fi
 if [ ${#missing[@]} -gt 0 ]; then
   say "Installing: ${missing[*]}" "Устанавливаю: ${missing[*]}"
   install_packages "${missing[@]}" || say "Could not install ${missing[*]}: install them with the package manager of the system." \
@@ -126,12 +129,18 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 if [ -z "$archive" ]; then
   if [ -z "$url" ]; then
-    # The newest release of the program (client-v…) that has the archive of this processor.
-    url=$(curl -fsSL "https://api.github.com/repos/$repository/releases?per_page=30" \
-      | grep -o "\"browser_download_url\": *\"[^\"]*/download/client-v[^\"]*/custos-linux-$arch.tar.gz\"" \
-      | head -n 1 | sed -E 's/.*"(https:[^"]+)"/\1/' || true)
-    [ -n "$url" ] || fail "no release of CUSTOS for Linux on GitHub yet; give the archive with --archive" \
-      "на GitHub ещё нет выпуска CUSTOS для Linux, укажите архив через --archive"
+    command -v jq > /dev/null || fail "install jq to find the stable release, or use --archive or --url" \
+      "установите jq для поиска стабильного выпуска или укажите --archive или --url"
+    url=$(curl -fsSL "https://api.github.com/repos/$repository/releases?per_page=100" \
+      | jq -r --arg downloads "https://github.com/$repository/releases/download/" --arg package "custos-linux-$arch.tar.gz" '
+        [ .[] | select(.draft == false and .prerelease == false)
+          | .tag_name as $tag | select($tag | test("^client-v[0-9]+\\.[0-9]+\\.[0-9]+$"))
+          | .assets[]? | select(.name == $package and .browser_download_url == ($downloads + $tag + "/" + $package))
+          | {url: .browser_download_url, version: ($tag | ltrimstr("client-v") | split(".") | map(tonumber))}
+        ] | sort_by(.version) | last | .url // empty
+      ') || fail "could not read the published releases from GitHub" "не удалось прочитать список выпусков GitHub"
+    [ -n "$url" ] || fail "no stable release of CUSTOS for this processor on GitHub; give the archive with --archive" \
+      "на GitHub нет стабильного выпуска CUSTOS для этого процессора, укажите архив через --archive"
   fi
   say "Downloading $url" "Скачиваю $url"
   curl -fSL --retry 3 -o "$work/custos.tar.gz" "$url"

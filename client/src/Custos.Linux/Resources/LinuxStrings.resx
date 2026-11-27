@@ -86,6 +86,7 @@ Usage:
   custos log [-f] [-n N]   the last lines of the journal; -f keeps showing new ones
   custos restore help      list and restore backup sets
   custos cloud help        connect to cloud drives
+  custos update help       manage the Linux agent update channel
   custos snapshots         whether the volumes of the tasks can have snapshots, and what to do if not
   custos connect '&lt;line&gt;'  connect to the monitoring site (the connection line from the site)
   custos disconnect        disconnect from the site
@@ -311,5 +312,53 @@ ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:{0}:127.0.0.1:{0} USER@SERVER
   </data>
   <data name="CliCloudAppMissing" xml:space="preserve">
     <value>{0}: no usable CUSTOS application is configured. Set up your own with sudo custos cloud app {1}.</value>
+  </data>
+  <data name="CliUpdateUsage" xml:space="preserve">
+    <value>Usage:
+  custos update channel                   show the channel or who manages updates
+  custos update channel stable|preview    select stable releases or include pre-releases
+  custos update check                     check GitHub now
+  custos update install                   install from the selected channel
+
+Changing the channel, checking and installing require local administrator rights. These actions are for standalone Linux archive installations.</value>
+  </data>
+  <data name="CliUpdateChannel" xml:space="preserve">
+    <value>GitHub update channel: {0}</value>
+  </data>
+  <data name="CliUpdateChannelUnsupported" xml:space="preserve">
+    <value>this version of the agent does not support changing the update channel</value>
+  </data>
+  <data name="CliUpdateChangeFailed" xml:space="preserve">
+    <value>the update channel could not be saved</value>
+  </data>
+  <data name="CliUpdateCheckAgain" xml:space="preserve">
+    <value>the check did not finish for the current channel. Run custos update check again</value>
+  </data>
+  <data name="CliUpdateNewRelease" xml:space="preserve">
+    <value>CUSTOS {0} is available. Installed version: {1}. Run custos update install to install it.</value>
+  </data>
+  <data name="CliUpdateNewPreview" xml:space="preserve">
+    <value>CUSTOS {0} is available as a pre-release. Installed version: {1}. Run custos update install to install it.</value>
+  </data>
+  <data name="CliUpdateNoRelease" xml:space="preserve">
+    <value>There is no Linux release in the selected channel yet.</value>
+  </data>
+  <data name="CliUpdateNoNewRelease" xml:space="preserve">
+    <value>There is no release newer than CUSTOS {0} in the selected channel.</value>
+  </data>
+  <data name="CliUpdateAccepted" xml:space="preserve">
+    <value>The agent accepted the update for installation.</value>
+  </data>
+  <data name="CliUpdateInstallFailed" xml:space="preserve">
+    <value>the agent could not start the update</value>
+  </data>
+  <data name="CliUpdatePasswordNeedsTerminal" xml:space="preserve">
+    <value>the program password is required. Run the command in an interactive terminal</value>
+  </data>
+  <data name="CliUpdatePasswordPrompt" xml:space="preserve">
+    <value>Program password (input is hidden):</value>
+  </data>
+  <data name="CliUpdatePasswordCancelled" xml:space="preserve">
+    <value>no program password was entered</value>
   </data>
 </root>

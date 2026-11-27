@@ -1691,6 +1691,12 @@ static partial class Messages
     /// <summary>Update CUSTOS using the system package manager.</summary>
     public static string ProgramManagedByPackage => Get(nameof(ProgramManagedByPackage));
 
+    /// <summary>The update channel changed. Check for updates again.</summary>
+    public static string ProgramUpdateChannelChanged => Get(nameof(ProgramUpdateChannelChanged));
+
+    /// <summary>The stable and preview channels are available for a standalone Linux agent.</summary>
+    public static string ProgramInvalidUpdateChannel => Get(nameof(ProgramInvalidUpdateChannel));
+
     /// <summary>There is no newer version of CUSTOS on GitHub than {0}.</summary>
     public static string ProgramNothingNewer => Get(nameof(ProgramNothingNewer));
 

@@ -1711,6 +1711,12 @@ is missing on the new server gets the number of the old one. To see what a tar h
   <data name="ProgramManagedByPackage" xml:space="preserve">
     <value>Update CUSTOS using the system package manager.</value>
   </data>
+  <data name="ProgramUpdateChannelChanged" xml:space="preserve">
+    <value>The update channel changed. Check for updates again.</value>
+  </data>
+  <data name="ProgramInvalidUpdateChannel" xml:space="preserve">
+    <value>The stable and preview channels are available for a standalone Linux agent.</value>
+  </data>
   <data name="ProgramNothingNewer" xml:space="preserve">
     <value>There is no newer version of CUSTOS on GitHub than {0}.</value>
   </data>

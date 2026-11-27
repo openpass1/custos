@@ -29,7 +29,7 @@ public sealed partial class ConfigStore
     /// <summary>Settings the server can never change (A.9).</summary>
     private static readonly HashSet<string> LocalSettings = new(StringComparer.Ordinal)
     {
-        "allow_remote_edit", "server_url", "heartbeat_interval_s",
+        "allow_remote_edit", "server_url", "heartbeat_interval_s", "program_update_channel",
     };
 
     /// <summary>

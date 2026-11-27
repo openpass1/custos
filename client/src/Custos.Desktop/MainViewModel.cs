@@ -37,6 +37,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     private int _historyGeneration;
     private string _serviceText = string.Empty;
     private bool _serviceOk;
+    private bool _systemServiceBusy;
     private string _serverText = string.Empty;
     private string _serverIcon = "cloud_off";
     private string _userText = string.Empty;
@@ -90,6 +91,22 @@ internal sealed class MainViewModel : Observable, IDisposable
     public ServiceMonitor Monitor => _monitor;
 
     public bool IsDemo => _demo;
+
+    public bool ShowsSystemServiceActions => !IsDemo && DesktopPlatform.Current.ControlsSystemService;
+
+    public bool CanControlSystemService => ShowsSystemServiceActions && !SystemServiceBusy;
+
+    public bool SystemServiceBusy
+    {
+        get => _systemServiceBusy;
+        internal set
+        {
+            if (Set(ref _systemServiceBusy, value))
+            {
+                Changed(nameof(CanControlSystemService));
+            }
+        }
+    }
 
     public bool HasSnapshot => _monitor.Snapshot is not null;
 
@@ -247,6 +264,8 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public bool ShowsSettings { get; }
 
+    public bool CanOpenSettings => ShowsSettings && (Core.CustosEdition.IsLinux || IsConnected);
+
     public bool ShowsTaskManagement { get; }
 
     public bool ShowsRestore { get; }
@@ -355,6 +374,31 @@ internal sealed class MainViewModel : Observable, IDisposable
         }
     }
 
+    public void RefreshLanguage()
+    {
+        ShowStatus();
+        ShowSnapshot();
+        RebuildLog();
+        Changed(nameof(LogLevelText));
+        if (_selected is null)
+        {
+            HistoryNote = Strings.HistorySelectTask;
+        }
+        else if (History.Count > 0)
+        {
+            for (int i = 0; i < History.Count; i++)
+            {
+                History[i] = DescribeRun(History[i].Run);
+            }
+
+            HistoryNote = Strings.Format(DesktopStrings.HistoryCount, _selected.Name, History.Count);
+        }
+        else if (!string.IsNullOrEmpty(HistoryNote))
+        {
+            LoadHistory(force: true);
+        }
+    }
+
     /// <summary>A click on a column header: sort by it, or turn the order round.</summary>
     public void SortBy(int column)
     {
@@ -451,7 +495,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     /// <summary>Which buttons can be used now: after a change of the connection, the tasks or the selection.</summary>
     private void ShowCommands()
     {
-        foreach (string name in (string[])[nameof(IsConnected), nameof(CanEdit), nameof(CanImportTasks), nameof(CanExportTasks), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
+        foreach (string name in (string[])[nameof(IsConnected), nameof(CanOpenSettings), nameof(CanEdit), nameof(CanImportTasks), nameof(CanExportTasks), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
             nameof(CanToggle), nameof(ToggleOn), nameof(ToggleText), nameof(ToggleIcon), nameof(CanRun), nameof(CanStop), nameof(CanPause),
             nameof(IsPaused), nameof(PauseText), nameof(PauseIcon), nameof(CanRestore)])
         {
@@ -825,9 +869,9 @@ internal sealed class MainViewModel : Observable, IDisposable
         Text = line.Text,
     };
 
-    private async void LoadHistory()
+    private async void LoadHistory(bool force = false)
     {
-        if (!_isHistoryTab && _historyTaskId == _selected?.TaskId)
+        if (!force && !_isHistoryTab && _historyTaskId == _selected?.TaskId)
         {
             return;
         }
@@ -857,19 +901,7 @@ internal sealed class MainViewModel : Observable, IDisposable
 
             foreach (var run in result.Runs)
             {
-                History.Add(new HistoryRow
-                {
-                    Run = run,
-                    Started = Describe.Time(run.StartedAt),
-                    Duration = run.FinishedAt is { } finished ? Sizes.FormatDuration(finished - run.StartedAt) : "—",
-                    Type = Words.BackupType(run.BackupType),
-                    Trigger = Words.Trigger(run.Trigger, run.ScheduledFor, run.RequestedBy),
-                    Files = Describe.Number(run.FilesProcessed),
-                    Size = Sizes.Format(run.BytesWritten),
-                    Result = Words.Status(run.Status),
-                    Details = run.ErrorMessage ?? (run.Warnings > 0 ? Strings.Format(Strings.HistoryWarnings, run.Warnings) : Describe.Verify(run.Verify)),
-                    State = Describe.StateOf(run.Status),
-                });
+                History.Add(DescribeRun(run));
             }
 
             HistoryNote = result.Runs.Count == 0 ? Strings.HistoryEmpty : Strings.Format(DesktopStrings.HistoryCount, task.Name, result.Runs.Count);
@@ -882,6 +914,20 @@ internal sealed class MainViewModel : Observable, IDisposable
             }
         }
     }
+
+    private static HistoryRow DescribeRun(RunRecord run) => new()
+    {
+        Run = run,
+        Started = Describe.Time(run.StartedAt),
+        Duration = run.FinishedAt is { } finished ? Sizes.FormatDuration(finished - run.StartedAt) : "—",
+        Type = Words.BackupType(run.BackupType),
+        Trigger = Words.Trigger(run.Trigger, run.ScheduledFor, run.RequestedBy),
+        Files = Describe.Number(run.FilesProcessed),
+        Size = Sizes.Format(run.BytesWritten),
+        Result = Words.Status(run.Status),
+        Details = run.ErrorMessage ?? (run.Warnings > 0 ? Strings.Format(Strings.HistoryWarnings, run.Warnings) : Describe.Verify(run.Verify)),
+        State = Describe.StateOf(run.Status),
+    };
 }
 
 /// <summary>The «Прогресс» tab: the run in progress in detail.</summary>

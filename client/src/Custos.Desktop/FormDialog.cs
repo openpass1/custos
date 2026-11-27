@@ -46,6 +46,16 @@ internal abstract class FormDialog : Window
         var view = new FormView { Items = Items, Margin = new Thickness(20, 0, 20, 12) };
         var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(20, 12, 20, 6) };
         Scroll = new ScrollViewer { Content = view, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        if (Core.CustosEdition.IsLinux)
+        {
+            SizeChanged += (_, _) =>
+            {
+                bool compact = ClientSize.Width < width;
+                Scroll.HorizontalScrollBarVisibility = compact ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+                view.MaxWidth = compact ? Math.Max(320, ClientSize.Width - 56) : double.PositiveInfinity;
+                view.Classes.Set("narrow", compact);
+            };
+        }
         _cancel = Ui.Text(Strings.ButtonCancel, () => Close());
         OkButton = Ui.Filled(Strings.ButtonOk, () => { });
         OkButton.IsDefault = true;

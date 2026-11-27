@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Custos.Core;
 using Custos.Core.Model;
 using Custos.Gui;
 
@@ -50,6 +52,22 @@ internal sealed partial class EditorWindow : Window
     {
         base.OnOpened(e);
         TitleBar.Paint(this);
+        if (CustosEdition.IsLinux)
+        {
+            SizeChanged += (_, _) => FitPageLayout();
+            FitPageLayout();
+        }
+    }
+
+    private void FitPageLayout()
+    {
+        bool compact = ClientSize.Width < 820;
+        EditorLayout.ColumnDefinitions[0].Width = new GridLength(compact ? 0 : 210);
+        PageSidebar.IsVisible = !compact;
+        CompactPageList.IsVisible = compact;
+        PageScroll.HorizontalScrollBarVisibility = compact ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        PageContent.MaxWidth = compact ? Math.Max(320, ClientSize.Width - 60) : 760;
+        EditorForm.Classes.Set("narrow", compact);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

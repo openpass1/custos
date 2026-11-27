@@ -55,9 +55,15 @@ internal static class Program
         }
 
         Console.WriteLine($"Icons: {IconData.CheckAll()} parse.");
-        if (Environment.GetEnvironmentVariable("CUSTOS_SHOTS_ONLY") == "newtask")
+        string? only = Environment.GetEnvironmentVariable("CUSTOS_SHOTS_ONLY");
+        if (only == "newtask")
         {
             return NewTaskWorks() ? 0 : 1;
+        }
+
+        if (only == "connection")
+        {
+            return ConnectionFormCheck.Run() ? 0 : 1;
         }
 
         Shot(folder, "1-glavnoe-okno-svetloe", "light", "Photos", Tab.Log, card: true);
@@ -114,7 +120,7 @@ internal static class Program
 
         bool cobianWorks = CobianImportWorks(cobian);
         File.Delete(cobian);
-        if (!MenuWorks() | !EditorWorks() | !NewTaskWorks() | !SelectionWorks() | !ToolbarWorks(folder) | !cobianWorks)
+        if (!MenuWorks() | !EditorWorks() | !NewTaskWorks() | !SelectionWorks() | !ToolbarWorks(folder) | !ConnectionFormCheck.Run() | !cobianWorks)
         {
             return 1;
         }

@@ -47,6 +47,19 @@
     <Style Selector="p|Field">
       <Setter Property="LabelWidth" Value="190" />
     </Style>
+    <Style Selector="ItemsControl.row">
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="p|FormView.narrow ItemsControl.row">
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate><WrapPanel ItemSpacing="10" LineSpacing="6" /></ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="p|FormView.narrow p|Field">
+      <Setter Property="LabelWidth" Value="120" />
+    </Style>
     <Style Selector="Border.checklist">
       <Setter Property="BorderBrush" Value="{DynamicResource OutlineVariant}" />
       <Setter Property="BorderThickness" Value="1" />
@@ -79,19 +92,16 @@
     </DataTemplate>
 
     <DataTemplate DataType="p:LabelItem">
-      <StackPanel Orientation="Horizontal" Spacing="6" Margin="{Binding Offset}" VerticalAlignment="Center">
-        <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" Width="{Binding Width}"
+      <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Text}" HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap" Width="{Binding Width}"
                    FontWeight="{Binding Strong, Converter={x:Static p:FormView.Weight}}" />
-        <p:Icon Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}" ToolTip.Tip="{Binding Help}"
-                ToolTip.ShowDelay="200" VerticalAlignment="Center" />
-      </StackPanel>
+        <p:Icon Grid.Column="1" Kind="help" Size="18" Foreground="{DynamicResource OnSurfaceVariant}" IsVisible="{Binding HasHelp}"
+                ToolTip.Tip="{Binding Help}" ToolTip.ShowDelay="200" VerticalAlignment="Center" Margin="6,0,0,0" />
+      </Grid>
     </DataTemplate>
 
     <DataTemplate DataType="p:RowItem">
       <ItemsControl Classes="form row" ItemsSource="{Binding Items}" Margin="{Binding Offset}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
         <ItemsControl.Styles>
           <Style Selector="ItemsControl.form > ContentPresenter">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -110,16 +120,16 @@
       <Grid ColumnDefinitions="*,Auto" Margin="{Binding Offset}" HorizontalAlignment="{Binding Align}">
         <p:Field Label="{Binding Label}" Hint="{Binding ShownHint}" FrameWidth="{Binding Width}" HorizontalAlignment="{Binding Align}"
                  Classes.compact="{Binding Compact}" Classes.error="{Binding HasError}">
-          <Grid ColumnDefinitions="*,Auto">
+          <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox Text="{Binding Text}" Height="{Binding Height}" Classes.multi="{Binding Multiline}" Classes.mono="{Binding Mono}"
                      AcceptsReturn="{Binding Multiline}" TextWrapping="{Binding Wrap, Converter={x:Static p:FormView.Wrapping}}"
                      PasswordChar="{Binding Mask}" PlaceholderText="{Binding Placeholder}" IsReadOnly="{Binding ReadOnly}"
-                     MaxLength="{Binding MaxLength}" ScrollViewer.HorizontalScrollBarVisibility="Auto" />
-            <Button Grid.Column="1" Theme="{StaticResource IconButton}" IsVisible="{Binding HasAction}" ToolTip.Tip="{Binding ActionTip}"
+                     MaxLength="{Binding MaxLength}" ScrollViewer.HorizontalScrollBarVisibility="{Binding HorizontalScrollbar}" />
+            <Button Grid.Column="1" Theme="{StaticResource IconButton}" IsVisible="{Binding HasAction}" IsEnabled="{Binding IsActionEnabled}" ToolTip.Tip="{Binding ActionTip}"
                     Command="{Binding Run}" Margin="0,0,6,0" VerticalAlignment="Center">
               <p:Icon Kind="{Binding ActionIcon}" Size="20" />
             </Button>
-            <ToggleButton Grid.Column="1" Theme="{StaticResource IconToggle}" IsVisible="{Binding Secret}" IsChecked="{Binding Reveal}"
+            <ToggleButton Grid.Column="2" Theme="{StaticResource IconToggle}" IsVisible="{Binding Secret}" IsChecked="{Binding Reveal}"
                           ToolTip.Tip="{x:Static g:Strings.ShowPassword}" Margin="0,0,6,0" VerticalAlignment="Center">
               <p:Icon Kind="{Binding RevealIcon}" Size="20" />
             </ToggleButton>

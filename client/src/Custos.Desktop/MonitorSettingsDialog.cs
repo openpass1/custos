@@ -1,5 +1,4 @@
 using System.Globalization;
-using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Custos.Core;
 using Custos.Core.Ipc;
@@ -7,24 +6,6 @@ using Custos.Core.Monitor;
 using Custos.Gui;
 
 namespace Custos.Desktop;
-
-/// <summary>The monitoring settings on a desktop that does not expose the full settings window.</summary>
-internal sealed class MonitorSettingsDialog : FormDialog
-{
-    private readonly ServiceMonitor _monitor;
-
-    public MonitorSettingsDialog(ServiceMonitor monitor) : base(Strings.SettingsServer, 700)
-    {
-        _monitor = monitor;
-        OkButton.IsVisible = false;
-        CancelButton.Content = Strings.ButtonClose;
-        _ = new MonitorSettingsSection(this, monitor, ShowError, standalone: true);
-    }
-
-    public Task<bool> ShowOverAsync(Window owner) => ShowAsync(owner, _monitor);
-
-    protected override Task<bool> OkAsync() => Task.FromResult(false);
-}
 
 /// <summary>The service's monitoring status and the two local administrator operations.</summary>
 internal sealed class MonitorSettingsSection
@@ -35,54 +16,46 @@ internal sealed class MonitorSettingsSection
     private readonly FormDialog _owner;
     private readonly ServiceMonitor _monitor;
     private readonly Action<string?> _showError;
-    private readonly bool _protectLine;
+    private readonly bool _linux = CustosEdition.IsLinux;
     private readonly NoteItem _state = new(string.Empty);
     private readonly NoteItem _details = new(string.Empty);
     private readonly NoteItem _administrators = new(Strings.ServerAdminOnly);
     private readonly TextItem _line;
     private readonly ButtonItem _connect;
     private readonly ButtonItem _reset;
-    private readonly ButtonItem? _paste;
+    private readonly ButtonItem _changeServer;
+    private readonly ButtonItem _cancelChange;
+    private readonly RowItem _editorActions;
     private bool _busy;
+    private bool _changingServer;
 
-    public MonitorSettingsSection(FormDialog owner, ServiceMonitor monitor, Action<string?> showError, bool standalone = false)
+    public MonitorSettingsSection(FormDialog owner, ServiceMonitor monitor, Action<string?> showError)
     {
         _owner = owner;
         _monitor = monitor;
         _showError = showError;
-        _protectLine = standalone || CustosEdition.IsLinux;
         _line = new TextItem(Strings.ServerLineLabel.TrimEnd(':', ' '))
         {
             Placeholder = Example,
             Help = Strings.ServerLineHelp,
-            Secret = _protectLine,
             ActionIcon = "content_paste",
             ActionTip = Strings.ServerPasteTip,
-            Action = _protectLine ? null : PasteAsync,
+            Action = PasteAsync,
         };
         var failed = (Exception error) => _showError(error.Message);
         _connect = new ButtonItem("link", Strings.ServerConnectButton, () => ChangeAsync(ConnectAsync)) { Failed = failed };
         _reset = new ButtonItem("link_off", Strings.ServerResetButton, () => ChangeAsync(ResetAsync), ButtonLook.Outlined) { Failed = failed };
+        _changeServer = ButtonItem.Of("link", DesktopStrings.MonitorChangeServer, StartChangingServer, ButtonLook.Outlined);
+        _cancelChange = ButtonItem.Of(null, Strings.ButtonCancel, EndChangingServer, ButtonLook.Text);
+        _editorActions = new RowItem(_connect, _cancelChange);
 
-        if (!standalone)
-        {
-            owner.Items.Add(new HeadingItem(Strings.SettingsServer));
-        }
-
+        owner.Items.Add(new HeadingItem(Strings.SettingsServer));
         owner.Items.Add(_state);
-        owner.Items.Add(_line);
-        if (_protectLine)
-        {
-            // TextItem has one slot for either its paste button or its password-visibility switch.
-            _paste = new ButtonItem("content_paste", Strings.ServerPasteTip, PasteAsync, ButtonLook.Text) { Failed = failed };
-            owner.Items.Add(new RowItem(_paste, _connect, _reset));
-        }
-        else
-        {
-            owner.Items.Add(new RowItem(_connect, _reset));
-        }
-
         owner.Items.Add(_details);
+        owner.Items.Add(_changeServer);
+        owner.Items.Add(_line);
+        owner.Items.Add(_editorActions);
+        owner.Items.Add(_reset);
         owner.Items.Add(_administrators);
         _monitor.StatusChanged += OnChanged;
         _monitor.SnapshotChanged += OnChanged;
@@ -96,22 +69,28 @@ internal sealed class MonitorSettingsSection
         Refresh();
     }
 
-    private bool CanChange => !_busy && _monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true;
+    private bool CanChange => !_busy && _monitor.IsConnected && _monitor.Snapshot is not null
+        && _monitor.Status.Hello?.IsAdmin == true;
 
     private void OnChanged(object? sender, EventArgs args) => Refresh();
 
     private void Refresh()
     {
-        var server = _monitor.Snapshot?.Server;
+        var server = _monitor.IsConnected ? _monitor.Snapshot?.Server : null;
+        bool configured = server?.ServerUrl is { Length: > 0 };
+        bool showEditor = !_linux || !configured || _changingServer;
         bool canChange = CanChange;
-        _line.IsEnabled = _connect.IsEnabled = canChange;
-        _reset.IsEnabled = canChange && server?.ServerUrl is not null;
-        if (_paste is not null)
-        {
-            _paste.IsEnabled = canChange;
-        }
+        _line.IsVisible = _editorActions.IsVisible = showEditor;
+        _line.ReadOnly = !canChange;
+        _line.IsActionEnabled = _connect.IsEnabled = canChange;
+        _changeServer.IsVisible = _linux && configured && !_changingServer;
+        _changeServer.IsEnabled = canChange;
+        _reset.IsVisible = configured && showEditor;
+        _reset.IsEnabled = canChange;
+        _cancelChange.IsVisible = configured && _changingServer;
+        _cancelChange.IsEnabled = !_busy;
 
-        _administrators.IsVisible = _monitor.IsConnected && _monitor.Status.Hello?.IsAdmin != true;
+        _administrators.IsVisible = _monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == false;
         if (server is null)
         {
             _state.Show(Strings.ProblemNoConnection, Tone.Caution);
@@ -126,7 +105,7 @@ internal sealed class MonitorSettingsSection
         }
 
         bool normal = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting;
-        if (!_protectLine && server.Detail is { } detail)
+        if (!_linux && server.Detail is { } detail)
         {
             status = status.TrimEnd('.') + ": " + detail;
         }
@@ -152,6 +131,22 @@ internal sealed class MonitorSettingsSection
         _details.Show(string.Join(Environment.NewLine, lines));
     }
 
+    private void StartChangingServer()
+    {
+        if (CanChange)
+        {
+            _changingServer = true;
+            Refresh();
+        }
+    }
+
+    private void EndChangingServer()
+    {
+        _changingServer = false;
+        ClearLine();
+        Refresh();
+    }
+
     private async Task PasteAsync()
     {
         if (!CanChange)
@@ -160,6 +155,11 @@ internal sealed class MonitorSettingsSection
         }
 
         string? text = _owner.Clipboard is { } clipboard ? await clipboard.TryGetTextAsync() : null;
+        if (!CanChange || !_owner.IsVisible || !_line.IsVisible)
+        {
+            return;
+        }
+
         string? line = text?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
         if (string.IsNullOrEmpty(line))
         {
@@ -167,7 +167,6 @@ internal sealed class MonitorSettingsSection
             return;
         }
 
-        _line.Reveal = false;
         _line.Text = line;
     }
 
@@ -203,14 +202,14 @@ internal sealed class MonitorSettingsSection
 
         if (!RegistrationCode.TrySplitConnection(line, out string url, out string code)
             || !MonitorClient.IsValidServerUrl(url, out string normalized) || RegistrationCode.TryParse(code, out _) is null
-            || (_protectLine && new Uri(normalized).UserInfo.Length != 0))
+            || (_linux && new Uri(normalized).UserInfo.Length != 0))
         {
             _line.Error = Strings.Format(Strings.ServerLineBad, Example);
             return;
         }
 
         string? current = _monitor.Snapshot?.Server.ServerUrl;
-        if (_protectLine && current is not null && !string.Equals(current, normalized, StringComparison.OrdinalIgnoreCase)
+        if (_linux && current is not null && !MonitorClient.HaveSameServerUrl(current, normalized)
             && !await Dialogs.Ask(_owner, Strings.Format(DesktopStrings.MonitorSwitchConfirm, DisplayUrl(current) ?? "—", DisplayUrl(normalized)),
                 Strings.ServerConnectButton, Strings.ButtonCancel))
         {
@@ -226,7 +225,7 @@ internal sealed class MonitorSettingsSection
             IpcJsonContext.Default.ServerConnectRequest, IpcJsonContext.Default.OkResult);
         if (result.Ok)
         {
-            ClearLine();
+            EndChangingServer();
             await Dialogs.Show(_owner, Strings.ServerConnectDone);
         }
         else
@@ -247,7 +246,11 @@ internal sealed class MonitorSettingsSection
 
         var result = await _monitor.RequestAsync(PipeProtocol.Methods.ServerReset, EmptyRequest.Instance,
             IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult);
-        if (!result.Ok)
+        if (result.Ok)
+        {
+            EndChangingServer();
+        }
+        else
         {
             _showError(result.Message ?? Strings.ProblemNoAnswer);
         }
@@ -260,7 +263,7 @@ internal sealed class MonitorSettingsSection
             return false;
         }
 
-        if (string.Equals(_monitor.Snapshot?.Server.ServerUrl, previous, StringComparison.OrdinalIgnoreCase))
+        if (MonitorClient.HaveSameServerUrl(_monitor.Snapshot?.Server.ServerUrl, previous))
         {
             return true;
         }
@@ -271,8 +274,8 @@ internal sealed class MonitorSettingsSection
 
     private void ClearLine()
     {
-        _line.Reveal = false;
         _line.Text = string.Empty;
+        _line.Error = null;
     }
 
     private static string? DisplayUrl(string? value) => MonitorClient.IsValidServerUrl(value, out string normalized)

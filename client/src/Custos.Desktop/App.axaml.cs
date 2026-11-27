@@ -33,9 +33,11 @@ internal sealed partial class App : Application, IDisposable
     private NativeMenuItem? _open;
     private NativeMenuItem? _runAll;
     private NativeMenuItem? _stopAll;
+    private NativeMenuItem? _close;
     private NativeMenuItemSeparator? _commandsSeparator;
     private NativeMenuItem? _serviceStart;
     private NativeMenuItem? _serviceStop;
+    private NativeMenuItem? _serviceRestart;
     private NativeMenuItemSeparator? _serviceSeparator;
     private TrayState? _shownState;
     private string _mode;
@@ -69,13 +71,18 @@ internal sealed partial class App : Application, IDisposable
                 monitor.StatusChanged += (_, _) => OnAgentChanged();
                 monitor.SnapshotChanged += (_, _) => OnAgentChanged();
                 monitor.ProgressChanged += (_, _) => UpdateTray();
-                desktop.ShutdownRequested += (_, _) => window.Quitting = true;
+                desktop.ShutdownRequested += (_, _) =>
+                {
+                    if (_window is { } current)
+                    {
+                        current.Quitting = true;
+                    }
+                };
                 CreateTray();
             }
             if (!keepInTray)
             {
-                desktop.MainWindow = window;
-                window.Closed += (_, _) => window.ViewModel.Dispose();
+                UseMainWindow(desktop, window);
             }
 
             window.ViewModel.Start();
@@ -87,6 +94,41 @@ internal sealed partial class App : Application, IDisposable
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Builds new controls in the selected language while keeping the view model and its agent session.</summary>
+    public void RefreshInterfaceLanguage()
+    {
+        if (_window is not { } old || ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return;
+        }
+
+        old.SaveLayout();
+        var model = old.ViewModel;
+        InterfaceLanguage.Apply(model.Ui.InterfaceLanguage);
+        model.RefreshLanguage();
+        var window = new MainWindow(model);
+        UseMainWindow(desktop, window);
+        window.Show();
+        window.ShowSelection();
+        old.CloseForLanguageChange();
+        window.Activate();
+        RelabelTray();
+        UpdateTray();
+    }
+
+    private void UseMainWindow(IClassicDesktopStyleApplicationLifetime desktop, MainWindow window)
+    {
+        _window = window;
+        desktop.MainWindow = window;
+        window.Closed += (_, _) =>
+        {
+            if (_window == window)
+            {
+                window.ViewModel.Dispose();
+            }
+        };
     }
 
     /// <summary>A second copy was started in this session: it asks this one to show its window.</summary>
@@ -150,12 +192,14 @@ internal sealed partial class App : Application, IDisposable
         _stopAll.Click += (_, _) => Safe.Run(() => _window!.ViewModel.Monitor.CommandAsync(PipeProtocol.Methods.RunStopAll), Problem);
         _commandsSeparator = new NativeMenuItemSeparator();
         _serviceStart = new NativeMenuItem { Header = Strings.MenuServiceStart };
-        _serviceStart.Click += (_, _) => platform.ControlService(start: true);
+        _serviceStart.Click += (_, _) => ControlServiceFromTray(SystemServiceAction.Start);
         _serviceStop = new NativeMenuItem { Header = Strings.MenuServiceStop };
-        _serviceStop.Click += (_, _) => Safe.Run(StopServiceAsync, Problem);
+        _serviceStop.Click += (_, _) => ControlServiceFromTray(SystemServiceAction.Stop);
+        _serviceRestart = new NativeMenuItem { Header = DesktopStrings.SystemServiceRestart };
+        _serviceRestart.Click += (_, _) => ControlServiceFromTray(SystemServiceAction.Restart);
         _serviceSeparator = new NativeMenuItemSeparator();
-        var close = new NativeMenuItem { Header = Strings.MenuClose };
-        close.Click += (_, _) => Quit();
+        _close = new NativeMenuItem { Header = Strings.MenuClose };
+        _close.Click += (_, _) => Quit();
 
         var menu = new NativeMenu();
         menu.Items.Add(_status);
@@ -166,9 +210,9 @@ internal sealed partial class App : Application, IDisposable
         menu.Items.Add(_commandsSeparator);
         menu.Items.Add(_serviceStart);
         menu.Items.Add(_serviceStop);
+        menu.Items.Add(_serviceRestart);
         menu.Items.Add(_serviceSeparator);
-        menu.Items.Add(close);
-        // What the system says about the service decides which of the two commands is available.
+        menu.Items.Add(_close);
         menu.Opening += (_, _) => UpdateServiceItems();
 
         _tray = new TrayIcon
@@ -250,15 +294,32 @@ internal sealed partial class App : Application, IDisposable
         _runAll!.IsVisible = full;
         _stopAll!.IsVisible = full;
         _commandsSeparator!.IsVisible = full;
-        bool service = full && DesktopPlatform.Current.ControlsService;
+        bool systemService = full && window.ViewModel.ShowsSystemServiceActions;
+        bool service = systemService || (full && DesktopPlatform.Current.ControlsService);
         _serviceStart!.IsVisible = service;
         _serviceStop!.IsVisible = service;
+        _serviceRestart!.IsVisible = systemService;
         _serviceSeparator!.IsVisible = service;
 
         var snapshot = monitor.Snapshot;
         var current = snapshot?.Current;
         _runAll.IsEnabled = monitor.IsConnected && snapshot?.Tasks.Any(t => t.Enabled) == true;
         _stopAll.IsEnabled = monitor.IsConnected && ((current is not null && !current.Stopping) || snapshot?.Queue.Count > 0);
+    }
+
+    private void RelabelTray()
+    {
+        if (_tray is null)
+        {
+            return;
+        }
+
+        _runAll!.Header = Strings.MenuRunAll;
+        _stopAll!.Header = Strings.MenuStopAll;
+        _serviceStart!.Header = Strings.MenuServiceStart;
+        _serviceStop!.Header = Strings.MenuServiceStop;
+        _serviceRestart!.Header = DesktopStrings.SystemServiceRestart;
+        _close!.Header = Strings.MenuClose;
     }
 
     /// <summary>Shows the countdown to a shutdown or sleep after a run while the service counts, and closes it after.</summary>
@@ -291,9 +352,34 @@ internal sealed partial class App : Application, IDisposable
 
     private void UpdateServiceItems()
     {
+        if (DesktopPlatform.Current.ControlsSystemService)
+        {
+            bool available = _window?.ViewModel.CanControlSystemService == true;
+            _serviceStart!.IsEnabled = _serviceStop!.IsEnabled = _serviceRestart!.IsEnabled = available;
+            return;
+        }
+
         bool? running = DesktopPlatform.Current.ServiceRunning();
         _serviceStart!.IsEnabled = running == false;
         _serviceStop!.IsEnabled = running == true;
+    }
+
+    private void ControlServiceFromTray(SystemServiceAction action)
+    {
+        var platform = DesktopPlatform.Current;
+        if (platform.ControlsSystemService && _window is { } window && window.ViewModel.CanControlSystemService)
+        {
+            ShowWindow();
+            Safe.Run(() => window.Actions.ControlSystemServiceAsync(action), Problem);
+        }
+        else if (platform.ControlsService && action == SystemServiceAction.Start)
+        {
+            platform.ControlService(start: true);
+        }
+        else if (platform.ControlsService && action == SystemServiceAction.Stop)
+        {
+            Safe.Run(StopServiceAsync, Problem);
+        }
     }
 
     private async Task RunAllAsync()
