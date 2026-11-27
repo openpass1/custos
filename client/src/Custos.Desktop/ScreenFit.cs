@@ -38,7 +38,15 @@ internal static class ScreenFit
         }
 
         // After the layout, when the size of the frame is known.
-        Dispatcher.UIThread.Post(() => MoveOnto(window, CustosEdition.IsLinux ? screen : null), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (CustosEdition.IsLinux && window.IsVisible && screen is not null)
+            {
+                LimitToScreen(window, screen);
+            }
+
+            MoveOnto(window, CustosEdition.IsLinux ? screen : null);
+        }, DispatcherPriority.Background);
     };
 
     private static void LimitToScreen(Window window, Screen screen)
@@ -56,12 +64,59 @@ internal static class ScreenFit
     /// <summary>Leave room in the work area for decorations even before the window manager supplies frame extents.</summary>
     public static void LimitLinux(Window window, Screen screen, double minimumWidth, double minimumHeight)
     {
-        double width = Math.Max(1, Math.Floor(screen.WorkingArea.Width / screen.Scaling) - 16);
-        double height = Math.Max(1, Math.Floor(screen.WorkingArea.Height / screen.Scaling) - 44);
+        ApplyLinuxLimits(window, minimumWidth, minimumHeight, LinuxClientRoom(window, screen), limitMaximum: true);
+    }
+
+    /// <summary>Fits the normal main window, leaving the compositor free to maximize it above that size.</summary>
+    public static bool FitLinuxMain(Window window, Screen screen, double minimumWidth, double minimumHeight)
+    {
+        var room = LinuxClientRoom(window, screen);
+        bool fits = window.Width <= room.Width && window.Height <= room.Height;
+        ApplyLinuxLimits(window, minimumWidth, minimumHeight, room, limitMaximum: false);
+        return fits;
+    }
+
+    public static PixelPoint ClampLinuxMainPosition(Window window, PixelPoint position, Screen screen)
+    {
+        return ClampPosition(position, LinuxFrame(window, screen, new Size(window.Width, window.Height)), screen);
+    }
+
+    private static Size LinuxClientRoom(Window window, Screen screen)
+    {
+        var decoration = LinuxDecoration(window, screen);
+        return new Size(Math.Max(1, Math.Floor(screen.WorkingArea.Width / screen.Scaling - decoration.Width)),
+            Math.Max(1, Math.Floor(screen.WorkingArea.Height / screen.Scaling - decoration.Height)));
+    }
+
+    private static Size LinuxFrame(Window window, Screen screen, Size client)
+    {
+        var decoration = LinuxDecoration(window, screen);
+        return new Size(client.Width + decoration.Width, client.Height + decoration.Height);
+    }
+
+    private static Size LinuxDecoration(Window window, Screen screen)
+    {
+        // The compositor may include sizeable shadows in the frame it places. Reserve some pixels at startup,
+        // before it reports the actual frame (which may be larger on a scaled display).
+        var client = window.ClientSize;
+        var frame = window.FrameSize ?? client;
+        double horizontal = Math.Max(80, (frame.Width - client.Width) * window.RenderScaling);
+        double vertical = Math.Max(104, (frame.Height - client.Height) * window.RenderScaling);
+        return new Size(horizontal / screen.Scaling, vertical / screen.Scaling);
+    }
+
+    private static void ApplyLinuxLimits(Window window, double minimumWidth, double minimumHeight, Size room, bool limitMaximum)
+    {
+        double width = room.Width;
+        double height = room.Height;
         window.MinWidth = Math.Min(minimumWidth, width);
         window.MinHeight = Math.Min(minimumHeight, height);
-        window.MaxWidth = width;
-        window.MaxHeight = height;
+        if (limitMaximum)
+        {
+            window.MaxWidth = width;
+            window.MaxHeight = height;
+        }
+
         if (window.WindowState != WindowState.Normal)
         {
             return;
@@ -105,7 +160,8 @@ internal static class ScreenFit
             return;
         }
 
-        var position = ClampPosition(window.Position, window.FrameSize ?? window.ClientSize, screen);
+        var frame = CustosEdition.IsLinux ? LinuxFrame(window, screen, window.ClientSize) : window.FrameSize ?? window.ClientSize;
+        var position = ClampPosition(window.Position, frame, screen);
         if (position != window.Position)
         {
             window.Position = position;

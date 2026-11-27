@@ -98,6 +98,13 @@ internal sealed partial class MainWindow : Window
             PositionChanged += (_, _) => FitLinuxScreen(bringIntoView: false);
             ScalingChanged += OnLinuxScreenChanged;
             Screens.Changed += OnLinuxScreenChanged;
+            PropertyChanged += (_, e) =>
+            {
+                if (e.Property == WindowStateProperty && WindowState == WindowState.Normal)
+                {
+                    Dispatcher.UIThread.Post(() => FitLinuxScreen(refit: true), DispatcherPriority.Background);
+                }
+            };
             Body.SizeChanged += (_, _) => FitLinuxContent();
             FitLinuxScreen();
             FitLinuxContent();
@@ -192,7 +199,7 @@ internal sealed partial class MainWindow : Window
 
     private void OnLinuxScreenChanged(object? sender, EventArgs e) => FitLinuxScreen();
 
-    private void FitLinuxScreen(bool bringIntoView = true)
+    private void FitLinuxScreen(bool bringIntoView = true, bool refit = false)
     {
         if (!IsVisible || (Screens.ScreenFromWindow(this) ?? Screens.Primary) is not { } screen)
         {
@@ -200,10 +207,10 @@ internal sealed partial class MainWindow : Window
         }
 
         var geometry = (screen.WorkingArea, screen.Scaling);
-        if (geometry != _linuxScreen)
+        if (geometry != _linuxScreen || refit)
         {
             _linuxScreen = geometry;
-            ScreenFit.LimitLinux(this, screen, LinuxMinWidth, LinuxMinHeight);
+            ScreenFit.FitLinuxMain(this, screen, LinuxMinWidth, LinuxMinHeight);
             double menuHeight = Math.Max(100, Math.Floor(screen.WorkingArea.Height / screen.Scaling) - 80);
             MoreMenuScroll.MaxHeight = SettingsMenuScroll.MaxHeight = menuHeight;
         }
@@ -318,14 +325,16 @@ internal sealed partial class MainWindow : Window
 
     private void RestoreLinuxBounds(UiState ui)
     {
-        if (ui.Width is > 0 and <= 10000)
+        bool savedWidth = ui.Width is > 0 and <= 10000;
+        bool savedHeight = ui.Height is > 0 and <= 10000;
+        if (savedWidth)
         {
-            Width = Math.Max(LinuxMinWidth, ui.Width.Value);
+            Width = Math.Max(LinuxMinWidth, ui.Width.GetValueOrDefault());
         }
 
-        if (ui.Height is > 0 and <= 10000)
+        if (savedHeight)
         {
-            Height = Math.Max(LinuxMinHeight, ui.Height.Value);
+            Height = Math.Max(LinuxMinHeight, ui.Height.GetValueOrDefault());
         }
 
         Screen? screen = null;
@@ -343,10 +352,15 @@ internal sealed partial class MainWindow : Window
 
         if ((screen ?? Screens.ScreenFromWindow(this) ?? Screens.Primary) is { } startScreen)
         {
-            ScreenFit.LimitLinux(this, startScreen, LinuxMinWidth, LinuxMinHeight);
+            bool fits = ScreenFit.FitLinuxMain(this, startScreen, LinuxMinWidth, LinuxMinHeight);
             if (saved is { } position)
             {
-                Position = ScreenFit.ClampPosition(position, new Size(Width, Height), startScreen);
+                Position = ScreenFit.ClampLinuxMainPosition(this, position, startScreen);
+            }
+
+            if (!fits && !savedWidth && !savedHeight)
+            {
+                WindowState = WindowState.Maximized;
             }
         }
     }
