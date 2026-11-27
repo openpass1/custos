@@ -408,6 +408,27 @@ internal sealed partial class MainWindow : Window
             };
             ColorMenu.Children.Add(item);
         }
+
+        if (DesktopPlatform.Current.SupportsMonitorSettings)
+        {
+            ColorMenu.Children.Add(new Border { Classes = { "divider" }, Margin = new Thickness(0, 8) });
+            var monitoring = new Button
+            {
+                Theme = this.FindResource("MenuItemButton") as ControlTheme,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 12,
+                    Children = { new Icon { Kind = "cloud" }, new TextBlock { Text = Strings.SettingsServer, VerticalAlignment = VerticalAlignment.Center } },
+                },
+            };
+            monitoring.Click += (_, _) =>
+            {
+                CloseMenu(monitoring);
+                Safe.Run(() => new MonitorSettingsDialog(_vm.Monitor).ShowOverAsync(this), ShowProblem);
+            };
+            ColorMenu.Children.Add(monitoring);
+        }
     }
 
     private static RadioButton MenuChoice(ControlTheme? theme, string group, bool on, Control lead, string text) => new()

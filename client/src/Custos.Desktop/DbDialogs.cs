@@ -54,7 +54,7 @@ internal sealed class DbServerDialog : FormDialog
 
         Items.Add(_engine);
         Items.Add(new RowItem(_binDir, find));
-        Items.Add(new NoteItem(Strings.DbBinDirHelp));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxDbBinDirHelp : Strings.DbBinDirHelp));
         Items.Add(new RowItem(_host, _port));
         Items.Add(_user);
         Items.Add(_password);
@@ -161,7 +161,8 @@ internal sealed class DbServerDialog : FormDialog
     private string? Check()
     {
         return _binDir.Value.Length == 0 ? Strings.ErrorDbBinDirRequired
-            : !PathVariables.LooksAbsolute(_binDir.Value) ? Strings.Format(Strings.ErrorPathNotAbsolute, _binDir.Value)
+            : !(CustosEdition.IsLinux ? LinuxEditorPaths.IsLocal(_binDir.Value) : PathVariables.LooksAbsolute(_binDir.Value))
+                ? Strings.Format(CustosEdition.IsLinux ? DesktopStrings.LinuxErrorLocalPath : Strings.ErrorPathNotAbsolute, _binDir.Value)
             : string.IsNullOrWhiteSpace(_host.Text) ? Strings.ErrorDbHostRequired
             : !_port.IsValid ? _port.Range()
             : string.IsNullOrWhiteSpace(_user.Text) ? Strings.ErrorUserRequired

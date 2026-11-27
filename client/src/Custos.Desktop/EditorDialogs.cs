@@ -28,13 +28,18 @@ internal sealed class SourceDialog : FormDialog
         _file = new RadioItem(_kinds, Strings.SourceFile, inline: true);
         _network = new RadioItem(_kinds, Strings.SourceNetwork, inline: true);
         _path = new TextItem(EditorPage_L(Strings.SourcePath)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = BrowseAsync };
-        _account = new AccountPicker(context, () => this, EditorPage_L(Strings.DestinationAccount), Strings.SourceAccountHelp);
+        _account = new AccountPicker(context, () => this, EditorPage_L(Strings.DestinationAccount),
+            CustosEdition.IsLinux ? DesktopStrings.LinuxSmbAccountHelp : Strings.SourceAccountHelp);
+        if (CustosEdition.IsLinux)
+        {
+            _account.SetKind(CredentialKinds.Windows, Strings.AccountNone);
+        }
         Items.Add(new RowItem(_folder, _file, _network));
         Items.Add(_path);
         Items.Add(_recursive);
         Items.Add(_account.Row);
-        Items.Add(new NoteItem(Strings.SourceNote));
-        Items.Add(new NoteItem(Strings.PathVariablesNote));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxSourcePathHelp : Strings.SourceNote));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxPathVariables : Strings.PathVariablesNote));
 
         (source.Kind switch
         {
@@ -54,7 +59,7 @@ internal sealed class SourceDialog : FormDialog
 
         _path.OnChange = () =>
         {
-            if (_path.Text.StartsWith(@"\\", StringComparison.Ordinal) && !_network.On)
+            if (IsNetworkPath(_path.Text) && !_network.On)
             {
                 _network.On = true;
             }
@@ -67,11 +72,7 @@ internal sealed class SourceDialog : FormDialog
     protected override Task<bool> OkAsync()
     {
         string path = _path.Value;
-        string? problem = path.Length == 0 ? Strings.ErrorPathRequired
-            : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
-            : _network.On && !path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorNotUnc, path)
-            : !_network.On && path.StartsWith(@"\\", StringComparison.Ordinal) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
-            : null;
+        string? problem = path.Length == 0 ? Strings.ErrorPathRequired : CheckPath(path);
         if (problem is not null)
         {
             _path.Error = problem;
@@ -82,7 +83,7 @@ internal sealed class SourceDialog : FormDialog
         {
             Id = _original.Id,
             Kind = _file.On ? SourceKinds.File : _network.On ? SourceKinds.Unc : SourceKinds.Folder,
-            Path = path,
+            Path = CustosEdition.IsLinux && _network.On ? LinuxEditorPaths.NormalizeShare(path) : path,
             Recursive = _file.On || _recursive.On,
             CredentialId = _network.On ? _account.SelectedId : null,
             ExtensionData = _original.ExtensionData,
@@ -91,6 +92,24 @@ internal sealed class SourceDialog : FormDialog
     }
 
     internal static string EditorPage_L(string label) => label.TrimEnd(':', ' ');
+
+    private string? CheckPath(string path)
+    {
+        if (CustosEdition.IsLinux)
+        {
+            return _network.On
+                ? LinuxEditorPaths.IsShare(path) ? null : Strings.Format(DesktopStrings.LinuxErrorSharePath, path)
+                : LinuxEditorPaths.IsLocal(path) ? null : Strings.Format(DesktopStrings.LinuxErrorLocalPath, path);
+        }
+
+        return !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
+            : _network.On && !IsNetworkPath(path) ? Strings.Format(Strings.ErrorNotUnc, path)
+            : !_network.On && IsNetworkPath(path) ? Strings.Format(Strings.ErrorUncNeedsNetwork, path)
+            : null;
+    }
+
+    internal static bool IsNetworkPath(string path) => CustosEdition.IsLinux ? BackupEngine.IsNetworkPath(path)
+        : path.StartsWith(@"\\", StringComparison.Ordinal);
 
     private void UpdateFields()
     {
@@ -191,7 +210,10 @@ internal sealed class DestinationDialog : FormDialog
             kinds.Add(DestinationsPage.KindText(destination.Kind));
         }
 
-        _kind = new ChoiceItem(L(Strings.DestinationKind), kinds, 0, 300) { Help = Strings.DestinationKindHelp };
+        _kind = new ChoiceItem(L(Strings.DestinationKind), kinds, 0, 300)
+        {
+            Help = CustosEdition.IsLinux ? DesktopStrings.LinuxDestinationKindHelp : Strings.DestinationKindHelp,
+        };
         _hostRow = new RowItem(_host, _port);
         _path = new TextItem(L(Strings.DestinationFolder)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = BrowseAsync };
         _account = new AccountPicker(context, () => this, L(Strings.DestinationAccount));
@@ -225,11 +247,15 @@ internal sealed class DestinationDialog : FormDialog
         Items.Add(_key);
         Items.Add(_forgetKey);
         Items.Add(_unsupported);
-        Items.Add(new NoteItem(Strings.PathVariablesNote));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxPathVariables : Strings.PathVariablesNote));
         Items.Add(_test);
         Items.Add(_testResult);
 
         _usbLabel.Options = UsbLabels();
+        if (CustosEdition.IsLinux)
+        {
+            _usbLabel.Help = DesktopStrings.LinuxUsbLabelHelp;
+        }
         int index = Array.IndexOf(Kinds, destination.Kind);
         _kind.Load(index >= 0 ? index : Kinds.Length);
         _shownKind = Kind;
@@ -260,7 +286,7 @@ internal sealed class DestinationDialog : FormDialog
         _path.OnChange = () =>
         {
             _testResult.Show(null);
-            if (_path.Text.StartsWith(@"\\", StringComparison.Ordinal) && Kind == DestinationKinds.Local)
+            if (SourceDialog.IsNetworkPath(_path.Text) && Kind == DestinationKinds.Local)
             {
                 _kind.Selected = Array.IndexOf(Kinds, DestinationKinds.Unc);
             }
@@ -283,7 +309,9 @@ internal sealed class DestinationDialog : FormDialog
         switch (destination.Kind)
         {
             case DestinationKinds.Usb:
-                return string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired : null;
+                return string.IsNullOrWhiteSpace(destination.UsbLabel) ? Strings.ErrorUsbLabelRequired
+                    : CustosEdition.IsLinux && !LinuxEditorPaths.IsVolumeFolder(path) ? DesktopStrings.LinuxErrorVolumeFolder
+                    : null;
             case DestinationKinds.Sftp or DestinationKinds.Ftp or DestinationKinds.Ftps:
                 return string.IsNullOrWhiteSpace(destination.Host) ? Strings.ErrorHostRequired
                     : destination.Port is < 1 or > 65535 ? Strings.ErrorPortBad
@@ -298,6 +326,11 @@ internal sealed class DestinationDialog : FormDialog
             case DestinationKinds.GDrive or DestinationKinds.YaDisk or DestinationKinds.Dropbox:
                 // The folder may be empty: the folder of CUSTOS in the account itself.
                 return string.IsNullOrEmpty(destination.CredentialId) ? Strings.ErrorCloudAccountRequired : null;
+            case DestinationKinds.Unc when CustosEdition.IsLinux:
+                return LinuxEditorPaths.IsShare(path) ? null : Strings.Format(DesktopStrings.LinuxErrorSharePath, path);
+            case DestinationKinds.Local when CustosEdition.IsLinux:
+                return string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
+                    : LinuxEditorPaths.IsLocal(path) ? null : Strings.Format(DesktopStrings.LinuxErrorLocalPath, path);
             default:
                 return string.IsNullOrWhiteSpace(path) ? Strings.ErrorDestinationFolderRequired
                     : !PathVariables.LooksAbsolute(path) ? Strings.Format(Strings.ErrorPathNotAbsolute, path)
@@ -377,6 +410,10 @@ internal sealed class DestinationDialog : FormDialog
         bool s3 = kind == DestinationKinds.S3;
         bool cloud = DestinationKinds.IsCloudDrive(kind);
         string path = _path.Value;
+        if (CustosEdition.IsLinux && kind == DestinationKinds.Unc)
+        {
+            path = LinuxEditorPaths.NormalizeShare(path);
+        }
         int lockDays = s3 ? _lockDays.Value : 0;
         int wormDays = DestinationKinds.IsFileSystem(kind) ? _wormDays.Value : 0;
         string port = _port.Text.Trim();
@@ -384,7 +421,7 @@ internal sealed class DestinationDialog : FormDialog
         {
             Id = _original.Id,
             Kind = kind,
-            Path = kind == DestinationKinds.Usb ? DestinationKinds.UsbFolder(path) : path,
+            Path = kind == DestinationKinds.Usb && !CustosEdition.IsLinux ? DestinationKinds.UsbFolder(path) : path,
             UsbLabel = kind == DestinationKinds.Usb ? _usbLabel.Value : null,
             CredentialId = DestinationKinds.CredentialKind(kind) is null ? null : _account.SelectedId,
             Host = server || kind == DestinationKinds.WebDav ? _host.Value : null,
@@ -436,7 +473,8 @@ internal sealed class DestinationDialog : FormDialog
             : s3 ? Strings.DestinationFolderInBucket
             : cloud ? Strings.Format(Strings.DestinationFolderInCloud, CloudNames.AppFolder(kind))
             : Strings.DestinationFolder);
-        _path.Help = files ? null
+        _path.Help = CustosEdition.IsLinux && usb ? DesktopStrings.LinuxUsbFolderHelp
+            : files ? null
             : s3 ? Strings.DestinationFolderBucketHelp
             : dav ? Strings.DestinationFolderWebDavHelp
             : cloud ? Strings.DestinationFolderCloudHelp
@@ -448,12 +486,13 @@ internal sealed class DestinationDialog : FormDialog
         {
             _account.SetKind(accountKind, accountKind switch
             {
-                CredentialKinds.Windows => Strings.AccountService,
+                CredentialKinds.Windows => CustosEdition.IsLinux ? Strings.AccountNone : Strings.AccountService,
                 CredentialKinds.Ftp or CredentialKinds.WebDav => Strings.AccountNone,
                 _ => null,
             });
             _account.Choice.Help = accountKind switch
             {
+                CredentialKinds.Windows when CustosEdition.IsLinux => DesktopStrings.LinuxSmbAccountHelp,
                 CredentialKinds.Sftp => Strings.DestinationAccountHelpSftp,
                 CredentialKinds.Ftp => Strings.DestinationAccountHelpFtp,
                 CredentialKinds.WebDav => Strings.DestinationAccountHelpWebDav,
@@ -534,6 +573,11 @@ internal sealed class DestinationDialog : FormDialog
     /// <summary>Labels of the disks connected now, for the USB label list.</summary>
     private static List<string> UsbLabels()
     {
+        if (CustosEdition.IsLinux)
+        {
+            return [];
+        }
+
         var labels = new List<string>();
         foreach (var drive in DriveInfo.GetDrives())
         {
@@ -691,8 +735,8 @@ internal sealed class EventDialog : FormDialog
     {
         _original = item;
         _run = new RadioItem(_kinds, Strings.EventKindRun);
-        _stop = new RadioItem(_kinds, Strings.EventKindStop);
-        _start = new RadioItem(_kinds, Strings.EventKindStart);
+        _stop = new RadioItem(_kinds, CustosEdition.IsLinux ? DesktopStrings.LinuxEventUnitStop : Strings.EventKindStop);
+        _start = new RadioItem(_kinds, CustosEdition.IsLinux ? DesktopStrings.LinuxEventUnitStart : Strings.EventKindStart);
         _program = new TextItem(L(Strings.EventProgram)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = BrowseAsync };
         Items.Add(_run);
         Items.Add(_stop);
@@ -701,7 +745,7 @@ internal sealed class EventDialog : FormDialog
         Items.Add(_arguments);
         Items.Add(_service);
         Items.Add(new RowItem(_timeout, new LabelItem(Strings.Minutes)));
-        Items.Add(new NoteItem(Strings.EventProgramHelp));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxEventHelp : Strings.EventProgramHelp));
 
         _service.Options = DesktopPlatform.Current.ServiceNames();
         (item.Kind switch
@@ -784,7 +828,8 @@ internal sealed class EventDialog : FormDialog
 
     private async Task BrowseAsync()
     {
-        if (await PickFileAsync(this, L(Strings.EventProgram), _program.Value, Filter(Strings.EventProgramFilter)) is { } path)
+        var filters = CustosEdition.IsLinux ? null : Filter(Strings.EventProgramFilter);
+        if (await PickFileAsync(this, L(Strings.EventProgram), _program.Value, filters) is { } path)
         {
             _program.Text = path;
         }

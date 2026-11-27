@@ -1,9 +1,7 @@
-using System.Globalization;
 using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
-using Custos.Core.Monitor;
 using Custos.Gui;
 
 namespace Custos.Desktop;
@@ -16,20 +14,12 @@ namespace Custos.Desktop;
 /// </summary>
 internal sealed class SettingsDialog : FormDialog
 {
-    /// <summary>What a connection line looks like, with made-up values.</summary>
-    internal const string ConnectionExample = "http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14";
-
     private static readonly string[] Languages = ["auto", "ru", "en"];
     private static readonly string[] TrayModeValues = [TrayModes.Full, TrayModes.Status, TrayModes.Hidden];
 
     private readonly ServiceMonitor _monitor;
     private readonly bool _canEdit;
     private readonly bool _isAdmin;
-    private readonly NoteItem _serverState = new(string.Empty);
-    private readonly TextItem _serverLine;
-    private readonly ButtonItem _serverConnect;
-    private readonly ButtonItem _serverReset;
-    private readonly NoteItem _serverKeys = new(string.Empty);
     private readonly CheckItem _allowRemoteEdit = new(Strings.AllowRemoteEdit, description: Strings.AllowRemoteEditHelp);
     private readonly CheckItem _allowAll = new(Strings.AllowAllUsersEdit, description: Strings.AllowAllUsersEditHelp);
     private readonly ChoiceItem _trayMode = new(L(Strings.TrayModeLabel), [Strings.TrayModeFull, Strings.TrayModeStatus, Strings.TrayModeHidden], 0, 360)
@@ -74,27 +64,8 @@ internal sealed class SettingsDialog : FormDialog
         bool connected = monitor.IsConnected;
         var failed = (Action<Exception>)(ex => ShowError(ex.Message));
 
-        // The monitoring server (A.3): the connection line of the site, the address and the registration code in one.
-        _serverLine = new TextItem(L(Strings.ServerLineLabel))
-        {
-            Placeholder = ConnectionExample,
-            Help = Strings.ServerLineHelp,
-            ActionIcon = "content_paste",
-            ActionTip = Strings.ServerPasteTip,
-            Action = PasteServerLineAsync,
-        };
-        _serverConnect = new ButtonItem("link", Strings.ServerConnectButton, ConnectServerAsync) { Failed = failed };
-        _serverReset = new ButtonItem("link_off", Strings.ServerResetButton, ResetServerAsync, ButtonLook.Outlined) { Failed = failed };
-        Items.Add(new HeadingItem(Strings.SettingsServer));
-        Items.Add(_serverState);
-        Items.Add(_serverLine);
-        Items.Add(new RowItem(_serverConnect, _serverReset));
-        Items.Add(_serverKeys);
+        _ = new MonitorSettingsSection(this, monitor, ShowError);
         Items.Add(_allowRemoteEdit);
-        if (!_isAdmin)
-        {
-            Items.Add(new NoteItem(Strings.ServerAdminOnly));
-        }
 
         // Section 4: who may change things, what users see, the program password.
         _passwordSet = new ButtonItem("password", Strings.ProgramPasswordSetButton, SetPasswordAsync) { Failed = failed };
@@ -205,7 +176,6 @@ internal sealed class SettingsDialog : FormDialog
             }
         };
 
-        _serverLine.IsEnabled = _serverConnect.IsEnabled = _isAdmin && connected;
         OkButton.IsVisible = _canEdit;
         CancelButton.Content = _canEdit ? Strings.ButtonCancel : Strings.ButtonClose;
         ShowAll();
@@ -216,9 +186,6 @@ internal sealed class SettingsDialog : FormDialog
             Opened += (_, _) => Safe.Run(LoadCloudAppsAsync, ex => _cloudApps.Show(ex.Message, Tone.Error));
         }
     }
-
-    /// <summary>Reads the text of the clipboard; the checks put their own text here.</summary>
-    internal Func<Task<string?>> ClipboardText { get; set; } = () => Task.FromResult<string?>(null);
 
     protected override async Task<bool> OkAsync()
     {
@@ -274,7 +241,6 @@ internal sealed class SettingsDialog : FormDialog
     {
         FillAccounts();
         ShowPassword();
-        ShowServer();
         ShowUpdates();
         ShowArchiver();
     }
@@ -400,93 +366,6 @@ internal sealed class SettingsDialog : FormDialog
         await _monitor.RequestAsync(PipeProtocol.Methods.PasswordSet, new PasswordRequest { Password = null },
             IpcJsonContext.Default.PasswordRequest, IpcJsonContext.Default.OkResult);
         await Dialogs.Show(this, Strings.ProgramPasswordRemoved);
-    }
-
-    /// <summary>The state of the connection to the monitoring server, the fingerprints and the reports waiting.</summary>
-    private void ShowServer()
-    {
-        var server = _monitor.Snapshot?.Server ?? new ServerLinkInfo();
-        string state = ServerLink.StateText(server.State);
-        if (server.ServerName is { Length: > 0 } name && server.State is ServerLinkStates.Approved or ServerLinkStates.Pending)
-        {
-            state += " " + Strings.Format(Strings.ServerNamed, name);
-        }
-
-        bool fine = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting;
-        _serverState.Show(server.Detail is { } detail ? state.TrimEnd('.') + ": " + detail : state, fine ? Tone.Plain : Tone.Caution);
-
-        // The line itself is not shown again (it holds the code): the address it gave is.
-        var lines = new List<string>();
-        if (server.ServerUrl is { } address)
-        {
-            lines.Add(Strings.Format(Strings.ServerAddress, address));
-        }
-
-        lines.Add(Strings.Format(Strings.ServerFingerprints, server.ServerFingerprint ?? "—", server.AgentFingerprint ?? "—"));
-        if (server.LastContact is { } contact)
-        {
-            lines.Add(Strings.Format(Strings.ServerLastContact, contact.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)));
-        }
-
-        if (server.Waiting > 0)
-        {
-            lines.Add(Strings.Format(Strings.ServerWaiting, server.Waiting));
-        }
-
-        _serverKeys.Show(string.Join(Environment.NewLine, lines), Tone.Plain);
-        _serverReset.IsEnabled = _isAdmin && _monitor.IsConnected && server.ServerUrl is not null;
-    }
-
-    /// <summary>
-    /// The button in the field: the line copied on the site replaces what the field holds. Of several lines the first
-    /// one with text is taken, so a line copied together with its line break fits too.
-    /// </summary>
-    private async Task PasteServerLineAsync()
-    {
-        string? text = Clipboard is { } clipboard ? await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard) : await ClipboardText();
-        string? line = text?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
-        if (string.IsNullOrEmpty(line))
-        {
-            _serverLine.Error = Strings.ServerPasteEmpty;
-            return;
-        }
-
-        _serverLine.Text = line;
-    }
-
-    /// <summary>«Подключить»: the connection line goes to the service, which registers.</summary>
-    private async Task ConnectServerAsync()
-    {
-        string line = _serverLine.Text.Trim();
-        if (line.Length == 0)
-        {
-            _serverLine.Error = Strings.ServerLineRequired;
-            return;
-        }
-
-        if (!RegistrationCode.TrySplitConnection(line, out string url, out string code) || RegistrationCode.TryParse(code, out _) is null)
-        {
-            _serverLine.Error = Strings.Format(Strings.ServerLineBad, ConnectionExample);
-            return;
-        }
-
-        await _monitor.RequestAsync(PipeProtocol.Methods.ServerConnect, new ServerConnectRequest { ServerUrl = url, Code = code },
-            IpcJsonContext.Default.ServerConnectRequest, IpcJsonContext.Default.OkResult);
-        _serverLine.Load(string.Empty);
-        await Dialogs.Show(this, Strings.ServerConnectDone);
-    }
-
-    /// <summary>«Сбросить привязку к серверу» (A.3): local, administrators only.</summary>
-    private async Task ResetServerAsync()
-    {
-        string server = _monitor.Snapshot?.Server.ServerHost ?? "?";
-        if (!await Dialogs.Ask(this, Strings.Format(Strings.ServerResetConfirm, server), Strings.Yes, Strings.No))
-        {
-            return;
-        }
-
-        await _monitor.RequestAsync(PipeProtocol.Methods.ServerReset, EmptyRequest.Instance,
-            IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult);
     }
 
     private void FillAccounts()

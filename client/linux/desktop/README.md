@@ -9,11 +9,15 @@ The package targets Debian 12 and 13, Ubuntu 22.04, 24.04 and 26.04, and compati
 1. Sign in to GitHub. Under **Actions**, open a successful **Linux desktop preview** run for the desired revision. Under **Artifacts**, download the ZIP named `custos-linux-desktop-preview-deb-amd64` or `custos-linux-desktop-preview-deb-arm64`. Choose **amd64** for a typical Intel or AMD PC or VM, or **arm64** for 64-bit ARM.
 2. Extract the `.deb`, open it in your package installer and select **Install**. If your live session has no graphical package installer, open a terminal in the folder containing the package and run `sudo apt install ./filename.deb` with the actual filename.
 3. Open CUSTOS from the applications menu. On a new machine the package installs and starts the backup service using systemd. In a live session without persistence, the package and settings last until reboot.
-4. To manage a new machine through Monitor, copy the connection string from **Install → Windows and macOS**. On Linux, run `sudo custos connect 'connection string'` with that value. Approve the machine in Monitor and create a task. If the agent is already connected, its existing tasks appear in the window.
+4. To connect to Monitor, open **Settings → Monitoring server** in CUSTOS. Copy the connection string from **Install → Windows and macOS** in your Monitor and paste it into the connection field and select **Connect**. Once the machine registers, compare its key fingerprint and approve it under **Machines**.
 
 If you used `add-menu-entry.sh` with the standalone archive before, remove its per-user launcher from `${XDG_DATA_HOME:-$HOME/.local/share}/applications/org.custos.DesktopPreview.desktop` so the menu opens the installed copy.
 
 To update the agent installed by this package, install a newer `.deb`. If Monitor installed the agent earlier, the package uses the existing service and Monitor can continue to update it.
+
+## Create your first backup task
+
+Open CUSTOS using a Linux administrator account and select **Create**. Enter a name, add the folder containing your files under **Sources**, and add a separate backup folder under **Destinations**. New Linux tasks request a filesystem snapshot by default. If the volume cannot be snapshotted (such as an overlay filesystem in a live VM), the agent continues with a warning. For tasks that require a snapshot, select the option to stop on failure under **Advanced**. Select **Save**, select the new task in the main window, and choose **Run**. Check the result in the run history. Local tasks can be created and run before connecting to Monitor.
 
 ## Standalone GUI archive
 
@@ -31,7 +35,7 @@ the window as your own user and keep the extracted files together. The window co
 `/var/run/custos.sock` and the agent applies its usual permissions. For a test agent listening elsewhere, set
 `CUSTOS_SOCKET` to its trusted absolute socket path when starting the window.
 
-The preview shows tasks, history and logs, and offers run controls. Use Monitor to configure tasks and settings.
+The desktop window shows tasks, history and logs, and lets you create and run tasks.
 Restore through Monitor or `custos restore`.
 
 Run `custos-gui --demo` to open the window with sample data when testing without an agent.

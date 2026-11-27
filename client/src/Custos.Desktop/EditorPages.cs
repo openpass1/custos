@@ -305,7 +305,8 @@ internal sealed class SourcesPage : EditorPage
     private readonly ButtonItem _add;
     private readonly ButtonItem _addLinux;
     private readonly NoteItem _remoteNote;
-    private readonly SwitchItem _keepTopDir = new(Strings.KeepTopDir, Lines(Strings.KeepTopDirHelp));
+    private readonly SwitchItem _keepTopDir = new(Strings.KeepTopDir,
+        Lines(Core.CustosEdition.IsLinux ? DesktopStrings.LinuxKeepTopDirHelp : Strings.KeepTopDirHelp));
     private readonly TextItem _exclude = new(L(Strings.FilterExclude), width: 500) { Hint = Strings.FilterExcludeHelp };
     private readonly TextItem _excludeDirs;
     private readonly CheckItem _skipHidden = new(Strings.SkipHidden);
@@ -415,7 +416,7 @@ internal sealed class SourcesPage : EditorPage
             return new CardItem("dns", DesktopStrings.LinuxServer + " " + source.Host, source.Path + " · " + key) { Edit = edit, Delete = delete };
         }
 
-        bool network = source.Kind == SourceKinds.Unc || source.Path.StartsWith(@"\\", StringComparison.Ordinal);
+        bool network = source.Kind == SourceKinds.Unc || SourceDialog.IsNetworkPath(source.Path);
         string subtitle = source.Kind == SourceKinds.File ? Strings.SourceFile
             : source.Recursive ? Strings.SourceRecursive
             : Strings.Format(Strings.CardNotRecursive, network ? Strings.SourceNetwork : Strings.SourceFolder);
@@ -449,7 +450,7 @@ internal sealed class SourcesPage : EditorPage
 
         Context.HasRemoteSource = remote;
         Context.Reads = (_sources.Count > 0,
-            _sources.Any(s => s.Kind is SourceKinds.Folder or SourceKinds.File && !s.Path.StartsWith(@"\\", StringComparison.Ordinal)));
+            _sources.Any(s => s.Kind is SourceKinds.Folder or SourceKinds.File && !SourceDialog.IsNetworkPath(s.Path)));
     }
 
     private async Task AddLinuxServerAsync()
@@ -666,7 +667,7 @@ internal sealed class DestinationsPage : EditorPage
                 continue;
             }
 
-            if (destination.Kind == DestinationKinds.Usb)
+            if (destination.Kind == DestinationKinds.Usb && !Core.CustosEdition.IsLinux)
             {
                 // The disk is found by its label; a drive letter in the folder would only mislead.
                 destination.Path = DestinationKinds.UsbFolder(destination.Path);
@@ -1544,12 +1545,15 @@ internal sealed class AdvancedPage : EditorPage
 {
     private static readonly string[] Levels = [LogLevels.Inherit, LogLevels.Summary, LogLevels.Files];
 
-    private readonly SwitchItem _vss = new(Strings.VssEnabled, Strings.VssHelp);
+    private readonly SwitchItem _vss = Core.CustosEdition.IsLinux
+        ? new(DesktopStrings.LinuxSnapshotEnabled, DesktopStrings.LinuxSnapshotHelp)
+        : new(Strings.VssEnabled, Strings.VssHelp);
     private readonly NoteItem _vssNote;
     private readonly ChoiceItem _vssFailure = new(L(Strings.VssOnFailure), [Strings.VssAbort, Strings.VssContinue], 0, 420);
     private readonly NumberItem _retries = new(L(Strings.ReadRetries), 1, 0, 5, 200) { Hint = Strings.ReadRetriesHelp };
     private readonly NoteItem _retriesNote;
-    private readonly CheckItem _acl = new(Strings.PreserveAcl, description: Strings.PreserveAclHelp);
+    private readonly CheckItem _acl = new(Core.CustosEdition.IsLinux ? DesktopStrings.LinuxFilePermissions : Strings.PreserveAcl,
+        description: Strings.PreserveAclHelp);
     private readonly NoteItem _aclNote;
     private readonly ChoiceItem _logLevel = new(L(Strings.LogLevel), [Strings.LogLevelInherit, Strings.LogLevelSummary, Strings.LogLevelFiles], 0, 420);
     private readonly NumberItem _priority = new(L(Strings.Priority), 0, -100, 100, 200) { Hint = Strings.PriorityHelp };
@@ -1627,7 +1631,7 @@ internal sealed class AdvancedPage : EditorPage
         string? acl = remote ? Strings.AdvancedAclRemote
             : Context.ArchiveFormat != ArchiveFormats.None ? Strings.AdvancedAclArchive
             : Context.KeepsNtfs ? null
-            : Strings.AdvancedAclNoNtfs;
+            : Core.CustosEdition.IsLinux ? DesktopStrings.LinuxNoFilePermissions : Strings.AdvancedAclNoNtfs;
         _acl.IsEnabled = acl is null;
         _aclNote.Show(acl);
     }

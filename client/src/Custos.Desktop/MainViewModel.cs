@@ -58,6 +58,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         _demo = demo;
         _knownTheme = knownTheme;
         ShowsManagement = DesktopPlatform.Current.SupportsManagement;
+        ShowsTaskCreation = DesktopPlatform.Current.SupportsTaskCreation;
         _colorChoice = Palettes.Known(Ui.Color);
         ApplyColor();
         _monitor.StatusChanged += (_, _) => ShowStatus();
@@ -242,11 +243,16 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public bool ShowsManagement { get; }
 
+    public bool ShowsTaskCreation { get; }
+
+    /// <summary>Task creation relies on the same permissions as editing in the agent.</summary>
+    public bool CanCreate => ShowsTaskCreation && (_demo || _monitor.CanEdit);
+
     /// <summary>This user may change tasks: an administrator, or everybody when the settings allow it.</summary>
     public bool CanEdit => ShowsManagement && (_demo || _monitor.CanEdit);
 
     /// <summary>«Изменение — только для администраторов» next to the toolbar.</summary>
-    public bool ShowAdminsOnly => ShowsManagement && IsConnected && !CanEdit;
+    public bool ShowAdminsOnly => ShowsTaskCreation && IsConnected && !CanCreate;
 
     public bool CanEditOne => CanEdit && _selection.Count == 1;
 
@@ -423,9 +429,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         bool demo = _demo;
         ServiceOk = demo || status.State == ServiceState.Running;
         ServiceText = demo ? Strings.StateRunning : ServiceMonitor.Describe(status.State);
-        UserText = demo ? Strings.Format(Strings.UserWithRights, @"OFFICE\admin", Strings.RightsAdmin)
-            : status.Hello?.User is { } user ? Strings.Format(Strings.UserWithRights, user, _monitor.CanEdit ? Strings.RightsAdmin : Strings.RightsUser)
-            : string.Empty;
+        ShowUserRights();
         EmptyText = status.State switch
         {
             ServiceState.Running => string.Empty,
@@ -438,7 +442,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     /// <summary>Which buttons can be used now: after a change of the connection, the tasks or the selection.</summary>
     private void ShowCommands()
     {
-        foreach (string name in (string[])[nameof(IsConnected), nameof(CanEdit), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
+        foreach (string name in (string[])[nameof(IsConnected), nameof(CanCreate), nameof(CanEdit), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
             nameof(CanToggle), nameof(ToggleOn), nameof(ToggleText), nameof(ToggleIcon), nameof(CanRun), nameof(CanStop), nameof(CanPause),
             nameof(IsPaused), nameof(PauseText), nameof(PauseIcon), nameof(CanRestore)])
         {
@@ -449,6 +453,11 @@ internal sealed class MainViewModel : Observable, IDisposable
     private void ShowSnapshot()
     {
         var snapshot = _monitor.Snapshot;
+        if (!ShowsManagement && ShowsTaskCreation)
+        {
+            ShowUserRights();
+        }
+
         Changed(nameof(HasSnapshot));
         Changed(nameof(TaskCount));
         if (snapshot is null)
@@ -508,6 +517,10 @@ internal sealed class MainViewModel : Observable, IDisposable
             LoadHistory();
         }
     }
+
+    private void ShowUserRights() => UserText = _demo ? Strings.Format(Strings.UserWithRights, @"OFFICE\admin", Strings.RightsAdmin)
+        : _monitor.Status.Hello?.User is { } user ? Strings.Format(Strings.UserWithRights, user, _monitor.CanEdit ? Strings.RightsAdmin : Strings.RightsUser)
+        : string.Empty;
 
     private string? _historyRunSeen;
 

@@ -17,6 +17,12 @@ static partial class DesktopStrings
     /// <summary>All settings…</summary>
     public static string SettingsAll => Get(nameof(SettingsAll));
 
+    /// <summary>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</summary>
+    public static string MonitorSwitchConfirm => Get(nameof(MonitorSwitchConfirm));
+
+    /// <summary>The monitoring connection changed. Review the current server and try again.</summary>
+    public static string MonitorConnectionChanged => Get(nameof(MonitorConnectionChanged));
+
     /// <summary>Theme</summary>
     public static string ThemeHeading => Get(nameof(ThemeHeading));
 
@@ -100,4 +106,58 @@ static partial class DesktopStrings
 
     /// <summary>{0} files · {1} · {2}</summary>
     public static string RestoreSetHint => Get(nameof(RestoreSetHint));
+
+    /// <summary>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agen...</summary>
+    public static string LinuxSourcePathHelp => Get(nameof(LinuxSourcePathHelp));
+
+    /// <summary>Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {M...</summary>
+    public static string LinuxPathVariables => Get(nameof(LinuxPathVariables));
+
+    /// <summary>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</summary>
+    public static string LinuxErrorLocalPath => Get(nameof(LinuxErrorLocalPath));
+
+    /// <summary>Enter an SMB path such as //server/share/folder. Invalid path: {0}</summary>
+    public static string LinuxErrorSharePath => Get(nameof(LinuxErrorSharePath));
+
+    /// <summary>Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.</summary>
+    public static string LinuxErrorVolumeFolder => Get(nameof(LinuxErrorVolumeFolder));
+
+    /// <summary>The agent mounts the share with the selected account, or connects as a guest without one.</summary>
+    public static string LinuxSmbAccountHelp => Get(nameof(LinuxSmbAccountHelp));
+
+    /// <summary>Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A...</summary>
+    public static string LinuxDestinationKindHelp => Get(nameof(LinuxDestinationKindHelp));
+
+    /// <summary>Enter the volume label of a mounted disk. Use lsblk -f to see the labels.</summary>
+    public static string LinuxUsbLabelHelp => Get(nameof(LinuxUsbLabelHelp));
+
+    /// <summary>Use a path relative to the volume, such as backups/daily.</summary>
+    public static string LinuxUsbFolderHelp => Get(nameof(LinuxUsbFolderHelp));
+
+    /// <summary>On: /srv/data is copied into &lt;backup&gt;/data/…</summary>
+    public static string LinuxKeepTopDirHelp => Get(nameof(LinuxKeepTopDirHelp));
+
+    /// <summary>Use a filesystem snapshot</summary>
+    public static string LinuxSnapshotEnabled => Get(nameof(LinuxSnapshotEnabled));
+
+    /// <summary>The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.</summary>
+    public static string LinuxSnapshotHelp => Get(nameof(LinuxSnapshotHelp));
+
+    /// <summary>Keep file and folder owners and permissions</summary>
+    public static string LinuxFilePermissions => Get(nameof(LinuxFilePermissions));
+
+    /// <summary>This setting applies to file copies in a local folder, a network folder or a USB disk.</summary>
+    public static string LinuxNoFilePermissions => Get(nameof(LinuxNoFilePermissions));
+
+    /// <summary>Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover ...</summary>
+    public static string LinuxDbBinDirHelp => Get(nameof(LinuxDbBinDirHelp));
+
+    /// <summary>Stop a systemd unit</summary>
+    public static string LinuxEventUnitStop => Get(nameof(LinuxEventUnitStop));
+
+    /// <summary>Start a systemd unit</summary>
+    public static string LinuxEventUnitStart => Get(nameof(LinuxEventUnitStart));
+
+    /// <summary>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs progr...</summary>
+    public static string LinuxEventHelp => Get(nameof(LinuxEventHelp));
 }

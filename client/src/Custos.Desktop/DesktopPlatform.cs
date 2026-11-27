@@ -27,6 +27,11 @@ internal class DesktopPlatform
     /// <summary>The host supports task editing, restore, settings and updates from the interface.</summary>
     public virtual bool SupportsManagement => true;
 
+    /// <summary>Shows the dedicated monitoring settings on hosts without the full settings window.</summary>
+    public virtual bool SupportsMonitorSettings => false;
+
+    public virtual bool SupportsTaskCreation => SupportsManagement;
+
     /// <summary>The icon of the tray for a state; null = no icon at all.</summary>
     public virtual WindowIcon? TrayIcon(TrayState state) => null;
 

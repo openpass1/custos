@@ -5,6 +5,8 @@ Tasks	Tasks	Задания
 Now	now	сейчас
 HistoryCount	{0}: {1} runs	{0}: запусков {1}
 SettingsAll	All settings…	Все настройки…
+MonitorSwitchConfirm	Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.	Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.
+MonitorConnectionChanged	The monitoring connection changed. Review the current server and try again.	Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.
 ThemeHeading	Theme	Тема
 ThemeForAll	For all users of this computer	Для всех пользователей компьютера
 ThemeAdminsOnly	The theme is the same for all users of this computer: an administrator changes it.	Тема общая для всех пользователей компьютера: её меняет администратор.
@@ -35,3 +37,23 @@ DemoScan	looking for files: 12 640	поиск файлов: 12 640
 DemoLocked	the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx	файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx
 HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
 RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}
+
+# ---- Linux task editor
+LinuxSourcePathHelp	Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.	Укажите полный путь Linux, например /home/user/Documents, или сетевую папку SMB вида //nas/share/folder. Агент подключает папки SMB через cifs-utils.
+LinuxPathVariables	Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {MM} and {dd}.	В локальных путях можно указать %HOME% пользователя, который впервые сохранит задание, а также {computer}, {task}, {yyyy}, {MM} и {dd}.
+LinuxErrorLocalPath	«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.	«{0}» не является полным локальным путём. Укажите путь вида /home/user/Documents или %HOME%/Documents.
+LinuxErrorSharePath	Enter an SMB path such as //server/share/folder. Invalid path: {0}	Укажите путь SMB вида //сервер/ресурс/папка. Неверный путь: {0}
+LinuxErrorVolumeFolder	Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.	Укажите папку относительно корня тома, например backups/daily, или оставьте поле пустым для записи в корень.
+LinuxSmbAccountHelp	The agent mounts the share with the selected account, or connects as a guest without one.	Агент подключит ресурс от выбранной учётной записи, а если она не указана, то как гость.
+LinuxDestinationKindHelp	Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A USB disk must already be mounted and is found by its volume label.	Для локальной папки укажите полный путь Linux, например /mnt/backup, для сетевой папки — //nas/share/folder. USB-диск должен быть смонтирован, агент найдёт его по метке тома.
+LinuxUsbLabelHelp	Enter the volume label of a mounted disk. Use lsblk -f to see the labels.	Укажите метку тома смонтированного диска. Команда lsblk -f показывает метки томов.
+LinuxUsbFolderHelp	Use a path relative to the volume, such as backups/daily.	Укажите путь относительно корня тома, например backups/daily.
+LinuxKeepTopDirHelp	On: /srv/data is copied into <backup>/data/…\nOff: the contents of /srv/data go straight into <backup>/…	Включено: /srv/data копируется в <копия>/data/…\nВыключено: содержимое /srv/data копируется прямо в <копия>/…
+LinuxSnapshotEnabled	Use a filesystem snapshot	Использовать снимок файловой системы
+LinuxSnapshotHelp	The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.	Агент может читать локальные источники из снимков LVM, Btrfs или ZFS, если том поддерживает снимки.
+LinuxFilePermissions	Keep file and folder owners and permissions	Сохранять владельцев и права файлов и папок
+LinuxNoFilePermissions	This setting applies to file copies in a local folder, a network folder or a USB disk.	Эта настройка применяется при копировании файлов в локальную или сетевую папку либо на USB-диск.
+LinuxDbBinDirHelp	Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover local installations.	Укажите полный путь к папке с утилитами базы данных, например /usr/bin. Нажмите «Найти», чтобы найти локальные установки.
+LinuxEventUnitStop	Stop a systemd unit	Остановить службу systemd
+LinuxEventUnitStart	Start a systemd unit	Запустить службу systemd
+LinuxEventHelp	Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.	Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.

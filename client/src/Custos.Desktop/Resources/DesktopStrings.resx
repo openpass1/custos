@@ -25,6 +25,12 @@
   <data name="SettingsAll" xml:space="preserve">
     <value>All settings…</value>
   </data>
+  <data name="MonitorSwitchConfirm" xml:space="preserve">
+    <value>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</value>
+  </data>
+  <data name="MonitorConnectionChanged" xml:space="preserve">
+    <value>The monitoring connection changed. Review the current server and try again.</value>
+  </data>
   <data name="ThemeHeading" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -108,5 +114,60 @@
   </data>
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} files · {1} · {2}</value>
+  </data>
+  <data name="LinuxSourcePathHelp" xml:space="preserve">
+    <value>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.</value>
+  </data>
+  <data name="LinuxPathVariables" xml:space="preserve">
+    <value>Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {MM} and {dd}.</value>
+  </data>
+  <data name="LinuxErrorLocalPath" xml:space="preserve">
+    <value>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</value>
+  </data>
+  <data name="LinuxErrorSharePath" xml:space="preserve">
+    <value>Enter an SMB path such as //server/share/folder. Invalid path: {0}</value>
+  </data>
+  <data name="LinuxErrorVolumeFolder" xml:space="preserve">
+    <value>Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.</value>
+  </data>
+  <data name="LinuxSmbAccountHelp" xml:space="preserve">
+    <value>The agent mounts the share with the selected account, or connects as a guest without one.</value>
+  </data>
+  <data name="LinuxDestinationKindHelp" xml:space="preserve">
+    <value>Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A USB disk must already be mounted and is found by its volume label.</value>
+  </data>
+  <data name="LinuxUsbLabelHelp" xml:space="preserve">
+    <value>Enter the volume label of a mounted disk. Use lsblk -f to see the labels.</value>
+  </data>
+  <data name="LinuxUsbFolderHelp" xml:space="preserve">
+    <value>Use a path relative to the volume, such as backups/daily.</value>
+  </data>
+  <data name="LinuxKeepTopDirHelp" xml:space="preserve">
+    <value>On: /srv/data is copied into &lt;backup&gt;/data/…
+Off: the contents of /srv/data go straight into &lt;backup&gt;/…</value>
+  </data>
+  <data name="LinuxSnapshotEnabled" xml:space="preserve">
+    <value>Use a filesystem snapshot</value>
+  </data>
+  <data name="LinuxSnapshotHelp" xml:space="preserve">
+    <value>The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.</value>
+  </data>
+  <data name="LinuxFilePermissions" xml:space="preserve">
+    <value>Keep file and folder owners and permissions</value>
+  </data>
+  <data name="LinuxNoFilePermissions" xml:space="preserve">
+    <value>This setting applies to file copies in a local folder, a network folder or a USB disk.</value>
+  </data>
+  <data name="LinuxDbBinDirHelp" xml:space="preserve">
+    <value>Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover local installations.</value>
+  </data>
+  <data name="LinuxEventUnitStop" xml:space="preserve">
+    <value>Stop a systemd unit</value>
+  </data>
+  <data name="LinuxEventUnitStart" xml:space="preserve">
+    <value>Start a systemd unit</value>
+  </data>
+  <data name="LinuxEventHelp" xml:space="preserve">
+    <value>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.</value>
   </data>
 </root>

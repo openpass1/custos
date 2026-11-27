@@ -18,12 +18,19 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     // The windows for changes ask for the program password before they open, not after a whole task was filled in.
     public async Task CreateAsync()
     {
-        if (!vm.CanEdit || (!vm.IsDemo && !await Monitor.EnsureUnlockedAsync()))
+        if (!vm.CanCreate || (!vm.IsDemo && !await Monitor.EnsureUnlockedAsync()))
         {
             return;
         }
 
         var task = new TaskDefinition { Name = vm.UniqueName(Strings.NewTaskName) };
+        if (Core.CustosEdition.IsLinux)
+        {
+            // Match Monitor's Linux defaults on volumes that do not support snapshots.
+            task.Vss.OnFailure = VssFailureActions.Continue;
+            task.Filters.Exclude = ["*.tmp", "*.swp"];
+        }
+
         await OpenEditorAsync(new EditorModel(Monitor, task, isNew: true, vm.IsDemo));
     }
 

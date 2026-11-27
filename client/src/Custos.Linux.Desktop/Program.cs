@@ -56,5 +56,9 @@ internal static partial class Program
         public override bool UsesTray => false;
 
         public override bool SupportsManagement => false;
+
+        public override bool SupportsMonitorSettings => true;
+
+        public override bool SupportsTaskCreation => true;
     }
 }
