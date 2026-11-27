@@ -11,5 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Custos.Desktop\Custos.Desktop.csproj" />
     <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Tmds.DBus.Protocol" />
+    <AvaloniaResource Include="..\Custos.Gui\Resources\tray-*.ico" Link="Assets\%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

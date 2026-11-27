@@ -50,6 +50,10 @@ internal sealed class UiState
     /// <summary>The colour scheme of the new window (src/Custos.Desktop, Palettes.cs); null = the main one.</summary>
     public string? Color { get; set; }
 
+    /// <summary>Language of the Linux desktop interface. Null follows the desktop session.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? InterfaceLanguage { get; set; }
+
     /// <summary>Where ui.json is kept; the interface tests use a folder of their own.</summary>
     internal static string Folder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CUSTOS");
 

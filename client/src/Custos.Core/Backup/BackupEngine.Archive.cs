@@ -476,7 +476,7 @@ public sealed partial class BackupEngine
                     _progress.FilesDone++;
                 }
 
-                _log.Write(RunLogLevel.Detail, Messages.Format(Messages.FileVanished, file.OriginalPath));
+                ReportVanishedSource(file);
                 return null;
             }
             catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && attempt < attempts)
@@ -492,8 +492,8 @@ public sealed partial class BackupEngine
         }
     }
 
-    private FileStream OpenSourceFile(SourceContext context, ScannedFile file) => Lowered(context.Session.Run(() => new FileStream(
-        file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, BufferSize, FileOptions.SequentialScan)));
+    private FileStream OpenSourceFile(SourceContext context, ScannedFile file, int bufferSize = BufferSize) =>
+        Lowered(context.Session.Run(() => _platform.OpenSourceFile(file.ReadPath, bufferSize)));
 
     /// <summary>
     /// Reads on from <paramref name="position"/>. On a read error the file is opened again and read on from the same

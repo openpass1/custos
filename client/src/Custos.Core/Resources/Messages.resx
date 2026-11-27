@@ -34,6 +34,12 @@
   <data name="MirrorOverlapsSource" xml:space="preserve">
     <value>{0}: the mirror folder and the source {1} lie inside each other.</value>
   </data>
+  <data name="DestinationContainsSource" xml:space="preserve">
+    <value>Destination {0} is the same folder as source {1}, or contains it. Choose a separate destination folder.</value>
+  </data>
+  <data name="NestedDestinationSkipped" xml:space="preserve">
+    <value>Folder {0} is a backup destination, so all its contents are excluded from the source. To back up its other files, choose a destination outside the source.</value>
+  </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Unknown backup type «{0}».</value>
   </data>
@@ -100,11 +106,17 @@
   <data name="FolderUnreadable" xml:space="preserve">
     <value>Cannot read the folder {0}: {1}</value>
   </data>
+  <data name="SourceEntryUnreadable" xml:space="preserve">
+    <value>Cannot read source path {0}: {1}</value>
+  </data>
   <data name="SourceUnavailable" xml:space="preserve">
     <value>Source {0} is not available: {1}</value>
   </data>
   <data name="SourceNotFound" xml:space="preserve">
     <value>Source not found: {0}</value>
+  </data>
+  <data name="SourceNotRegular" xml:space="preserve">
+    <value>Choose a regular file or directory as the source.</value>
   </data>
   <data name="SourceScanned" xml:space="preserve">
     <value>Source {0}: {1} files, {2}.</value>

@@ -105,6 +105,13 @@ public interface IBackupPlatform
     /// </summary>
     string? SkipFolder(string readPath) => null;
 
+    bool IsRegularSourceFile(string path) => true;
+
+    FileStream OpenSourceFile(string path, int bufferSize) => new(path, FileMode.Open, FileAccess.Read,
+        FileShare.ReadWrite | FileShare.Delete, bufferSize, FileOptions.SequentialScan);
+
+    string CanonicalLocalPath(string path) => path;
+
     /// <summary>The NTFS permissions, owner and group of a file or folder (section 6.8); null if there are none.</summary>
     byte[]? ReadSecurity(string path, bool folder);
 
@@ -248,6 +255,13 @@ public class LocalBackupPlatform : IBackupPlatform
     public virtual ISnapshotSet CreateSnapshots(IReadOnlyCollection<string> localPaths) => NoSnapshots.Instance;
 
     public virtual string? SkipFolder(string readPath) => null;
+
+    public virtual bool IsRegularSourceFile(string path) => true;
+
+    public virtual FileStream OpenSourceFile(string path, int bufferSize) => new(path, FileMode.Open, FileAccess.Read,
+        FileShare.ReadWrite | FileShare.Delete, bufferSize, FileOptions.SequentialScan);
+
+    public virtual string CanonicalLocalPath(string path) => path;
 
     public virtual string? FindVolumeByLabel(string label)
     {

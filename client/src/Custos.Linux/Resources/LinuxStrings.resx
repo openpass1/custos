@@ -112,7 +112,7 @@ Tasks are created and changed on the monitoring site. Service log: /var/log/cust
     <value>Monitoring site: {0}</value>
   </data>
   <data name="CliNoTasks" xml:space="preserve">
-    <value>No tasks yet: create them on the monitoring site.</value>
+    <value>No tasks yet. Create a task in CUSTOS Monitor or the CUSTOS desktop app.</value>
   </data>
   <data name="CliTasks" xml:space="preserve">
     <value>Tasks (last run → next run):</value>

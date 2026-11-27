@@ -31,6 +31,39 @@
   <data name="MonitorConnectionChanged" xml:space="preserve">
     <value>Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.</value>
   </data>
+  <data name="InterfaceLanguage" xml:space="preserve">
+    <value>Язык интерфейса</value>
+  </data>
+  <data name="InterfaceLanguageRestart" xml:space="preserve">
+    <value>Чтобы применить язык, закройте и снова откройте CUSTOS. Служба резервного копирования продолжит работу.</value>
+  </data>
+  <data name="LinuxThemeAuto" xml:space="preserve">
+    <value>Как в системе</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditHelp" xml:space="preserve">
+    <value>По умолчанию выключено. Служба резервного копирования работает от имени root. Каждый, кто может менять задания, может через них читать файлы и выполнять команды от имени root. Восстановление доступно только администраторам.</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditWarning" xml:space="preserve">
+    <value>Разрешить всем локальным пользователям менять задания и запускать их с правами root?</value>
+  </data>
+  <data name="LinuxLogRetentionHelp" xml:space="preserve">
+    <value>Включает ежедневный журнал, журналы отдельных запусков и журнал службы в каталоге данных CUSTOS.</value>
+  </data>
+  <data name="LinuxProgramPasswordHelp" xml:space="preserve">
+    <value>Если пароль задан, для редактирования и восстановления он нужен в дополнение к обычным правам. Окно остаётся разблокированным 30 минут после последнего защищённого действия или до закрытия.</value>
+  </data>
+  <data name="LinuxServiceLanguageHelp" xml:space="preserve">
+    <value>Язык журналов запусков и сообщений службы. «Автоматически» использует язык среды службы. Язык интерфейса настраивается отдельно.</value>
+  </data>
+  <data name="LinuxAccountsNote" xml:space="preserve">
+    <value>Служба шифрует пароли и ключи и никогда не показывает их. Учётную запись, используемую в задании, удалить нельзя.</value>
+  </data>
+  <data name="LinuxArchiverVersion" xml:space="preserve">
+    <value>7-Zip (7z.so) версии {0}</value>
+  </data>
+  <data name="LinuxArchiverProblem" xml:space="preserve">
+    <value>Служба резервного копирования не смогла загрузить 7z.so.</value>
+  </data>
   <data name="ThemeHeading" xml:space="preserve">
     <value>Тема</value>
   </data>
@@ -115,6 +148,15 @@
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} файлов · {1} · {2}</value>
   </data>
+  <data name="LinuxCloudNoLoopback" xml:space="preserve">
+    <value>Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.</value>
+  </data>
+  <data name="LinuxCloudSecretNote" xml:space="preserve">
+    <value>Для Google Диска и Яндекс Диска нужен секрет клиента. Для Dropbox он не нужен.</value>
+  </data>
+  <data name="LinuxCloudYandexSecretRequired" xml:space="preserve">
+    <value>Для Яндекс Диска нужен секрет клиента вместе с Client ID.</value>
+  </data>
   <data name="LinuxSourcePathHelp" xml:space="preserve">
     <value>Укажите полный путь Linux, например /home/user/Documents, или сетевую папку SMB вида //nas/share/folder. Агент подключает папки SMB через cifs-utils.</value>
   </data>
@@ -123,6 +165,21 @@
   </data>
   <data name="LinuxErrorLocalPath" xml:space="preserve">
     <value>«{0}» не является полным локальным путём. Укажите путь вида /home/user/Documents или %HOME%/Documents.</value>
+  </data>
+  <data name="LinuxImportUnsupportedPaths" xml:space="preserve">
+    <value>Отключены задания с путями, несовместимыми с Linux: {0}. Проверьте пути перед включением заданий.</value>
+  </data>
+  <data name="LinuxTaskUnsupportedPaths" xml:space="preserve">
+    <value>В задании есть пути, несовместимые с Linux. Проверьте источники, назначения и пути к утилитам баз данных перед включением.</value>
+  </data>
+  <data name="LinuxRightsEditTasks" xml:space="preserve">
+    <value>управление заданиями</value>
+  </data>
+  <data name="ExportWithSecrets" xml:space="preserve">
+    <value>С паролями и ключами</value>
+  </data>
+  <data name="ExportWithoutSecrets" xml:space="preserve">
+    <value>Без паролей и ключей</value>
   </data>
   <data name="LinuxErrorSharePath" xml:space="preserve">
     <value>Укажите путь SMB вида //сервер/ресурс/папка. Неверный путь: {0}</value>

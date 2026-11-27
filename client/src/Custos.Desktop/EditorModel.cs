@@ -18,10 +18,10 @@ internal sealed class EditorModel : Observable
 
     public EditorModel(ServiceMonitor monitor, TaskDefinition task, bool isNew, bool demo = false)
     {
-        _task = task;
+        _task = task.Clone();
         _baseRevision = isNew ? null : task.Revision;
         IsDemo = demo;
-        Context = new EditorContext(monitor) { ProfileSid = task.ProfileSid };
+        Context = new EditorContext(monitor) { ProfileSid = task.ProfileSid, IsNew = isNew };
         Title = isNew ? Strings.EditorTitleNew : Strings.Format(Strings.EditorTitle, task.Name);
         Revision = isNew ? Strings.EditorNewTask
             : Strings.Format(Strings.EditorRevision, task.Revision, Describe.Time(task.UpdatedAt), Describe.Author(task.UpdatedBy));
@@ -39,7 +39,7 @@ internal sealed class EditorModel : Observable
         ];
         foreach (var page in Pages)
         {
-            page.LoadFrom(task);
+            page.LoadFrom(_task);
         }
 
         _page = Pages[0];
@@ -115,6 +115,12 @@ internal sealed class EditorModel : Observable
                 Problem = found;
                 return null;
             }
+        }
+
+        if (Core.CustosEdition.IsLinux && task.Enabled && LinuxEditorPaths.HasUnsupportedPath(task))
+        {
+            Problem = DesktopStrings.LinuxTaskUnsupportedPaths;
+            return null;
         }
 
         Problem = null;

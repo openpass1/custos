@@ -26,6 +26,12 @@ static partial class Messages
     /// <summary>{0}: the mirror folder and the source {1} lie inside each other.</summary>
     public static string MirrorOverlapsSource => Get(nameof(MirrorOverlapsSource));
 
+    /// <summary>Destination {0} is the same folder as source {1}, or contains it. Choose a separate destination folder.</summary>
+    public static string DestinationContainsSource => Get(nameof(DestinationContainsSource));
+
+    /// <summary>Folder {0} is a backup destination, so all its contents are excluded from the source. To back up its other ...</summary>
+    public static string NestedDestinationSkipped => Get(nameof(NestedDestinationSkipped));
+
     /// <summary>Unknown backup type «{0}».</summary>
     public static string BackupTypeNotSupported => Get(nameof(BackupTypeNotSupported));
 
@@ -92,11 +98,17 @@ static partial class Messages
     /// <summary>Cannot read the folder {0}: {1}</summary>
     public static string FolderUnreadable => Get(nameof(FolderUnreadable));
 
+    /// <summary>Cannot read source path {0}: {1}</summary>
+    public static string SourceEntryUnreadable => Get(nameof(SourceEntryUnreadable));
+
     /// <summary>Source {0} is not available: {1}</summary>
     public static string SourceUnavailable => Get(nameof(SourceUnavailable));
 
     /// <summary>Source not found: {0}</summary>
     public static string SourceNotFound => Get(nameof(SourceNotFound));
+
+    /// <summary>Choose a regular file or directory as the source.</summary>
+    public static string SourceNotRegular => Get(nameof(SourceNotRegular));
 
     /// <summary>Source {0}: {1} files, {2}.</summary>
     public static string SourceScanned => Get(nameof(SourceScanned));

@@ -21,16 +21,25 @@ internal class DesktopPlatform
 {
     public static DesktopPlatform Current { get; set; } = new();
 
-    /// <summary>Closing the main window can leave the interface available in the tray.</summary>
+    /// <summary>The platform has a tray in this desktop session.</summary>
     public virtual bool UsesTray => true;
+
+    /// <summary>Closing the main window leaves the interface available in the tray.</summary>
+    public virtual bool KeepsWindowInTray => UsesTray;
 
     /// <summary>The host supports task editing, restore, settings and updates from the interface.</summary>
     public virtual bool SupportsManagement => true;
 
+    public virtual bool SupportsSettings => SupportsManagement;
+
     /// <summary>Shows the dedicated monitoring settings on hosts without the full settings window.</summary>
     public virtual bool SupportsMonitorSettings => false;
 
-    public virtual bool SupportsTaskCreation => SupportsManagement;
+    public virtual bool SupportsTaskManagement => SupportsManagement;
+
+    public virtual bool SupportsRestore => SupportsManagement;
+
+    public virtual bool SupportsCloudAccounts => SupportsManagement;
 
     /// <summary>The icon of the tray for a state; null = no icon at all.</summary>
     public virtual WindowIcon? TrayIcon(TrayState state) => null;

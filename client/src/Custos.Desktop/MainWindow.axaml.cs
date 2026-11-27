@@ -86,7 +86,7 @@ internal sealed partial class MainWindow : Window
     /// </summary>
     private void FitToolbar()
     {
-        if (!_vm.ShowsManagement || _fitting || !IsVisible)
+        if ((!_vm.ShowsTaskManagement && !_vm.ShowsRestore) || _fitting || !IsVisible)
         {
             return;
         }
@@ -95,7 +95,7 @@ internal sealed partial class MainWindow : Window
         try
         {
             static double WidthOf(Control c) => double.IsNaN(c.Width) ? c.Bounds.Width : c.Width;
-            double moved = WidthOf(CloneButton) + WidthOf(RestoreButton);
+            double moved = (_vm.ShowsTaskManagement ? WidthOf(CloneButton) : 0) + (_vm.ShowsRestore ? WidthOf(RestoreButton) : 0);
             double more = WidthOf(MoreButton);
             const double FullMargins = 14 + 12 + 14 + 6;
             const double CompactMargins = 8 + 8 + 8 + 4;
@@ -117,8 +117,8 @@ internal sealed partial class MainWindow : Window
             if (narrow != _compactToolbar)
             {
                 _compactToolbar = narrow;
-                CloneButton.IsVisible = !narrow;
-                RestoreButton.IsVisible = !narrow;
+                CloneButton.IsVisible = !narrow && _vm.ShowsTaskManagement;
+                RestoreButton.IsVisible = !narrow && _vm.ShowsRestore;
                 MoreButton.IsVisible = narrow;
                 Toolbar.Margin = narrow ? new Thickness(8, 4, 8, 4) : new Thickness(14, 4, 12, 4);
                 FabPanel.Margin = new Thickness(0, 0, narrow ? 8 : 14, 0);
@@ -135,7 +135,7 @@ internal sealed partial class MainWindow : Window
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         SaveLayout();
-        if (!Quitting && DesktopPlatform.Current.UsesTray)
+        if (!Quitting && DesktopPlatform.Current.KeepsWindowInTray)
         {
             e.Cancel = true;
             Hide();
@@ -365,7 +365,7 @@ internal sealed partial class MainWindow : Window
     {
         var theme = this.FindResource("Swatch") as ControlTheme;
         ThemeMenu.Children.Clear();
-        if (_vm.ShowsManagement)
+        if (_vm.ShowsSettings)
         {
             foreach (var (id, icon, text) in (ReadOnlySpan<(string, string, string)>)[
                 (Core.Model.Themes.Auto, "brightness_auto", DesktopPlatform.Current.ThemeAuto),
@@ -412,23 +412,31 @@ internal sealed partial class MainWindow : Window
         if (DesktopPlatform.Current.SupportsMonitorSettings)
         {
             ColorMenu.Children.Add(new Border { Classes = { "divider" }, Margin = new Thickness(0, 8) });
-            var monitoring = new Button
-            {
-                Theme = this.FindResource("MenuItemButton") as ControlTheme,
-                Content = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 12,
-                    Children = { new Icon { Kind = "cloud" }, new TextBlock { Text = Strings.SettingsServer, VerticalAlignment = VerticalAlignment.Center } },
-                },
-            };
-            monitoring.Click += (_, _) =>
-            {
-                CloseMenu(monitoring);
-                Safe.Run(() => new MonitorSettingsDialog(_vm.Monitor).ShowOverAsync(this), ShowProblem);
-            };
-            ColorMenu.Children.Add(monitoring);
+            ColorMenu.Children.Add(SettingsMenuButton("cloud", Strings.SettingsServer,
+                () => new MonitorSettingsDialog(_vm.Monitor).ShowOverAsync(this)));
+            ColorMenu.Children.Add(SettingsMenuButton("language", DesktopStrings.InterfaceLanguage,
+                () => new InterfaceLanguageDialog(_vm.Ui).ShowAsync(this)));
         }
+    }
+
+    private Button SettingsMenuButton(string icon, string label, Func<Task> action)
+    {
+        var button = new Button
+        {
+            Theme = this.FindResource("MenuItemButton") as ControlTheme,
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 12,
+                Children = { new Icon { Kind = icon }, new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center } },
+            },
+        };
+        button.Click += (_, _) =>
+        {
+            CloseMenu(button);
+            Safe.Run(action, ShowProblem);
+        };
+        return button;
     }
 
     private static RadioButton MenuChoice(ControlTheme? theme, string group, bool on, Control lead, string text) => new()

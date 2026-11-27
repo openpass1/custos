@@ -16,6 +16,19 @@ How to write it:
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
+## 1.5.0
+
+### Added
+- Linux: Install the desktop window and backup service together with a `.deb` or `.rpm` package for x86_64 or ARM64.
+- Linux: Create, edit, clone, switch on or off and delete tasks from the desktop window.
+- Linux: Import and export CUSTOS task files from the desktop window.
+- Linux: Restore files and connect cloud drive accounts from the desktop window.
+- Linux: Configure the backup service and choose the interface language in the desktop window.
+
+### Fixed
+- Linux: Skip sockets, named pipes and symbolic links to them when backing up local files.
+- Linux: Exclude local backup folders nested inside a source from new backups.
+
 ## 1.4.0
 
 ### Added

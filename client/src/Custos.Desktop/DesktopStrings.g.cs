@@ -23,6 +23,39 @@ static partial class DesktopStrings
     /// <summary>The monitoring connection changed. Review the current server and try again.</summary>
     public static string MonitorConnectionChanged => Get(nameof(MonitorConnectionChanged));
 
+    /// <summary>Interface language</summary>
+    public static string InterfaceLanguage => Get(nameof(InterfaceLanguage));
+
+    /// <summary>Close and reopen CUSTOS to apply the language. The backup service continues to run.</summary>
+    public static string InterfaceLanguageRestart => Get(nameof(InterfaceLanguageRestart));
+
+    /// <summary>Follow the system</summary>
+    public static string LinuxThemeAuto => Get(nameof(LinuxThemeAuto));
+
+    /// <summary>Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or ru...</summary>
+    public static string LinuxAllowAllUsersEditHelp => Get(nameof(LinuxAllowAllUsersEditHelp));
+
+    /// <summary>Allow every local user to change tasks and run them with root privileges?</summary>
+    public static string LinuxAllowAllUsersEditWarning => Get(nameof(LinuxAllowAllUsersEditWarning));
+
+    /// <summary>Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.</summary>
+    public static string LinuxLogRetentionHelp => Get(nameof(LinuxLogRetentionHelp));
+
+    /// <summary>When set, this password is required in addition to the usual permissions for editing and restoring. The win...</summary>
+    public static string LinuxProgramPasswordHelp => Get(nameof(LinuxProgramPasswordHelp));
+
+    /// <summary>The language of the run logs and service messages. Automatic follows the service locale. The desktop interf...</summary>
+    public static string LinuxServiceLanguageHelp => Get(nameof(LinuxServiceLanguageHelp));
+
+    /// <summary>The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.</summary>
+    public static string LinuxAccountsNote => Get(nameof(LinuxAccountsNote));
+
+    /// <summary>7-Zip (7z.so) version {0}</summary>
+    public static string LinuxArchiverVersion => Get(nameof(LinuxArchiverVersion));
+
+    /// <summary>The backup service could not load 7z.so.</summary>
+    public static string LinuxArchiverProblem => Get(nameof(LinuxArchiverProblem));
+
     /// <summary>Theme</summary>
     public static string ThemeHeading => Get(nameof(ThemeHeading));
 
@@ -107,6 +140,15 @@ static partial class DesktopStrings
     /// <summary>{0} files · {1} · {2}</summary>
     public static string RestoreSetHint => Get(nameof(RestoreSetHint));
 
+    /// <summary>Cannot open a local callback port for Google Drive. Close this window and try again.</summary>
+    public static string LinuxCloudNoLoopback => Get(nameof(LinuxCloudNoLoopback));
+
+    /// <summary>Google Drive and Yandex Disk require the client secret. Dropbox does not require one.</summary>
+    public static string LinuxCloudSecretNote => Get(nameof(LinuxCloudSecretNote));
+
+    /// <summary>Yandex Disk needs the client secret together with the client ID.</summary>
+    public static string LinuxCloudYandexSecretRequired => Get(nameof(LinuxCloudYandexSecretRequired));
+
     /// <summary>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agen...</summary>
     public static string LinuxSourcePathHelp => Get(nameof(LinuxSourcePathHelp));
 
@@ -115,6 +157,21 @@ static partial class DesktopStrings
 
     /// <summary>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</summary>
     public static string LinuxErrorLocalPath => Get(nameof(LinuxErrorLocalPath));
+
+    /// <summary>Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.</summary>
+    public static string LinuxImportUnsupportedPaths => Get(nameof(LinuxImportUnsupportedPaths));
+
+    /// <summary>This task uses paths incompatible with Linux. Review its sources, destinations and database tools before sw...</summary>
+    public static string LinuxTaskUnsupportedPaths => Get(nameof(LinuxTaskUnsupportedPaths));
+
+    /// <summary>manage tasks</summary>
+    public static string LinuxRightsEditTasks => Get(nameof(LinuxRightsEditTasks));
+
+    /// <summary>With passwords and keys</summary>
+    public static string ExportWithSecrets => Get(nameof(ExportWithSecrets));
+
+    /// <summary>Without passwords and keys</summary>
+    public static string ExportWithoutSecrets => Get(nameof(ExportWithoutSecrets));
 
     /// <summary>Enter an SMB path such as //server/share/folder. Invalid path: {0}</summary>
     public static string LinuxErrorSharePath => Get(nameof(LinuxErrorSharePath));

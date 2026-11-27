@@ -4,8 +4,8 @@ set -eu
 unit=custos.service
 unit_path=/usr/lib/systemd/system/$unit
 enable_link=/etc/systemd/system/multi-user.target.wants/$unit
-program=/usr/lib/custos-desktop-preview/agent/custos
-state_dir=/var/lib/custos-desktop-preview
+program=/usr/lib/custos-desktop/agent/custos
+state_dir=/var/lib/custos-desktop
 install_marker=$state_dir/new-install
 
 path_exists() {

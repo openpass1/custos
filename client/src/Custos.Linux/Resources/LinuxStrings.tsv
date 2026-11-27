@@ -29,7 +29,7 @@ CliConnectionLost	the connection to the service broke: {0}	связь со сл�
 CliForbidden	only root or a member of sudo (wheel) may do that: run it with sudo	это может только root или участник sudo (wheel): запустите через sudo
 CliStatusService	CUSTOS {0}, the service runs since {1}	CUSTOS {0}, служба работает с {1}
 CliStatusSite	Monitoring site: {0}	Сайт мониторинга: {0}
-CliNoTasks	No tasks yet: create them on the monitoring site.	Заданий пока нет: создайте их на сайте мониторинга.
+CliNoTasks	No tasks yet. Create a task in CUSTOS Monitor or the CUSTOS desktop app.	Заданий пока нет. Создайте задание в CUSTOS Monitor или в окне CUSTOS.
 CliTasks	Tasks (last run → next run):	Задания (последний запуск → следующий):
 CliNever	never run	не запускалось
 CliDisabled	off	выключено

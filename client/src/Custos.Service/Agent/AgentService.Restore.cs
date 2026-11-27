@@ -324,7 +324,8 @@ internal sealed partial class AgentService
         {
             var folder = new TaskDestination
             {
-                Kind = request.CredentialId is null ? DestinationKinds.Local : DestinationKinds.Unc,
+                Kind = request.CredentialId is not null || (OperatingSystem.IsLinux() && BackupEngine.IsNetworkPath(request.Folder))
+                    ? DestinationKinds.Unc : DestinationKinds.Local,
                 Path = request.Folder,
                 CredentialId = request.CredentialId,
             };

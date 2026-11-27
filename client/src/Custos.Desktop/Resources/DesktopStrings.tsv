@@ -7,6 +7,17 @@ HistoryCount	{0}: {1} runs	{0}: запусков {1}
 SettingsAll	All settings…	Все настройки…
 MonitorSwitchConfirm	Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.	Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.
 MonitorConnectionChanged	The monitoring connection changed. Review the current server and try again.	Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.
+InterfaceLanguage	Interface language	Язык интерфейса
+InterfaceLanguageRestart	Close and reopen CUSTOS to apply the language. The backup service continues to run.	Чтобы применить язык, закройте и снова откройте CUSTOS. Служба резервного копирования продолжит работу.
+LinuxThemeAuto	Follow the system	Как в системе
+LinuxAllowAllUsersEditHelp	Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or run commands as root. Restore remains available only to administrators.	По умолчанию выключено. Служба резервного копирования работает от имени root. Каждый, кто может менять задания, может через них читать файлы и выполнять команды от имени root. Восстановление доступно только администраторам.
+LinuxAllowAllUsersEditWarning	Allow every local user to change tasks and run them with root privileges?	Разрешить всем локальным пользователям менять задания и запускать их с правами root?
+LinuxLogRetentionHelp	Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.	Включает ежедневный журнал, журналы отдельных запусков и журнал службы в каталоге данных CUSTOS.
+LinuxProgramPasswordHelp	When set, this password is required in addition to the usual permissions for editing and restoring. The window stays unlocked for 30 minutes after the last protected operation or until it closes.	Если пароль задан, для редактирования и восстановления он нужен в дополнение к обычным правам. Окно остаётся разблокированным 30 минут после последнего защищённого действия или до закрытия.
+LinuxServiceLanguageHelp	The language of the run logs and service messages. Automatic follows the service locale. The desktop interface language is set separately.	Язык журналов запусков и сообщений службы. «Автоматически» использует язык среды службы. Язык интерфейса настраивается отдельно.
+LinuxAccountsNote	The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.	Служба шифрует пароли и ключи и никогда не показывает их. Учётную запись, используемую в задании, удалить нельзя.
+LinuxArchiverVersion	7-Zip (7z.so) version {0}	7-Zip (7z.so) версии {0}
+LinuxArchiverProblem	The backup service could not load 7z.so.	Служба резервного копирования не смогла загрузить 7z.so.
 ThemeHeading	Theme	Тема
 ThemeForAll	For all users of this computer	Для всех пользователей компьютера
 ThemeAdminsOnly	The theme is the same for all users of this computer: an administrator changes it.	Тема общая для всех пользователей компьютера: её меняет администратор.
@@ -38,10 +49,20 @@ DemoLocked	the file is in use by another program, taken from the shadow copy: Re
 HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
 RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}
 
+# ---- Cloud sign-in on Linux
+LinuxCloudNoLoopback	Cannot open a local callback port for Google Drive. Close this window and try again.	Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.
+LinuxCloudSecretNote	Google Drive and Yandex Disk require the client secret. Dropbox does not require one.	Для Google Диска и Яндекс Диска нужен секрет клиента. Для Dropbox он не нужен.
+LinuxCloudYandexSecretRequired	Yandex Disk needs the client secret together with the client ID.	Для Яндекс Диска нужен секрет клиента вместе с Client ID.
+
 # ---- Linux task editor
 LinuxSourcePathHelp	Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.	Укажите полный путь Linux, например /home/user/Documents, или сетевую папку SMB вида //nas/share/folder. Агент подключает папки SMB через cifs-utils.
 LinuxPathVariables	Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {MM} and {dd}.	В локальных путях можно указать %HOME% пользователя, который впервые сохранит задание, а также {computer}, {task}, {yyyy}, {MM} и {dd}.
 LinuxErrorLocalPath	«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.	«{0}» не является полным локальным путём. Укажите путь вида /home/user/Documents или %HOME%/Documents.
+LinuxImportUnsupportedPaths	Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.	Отключены задания с путями, несовместимыми с Linux: {0}. Проверьте пути перед включением заданий.
+LinuxTaskUnsupportedPaths	This task uses paths incompatible with Linux. Review its sources, destinations and database tools before switching it on.	В задании есть пути, несовместимые с Linux. Проверьте источники, назначения и пути к утилитам баз данных перед включением.
+LinuxRightsEditTasks	manage tasks	управление заданиями
+ExportWithSecrets	With passwords and keys	С паролями и ключами
+ExportWithoutSecrets	Without passwords and keys	Без паролей и ключей
 LinuxErrorSharePath	Enter an SMB path such as //server/share/folder. Invalid path: {0}	Укажите путь SMB вида //сервер/ресурс/папка. Неверный путь: {0}
 LinuxErrorVolumeFolder	Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.	Укажите папку относительно корня тома, например backups/daily, или оставьте поле пустым для записи в корень.
 LinuxSmbAccountHelp	The agent mounts the share with the selected account, or connects as a guest without one.	Агент подключит ресурс от выбранной учётной записи, а если она не указана, то как гость.

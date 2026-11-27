@@ -92,11 +92,29 @@ internal abstract class FormDialog : Window
     protected ScrollViewer Scroll { get; }
 
     /// <summary>Opens the dialog over <paramref name="owner"/>; true when it was closed with the main button.</summary>
-    public async Task<bool> ShowAsync(Window owner)
+    public async Task<bool> ShowAsync(Window owner, ServiceMonitor? monitor = null)
     {
         // Sized for the screen before it is placed over the owner, so that it opens whole on it.
         ScreenFit.Limit(this, owner);
-        await ShowDialog(owner);
+        var previous = monitor?.AskPassword;
+        if (monitor is not null)
+        {
+            // The program password belongs to the active modal window, not its disabled owner.
+            monitor.AskPassword = () => Dialogs.ProgramPassword(this, monitor);
+        }
+
+        try
+        {
+            await ShowDialog(owner);
+        }
+        finally
+        {
+            if (monitor is not null)
+            {
+                monitor.AskPassword = previous;
+            }
+        }
+
         return _result;
     }
 

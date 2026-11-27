@@ -112,7 +112,7 @@
     <value>Сайт мониторинга: {0}</value>
   </data>
   <data name="CliNoTasks" xml:space="preserve">
-    <value>Заданий пока нет: создайте их на сайте мониторинга.</value>
+    <value>Заданий пока нет. Создайте задание в CUSTOS Monitor или в окне CUSTOS.</value>
   </data>
   <data name="CliTasks" xml:space="preserve">
     <value>Задания (последний запуск → следующий):</value>

@@ -42,7 +42,7 @@ internal sealed partial class App : Application, IDisposable
 
     public App()
     {
-        _mode = _lastKnown.TrayMode;
+        _mode = DesktopPlatform.Current.KeepsWindowInTray ? _lastKnown.TrayMode : TrayModes.Full;
     }
 
     /// <summary>Made-up tasks instead of the service (the «--demo» switch, and the pictures).</summary>
@@ -57,13 +57,14 @@ internal sealed partial class App : Application, IDisposable
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            bool usesTray = DesktopPlatform.Current.UsesTray;
-            desktop.ShutdownMode = usesTray ? ShutdownMode.OnExplicitShutdown : ShutdownMode.OnMainWindowClose;
+            var platform = DesktopPlatform.Current;
+            bool keepInTray = platform.KeepsWindowInTray;
+            desktop.ShutdownMode = keepInTray ? ShutdownMode.OnExplicitShutdown : ShutdownMode.OnMainWindowClose;
             var window = CreateMainWindow(Demo, _lastKnown.Theme);
             _window = window;
             var monitor = window.ViewModel.Monitor;
             monitor.AskPassword = () => AskPasswordAsync(monitor);
-            if (usesTray)
+            if (platform.UsesTray)
             {
                 monitor.StatusChanged += (_, _) => OnAgentChanged();
                 monitor.SnapshotChanged += (_, _) => OnAgentChanged();
@@ -71,7 +72,7 @@ internal sealed partial class App : Application, IDisposable
                 desktop.ShutdownRequested += (_, _) => window.Quitting = true;
                 CreateTray();
             }
-            else
+            if (!keepInTray)
             {
                 desktop.MainWindow = window;
                 window.Closed += (_, _) => window.ViewModel.Dispose();
@@ -79,7 +80,7 @@ internal sealed partial class App : Application, IDisposable
 
             window.ViewModel.Start();
             UpdateTray();
-            if (usesTray && !StartHidden)
+            if (keepInTray && !StartHidden)
             {
                 ShowWindow();
             }
@@ -190,7 +191,7 @@ internal sealed partial class App : Application, IDisposable
         var monitor = _window!.ViewModel.Monitor;
         if (monitor.IsConnected && monitor.Snapshot is { } snapshot)
         {
-            string mode = monitor.Status.Hello?.IsAdmin == true || !TrayModes.IsKnown(snapshot.Settings.TrayMode)
+            string mode = !DesktopPlatform.Current.KeepsWindowInTray || monitor.Status.Hello?.IsAdmin == true || !TrayModes.IsKnown(snapshot.Settings.TrayMode)
                 ? TrayModes.Full : snapshot.Settings.TrayMode;
             string theme = Themes.IsKnown(snapshot.Settings.Theme) ? snapshot.Settings.Theme : Themes.Auto;
             if (mode != _lastKnown.TrayMode || theme != _lastKnown.Theme)
@@ -394,7 +395,10 @@ internal sealed partial class App : Application, IDisposable
             }
 
             window.Close();
-            window.ViewModel.Dispose();
+            if (DesktopPlatform.Current.KeepsWindowInTray)
+            {
+                window.ViewModel.Dispose();
+            }
         }
 
         if (_tray is not null)
@@ -402,7 +406,7 @@ internal sealed partial class App : Application, IDisposable
             _tray.IsVisible = false;
         }
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (DesktopPlatform.Current.KeepsWindowInTray && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();
         }

@@ -1,6 +1,9 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Custos.Core;
 using Custos.Desktop;
 using Custos.Gui;
@@ -9,18 +12,26 @@ namespace Custos.Linux.Desktop;
 
 internal static partial class Program
 {
+    private const string Usage = "Usage: custos-gui [--demo | --version | --help]";
+
     [STAThread]
     public static int Main(string[] args)
     {
         if (args is ["--help" or "-h"])
         {
-            Console.WriteLine("Usage: custos-gui [--demo]");
+            Console.WriteLine(Usage);
+            return 0;
+        }
+
+        if (args is ["--version"])
+        {
+            Console.WriteLine(CustosInfo.Version);
             return 0;
         }
 
         if (args is not ([] or ["--demo"]))
         {
-            Console.Error.WriteLine("Usage: custos-gui [--demo]");
+            Console.Error.WriteLine(Usage);
             return 2;
         }
 
@@ -39,7 +50,12 @@ internal static partial class Program
         CustosEdition.UseLinux();
         UiState.Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData,
             Environment.SpecialFolderOption.DoNotVerify), "CUSTOS");
-        DesktopPlatform.Current = new LinuxPlatform();
+        string? language = UiState.Load().InterfaceLanguage;
+        if (language is "en" or "ru")
+        {
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
+        }
+        DesktopPlatform.Current = new LinuxPlatform(StatusNotifier.HostRegisteredAsync().GetAwaiter().GetResult());
         App.Demo = args.Length > 0;
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()
@@ -51,14 +67,68 @@ internal static partial class Program
     [LibraryImport("libc", EntryPoint = "geteuid")]
     private static partial uint GetEffectiveUserId();
 
-    private sealed class LinuxPlatform : DesktopPlatform
+    private sealed class LinuxPlatform(bool hasTray) : DesktopPlatform
     {
-        public override bool UsesTray => false;
+        private readonly Dictionary<TrayState, WindowIcon> _icons = [];
+        private readonly Task<IReadOnlyList<string>> _unitNames = Task.Run(ReadUnitNames);
+
+        public override bool UsesTray => hasTray;
+
+        public override bool KeepsWindowInTray => false;
+
+        public override string ThemeAuto => DesktopStrings.LinuxThemeAuto;
+
+        public override IReadOnlyList<string> ServiceNames() => _unitNames.IsCompletedSuccessfully ? _unitNames.Result : [];
+
+        private static IReadOnlyList<string> ReadUnitNames()
+        {
+            string[] paths = ["/etc/systemd/system", "/run/systemd/system", "/run/systemd/transient",
+                "/usr/local/lib/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system"];
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string path in paths)
+            {
+                try
+                {
+                    foreach (string unitFile in Directory.EnumerateFiles(path, "*.service"))
+                    {
+                        names.Add(Path.GetFileName(unitFile));
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // The event also accepts a unit name typed by hand.
+                }
+            }
+
+            return [.. names.Order(StringComparer.Ordinal)];
+        }
+
+        public override WindowIcon? TrayIcon(TrayState state)
+        {
+            if (!hasTray)
+            {
+                return null;
+            }
+
+            if (!_icons.TryGetValue(state, out var icon))
+            {
+                using var image = AssetLoader.Open(new Uri($"avares://custos-gui/Assets/tray-{state.ToString().ToLowerInvariant()}.ico"));
+                _icons[state] = icon = new WindowIcon(image);
+            }
+
+            return icon;
+        }
 
         public override bool SupportsManagement => false;
 
+        public override bool SupportsSettings => true;
+
         public override bool SupportsMonitorSettings => true;
 
-        public override bool SupportsTaskCreation => true;
+        public override bool SupportsTaskManagement => true;
+
+        public override bool SupportsRestore => true;
+
+        public override bool SupportsCloudAccounts => true;
     }
 }

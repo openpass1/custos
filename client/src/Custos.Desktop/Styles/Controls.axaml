@@ -228,6 +228,9 @@
     <Style Selector="^:pointerover">
       <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
     </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.46" />
+    </Style>
   </ControlTheme>
 
   <!-- Column header of a table: text, and an arrow on the sorted column. -->

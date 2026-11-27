@@ -76,7 +76,8 @@ public sealed class FileFilter
         // In a "simple expression" a backslash escapes the next character, so a literal one is written twice.
         private readonly string _text = text.TrimEnd('\\').Replace(@"\", @"\\", StringComparison.Ordinal);
         private readonly bool _isPath = text.Contains('\\', StringComparison.Ordinal);
-        private readonly bool _isRooted = text.StartsWith(@"\\", StringComparison.Ordinal) || (text.Length >= 2 && text[1] == ':');
+        private readonly bool _isRooted = text.StartsWith(@"\\", StringComparison.Ordinal) || (text.Length >= 2 && text[1] == ':')
+            || (CustosEdition.IsLinux && text.StartsWith('\\'));
 
         public bool Matches(string name, string relativePath, string fullPath)
         {

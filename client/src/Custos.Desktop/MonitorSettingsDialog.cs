@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
+using Custos.Core;
 using Custos.Core.Ipc;
 using Custos.Core.Monitor;
 using Custos.Gui;
@@ -20,20 +21,7 @@ internal sealed class MonitorSettingsDialog : FormDialog
         _ = new MonitorSettingsSection(this, monitor, ShowError, standalone: true);
     }
 
-    public async Task ShowOverAsync(Window owner)
-    {
-        // The password dialog belongs to the active modal window, not the disabled main window.
-        var previous = _monitor.AskPassword;
-        _monitor.AskPassword = () => Dialogs.ProgramPassword(this, _monitor);
-        try
-        {
-            await ShowAsync(owner);
-        }
-        finally
-        {
-            _monitor.AskPassword = previous;
-        }
-    }
+    public Task<bool> ShowOverAsync(Window owner) => ShowAsync(owner, _monitor);
 
     protected override Task<bool> OkAsync() => Task.FromResult(false);
 }
@@ -47,7 +35,7 @@ internal sealed class MonitorSettingsSection
     private readonly FormDialog _owner;
     private readonly ServiceMonitor _monitor;
     private readonly Action<string?> _showError;
-    private readonly bool _standalone;
+    private readonly bool _protectLine;
     private readonly NoteItem _state = new(string.Empty);
     private readonly NoteItem _details = new(string.Empty);
     private readonly NoteItem _administrators = new(Strings.ServerAdminOnly);
@@ -62,15 +50,15 @@ internal sealed class MonitorSettingsSection
         _owner = owner;
         _monitor = monitor;
         _showError = showError;
-        _standalone = standalone;
+        _protectLine = standalone || CustosEdition.IsLinux;
         _line = new TextItem(Strings.ServerLineLabel.TrimEnd(':', ' '))
         {
             Placeholder = Example,
             Help = Strings.ServerLineHelp,
-            Secret = standalone,
+            Secret = _protectLine,
             ActionIcon = "content_paste",
             ActionTip = Strings.ServerPasteTip,
-            Action = standalone ? null : PasteAsync,
+            Action = _protectLine ? null : PasteAsync,
         };
         var failed = (Exception error) => _showError(error.Message);
         _connect = new ButtonItem("link", Strings.ServerConnectButton, () => ChangeAsync(ConnectAsync)) { Failed = failed };
@@ -83,7 +71,7 @@ internal sealed class MonitorSettingsSection
 
         owner.Items.Add(_state);
         owner.Items.Add(_line);
-        if (standalone)
+        if (_protectLine)
         {
             // TextItem has one slot for either its paste button or its password-visibility switch.
             _paste = new ButtonItem("content_paste", Strings.ServerPasteTip, PasteAsync, ButtonLook.Text) { Failed = failed };
@@ -138,7 +126,7 @@ internal sealed class MonitorSettingsSection
         }
 
         bool normal = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting;
-        if (!_standalone && server.Detail is { } detail)
+        if (!_protectLine && server.Detail is { } detail)
         {
             status = status.TrimEnd('.') + ": " + detail;
         }
@@ -215,14 +203,14 @@ internal sealed class MonitorSettingsSection
 
         if (!RegistrationCode.TrySplitConnection(line, out string url, out string code)
             || !MonitorClient.IsValidServerUrl(url, out string normalized) || RegistrationCode.TryParse(code, out _) is null
-            || (_standalone && new Uri(normalized).UserInfo.Length != 0))
+            || (_protectLine && new Uri(normalized).UserInfo.Length != 0))
         {
             _line.Error = Strings.Format(Strings.ServerLineBad, Example);
             return;
         }
 
         string? current = _monitor.Snapshot?.Server.ServerUrl;
-        if (_standalone && current is not null && !string.Equals(current, normalized, StringComparison.OrdinalIgnoreCase)
+        if (_protectLine && current is not null && !string.Equals(current, normalized, StringComparison.OrdinalIgnoreCase)
             && !await Dialogs.Ask(_owner, Strings.Format(DesktopStrings.MonitorSwitchConfirm, DisplayUrl(current) ?? "—", DisplayUrl(normalized)),
                 Strings.ServerConnectButton, Strings.ButtonCancel))
         {

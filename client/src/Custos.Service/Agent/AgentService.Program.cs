@@ -52,6 +52,7 @@ internal sealed partial class AgentService
         {
             Checking = checking,
             ManagedBySite = ServerConfigured && !ProgramManagedByPackage,
+            ManagedByPackage = ProgramManagedByPackage,
             CheckedAt = state.CheckedAt,
             Latest = latest?.Version,
             Available = checking && latest is not null && ProgramReleases.IsNewer(latest.Version, info.Version),

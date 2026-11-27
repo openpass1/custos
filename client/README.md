@@ -2,7 +2,7 @@
 
 [По-русски](README.ru.md)
 
-[Windows](#windows) · [Windows legacy](#edition-for-windows-7-and-81) · [macOS](#macos) · [Linux agent](#custos-for-linux)
+[Windows](#windows) · [Windows legacy](#edition-for-windows-7-and-81) · [macOS](#macos) · [Linux desktop](#linux-desktop-preview) · [Linux server](#custos-for-linux)
 
 ## Windows
 
@@ -31,6 +31,7 @@ C# / .NET 10 for the current agents, and .NET 6 x86 for legacy Windows. Specific
 | `tests/Custos.Mac.Tests`, `tests/Custos.Mac.Shots` | | Tests of the macOS program (its service started inside the tests and driven over its socket) and pictures of every window |
 | `mac/` | | The macOS installer: `build-mac.sh`, `build-7z.sh`, the launchd jobs, the uninstaller |
 | `src/Custos.Linux`, `linux/` | `custos` | Linux systemd service and command-line client, with x86_64 and ARM64 packages |
+| `src/Custos.Linux.Desktop`, `src/Custos.Desktop`, `linux/desktop/` | `custos-gui` | Avalonia preview that connects to the Linux agent over a local socket |
 | `tests/Custos.Linux.Tests` | | Linux agent and platform tests |
 | `installer/custos.iss` | | Inno Setup script |
 
@@ -188,11 +189,17 @@ program (as a user and as root), draws every window, builds the installer, insta
 service answers and runs a task, opens the window and removes everything with the uninstaller. The run keeps the
 installer, the update package and the pictures of the windows for 14 days.
 
+## Linux desktop preview
+
+The desktop package installs the Linux agent and adds CUSTOS to the applications menu. Use the `.deb` for compatible
+Debian, Ubuntu and Linux Mint desktops or the `.rpm` for Fedora. Set up and run local backup tasks from the window.
+Connecting to Monitor is optional for local backups. See the [desktop guide](linux/desktop/README.md) for downloads,
+installation and setup.
+
 ## CUSTOS for Linux
 
-CUSTOS for Linux is the backup agent of a Linux server: a systemd service without a window, run from a monitoring
-site. It does the same work as the service on Windows (copies and archives, schedules, keeping copies, checks,
-and destinations including cloud drives). Make and change the server's tasks on the monitoring site.
+The Linux agent is a systemd service for backups, archives, schedules, retention and verification. For a headless
+installation, create and edit the server's tasks in CUSTOS Monitor.
 It needs x86_64 or ARM64 (aarch64), glibc 2.28 or newer and systemd: Ubuntu 20.04+, Debian 10+, RHEL, AlmaLinux,
 Rocky and Oracle Linux 8+, openSUSE 15. Alpine and CentOS 7 cannot run it.
 
@@ -276,8 +283,9 @@ in that directory. The agent uses the task's saved account and archive password,
 `sudo custos restore` locally to choose a destination, restore to the original paths, change the overwrite mode, or
 enter a password for this restore.
 
-**Cloud drives.** Connect each account on the Linux server, then select it as a destination in CUSTOS Monitor 1.4.2
-or newer. `custos cloud list` shows the connected accounts and their IDs. To renew access without changing tasks,
+**Cloud drives.** On the desktop, [connect accounts in the CUSTOS window](linux/desktop/README.md#connect-a-cloud-drive).
+On a headless server, connect each account from the terminal, then select it as a destination in CUSTOS Monitor
+1.4.2 or newer. `custos cloud list` shows the connected accounts and their IDs. To renew access without changing tasks,
 pass `--account <id>` to the login command.
 
 ```sh
@@ -330,8 +338,6 @@ bash client/linux/build-linux.sh package 1.0.1      # custos-linux-1.0.1.zip fro
 every change under `client/` (workflow `Linux agent`): on an x86_64 and an ARM machine it runs the tests (as root too,
 with LVM, btrfs and XFS on loop disks), installs the program with `install.sh`, tests the installed service and removes
 it; then it starts the program on other distributions in containers and makes the update package.
-
-On a Debian, Ubuntu or Linux Mint desktop, install the agent and its graphical interface with the [desktop .deb package](linux/desktop/README.md).
 
 ## Archives
 

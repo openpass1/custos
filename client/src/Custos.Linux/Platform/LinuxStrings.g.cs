@@ -89,7 +89,7 @@ static partial class LinuxStrings
     /// <summary>Monitoring site: {0}</summary>
     public static string CliStatusSite => Get(nameof(CliStatusSite));
 
-    /// <summary>No tasks yet: create them on the monitoring site.</summary>
+    /// <summary>No tasks yet. Create a task in CUSTOS Monitor or the CUSTOS desktop app.</summary>
     public static string CliNoTasks => Get(nameof(CliNoTasks));
 
     /// <summary>Tasks (last run → next run):</summary>

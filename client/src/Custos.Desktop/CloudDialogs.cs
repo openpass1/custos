@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using Custos.Core;
 using Custos.Core.Cloud;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
@@ -41,7 +42,6 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
     private readonly NoteItem _status = new(string.Empty);
     private readonly CancellationTokenSource _closing = new();
     private LoopbackReceiver? _receiver;
-    private bool _triedReceiver;
     private CloudBeginResult? _begun;
     private bool _finishing;
     private bool _closed;
@@ -59,7 +59,10 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         _open = ButtonItem.Of("open_in_new", Strings.CloudOpenPage, () => Safe.Run(OpenPageAsync));
         _copy = new ButtonItem("content_copy", Strings.CloudCopyLink, CopyLinkAsync, ButtonLook.Outlined) { Failed = ex => ShowStatus(ex.Message, error: true) };
         _open.IsEnabled = _copy.IsEnabled = false;
-        _answer = new TextItem(Strings.CloudAnswer.TrimEnd(':', ' ')) { ActionIcon = "content_paste", ActionTip = Strings.CloudPasteTip, Action = PasteAsync };
+        _answer = new TextItem(Strings.CloudAnswer.TrimEnd(':', ' '))
+        {
+            Secret = true, ActionIcon = "content_paste", ActionTip = Strings.CloudPasteTip, Action = PasteAsync,
+        };
 
         ClipboardText = ReadClipboardAsync;
         Items.Add(new LabelItem(Strings.Format(Strings.CloudConnectSteps, CloudNames.Name(kind), CloudNames.AppFolder(kind))));
@@ -87,8 +90,14 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
 
     public void Dispose()
     {
+        if (_closed)
+        {
+            return;
+        }
+
         _closed = true;
-        StopListening();
+        _closing.Cancel();
+        CloseReceiver();
         _closing.Dispose();
     }
 
@@ -117,11 +126,17 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         _begun = null;
         _open.IsEnabled = _copy.IsEnabled = false;
         ShowStatus(Strings.CloudPreparing, error: false);
-        if (!_triedReceiver)
+        CloseReceiver();
+        // Match the Linux CLI: Yandex Disk and Dropbox can return a code without registering a new redirect.
+        if (!CustosEdition.IsLinux || service.CodeOnScreen is null)
         {
-            // Google takes any port, the others only the one registered with the application.
-            _triedReceiver = true;
             _receiver = LoopbackReceiver.TryStart(service.LoopbackPort);
+        }
+
+        if (CustosEdition.IsLinux && _receiver is null && service.CodeOnScreen is null)
+        {
+            ShowStatus(Join(problem, DesktopStrings.LinuxCloudNoLoopback), error: true);
+            return;
         }
 
         // Without a port of our own the service shows the code on its page; Google has no such page, so the browser
@@ -138,6 +153,7 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         }
         catch (ServiceUnavailableException ex)
         {
+            CloseReceiver();
             ShowStatus(Join(problem, ex.Message), error: true);
             return;
         }
@@ -165,7 +181,7 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         string target;
         try
         {
-            target = await receiver.WaitAsync(Strings.CloudBrowserDone, _closing.Token);
+            target = await receiver.WaitAsync(Strings.CloudBrowserDone, _closing.Token, begun.State);
         }
         catch (Exception ex) when (ex is OperationCanceledException or ObjectDisposedException or SocketException or IOException)
         {
@@ -274,13 +290,8 @@ internal sealed class CloudConnectDialog : FormDialog, IDisposable
         }
     }
 
-    private void StopListening()
+    private void CloseReceiver()
     {
-        if (!_closing.IsCancellationRequested)
-        {
-            _closing.Cancel();
-        }
-
         _receiver?.Dispose();
         _receiver = null;
     }
@@ -306,7 +317,7 @@ internal sealed class CloudAppsDialog : FormDialog
             Items.Add(new NoteItem(current.BuiltIn.Contains(kind) ? Strings.CloudAppsBuiltIn : Strings.CloudAppsNoBuiltIn));
             var app = current.Own.Of(kind);
             var id = new TextItem(Strings.CloudAppsClientId.TrimEnd(':', ' '), app?.ClientId ?? string.Empty);
-            var secret = new TextItem(Strings.CloudAppsSecret.TrimEnd(':', ' '), app?.ClientSecret ?? string.Empty);
+            var secret = new TextItem(Strings.CloudAppsSecret.TrimEnd(':', ' '), app?.ClientSecret ?? string.Empty) { Secret = true };
             Items.Add(id);
             if (kind != DestinationKinds.Dropbox)
             {
@@ -316,7 +327,7 @@ internal sealed class CloudAppsDialog : FormDialog
             _fields[kind] = (id, secret);
         }
 
-        Items.Add(new NoteItem(Strings.CloudAppsSecretNote));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxCloudSecretNote : Strings.CloudAppsSecretNote));
     }
 
     /// <summary>The applications as entered.</summary>
@@ -339,6 +350,12 @@ internal sealed class CloudAppsDialog : FormDialog
         if (apps.Gdrive is { ClientSecret: null })
         {
             ShowError(Strings.ErrorCloudSecretRequired);
+            return false;
+        }
+
+        if (CustosEdition.IsLinux && apps.Yadisk is { ClientSecret: null })
+        {
+            ShowError(DesktopStrings.LinuxCloudYandexSecretRequired);
             return false;
         }
 

@@ -20,8 +20,11 @@ internal sealed class SettingsDialog : FormDialog
     private readonly ServiceMonitor _monitor;
     private readonly bool _canEdit;
     private readonly bool _isAdmin;
+    private readonly bool _linux = CustosEdition.IsLinux;
+    private readonly bool _supportsCloud = DesktopPlatform.Current.SupportsCloudAccounts && !CustosEdition.IsLegacy;
     private readonly CheckItem _allowRemoteEdit = new(Strings.AllowRemoteEdit, description: Strings.AllowRemoteEditHelp);
-    private readonly CheckItem _allowAll = new(Strings.AllowAllUsersEdit, description: Strings.AllowAllUsersEditHelp);
+    private readonly CheckItem _allowAll = new(Strings.AllowAllUsersEdit,
+        description: CustosEdition.IsLinux ? DesktopStrings.LinuxAllowAllUsersEditHelp : Strings.AllowAllUsersEditHelp);
     private readonly ChoiceItem _trayMode = new(L(Strings.TrayModeLabel), [Strings.TrayModeFull, Strings.TrayModeStatus, Strings.TrayModeHidden], 0, 360)
     {
         Help = Strings.TrayModeHelp,
@@ -35,12 +38,15 @@ internal sealed class SettingsDialog : FormDialog
         Help = Strings.DefaultLogLevelHelp,
     };
 
-    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 120) { Help = Strings.LogRetentionHelp };
+    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 120)
+    {
+        Help = CustosEdition.IsLinux ? DesktopStrings.LinuxLogRetentionHelp : Strings.LogRetentionHelp,
+    };
     private readonly NumberItem _historyRetention = new(L(Strings.HistoryRetention), 365, 1, 3650, 120) { Help = Strings.HistoryRetentionHelp };
     private readonly ChoiceItem _priority = new(L(Strings.CopyPriority), [Strings.PriorityLow, Strings.PriorityNormal], 0, 300) { Help = Strings.CopyPriorityHelp };
     private readonly ChoiceItem _language = new(L(Strings.ServiceLanguage), [Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish], 0, 300)
     {
-        Help = Strings.ServiceLanguageHelp,
+        Help = CustosEdition.IsLinux ? DesktopStrings.LinuxServiceLanguageHelp : Strings.ServiceLanguageHelp,
     };
 
     private readonly CheckItem _checkUpdates = new(Strings.CheckUpdates, description: Strings.Format(Strings.CheckUpdatesHelp, CustosInfo.GitHubRepository));
@@ -72,8 +78,11 @@ internal sealed class SettingsDialog : FormDialog
         _passwordRemove = new ButtonItem(null, Strings.ProgramPasswordRemoveButton, RemovePasswordAsync, ButtonLook.Outlined) { Failed = failed };
         Items.Add(new HeadingItem(Strings.SettingsRights));
         Items.Add(_allowAll);
-        Items.Add(_trayMode);
-        Items.Add(new HeadingItem(L(Strings.ProgramPasswordLabel), Strings.ProgramPasswordHelp));
+        if (!_linux)
+        {
+            Items.Add(_trayMode);
+        }
+        Items.Add(new HeadingItem(L(Strings.ProgramPasswordLabel), _linux ? DesktopStrings.LinuxProgramPasswordHelp : Strings.ProgramPasswordHelp));
         Items.Add(_passwordState);
         Items.Add(new RowItem(_passwordSet, _passwordRemove));
         if (!_isAdmin)
@@ -98,15 +107,18 @@ internal sealed class SettingsDialog : FormDialog
         _sevenZipCheck = new ButtonItem("update", Strings.SevenZipCheckButton, CheckSevenZipAsync) { Failed = failed };
         Items.Add(new HeadingItem(Strings.Settings7Zip));
         Items.Add(_archiver);
-        Items.Add(_sevenZipCheck);
-        Items.Add(new NoteItem(CustosEdition.IsLegacy ? Strings.Settings7ZipNoteLegacy : Strings.Settings7ZipNote));
-        _sevenZipCheck.IsEnabled = _isAdmin && connected;
+        if (!_linux)
+        {
+            Items.Add(_sevenZipCheck);
+            Items.Add(new NoteItem(CustosEdition.IsLegacy ? Strings.Settings7ZipNoteLegacy : Strings.Settings7ZipNote));
+            _sevenZipCheck.IsEnabled = _isAdmin && connected;
+        }
 
         // Cloud drives (section 6.3): what this version brings, and the administrator's own applications. The legacy
         // edition has none (CustosEdition).
         _cloudOwn = ButtonItem.Of("apps", Strings.SettingsCloudOwn, () => Safe.Run(EditCloudAppsAsync, failed), ButtonLook.Outlined);
         _cloudOwn.IsEnabled = false;
-        if (!CustosEdition.IsLegacy)
+        if (_supportsCloud)
         {
             Items.Add(new HeadingItem(Strings.SettingsCloud));
             Items.Add(_cloudApps);
@@ -119,10 +131,10 @@ internal sealed class SettingsDialog : FormDialog
         _addAccount = ButtonItem.Of("person_add", Strings.ButtonAdd, () => Safe.Run(AddAccountAsync, failed));
         _addAccount.IsEnabled = _canEdit;
         Items.Add(new HeadingItem(Strings.SettingsAccounts));
-        Items.Add(new NoteItem(Strings.SettingsAccountsNote));
+        Items.Add(new NoteItem(_linux ? DesktopStrings.LinuxAccountsNote : Strings.SettingsAccountsNote));
         Items.Add(_accounts);
         var accountButtons = new List<FormItem> { _addAccount };
-        if (!CustosEdition.IsLegacy)
+        if (_supportsCloud)
         {
             foreach (string kind in CloudNames.Kinds)
             {
@@ -163,12 +175,13 @@ internal sealed class SettingsDialog : FormDialog
 
         _allowAll.OnChange = () =>
         {
-            // Turning it on hands out the rights of an administrator: said plainly, and only on «Да».
+            // A task runs with the service's authority, so ask before giving everyone access to editing.
             if (_allowAll.On && !settings.AllowAllUsersEdit)
             {
                 Safe.Run(async () =>
                 {
-                    if (!await Dialogs.Ask(this, Strings.AllowAllUsersEditWarning, Strings.Yes, Strings.No))
+                    if (!await Dialogs.Ask(this, _linux ? DesktopStrings.LinuxAllowAllUsersEditWarning : Strings.AllowAllUsersEditWarning,
+                        Strings.Yes, Strings.No))
                     {
                         _allowAll.Load(false);
                     }
@@ -181,7 +194,7 @@ internal sealed class SettingsDialog : FormDialog
         ShowAll();
         _monitor.SnapshotChanged += OnSnapshotChanged;
         Closed += (_, _) => _monitor.SnapshotChanged -= OnSnapshotChanged;
-        if (_isAdmin && connected && !CustosEdition.IsLegacy)
+        if (_isAdmin && connected && _supportsCloud)
         {
             Opened += (_, _) => Safe.Run(LoadCloudAppsAsync, ex => _cloudApps.Show(ex.Message, Tone.Error));
         }
@@ -192,6 +205,12 @@ internal sealed class SettingsDialog : FormDialog
         if (_monitor.Snapshot?.Settings is not { } current)
         {
             ShowError(Strings.ProblemNoConnection);
+            return false;
+        }
+
+        if (!_monitor.CanEdit)
+        {
+            ShowError(Strings.SettingsReadOnly);
             return false;
         }
 
@@ -209,13 +228,25 @@ internal sealed class SettingsDialog : FormDialog
         settings.HistoryRetentionDays = _historyRetention.Value;
         settings.ProcessPriority = _priority.Selected == 1 ? "normal" : "low";
         settings.Language = Languages[Math.Max(0, _language.Selected)];
-        settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.Selected)];
+        if (!_linux)
+        {
+            settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.Selected)];
+        }
+
         settings.AllowAllUsersEdit = _allowAll.On;
         settings.AllowRemoteEdit = _allowRemoteEdit.On;
-        settings.CheckUpdates = _checkUpdates.On;
-        await _monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
+        if (_checkUpdates.IsEnabled)
+        {
+            settings.CheckUpdates = _checkUpdates.On;
+        }
+
+        var result = await _monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
             IpcJsonContext.Default.SettingsSaveRequest, IpcJsonContext.Default.OkResult);
-        return true;
+        if (!result.Ok)
+        {
+            ShowError(result.Message ?? Strings.ProblemNoAnswer);
+        }
+        return result.Ok;
     }
 
     private static string L(string label) => label.TrimEnd(':', ' ');
@@ -251,6 +282,13 @@ internal sealed class SettingsDialog : FormDialog
     {
         var update = _monitor.Snapshot?.ProgramUpdate ?? new ProgramUpdateInfo();
         bool site = update.ManagedBySite;
+        _checkUpdates.IsVisible = _updatesCheck.IsVisible = !update.ManagedByPackage;
+        if (update.ManagedByPackage)
+        {
+            _checkUpdates.IsEnabled = _updatesCheck.IsEnabled = false;
+            _updatesState.Show(Messages.ProgramManagedByPackage, Tone.Plain);
+            return;
+        }
         _checkUpdates.IsEnabled = _canEdit && _isAdmin && !site;
 
         // Off (or a site decides): a check would show nowhere, so there is nothing to press.
@@ -288,6 +326,14 @@ internal sealed class SettingsDialog : FormDialog
     private void ShowArchiver()
     {
         var snapshot = _monitor.Snapshot;
+        if (_linux)
+        {
+            string version = Strings.Format(DesktopStrings.LinuxArchiverVersion, snapshot?.SevenZipVersion ?? "—");
+            _archiver.Show(snapshot?.SevenZipProblem is null ? version : DesktopStrings.LinuxArchiverProblem,
+                snapshot?.SevenZipProblem is null ? Tone.Plain : Tone.Caution);
+            return;
+        }
+
         _archiver.Show(snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
             : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—"), snapshot?.SevenZipProblem is null ? Tone.Plain : Tone.Caution);
     }
@@ -371,7 +417,7 @@ internal sealed class SettingsDialog : FormDialog
     private void FillAccounts()
     {
         var snapshot = _monitor.Snapshot;
-        string[] kinds = [.. CredentialDialog.Kinds, .. CloudNames.Kinds];
+        string[] kinds = _supportsCloud ? [.. CredentialDialog.Kinds, .. CloudNames.Kinds] : CredentialDialog.Kinds;
         var shown = (snapshot?.Credentials ?? [])
             .Where(c => Array.IndexOf(kinds, c.Kind) >= 0)
             .OrderBy(c => Array.IndexOf(kinds, c.Kind))
@@ -393,7 +439,7 @@ internal sealed class SettingsDialog : FormDialog
     private async Task AddAccountAsync()
     {
         var dialog = new CredentialDialog(_monitor, null, null);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     /// <summary>A new password of an account; an account of a cloud drive is connected again in the browser.</summary>
@@ -406,14 +452,14 @@ internal sealed class SettingsDialog : FormDialog
         }
 
         var dialog = new CredentialDialog(_monitor, account, account.Kind);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     /// <summary>Connects a new account of a cloud drive, or an existing one again.</summary>
     private async Task ConnectCloudAsync(string kind, Credential? existing)
     {
         var dialog = new CloudConnectDialog(_monitor, kind, existing);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     private async Task DeleteAccountAsync(Credential account)
@@ -446,7 +492,7 @@ internal sealed class SettingsDialog : FormDialog
         }
 
         var dialog = new CloudAppsDialog(_monitor, current);
-        if (await dialog.ShowAsync(this))
+        if (await dialog.ShowAsync(this, _monitor))
         {
             current.Own = dialog.Entered();
         }

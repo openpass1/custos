@@ -39,9 +39,11 @@ jobs:
         include:
           - arch: x64
             deb_arch: amd64
+            rpm_arch: x86_64
             runner: ubuntu-24.04
           - arch: arm64
             deb_arch: arm64
+            rpm_arch: aarch64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
@@ -54,28 +56,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build and smoke-test the archive
-        working-directory: client
-        env:
-          ARCH: ${{ matrix.arch }}
-        run: |
-          output="$RUNNER_TEMP/custos-desktop"
-          name="custos-linux-desktop-preview-$ARCH"
-          bash linux/build-desktop-preview.sh "$ARCH" "$output"
-          unpacked=$(mktemp -d "$RUNNER_TEMP/custos-desktop-test.XXXXXX")
-          tar -xzf "$output/$name.tar.gz" -C "$unpacked"
-          "$unpacked/$name/custos-gui" --help
-
-      - name: Upload the archive
-        uses: actions/upload-artifact@v6
-        with:
-          name: custos-linux-desktop-preview-${{ matrix.arch }}
-          path: ${{ runner.temp }}/custos-desktop/custos-linux-desktop-preview-${{ matrix.arch }}.tar.gz
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 14
-
-      - name: Build the Debian installer
+      - name: Build the Debian installer and GUI archive
         working-directory: client
         env:
           ARCH: ${{ matrix.arch }}
@@ -84,23 +65,39 @@ jobs:
           version=$(awk '/^## [0-9]+\.[0-9]+\.[0-9]+$/ {print $2; exit}' CHANGELOG.md)
           test -n "$version"
           package_version="$version~preview${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          CUSTOS_DESKTOP_DEB_VERSION="$package_version" bash linux/build-desktop-deb.sh "$ARCH" "$RUNNER_TEMP/custos-desktop"
-          shopt -s failglob
-          packages=("$RUNNER_TEMP"/custos-desktop/custos-desktop-preview_*_"$DEB_ARCH".deb)
-          test "${#packages[@]}" = 1
-          package="${packages[0]}"
-          test "$(dpkg-deb -f "$package" Package)" = custos-desktop-preview
+          output="$RUNNER_TEMP/custos-desktop"
+          CUSTOS_DESKTOP_DEB_VERSION="$package_version" bash linux/build-desktop-deb.sh "$ARCH" "$output" "$version"
+          package="$output/custos-desktop_${package_version}_$DEB_ARCH.deb"
+          archive="$output/custos-linux-desktop-$version-$ARCH.tar.gz"
+          test "$(dpkg-deb -f "$package" Package)" = custos-desktop
           test "$(dpkg-deb -f "$package" Version)" = "$package_version"
           test "$(dpkg-deb -f "$package" Architecture)" = "$DEB_ARCH"
-          printf 'DEB_PACKAGE=%s\n' "$package" >> "$GITHUB_ENV"
+          unpacked=$(mktemp -d "$RUNNER_TEMP/custos-desktop-test.XXXXXX")
+          tar -xzf "$archive" -C "$unpacked"
+          gui="$unpacked/custos-linux-desktop-$version-$ARCH/custos-gui"
+          "$gui" --help
+          test "$("$gui" --version)" = "$version"
+          printf 'DEB_PACKAGE=%s\nGUI_ARCHIVE=%s\nPRODUCT_VERSION=%s\nPACKAGE_VERSION=%s\n' \
+            "$package" "$archive" "$version" "$package_version" >> "$GITHUB_ENV"
+
+      - name: Upload the GUI archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-linux-desktop-preview-${{ matrix.arch }}
+          path: ${{ env.GUI_ARCHIVE }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
       - name: Install and smoke-test the Debian package
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y "$DEB_PACKAGE"
-          test "$(dpkg-query -W -f='${Status}' custos-desktop-preview)" = 'install ok installed'
-          test -f /usr/share/applications/org.custos.DesktopPreview.desktop
+          test "$(dpkg-query -W -f='${Status}' custos-desktop)" = 'install ok installed'
+          test -f /usr/share/applications/org.custos.Desktop.desktop
           custos-gui --help
+          test "$(custos-gui --version)" = "$PRODUCT_VERSION"
+          test "$(custos version)" = "$PRODUCT_VERSION"
           check_installed_service() {
             fragment=$(systemctl show -p FragmentPath --value custos.service)
             test "$(readlink -f "$fragment")" = /usr/lib/systemd/system/custos.service
@@ -126,13 +123,13 @@ jobs:
           sudo apt-get install -y --reinstall "$DEB_PACKAGE"
           check_installed_service
           sudo test -f /var/lib/custos/.deb-smoke-test
-          sudo apt-get remove -y custos-desktop-preview
+          sudo apt-get remove -y custos-desktop
           check_removed_package
 
           sudo apt-get install -y "$DEB_PACKAGE"
           check_installed_service
           sudo test -f /var/lib/custos/.deb-smoke-test
-          sudo apt-get remove -y custos-desktop-preview
+          sudo apt-get remove -y custos-desktop
           check_removed_package
 
       - name: Check coexistence with an existing service
@@ -161,7 +158,7 @@ jobs:
 
           sudo apt-get install -y "$DEB_PACKAGE"
           check_existing
-          sudo apt-get purge -y custos-desktop-preview
+          sudo apt-get purge -y custos-desktop
           check_existing
           sudo systemctl disable --now custos.service
 
@@ -169,7 +166,41 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: custos-linux-desktop-preview-deb-${{ matrix.deb_arch }}
-          path: ${{ runner.temp }}/custos-desktop/custos-desktop-preview_*_${{ matrix.deb_arch }}.deb
+          path: ${{ env.DEB_PACKAGE }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Build and smoke-test the Fedora package
+        env:
+          RPM_ARCH: ${{ matrix.rpm_arch }}
+        run: |
+          sudo apt-get install -y rpm
+          output="$RUNNER_TEMP/custos-desktop/rpm"
+          bash client/linux/build-desktop-rpm.sh "$DEB_PACKAGE" "$output"
+          rpm="$output/custos-desktop-$PACKAGE_VERSION-1.$RPM_ARCH.rpm"
+          test "$(rpm -qp --qf '%{ARCH}' "$rpm")" = "$RPM_ARCH"
+          docker run --rm --env "EXPECTED_VERSION=$PRODUCT_VERSION" \
+            --mount "type=bind,src=$output,dst=/rpms,readonly" fedora:44 sh -ec '
+              dnf -y --setopt=install_weak_deps=False install shadow-utils util-linux /rpms/*.rpm
+              test "$(custos version)" = "$EXPECTED_VERSION"
+              useradd -m desktopuser
+              su -s /bin/sh desktopuser -c "custos-gui --help"
+              test "$(su -s /bin/sh desktopuser -c "custos-gui --version")" = "$EXPECTED_VERSION"
+              systemctl is-enabled custos.service
+              test -f /usr/share/applications/org.custos.Desktop.desktop
+              mkdir -p /var/lib/custos
+              touch /var/lib/custos/.rpm-smoke-test
+              dnf -y remove custos-desktop
+              test ! -e /usr/bin/custos-gui
+              test -f /var/lib/custos/.rpm-smoke-test
+            '
+
+      - name: Upload the Fedora package
+        uses: actions/upload-artifact@v6
+        with:
+          name: custos-linux-desktop-preview-rpm-${{ matrix.rpm_arch }}
+          path: ${{ runner.temp }}/custos-desktop/rpm/custos-desktop-*-1.${{ matrix.rpm_arch }}.rpm
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

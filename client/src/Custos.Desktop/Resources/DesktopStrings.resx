@@ -31,6 +31,39 @@
   <data name="MonitorConnectionChanged" xml:space="preserve">
     <value>The monitoring connection changed. Review the current server and try again.</value>
   </data>
+  <data name="InterfaceLanguage" xml:space="preserve">
+    <value>Interface language</value>
+  </data>
+  <data name="InterfaceLanguageRestart" xml:space="preserve">
+    <value>Close and reopen CUSTOS to apply the language. The backup service continues to run.</value>
+  </data>
+  <data name="LinuxThemeAuto" xml:space="preserve">
+    <value>Follow the system</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditHelp" xml:space="preserve">
+    <value>Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or run commands as root. Restore remains available only to administrators.</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditWarning" xml:space="preserve">
+    <value>Allow every local user to change tasks and run them with root privileges?</value>
+  </data>
+  <data name="LinuxLogRetentionHelp" xml:space="preserve">
+    <value>Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.</value>
+  </data>
+  <data name="LinuxProgramPasswordHelp" xml:space="preserve">
+    <value>When set, this password is required in addition to the usual permissions for editing and restoring. The window stays unlocked for 30 minutes after the last protected operation or until it closes.</value>
+  </data>
+  <data name="LinuxServiceLanguageHelp" xml:space="preserve">
+    <value>The language of the run logs and service messages. Automatic follows the service locale. The desktop interface language is set separately.</value>
+  </data>
+  <data name="LinuxAccountsNote" xml:space="preserve">
+    <value>The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.</value>
+  </data>
+  <data name="LinuxArchiverVersion" xml:space="preserve">
+    <value>7-Zip (7z.so) version {0}</value>
+  </data>
+  <data name="LinuxArchiverProblem" xml:space="preserve">
+    <value>The backup service could not load 7z.so.</value>
+  </data>
   <data name="ThemeHeading" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -115,6 +148,15 @@
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} files · {1} · {2}</value>
   </data>
+  <data name="LinuxCloudNoLoopback" xml:space="preserve">
+    <value>Cannot open a local callback port for Google Drive. Close this window and try again.</value>
+  </data>
+  <data name="LinuxCloudSecretNote" xml:space="preserve">
+    <value>Google Drive and Yandex Disk require the client secret. Dropbox does not require one.</value>
+  </data>
+  <data name="LinuxCloudYandexSecretRequired" xml:space="preserve">
+    <value>Yandex Disk needs the client secret together with the client ID.</value>
+  </data>
   <data name="LinuxSourcePathHelp" xml:space="preserve">
     <value>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.</value>
   </data>
@@ -123,6 +165,21 @@
   </data>
   <data name="LinuxErrorLocalPath" xml:space="preserve">
     <value>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</value>
+  </data>
+  <data name="LinuxImportUnsupportedPaths" xml:space="preserve">
+    <value>Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.</value>
+  </data>
+  <data name="LinuxTaskUnsupportedPaths" xml:space="preserve">
+    <value>This task uses paths incompatible with Linux. Review its sources, destinations and database tools before switching it on.</value>
+  </data>
+  <data name="LinuxRightsEditTasks" xml:space="preserve">
+    <value>manage tasks</value>
+  </data>
+  <data name="ExportWithSecrets" xml:space="preserve">
+    <value>With passwords and keys</value>
+  </data>
+  <data name="ExportWithoutSecrets" xml:space="preserve">
+    <value>Without passwords and keys</value>
   </data>
   <data name="LinuxErrorSharePath" xml:space="preserve">
     <value>Enter an SMB path such as //server/share/folder. Invalid path: {0}</value>

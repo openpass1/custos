@@ -1,4 +1,5 @@
 using Custos.Core.Backup;
+using Custos.Core.Model;
 
 namespace Custos.Desktop;
 
@@ -40,4 +41,27 @@ internal static class LinuxEditorPaths
         !path.StartsWith('/') && !path.Contains('\\', StringComparison.Ordinal)
         && !path.Contains('\0', StringComparison.Ordinal) && !PathVariables.HasVariables(path)
         && !path.Split('/').Contains("..", StringComparer.Ordinal);
+
+    public static bool HasUnsupportedPath(TaskDefinition task) =>
+        task.Sources.Any(source => source.Kind switch
+        {
+            SourceKinds.Folder or SourceKinds.File => !IsLocal(source.Path) && !IsShare(source.Path),
+            SourceKinds.Unc => !IsShare(source.Path),
+            _ => false,
+        }) || task.Destinations.Any(destination => destination.Kind switch
+        {
+            DestinationKinds.Local => !IsLocal(destination.Path),
+            DestinationKinds.Unc => !destination.Path.StartsWith("//", StringComparison.Ordinal) || !IsShare(destination.Path),
+            DestinationKinds.Usb => !IsVolumeFolder(destination.Path),
+            _ => false,
+        }) || task.DbServers.Any(server => !IsLocal(server.BinDir));
+
+    // The Linux agent opens SMB destinations by their POSIX UNC path. Keep source paths as entered.
+    public static void NormalizeShares(TaskDefinition task)
+    {
+        foreach (var destination in task.Destinations.Where(d => d.Kind == DestinationKinds.Unc && IsShare(d.Path)))
+        {
+            destination.Path = NormalizeShare(destination.Path);
+        }
+    }
 }
