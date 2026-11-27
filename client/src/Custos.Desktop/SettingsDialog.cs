@@ -1,9 +1,8 @@
-using System.Globalization;
 using Custos.Core;
 using Custos.Core.Agent;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
-using Custos.Core.Monitor;
+using Custos.Core.Updates;
 using Custos.Gui;
 
 namespace Custos.Desktop;
@@ -16,22 +15,20 @@ namespace Custos.Desktop;
 /// </summary>
 internal sealed class SettingsDialog : FormDialog
 {
-    /// <summary>What a connection line looks like, with made-up values.</summary>
-    internal const string ConnectionExample = "http://custos.example.lan#K7QHM-2XARV-4NTB6-EWZ3P-LC5DQ#3F2A-91C0-77DE-0B14";
-
     private static readonly string[] Languages = ["auto", "ru", "en"];
     private static readonly string[] TrayModeValues = [TrayModes.Full, TrayModes.Status, TrayModes.Hidden];
 
     private readonly ServiceMonitor _monitor;
+    private readonly UiState? _ui;
+    private readonly ChoiceItem? _interfaceLanguage;
+    private AgentSettings _initialSettings;
     private readonly bool _canEdit;
     private readonly bool _isAdmin;
-    private readonly NoteItem _serverState = new(string.Empty);
-    private readonly TextItem _serverLine;
-    private readonly ButtonItem _serverConnect;
-    private readonly ButtonItem _serverReset;
-    private readonly NoteItem _serverKeys = new(string.Empty);
+    private readonly bool _linux = CustosEdition.IsLinux;
+    private readonly bool _supportsCloud = DesktopPlatform.Current.SupportsCloudAccounts && !CustosEdition.IsLegacy;
     private readonly CheckItem _allowRemoteEdit = new(Strings.AllowRemoteEdit, description: Strings.AllowRemoteEditHelp);
-    private readonly CheckItem _allowAll = new(Strings.AllowAllUsersEdit, description: Strings.AllowAllUsersEditHelp);
+    private readonly CheckItem _allowAll = new(Strings.AllowAllUsersEdit,
+        description: CustosEdition.IsLinux ? DesktopStrings.LinuxAllowAllUsersEditHelp : Strings.AllowAllUsersEditHelp);
     private readonly ChoiceItem _trayMode = new(L(Strings.TrayModeLabel), [Strings.TrayModeFull, Strings.TrayModeStatus, Strings.TrayModeHidden], 0, 360)
     {
         Help = Strings.TrayModeHelp,
@@ -45,15 +42,22 @@ internal sealed class SettingsDialog : FormDialog
         Help = Strings.DefaultLogLevelHelp,
     };
 
-    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 120) { Help = Strings.LogRetentionHelp };
+    private readonly NumberItem _retention = new(L(Strings.LogRetention), 30, 1, 3650, 120)
+    {
+        Help = CustosEdition.IsLinux ? DesktopStrings.LinuxLogRetentionHelp : Strings.LogRetentionHelp,
+    };
     private readonly NumberItem _historyRetention = new(L(Strings.HistoryRetention), 365, 1, 3650, 120) { Help = Strings.HistoryRetentionHelp };
     private readonly ChoiceItem _priority = new(L(Strings.CopyPriority), [Strings.PriorityLow, Strings.PriorityNormal], 0, 300) { Help = Strings.CopyPriorityHelp };
     private readonly ChoiceItem _language = new(L(Strings.ServiceLanguage), [Strings.LanguageAuto, Strings.LanguageRussian, Strings.LanguageEnglish], 0, 300)
     {
-        Help = Strings.ServiceLanguageHelp,
+        Help = CustosEdition.IsLinux ? DesktopStrings.LinuxServiceLanguageHelp : Strings.ServiceLanguageHelp,
     };
 
     private readonly CheckItem _checkUpdates = new(Strings.CheckUpdates, description: Strings.Format(Strings.CheckUpdatesHelp, CustosInfo.GitHubRepository));
+    private readonly ChoiceItem? _agentChannel;
+    private string _initialAgentChannel = ProgramReleases.StableChannel;
+    private readonly LinuxPackageUpdates? _packageUpdates;
+    private readonly HeadingItem? _agentUpdatesHeading;
     private readonly NoteItem _updatesState = new(string.Empty);
     private readonly ButtonItem _updatesCheck;
     private readonly NoteItem _archiver = new(string.Empty);
@@ -65,44 +69,36 @@ internal sealed class SettingsDialog : FormDialog
     private readonly List<ButtonItem> _connectCloud = [];
     private CloudAppsResult? _cloudAppsResult;
 
-    public SettingsDialog(ServiceMonitor monitor)
+    public SettingsDialog(ServiceMonitor monitor, UiState? ui = null)
         : base(Strings.SettingsTitle, 760, sizable: true)
     {
         _monitor = monitor;
+        _ui = ui;
         _canEdit = monitor.CanEdit;
         _isAdmin = monitor.Status.Hello?.IsAdmin == true;
         bool connected = monitor.IsConnected;
         var failed = (Action<Exception>)(ex => ShowError(ex.Message));
 
-        // The monitoring server (A.3): the connection line of the site, the address and the registration code in one.
-        _serverLine = new TextItem(L(Strings.ServerLineLabel))
+        if (_linux && ui is not null)
         {
-            Placeholder = ConnectionExample,
-            Help = Strings.ServerLineHelp,
-            ActionIcon = "content_paste",
-            ActionTip = Strings.ServerPasteTip,
-            Action = PasteServerLineAsync,
-        };
-        _serverConnect = new ButtonItem("link", Strings.ServerConnectButton, ConnectServerAsync) { Failed = failed };
-        _serverReset = new ButtonItem("link_off", Strings.ServerResetButton, ResetServerAsync, ButtonLook.Outlined) { Failed = failed };
-        Items.Add(new HeadingItem(Strings.SettingsServer));
-        Items.Add(_serverState);
-        Items.Add(_serverLine);
-        Items.Add(new RowItem(_serverConnect, _serverReset));
-        Items.Add(_serverKeys);
-        Items.Add(_allowRemoteEdit);
-        if (!_isAdmin)
-        {
-            Items.Add(new NoteItem(Strings.ServerAdminOnly));
+            _interfaceLanguage = InterfaceLanguage.Choice(ui.InterfaceLanguage);
+            Items.Add(new HeadingItem(Strings.SettingsLook));
+            Items.Add(_interfaceLanguage);
         }
+
+        _ = new MonitorSettingsSection(this, monitor, ShowError);
+        Items.Add(_allowRemoteEdit);
 
         // Section 4: who may change things, what users see, the program password.
         _passwordSet = new ButtonItem("password", Strings.ProgramPasswordSetButton, SetPasswordAsync) { Failed = failed };
         _passwordRemove = new ButtonItem(null, Strings.ProgramPasswordRemoveButton, RemovePasswordAsync, ButtonLook.Outlined) { Failed = failed };
         Items.Add(new HeadingItem(Strings.SettingsRights));
         Items.Add(_allowAll);
-        Items.Add(_trayMode);
-        Items.Add(new HeadingItem(L(Strings.ProgramPasswordLabel), Strings.ProgramPasswordHelp));
+        if (!_linux)
+        {
+            Items.Add(_trayMode);
+        }
+        Items.Add(new HeadingItem(L(Strings.ProgramPasswordLabel), _linux ? DesktopStrings.LinuxProgramPasswordHelp : Strings.ProgramPasswordHelp));
         Items.Add(_passwordState);
         Items.Add(new RowItem(_passwordSet, _passwordRemove));
         if (!_isAdmin)
@@ -120,22 +116,38 @@ internal sealed class SettingsDialog : FormDialog
         // New versions of the program on GitHub, for a computer without a monitoring site.
         _updatesCheck = new ButtonItem("update", Strings.UpdatesCheckNow, CheckUpdatesAsync) { Failed = failed };
         Items.Add(new HeadingItem(Strings.SettingsUpdates));
+        _packageUpdates = LinuxPackageUpdates.AddTo(this, failed);
+        if (_packageUpdates is not null)
+        {
+            _agentUpdatesHeading = new HeadingItem(DesktopStrings.LinuxAgentUpdates);
+            Items.Add(_agentUpdatesHeading);
+        }
         Items.Add(_checkUpdates);
+        if (_linux)
+        {
+            _initialAgentChannel = ProgramReleases.NormalizeChannel(monitor.Snapshot?.Settings.ProgramUpdateChannel);
+            _agentChannel = LinuxPackageUpdates.ChannelChoice(_initialAgentChannel);
+            _agentChannel.OnChange = ShowUpdates;
+            Items.Add(_agentChannel);
+        }
         Items.Add(_updatesState);
         Items.Add(_updatesCheck);
 
         _sevenZipCheck = new ButtonItem("update", Strings.SevenZipCheckButton, CheckSevenZipAsync) { Failed = failed };
         Items.Add(new HeadingItem(Strings.Settings7Zip));
         Items.Add(_archiver);
-        Items.Add(_sevenZipCheck);
-        Items.Add(new NoteItem(CustosEdition.IsLegacy ? Strings.Settings7ZipNoteLegacy : Strings.Settings7ZipNote));
-        _sevenZipCheck.IsEnabled = _isAdmin && connected;
+        if (!_linux)
+        {
+            Items.Add(_sevenZipCheck);
+            Items.Add(new NoteItem(CustosEdition.IsLegacy ? Strings.Settings7ZipNoteLegacy : Strings.Settings7ZipNote));
+            _sevenZipCheck.IsEnabled = _isAdmin && connected;
+        }
 
         // Cloud drives (section 6.3): what this version brings, and the administrator's own applications. The legacy
         // edition has none (CustosEdition).
         _cloudOwn = ButtonItem.Of("apps", Strings.SettingsCloudOwn, () => Safe.Run(EditCloudAppsAsync, failed), ButtonLook.Outlined);
         _cloudOwn.IsEnabled = false;
-        if (!CustosEdition.IsLegacy)
+        if (_supportsCloud)
         {
             Items.Add(new HeadingItem(Strings.SettingsCloud));
             Items.Add(_cloudApps);
@@ -148,10 +160,10 @@ internal sealed class SettingsDialog : FormDialog
         _addAccount = ButtonItem.Of("person_add", Strings.ButtonAdd, () => Safe.Run(AddAccountAsync, failed));
         _addAccount.IsEnabled = _canEdit;
         Items.Add(new HeadingItem(Strings.SettingsAccounts));
-        Items.Add(new NoteItem(Strings.SettingsAccountsNote));
+        Items.Add(new NoteItem(_linux ? DesktopStrings.LinuxAccountsNote : Strings.SettingsAccountsNote));
         Items.Add(_accounts);
         var accountButtons = new List<FormItem> { _addAccount };
-        if (!CustosEdition.IsLegacy)
+        if (_supportsCloud)
         {
             foreach (string kind in CloudNames.Kinds)
             {
@@ -166,10 +178,10 @@ internal sealed class SettingsDialog : FormDialog
         Items.Add(new RowItem([.. accountButtons]));
         if (!_canEdit)
         {
-            Items.Add(new NoteItem(Strings.SettingsReadOnly));
+            Items.Add(new NoteItem(_interfaceLanguage is null ? Strings.SettingsReadOnly : DesktopStrings.LinuxServiceSettingsReadOnly));
         }
 
-        var settings = monitor.Snapshot?.Settings ?? new AgentSettings();
+        var settings = _initialSettings = monitor.Snapshot?.Settings ?? new AgentSettings();
         _logLevel.Load(settings.DefaultLogLevel == LogLevels.Files ? 1 : 0);
         _retention.Value = Math.Clamp(settings.LogRetentionDays, 1, 3650);
         _historyRetention.Value = Math.Clamp(settings.HistoryRetentionDays, 1, 3650);
@@ -192,12 +204,13 @@ internal sealed class SettingsDialog : FormDialog
 
         _allowAll.OnChange = () =>
         {
-            // Turning it on hands out the rights of an administrator: said plainly, and only on «Да».
+            // A task runs with the service's authority, so ask before giving everyone access to editing.
             if (_allowAll.On && !settings.AllowAllUsersEdit)
             {
                 Safe.Run(async () =>
                 {
-                    if (!await Dialogs.Ask(this, Strings.AllowAllUsersEditWarning, Strings.Yes, Strings.No))
+                    if (!await Dialogs.Ask(this, _linux ? DesktopStrings.LinuxAllowAllUsersEditWarning : Strings.AllowAllUsersEditWarning,
+                        Strings.Yes, Strings.No))
                     {
                         _allowAll.Load(false);
                     }
@@ -205,26 +218,102 @@ internal sealed class SettingsDialog : FormDialog
             }
         };
 
-        _serverLine.IsEnabled = _serverConnect.IsEnabled = _isAdmin && connected;
-        OkButton.IsVisible = _canEdit;
-        CancelButton.Content = _canEdit ? Strings.ButtonCancel : Strings.ButtonClose;
+        OkButton.IsVisible = _canEdit || _interfaceLanguage is not null;
+        CancelButton.Content = OkButton.IsVisible ? Strings.ButtonCancel : Strings.ButtonClose;
         ShowAll();
         _monitor.SnapshotChanged += OnSnapshotChanged;
         Closed += (_, _) => _monitor.SnapshotChanged -= OnSnapshotChanged;
-        if (_isAdmin && connected && !CustosEdition.IsLegacy)
+        if (_isAdmin && connected && _supportsCloud)
         {
             Opened += (_, _) => Safe.Run(LoadCloudAppsAsync, ex => _cloudApps.Show(ex.Message, Tone.Error));
         }
     }
 
-    /// <summary>Reads the text of the clipboard; the checks put their own text here.</summary>
-    internal Func<Task<string?>> ClipboardText { get; set; } = () => Task.FromResult<string?>(null);
+    public bool LanguageChanged { get; private set; }
 
     protected override async Task<bool> OkAsync()
+    {
+        if (_interfaceLanguage is null || _ui is null)
+        {
+            return await SaveAgentSettingsAsync() && await SaveAgentChannelAsync();
+        }
+
+        if ((_canEdit && HasAgentChanges() && !await SaveAgentSettingsAsync()) || !await SaveAgentChannelAsync())
+        {
+            return false;
+        }
+
+        if (_packageUpdates?.SaveChannel() == false)
+        {
+            ShowError(DesktopStrings.LinuxUpdateChannelSaveFailed);
+            return false;
+        }
+
+        string? previous = _ui.InterfaceLanguage;
+        string? selected = InterfaceLanguage.Selected(_interfaceLanguage);
+        if (previous == selected)
+        {
+            return true;
+        }
+
+        _ui.InterfaceLanguage = selected;
+        if (!_ui.TrySave())
+        {
+            _ui.InterfaceLanguage = previous;
+            ShowError(DesktopStrings.InterfaceLanguageSaveFailed);
+            return false;
+        }
+
+        LanguageChanged = true;
+        return true;
+    }
+
+    private string SelectedLogLevel => _logLevel.Selected == 1 ? LogLevels.Files : LogLevels.Summary;
+    private string SelectedPriority => _priority.Selected == 1 ? "normal" : "low";
+    private string SelectedLogLanguage => Languages[Math.Max(0, _language.Selected)];
+
+    private bool HasAgentChanges() => !_retention.IsValid || !_historyRetention.IsValid
+        || SelectedLogLevel != _initialSettings.DefaultLogLevel || _retention.Value != _initialSettings.LogRetentionDays
+        || _historyRetention.Value != _initialSettings.HistoryRetentionDays || SelectedPriority != _initialSettings.ProcessPriority
+        || SelectedLogLanguage != _initialSettings.Language || _allowAll.On != _initialSettings.AllowAllUsersEdit
+        || _allowRemoteEdit.On != _initialSettings.AllowRemoteEdit || (_checkUpdates.IsEnabled && _checkUpdates.On != _initialSettings.CheckUpdates);
+
+    private async Task<bool> SaveAgentChannelAsync()
+    {
+        if (_agentChannel is not { IsEnabled: true } choice)
+        {
+            return true;
+        }
+
+        string channel = LinuxPackageUpdates.SelectedChannel(choice);
+        if (channel == _initialAgentChannel)
+        {
+            return true;
+        }
+
+        var result = await _monitor.RequestAsync(PipeProtocol.Methods.ProgramChannelSet, new ProgramChannelRequest { Channel = channel },
+            IpcJsonContext.Default.ProgramChannelRequest, IpcJsonContext.Default.OkResult);
+        if (!result.Ok)
+        {
+            ShowError(result.Message ?? Strings.ProblemNoAnswer);
+            return false;
+        }
+
+        _initialAgentChannel = channel;
+        return true;
+    }
+
+    private async Task<bool> SaveAgentSettingsAsync()
     {
         if (_monitor.Snapshot?.Settings is not { } current)
         {
             ShowError(Strings.ProblemNoConnection);
+            return false;
+        }
+
+        if (!_monitor.CanEdit)
+        {
+            ShowError(Strings.SettingsReadOnly);
             return false;
         }
 
@@ -237,19 +326,37 @@ internal sealed class SettingsDialog : FormDialog
         // A copy: the snapshot keeps what the service said until it says otherwise.
         var json = IpcJsonContext.Default.AgentSettings;
         var settings = System.Text.Json.JsonSerializer.Deserialize(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(current, json), json)!;
-        settings.DefaultLogLevel = _logLevel.Selected == 1 ? LogLevels.Files : LogLevels.Summary;
-        settings.LogRetentionDays = _retention.Value;
-        settings.HistoryRetentionDays = _historyRetention.Value;
-        settings.ProcessPriority = _priority.Selected == 1 ? "normal" : "low";
-        settings.Language = Languages[Math.Max(0, _language.Selected)];
-        settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.Selected)];
-        settings.AllowAllUsersEdit = _allowAll.On;
-        settings.AllowRemoteEdit = _allowRemoteEdit.On;
-        settings.CheckUpdates = _checkUpdates.On;
-        await _monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
+        settings.DefaultLogLevel = Edited(SelectedLogLevel, _initialSettings.DefaultLogLevel, current.DefaultLogLevel);
+        settings.LogRetentionDays = Edited(_retention.Value, _initialSettings.LogRetentionDays, current.LogRetentionDays);
+        settings.HistoryRetentionDays = Edited(_historyRetention.Value, _initialSettings.HistoryRetentionDays, current.HistoryRetentionDays);
+        settings.ProcessPriority = Edited(SelectedPriority, _initialSettings.ProcessPriority, current.ProcessPriority);
+        settings.Language = Edited(SelectedLogLanguage, _initialSettings.Language, current.Language);
+        if (!_linux)
+        {
+            settings.TrayMode = TrayModeValues[Math.Max(0, _trayMode.Selected)];
+        }
+
+        settings.AllowAllUsersEdit = Edited(_allowAll.On, _initialSettings.AllowAllUsersEdit, current.AllowAllUsersEdit);
+        settings.AllowRemoteEdit = Edited(_allowRemoteEdit.On, _initialSettings.AllowRemoteEdit, current.AllowRemoteEdit);
+        if (_checkUpdates.IsEnabled)
+        {
+            settings.CheckUpdates = Edited(_checkUpdates.On, _initialSettings.CheckUpdates, current.CheckUpdates);
+        }
+        var result = await _monitor.RequestAsync(PipeProtocol.Methods.SettingsSave, new SettingsSaveRequest { Settings = settings },
             IpcJsonContext.Default.SettingsSaveRequest, IpcJsonContext.Default.OkResult);
-        return true;
+        if (!result.Ok)
+        {
+            ShowError(result.Message ?? Strings.ProblemNoAnswer);
+        }
+        else
+        {
+            _initialSettings = settings;
+        }
+        return result.Ok;
     }
+
+    private T Edited<T>(T selected, T initial, T current) =>
+        _interfaceLanguage is not null && EqualityComparer<T>.Default.Equals(selected, initial) ? current : selected;
 
     private static string L(string label) => label.TrimEnd(':', ' ');
 
@@ -274,7 +381,6 @@ internal sealed class SettingsDialog : FormDialog
     {
         FillAccounts();
         ShowPassword();
-        ShowServer();
         ShowUpdates();
         ShowArchiver();
     }
@@ -285,19 +391,45 @@ internal sealed class SettingsDialog : FormDialog
     {
         var update = _monitor.Snapshot?.ProgramUpdate ?? new ProgramUpdateInfo();
         bool site = update.ManagedBySite;
+        _checkUpdates.IsVisible = _updatesCheck.IsVisible = !update.ManagedByPackage;
+        if (_agentUpdatesHeading is not null)
+        {
+            _agentUpdatesHeading.IsVisible = !update.ManagedByPackage;
+        }
+
+        bool pendingChannel = false;
+        if (_agentChannel is not null)
+        {
+            _agentChannel.IsVisible = update.Channel is not null;
+            _agentChannel.IsEnabled = update.Channel is not null && _canEdit && _isAdmin && !update.Installing;
+            pendingChannel = _agentChannel.IsEnabled && LinuxPackageUpdates.SelectedChannel(_agentChannel) != update.Channel;
+        }
+
+        if (update.ManagedByPackage)
+        {
+            _checkUpdates.IsEnabled = _updatesCheck.IsEnabled = false;
+            _updatesState.Show(_packageUpdates is null ? Messages.ProgramManagedByPackage : null, Tone.Plain);
+            return;
+        }
         _checkUpdates.IsEnabled = _canEdit && _isAdmin && !site;
 
         // Off (or a site decides): a check would show nowhere, so there is nothing to press.
-        _updatesCheck.IsEnabled = _isAdmin && _monitor.IsConnected && update.Checking;
+        _updatesCheck.IsEnabled = _isAdmin && _monitor.IsConnected && update.Checking && !pendingChannel;
         if (site)
         {
             _updatesState.Show(Strings.UpdatesManagedBySite, Tone.Plain);
             return;
         }
 
+        if (pendingChannel)
+        {
+            _updatesState.Show(DesktopStrings.LinuxUpdateSaveAgentChannel, Tone.Plain);
+            return;
+        }
+
         string found = update.Error
             ?? (update.Latest is null ? Strings.UpdatesNone
-                : update.Available ? Strings.Format(Strings.UpdatesAvailable, update.Latest)
+                : update.Available ? Strings.Format(update.Prerelease ? DesktopStrings.LinuxUpdatePreviewAvailable : Strings.UpdatesAvailable, update.Latest)
                 : Strings.Format(Strings.UpdatesLatest, CustosInfo.Version));
         _updatesState.Show(!update.Checking ? Strings.UpdatesOff
             : update.CheckedAt is { } at ? Strings.Format(Strings.UpdatesLastCheck, Describe.Time(at), found)
@@ -322,6 +454,14 @@ internal sealed class SettingsDialog : FormDialog
     private void ShowArchiver()
     {
         var snapshot = _monitor.Snapshot;
+        if (_linux)
+        {
+            string version = Strings.Format(DesktopStrings.LinuxArchiverVersion, snapshot?.SevenZipVersion ?? "—");
+            _archiver.Show(snapshot?.SevenZipProblem is null ? version : DesktopStrings.LinuxArchiverProblem,
+                snapshot?.SevenZipProblem is null ? Tone.Plain : Tone.Caution);
+            return;
+        }
+
         _archiver.Show(snapshot?.SevenZipProblem is { } problem ? Strings.Format(Strings.Settings7ZipProblem, problem)
             : Strings.Format(Strings.Settings7ZipVersion, snapshot?.SevenZipVersion ?? "—"), snapshot?.SevenZipProblem is null ? Tone.Plain : Tone.Caution);
     }
@@ -402,97 +542,10 @@ internal sealed class SettingsDialog : FormDialog
         await Dialogs.Show(this, Strings.ProgramPasswordRemoved);
     }
 
-    /// <summary>The state of the connection to the monitoring server, the fingerprints and the reports waiting.</summary>
-    private void ShowServer()
-    {
-        var server = _monitor.Snapshot?.Server ?? new ServerLinkInfo();
-        string state = ServerLink.StateText(server.State);
-        if (server.ServerName is { Length: > 0 } name && server.State is ServerLinkStates.Approved or ServerLinkStates.Pending)
-        {
-            state += " " + Strings.Format(Strings.ServerNamed, name);
-        }
-
-        bool fine = server.State is ServerLinkStates.Approved or ServerLinkStates.Off or ServerLinkStates.Pending or ServerLinkStates.Connecting;
-        _serverState.Show(server.Detail is { } detail ? state.TrimEnd('.') + ": " + detail : state, fine ? Tone.Plain : Tone.Caution);
-
-        // The line itself is not shown again (it holds the code): the address it gave is.
-        var lines = new List<string>();
-        if (server.ServerUrl is { } address)
-        {
-            lines.Add(Strings.Format(Strings.ServerAddress, address));
-        }
-
-        lines.Add(Strings.Format(Strings.ServerFingerprints, server.ServerFingerprint ?? "—", server.AgentFingerprint ?? "—"));
-        if (server.LastContact is { } contact)
-        {
-            lines.Add(Strings.Format(Strings.ServerLastContact, contact.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)));
-        }
-
-        if (server.Waiting > 0)
-        {
-            lines.Add(Strings.Format(Strings.ServerWaiting, server.Waiting));
-        }
-
-        _serverKeys.Show(string.Join(Environment.NewLine, lines), Tone.Plain);
-        _serverReset.IsEnabled = _isAdmin && _monitor.IsConnected && server.ServerUrl is not null;
-    }
-
-    /// <summary>
-    /// The button in the field: the line copied on the site replaces what the field holds. Of several lines the first
-    /// one with text is taken, so a line copied together with its line break fits too.
-    /// </summary>
-    private async Task PasteServerLineAsync()
-    {
-        string? text = Clipboard is { } clipboard ? await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard) : await ClipboardText();
-        string? line = text?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
-        if (string.IsNullOrEmpty(line))
-        {
-            _serverLine.Error = Strings.ServerPasteEmpty;
-            return;
-        }
-
-        _serverLine.Text = line;
-    }
-
-    /// <summary>«Подключить»: the connection line goes to the service, which registers.</summary>
-    private async Task ConnectServerAsync()
-    {
-        string line = _serverLine.Text.Trim();
-        if (line.Length == 0)
-        {
-            _serverLine.Error = Strings.ServerLineRequired;
-            return;
-        }
-
-        if (!RegistrationCode.TrySplitConnection(line, out string url, out string code) || RegistrationCode.TryParse(code, out _) is null)
-        {
-            _serverLine.Error = Strings.Format(Strings.ServerLineBad, ConnectionExample);
-            return;
-        }
-
-        await _monitor.RequestAsync(PipeProtocol.Methods.ServerConnect, new ServerConnectRequest { ServerUrl = url, Code = code },
-            IpcJsonContext.Default.ServerConnectRequest, IpcJsonContext.Default.OkResult);
-        _serverLine.Load(string.Empty);
-        await Dialogs.Show(this, Strings.ServerConnectDone);
-    }
-
-    /// <summary>«Сбросить привязку к серверу» (A.3): local, administrators only.</summary>
-    private async Task ResetServerAsync()
-    {
-        string server = _monitor.Snapshot?.Server.ServerHost ?? "?";
-        if (!await Dialogs.Ask(this, Strings.Format(Strings.ServerResetConfirm, server), Strings.Yes, Strings.No))
-        {
-            return;
-        }
-
-        await _monitor.RequestAsync(PipeProtocol.Methods.ServerReset, EmptyRequest.Instance,
-            IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.OkResult);
-    }
-
     private void FillAccounts()
     {
         var snapshot = _monitor.Snapshot;
-        string[] kinds = [.. CredentialDialog.Kinds, .. CloudNames.Kinds];
+        string[] kinds = _supportsCloud ? [.. CredentialDialog.Kinds, .. CloudNames.Kinds] : CredentialDialog.Kinds;
         var shown = (snapshot?.Credentials ?? [])
             .Where(c => Array.IndexOf(kinds, c.Kind) >= 0)
             .OrderBy(c => Array.IndexOf(kinds, c.Kind))
@@ -514,7 +567,7 @@ internal sealed class SettingsDialog : FormDialog
     private async Task AddAccountAsync()
     {
         var dialog = new CredentialDialog(_monitor, null, null);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     /// <summary>A new password of an account; an account of a cloud drive is connected again in the browser.</summary>
@@ -527,14 +580,14 @@ internal sealed class SettingsDialog : FormDialog
         }
 
         var dialog = new CredentialDialog(_monitor, account, account.Kind);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     /// <summary>Connects a new account of a cloud drive, or an existing one again.</summary>
     private async Task ConnectCloudAsync(string kind, Credential? existing)
     {
         var dialog = new CloudConnectDialog(_monitor, kind, existing);
-        await dialog.ShowAsync(this);
+        await dialog.ShowAsync(this, _monitor);
     }
 
     private async Task DeleteAccountAsync(Credential account)
@@ -567,7 +620,7 @@ internal sealed class SettingsDialog : FormDialog
         }
 
         var dialog = new CloudAppsDialog(_monitor, current);
-        if (await dialog.ShowAsync(this))
+        if (await dialog.ShowAsync(this, _monitor))
         {
             current.Own = dialog.Entered();
         }

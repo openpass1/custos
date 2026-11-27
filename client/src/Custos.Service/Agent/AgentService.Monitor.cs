@@ -134,7 +134,7 @@ internal sealed partial class AgentService : IMonitorHost
         }
 
         string? old = _config.GetSettings().ServerUrl;
-        bool newServer = !string.Equals(old, normalized, StringComparison.OrdinalIgnoreCase);
+        bool newServer = !MonitorClient.HaveSameServerUrl(old, normalized);
         _config.SetServerUrl(normalized);
         link.Connect(code.Trim(), newServer);
         Log(LogLineLevels.Info, Messages.Format(Messages.MonitorConnectedBy, normalized, user));

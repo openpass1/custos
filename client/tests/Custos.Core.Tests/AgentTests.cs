@@ -3,6 +3,7 @@ using Custos.Core.Agent;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Text;
+using Custos.Core.Updates;
 
 namespace Custos.Core.Tests;
 
@@ -201,6 +202,26 @@ public sealed class ConfigStoreTests : IDisposable
         Assert.Equal(30, reloaded.GetSettings().LogRetentionDays);
         Assert.Equal(730, reloaded.GetSettings().HistoryRetentionDays);
         Assert.Equal(LogLevels.Files, reloaded.GetSettings().DefaultLogLevel);
+    }
+
+    [Fact]
+    public void The_standalone_update_channel_survives_settings_and_monitor_changes()
+    {
+        Assert.True(_store.TrySetProgramUpdateChannel(ProgramReleases.PreviewChannel));
+        _store.SaveSettings(new AgentSettings { LogRetentionDays = 30 });
+        _store.SetServerUrl("https://monitor.example");
+        Assert.False(_store.TrySetProgramUpdateChannel(ProgramReleases.StableChannel));
+        using var changes = System.Text.Json.JsonDocument.Parse("""{"program_update_channel":"stable","history_retention_days":730}""");
+        Assert.Equal(["history_retention_days"], _store.UpdateSettingsFromServer(changes.RootElement));
+        _store.SetServerUrl(null);
+
+        var reloaded = new ConfigStore(_temp.Combine("config"), new ReversingProtector());
+        reloaded.Load();
+        Assert.Equal(ProgramReleases.PreviewChannel, reloaded.GetSettings().ProgramUpdateChannel);
+        Assert.Equal(30, reloaded.GetSettings().LogRetentionDays);
+        Assert.Equal(730, reloaded.GetSettings().HistoryRetentionDays);
+        Assert.True(reloaded.TrySetProgramUpdateChannel(ProgramReleases.StableChannel));
+        Assert.Equal(ProgramReleases.StableChannel, reloaded.GetSettings().ProgramUpdateChannel);
     }
 
     /// <summary>Not encryption, but enough to see that the stored text is not the password.</summary>

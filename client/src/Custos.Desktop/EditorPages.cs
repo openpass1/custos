@@ -233,7 +233,10 @@ internal sealed class BasicPage : EditorPage
 
         task.Name = name;
         task.Enabled = _enabled.On;
-        task.BackupType = Type;
+        if (Type != BackupTypes.Incremental || task.BackupType is BackupTypes.Full or BackupTypes.Differential or BackupTypes.Mirror)
+        {
+            task.BackupType = Type;
+        }
         task.MirrorMode = task.BackupType == BackupTypes.Mirror ? _mirrorSafe.On ? MirrorModes.Safe : MirrorModes.Exact : null;
         if (task.BackupType == BackupTypes.Mirror && _mirrorSafe.On)
         {
@@ -242,8 +245,13 @@ internal sealed class BasicPage : EditorPage
 
         task.ForceFull.EveryRuns = _forceEvery.On ? _forceEveryRuns.Value : 0;
         task.ForceFull.Weekday = _forceWeekday.On ? _weekday.Selected + 1 : null;
-        task.ForceFull.MonthDay = _forceMonthDay.On ? (_monthDay.Selected == MonthDays.LastNumber ? -1 : _monthDay.Selected + 1) : null;
-        task.Comment = _comment.Text.Trim();
+        task.ForceFull.MonthDay = _forceMonthDay.On ? (_monthDay.Selected == MonthDays.LastNumber
+            ? task.ForceFull.MonthDay == 31 ? 31 : -1
+            : _monthDay.Selected + 1) : null;
+        if (!string.Equals(task.Comment, _comment.Text, StringComparison.Ordinal))
+        {
+            task.Comment = _comment.Text.Trim();
+        }
         return null;
     }
 
@@ -305,7 +313,8 @@ internal sealed class SourcesPage : EditorPage
     private readonly ButtonItem _add;
     private readonly ButtonItem _addLinux;
     private readonly NoteItem _remoteNote;
-    private readonly SwitchItem _keepTopDir = new(Strings.KeepTopDir, Lines(Strings.KeepTopDirHelp));
+    private readonly SwitchItem _keepTopDir = new(Strings.KeepTopDir,
+        Lines(Core.CustosEdition.IsLinux ? DesktopStrings.LinuxKeepTopDirHelp : Strings.KeepTopDirHelp));
     private readonly TextItem _exclude = new(L(Strings.FilterExclude), width: 500) { Hint = Strings.FilterExcludeHelp };
     private readonly TextItem _excludeDirs;
     private readonly CheckItem _skipHidden = new(Strings.SkipHidden);
@@ -371,12 +380,23 @@ internal sealed class SourcesPage : EditorPage
         task.Sources = [.. _sources];
         task.Layout.KeepTopDir = _keepTopDir.On;
         var filters = task.Filters;
-        filters.Exclude = Masks(_exclude.Text);
-        filters.ExcludeDirs = Masks(_excludeDirs.Text);
+        if (!string.Equals(_exclude.Text, string.Join("; ", filters.Exclude), StringComparison.Ordinal))
+        {
+            filters.Exclude = Masks(_exclude.Text);
+        }
+
+        if (!string.Equals(_excludeDirs.Text, string.Join(Environment.NewLine, filters.ExcludeDirs), StringComparison.Ordinal))
+        {
+            filters.ExcludeDirs = Masks(_excludeDirs.Text);
+        }
         filters.SkipHidden = _skipHidden.On;
         filters.SkipSystem = _skipSystem.On;
         filters.SkipTemp = _skipTemp.On;
-        filters.Include = Masks(_include.Text);
+        if (!string.Equals(_include.Text, string.Join("; ", filters.Include), StringComparison.Ordinal))
+        {
+            filters.Include = Masks(_include.Text);
+        }
+
         return null;
     }
 
@@ -415,7 +435,7 @@ internal sealed class SourcesPage : EditorPage
             return new CardItem("dns", DesktopStrings.LinuxServer + " " + source.Host, source.Path + " · " + key) { Edit = edit, Delete = delete };
         }
 
-        bool network = source.Kind == SourceKinds.Unc || source.Path.StartsWith(@"\\", StringComparison.Ordinal);
+        bool network = source.Kind == SourceKinds.Unc || SourceDialog.IsNetworkPath(source.Path);
         string subtitle = source.Kind == SourceKinds.File ? Strings.SourceFile
             : source.Recursive ? Strings.SourceRecursive
             : Strings.Format(Strings.CardNotRecursive, network ? Strings.SourceNetwork : Strings.SourceFolder);
@@ -449,7 +469,7 @@ internal sealed class SourcesPage : EditorPage
 
         Context.HasRemoteSource = remote;
         Context.Reads = (_sources.Count > 0,
-            _sources.Any(s => s.Kind is SourceKinds.Folder or SourceKinds.File && !s.Path.StartsWith(@"\\", StringComparison.Ordinal)));
+            _sources.Any(s => s.Kind is SourceKinds.Folder or SourceKinds.File && !SourceDialog.IsNetworkPath(s.Path)));
     }
 
     private async Task AddLinuxServerAsync()
@@ -666,13 +686,13 @@ internal sealed class DestinationsPage : EditorPage
                 continue;
             }
 
-            if (destination.Kind == DestinationKinds.Usb)
+            if (destination.Kind == DestinationKinds.Usb && !Core.CustosEdition.IsLinux)
             {
                 // The disk is found by its label; a drive letter in the folder would only mislead.
                 destination.Path = DestinationKinds.UsbFolder(destination.Path);
             }
 
-            if (DestinationDialog.Check(destination) is { } problem)
+            if ((task.Enabled || !Core.CustosEdition.IsLinux) && DestinationDialog.Check(destination) is { } problem)
             {
                 return TaskDescriber.Destination(destination) + ": " + problem;
             }
@@ -699,6 +719,10 @@ internal sealed class DestinationsPage : EditorPage
         }
 
         task.Destinations = [.. _destinations];
+        if (Core.CustosEdition.IsLinux)
+        {
+            LinuxEditorPaths.NormalizeShares(task);
+        }
         task.Layout.SeparateFolders = _separate.On;
         if (named)
         {
@@ -900,6 +924,10 @@ internal sealed class SchedulePage : EditorPage
     private readonly InfoItem _preview = new("event_available", string.Empty);
     private bool _loading;
 
+    private ScheduleFields _loadedFields;
+
+    private readonly record struct ScheduleFields(int Type, string Times, string Weekdays, string MonthDays, string Interval, bool CatchUp);
+
     // The interval as loaded: kept as it was when the schedule is not «by timer».
     private int _loadedInterval;
 
@@ -955,6 +983,7 @@ internal sealed class SchedulePage : EditorPage
         _loadedInterval = schedule.IntervalMinutes;
         _interval.Value = schedule.IntervalMinutes > 0 ? schedule.IntervalMinutes : 60;
         _catchUp.On = schedule.CatchUp;
+        _loadedFields = ReadFields();
         _loading = false;
         UpdateFields();
         ShowPreview();
@@ -962,17 +991,42 @@ internal sealed class SchedulePage : EditorPage
 
     public override string? SaveTo(TaskDefinition task)
     {
+        var fields = ReadFields();
+        if (!Context.IsNew && fields == _loadedFields)
+        {
+            return null;
+        }
+
         var (schedule, problem) = Read();
         if (problem is not null)
         {
             return problem;
         }
 
-        // Fields this page does not show are kept.
-        schedule!.ExtensionData = task.Schedule.ExtensionData;
-        task.Schedule = schedule;
+        // Change only what was edited. Old schedules may use an empty weekday filter, 31 for the last day,
+        // or keep options for the other schedule types.
+        var old = task.Schedule;
+        var updated = schedule!;
+        if (Context.IsNew || fields.Type != _loadedFields.Type)
+        {
+            updated.ExtensionData = old.ExtensionData;
+            task.Schedule = updated;
+        }
+        else
+        {
+            old.Times = fields.Times == _loadedFields.Times ? old.Times : updated.Times;
+            old.DaysOfWeek = fields.Weekdays == _loadedFields.Weekdays ? old.DaysOfWeek : updated.DaysOfWeek;
+            old.DaysOfMonth = fields.MonthDays == _loadedFields.MonthDays ? old.DaysOfMonth : updated.DaysOfMonth;
+            old.IntervalMinutes = fields.Interval == _loadedFields.Interval ? old.IntervalMinutes : updated.IntervalMinutes;
+            old.CatchUp = updated.CatchUp;
+        }
+
         return null;
     }
+
+    private ScheduleFields ReadFields() => new(_type.Selected, _times.Text,
+        string.Concat(_days.Chips.Select(chip => chip.On ? '1' : '0')),
+        string.Concat(_monthDays.Chips.Select(chip => chip.On ? '1' : '0')), _interval.Text, _catchUp.On);
 
     private string SelectedType => Types[Math.Clamp(_type.Selected, 0, Types.Length - 1)];
 
@@ -1073,6 +1127,11 @@ internal sealed class ArchivePage : EditorPage
 {
     // Volume sizes in MB as 7-Zip offers them: CD, the FAT32 limit, DVD.
     private static readonly int[] VolumePresets = [700, 4095, 4480];
+
+    private ArchiveFields _loadedFields;
+
+    private readonly record struct ArchiveFields(string Format, int Level, bool Split, int Volume, string Size,
+        bool Encrypt, bool EncryptNames, string? PasswordId);
 
     private readonly NoteItem _mirrorNote;
     private readonly RadioGroup _formats = new();
@@ -1179,6 +1238,7 @@ internal sealed class ArchivePage : EditorPage
         _encrypt.On = archive.Encrypt;
         _encryptNames.Load(archive.EncryptNames);
         _passwordId = archive.PasswordCredentialId;
+        _loadedFields = ReadFields();
         _verifyRuns.Value = task.Verify.EveryRuns;
         _verifyDays.Value = task.Verify.StoredEveryDays;
         ShowPasswordState();
@@ -1194,15 +1254,18 @@ internal sealed class ArchivePage : EditorPage
         }
 
         var archive = task.Archive;
-        archive.Format = Context.IsMirror ? ArchiveFormats.None : SelectedFormat;
-        archive.Level = Math.Max(0, _level.Selected);
-        archive.SplitMb = _sevenZip.On && _split.On
-            ? _volume.Selected < VolumePresets.Length ? VolumePresets[Math.Max(0, _volume.Selected)] : _volumeMb.Value
-            : 0;
-        bool packed = archive.Format != ArchiveFormats.None;
-        archive.Encrypt = packed && _encrypt.On;
-        archive.EncryptNames = archive.Encrypt && _sevenZip.On && _encryptNames.On;
-        archive.PasswordCredentialId = archive.Encrypt ? _passwordId : archive.PasswordCredentialId;
+        if (Context.IsNew || ReadFields() != _loadedFields || Context.IsMirror && archive.Format != ArchiveFormats.None)
+        {
+            archive.Format = Context.IsMirror ? ArchiveFormats.None : SelectedFormat;
+            archive.Level = Math.Max(0, _level.Selected);
+            archive.SplitMb = _sevenZip.On && _split.On
+                ? _volume.Selected < VolumePresets.Length ? VolumePresets[Math.Max(0, _volume.Selected)] : _volumeMb.Value
+                : 0;
+            bool packed = archive.Format != ArchiveFormats.None;
+            archive.Encrypt = packed && _encrypt.On;
+            archive.EncryptNames = archive.Encrypt && _sevenZip.On && _encryptNames.On;
+            archive.PasswordCredentialId = archive.Encrypt ? _passwordId : archive.PasswordCredentialId;
+        }
         task.Verify.EveryRuns = _verifyRuns.Value;
         task.Verify.StoredEveryDays = _verifyDays.Value;
 
@@ -1211,7 +1274,7 @@ internal sealed class ArchivePage : EditorPage
             return Strings.Format(Strings.ArchiveSevenZipNeedsSeek, TaskDescriber.Destination(stream));
         }
 
-        if (archive.Encrypt && !HasPassword())
+        if (archive.Format is ArchiveFormats.Zip or ArchiveFormats.SevenZip && archive.Encrypt && !HasPassword())
         {
             return Strings.ArchivePasswordRequired;
         }
@@ -1220,6 +1283,9 @@ internal sealed class ArchivePage : EditorPage
     }
 
     private string SelectedFormat => _zip.On ? ArchiveFormats.Zip : _sevenZip.On ? ArchiveFormats.SevenZip : ArchiveFormats.None;
+
+    private ArchiveFields ReadFields() => new(SelectedFormat, _level.Selected, _split.On, _volume.Selected, _volumeMb.Text,
+        _encrypt.On, _encryptNames.On, _passwordId);
 
     private void UpdateControls()
     {
@@ -1348,7 +1414,10 @@ internal sealed class RetentionPage : EditorPage
         }
 
         var retention = task.Retention;
-        retention.Mode = _byCount.On ? RetentionModes.Count : _byAge.On ? RetentionModes.Age : _gfs.On ? RetentionModes.Gfs : RetentionModes.None;
+        if (!_keepAll.On || retention.Mode is RetentionModes.Count or RetentionModes.Age or RetentionModes.Gfs)
+        {
+            retention.Mode = _byCount.On ? RetentionModes.Count : _byAge.On ? RetentionModes.Age : _gfs.On ? RetentionModes.Gfs : RetentionModes.None;
+        }
         retention.KeepFull = _keepFull.Value;
         if (_byAge.On)
         {
@@ -1544,12 +1613,15 @@ internal sealed class AdvancedPage : EditorPage
 {
     private static readonly string[] Levels = [LogLevels.Inherit, LogLevels.Summary, LogLevels.Files];
 
-    private readonly SwitchItem _vss = new(Strings.VssEnabled, Strings.VssHelp);
+    private readonly SwitchItem _vss = Core.CustosEdition.IsLinux
+        ? new(DesktopStrings.LinuxSnapshotEnabled, DesktopStrings.LinuxSnapshotHelp)
+        : new(Strings.VssEnabled, Strings.VssHelp);
     private readonly NoteItem _vssNote;
     private readonly ChoiceItem _vssFailure = new(L(Strings.VssOnFailure), [Strings.VssAbort, Strings.VssContinue], 0, 420);
     private readonly NumberItem _retries = new(L(Strings.ReadRetries), 1, 0, 5, 200) { Hint = Strings.ReadRetriesHelp };
     private readonly NoteItem _retriesNote;
-    private readonly CheckItem _acl = new(Strings.PreserveAcl, description: Strings.PreserveAclHelp);
+    private readonly CheckItem _acl = new(Core.CustosEdition.IsLinux ? DesktopStrings.LinuxFilePermissions : Strings.PreserveAcl,
+        description: Strings.PreserveAclHelp);
     private readonly NoteItem _aclNote;
     private readonly ChoiceItem _logLevel = new(L(Strings.LogLevel), [Strings.LogLevelInherit, Strings.LogLevelSummary, Strings.LogLevelFiles], 0, 420);
     private readonly NumberItem _priority = new(L(Strings.Priority), 0, -100, 100, 200) { Hint = Strings.PriorityHelp };
@@ -1597,10 +1669,16 @@ internal sealed class AdvancedPage : EditorPage
         }
 
         task.Vss.Enabled = _vss.On;
-        task.Vss.OnFailure = _vssFailure.Selected == 1 ? VssFailureActions.Continue : VssFailureActions.Abort;
+        if (_vssFailure.Selected == 1 || task.Vss.OnFailure == VssFailureActions.Continue)
+        {
+            task.Vss.OnFailure = _vssFailure.Selected == 1 ? VssFailureActions.Continue : VssFailureActions.Abort;
+        }
         task.Copy.ReadRetries = _retries.Value;
         task.Copy.PreserveAcl = _acl.On;
-        task.LogLevel = Levels[Math.Max(0, _logLevel.Selected)];
+        if (_logLevel.Selected > 0 || Levels.Contains(task.LogLevel, StringComparer.Ordinal))
+        {
+            task.LogLevel = Levels[Math.Max(0, _logLevel.Selected)];
+        }
         task.Priority = _priority.Value;
         return null;
     }
@@ -1627,7 +1705,7 @@ internal sealed class AdvancedPage : EditorPage
         string? acl = remote ? Strings.AdvancedAclRemote
             : Context.ArchiveFormat != ArchiveFormats.None ? Strings.AdvancedAclArchive
             : Context.KeepsNtfs ? null
-            : Strings.AdvancedAclNoNtfs;
+            : Core.CustosEdition.IsLinux ? DesktopStrings.LinuxNoFilePermissions : Strings.AdvancedAclNoNtfs;
         _acl.IsEnabled = acl is null;
         _aclNote.Show(acl);
     }

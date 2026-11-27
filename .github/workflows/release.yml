@@ -15,7 +15,8 @@ name: Release
 # carries only the files of the systems ticked when it is run: a fix for the Mac alone is a release with the Mac files
 # only. Each program and the monitoring site look for their own package and pass over a release without it. CUSTOS for
 # macOS is built on a Mac of GitHub by client/mac/build-mac.sh, CUSTOS for Linux on an x86_64 and an ARM machine of
-# GitHub by client/linux/build-linux.sh.
+# GitHub by client/linux/build-linux.sh. Include the Linux desktop packages on those runners unless Linux desktop is
+# unchecked. The agent archives and the Monitor update ZIP keep their own names.
 #
 # A pull request that changes this file or release-notes.sh builds every part with a test version and publishes
 # nothing. The changelogs themselves are checked by changelog.yml.
@@ -40,7 +41,11 @@ on:
         type: boolean
         default: true
       linux:
-        description: 'Client: files for Linux'
+        description: 'Client: Linux agent and update package'
+        type: boolean
+        default: true
+      linux_desktop:
+        description: 'Client: include desktop .deb, .rpm and GUI archive when Linux is selected'
         type: boolean
         default: true
   pull_request:
@@ -64,6 +69,7 @@ jobs:
       windows: ${{ steps.check.outputs.windows }}
       macos: ${{ steps.check.outputs.macos }}
       linux: ${{ steps.check.outputs.linux }}
+      linux_desktop: ${{ steps.check.outputs.linux_desktop }}
       legacy: ${{ steps.check.outputs.legacy }}
       server: ${{ steps.check.outputs.server }}
       version: ${{ steps.check.outputs.version }}
@@ -81,6 +87,7 @@ jobs:
           WINDOWS: ${{ inputs.windows }}
           MACOS: ${{ inputs.macos }}
           LINUX: ${{ inputs.linux }}
+          LINUX_DESKTOP: ${{ inputs.linux_desktop }}
         run: |
           set -euo pipefail
           site_version=$(sed -nE "s/.*const VERSION = '([^']+)'.*/\1/p" server/src/App.php)
@@ -91,6 +98,7 @@ jobs:
               echo "windows=true"
               echo "macos=true"
               echo "linux=true"
+              echo "linux_desktop=true"
               echo "legacy=true"
               echo "server=true"
               echo "version=0.0.1"
@@ -129,6 +137,7 @@ jobs:
             echo "windows=$([ "$PART" = client ] && [ "$WINDOWS" = true ] && echo true || echo false)"
             echo "macos=$([ "$PART" = client ] && [ "$MACOS" = true ] && echo true || echo false)"
             echo "linux=$([ "$PART" = client ] && [ "$LINUX" = true ] && echo true || echo false)"
+            echo "linux_desktop=$([ "$PART" = client ] && [ "$LINUX" = true ] && [ "$LINUX_DESKTOP" = true ] && echo true || echo false)"
             echo "legacy=$([ "$PART" = client-legacy ] && echo true || echo false)"
             echo "server=$([ "$PART" = server ] && echo true || echo false)"
             echo "version=$VERSION"
@@ -164,11 +173,11 @@ jobs:
           VERSION: ${{ needs.check.outputs.version }}
           # Built-in cloud drive applications, as in the "Client build" workflow: without them the released program
           # cannot connect Google Drive, Yandex Disk or Dropbox.
-          CUSTOS_GDRIVE_CLIENT_ID: ${{ vars.CUSTOS_GDRIVE_CLIENT_ID }}
-          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ secrets.CUSTOS_GDRIVE_CLIENT_SECRET }}
-          CUSTOS_YADISK_CLIENT_ID: ${{ vars.CUSTOS_YADISK_CLIENT_ID }}
-          CUSTOS_YADISK_CLIENT_SECRET: ${{ secrets.CUSTOS_YADISK_CLIENT_SECRET }}
-          CUSTOS_DROPBOX_CLIENT_ID: ${{ vars.CUSTOS_DROPBOX_CLIENT_ID }}
+          CUSTOS_GDRIVE_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_GDRIVE_CLIENT_ID || '' }}
+          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ github.event_name == 'workflow_dispatch' && secrets.CUSTOS_GDRIVE_CLIENT_SECRET || '' }}
+          CUSTOS_YADISK_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_YADISK_CLIENT_ID || '' }}
+          CUSTOS_YADISK_CLIENT_SECRET: ${{ github.event_name == 'workflow_dispatch' && secrets.CUSTOS_YADISK_CLIENT_SECRET || '' }}
+          CUSTOS_DROPBOX_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_DROPBOX_CLIENT_ID || '' }}
         run: .\build.ps1 -Configuration Release -Version $env:VERSION
 
       - name: Collect the files
@@ -276,8 +285,12 @@ jobs:
       matrix:
         include:
           - arch: x64
+            deb_arch: amd64
+            rpm_arch: x86_64
             runner: ubuntu-24.04
           - arch: arm64
+            deb_arch: arm64
+            rpm_arch: aarch64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
@@ -298,6 +311,44 @@ jobs:
           CUSTOS_GDRIVE_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_GDRIVE_CLIENT_ID || '' }}
           CUSTOS_GDRIVE_CLIENT_SECRET: ${{ github.event_name == 'workflow_dispatch' && secrets.CUSTOS_GDRIVE_CLIENT_SECRET || '' }}
         run: bash client/linux/build-linux.sh "$VERSION" ${{ matrix.arch }} client/artifacts-linux
+
+      - name: Build and check the Linux desktop packages
+        if: needs.check.outputs.linux_desktop == 'true'
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+          DEB_ARCH: ${{ matrix.deb_arch }}
+          RPM_ARCH: ${{ matrix.rpm_arch }}
+          CUSTOS_GDRIVE_CLIENT_ID: ${{ github.event_name == 'workflow_dispatch' && vars.CUSTOS_GDRIVE_CLIENT_ID || '' }}
+          CUSTOS_GDRIVE_CLIENT_SECRET: ${{ github.event_name == 'workflow_dispatch' && secrets.CUSTOS_GDRIVE_CLIENT_SECRET || '' }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y rpm
+          output=client/artifacts-linux
+          CUSTOS_DESKTOP_DEB_VERSION="$VERSION" bash client/linux/build-desktop-deb.sh "$ARCH" "$output" "$VERSION"
+          deb="$output/custos-desktop_${VERSION}_$DEB_ARCH.deb"
+          name="custos-linux-desktop-$VERSION-$ARCH"
+          archive="$output/$name.tar.gz"
+          test "$(dpkg-deb -f "$deb" Version)" = "$VERSION"
+          test "$(dpkg-deb -f "$deb" Architecture)" = "$DEB_ARCH"
+          unpacked=$(mktemp -d "$RUNNER_TEMP/custos-release-desktop.XXXXXX")
+          tar -xzf "$archive" -C "$unpacked"
+          test "$("$unpacked/$name/custos-gui" --version)" = "$VERSION"
+          bash client/linux/build-desktop-rpm.sh "$deb" out-desktop
+          rpm="out-desktop/custos-desktop-$VERSION-1.$RPM_ARCH.rpm"
+          test "$(rpm -qp --qf '%{VERSION}' "$rpm")" = "$VERSION"
+          test "$(rpm -qp --qf '%{ARCH}' "$rpm")" = "$RPM_ARCH"
+          cp "$deb" "$archive" out-desktop/
+
+      - uses: actions/upload-artifact@v6
+        if: needs.check.outputs.linux_desktop == 'true'
+        with:
+          name: release-linux-desktop-${{ matrix.arch }}
+          path: out-desktop/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
 
       - uses: actions/upload-artifact@v6
         with:
@@ -389,8 +440,11 @@ jobs:
       always() && github.event_name == 'workflow_dispatch' && needs.check.result == 'success' &&
       (needs.client.result == 'success' || needs.macos.result == 'success' || needs.linux-package.result == 'success' ||
       needs.legacy.result == 'success' || needs.server.result == 'success') &&
-      needs.client.result != 'failure' && needs.legacy.result != 'failure' && needs.macos.result != 'failure' &&
-      needs.linux-package.result != 'failure' && needs.server.result != 'failure'
+      (needs.check.outputs.windows != 'true' || needs.client.result == 'success') &&
+      (needs.check.outputs.macos != 'true' || needs.macos.result == 'success') &&
+      (needs.check.outputs.linux != 'true' || needs.linux-package.result == 'success') &&
+      (needs.check.outputs.legacy != 'true' || needs.legacy.result == 'success') &&
+      (needs.check.outputs.server != 'true' || needs.server.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -428,8 +482,11 @@ jobs:
               if compgen -G "Custos-*.pkg" > /dev/null; then
                 systems+=(macOS); install+=("macOS: [guide]($blob/client/README.md#macos)")
               fi
-              if compgen -G "custos-linux-*.tar.gz" > /dev/null; then
-                systems+=(Linux); install+=("Linux: [guide]($blob/client/README.md#custos-for-linux)")
+              if [ -f custos-linux-x64.tar.gz ] && [ -f custos-linux-arm64.tar.gz ]; then
+                systems+=(Linux); install+=("[Linux agent guide]($blob/client/README.md#custos-for-linux)")
+              fi
+              if compgen -G "custos-desktop_*.deb" > /dev/null; then
+                install+=("[Linux desktop guide]($blob/client/linux/desktop/README.md)")
               fi
               case ${#systems[@]} in
                 0) echo "::error::No files of any system were built."; exit 1 ;;

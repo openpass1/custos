@@ -25,6 +25,99 @@
   <data name="SettingsAll" xml:space="preserve">
     <value>Все настройки…</value>
   </data>
+  <data name="MonitorChangeServer" xml:space="preserve">
+    <value>Сменить сервер…</value>
+  </data>
+  <data name="MonitorSwitchConfirm" xml:space="preserve">
+    <value>Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.</value>
+  </data>
+  <data name="MonitorConnectionChanged" xml:space="preserve">
+    <value>Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.</value>
+  </data>
+  <data name="InterfaceLanguage" xml:space="preserve">
+    <value>Язык интерфейса</value>
+  </data>
+  <data name="InterfaceLanguageSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить язык интерфейса в ваших настройках CUSTOS.</value>
+  </data>
+  <data name="LinuxServiceSettingsReadOnly" xml:space="preserve">
+    <value>Настройки службы доступны только для просмотра.</value>
+  </data>
+  <data name="LinuxDesktopUpdates" xml:space="preserve">
+    <value>Обновления рабочего стола</value>
+  </data>
+  <data name="LinuxDesktopUpdatesHelp" xml:space="preserve">
+    <value>Скачайте пакет из GitHub Releases и откройте его в пакетном менеджере системы для установки.</value>
+  </data>
+  <data name="LinuxAgentUpdates" xml:space="preserve">
+    <value>Обновления службы</value>
+  </data>
+  <data name="LinuxUpdateChannel" xml:space="preserve">
+    <value>Канал обновлений</value>
+  </data>
+  <data name="LinuxUpdateStable" xml:space="preserve">
+    <value>Стабильный</value>
+  </data>
+  <data name="LinuxUpdatePreview" xml:space="preserve">
+    <value>Предварительный</value>
+  </data>
+  <data name="LinuxUpdateInstalledVersion" xml:space="preserve">
+    <value>Установлен пакет версии {0}.</value>
+  </data>
+  <data name="LinuxUpdateInstalledUnknown" xml:space="preserve">
+    <value>Не удалось прочитать установленную версию в пакетном менеджере системы.</value>
+  </data>
+  <data name="LinuxUpdateNoPackage" xml:space="preserve">
+    <value>на GitHub нет подходящего пакета для этого канала</value>
+  </data>
+  <data name="LinuxUpdateNoNewerPackage" xml:space="preserve">
+    <value>для этого канала нет пакета новее установленного</value>
+  </data>
+  <data name="LinuxUpdatePreviewAvailable" xml:space="preserve">
+    <value>вышла предварительная версия CUSTOS {0}</value>
+  </data>
+  <data name="LinuxUpdateReleaseNotes" xml:space="preserve">
+    <value>О выпуске</value>
+  </data>
+  <data name="LinuxUpdateDownloadPackage" xml:space="preserve">
+    <value>Скачать пакет</value>
+  </data>
+  <data name="LinuxUpdateBrowserFailed" xml:space="preserve">
+    <value>Не удалось открыть GitHub Releases в браузере.</value>
+  </data>
+  <data name="LinuxUpdateChannelSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить канал обновлений рабочего стола.</value>
+  </data>
+  <data name="LinuxUpdateSaveAgentChannel" xml:space="preserve">
+    <value>Сохраните настройки, чтобы сменить канал обновлений службы, затем проверьте ещё раз.</value>
+  </data>
+  <data name="LinuxThemeAuto" xml:space="preserve">
+    <value>Как в системе</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditHelp" xml:space="preserve">
+    <value>По умолчанию выключено. Служба резервного копирования работает от имени root. Каждый, кто может менять задания, может через них читать файлы и выполнять команды от имени root. Восстановление доступно только администраторам.</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditWarning" xml:space="preserve">
+    <value>Разрешить всем локальным пользователям менять задания и запускать их с правами root?</value>
+  </data>
+  <data name="LinuxLogRetentionHelp" xml:space="preserve">
+    <value>Включает ежедневный журнал, журналы отдельных запусков и журнал службы в каталоге данных CUSTOS.</value>
+  </data>
+  <data name="LinuxProgramPasswordHelp" xml:space="preserve">
+    <value>Если пароль задан, для редактирования и восстановления он нужен в дополнение к обычным правам. Окно остаётся разблокированным 30 минут после последнего защищённого действия или до закрытия.</value>
+  </data>
+  <data name="LinuxServiceLanguageHelp" xml:space="preserve">
+    <value>Язык журналов запусков и сообщений службы. «Автоматически» использует язык среды службы. Язык интерфейса настраивается отдельно.</value>
+  </data>
+  <data name="LinuxAccountsNote" xml:space="preserve">
+    <value>Служба шифрует пароли и ключи и никогда не показывает их. Учётную запись, используемую в задании, удалить нельзя.</value>
+  </data>
+  <data name="LinuxArchiverVersion" xml:space="preserve">
+    <value>7-Zip (7z.so) версии {0}</value>
+  </data>
+  <data name="LinuxArchiverProblem" xml:space="preserve">
+    <value>Служба резервного копирования не смогла загрузить 7z.so.</value>
+  </data>
   <data name="ThemeHeading" xml:space="preserve">
     <value>Тема</value>
   </data>
@@ -108,5 +201,118 @@
   </data>
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} файлов · {1} · {2}</value>
+  </data>
+  <data name="LinuxCloudAppMissing" xml:space="preserve">
+    <value>Для входа в {0} укажите Client ID собственного приложения, затем продолжите вход в этом окне.</value>
+  </data>
+  <data name="LinuxCloudAppMissingWithSecret" xml:space="preserve">
+    <value>Для входа в {0} укажите Client ID и секрет собственного приложения, затем продолжите вход в этом окне.</value>
+  </data>
+  <data name="LinuxCloudNoLoopback" xml:space="preserve">
+    <value>Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.</value>
+  </data>
+  <data name="LinuxCloudSecretNote" xml:space="preserve">
+    <value>Для Google Диска и Яндекс Диска нужен секрет клиента. Для Dropbox он не нужен.</value>
+  </data>
+  <data name="LinuxCloudYandexSecretRequired" xml:space="preserve">
+    <value>Для Яндекс Диска нужен секрет клиента вместе с Client ID.</value>
+  </data>
+  <data name="LinuxSourcePathHelp" xml:space="preserve">
+    <value>Укажите полный путь Linux, например /home/user/Documents, или сетевую папку SMB вида //nas/share/folder. Агент подключает папки SMB через cifs-utils.</value>
+  </data>
+  <data name="LinuxPathVariables" xml:space="preserve">
+    <value>В локальных путях можно указать %HOME% пользователя, который впервые сохранит задание, а также {computer}, {task}, {yyyy}, {MM} и {dd}.</value>
+  </data>
+  <data name="LinuxErrorLocalPath" xml:space="preserve">
+    <value>«{0}» не является полным локальным путём. Укажите путь вида /home/user/Documents или %HOME%/Documents.</value>
+  </data>
+  <data name="LinuxImportUnsupportedPaths" xml:space="preserve">
+    <value>Отключены задания с путями, несовместимыми с Linux: {0}. Проверьте пути перед включением заданий.</value>
+  </data>
+  <data name="LinuxTaskUnsupportedPaths" xml:space="preserve">
+    <value>В задании есть пути, несовместимые с Linux. Проверьте источники, назначения и пути к утилитам баз данных перед включением.</value>
+  </data>
+  <data name="LinuxRightsEditTasks" xml:space="preserve">
+    <value>управление заданиями</value>
+  </data>
+  <data name="ExportWithSecrets" xml:space="preserve">
+    <value>С паролями и ключами</value>
+  </data>
+  <data name="ExportWithoutSecrets" xml:space="preserve">
+    <value>Без паролей и ключей</value>
+  </data>
+  <data name="LinuxErrorSharePath" xml:space="preserve">
+    <value>Укажите путь SMB вида //сервер/ресурс/папка. Неверный путь: {0}</value>
+  </data>
+  <data name="LinuxErrorVolumeFolder" xml:space="preserve">
+    <value>Укажите папку относительно корня тома, например backups/daily, или оставьте поле пустым для записи в корень.</value>
+  </data>
+  <data name="LinuxSmbAccountHelp" xml:space="preserve">
+    <value>Агент подключит ресурс от выбранной учётной записи, а если она не указана, то как гость.</value>
+  </data>
+  <data name="LinuxDestinationKindHelp" xml:space="preserve">
+    <value>Для локальной папки укажите полный путь Linux, например /mnt/backup, для сетевой папки — //nas/share/folder. USB-диск должен быть смонтирован, агент найдёт его по метке тома.</value>
+  </data>
+  <data name="LinuxUsbLabelHelp" xml:space="preserve">
+    <value>Укажите метку тома смонтированного диска. Команда lsblk -f показывает метки томов.</value>
+  </data>
+  <data name="LinuxUsbFolderHelp" xml:space="preserve">
+    <value>Укажите путь относительно корня тома, например backups/daily.</value>
+  </data>
+  <data name="LinuxKeepTopDirHelp" xml:space="preserve">
+    <value>Включено: /srv/data копируется в &lt;копия&gt;/data/…
+Выключено: содержимое /srv/data копируется прямо в &lt;копия&gt;/…</value>
+  </data>
+  <data name="LinuxSnapshotEnabled" xml:space="preserve">
+    <value>Использовать снимок файловой системы</value>
+  </data>
+  <data name="LinuxSnapshotHelp" xml:space="preserve">
+    <value>Агент может читать локальные источники из снимков LVM, Btrfs или ZFS, если том поддерживает снимки.</value>
+  </data>
+  <data name="LinuxFilePermissions" xml:space="preserve">
+    <value>Сохранять владельцев и права файлов и папок</value>
+  </data>
+  <data name="LinuxNoFilePermissions" xml:space="preserve">
+    <value>Эта настройка применяется при копировании файлов в локальную или сетевую папку либо на USB-диск.</value>
+  </data>
+  <data name="LinuxDbBinDirHelp" xml:space="preserve">
+    <value>Укажите полный путь к папке с утилитами базы данных, например /usr/bin. Нажмите «Найти», чтобы найти локальные установки.</value>
+  </data>
+  <data name="LinuxEventUnitStop" xml:space="preserve">
+    <value>Остановить службу systemd</value>
+  </data>
+  <data name="LinuxEventUnitStart" xml:space="preserve">
+    <value>Запустить службу systemd</value>
+  </data>
+  <data name="LinuxEventHelp" xml:space="preserve">
+    <value>Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.</value>
+  </data>
+  <data name="SystemServiceHeading" xml:space="preserve">
+    <value>Служба CUSTOS</value>
+  </data>
+  <data name="SystemServiceRestart" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="SystemServiceRestartConfirm" xml:space="preserve">
+    <value>Перезапустить службу CUSTOS?</value>
+  </data>
+  <data name="SystemServiceDone" xml:space="preserve">
+    <value>Команда управления службой CUSTOS выполнена.</value>
+  </data>
+  <data name="SystemServiceFailed" xml:space="preserve">
+    <value>Не удалось выполнить команду управления службой CUSTOS.
+{0}</value>
+  </data>
+  <data name="SystemServiceExitCode" xml:space="preserve">
+    <value>systemctl завершился с кодом {0}.</value>
+  </data>
+  <data name="SystemServiceCustomSocket" xml:space="preserve">
+    <value>Для управления службой нужен стандартный сокет CUSTOS. Управляйте агентом с другим сокетом отдельно.</value>
+  </data>
+  <data name="SystemServiceUnavailable" xml:space="preserve">
+    <value>В этой системе нет systemctl. Для установки и управления службой CUSTOS нужна система с systemd.</value>
+  </data>
+  <data name="SystemServiceTimeout" xml:space="preserve">
+    <value>Не удалось вовремя подтвердить выполнение команды. Проверьте состояние службы перед повтором.</value>
   </data>
 </root>

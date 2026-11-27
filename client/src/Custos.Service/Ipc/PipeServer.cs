@@ -61,6 +61,7 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
 
         // A new version of the program runs as SYSTEM.
         PipeProtocol.Methods.ProgramCheck,
+        PipeProtocol.Methods.ProgramChannelSet,
         PipeProtocol.Methods.ProgramUpdate,
     ];
 
@@ -377,7 +378,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                     : method.StartsWith("cloud.", StringComparison.Ordinal) ? Messages.CloudNotAllowed
                     : method is PipeProtocol.Methods.PasswordSet ? Messages.PasswordNotAllowed
                     : method is PipeProtocol.Methods.TasksExport ? Messages.ExportNotAllowed
-                    : method is PipeProtocol.Methods.ProgramCheck or PipeProtocol.Methods.ProgramUpdate ? Messages.ProgramNotAllowed
+                    : method is PipeProtocol.Methods.ProgramCheck or PipeProtocol.Methods.ProgramChannelSet or PipeProtocol.Methods.ProgramUpdate
+                        ? Messages.ProgramNotAllowed
                     : AdminOnlyMethods.Contains(method) ? Messages.RestoreNotAllowed
                     : Messages.NotAllowed;
                 response = PipeMessage.Failure(requestId, PipeProtocol.Errors.Forbidden, refusal);
@@ -491,6 +493,8 @@ internal sealed class PipeServer(ServiceInfo info, AgentService agent, AgentEven
                 PipeMessage.Success(id, agent.TestRemote(request.GetData(json.RemoteTestRequest)), json.RemoteTestResult),
             PipeProtocol.Methods.SettingsSave =>
                 Ok(id, agent.SaveSettings(request.GetData(json.SettingsSaveRequest).Settings, user, identity.IsAdmin)),
+            PipeProtocol.Methods.ProgramChannelSet =>
+                Ok(id, agent.SetProgramChannel(request.GetData(json.ProgramChannelRequest).Channel, user)),
             PipeProtocol.Methods.PasswordSet =>
                 Ok(id, agent.SetProgramPassword(request.GetData(json.PasswordRequest).Password, user)),
             PipeProtocol.Methods.RestoreList =>

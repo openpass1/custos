@@ -35,6 +35,7 @@ internal static partial class Commands
                 "log" => await LogAsync(rest).ConfigureAwait(false),
                 "restore" => await RestoreAsync(rest).ConfigureAwait(false),
                 "cloud" => await CloudAsync(rest).ConfigureAwait(false),
+                "update" => await UpdateAsync(rest).ConfigureAwait(false),
                 "connect" => await ConnectAsync(rest).ConfigureAwait(false),
                 "disconnect" => await DisconnectAsync().ConfigureAwait(false),
                 "version" or "v" => Version(),

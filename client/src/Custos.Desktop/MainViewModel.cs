@@ -37,6 +37,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     private int _historyGeneration;
     private string _serviceText = string.Empty;
     private bool _serviceOk;
+    private bool _systemServiceBusy;
     private string _serverText = string.Empty;
     private string _serverIcon = "cloud_off";
     private string _userText = string.Empty;
@@ -57,6 +58,10 @@ internal sealed class MainViewModel : Observable, IDisposable
         _monitor = monitor;
         _demo = demo;
         _knownTheme = knownTheme;
+        ShowsManagement = DesktopPlatform.Current.SupportsManagement;
+        ShowsSettings = DesktopPlatform.Current.SupportsSettings;
+        ShowsTaskManagement = DesktopPlatform.Current.SupportsTaskManagement;
+        ShowsRestore = DesktopPlatform.Current.SupportsRestore;
         _colorChoice = Palettes.Known(Ui.Color);
         ApplyColor();
         _monitor.StatusChanged += (_, _) => ShowStatus();
@@ -86,6 +91,22 @@ internal sealed class MainViewModel : Observable, IDisposable
     public ServiceMonitor Monitor => _monitor;
 
     public bool IsDemo => _demo;
+
+    public bool ShowsSystemServiceActions => !IsDemo && DesktopPlatform.Current.ControlsSystemService;
+
+    public bool CanControlSystemService => ShowsSystemServiceActions && !SystemServiceBusy;
+
+    public bool SystemServiceBusy
+    {
+        get => _systemServiceBusy;
+        internal set
+        {
+            if (Set(ref _systemServiceBusy, value))
+            {
+                Changed(nameof(CanControlSystemService));
+            }
+        }
+    }
 
     public bool HasSnapshot => _monitor.Snapshot is not null;
 
@@ -218,7 +239,7 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     private void ShowUpdate(ProgramUpdateInfo? update)
     {
-        UpdateVisible = update is { Available: true, Latest: not null };
+        UpdateVisible = ShowsSettings && update is { Available: true, ManagedByPackage: false, Latest: not null };
         if (!UpdateVisible)
         {
             return;
@@ -239,11 +260,27 @@ internal sealed class MainViewModel : Observable, IDisposable
 
     public bool IsConnected => _demo || (_monitor.IsConnected && _monitor.Snapshot is not null);
 
+    public bool ShowsManagement { get; }
+
+    public bool ShowsSettings { get; }
+
+    public bool CanOpenSettings => ShowsSettings && (Core.CustosEdition.IsLinux || IsConnected);
+
+    public bool ShowsTaskManagement { get; }
+
+    public bool ShowsRestore { get; }
+
+    public bool ShowsCobianImport => ShowsTaskManagement && !Core.CustosEdition.IsLinux;
+
     /// <summary>This user may change tasks: an administrator, or everybody when the settings allow it.</summary>
-    public bool CanEdit => _demo || _monitor.CanEdit;
+    public bool CanEdit => ShowsTaskManagement && (_demo || _monitor.CanEdit);
+
+    public bool CanImportTasks => !_demo && CanEdit;
+
+    public bool CanExportTasks => ShowsTaskManagement && !_demo && _monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true;
 
     /// <summary>«Изменение — только для администраторов» next to the toolbar.</summary>
-    public bool ShowAdminsOnly => IsConnected && !CanEdit;
+    public bool ShowAdminsOnly => ShowsTaskManagement && IsConnected && !CanEdit;
 
     public bool CanEditOne => CanEdit && _selection.Count == 1;
 
@@ -278,7 +315,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     public string PauseIcon => IsPaused ? "play_circle" : "pause";
 
     /// <summary>Restoring writes anywhere on the computer: administrators only (section 4).</summary>
-    public bool CanRestore => _demo || (_monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true);
+    public bool CanRestore => ShowsRestore && (_demo || (_monitor.IsConnected && _monitor.Status.Hello?.IsAdmin == true));
 
     /// <summary>The task of <see cref="SelectedTask"/> as the service has it now.</summary>
     public TaskDefinition? SelectedDefinition =>
@@ -334,6 +371,31 @@ internal sealed class MainViewModel : Observable, IDisposable
         else
         {
             _monitor.Start();
+        }
+    }
+
+    public void RefreshLanguage()
+    {
+        ShowStatus();
+        ShowSnapshot();
+        RebuildLog();
+        Changed(nameof(LogLevelText));
+        if (_selected is null)
+        {
+            HistoryNote = Strings.HistorySelectTask;
+        }
+        else if (History.Count > 0)
+        {
+            for (int i = 0; i < History.Count; i++)
+            {
+                History[i] = DescribeRun(History[i].Run);
+            }
+
+            HistoryNote = Strings.Format(DesktopStrings.HistoryCount, _selected.Name, History.Count);
+        }
+        else if (!string.IsNullOrEmpty(HistoryNote))
+        {
+            LoadHistory(force: true);
         }
     }
 
@@ -420,9 +482,7 @@ internal sealed class MainViewModel : Observable, IDisposable
         bool demo = _demo;
         ServiceOk = demo || status.State == ServiceState.Running;
         ServiceText = demo ? Strings.StateRunning : ServiceMonitor.Describe(status.State);
-        UserText = demo ? Strings.Format(Strings.UserWithRights, @"OFFICE\admin", Strings.RightsAdmin)
-            : status.Hello?.User is { } user ? Strings.Format(Strings.UserWithRights, user, _monitor.CanEdit ? Strings.RightsAdmin : Strings.RightsUser)
-            : string.Empty;
+        ShowUserRights();
         EmptyText = status.State switch
         {
             ServiceState.Running => string.Empty,
@@ -435,7 +495,7 @@ internal sealed class MainViewModel : Observable, IDisposable
     /// <summary>Which buttons can be used now: after a change of the connection, the tasks or the selection.</summary>
     private void ShowCommands()
     {
-        foreach (string name in (string[])[nameof(IsConnected), nameof(CanEdit), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
+        foreach (string name in (string[])[nameof(IsConnected), nameof(CanOpenSettings), nameof(CanEdit), nameof(CanImportTasks), nameof(CanExportTasks), nameof(ShowAdminsOnly), nameof(CanEditOne), nameof(CanDelete),
             nameof(CanToggle), nameof(ToggleOn), nameof(ToggleText), nameof(ToggleIcon), nameof(CanRun), nameof(CanStop), nameof(CanPause),
             nameof(IsPaused), nameof(PauseText), nameof(PauseIcon), nameof(CanRestore)])
         {
@@ -446,6 +506,11 @@ internal sealed class MainViewModel : Observable, IDisposable
     private void ShowSnapshot()
     {
         var snapshot = _monitor.Snapshot;
+        if (Core.CustosEdition.IsLinux)
+        {
+            ShowUserRights();
+        }
+
         Changed(nameof(HasSnapshot));
         Changed(nameof(TaskCount));
         if (snapshot is null)
@@ -504,6 +569,21 @@ internal sealed class MainViewModel : Observable, IDisposable
         {
             LoadHistory();
         }
+    }
+
+    private void ShowUserRights()
+    {
+        if (_demo)
+        {
+            UserText = Strings.Format(Strings.UserWithRights, @"OFFICE\admin", Strings.RightsAdmin);
+            return;
+        }
+
+        var hello = _monitor.Status.Hello;
+        string rights = !_monitor.CanEdit ? Strings.RightsUser
+            : Core.CustosEdition.IsLinux && hello?.IsAdmin != true ? DesktopStrings.LinuxRightsEditTasks
+            : Strings.RightsAdmin;
+        UserText = hello?.User is { } user ? Strings.Format(Strings.UserWithRights, user, rights) : string.Empty;
     }
 
     private string? _historyRunSeen;
@@ -789,9 +869,9 @@ internal sealed class MainViewModel : Observable, IDisposable
         Text = line.Text,
     };
 
-    private async void LoadHistory()
+    private async void LoadHistory(bool force = false)
     {
-        if (!_isHistoryTab && _historyTaskId == _selected?.TaskId)
+        if (!force && !_isHistoryTab && _historyTaskId == _selected?.TaskId)
         {
             return;
         }
@@ -821,19 +901,7 @@ internal sealed class MainViewModel : Observable, IDisposable
 
             foreach (var run in result.Runs)
             {
-                History.Add(new HistoryRow
-                {
-                    Run = run,
-                    Started = Describe.Time(run.StartedAt),
-                    Duration = run.FinishedAt is { } finished ? Sizes.FormatDuration(finished - run.StartedAt) : "—",
-                    Type = Words.BackupType(run.BackupType),
-                    Trigger = Words.Trigger(run.Trigger, run.ScheduledFor, run.RequestedBy),
-                    Files = Describe.Number(run.FilesProcessed),
-                    Size = Sizes.Format(run.BytesWritten),
-                    Result = Words.Status(run.Status),
-                    Details = run.ErrorMessage ?? (run.Warnings > 0 ? Strings.Format(Strings.HistoryWarnings, run.Warnings) : Describe.Verify(run.Verify)),
-                    State = Describe.StateOf(run.Status),
-                });
+                History.Add(DescribeRun(run));
             }
 
             HistoryNote = result.Runs.Count == 0 ? Strings.HistoryEmpty : Strings.Format(DesktopStrings.HistoryCount, task.Name, result.Runs.Count);
@@ -846,6 +914,20 @@ internal sealed class MainViewModel : Observable, IDisposable
             }
         }
     }
+
+    private static HistoryRow DescribeRun(RunRecord run) => new()
+    {
+        Run = run,
+        Started = Describe.Time(run.StartedAt),
+        Duration = run.FinishedAt is { } finished ? Sizes.FormatDuration(finished - run.StartedAt) : "—",
+        Type = Words.BackupType(run.BackupType),
+        Trigger = Words.Trigger(run.Trigger, run.ScheduledFor, run.RequestedBy),
+        Files = Describe.Number(run.FilesProcessed),
+        Size = Sizes.Format(run.BytesWritten),
+        Result = Words.Status(run.Status),
+        Details = run.ErrorMessage ?? (run.Warnings > 0 ? Strings.Format(Strings.HistoryWarnings, run.Warnings) : Describe.Verify(run.Verify)),
+        State = Describe.StateOf(run.Status),
+    };
 }
 
 /// <summary>The «Прогресс» tab: the run in progress in detail.</summary>

@@ -12,6 +12,7 @@
     <AssemblyName>custos</AssemblyName>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);CUSTOS_LINUX</DefineConstants>
+    <DefineConstants Condition="'$(CustosPackageManaged)' == 'true'">$(DefineConstants);CUSTOS_PACKAGE_MANAGED</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>

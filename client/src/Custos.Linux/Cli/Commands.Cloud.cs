@@ -72,7 +72,7 @@ internal static partial class Commands
         string? answer;
         if (receiver is null)
         {
-            answer = ReadCloudSecret(LinuxStrings.CliCloudCode);
+            answer = ReadSecret(LinuxStrings.CliCloudCode);
         }
         else
         {
@@ -114,7 +114,7 @@ internal static partial class Commands
         }
 
         var service = CloudService.Of(kind);
-        string? secret = ReadCloudSecret(service.NeedsSecret ? LinuxStrings.CliCloudClientSecret : LinuxStrings.CliCloudClientSecretOptional);
+        string? secret = ReadSecret(service.NeedsSecret ? LinuxStrings.CliCloudClientSecret : LinuxStrings.CliCloudClientSecretOptional);
         if (secret is null || (service.NeedsSecret && string.IsNullOrWhiteSpace(secret)))
         {
             return Fail(LinuxStrings.CliCloudCancelled);
@@ -132,7 +132,7 @@ internal static partial class Commands
         return Done(LinuxStrings.Format(LinuxStrings.CliCloudAppSaved, service.Name));
     }
 
-    private static string? ReadCloudSecret(string prompt)
+    private static string? ReadSecret(string prompt)
     {
         Console.Write(prompt + " ");
         if (Console.IsInputRedirected)

@@ -54,7 +54,7 @@ internal sealed class DbServerDialog : FormDialog
 
         Items.Add(_engine);
         Items.Add(new RowItem(_binDir, find));
-        Items.Add(new NoteItem(Strings.DbBinDirHelp));
+        Items.Add(new NoteItem(CustosEdition.IsLinux ? DesktopStrings.LinuxDbBinDirHelp : Strings.DbBinDirHelp));
         Items.Add(new RowItem(_host, _port));
         Items.Add(_user);
         Items.Add(_password);
@@ -101,6 +101,9 @@ internal sealed class DbServerDialog : FormDialog
     /// <summary>The password to store: "" for none, null to keep the stored one.</summary>
     private string? Password => _noPassword.On ? string.Empty : _password.Text.Length > 0 ? _password.Text : null;
 
+    private bool UsesLocalLogin => CustosEdition.IsLinux && _credential is null && Password is null
+        && _user.Value == DefaultUser(Engine) && _host.Value is "localhost" or "127.0.0.1" or "::1" or "[::1]";
+
     protected override async Task<bool> OkAsync()
     {
         if (Check() is { } problem)
@@ -110,6 +113,13 @@ internal sealed class DbServerDialog : FormDialog
         }
 
         string? password = Password;
+        var server = Build();
+        if (UsesLocalLogin || _credential is { } existing && _user.Value == existing.User && (password is null || password.Length == 0 && !existing.HasSecret))
+        {
+            Server = server;
+            return true;
+        }
+
         if (_credential is null && password is null)
         {
             _password.Error = Strings.ErrorPasswordRequired;
@@ -123,7 +133,6 @@ internal sealed class DbServerDialog : FormDialog
             User = _user.Text.Trim(),
             ExtensionData = _credential?.ExtensionData,
         };
-        var server = Build();
         var result = await _context.Monitor.RequestAsync(PipeProtocol.Methods.CredentialSave, new CredentialInput { Credential = credential, Password = password },
             IpcJsonContext.Default.CredentialInput, IpcJsonContext.Default.CredentialSaveResult);
         _context.RememberCredential(result.Credential);
@@ -161,7 +170,8 @@ internal sealed class DbServerDialog : FormDialog
     private string? Check()
     {
         return _binDir.Value.Length == 0 ? Strings.ErrorDbBinDirRequired
-            : !PathVariables.LooksAbsolute(_binDir.Value) ? Strings.Format(Strings.ErrorPathNotAbsolute, _binDir.Value)
+            : !(CustosEdition.IsLinux ? LinuxEditorPaths.IsLocal(_binDir.Value) : PathVariables.LooksAbsolute(_binDir.Value))
+                ? Strings.Format(CustosEdition.IsLinux ? DesktopStrings.LinuxErrorLocalPath : Strings.ErrorPathNotAbsolute, _binDir.Value)
             : string.IsNullOrWhiteSpace(_host.Text) ? Strings.ErrorDbHostRequired
             : !_port.IsValid ? _port.Range()
             : string.IsNullOrWhiteSpace(_user.Text) ? Strings.ErrorUserRequired
@@ -180,11 +190,11 @@ internal sealed class DbServerDialog : FormDialog
             Engine = Engine,
             BinDir = _binDir.Value,
             Host = _host.Text.Trim(),
-            Port = _port.Value,
+            Port = _original.Port is null && _port.Value == DbEngines.DefaultPort(Engine) ? null : _port.Value,
             CredentialId = _original.CredentialId,
             AllDatabases = _all.On,
-            Exclude = _all.On ? left : [],
-            Include = _all.On ? [] : chosen,
+            Exclude = _all.On ? left : [.. _original.Exclude],
+            Include = _all.On ? [.. _original.Include] : chosen,
             DataDir = _dataDir,
             ExtensionData = _original.ExtensionData,
         };
@@ -283,7 +293,7 @@ internal sealed class DbServerDialog : FormDialog
             return;
         }
 
-        var account = new CredentialInput
+        var account = UsesLocalLogin ? null : new CredentialInput
         {
             Credential = new Credential { Id = _credential?.Id ?? TaskDefinition.NewId(), Kind = CredentialKinds.Db, User = _user.Text.Trim() },
             Password = Password,

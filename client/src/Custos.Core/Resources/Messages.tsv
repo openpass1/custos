@@ -7,6 +7,8 @@ RunAborted	The run was stopped.	Задание прервано.
 NothingChanged	No file has changed since the last backup, so no new set was made.	С прошлой копии файлы не менялись, новый набор не создан.
 MirrorNeedsPlainFiles	A mirror keeps plain files: switch compression off for this task.	Зеркало хранит обычные файлы: выключите сжатие для этого задания.
 MirrorOverlapsSource	{0}: the mirror folder and the source {1} lie inside each other.	{0}: папка зеркала и источник {1} вложены друг в друга.
+DestinationContainsSource	Destination {0} is the same folder as source {1}, or contains it. Choose a separate destination folder.	Назначение {0} совпадает с источником {1} или содержит его. Выберите отдельную папку назначения.
+NestedDestinationSkipped	Folder {0} is a backup destination, so all its contents are excluded from the source. To back up its other files, choose a destination outside the source.	Папка {0} служит назначением, поэтому всё её содержимое исключено из источника. Чтобы сохранить другие файлы этой папки, выберите назначение вне источника.
 BackupTypeNotSupported	Unknown backup type «{0}».	Неизвестный тип копии «{0}».
 ArchiveFormatUnknown	Unknown archive format «{0}». The task was not run.	Неизвестный формат архива «{0}». Задание не выполнено.
 NoSources	The task has no sources.	В задании нет источников.
@@ -29,8 +31,10 @@ VssCreated	Shadow copy (VSS) created.	Теневая копия (VSS) созда
 VssFailedContinue	Shadow copy (VSS) failed: {0}. Copying without it: files open in other programs may be skipped.	Не удалось создать теневую копию (VSS): {0}. Копирую без неё, открытые в программах файлы могут быть пропущены.
 VssFailedAbort	Shadow copy (VSS) failed: {0}. The task is set to stop in that case.	Не удалось создать теневую копию (VSS): {0}. По настройке задания копирование отменено.
 FolderUnreadable	Cannot read the folder {0}: {1}	Не удалось прочитать папку {0}: {1}
+SourceEntryUnreadable	Cannot read source path {0}: {1}	Не удалось прочитать путь источника {0}: {1}
 SourceUnavailable	Source {0} is not available: {1}	Источник {0} недоступен: {1}
 SourceNotFound	Source not found: {0}	Источник не найден: {0}
+SourceNotRegular	Choose a regular file or directory as the source.	Выберите обычный файл или папку в качестве источника.
 SourceScanned	Source {0}: {1} files, {2}.	Источник {0}: файлов {1}, {2}.
 CopyPlanned	To copy: {0} files, {1}.	К копированию: файлов {0}, {1}.
 NotEnoughSpace	Not enough space in {0}: {1} needed, {2} free. Nothing was written there.	Недостаточно места в {0}: нужно {1}, свободно {2}. В это назначение ничего не записано.
@@ -572,6 +576,9 @@ ProgramUpdateBy	Update to CUSTOS {0} from GitHub started ({1}).	Запущено
 ProgramUpdateStarted	CUSTOS {0} is being installed. The service restarts in about a minute; the window connects again by itself.	Устанавливается CUSTOS {0}. Примерно через минуту служба перезапустится, окно подключится само.
 ProgramNotAllowed	Only administrators may update CUSTOS.	Обновлять CUSTOS могут только администраторы.
 ProgramManagedBySite	This computer is connected to a monitoring site: new versions of CUSTOS come from the site.	Компьютер подключён к сайту мониторинга: новые версии CUSTOS приходят с сайта.
+ProgramManagedByPackage	Update CUSTOS using the system package manager.	Обновляйте CUSTOS через пакетный менеджер системы.
+ProgramUpdateChannelChanged	The update channel changed. Check for updates again.	Канал обновлений изменился. Проверьте наличие обновлений ещё раз.
+ProgramInvalidUpdateChannel	The stable and preview channels are available for a standalone Linux agent.	Каналы stable и preview доступны для автономной службы Linux.
 ProgramNothingNewer	There is no newer version of CUSTOS on GitHub than {0}.	На GitHub нет версии CUSTOS новее {0}.
 StoreFileShorter	The file in the destination is shorter than it should be.	Файл в назначении короче, чем должен быть.
 StoreFailed	{0}: {1}	{0}: {1}

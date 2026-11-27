@@ -1,6 +1,6 @@
 # CUSTOS
 
-Backup agents for Windows, macOS and Linux servers, with a self-hosted monitoring site. On Windows, CUSTOS is a free replacement for Cobian Backup 11.
+Backup agents for Windows, macOS and Linux, with a self-hosted monitoring site. On Windows, CUSTOS is a free replacement for Cobian Backup 11.
 
 [Русская версия](README.ru.md)
 
@@ -11,8 +11,8 @@ Backup agents for Windows, macOS and Linux servers, with a self-hosted monitorin
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 The agents make backups on each machine. CUSTOS Monitor shows their progress in one place, sends alerts and lets you
-manage tasks remotely. Windows and macOS can be set up locally. The headless Linux agent uses Monitor to configure
-its backup tasks.
+manage tasks remotely. Set up backups locally on Windows, macOS or with the Linux desktop preview. On a headless Linux
+server, use Monitor to configure backup tasks.
 
 ## Choose what to install
 
@@ -21,13 +21,13 @@ its backup tasks.
 | Windows agent | Windows 10 and 11, Windows Server 2019, 2022 and 2025 (x64) | [Releases](https://github.com/openpass1/custos/releases) · `CUSTOS-Setup-<version>.exe` | [Windows](client/README.md#windows) |
 | Windows legacy | Windows 7 SP1 and 8.1 (32-bit build) | [Preview release](https://github.com/openpass1/custos/releases/tag/client-legacy-v1.0.1) · `CUSTOS-Legacy-Setup-<version>.exe` | [Legacy edition](client/README.md#edition-for-windows-7-and-81) |
 | macOS agent | macOS 15+ (Apple silicon or Intel) | [Preview release](https://github.com/openpass1/custos/releases/tag/client-v1.2.0) · `Custos-<version>.pkg` | [macOS](client/README.md#macos) |
+| Linux desktop preview | Compatible Debian, Ubuntu, Linux Mint and Fedora desktops (x86_64 or ARM64) | [Releases](https://github.com/openpass1/custos/releases) · `.deb` / `.rpm`, [test builds](https://github.com/openpass1/custos/actions/workflows/linux-desktop-preview.yml) | [Linux desktop](client/linux/desktop/README.md) |
 | Headless Linux agent | Linux servers with systemd and glibc 2.28+ (x86_64 or ARM64) | [Releases](https://github.com/openpass1/custos/releases) · `custos-linux-x64.tar.gz` or `custos-linux-arm64.tar.gz` | [Linux agent](client/README.md#custos-for-linux) |
 | CUSTOS Monitor | Linux with nginx, PHP 8.3+, MariaDB 10.11+ or MySQL 8.0+ | [Releases](https://github.com/openpass1/custos/releases) · `custos-server-<version>.zip` | [Install and update](server/INSTALL.en.md) |
 
 In a release, open **Assets** and choose the installer or archive for your platform. The agent update ZIPs are for
 the **Updates** page in Monitor. You can download previews manually or select the **Preview** GitHub release channel in Monitor 1.4.3 or later.
 
-A graphical Linux desktop client is planned. There is no installer or announced release date for it yet.
 The [custos-helper](helper/README.md) script is a separate tool that lets a CUSTOS agent read files and database dumps
 from a Linux server over SSH.
 
@@ -37,6 +37,8 @@ from a Linux server over SSH.
   copy the connection string from its **Install** page, then paste it under **Settings → Monitoring server** in the
   program. Approve the machine in Monitor under **Machines**.
 - **Windows legacy and macOS:** use the platform guides in the table for the system requirements and installation steps.
+- **Linux desktop:** [install the `.deb` or `.rpm`](client/linux/desktop/README.md), open **CUSTOS** from the
+  applications menu and create a backup task. You can connect to Monitor from the settings menu.
 - **Linux server:** with CUSTOS Monitor 1.4.1 or newer, add the `custos-linux-<version>.zip` package on **Updates**,
   copy the Linux command from **Install**, run it on the Linux machine and approve the machine under **Machines**.
   [Linux installation and commands](client/README.md#custos-for-linux)
@@ -85,7 +87,7 @@ from a Linux server over SSH.
 
 | Document | What is in it |
 |---|---|
-| Agent guides | [Windows](client/README.md#windows), [legacy](client/README.md#edition-for-windows-7-and-81), [macOS](client/README.md#macos), [Linux](client/README.md#custos-for-linux). Backups, destinations, updates, task migration and development. |
+| Agent guides | [Windows](client/README.md#windows), [legacy](client/README.md#edition-for-windows-7-and-81), [macOS](client/README.md#macos), [Linux desktop](client/linux/desktop/README.md), [Linux server](client/README.md#custos-for-linux). Backups, destinations, updates, task migration and development. |
 | [server/INSTALL.en.md](server/INSTALL.en.md), [server/INSTALL.md](server/INSTALL.md) | Installing and updating the site on CloudPanel or plain nginx, Telegram, e-mail, Zabbix |
 | [server/README.md](server/README.md) | How the site is built, tests, the fake agent |
 | [helper/README.md](helper/README.md) | Using custos-helper to read backups over SSH (in Russian) |

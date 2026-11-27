@@ -289,6 +289,7 @@ internal sealed class RemoteSourceDialog : FormDialog
         DbEngines = [.. _engines.Where(e => e.On).Select(e => (string)e.Tag!)],
         DbExclude = [.. _original.Helper?.DbExclude ?? []],
         DbDefaultsFile = _original.Helper?.DbDefaultsFile,
+        ExtensionData = _original.Helper?.ExtensionData,
     };
 
     /// <summary>The preset the lists match, or <see cref="RemotePresets.Custom"/>.</summary>
@@ -466,7 +467,7 @@ internal sealed class RemoteSourceDialog : FormDialog
             Id = _original.Id,
             Kind = SourceKinds.Ssh,
             Host = _host.Text.Trim(),
-            Port = _port.Value,
+            Port = _original.Port is null && _port.Value == 22 ? null : _port.Value,
             User = _user.Text.Trim(),
             CredentialId = _credentialId,
             HostKeySha256 = _pinned,
@@ -475,6 +476,8 @@ internal sealed class RemoteSourceDialog : FormDialog
             SpeedLimitKbps = _speed.Kbps > 0 ? _speed.Kbps : null,
             Helper = settings,
             Databases = DbChoice(settings),
+            Recursive = _original.Recursive,
+            ExtensionData = _original.ExtensionData,
         };
         source.Path = BackupEngine.RemoteLabel(source);
         return source;
@@ -551,13 +554,20 @@ internal sealed class RemoteSourceDialog : FormDialog
         }
 
         var rows = DbRows();
+        var extension = _original.Databases?.ExtensionData;
         if (_dbAll.On)
         {
             var left = rows.Where(r => !r.Ticked).Select(r => r.Item.Key).ToList();
-            return left.Count == 0 ? null : new RemoteDatabaseChoice { Exclude = left };
+            return left.Count == 0 && extension is not { Count: > 0 } ? null
+                : new RemoteDatabaseChoice { Exclude = left, ExtensionData = extension };
         }
 
-        return new RemoteDatabaseChoice { AllDatabases = false, Include = [.. rows.Where(r => r.Ticked).Select(r => r.Item.Key)] };
+        return new RemoteDatabaseChoice
+        {
+            AllDatabases = false,
+            Include = [.. rows.Where(r => r.Ticked).Select(r => r.Item.Key)],
+            ExtensionData = extension,
+        };
     }
 
     /// <summary>A database in the list.</summary>

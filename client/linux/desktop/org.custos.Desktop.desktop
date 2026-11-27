@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=CUSTOS
+Comment=Open the local CUSTOS backup agent
+Comment[ru]=Открыть локальный агент резервного копирования CUSTOS
+Exec=custos-gui
+Icon=custos-gui
+Terminal=false
+Categories=Utility;Archiving;
+StartupWMClass=custos-gui

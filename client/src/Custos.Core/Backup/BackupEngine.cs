@@ -282,6 +282,10 @@ public sealed partial class BackupEngine
                 {
                     CheckMirrorRoot(run.Task, target.Root);
                 }
+                else if (CustosEdition.IsLinux && store is LocalStore && !IsRemote(run.Task))
+                {
+                    CheckLinuxDestinationRoot(run.Task, target.Root);
+                }
 
                 store.CreateFolder(target.Root);
                 store.CheckReady();
@@ -473,6 +477,8 @@ public sealed partial class BackupEngine
     {
         Phase(BackupPhases.Scan);
         var filter = new FileFilter(run.Task.Filters);
+        var excluded = CustosEdition.IsLinux ? run.Targets.Where(target => target.Root.Length != 0 && target.Store is LocalStore)
+            .SelectMany(target => new[] { NormalizeLocalPath(target.Root), CanonicalLocalPath(target.Root) }).ToHashSet(PathNames.Comparer) : [];
         var usedTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (HasDatabases(run.Task))
         {
@@ -491,16 +497,29 @@ public sealed partial class BackupEngine
                 context.Session = Session(IsNetworkPath(source.Path) ? source.CredentialId : null);
                 string readRoot = context.Session.LocalPath(run.Snapshots.Map(source.Path));
                 context.ReadRoot = readRoot;
+                string? liveRoot = excluded.Count != 0 ? CanonicalLocalPath(context.Session.LocalPath(source.Path)) : null;
                 context.Scan = context.Session.Run(() => SourceScanner.Scan(source, i, readRoot, filter,
                     (path, reason) =>
                     {
                         run.Result.Warnings++;
                         run.UnreadableFolders++;
-                        _log.Write(RunLogLevel.Warning, Messages.Format(Messages.FolderUnreadable, path, reason));
+                        _log.Write(RunLogLevel.Warning, Messages.Format(Messages.SourceEntryUnreadable, path, reason));
                     },
                     run.Cancellation,
                     _platform.SkipFolder,
-                    (path, reason) => _log.Write(RunLogLevel.Info, Messages.Format(Messages.FolderSkippedMount, path, reason))));
+                    (path, reason) => _log.Write(RunLogLevel.Info, Messages.Format(Messages.FolderSkippedMount, path, reason)),
+                    _platform.IsRegularSourceFile,
+                    (path, original) =>
+                    {
+                        if (liveRoot is null || !excluded.Contains(Path.Combine(liveRoot, Path.GetRelativePath(readRoot, path))))
+                        {
+                            return false;
+                        }
+
+                        run.Result.Warnings++;
+                        _log.Write(RunLogLevel.Warning, Messages.Format(Messages.NestedDestinationSkipped, original));
+                        return true;
+                    }));
             }
             catch (Exception ex) when (ex is BackupException or IOException or UnauthorizedAccessException or ArgumentException)
             {
@@ -530,6 +549,22 @@ public sealed partial class BackupEngine
             _log.Write(RunLogLevel.Info, Messages.Format(Messages.SourceScanned, source.Path, context.Scan.Files.Count, Sizes.Format(bytes)));
         }
     }
+
+    private void CheckLinuxDestinationRoot(TaskDefinition task, string root)
+    {
+        string destination = CanonicalLocalPath(root);
+        foreach (var source in task.Sources.Where(source => !IsNetworkPath(source.Path) && Path.IsPathFullyQualified(source.Path)))
+        {
+            if (IsSameOrBelow(CanonicalLocalPath(source.Path), destination))
+            {
+                throw new BackupException(Messages.Format(Messages.DestinationContainsSource, root, source.Path));
+            }
+        }
+    }
+
+    private static string NormalizeLocalPath(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+
+    private string CanonicalLocalPath(string path) => NormalizeLocalPath(_platform.CanonicalLocalPath(NormalizeLocalPath(path)));
 
     private void SelectFiles(RunContext run)
     {
@@ -749,8 +784,7 @@ public sealed partial class BackupEngine
             var outputs = new List<Output>();
             try
             {
-                using var input = Lowered(context.Session.Run(() => new FileStream(
-                    file.ReadPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1, FileOptions.SequentialScan)));
+                using var input = OpenSourceFile(context, file, 1);
                 var held = OpenOutputs(run, targetPath, file, outputs);
                 if (outputs.Count == 0 && held.Count == 0)
                 {
@@ -800,7 +834,7 @@ public sealed partial class BackupEngine
             {
                 // Deleted after the scan: not a problem, it is simply no longer part of the source.
                 run.Vanished.Add(file.OriginalPath);
-                _log.Write(RunLogLevel.Detail, Messages.Format(Messages.FileVanished, file.OriginalPath));
+                ReportVanishedSource(file);
                 return null;
             }
             catch (SourceReadException ex) when (attempt < attempts)
@@ -831,6 +865,9 @@ public sealed partial class BackupEngine
             }
         }
     }
+
+    private void ReportVanishedSource(ScannedFile file) =>
+        _log.Write(CustosEdition.IsLinux ? RunLogLevel.Info : RunLogLevel.Detail, Messages.Format(Messages.FileVanished, file.OriginalPath));
 
     /// <returns>The destinations that hold this version of the file already (a full copy into a shared folder): they
     /// are not written.</returns>

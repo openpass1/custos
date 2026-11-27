@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -14,10 +15,14 @@ internal sealed record UnixAccount(string Name, uint Uid, uint Gid, string Home)
 /// </summary>
 internal static unsafe partial class Native
 {
+    public const int PathOnly = 0x200000;
+    public const int CloseOnExec = 0x80000;
+
     private const string LibC = "libc";
     private const int AtFdCwd = -100;
     private const int AtSymlinkNoFollow = 0x100;
     private const int AtEmptyPath = 0x1000;
+    private const uint StatxType = 1;
     private const uint StatxBasicStats = 0x7ff;
     private static readonly Lock PasswdLock = new();
 
@@ -38,6 +43,12 @@ internal static unsafe partial class Native
 
     [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
     public static partial SafeFileHandle openat(SafeFileHandle directory, string path, int flags);
+
+    [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr realpath(string path, IntPtr resolved);
+
+    [LibraryImport(LibC)]
+    private static partial void free(IntPtr pointer);
 
     [LibraryImport(LibC, StringMarshalling = StringMarshalling.Utf8)]
     private static partial IntPtr getpwnam(string name);
@@ -144,21 +155,75 @@ internal static unsafe partial class Native
     }
 
     /// <summary>Owner, group and permission bits of a file or folder (not following a symbolic link), or null.</summary>
-    public static (uint Uid, uint Gid, uint Mode)? Stat(string path) => Stat(AtFdCwd, path, AtSymlinkNoFollow);
+    public static (uint Uid, uint Gid, uint Mode)? Stat(string path) => Stat(AtFdCwd, path, AtSymlinkNoFollow, out _);
 
-    public static (uint Uid, uint Gid, uint Mode)? Stat(SafeFileHandle file) => Stat((int)file.DangerousGetHandle(), "", AtEmptyPath);
+    public static bool IsRegularFile(string path) => Stat(AtFdCwd, path, 0, out int error) is { } stat
+        ? IsRegular(stat.Mode) : throw SourceFileError(path, error);
 
-    private static (uint Uid, uint Gid, uint Mode)? Stat(int directory, string path, int flags)
+    public static IOException SourceFileError(string path, int error) => error switch
+    {
+        2 or 20 => new FileNotFoundException(new Win32Exception(error).Message, path), // ENOENT, ENOTDIR
+        0 => new IOException("The file system did not report the file type."),
+        _ => new IOException(new Win32Exception(error).Message),
+    };
+
+    public static FileStream OpenRegularFile(SafeFileHandle original, int bufferSize)
+    {
+        if (original.IsInvalid || Stat(original) is not { } stat || !IsRegular(stat.Mode))
+        {
+            throw new IOException("Cannot read a source that is not an accessible regular file.");
+        }
+
+        // O_PATH only inspects a FIFO or device. Reopen the pinned regular inode instead of resolving its name again.
+        string descriptor = original.DangerousGetHandle().ToInt64().ToString(System.Globalization.CultureInfo.InvariantCulture);
+        const int nonBlocking = 0x800;
+        var readable = open("/proc/self/fd/" + descriptor, CloseOnExec | nonBlocking);
+        try
+        {
+            if (readable.IsInvalid)
+            {
+                throw new IOException(new Win32Exception(Marshal.GetLastPInvokeError()).Message);
+            }
+
+            return new FileStream(readable, FileAccess.Read, bufferSize);
+        }
+        catch
+        {
+            readable.Dispose();
+            throw;
+        }
+    }
+
+    public static string ResolvePath(string path)
+    {
+        IntPtr resolved = realpath(path, IntPtr.Zero);
+        try
+        {
+            return Marshal.PtrToStringUTF8(resolved) ?? path;
+        }
+        finally
+        {
+            free(resolved);
+        }
+    }
+
+    private static bool IsRegular(uint mode) => (mode & 0xf000) == 0x8000;
+
+    public static (uint Uid, uint Gid, uint Mode)? Stat(SafeFileHandle file) => Stat((int)file.DangerousGetHandle(), "", AtEmptyPath, out _);
+
+    private static (uint Uid, uint Gid, uint Mode)? Stat(int directory, string path, int flags, out int error)
     {
         // struct statx (the same on every processor): stx_mask u32, stx_blksize u32, stx_attributes u64, stx_nlink u32,
         // stx_uid u32 (20), stx_gid u32 (24), stx_mode u16 (28) … 256 bytes in all.
         byte* buffer = stackalloc byte[256];
         if (statx(directory, path, flags, StatxBasicStats, buffer) != 0)
         {
+            error = Marshal.GetLastPInvokeError();
             return null;
         }
 
-        return (*(uint*)(buffer + 20), *(uint*)(buffer + 24), *(ushort*)(buffer + 28));
+        error = 0;
+        return (*(uint*)buffer & StatxType) == 0 ? null : (*(uint*)(buffer + 20), *(uint*)(buffer + 24), *(ushort*)(buffer + 28));
     }
 
     private static UnixAccount? ReadPasswd(IntPtr entry)

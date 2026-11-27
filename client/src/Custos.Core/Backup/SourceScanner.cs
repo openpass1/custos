@@ -65,6 +65,8 @@ public static class SourceScanner
     /// <param name="onProblem">Called for a folder or file that cannot be read: path and reason.</param>
     /// <param name="skipFolder">Why a folder below the source is not read at all (<see cref="IBackupPlatform.SkipFolder"/>), or null.</param>
     /// <param name="onSkipped">Called for such a folder: path and reason.</param>
+    /// <param name="isRegularFile">Platform check that a file can be read as ordinary data.</param>
+    /// <param name="excludeFolder">Whether an original folder and its corresponding read path are excluded.</param>
     public static SourceScan Scan(
         TaskSource source,
         int index,
@@ -73,7 +75,9 @@ public static class SourceScanner
         Action<string, string> onProblem,
         CancellationToken cancellationToken,
         Func<string, string?>? skipFolder = null,
-        Action<string, string>? onSkipped = null)
+        Action<string, string>? onSkipped = null,
+        Func<string, bool>? isRegularFile = null,
+        Func<string, string, bool>? excludeFolder = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(readRoot);
@@ -86,6 +90,11 @@ public static class SourceScanner
 
         if (File.Exists(readRoot))
         {
+            if (isRegularFile?.Invoke(readRoot) == false)
+            {
+                throw new BackupException(Messages.SourceNotRegular);
+            }
+
             var info = new FileInfo(readRoot);
             files.Add(Describe(index, info.Name, originalRoot, info));
             return new SourceScan { Found = true, IsFile = true, Files = files, Folders = folders, UnreadableFolders = 0 };
@@ -124,7 +133,7 @@ public static class SourceScanner
                 {
                     attributes = entry.Attributes;
                 }
-                catch (IOException ex)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
                 {
                     onProblem(original, ex.Message);
                     continue;
@@ -133,6 +142,11 @@ public static class SourceScanner
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
                     if (!source.Recursive || !filter.IncludesFolder(entry.Name, relative, original, attributes) || IsLink(entry, attributes))
+                    {
+                        continue;
+                    }
+
+                    if (excludeFolder?.Invoke(entry.FullName, original) == true)
                     {
                         continue;
                     }
@@ -150,9 +164,12 @@ public static class SourceScanner
                 {
                     try
                     {
-                        files.Add(Describe(index, relative, original, (FileInfo)entry));
+                        if (isRegularFile?.Invoke(entry.FullName) != false)
+                        {
+                            files.Add(Describe(index, relative, original, (FileInfo)entry));
+                        }
                     }
-                    catch (IOException ex)
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
                     {
                         onProblem(original, ex.Message);
                     }

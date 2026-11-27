@@ -89,6 +89,52 @@ public sealed class ProgramReleaseTests : IDisposable
     }
 
     [Fact]
+    public void Preview_can_pick_a_newer_prerelease_and_switching_to_stable_hides_its_cache()
+    {
+        string json = Releases($"\"sha256:{PackageSha}\"");
+        var preview = ProgramReleases.Newest(Json(json), ProgramReleases.PreviewChannel);
+        var stable = ProgramReleases.Newest(Json(json), ProgramReleases.StableChannel);
+
+        Assert.Equal("1.3.0", preview?.Version);
+        Assert.True(preview?.Prerelease);
+        Assert.Equal("1.2.0", stable?.Version);
+        Assert.False(stable?.Prerelease);
+
+        var state = new ProgramCheckState { Channel = ProgramReleases.PreviewChannel, Latest = preview, CheckedAt = DateTimeOffset.UtcNow };
+        Assert.Same(state, state.ForChannel(ProgramReleases.PreviewChannel));
+        var switched = state.ForChannel(ProgramReleases.StableChannel);
+        Assert.Null(switched.Latest);
+        Assert.Null(switched.CheckedAt);
+        Assert.Equal(ProgramReleases.StableChannel, ProgramReleases.NormalizeChannel(null));
+    }
+
+    [Theory]
+    [InlineData("custos-desktop_{0}_amd64.deb", "custos-desktop_{0}_arm64.deb")]
+    [InlineData("custos-desktop_{0}_arm64.deb", "custos-desktop_{0}_amd64.deb")]
+    [InlineData("custos-desktop-{0}-1.x86_64.rpm", "custos-desktop-{0}-1.aarch64.rpm")]
+    [InlineData("custos-desktop-{0}-1.aarch64.rpm", "custos-desktop-{0}-1.x86_64.rpm")]
+    public void Desktop_needs_the_exact_official_package_even_when_another_release_is_newer(string expected, string other)
+    {
+        string AssetName(string version) => expected.Replace("{0}", version, StringComparison.Ordinal);
+        var json = System.Text.Json.JsonSerializer.Serialize(new[]
+        {
+            Release("client-v2.5.0", AssetName("2.5.0"), urlTag: "client-v2.4.0"),
+            Release("client-v2.4.0", AssetName("2.4.0"), draft: true),
+            Release("client-v2.3.0", other.Replace("{0}", "2.3.0", StringComparison.Ordinal)),
+            Release("client-v2.2.0-test", AssetName("2.2.0-test")),
+            Release("client-v2.1.0", AssetName("2.1.0"), preview: true),
+            Release("client-v2.0.0", AssetName("2.0.0")),
+        });
+        var preview = ProgramReleases.Newest(Json(json), ProgramReleases.PreviewChannel, AssetName);
+        var stable = ProgramReleases.Newest(Json(json), ProgramReleases.StableChannel, AssetName);
+
+        Assert.Equal("2.1.0", preview?.Version);
+        Assert.Equal("2.0.0", stable?.Version);
+        Assert.Equal(AssetName("2.0.0"), stable?.PackageName);
+        Assert.Equal(new Uri(Downloads + "client-v2.0.0/" + AssetName("2.0.0")), stable?.PackageUrl);
+    }
+
+    [Fact]
     public void No_release_of_the_program_gives_null()
     {
         Assert.Null(ProgramReleases.Newest(Json("[]")));
@@ -172,6 +218,18 @@ public sealed class ProgramReleaseTests : IDisposable
     }
 
     private static MemoryStream Json(string text) => new(Encoding.UTF8.GetBytes(text));
+
+    private static object Release(string tag, string name, bool draft = false, bool preview = false, string? urlTag = null) =>
+        new
+        {
+            tag_name = tag,
+            draft,
+            prerelease = preview,
+            assets = new[]
+            {
+                new { name, digest = $"sha256:{PackageSha}", browser_download_url = $"{Downloads}{urlTag ?? tag}/{name}" },
+            },
+        };
 
     /// <summary>The package of the edition that shares the releases with this one: Windows next to macOS.</summary>
     private static string OtherZip(string version) => CustosEdition.IsMac ? $"custos-{version}.zip" : $"custos-{CustosEdition.MacName}-{version}.zip";

@@ -17,6 +17,99 @@ static partial class DesktopStrings
     /// <summary>All settings…</summary>
     public static string SettingsAll => Get(nameof(SettingsAll));
 
+    /// <summary>Change server…</summary>
+    public static string MonitorChangeServer => Get(nameof(MonitorChangeServer));
+
+    /// <summary>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</summary>
+    public static string MonitorSwitchConfirm => Get(nameof(MonitorSwitchConfirm));
+
+    /// <summary>The monitoring connection changed. Review the current server and try again.</summary>
+    public static string MonitorConnectionChanged => Get(nameof(MonitorConnectionChanged));
+
+    /// <summary>Interface language</summary>
+    public static string InterfaceLanguage => Get(nameof(InterfaceLanguage));
+
+    /// <summary>The interface language could not be saved in your CUSTOS settings.</summary>
+    public static string InterfaceLanguageSaveFailed => Get(nameof(InterfaceLanguageSaveFailed));
+
+    /// <summary>The service settings are read-only.</summary>
+    public static string LinuxServiceSettingsReadOnly => Get(nameof(LinuxServiceSettingsReadOnly));
+
+    /// <summary>Desktop updates</summary>
+    public static string LinuxDesktopUpdates => Get(nameof(LinuxDesktopUpdates));
+
+    /// <summary>Download the package from GitHub Releases and open it in your system package manager to install it.</summary>
+    public static string LinuxDesktopUpdatesHelp => Get(nameof(LinuxDesktopUpdatesHelp));
+
+    /// <summary>Agent updates</summary>
+    public static string LinuxAgentUpdates => Get(nameof(LinuxAgentUpdates));
+
+    /// <summary>Update channel</summary>
+    public static string LinuxUpdateChannel => Get(nameof(LinuxUpdateChannel));
+
+    /// <summary>Stable</summary>
+    public static string LinuxUpdateStable => Get(nameof(LinuxUpdateStable));
+
+    /// <summary>Preview</summary>
+    public static string LinuxUpdatePreview => Get(nameof(LinuxUpdatePreview));
+
+    /// <summary>Installed package version is {0}.</summary>
+    public static string LinuxUpdateInstalledVersion => Get(nameof(LinuxUpdateInstalledVersion));
+
+    /// <summary>Could not read the installed version from the system package manager.</summary>
+    public static string LinuxUpdateInstalledUnknown => Get(nameof(LinuxUpdateInstalledUnknown));
+
+    /// <summary>no matching package on GitHub for this channel</summary>
+    public static string LinuxUpdateNoPackage => Get(nameof(LinuxUpdateNoPackage));
+
+    /// <summary>no newer package for this channel</summary>
+    public static string LinuxUpdateNoNewerPackage => Get(nameof(LinuxUpdateNoNewerPackage));
+
+    /// <summary>CUSTOS {0} Preview is out</summary>
+    public static string LinuxUpdatePreviewAvailable => Get(nameof(LinuxUpdatePreviewAvailable));
+
+    /// <summary>Release notes</summary>
+    public static string LinuxUpdateReleaseNotes => Get(nameof(LinuxUpdateReleaseNotes));
+
+    /// <summary>Download package</summary>
+    public static string LinuxUpdateDownloadPackage => Get(nameof(LinuxUpdateDownloadPackage));
+
+    /// <summary>Could not open GitHub Releases in the browser.</summary>
+    public static string LinuxUpdateBrowserFailed => Get(nameof(LinuxUpdateBrowserFailed));
+
+    /// <summary>Could not save the desktop update channel.</summary>
+    public static string LinuxUpdateChannelSaveFailed => Get(nameof(LinuxUpdateChannelSaveFailed));
+
+    /// <summary>Save settings to change the agent update channel, then check again.</summary>
+    public static string LinuxUpdateSaveAgentChannel => Get(nameof(LinuxUpdateSaveAgentChannel));
+
+    /// <summary>Follow the system</summary>
+    public static string LinuxThemeAuto => Get(nameof(LinuxThemeAuto));
+
+    /// <summary>Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or ru...</summary>
+    public static string LinuxAllowAllUsersEditHelp => Get(nameof(LinuxAllowAllUsersEditHelp));
+
+    /// <summary>Allow every local user to change tasks and run them with root privileges?</summary>
+    public static string LinuxAllowAllUsersEditWarning => Get(nameof(LinuxAllowAllUsersEditWarning));
+
+    /// <summary>Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.</summary>
+    public static string LinuxLogRetentionHelp => Get(nameof(LinuxLogRetentionHelp));
+
+    /// <summary>When set, this password is required in addition to the usual permissions for editing and restoring. The win...</summary>
+    public static string LinuxProgramPasswordHelp => Get(nameof(LinuxProgramPasswordHelp));
+
+    /// <summary>The language of the run logs and service messages. Automatic follows the service locale. The desktop interf...</summary>
+    public static string LinuxServiceLanguageHelp => Get(nameof(LinuxServiceLanguageHelp));
+
+    /// <summary>The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.</summary>
+    public static string LinuxAccountsNote => Get(nameof(LinuxAccountsNote));
+
+    /// <summary>7-Zip (7z.so) version {0}</summary>
+    public static string LinuxArchiverVersion => Get(nameof(LinuxArchiverVersion));
+
+    /// <summary>The backup service could not load 7z.so.</summary>
+    public static string LinuxArchiverProblem => Get(nameof(LinuxArchiverProblem));
+
     /// <summary>Theme</summary>
     public static string ThemeHeading => Get(nameof(ThemeHeading));
 
@@ -100,4 +193,115 @@ static partial class DesktopStrings
 
     /// <summary>{0} files · {1} · {2}</summary>
     public static string RestoreSetHint => Get(nameof(RestoreSetHint));
+
+    /// <summary>Enter the client ID of your application for {0}, then continue signing in here.</summary>
+    public static string LinuxCloudAppMissing => Get(nameof(LinuxCloudAppMissing));
+
+    /// <summary>Enter the client ID and secret of your application for {0}, then continue signing in here.</summary>
+    public static string LinuxCloudAppMissingWithSecret => Get(nameof(LinuxCloudAppMissingWithSecret));
+
+    /// <summary>Cannot open a local callback port for Google Drive. Close this window and try again.</summary>
+    public static string LinuxCloudNoLoopback => Get(nameof(LinuxCloudNoLoopback));
+
+    /// <summary>Google Drive and Yandex Disk require the client secret. Dropbox does not require one.</summary>
+    public static string LinuxCloudSecretNote => Get(nameof(LinuxCloudSecretNote));
+
+    /// <summary>Yandex Disk needs the client secret together with the client ID.</summary>
+    public static string LinuxCloudYandexSecretRequired => Get(nameof(LinuxCloudYandexSecretRequired));
+
+    /// <summary>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agen...</summary>
+    public static string LinuxSourcePathHelp => Get(nameof(LinuxSourcePathHelp));
+
+    /// <summary>Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {M...</summary>
+    public static string LinuxPathVariables => Get(nameof(LinuxPathVariables));
+
+    /// <summary>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</summary>
+    public static string LinuxErrorLocalPath => Get(nameof(LinuxErrorLocalPath));
+
+    /// <summary>Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.</summary>
+    public static string LinuxImportUnsupportedPaths => Get(nameof(LinuxImportUnsupportedPaths));
+
+    /// <summary>This task uses paths incompatible with Linux. Review its sources, destinations and database tools before sw...</summary>
+    public static string LinuxTaskUnsupportedPaths => Get(nameof(LinuxTaskUnsupportedPaths));
+
+    /// <summary>manage tasks</summary>
+    public static string LinuxRightsEditTasks => Get(nameof(LinuxRightsEditTasks));
+
+    /// <summary>With passwords and keys</summary>
+    public static string ExportWithSecrets => Get(nameof(ExportWithSecrets));
+
+    /// <summary>Without passwords and keys</summary>
+    public static string ExportWithoutSecrets => Get(nameof(ExportWithoutSecrets));
+
+    /// <summary>Enter an SMB path such as //server/share/folder. Invalid path: {0}</summary>
+    public static string LinuxErrorSharePath => Get(nameof(LinuxErrorSharePath));
+
+    /// <summary>Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.</summary>
+    public static string LinuxErrorVolumeFolder => Get(nameof(LinuxErrorVolumeFolder));
+
+    /// <summary>The agent mounts the share with the selected account, or connects as a guest without one.</summary>
+    public static string LinuxSmbAccountHelp => Get(nameof(LinuxSmbAccountHelp));
+
+    /// <summary>Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A...</summary>
+    public static string LinuxDestinationKindHelp => Get(nameof(LinuxDestinationKindHelp));
+
+    /// <summary>Enter the volume label of a mounted disk. Use lsblk -f to see the labels.</summary>
+    public static string LinuxUsbLabelHelp => Get(nameof(LinuxUsbLabelHelp));
+
+    /// <summary>Use a path relative to the volume, such as backups/daily.</summary>
+    public static string LinuxUsbFolderHelp => Get(nameof(LinuxUsbFolderHelp));
+
+    /// <summary>On: /srv/data is copied into &lt;backup&gt;/data/…</summary>
+    public static string LinuxKeepTopDirHelp => Get(nameof(LinuxKeepTopDirHelp));
+
+    /// <summary>Use a filesystem snapshot</summary>
+    public static string LinuxSnapshotEnabled => Get(nameof(LinuxSnapshotEnabled));
+
+    /// <summary>The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.</summary>
+    public static string LinuxSnapshotHelp => Get(nameof(LinuxSnapshotHelp));
+
+    /// <summary>Keep file and folder owners and permissions</summary>
+    public static string LinuxFilePermissions => Get(nameof(LinuxFilePermissions));
+
+    /// <summary>This setting applies to file copies in a local folder, a network folder or a USB disk.</summary>
+    public static string LinuxNoFilePermissions => Get(nameof(LinuxNoFilePermissions));
+
+    /// <summary>Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover ...</summary>
+    public static string LinuxDbBinDirHelp => Get(nameof(LinuxDbBinDirHelp));
+
+    /// <summary>Stop a systemd unit</summary>
+    public static string LinuxEventUnitStop => Get(nameof(LinuxEventUnitStop));
+
+    /// <summary>Start a systemd unit</summary>
+    public static string LinuxEventUnitStart => Get(nameof(LinuxEventUnitStart));
+
+    /// <summary>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs progr...</summary>
+    public static string LinuxEventHelp => Get(nameof(LinuxEventHelp));
+
+    /// <summary>CUSTOS service</summary>
+    public static string SystemServiceHeading => Get(nameof(SystemServiceHeading));
+
+    /// <summary>Restart the service</summary>
+    public static string SystemServiceRestart => Get(nameof(SystemServiceRestart));
+
+    /// <summary>Restart the CUSTOS service?</summary>
+    public static string SystemServiceRestartConfirm => Get(nameof(SystemServiceRestartConfirm));
+
+    /// <summary>The CUSTOS service operation completed.</summary>
+    public static string SystemServiceDone => Get(nameof(SystemServiceDone));
+
+    /// <summary>Could not control the CUSTOS service.</summary>
+    public static string SystemServiceFailed => Get(nameof(SystemServiceFailed));
+
+    /// <summary>systemctl exited with code {0}.</summary>
+    public static string SystemServiceExitCode => Get(nameof(SystemServiceExitCode));
+
+    /// <summary>Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.</summary>
+    public static string SystemServiceCustomSocket => Get(nameof(SystemServiceCustomSocket));
+
+    /// <summary>This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.</summary>
+    public static string SystemServiceUnavailable => Get(nameof(SystemServiceUnavailable));
+
+    /// <summary>The service operation could not be confirmed in time. Check the service status before retrying.</summary>
+    public static string SystemServiceTimeout => Get(nameof(SystemServiceTimeout));
 }

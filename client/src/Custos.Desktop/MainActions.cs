@@ -1,5 +1,7 @@
 using System.Globalization;
+using Avalonia;
 using Avalonia.Platform.Storage;
+using Custos.Core;
 using Custos.Core.Ipc;
 using Custos.Core.Model;
 using Custos.Core.Transfer;
@@ -15,6 +17,40 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
 {
     private ServiceMonitor Monitor => vm.Monitor;
 
+    public async Task ControlSystemServiceAsync(SystemServiceAction action)
+    {
+        if (!vm.CanControlSystemService)
+        {
+            return;
+        }
+
+        vm.SystemServiceBusy = true;
+        try
+        {
+            if (action is SystemServiceAction.Stop or SystemServiceAction.Restart)
+            {
+                bool restart = action == SystemServiceAction.Restart;
+                string text = restart ? DesktopStrings.SystemServiceRestartConfirm : Strings.ServiceStopConfirm;
+                if (Monitor.IsConnected && Monitor.Snapshot?.Current is { } current)
+                {
+                    text += Environment.NewLine + Environment.NewLine + Strings.Format(Strings.ServiceStopRunning, current.TaskName);
+                }
+
+                if (!await Dialogs.Ask(window, text, restart ? DesktopStrings.SystemServiceRestart : Strings.MenuServiceStop))
+                {
+                    return;
+                }
+            }
+
+            await DesktopPlatform.Current.ControlSystemServiceAsync(action);
+            vm.Snack(DesktopStrings.SystemServiceDone);
+        }
+        finally
+        {
+            vm.SystemServiceBusy = false;
+        }
+    }
+
     // The windows for changes ask for the program password before they open, not after a whole task was filled in.
     public async Task CreateAsync()
     {
@@ -24,6 +60,13 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         }
 
         var task = new TaskDefinition { Name = vm.UniqueName(Strings.NewTaskName) };
+        if (Core.CustosEdition.IsLinux)
+        {
+            // Match Monitor's Linux defaults on volumes that do not support snapshots.
+            task.Vss.OnFailure = VssFailureActions.Continue;
+            task.Filters.Exclude = ["*.tmp", "*.swp"];
+        }
+
         await OpenEditorAsync(new EditorModel(Monitor, task, isNew: true, vm.IsDemo));
     }
 
@@ -45,8 +88,11 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
             return;
         }
 
-        // The task as it is now: the snapshot may have changed while the password was typed.
-        await OpenEditorAsync(new EditorModel(Monitor, vm.SelectedDefinition ?? task, isNew: false, vm.IsDemo));
+        // Keep the task that was selected when the editor was requested, updating its revision after unlock.
+        if (Monitor.Snapshot?.Tasks.FirstOrDefault(t => Describe.SameId(t.Id, task.Id)) is { } current)
+        {
+            await OpenEditorAsync(new EditorModel(Monitor, current, isNew: false, vm.IsDemo));
+        }
     }
 
     /// <summary>A copy of the selected task, switched off, with a name of its own; it is selected once it is there.</summary>
@@ -57,9 +103,14 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
             return;
         }
 
-        var copy = task.Clone();
+        if (Monitor.Snapshot?.Tasks.FirstOrDefault(t => Describe.SameId(t.Id, task.Id)) is not { } current)
+        {
+            return;
+        }
+
+        var copy = current.Clone();
         copy.Id = TaskDefinition.NewId();
-        copy.Name = vm.UniqueName(Strings.Format(Strings.CloneName, task.Name));
+        copy.Name = vm.UniqueName(Strings.Format(Strings.CloneName, current.Name));
         copy.Enabled = false;
         copy.Revision = 0;
         copy.UpdatedAt = null;
@@ -72,6 +123,16 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         foreach (var destination in copy.Destinations)
         {
             destination.Id = TaskDefinition.NewId();
+        }
+
+        foreach (var server in copy.DbServers)
+        {
+            server.Id = TaskDefinition.NewId();
+        }
+
+        if (Core.CustosEdition.IsLinux)
+        {
+            LinuxEditorPaths.NormalizeShares(copy);
         }
 
         var result = await Monitor.RequestAsync(PipeProtocol.Methods.TaskSave, new TaskSaveRequest { Task = copy },
@@ -104,17 +165,34 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     public async Task ToggleAsync()
     {
         bool enabled = vm.ToggleOn;
-        var ids = vm.SelectedDefinitions.Where(t => t.Enabled != enabled).Select(t => t.Id).ToList();
-        if (ids.Count == 0 || !vm.CanEdit || !await Monitor.EnsureUnlockedAsync())
+        var tasks = vm.SelectedDefinitions.Where(t => t.Enabled != enabled).ToList();
+        if (tasks.Count == 0 || !vm.CanEdit || !await Monitor.EnsureUnlockedAsync())
         {
             return;
         }
 
-        var result = await Monitor.RequestAsync(PipeProtocol.Methods.TasksEnable, new TasksEnableRequest { TaskIds = ids, Enabled = enabled },
-            IpcJsonContext.Default.TasksEnableRequest, IpcJsonContext.Default.TasksEnableResult);
-        if (result.Problems.Count > 0)
+        var issues = new List<string>();
+        if (enabled && Core.CustosEdition.IsLinux)
         {
-            await Dialogs.Show(window, Strings.TasksNotChanged + "\n\n" + string.Join("\n", result.Problems));
+            var incompatible = tasks.Where(LinuxEditorPaths.HasUnsupportedPath).ToList();
+            if (incompatible.Count > 0)
+            {
+                issues.Add(string.Join(", ", incompatible.Select(task => task.Name)) + "\n" + DesktopStrings.LinuxTaskUnsupportedPaths);
+                tasks = tasks.Except(incompatible).ToList();
+            }
+        }
+
+        if (tasks.Count > 0)
+        {
+            var ids = tasks.Select(task => task.Id).ToList();
+            var result = await Monitor.RequestAsync(PipeProtocol.Methods.TasksEnable, new TasksEnableRequest { TaskIds = ids, Enabled = enabled },
+                IpcJsonContext.Default.TasksEnableRequest, IpcJsonContext.Default.TasksEnableResult);
+            issues.AddRange(result.Problems);
+        }
+
+        if (issues.Count > 0)
+        {
+            await Dialogs.Show(window, Strings.TasksNotChanged + "\n\n" + string.Join("\n", issues));
         }
     }
 
@@ -174,6 +252,11 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// </summary>
     public async Task SetThemeAsync(string theme)
     {
+        if (!vm.ShowsSettings)
+        {
+            return;
+        }
+
         if (vm.IsDemo)
         {
             vm.SetDemoTheme(theme);
@@ -185,7 +268,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
             return;
         }
 
-        if (!vm.CanEdit)
+        if (!Monitor.CanEdit)
         {
             vm.Snack(DesktopStrings.ThemeAdminsOnly);
             return;
@@ -207,7 +290,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Импорт заданий из файла»: a file of «Экспорт заданий» (section 9a), all its tasks.</summary>
     public async Task ImportAsync()
     {
-        if (!vm.CanEdit || Monitor.Snapshot is not { } snapshot || !await Monitor.EnsureUnlockedAsync())
+        if (!vm.CanImportTasks || Monitor.Snapshot is not { } snapshot || !await Monitor.EnsureUnlockedAsync())
         {
             return;
         }
@@ -279,11 +362,30 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
         }
 
         var build = plan.Build(plan.Items, typed, new Dictionary<string, string>());
+        var unsupportedPaths = new List<string>();
+        if (Core.CustosEdition.IsLinux)
+        {
+            foreach (var task in build.Request.Tasks)
+            {
+                LinuxEditorPaths.NormalizeShares(task);
+                if (task.Enabled && LinuxEditorPaths.HasUnsupportedPath(task))
+                {
+                    task.Enabled = false;
+                    unsupportedPaths.Add(task.Name);
+                }
+            }
+        }
+
         await Monitor.RequestAsync(PipeProtocol.Methods.TasksImport, build.Request, IpcJsonContext.Default.TasksImportRequest, IpcJsonContext.Default.OkResult);
         string text = Strings.Format(Strings.ImportFileDone, build.Request.Tasks.Count);
         if (build.SwitchedOff.Count > 0)
         {
             text += "\n\n" + Strings.Format(Strings.ImportFileSwitchedOff, string.Join(", ", build.SwitchedOff));
+        }
+
+        if (unsupportedPaths.Count > 0)
+        {
+            text += "\n\n" + Strings.Format(DesktopStrings.LinuxImportUnsupportedPaths, string.Join(", ", unsupportedPaths));
         }
 
         await Dialogs.Show(window, text);
@@ -293,9 +395,9 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// passwords leave the service only this way: administrators only (section 9a).</summary>
     public async Task ExportAsync()
     {
-        if (Monitor.Status.Hello?.IsAdmin != true || Monitor.Snapshot is not { } snapshot || !await Monitor.EnsureUnlockedAsync())
+        if (!vm.CanExportTasks || Monitor.Snapshot is not { } snapshot || !await Monitor.EnsureUnlockedAsync())
         {
-            if (Monitor.IsConnected && Monitor.Status.Hello?.IsAdmin != true)
+            if (vm.ShowsTaskManagement && Monitor.IsConnected && Monitor.Status.Hello?.IsAdmin != true)
             {
                 vm.Snack(Strings.ToolAdminsOnly);
             }
@@ -303,8 +405,19 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
             return;
         }
 
+        var protection = new DialogWindow(Strings.ExportTitle);
+        protection.Body.Children.Add(Ui.Note(Strings.ExportSecretsNote));
+        protection.AddButton(Strings.ButtonCancel, () => protection.Close(null));
+        protection.AddButton(DesktopStrings.ExportWithSecrets, () => protection.Close(true));
+        protection.AddButton(DesktopStrings.ExportWithoutSecrets, () => protection.Close(false), main: true);
+        bool? withSecrets = await protection.ShowDialog<bool?>(window);
+        if (withSecrets is null)
+        {
+            return;
+        }
+
         string? password = null;
-        if (await Dialogs.Ask(window, Strings.ExportSecretsNote, Strings.ExportIncludeSecrets, Strings.ExportPasswordSkip, Strings.ExportTitle))
+        if (withSecrets.Value)
         {
             password = await Dialogs.NewPassword(window, Strings.ExportPasswordTitle, null, minLength: 8);
             if (password is null)
@@ -350,7 +463,7 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Импорт из Cobian Backup»: the tasks of Cobian Backup 11, added switched off.</summary>
     public async Task CobianImportAsync()
     {
-        if (!vm.CanEdit || !await Monitor.EnsureUnlockedAsync())
+        if (!vm.ShowsCobianImport || !vm.CanImportTasks || !await Monitor.EnsureUnlockedAsync())
         {
             return;
         }
@@ -361,18 +474,18 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Восстановить»: administrators only, with the program password when one is set (section 6.11).</summary>
     public async Task RestoreAsync()
     {
-        if (!vm.IsDemo && (Monitor.Status.Hello?.IsAdmin != true || !await Monitor.EnsureUnlockedAsync()))
+        if (!vm.CanRestore || (!vm.IsDemo && !await Monitor.EnsureUnlockedAsync()))
         {
             return;
         }
 
-        await new RestoreDialog(Monitor, vm.SelectedTask?.TaskId).ShowAsync(window);
+        await new RestoreDialog(Monitor, vm.SelectedTask?.TaskId).ShowAsync(window, Monitor);
     }
 
     /// <summary>«Обновить»: the service downloads the version from GitHub, checks it and installs it.</summary>
     public async Task InstallUpdateAsync()
     {
-        if (Monitor.Snapshot?.ProgramUpdate is not { Available: true, Latest: { } version }
+        if (!vm.ShowsSettings || Monitor.Snapshot?.ProgramUpdate is not { Available: true, ManagedByPackage: false, Latest: { } version }
             || !await Dialogs.Ask(window, Strings.Format(Strings.UpdateAsk, version), Strings.UpdateInstall, Strings.ButtonCancel)
             || !await Monitor.EnsureUnlockedAsync())
         {
@@ -387,22 +500,31 @@ internal sealed class MainActions(MainWindow window, MainViewModel vm)
     /// <summary>«Все настройки»: everyone may look; the window asks for the program password before a change is sent.</summary>
     public async Task SettingsAsync()
     {
-        if (!Monitor.IsConnected)
+        if (!vm.CanOpenSettings)
         {
             return;
         }
 
-        if (vm.CanEdit && !await Monitor.EnsureUnlockedAsync())
+        if (!CustosEdition.IsLinux && Monitor.CanEdit && !await Monitor.EnsureUnlockedAsync())
         {
             return;
         }
 
-        await new SettingsDialog(Monitor).ShowAsync(window);
+        var dialog = new SettingsDialog(Monitor, vm.Ui);
+        if (await dialog.ShowAsync(window, Monitor) && dialog.LanguageChanged && Application.Current is App app)
+        {
+            app.RefreshInterfaceLanguage();
+        }
     }
 
     private async Task OpenEditorAsync(EditorModel model)
     {
         var editor = new EditorWindow(model);
+        if (Core.CustosEdition.IsLinux)
+        {
+            ScreenFit.Limit(editor, window);
+        }
+
         await editor.ShowDialog(window);
         if (editor.Saved is not { } saved)
         {

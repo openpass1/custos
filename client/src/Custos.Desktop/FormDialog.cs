@@ -46,6 +46,16 @@ internal abstract class FormDialog : Window
         var view = new FormView { Items = Items, Margin = new Thickness(20, 0, 20, 12) };
         var head = new TextBlock { Text = title, Classes = { "headline" }, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(20, 12, 20, 6) };
         Scroll = new ScrollViewer { Content = view, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        if (Core.CustosEdition.IsLinux)
+        {
+            SizeChanged += (_, _) =>
+            {
+                bool compact = ClientSize.Width < width;
+                Scroll.HorizontalScrollBarVisibility = compact ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+                view.MaxWidth = compact ? Math.Max(320, ClientSize.Width - 56) : double.PositiveInfinity;
+                view.Classes.Set("narrow", compact);
+            };
+        }
         _cancel = Ui.Text(Strings.ButtonCancel, () => Close());
         OkButton = Ui.Filled(Strings.ButtonOk, () => { });
         OkButton.IsDefault = true;
@@ -92,11 +102,29 @@ internal abstract class FormDialog : Window
     protected ScrollViewer Scroll { get; }
 
     /// <summary>Opens the dialog over <paramref name="owner"/>; true when it was closed with the main button.</summary>
-    public async Task<bool> ShowAsync(Window owner)
+    public async Task<bool> ShowAsync(Window owner, ServiceMonitor? monitor = null)
     {
         // Sized for the screen before it is placed over the owner, so that it opens whole on it.
         ScreenFit.Limit(this, owner);
-        await ShowDialog(owner);
+        var previous = monitor?.AskPassword;
+        if (monitor is not null)
+        {
+            // The program password belongs to the active modal window, not its disabled owner.
+            monitor.AskPassword = () => Dialogs.ProgramPassword(this, monitor);
+        }
+
+        try
+        {
+            await ShowDialog(owner);
+        }
+        finally
+        {
+            if (monitor is not null)
+            {
+                monitor.AskPassword = previous;
+            }
+        }
+
         return _result;
     }
 

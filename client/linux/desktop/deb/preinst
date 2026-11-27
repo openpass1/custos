@@ -1,0 +1,14 @@
+# Do not overwrite a vendor unit or binary left by an independent installation.
+if [ "$1" = install ]; then
+  for path in "$unit_path" "/lib/systemd/system/$unit" /usr/bin/custos /usr/bin/custos-gui; do
+    if path_exists "$path" && ! dpkg-query -S -- "$path" "$(readlink -m -- "$path")" 2>/dev/null \
+      | grep -Eq '^custos-desktop(-preview)?:'; then
+      printf 'Cannot install custos-desktop over an existing file: %s\n' "$path" >&2
+      exit 1
+    fi
+  done
+
+  # dpkg reports install here even when it remembers the version of a removed package.
+  install -d -m 0700 -- "$state_dir"
+  touch -- "$install_marker"
+fi

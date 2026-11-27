@@ -25,6 +25,99 @@
   <data name="SettingsAll" xml:space="preserve">
     <value>All settings…</value>
   </data>
+  <data name="MonitorChangeServer" xml:space="preserve">
+    <value>Change server…</value>
+  </data>
+  <data name="MonitorSwitchConfirm" xml:space="preserve">
+    <value>Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.</value>
+  </data>
+  <data name="MonitorConnectionChanged" xml:space="preserve">
+    <value>The monitoring connection changed. Review the current server and try again.</value>
+  </data>
+  <data name="InterfaceLanguage" xml:space="preserve">
+    <value>Interface language</value>
+  </data>
+  <data name="InterfaceLanguageSaveFailed" xml:space="preserve">
+    <value>The interface language could not be saved in your CUSTOS settings.</value>
+  </data>
+  <data name="LinuxServiceSettingsReadOnly" xml:space="preserve">
+    <value>The service settings are read-only.</value>
+  </data>
+  <data name="LinuxDesktopUpdates" xml:space="preserve">
+    <value>Desktop updates</value>
+  </data>
+  <data name="LinuxDesktopUpdatesHelp" xml:space="preserve">
+    <value>Download the package from GitHub Releases and open it in your system package manager to install it.</value>
+  </data>
+  <data name="LinuxAgentUpdates" xml:space="preserve">
+    <value>Agent updates</value>
+  </data>
+  <data name="LinuxUpdateChannel" xml:space="preserve">
+    <value>Update channel</value>
+  </data>
+  <data name="LinuxUpdateStable" xml:space="preserve">
+    <value>Stable</value>
+  </data>
+  <data name="LinuxUpdatePreview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="LinuxUpdateInstalledVersion" xml:space="preserve">
+    <value>Installed package version is {0}.</value>
+  </data>
+  <data name="LinuxUpdateInstalledUnknown" xml:space="preserve">
+    <value>Could not read the installed version from the system package manager.</value>
+  </data>
+  <data name="LinuxUpdateNoPackage" xml:space="preserve">
+    <value>no matching package on GitHub for this channel</value>
+  </data>
+  <data name="LinuxUpdateNoNewerPackage" xml:space="preserve">
+    <value>no newer package for this channel</value>
+  </data>
+  <data name="LinuxUpdatePreviewAvailable" xml:space="preserve">
+    <value>CUSTOS {0} Preview is out</value>
+  </data>
+  <data name="LinuxUpdateReleaseNotes" xml:space="preserve">
+    <value>Release notes</value>
+  </data>
+  <data name="LinuxUpdateDownloadPackage" xml:space="preserve">
+    <value>Download package</value>
+  </data>
+  <data name="LinuxUpdateBrowserFailed" xml:space="preserve">
+    <value>Could not open GitHub Releases in the browser.</value>
+  </data>
+  <data name="LinuxUpdateChannelSaveFailed" xml:space="preserve">
+    <value>Could not save the desktop update channel.</value>
+  </data>
+  <data name="LinuxUpdateSaveAgentChannel" xml:space="preserve">
+    <value>Save settings to change the agent update channel, then check again.</value>
+  </data>
+  <data name="LinuxThemeAuto" xml:space="preserve">
+    <value>Follow the system</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditHelp" xml:space="preserve">
+    <value>Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or run commands as root. Restore remains available only to administrators.</value>
+  </data>
+  <data name="LinuxAllowAllUsersEditWarning" xml:space="preserve">
+    <value>Allow every local user to change tasks and run them with root privileges?</value>
+  </data>
+  <data name="LinuxLogRetentionHelp" xml:space="preserve">
+    <value>Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.</value>
+  </data>
+  <data name="LinuxProgramPasswordHelp" xml:space="preserve">
+    <value>When set, this password is required in addition to the usual permissions for editing and restoring. The window stays unlocked for 30 minutes after the last protected operation or until it closes.</value>
+  </data>
+  <data name="LinuxServiceLanguageHelp" xml:space="preserve">
+    <value>The language of the run logs and service messages. Automatic follows the service locale. The desktop interface language is set separately.</value>
+  </data>
+  <data name="LinuxAccountsNote" xml:space="preserve">
+    <value>The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.</value>
+  </data>
+  <data name="LinuxArchiverVersion" xml:space="preserve">
+    <value>7-Zip (7z.so) version {0}</value>
+  </data>
+  <data name="LinuxArchiverProblem" xml:space="preserve">
+    <value>The backup service could not load 7z.so.</value>
+  </data>
   <data name="ThemeHeading" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -108,5 +201,118 @@
   </data>
   <data name="RestoreSetHint" xml:space="preserve">
     <value>{0} files · {1} · {2}</value>
+  </data>
+  <data name="LinuxCloudAppMissing" xml:space="preserve">
+    <value>Enter the client ID of your application for {0}, then continue signing in here.</value>
+  </data>
+  <data name="LinuxCloudAppMissingWithSecret" xml:space="preserve">
+    <value>Enter the client ID and secret of your application for {0}, then continue signing in here.</value>
+  </data>
+  <data name="LinuxCloudNoLoopback" xml:space="preserve">
+    <value>Cannot open a local callback port for Google Drive. Close this window and try again.</value>
+  </data>
+  <data name="LinuxCloudSecretNote" xml:space="preserve">
+    <value>Google Drive and Yandex Disk require the client secret. Dropbox does not require one.</value>
+  </data>
+  <data name="LinuxCloudYandexSecretRequired" xml:space="preserve">
+    <value>Yandex Disk needs the client secret together with the client ID.</value>
+  </data>
+  <data name="LinuxSourcePathHelp" xml:space="preserve">
+    <value>Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.</value>
+  </data>
+  <data name="LinuxPathVariables" xml:space="preserve">
+    <value>Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {MM} and {dd}.</value>
+  </data>
+  <data name="LinuxErrorLocalPath" xml:space="preserve">
+    <value>«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.</value>
+  </data>
+  <data name="LinuxImportUnsupportedPaths" xml:space="preserve">
+    <value>Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.</value>
+  </data>
+  <data name="LinuxTaskUnsupportedPaths" xml:space="preserve">
+    <value>This task uses paths incompatible with Linux. Review its sources, destinations and database tools before switching it on.</value>
+  </data>
+  <data name="LinuxRightsEditTasks" xml:space="preserve">
+    <value>manage tasks</value>
+  </data>
+  <data name="ExportWithSecrets" xml:space="preserve">
+    <value>With passwords and keys</value>
+  </data>
+  <data name="ExportWithoutSecrets" xml:space="preserve">
+    <value>Without passwords and keys</value>
+  </data>
+  <data name="LinuxErrorSharePath" xml:space="preserve">
+    <value>Enter an SMB path such as //server/share/folder. Invalid path: {0}</value>
+  </data>
+  <data name="LinuxErrorVolumeFolder" xml:space="preserve">
+    <value>Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.</value>
+  </data>
+  <data name="LinuxSmbAccountHelp" xml:space="preserve">
+    <value>The agent mounts the share with the selected account, or connects as a guest without one.</value>
+  </data>
+  <data name="LinuxDestinationKindHelp" xml:space="preserve">
+    <value>Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A USB disk must already be mounted and is found by its volume label.</value>
+  </data>
+  <data name="LinuxUsbLabelHelp" xml:space="preserve">
+    <value>Enter the volume label of a mounted disk. Use lsblk -f to see the labels.</value>
+  </data>
+  <data name="LinuxUsbFolderHelp" xml:space="preserve">
+    <value>Use a path relative to the volume, such as backups/daily.</value>
+  </data>
+  <data name="LinuxKeepTopDirHelp" xml:space="preserve">
+    <value>On: /srv/data is copied into &lt;backup&gt;/data/…
+Off: the contents of /srv/data go straight into &lt;backup&gt;/…</value>
+  </data>
+  <data name="LinuxSnapshotEnabled" xml:space="preserve">
+    <value>Use a filesystem snapshot</value>
+  </data>
+  <data name="LinuxSnapshotHelp" xml:space="preserve">
+    <value>The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.</value>
+  </data>
+  <data name="LinuxFilePermissions" xml:space="preserve">
+    <value>Keep file and folder owners and permissions</value>
+  </data>
+  <data name="LinuxNoFilePermissions" xml:space="preserve">
+    <value>This setting applies to file copies in a local folder, a network folder or a USB disk.</value>
+  </data>
+  <data name="LinuxDbBinDirHelp" xml:space="preserve">
+    <value>Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover local installations.</value>
+  </data>
+  <data name="LinuxEventUnitStop" xml:space="preserve">
+    <value>Stop a systemd unit</value>
+  </data>
+  <data name="LinuxEventUnitStart" xml:space="preserve">
+    <value>Start a systemd unit</value>
+  </data>
+  <data name="LinuxEventHelp" xml:space="preserve">
+    <value>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.</value>
+  </data>
+  <data name="SystemServiceHeading" xml:space="preserve">
+    <value>CUSTOS service</value>
+  </data>
+  <data name="SystemServiceRestart" xml:space="preserve">
+    <value>Restart the service</value>
+  </data>
+  <data name="SystemServiceRestartConfirm" xml:space="preserve">
+    <value>Restart the CUSTOS service?</value>
+  </data>
+  <data name="SystemServiceDone" xml:space="preserve">
+    <value>The CUSTOS service operation completed.</value>
+  </data>
+  <data name="SystemServiceFailed" xml:space="preserve">
+    <value>Could not control the CUSTOS service.
+{0}</value>
+  </data>
+  <data name="SystemServiceExitCode" xml:space="preserve">
+    <value>systemctl exited with code {0}.</value>
+  </data>
+  <data name="SystemServiceCustomSocket" xml:space="preserve">
+    <value>Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.</value>
+  </data>
+  <data name="SystemServiceUnavailable" xml:space="preserve">
+    <value>This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.</value>
+  </data>
+  <data name="SystemServiceTimeout" xml:space="preserve">
+    <value>The service operation could not be confirmed in time. Check the service status before retrying.</value>
   </data>
 </root>

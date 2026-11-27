@@ -16,6 +16,8 @@ internal sealed class EditorContext(ServiceMonitor monitor)
 
     public ServiceMonitor Monitor { get; } = monitor;
 
+    public bool CanConnectCloud => DesktopPlatform.Current.SupportsCloudAccounts && Monitor.Status.Hello?.IsAdmin == true;
+
     /// <summary>The editor window: the owner of the dialogs the pages open.</summary>
     public Window Owner { get; set; } = null!;
 
@@ -134,6 +136,8 @@ internal sealed class EditorContext(ServiceMonitor monitor)
     /// <summary>Whose profile %USERPROFILE% in the paths means; null until the task is first saved.</summary>
     public string? ProfileSid { get; init; }
 
+    public bool IsNew { get; init; }
+
     /// <summary>Tells the other pages what changed; null leaves a value as it is.</summary>
     public void SetShape(string? taskName = null, string? backupType = null, string? archiveFormat = null, bool? forcedFull = null)
     {
@@ -184,9 +188,14 @@ internal sealed class EditorContext(ServiceMonitor monitor)
         Credential? saved;
         if (CredentialKinds.IsCloud(kind))
         {
+            if (!CanConnectCloud)
+            {
+                return null;
+            }
+
             // An account of a cloud drive is connected in the browser, not typed in (section 6.3).
             var connect = new CloudConnectDialog(Monitor, kind);
-            saved = await connect.ShowAsync(owner) ? connect.Saved : null;
+            saved = await connect.ShowAsync(owner, Monitor) ? connect.Saved : null;
         }
         else
         {
@@ -277,7 +286,9 @@ internal sealed class AccountPicker
 
         _kind = kind;
         _noneText = noneText;
-        Add.Text = CredentialKinds.IsCloud(kind) ? Strings.ButtonConnectAccount : Strings.ButtonAddAccount;
+        bool cloud = CredentialKinds.IsCloud(kind);
+        Add.Text = cloud ? Strings.ButtonConnectAccount : Strings.ButtonAddAccount;
+        Add.IsEnabled = !cloud || _context.CanConnectCloud;
         Fill();
     }
 

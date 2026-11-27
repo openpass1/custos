@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 
 namespace Custos.Desktop;
@@ -237,6 +238,7 @@ internal sealed class TextItem(string? label, string text = "", double width = d
     private bool _reveal;
     private string? _placeholder;
     private bool _readOnly;
+    private bool _actionEnabled = true;
 
     public string Text
     {
@@ -278,6 +280,8 @@ internal sealed class TextItem(string? label, string text = "", double width = d
 
     public bool Wrap => Multiline && !Mono;
 
+    public ScrollBarVisibility HorizontalScrollbar => Multiline ? ScrollBarVisibility.Auto : ScrollBarVisibility.Hidden;
+
     public bool Secret { get; init; }
 
     public char Mask => Secret && !_reveal ? '•' : '\0';
@@ -307,6 +311,12 @@ internal sealed class TextItem(string? label, string text = "", double width = d
     public Func<Task>? Action { get; init; }
 
     public bool HasAction => Action is not null;
+
+    public bool IsActionEnabled
+    {
+        get => _actionEnabled;
+        set => Set(ref _actionEnabled, value);
+    }
 
     public bool HasIcon => Action is not null || Secret;
 

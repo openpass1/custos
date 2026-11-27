@@ -1,0 +1,39 @@
+if [ "$1" != configure ]; then
+  exit 0
+fi
+
+if external_agent || {
+  systemd_running && { systemctl is-active --quiet "$unit" || [ -S /run/custos.sock ]; } && ! package_unit_loaded
+}; then
+  clear_install_marker
+  exit 0
+fi
+
+if [ -f "$install_marker" ]; then
+  # A new install enables the service. On upgrades keep the administrator's enablement choice.
+  systemctl --no-reload enable "$unit"
+fi
+
+# A removed preview package can still run its old postrm when purged. It only
+# removes absolute links to the vendor unit, so keep our link to that unit relative.
+if [ -L "$enable_link" ] && dpkg-query -W -f='${db:Status-Abbrev}' custos-desktop-preview 2>/dev/null | grep -q '^.c'; then
+  case "$(readlink -- "$enable_link")" in
+    "$unit_path"|"/lib/systemd/system/$unit")
+      relative_unit=$(realpath --relative-to="$(dirname "$enable_link")" "$unit_path")
+      ln -sfnT -- "$relative_unit" "$enable_link"
+      ;;
+  esac
+fi
+
+if systemd_running; then
+  systemctl daemon-reload
+  if package_unit_loaded; then
+    if [ -f "$install_marker" ]; then
+      deb-systemd-invoke start "$unit"
+    elif systemctl is-active --quiet "$unit"; then
+      deb-systemd-invoke restart "$unit"
+    fi
+  fi
+fi
+
+clear_install_marker

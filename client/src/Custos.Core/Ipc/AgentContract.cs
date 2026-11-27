@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Custos.Core.Backup;
 using Custos.Core.Model;
 
@@ -68,6 +69,17 @@ public sealed class ProgramUpdateInfo
     /// <summary>A monitoring site is connected: it decides about updates, GitHub is not asked.</summary>
     public bool ManagedBySite { get; set; }
 
+    /// <summary>The package manager owns the installed service files.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ManagedByPackage { get; set; }
+
+    /// <summary>The selected channel for a Linux agent that checks GitHub directly.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Channel { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Prerelease { get; set; }
+
     /// <summary>When GitHub was last asked; null if never.</summary>
     public DateTimeOffset? CheckedAt { get; set; }
 
@@ -85,6 +97,12 @@ public sealed class ProgramUpdateInfo
 
     /// <summary>An update is being downloaded or installed (from GitHub or from the site).</summary>
     public bool Installing { get; set; }
+}
+
+/// <summary>Changes the release channel of a standalone Linux agent.</summary>
+public sealed class ProgramChannelRequest
+{
+    public string Channel { get; set; } = string.Empty;
 }
 
 /// <summary>The connection to the monitoring server as the program window shows it.</summary>

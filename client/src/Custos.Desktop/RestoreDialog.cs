@@ -44,12 +44,15 @@ internal sealed class RestoreDialog : FormDialog
     private readonly NoteItem _dumpsNote = new(Strings.RestoreDumpsNote) { IsVisible = false };
     private readonly ProgressItem _progress = new() { IsVisible = false };
     private readonly NoteItem _goesOn = new(Strings.RestoreGoesOn) { IsVisible = false };
+    private readonly NoteItem _result = new(string.Empty) { IsVisible = false };
     private readonly Avalonia.Controls.Button _stop;
     private readonly DispatcherTimer _poll = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly List<string?> _accountIds = [null];
     private List<TaskDefinition> _tasks = [];
     private TaskDestination? _storeDestination;
+    private string? _jobId;
     private bool _running;
+    private bool _searching;
     private bool _polling;
 
     public RestoreDialog(ServiceMonitor monitor, string? taskId)
@@ -64,8 +67,8 @@ internal sealed class RestoreDialog : FormDialog
         _byStore = new RadioItem(_from, Strings.RestoreByStore);
         _chooseStore = new ButtonItem("cloud", Strings.RestoreChooseStore, ChooseStoreAsync, ButtonLook.Outlined) { Indent = 30, Failed = ex => ShowError(ex.Message) };
         _search = new ButtonItem("search", Strings.RestoreSearch, SearchAsync) { Failed = ex => _found.Show(ex.Message, Tone.Error) };
-        _toOriginal = new RadioItem(_to, Strings.RestoreToOriginal, on: true);
-        _toFolder = new RadioItem(_to, Strings.RestoreToFolder);
+        _toOriginal = new RadioItem(_to, Strings.RestoreToOriginal, on: !CustosEdition.IsLinux);
+        _toFolder = new RadioItem(_to, Strings.RestoreToFolder, on: CustosEdition.IsLinux);
         _target = new TextItem(null) { Indent = 30, ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_target!) };
         _dumps = new TextItem(L(Strings.RestoreDumpsFolder)) { ActionIcon = "folder_open", ActionTip = Strings.ButtonBrowse, Action = () => BrowseAsync(_dumps!) };
 
@@ -90,10 +93,11 @@ internal sealed class RestoreDialog : FormDialog
         Items.Add(_dumpsNote);
         Items.Add(_progress);
         Items.Add(_goesOn);
+        Items.Add(_result);
 
         OkButton.Content = Strings.RestoreStart;
         CancelButton.Content = Strings.ButtonClose;
-        _stop = AddButton(Strings.ToolStop, () => _monitor.CommandAsync(PipeProtocol.Methods.RestoreStop));
+        _stop = AddButton(Strings.ToolStop, StopAsync);
         FillChoices(taskId);
 
         foreach (var item in _from.Items)
@@ -108,6 +112,8 @@ internal sealed class RestoreDialog : FormDialog
         _to.Items[0].OnChange = UpdateControls;
         _task.OnChange = ClearSets;
         _folder.OnChange = ClearSets;
+        _account.OnChange = ClearSets;
+        _password.OnChange = ClearSets;
         _poll.Tick += (_, _) => Poll();
         Opened += (_, _) =>
         {
@@ -141,7 +147,7 @@ internal sealed class RestoreDialog : FormDialog
         if (_toFolder.On)
         {
             target = _target.Value;
-            if (!Path.IsPathFullyQualified(target))
+            if (!ValidFolder(target))
             {
                 _target.Error = Strings.RestoreChooseTarget;
                 return false;
@@ -152,7 +158,7 @@ internal sealed class RestoreDialog : FormDialog
         if (target is null && set.Header.Databases.Count > 0 && _dumps.Value.Length > 0)
         {
             dumps = _dumps.Value;
-            if (!Path.IsPathFullyQualified(dumps))
+            if (!ValidFolder(dumps))
             {
                 _dumps.Error = Strings.RestoreChooseTarget;
                 return false;
@@ -174,7 +180,7 @@ internal sealed class RestoreDialog : FormDialog
         }
 
         var source = Source();
-        await _monitor.RequestAsync(PipeProtocol.Methods.RestoreStart, new RestoreStartRequest
+        var started = await _monitor.RequestAsync(PipeProtocol.Methods.RestoreStart, new RestoreStartRequest
         {
             TaskId = source.TaskId,
             Folder = source.Folder,
@@ -182,13 +188,17 @@ internal sealed class RestoreDialog : FormDialog
             CredentialId = source.CredentialId,
             Password = source.Password,
             Location = set.Location,
+            SetRunId = set.Header.RunId,
             Where = set.Where,
+            DestinationId = set.DestinationId,
             TargetFolder = target,
             DumpsFolder = dumps,
             Existing = existing,
         },
-            IpcJsonContext.Default.RestoreStartRequest, IpcJsonContext.Default.OkResult, ListTimeout);
+            IpcJsonContext.Default.RestoreStartRequest, IpcJsonContext.Default.RestoreStartResult, ListTimeout);
+        _jobId = started.JobId;
         _running = true;
+        _result.Show(null);
         _progress.Percent = 0;
         _progress.Text = Strings.RestoreStarting;
         _poll.Start();
@@ -225,6 +235,16 @@ internal sealed class RestoreDialog : FormDialog
 
     private static string L(string label) => label.TrimEnd(':', ' ');
 
+    private static bool ValidFolder(string path, bool allowShare = false)
+    {
+        if (CustosEdition.IsLinux && BackupEngine.IsNetworkPath(path))
+        {
+            return allowShare && LinuxEditorPaths.IsShare(path);
+        }
+
+        return Path.IsPathFullyQualified(path) && !path.Contains('\0', StringComparison.Ordinal);
+    }
+
     private static string StorageSuffix(RestoreSetInfo set) => set.Storage switch
     {
         "folder" => string.Empty,
@@ -246,7 +266,7 @@ internal sealed class RestoreDialog : FormDialog
             _byFolder.Load();
         }
 
-        var names = new List<string> { Strings.RestoreServiceAccount };
+        var names = new List<string> { CustosEdition.IsLinux ? Strings.AccountNone : Strings.RestoreServiceAccount };
         foreach (var credential in snapshot?.Credentials.Where(c => c.Kind == CredentialKinds.Windows) ?? [])
         {
             names.Add(credential.DisplayName);
@@ -259,11 +279,12 @@ internal sealed class RestoreDialog : FormDialog
 
     private void UpdateControls()
     {
-        bool idle = !_running;
+        bool idle = !_running && !_searching;
         _byTask.IsEnabled = idle && _tasks.Count > 0;
         _task.IsEnabled = idle && _byTask.On;
         _byFolder.IsEnabled = idle;
-        _folder.IsEnabled = _account.IsEnabled = idle && _byFolder.On;
+        _folder.IsEnabled = idle && _byFolder.On;
+        _account.IsEnabled = _folder.IsEnabled && UsesFolderAccount;
         _byStore.IsEnabled = idle;
         _chooseStore.IsEnabled = idle && _byStore.On;
         _password.IsEnabled = idle;
@@ -295,7 +316,7 @@ internal sealed class RestoreDialog : FormDialog
         _dumps.IsVisible = dumps && _toOriginal.On;
         _dumps.IsEnabled = idle;
         OkButton.IsEnabled = idle && set is not null;
-        _stop.IsVisible = _running;
+        _stop.IsVisible = _running && _jobId is not null;
         _progress.IsVisible = _goesOn.IsVisible = _running;
     }
 
@@ -307,7 +328,7 @@ internal sealed class RestoreDialog : FormDialog
     {
         var start = _storeDestination ?? new TaskDestination { Kind = CustosEdition.IsLegacy ? DestinationKinds.Sftp : DestinationKinds.GDrive };
         var dialog = new DestinationDialog(new EditorContext(_monitor) { Owner = this }, start, isNew: _storeDestination is null, Strings.RestoreStoreTitle);
-        if (!await dialog.ShowAsync(this))
+        if (!await dialog.ShowAsync(this, _monitor))
         {
             return;
         }
@@ -315,7 +336,7 @@ internal sealed class RestoreDialog : FormDialog
         var chosen = dialog.Destination;
         if (DestinationKinds.IsFileSystem(chosen.Kind))
         {
-            if (chosen.Kind == DestinationKinds.Usb || !Path.IsPathFullyQualified(chosen.Path))
+            if (chosen.Kind == DestinationKinds.Usb || !ValidFolder(chosen.Path, allowShare: true))
             {
                 ShowError(Strings.RestoreChooseFolder);
                 return;
@@ -345,18 +366,22 @@ internal sealed class RestoreDialog : FormDialog
         UpdateControls();
     }
 
+    private bool UsesFolderAccount => !CustosEdition.IsLinux || BackupEngine.IsNetworkPath(_folder.Value);
+
     private RestoreListRequest Source() => new()
     {
         TaskId = _byTask.On && _task.Selected >= 0 && _task.Selected < _tasks.Count ? _tasks[_task.Selected].Id : null,
-        Folder = _byFolder.On ? _folder.Value : null,
+        Folder = _byFolder.On
+            ? CustosEdition.IsLinux && UsesFolderAccount ? LinuxEditorPaths.NormalizeShare(_folder.Value) : _folder.Value
+            : null,
         Destination = _byStore.On ? _storeDestination : null,
-        CredentialId = _byFolder.On ? _accountIds[Math.Max(0, _account.Selected)] : null,
+        CredentialId = _byFolder.On && UsesFolderAccount ? _accountIds[Math.Max(0, _account.Selected)] : null,
         Password = _password.Text.Length > 0 ? _password.Text : null,
     };
 
     private async Task SearchAsync()
     {
-        if (_byFolder.On && !Path.IsPathFullyQualified(_folder.Value))
+        if (_byFolder.On && !ValidFolder(_folder.Value, allowShare: true))
         {
             _folder.Error = Strings.RestoreChooseFolder;
             return;
@@ -370,9 +395,32 @@ internal sealed class RestoreDialog : FormDialog
 
         ClearSets();
         _found.Show(Strings.RestoreSearching, Tone.Plain);
-        var result = await _monitor.RequestAsync(PipeProtocol.Methods.RestoreList, Source(),
-            IpcJsonContext.Default.RestoreListRequest, IpcJsonContext.Default.RestoreListResult, ListTimeout);
-        ShowSets(result);
+        _searching = true;
+        UpdateControls();
+        try
+        {
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.RestoreList, Source(),
+                IpcJsonContext.Default.RestoreListRequest, IpcJsonContext.Default.RestoreListResult, ListTimeout);
+            ShowSets(result);
+        }
+        finally
+        {
+            _searching = false;
+            UpdateControls();
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_jobId is { } job)
+        {
+            var result = await _monitor.RequestAsync(PipeProtocol.Methods.RestoreStop, new RestoreStopRequest { JobId = job },
+                IpcJsonContext.Default.RestoreStopRequest, IpcJsonContext.Default.OkResult);
+            if (!result.Ok)
+            {
+                ShowError(result.Message);
+            }
+        }
     }
 
     private async void Poll()
@@ -383,11 +431,15 @@ internal sealed class RestoreDialog : FormDialog
         }
 
         _polling = true;
+        string? job = _jobId;
         try
         {
             var status = await _monitor.RequestAsync(PipeProtocol.Methods.RestoreStatus, EmptyRequest.Instance,
                 IpcJsonContext.Default.EmptyRequest, IpcJsonContext.Default.RestoreStatusResult);
-            await ShowStatusAsync(status);
+            if (IsVisible && (job == _jobId || status.JobId == _jobId))
+            {
+                await ShowStatusAsync(status);
+            }
         }
         catch (ServiceUnavailableException ex)
         {
@@ -404,8 +456,10 @@ internal sealed class RestoreDialog : FormDialog
     {
         bool wasRunning = _running;
         _running = status.Running;
+        _jobId = status.JobId;
         if (status.Running)
         {
+            _result.Show(null);
             _poll.Start();
             var progress = status.Progress;
             _progress.Percent = progress is null ? 0 : Math.Clamp(progress.Percent, 0, 100);
@@ -419,14 +473,17 @@ internal sealed class RestoreDialog : FormDialog
 
         _poll.Stop();
         UpdateControls();
-        if (wasRunning && status.Result is { } result)
+        if (status.Result is { } result)
         {
             string line = Strings.Format(Strings.RestoreResultText, Words.Status(result.Status), Describe.Number(result.FilesRestored),
                 Describe.Number(result.FilesSkipped), Describe.Number(result.FilesFailed));
             string text = line + (result.ErrorMessage is { } error ? Environment.NewLine + Environment.NewLine + error : string.Empty)
                 + (status.LogFile is { } log ? Environment.NewLine + Environment.NewLine + Strings.Format(Strings.RestoreLogFile, log) : string.Empty);
-            ShowError(result.Status == RunStatuses.Success ? null : line);
-            await Dialogs.Show(this, text);
+            _result.Show(text, result.Status == RunStatuses.Success ? Tone.Plain : Tone.Error);
+            if (wasRunning)
+            {
+                await Dialogs.Show(this, text);
+            }
         }
     }
 

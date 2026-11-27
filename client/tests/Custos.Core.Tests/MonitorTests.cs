@@ -13,6 +13,21 @@ using Microsoft.Data.Sqlite;
 
 namespace Custos.Core.Tests;
 
+public sealed class MonitorServerAddressTests
+{
+    [Theory]
+    [InlineData(null, null, true)]
+    [InlineData(null, "http://custos.example.lan", false)]
+    [InlineData("HTTPS://CUSTOS.EXAMPLE.LAN:443/Team/", "https://custos.example.lan/Team", true)]
+    [InlineData("http://custos.example.lan:80/", "http://CUSTOS.EXAMPLE.LAN", true)]
+    [InlineData("https://custos.example.lan/Team", "https://custos.example.lan/team", false)]
+    [InlineData("https://custos.example.lan/Team", "https://custos.example.lan/Other", false)]
+    [InlineData("https://custos.example.lan:8443/Team", "https://custos.example.lan/Team", false)]
+    [InlineData("http://custos.example.lan/Team", "https://custos.example.lan/Team", false)]
+    public void Monitor_addresses_use_canonical_origin_and_case_sensitive_path(string? first, string? second, bool same) =>
+        Assert.Equal(same, MonitorClient.HaveSameServerUrl(first, second));
+}
+
 public sealed class RegistrationCodeTests
 {
     [Fact]

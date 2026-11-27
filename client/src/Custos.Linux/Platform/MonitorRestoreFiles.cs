@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Custos.Core;
 using Microsoft.Win32.SafeHandles;
@@ -8,16 +7,11 @@ namespace Custos.Service.Platform;
 /// <summary>Confines files read and written by Linux restores requested by the monitoring server.</summary>
 internal static class MonitorRestoreFiles
 {
-    private const int PathOnly = 0x200000;
-    private const int CloseOnExec = 0x80000;
-    private const int NonBlocking = 0x800;
     // Linux arm64 overrides the asm-generic O_DIRECTORY and O_NOFOLLOW values.
     private static int DirectoryOnly => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x4000 : 0x10000;
     private static int NoFollow => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x8000 : 0x20000;
-    private static int DirectoryFlags => PathOnly | CloseOnExec | DirectoryOnly | NoFollow;
+    private static int DirectoryFlags => Native.PathOnly | Native.CloseOnExec | DirectoryOnly | NoFollow;
 
-    private const uint TypeBits = 0xf000;
-    private const uint Regular = 0x8000;
     private const uint PrivateMode = 0x1c0; // 0700
     private const uint GroupAndOtherWrite = 0x12;
     private const uint Sticky = 0x200;
@@ -61,30 +55,8 @@ internal static class MonitorRestoreFiles
 
         string directoryPath = Path.Combine(root, Path.GetDirectoryName(relative) ?? string.Empty);
         using var directory = OpenDirectory(directoryPath);
-        using var original = Native.openat(directory, Path.GetFileName(relative), PathOnly | NoFollow | CloseOnExec);
-        if (original.IsInvalid || Native.Stat(original) is not { } stat || (stat.Mode & TypeBits) != Regular)
-        {
-            throw new IOException("A restore source is not a regular file.");
-        }
-
-        // An O_PATH handle can inspect a FIFO or a device without opening it for I/O. Reopen only the pinned regular
-        // file through procfs so a name changed concurrently cannot turn the open into a link or special-file read.
-        string descriptor = original.DangerousGetHandle().ToInt64().ToString(CultureInfo.InvariantCulture);
-        var readable = Native.open("/proc/self/fd/" + descriptor, CloseOnExec | NonBlocking);
-        try
-        {
-            if (readable.IsInvalid)
-            {
-                throw new IOException("A restore source could not be opened.");
-            }
-
-            return new FileStream(readable, FileAccess.Read);
-        }
-        catch
-        {
-            readable.Dispose();
-            throw;
-        }
+        using var original = Native.openat(directory, Path.GetFileName(relative), Native.PathOnly | NoFollow | Native.CloseOnExec);
+        return Native.OpenRegularFile(original, 4096);
     }
 
     private static SafeFileHandle OpenDirectory(string path, bool requireProtected = false)

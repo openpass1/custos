@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
 using Custos.Core;
@@ -66,6 +68,166 @@ public sealed class ServiceTests(ServiceFixture service)
         Assert.True(run.Status == RunStatuses.Success, run.ErrorMessage);
         Assert.NotEmpty(Directory.GetFiles(destination, "*.zip", SearchOption.AllDirectories));
         await RestoreAndCompareAsync(task.Id, ArchiveFormats.Zip);
+    }
+
+    [Fact]
+    public async Task A_backup_skips_special_files_and_directory_links_but_keeps_regular_file_links()
+    {
+        string source = TestPlace.NewFolder("special-src");
+        string destination = TestPlace.NewFolder("special-dst");
+        string outside = TestPlace.NewFolder("special-outside");
+        string folder = Directory.CreateDirectory(Path.Combine(source, "files")).FullName;
+        string regular = Path.Combine(folder, "ordinary.txt");
+        File.WriteAllText(regular, "file contents");
+        File.WriteAllText(Path.Combine(outside, "external.txt"), "not selected");
+
+        File.CreateSymbolicLink(Path.Combine(source, "regular-link.txt"), regular);
+        Directory.CreateSymbolicLink(Path.Combine(source, "directory-link"), outside);
+        string fifo = Path.Combine(source, "live-fifo");
+        Assert.Equal(0, Tool.Run("mkfifo", [fifo]).ExitCode);
+        File.CreateSymbolicLink(Path.Combine(source, "fifo-link"), fifo);
+        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        socket.Bind(new UnixDomainSocketEndPoint(Path.Combine(source, "live.socket")));
+
+        var task = await service.SaveAsync(NewTask("Linux file types", source, destination));
+        var run = await service.RunAsync(task.Id);
+
+        Assert.True(run.Status == RunStatuses.Success, run.ErrorMessage);
+        Assert.Equal(2, run.FilesProcessed);
+        string copied = Assert.Single(Directory.GetFiles(destination, "ordinary.txt", SearchOption.AllDirectories));
+        string linked = Assert.Single(Directory.GetFiles(destination, "regular-link.txt", SearchOption.AllDirectories));
+        Assert.Equal("file contents", File.ReadAllText(copied));
+        Assert.Equal("file contents", File.ReadAllText(linked));
+        Assert.Empty(Directory.GetFiles(destination, "external.txt", SearchOption.AllDirectories));
+        Assert.Empty(Directory.GetFiles(destination, "live*", SearchOption.AllDirectories));
+        Assert.Empty(Directory.GetFiles(destination, "fifo-link", SearchOption.AllDirectories));
+
+        var platform = new LinuxBackupPlatform(new Custos.Core.Agent.ConfigStore(DataFolders.Config, new KeyFileProtector()), new ShadowCopies(DataFolders.PendingShadowsFile));
+        Assert.Throws<IOException>(() => platform.OpenSourceFile(fifo, 1));
+    }
+
+    [Fact]
+    public async Task Files_with_metadata_errors_are_reported_and_the_rest_of_the_source_is_copied()
+    {
+        var (source, destination) = Folders("source-metadata");
+        string dangling = Path.Combine(source, "missing-link");
+        string loop = Path.Combine(source, "looping-link");
+        File.CreateSymbolicLink(dangling, "missing-target");
+        File.CreateSymbolicLink(loop, loop);
+        var task = await service.SaveAsync(NewTask("Linux source metadata", source, destination));
+
+        var run = await service.RunAsync(task.Id);
+
+        Assert.Equal(RunStatuses.Warning, run.Status);
+        Assert.Equal(Files.Length, run.FilesProcessed);
+        var log = await service.RunLogAsync(run.RunId);
+        Assert.Contains(log, line => line.Contains(dangling, StringComparison.Ordinal));
+        Assert.Contains(log, line => line.Contains(loop, StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(ArchiveFormats.None)]
+    [InlineData(ArchiveFormats.Zip)]
+    public void A_file_deleted_after_the_scan_is_logged_and_the_case_distinct_destination_still_works(string format)
+    {
+        string parent = TestPlace.NewFolder("vanished");
+        string source = Directory.CreateDirectory(Path.Combine(parent, "Source")).FullName;
+        string destination = Path.Combine(parent, "source");
+        string vanished = Path.Combine(source, "gone.txt");
+        File.WriteAllText(vanished, "short-lived data");
+        File.WriteAllText(Path.Combine(source, "kept.txt"), "lasting data");
+        var task = NewTask("Linux disappearing file", source, destination);
+        task.Archive.Format = format;
+        var platform = new LinuxBackupPlatform(new Custos.Core.Agent.ConfigStore(DataFolders.Config, new KeyFileProtector()), new ShadowCopies(DataFolders.PendingShadowsFile));
+        var log = new CapturedRunLog();
+        var engine = new BackupEngine(platform, new MemoryFileStateStore(), log, progress =>
+        {
+            if (progress.Phase == BackupPhases.Copy)
+            {
+                File.Delete(vanished);
+            }
+        });
+        using var pause = new PauseGate();
+        var result = engine.Run(new BackupRequest
+        {
+            Task = task,
+            RunId = TaskDefinition.NewId(),
+            Trigger = RunTriggers.Manual,
+            StartedAt = DateTimeOffset.UtcNow,
+        }, pause, TestContext.Current.CancellationToken);
+
+        Assert.Equal(RunStatuses.Success, result.Status);
+        Assert.Equal(1, result.FilesProcessed);
+        Assert.Contains(log.Lines, line => line.Level == RunLogLevel.Info && line.Message.Contains(vanished, StringComparison.Ordinal));
+    }
+
+    private sealed class CapturedRunLog : IRunLog
+    {
+        public List<(RunLogLevel Level, string Message)> Lines { get; } = [];
+
+        public void Write(RunLogLevel level, string message) => Lines.Add((level, message));
+    }
+
+    [Theory]
+    [InlineData(ArchiveFormats.None)]
+    [InlineData(ArchiveFormats.Zip)]
+    public async Task Repeated_backups_exclude_a_nested_destination_and_its_previous_sets(string format)
+    {
+        string source = TestPlace.NewFolder("overlap-src");
+        string destination = Directory.CreateDirectory(Path.Combine(source, "destination")).FullName;
+        string outside = TestPlace.NewFolder("overlap-alias");
+        string alias = Path.Combine(outside, "backup-link");
+        Directory.CreateSymbolicLink(alias, destination);
+        File.WriteAllText(Path.Combine(source, "selected.txt"), "backup data");
+        string existing = Path.Combine(destination, "personal.txt");
+        File.WriteAllText(existing, "already in the destination");
+        var definition = NewTask("Linux nested destination", source, alias);
+        definition.Archive.Format = format;
+        var task = await service.SaveAsync(definition);
+
+        for (int i = 0; i < 2; i++)
+        {
+            var run = await service.RunAsync(task.Id);
+            Assert.Equal(RunStatuses.Warning, run.Status);
+            Assert.Equal(1, run.FilesProcessed);
+            Assert.Contains(await service.RunLogAsync(run.RunId), line => line.Contains(destination, StringComparison.Ordinal));
+        }
+
+        Assert.Equal("already in the destination", File.ReadAllText(existing));
+        if (format == ArchiveFormats.None)
+        {
+            Assert.Equal(2, Directory.GetFiles(destination, "selected.txt", SearchOption.AllDirectories).Length);
+            Assert.Equal(existing, Assert.Single(Directory.GetFiles(destination, "personal.txt", SearchOption.AllDirectories)));
+        }
+        else
+        {
+            string[] archives = Directory.GetFiles(destination, "*.zip", SearchOption.AllDirectories);
+            Assert.Equal(2, archives.Length);
+            foreach (string path in archives)
+            {
+                using var archive = ZipFile.OpenRead(path);
+                Assert.Single(archive.Entries, entry => entry.Name == "selected.txt");
+                Assert.DoesNotContain(archive.Entries, entry => entry.Name == "personal.txt" || entry.Name.EndsWith(".zip", StringComparison.Ordinal));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_destination_equal_to_or_containing_the_source_is_rejected(bool sameFolder)
+    {
+        string destination = TestPlace.NewFolder("unsafe-overlap");
+        string source = sameFolder ? destination : Directory.CreateDirectory(Path.Combine(destination, "source")).FullName;
+        string existing = Path.Combine(source, "selected.txt");
+        File.WriteAllText(existing, "leave the source alone");
+        var task = await service.SaveAsync(NewTask("Linux unsafe overlap", source, destination));
+
+        var run = await service.RunAsync(task.Id);
+
+        Assert.Equal(RunStatuses.Error, run.Status);
+        Assert.Equal(existing, Assert.Single(Directory.GetFiles(destination, "*", SearchOption.AllDirectories)));
+        Assert.Equal("leave the source alone", File.ReadAllText(existing));
     }
 
     /// <summary>7-Zip on Linux is 7z.so built from the sources by linux/build-native-linux.sh; CI puts it next to the tests.</summary>

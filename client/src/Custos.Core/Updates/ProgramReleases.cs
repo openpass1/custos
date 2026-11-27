@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace Custos.Core.Updates;
 
 /// <summary>
-/// A published release of CUSTOS for Windows on GitHub: its update package and how to check it. The SHA-256 comes
+/// A published CUSTOS release on GitHub: its update package and how to check it. The SHA-256 comes
 /// from GitHub's own digest of the file, or else from the file SHA256SUMS.txt of the same release.
 /// </summary>
 public sealed class ProgramRelease
@@ -29,11 +30,17 @@ public sealed class ProgramRelease
 
     /// <summary>The page of the release: what is new.</summary>
     public required Uri PageUrl { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Prerelease { get; init; }
 }
 
 /// <summary>What the service last learned from GitHub, kept in <c>program-update.json</c> between restarts.</summary>
 public sealed class ProgramCheckState
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Channel { get; set; }
+
     /// <summary>When GitHub was last asked (also after a failed attempt: the next one is a day later).</summary>
     public DateTimeOffset? CheckedAt { get; set; }
 
@@ -45,18 +52,28 @@ public sealed class ProgramCheckState
 
     /// <summary>The newest version already written to the log, so that each one is told once.</summary>
     public string? Announced { get; set; }
+
+    public ProgramCheckState ForChannel(string channel) =>
+        ProgramReleases.NormalizeChannel(Channel) == channel
+        && (channel == ProgramReleases.PreviewChannel || Latest?.Prerelease != true)
+            ? this : new ProgramCheckState { Channel = channel };
 }
 
 /// <summary>Why GitHub could not tell or give a release.</summary>
 public sealed class ReleaseCheckException(string message, Exception? inner = null) : Exception(message, inner);
 
 /// <summary>
-/// New versions of CUSTOS for Windows on GitHub (releases with the tag <c>client-vX.Y.Z</c>). A computer that is
+/// New versions of CUSTOS on GitHub (releases with the tag <c>client-vX.Y.Z</c>). A computer that is
 /// not connected to a monitoring site asks once a day; the update is installed only when an administrator presses
 /// «Обновить». A computer connected to a site never asks: the site decides about updates.
 /// </summary>
 public static class ProgramReleases
 {
+    public const string StableChannel = "stable";
+    public const string PreviewChannel = "preview";
+
+    public static string NormalizeChannel(string? channel) => channel == PreviewChannel ? PreviewChannel : StableChannel;
+
     /// <summary>Tags of the program (<c>client-v</c>, or <c>client-legacy-v</c> for the legacy edition); the site has its own (<c>server-v</c>).</summary>
     public static string TagPrefix => CustosEdition.ReleaseTagPrefix;
 
@@ -71,50 +88,105 @@ public static class ProgramReleases
 
     private static string ReleasesPrefix => $"https://github.com/{CustosInfo.GitHubRepository}/releases/";
 
-    /// <summary>
-    /// The newest published release of the program in an answer of <see cref="ApiUrl"/> that can be installed: it
-    /// has the update package and a SHA-256 to check it with. Pre-releases are skipped. Null when there is none.
-    /// </summary>
-    /// <exception cref="ReleaseCheckException">The answer is not a list of releases.</exception>
-    public static ProgramRelease? Newest(Stream json)
+    /// <summary>Reads the official release list and selects an asset of this edition.</summary>
+    public static async Task<ProgramRelease?> CheckAsync(HttpClient http, string channel, CancellationToken cancellationToken,
+        Func<string, string>? assetName = null)
     {
-        ArgumentNullException.ThrowIfNull(json);
-        JsonDocument document;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        const int timeoutSeconds = 30;
+        timeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
         try
         {
-            document = JsonDocument.Parse(json);
+            Uri url = CustosEdition.IsLinux || assetName is not null
+                ? new Uri($"https://api.github.com/repos/{CustosInfo.GitHubRepository}/releases?per_page=100") : ApiUrl;
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            request.Headers.UserAgent.ParseAdd("CUSTOS");
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+            {
+                throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, Messages.ProgramCheckLimited));
+            }
+
+            response.EnsureSuccessStatusCode();
+            var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
+            await using (stream.ConfigureAwait(false))
+            {
+                using var document = await JsonDocument.ParseAsync(stream, cancellationToken: timeout.Token).ConfigureAwait(false);
+                return Newest(document.RootElement, channel, assetName);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException
+            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            string reason = ex is OperationCanceledException ? Messages.Format(Messages.SevenZipNoAnswer, timeoutSeconds) : ex.Message;
+            throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, reason), ex);
+        }
+    }
+
+    /// <summary>
+    /// The newest published release of the program in an answer of <see cref="ApiUrl"/> that can be installed: it
+    /// has the expected asset and a SHA-256 to check it with. Preview also considers published pre-releases.
+    /// </summary>
+    /// <exception cref="ReleaseCheckException">The answer is not a list of releases.</exception>
+    public static ProgramRelease? Newest(Stream json, string channel = StableChannel, Func<string, string>? assetName = null)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return Newest(document.RootElement, channel, assetName);
         }
         catch (JsonException ex)
         {
             throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, ex.Message), ex);
         }
+    }
 
-        using (document)
+    private static ProgramRelease? Newest(JsonElement releases, string channel, Func<string, string>? assetName)
+    {
+        if (releases.ValueKind != JsonValueKind.Array)
         {
-            if (document.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, Messages.ProgramBadAnswer));
-            }
-
-            ProgramRelease? best = null;
-            int[]? bestVersion = null;
-            foreach (var release in document.RootElement.EnumerateArray())
-            {
-                if (IsTrue(release, "draft") || IsTrue(release, "prerelease")
-                    || Text(release, "tag_name") is not { } tag || !tag.StartsWith(TagPrefix, StringComparison.Ordinal)
-                    || ParseVersion(tag[TagPrefix.Length..]) is not { } version
-                    || (bestVersion is not null && Compare(version, bestVersion) <= 0)
-                    || Read(release, tag[TagPrefix.Length..]) is not { } found)
-                {
-                    continue;
-                }
-
-                best = found;
-                bestVersion = version;
-            }
-
-            return best;
+            throw new ReleaseCheckException(Messages.Format(Messages.ProgramCheckFailed, Messages.ProgramBadAnswer));
         }
+
+        bool linux = CustosEdition.IsLinux || assetName is not null;
+        ProgramRelease? best = null;
+        int[]? bestVersion = null;
+        foreach (var release in releases.EnumerateArray())
+        {
+            bool prerelease = IsTrue(release, "prerelease");
+            if (IsTrue(release, "draft") || (prerelease && channel != PreviewChannel)
+                || Text(release, "tag_name") is not { } tag || !tag.StartsWith(TagPrefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string releaseVersion = tag[TagPrefix.Length..];
+            if (ParseVersion(releaseVersion) is not { } version
+                || (linux && (version.Length != 3 || releaseVersion.Any(c => c != '.' && (c < '0' || c > '9')))))
+            {
+                continue;
+            }
+
+            int order = bestVersion is null ? 1 : Compare(version, bestVersion);
+            string expected = assetName?.Invoke(releaseVersion) ?? CustosEdition.PackageName(releaseVersion);
+            if (order < 0 || (order == 0 && (prerelease || best?.Prerelease != true))
+                || Read(release, releaseVersion, expected, prerelease, linux) is not { } found)
+            {
+                continue;
+            }
+
+            best = found;
+            bestVersion = version;
+        }
+
+        return best;
     }
 
     /// <summary>"1.2.3" or "1.2.3.4" → its numbers; null if it is not a version like that. "+…" and "-…" are cut off.</summary>
@@ -259,22 +331,24 @@ public static class ProgramReleases
     }
 
     /// <summary>The package of a release and how to check it; null if it has no package or nothing to check it with.</summary>
-    private static ProgramRelease? Read(JsonElement release, string version)
+    private static ProgramRelease? Read(JsonElement release, string version, string packageName, bool prerelease, bool exactUrl)
     {
         if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
         {
             return null;
         }
 
-        string packageName = CustosEdition.PackageName(version);
         string downloads = ReleasesPrefix + "download/";
+        string versionDownloads = downloads + TagPrefix + version + "/";
         JsonElement? package = null;
         Uri? sums = null;
         foreach (var asset in assets.EnumerateArray())
         {
             string? name = Text(asset, "name");
             string? url = Text(asset, "browser_download_url");
-            if (url is null || !url.StartsWith(downloads, StringComparison.Ordinal))
+            if (url is null || !url.StartsWith(downloads, StringComparison.Ordinal)
+                || (exactUrl && (!string.Equals(url, versionDownloads + name, StringComparison.Ordinal)
+                    || Text(asset, "state") is not (null or "uploaded"))))
             {
                 continue;
             }
@@ -308,10 +382,12 @@ public static class ProgramReleases
             Version = version,
             PackageName = packageName,
             PackageUrl = new Uri(Text(file, "browser_download_url")!),
-            Size = file.TryGetProperty("size", out var size) && size.TryGetInt64(out long bytes) ? bytes : 0,
+            Size = file.TryGetProperty("size", out var size) && size.ValueKind == JsonValueKind.Number
+                && size.TryGetInt64(out long bytes) ? bytes : 0,
             Sha256 = sha256,
             SumsUrl = sums,
-            PageUrl = page is not null && page.StartsWith(ReleasesPrefix, StringComparison.Ordinal)
+            Prerelease = prerelease,
+            PageUrl = !exactUrl && page is not null && page.StartsWith(ReleasesPrefix, StringComparison.Ordinal)
                 ? new Uri(page) : new Uri(ReleasesPrefix + "tag/" + TagPrefix + version),
         };
     }
@@ -332,10 +408,11 @@ public static class ProgramReleases
     }
 
     private static bool IsTrue(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
 
     private static string? Text(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString() : null;
 
     private static void TryDelete(string path)
     {

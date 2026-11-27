@@ -34,6 +34,12 @@
   <data name="MirrorOverlapsSource" xml:space="preserve">
     <value>{0}: папка зеркала и источник {1} вложены друг в друга.</value>
   </data>
+  <data name="DestinationContainsSource" xml:space="preserve">
+    <value>Назначение {0} совпадает с источником {1} или содержит его. Выберите отдельную папку назначения.</value>
+  </data>
+  <data name="NestedDestinationSkipped" xml:space="preserve">
+    <value>Папка {0} служит назначением, поэтому всё её содержимое исключено из источника. Чтобы сохранить другие файлы этой папки, выберите назначение вне источника.</value>
+  </data>
   <data name="BackupTypeNotSupported" xml:space="preserve">
     <value>Неизвестный тип копии «{0}».</value>
   </data>
@@ -100,11 +106,17 @@
   <data name="FolderUnreadable" xml:space="preserve">
     <value>Не удалось прочитать папку {0}: {1}</value>
   </data>
+  <data name="SourceEntryUnreadable" xml:space="preserve">
+    <value>Не удалось прочитать путь источника {0}: {1}</value>
+  </data>
   <data name="SourceUnavailable" xml:space="preserve">
     <value>Источник {0} недоступен: {1}</value>
   </data>
   <data name="SourceNotFound" xml:space="preserve">
     <value>Источник не найден: {0}</value>
+  </data>
+  <data name="SourceNotRegular" xml:space="preserve">
+    <value>Выберите обычный файл или папку в качестве источника.</value>
   </data>
   <data name="SourceScanned" xml:space="preserve">
     <value>Источник {0}: файлов {1}, {2}.</value>
@@ -1695,6 +1707,15 @@
   </data>
   <data name="ProgramManagedBySite" xml:space="preserve">
     <value>Компьютер подключён к сайту мониторинга: новые версии CUSTOS приходят с сайта.</value>
+  </data>
+  <data name="ProgramManagedByPackage" xml:space="preserve">
+    <value>Обновляйте CUSTOS через пакетный менеджер системы.</value>
+  </data>
+  <data name="ProgramUpdateChannelChanged" xml:space="preserve">
+    <value>Канал обновлений изменился. Проверьте наличие обновлений ещё раз.</value>
+  </data>
+  <data name="ProgramInvalidUpdateChannel" xml:space="preserve">
+    <value>Каналы stable и preview доступны для автономной службы Linux.</value>
   </data>
   <data name="ProgramNothingNewer" xml:space="preserve">
     <value>На GitHub нет версии CUSTOS новее {0}.</value>

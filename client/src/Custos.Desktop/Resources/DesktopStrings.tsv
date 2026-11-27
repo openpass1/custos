@@ -5,6 +5,37 @@ Tasks	Tasks	Задания
 Now	now	сейчас
 HistoryCount	{0}: {1} runs	{0}: запусков {1}
 SettingsAll	All settings…	Все настройки…
+MonitorChangeServer	Change server…	Сменить сервер…
+MonitorSwitchConfirm	Change the monitoring server from {0} to {1}? Reports not yet sent to the old server will be discarded.	Сменить сервер мониторинга с {0} на {1}? Ещё не отправленные на прежний сервер отчёты будут удалены.
+MonitorConnectionChanged	The monitoring connection changed. Review the current server and try again.	Подключение к Monitor изменилось. Проверьте текущий сервер и повторите действие.
+InterfaceLanguage	Interface language	Язык интерфейса
+InterfaceLanguageSaveFailed	The interface language could not be saved in your CUSTOS settings.	Не удалось сохранить язык интерфейса в ваших настройках CUSTOS.
+LinuxServiceSettingsReadOnly	The service settings are read-only.	Настройки службы доступны только для просмотра.
+LinuxDesktopUpdates	Desktop updates	Обновления рабочего стола
+LinuxDesktopUpdatesHelp	Download the package from GitHub Releases and open it in your system package manager to install it.	Скачайте пакет из GitHub Releases и откройте его в пакетном менеджере системы для установки.
+LinuxAgentUpdates	Agent updates	Обновления службы
+LinuxUpdateChannel	Update channel	Канал обновлений
+LinuxUpdateStable	Stable	Стабильный
+LinuxUpdatePreview	Preview	Предварительный
+LinuxUpdateInstalledVersion	Installed package version is {0}.	Установлен пакет версии {0}.
+LinuxUpdateInstalledUnknown	Could not read the installed version from the system package manager.	Не удалось прочитать установленную версию в пакетном менеджере системы.
+LinuxUpdateNoPackage	no matching package on GitHub for this channel	на GitHub нет подходящего пакета для этого канала
+LinuxUpdateNoNewerPackage	no newer package for this channel	для этого канала нет пакета новее установленного
+LinuxUpdatePreviewAvailable	CUSTOS {0} Preview is out	вышла предварительная версия CUSTOS {0}
+LinuxUpdateReleaseNotes	Release notes	О выпуске
+LinuxUpdateDownloadPackage	Download package	Скачать пакет
+LinuxUpdateBrowserFailed	Could not open GitHub Releases in the browser.	Не удалось открыть GitHub Releases в браузере.
+LinuxUpdateChannelSaveFailed	Could not save the desktop update channel.	Не удалось сохранить канал обновлений рабочего стола.
+LinuxUpdateSaveAgentChannel	Save settings to change the agent update channel, then check again.	Сохраните настройки, чтобы сменить канал обновлений службы, затем проверьте ещё раз.
+LinuxThemeAuto	Follow the system	Как в системе
+LinuxAllowAllUsersEditHelp	Off by default. The backup service runs as root. Anyone who can edit tasks can use them to read files or run commands as root. Restore remains available only to administrators.	По умолчанию выключено. Служба резервного копирования работает от имени root. Каждый, кто может менять задания, может через них читать файлы и выполнять команды от имени root. Восстановление доступно только администраторам.
+LinuxAllowAllUsersEditWarning	Allow every local user to change tasks and run them with root privileges?	Разрешить всем локальным пользователям менять задания и запускать их с правами root?
+LinuxLogRetentionHelp	Includes the daily journal, individual run logs and the service log in the CUSTOS data directory.	Включает ежедневный журнал, журналы отдельных запусков и журнал службы в каталоге данных CUSTOS.
+LinuxProgramPasswordHelp	When set, this password is required in addition to the usual permissions for editing and restoring. The window stays unlocked for 30 minutes after the last protected operation or until it closes.	Если пароль задан, для редактирования и восстановления он нужен в дополнение к обычным правам. Окно остаётся разблокированным 30 минут после последнего защищённого действия или до закрытия.
+LinuxServiceLanguageHelp	The language of the run logs and service messages. Automatic follows the service locale. The desktop interface language is set separately.	Язык журналов запусков и сообщений службы. «Автоматически» использует язык среды службы. Язык интерфейса настраивается отдельно.
+LinuxAccountsNote	The service encrypts passwords and keys and never displays them. An account used by a task cannot be removed.	Служба шифрует пароли и ключи и никогда не показывает их. Учётную запись, используемую в задании, удалить нельзя.
+LinuxArchiverVersion	7-Zip (7z.so) version {0}	7-Zip (7z.so) версии {0}
+LinuxArchiverProblem	The backup service could not load 7z.so.	Служба резервного копирования не смогла загрузить 7z.so.
 ThemeHeading	Theme	Тема
 ThemeForAll	For all users of this computer	Для всех пользователей компьютера
 ThemeAdminsOnly	The theme is the same for all users of this computer: an administrator changes it.	Тема общая для всех пользователей компьютера: её меняет администратор.
@@ -35,3 +66,44 @@ DemoScan	looking for files: 12 640	поиск файлов: 12 640
 DemoLocked	the file is in use by another program, taken from the shadow copy: Reports\2026-11 budget.xlsx	файл занят другой программой, взят из теневой копии: Reports\2026-11 budget.xlsx
 HistoryOpenLog	Double-click a run to see its log.	Двойной щелчок по запуску открывает его журнал.
 RestoreSetHint	{0} files · {1} · {2}	{0} файлов · {1} · {2}
+
+# ---- Cloud sign-in on Linux
+LinuxCloudAppMissing	Enter the client ID of your application for {0}, then continue signing in here.	Для входа в {0} укажите Client ID собственного приложения, затем продолжите вход в этом окне.
+LinuxCloudAppMissingWithSecret	Enter the client ID and secret of your application for {0}, then continue signing in here.	Для входа в {0} укажите Client ID и секрет собственного приложения, затем продолжите вход в этом окне.
+LinuxCloudNoLoopback	Cannot open a local callback port for Google Drive. Close this window and try again.	Не удалось открыть локальный порт для ответа Google Диска. Закройте это окно и повторите попытку.
+LinuxCloudSecretNote	Google Drive and Yandex Disk require the client secret. Dropbox does not require one.	Для Google Диска и Яндекс Диска нужен секрет клиента. Для Dropbox он не нужен.
+LinuxCloudYandexSecretRequired	Yandex Disk needs the client secret together with the client ID.	Для Яндекс Диска нужен секрет клиента вместе с Client ID.
+
+# ---- Linux task editor
+LinuxSourcePathHelp	Enter a full Linux path such as /home/user/Documents, or an SMB folder such as //nas/share/folder. The agent mounts SMB shares using cifs-utils.	Укажите полный путь Linux, например /home/user/Documents, или сетевую папку SMB вида //nas/share/folder. Агент подключает папки SMB через cifs-utils.
+LinuxPathVariables	Local paths can use %HOME% for the user who first saves the task, as well as {computer}, {task}, {yyyy}, {MM} and {dd}.	В локальных путях можно указать %HOME% пользователя, который впервые сохранит задание, а также {computer}, {task}, {yyyy}, {MM} и {dd}.
+LinuxErrorLocalPath	«{0}» is not a full local path. Enter a path such as /home/user/Documents or %HOME%/Documents.	«{0}» не является полным локальным путём. Укажите путь вида /home/user/Documents или %HOME%/Documents.
+LinuxImportUnsupportedPaths	Switched off because they use paths incompatible with Linux: {0}. Review their paths before switching them on.	Отключены задания с путями, несовместимыми с Linux: {0}. Проверьте пути перед включением заданий.
+LinuxTaskUnsupportedPaths	This task uses paths incompatible with Linux. Review its sources, destinations and database tools before switching it on.	В задании есть пути, несовместимые с Linux. Проверьте источники, назначения и пути к утилитам баз данных перед включением.
+LinuxRightsEditTasks	manage tasks	управление заданиями
+ExportWithSecrets	With passwords and keys	С паролями и ключами
+ExportWithoutSecrets	Without passwords and keys	Без паролей и ключей
+LinuxErrorSharePath	Enter an SMB path such as //server/share/folder. Invalid path: {0}	Укажите путь SMB вида //сервер/ресурс/папка. Неверный путь: {0}
+LinuxErrorVolumeFolder	Enter a folder relative to the volume, such as backups/daily, or leave it empty for the root of the volume.	Укажите папку относительно корня тома, например backups/daily, или оставьте поле пустым для записи в корень.
+LinuxSmbAccountHelp	The agent mounts the share with the selected account, or connects as a guest without one.	Агент подключит ресурс от выбранной учётной записи, а если она не указана, то как гость.
+LinuxDestinationKindHelp	Use a full Linux path such as /mnt/backup for a local folder and //nas/share/folder for a network folder. A USB disk must already be mounted and is found by its volume label.	Для локальной папки укажите полный путь Linux, например /mnt/backup, для сетевой папки — //nas/share/folder. USB-диск должен быть смонтирован, агент найдёт его по метке тома.
+LinuxUsbLabelHelp	Enter the volume label of a mounted disk. Use lsblk -f to see the labels.	Укажите метку тома смонтированного диска. Команда lsblk -f показывает метки томов.
+LinuxUsbFolderHelp	Use a path relative to the volume, such as backups/daily.	Укажите путь относительно корня тома, например backups/daily.
+LinuxKeepTopDirHelp	On: /srv/data is copied into <backup>/data/…\nOff: the contents of /srv/data go straight into <backup>/…	Включено: /srv/data копируется в <копия>/data/…\nВыключено: содержимое /srv/data копируется прямо в <копия>/…
+LinuxSnapshotEnabled	Use a filesystem snapshot	Использовать снимок файловой системы
+LinuxSnapshotHelp	The agent can read local sources from LVM, Btrfs or ZFS snapshots when the volume supports them.	Агент может читать локальные источники из снимков LVM, Btrfs или ZFS, если том поддерживает снимки.
+LinuxFilePermissions	Keep file and folder owners and permissions	Сохранять владельцев и права файлов и папок
+LinuxNoFilePermissions	This setting applies to file copies in a local folder, a network folder or a USB disk.	Эта настройка применяется при копировании файлов в локальную или сетевую папку либо на USB-диск.
+LinuxDbBinDirHelp	Enter the full path to the directory containing the database tools, such as /usr/bin. Use Find to discover local installations.	Укажите полный путь к папке с утилитами базы данных, например /usr/bin. Нажмите «Найти», чтобы найти локальные установки.
+LinuxEventUnitStop	Stop a systemd unit	Остановить службу systemd
+LinuxEventUnitStart	Start a systemd unit	Запустить службу systemd
+LinuxEventHelp	Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.	Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.
+SystemServiceHeading	CUSTOS service	Служба CUSTOS
+SystemServiceRestart	Restart the service	Перезапустить службу
+SystemServiceRestartConfirm	Restart the CUSTOS service?	Перезапустить службу CUSTOS?
+SystemServiceDone	The CUSTOS service operation completed.	Команда управления службой CUSTOS выполнена.
+SystemServiceFailed	Could not control the CUSTOS service.\n{0}	Не удалось выполнить команду управления службой CUSTOS.\n{0}
+SystemServiceExitCode	systemctl exited with code {0}.	systemctl завершился с кодом {0}.
+SystemServiceCustomSocket	Service controls require the standard CUSTOS socket. Manage an agent on a custom socket separately.	Для управления службой нужен стандартный сокет CUSTOS. Управляйте агентом с другим сокетом отдельно.
+SystemServiceUnavailable	This system does not provide systemctl. Install and manage the CUSTOS service on a systemd host.	В этой системе нет systemctl. Для установки и управления службой CUSTOS нужна система с systemd.
+SystemServiceTimeout	The service operation could not be confirmed in time. Check the service status before retrying.	Не удалось вовремя подтвердить выполнение команды. Проверьте состояние службы перед повтором.

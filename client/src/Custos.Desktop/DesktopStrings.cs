@@ -1,5 +1,5 @@
-using System.Globalization;
 using System.Resources;
+using Custos.Gui;
 
 namespace Custos.Desktop;
 
@@ -12,5 +12,5 @@ internal static partial class DesktopStrings
 {
     private static readonly ResourceManager Resources = new("Custos.Desktop.Resources.DesktopStrings", typeof(DesktopStrings).Assembly);
 
-    private static string Get(string name) => Resources.GetString(name, CultureInfo.CurrentUICulture) ?? name;
+    private static string Get(string name) => Resources.GetString(name, Strings.UiCulture) ?? name;
 }

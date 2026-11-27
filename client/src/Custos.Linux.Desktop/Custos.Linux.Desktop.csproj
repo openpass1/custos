@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Custos.Linux.Desktop</RootNamespace>
+    <AssemblyName>custos-gui</AssemblyName>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Custos.Desktop\Custos.Desktop.csproj" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Tmds.DBus.Protocol" />
+    <AvaloniaResource Include="..\Custos.Gui\Resources\tray-*.ico" Link="Assets\%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -228,6 +228,9 @@
     <Style Selector="^:pointerover">
       <Setter Property="Foreground" Value="{DynamicResource OnSecondaryContainer}" />
     </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.46" />
+    </Style>
   </ControlTheme>
 
   <!-- Column header of a table: text, and an arrow on the sorted column. -->
@@ -414,7 +417,7 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Panel Width="24" Height="24" VerticalAlignment="Top">
+          <Panel Width="24" Height="24" VerticalAlignment="Center">
             <Border Name="layer" CornerRadius="12" Background="{TemplateBinding Background}" />
             <Border Name="box" Width="16" Height="16" CornerRadius="2" BorderThickness="2" BorderBrush="{DynamicResource OnSurfaceVariant}"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -444,7 +447,7 @@
     </Style>
   </ControlTheme>
 
-  <!-- Radio button: a 20 px ring with a dot when chosen. -->
+  <!-- Radio button: an 18 DIP ring with an 8 DIP dot when chosen. -->
   <ControlTheme x:Key="M3Radio" TargetType="RadioButton">
     <Setter Property="Foreground" Value="{DynamicResource OnSurface}" />
     <Setter Property="Background" Value="Transparent" />
@@ -452,13 +455,15 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Panel Width="24" Height="24" VerticalAlignment="Top">
+          <Panel Width="24" Height="24" VerticalAlignment="Center" UseLayoutRounding="False">
             <Border Name="layer" CornerRadius="12" Background="{TemplateBinding Background}" />
-            <Ellipse Name="ring" Width="17" Height="17" Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
-            <Ellipse Name="dot" Width="8" Height="8" Fill="{DynamicResource Primary}" IsVisible="False" />
+            <Ellipse Name="ring" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Stroke="{DynamicResource OnSurfaceVariant}" StrokeThickness="2" />
+            <Ellipse Name="dot" Width="8" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     Fill="{DynamicResource Primary}" IsVisible="False" />
           </Panel>
           <ContentPresenter Name="content" Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Margin="6,3,0,0" VerticalAlignment="Top" />
+                            Margin="6,0,0,0" VerticalAlignment="Center" />
         </Grid>
       </ControlTemplate>
     </Setter>

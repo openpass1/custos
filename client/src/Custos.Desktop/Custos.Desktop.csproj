@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Custos" />
+    <InternalsVisibleTo Include="custos-gui" />
     <InternalsVisibleTo Include="CustosDesktopShots" />
   </ItemGroup>
 

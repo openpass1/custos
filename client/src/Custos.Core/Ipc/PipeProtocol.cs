@@ -177,6 +177,9 @@ public static class PipeProtocol
         /// <see cref="EmptyRequest"/> → <see cref="ProgramUpdateInfo"/>.</summary>
         public const string ProgramCheck = "program.check";
 
+        /// <summary>Administrators only. <see cref="ProgramChannelRequest"/> → <see cref="OkResult"/>.</summary>
+        public const string ProgramChannelSet = "program.channel_set";
+
         /// <summary>Administrators only, always: downloads the newest version from GitHub, checks it and hands it to
         /// Custos.Updater, which restarts the service. <see cref="EmptyRequest"/> → <see cref="OkResult"/>.</summary>
         public const string ProgramUpdate = "program.update";

@@ -144,6 +144,21 @@ internal sealed class LinuxBackupPlatform(ConfigStore config, ShadowCopies shado
 
     public override ISnapshotSet CreateSnapshots(IReadOnlyCollection<string> localPaths) => shadows.Create(localPaths);
 
+    public override bool IsRegularSourceFile(string path) => Native.IsRegularFile(path);
+
+    public override FileStream OpenSourceFile(string path, int bufferSize)
+    {
+        using var file = Native.open(path, Native.PathOnly | Native.CloseOnExec);
+        if (file.IsInvalid)
+        {
+            throw Native.SourceFileError(path, Marshal.GetLastPInvokeError());
+        }
+
+        return Native.OpenRegularFile(file, bufferSize);
+    }
+
+    public override string CanonicalLocalPath(string path) => Native.ResolvePath(path);
+
     /// <summary>
     /// The mounts of the system (/proc, /sys, /run …), of other computers (NFS, SMB) and the folders CUSTOS mounts
     /// its snapshots and shares in are not read when met inside a source; a path inside a snapshot view stands for

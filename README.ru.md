@@ -1,6 +1,6 @@
 # CUSTOS
 
-Агенты резервного копирования для Windows, macOS и Linux-серверов с мониторингом на своём сервере. В Windows CUSTOS — бесплатная замена Cobian Backup 11.
+Агенты резервного копирования для Windows, macOS и Linux с мониторингом на своём сервере. В Windows CUSTOS — бесплатная замена Cobian Backup 11.
 
 [English version](README.md)
 
@@ -11,8 +11,8 @@
 [![Лицензия: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 Агенты делают резервные копии на каждой машине. CUSTOS Monitor показывает ход копирования в одном месте, предупреждает
-о проблемах и позволяет управлять заданиями удалённо. Агенты для Windows и macOS можно настроить локально. У агента
-для Linux-серверов нет графического интерфейса, задания для него настраиваются в Monitor.
+о проблемах и позволяет управлять заданиями удалённо. На Windows, macOS и в предварительной версии для рабочего
+стола Linux задания можно настроить локально. На Linux-сервере без графического интерфейса задания настраиваются в Monitor.
 
 ## Что установить
 
@@ -21,6 +21,7 @@
 | Агент для Windows | Windows 10 и 11, Windows Server 2019, 2022 и 2025 (x64) | [Выпуски](https://github.com/openpass1/custos/releases) · `CUSTOS-Setup-<версия>.exe` | [Windows](client/README.ru.md#windows) |
 | Windows legacy | Windows 7 SP1 и 8.1 (32-битная сборка) | [Предварительный выпуск](https://github.com/openpass1/custos/releases/tag/client-legacy-v1.0.1) · `CUSTOS-Legacy-Setup-<версия>.exe` | [Версия для старых Windows](client/README.ru.md#версия-для-windows-7-и-81) |
 | Агент для macOS | macOS 15+ (Apple silicon или Intel) | [Предварительный выпуск](https://github.com/openpass1/custos/releases/tag/client-v1.2.0) · `Custos-<версия>.pkg` | [macOS](client/README.ru.md#macos) |
+| Предварительная версия для рабочего стола Linux | Совместимые версии Debian, Ubuntu, Linux Mint и Fedora (x86_64 или ARM64) | [Выпуски](https://github.com/openpass1/custos/releases) · `.deb` / `.rpm`, [сборки для тестирования](https://github.com/openpass1/custos/actions/workflows/linux-desktop-preview.yml) | [Рабочий стол Linux](client/linux/desktop/README.ru.md) |
 | Агент для Linux-серверов | Linux-серверы с systemd и glibc 2.28+ (x86_64 или ARM64) | [Выпуски](https://github.com/openpass1/custos/releases) · `custos-linux-x64.tar.gz` или `custos-linux-arm64.tar.gz` | [Агент Linux](client/README.ru.md#custos-для-linux) |
 | CUSTOS Monitor | Linux с nginx, PHP 8.3+, MariaDB 10.11+ или MySQL 8.0+ | [Выпуски](https://github.com/openpass1/custos/releases) · `custos-server-<версия>.zip` | [Установка и обновление](server/INSTALL.md) |
 
@@ -28,7 +29,6 @@
 предназначены для раздела **«Обновления»** в Monitor. Предварительные выпуски можно скачать вручную или выбрать
 **предварительный** канал выпусков GitHub в Monitor 1.4.3 и новее.
 
-Графический клиент для рабочего стола Linux планируется. Установщика и объявленной даты выпуска пока нет.
 Скрипт [custos-helper](helper/README.md) позволяет агенту CUSTOS читать файлы и дампы баз на Linux-сервере по SSH.
 
 ## Быстрый старт
@@ -37,6 +37,8 @@
   Monitor, скопируйте строку подключения со страницы **«Установка»** и вставьте в программе в разделе
   **«Настройки» → «Сервер мониторинга»**. Подтвердите машину в Monitor в разделе **«Машины»**.
 - **Windows legacy и macOS.** Системные требования и шаги установки описаны в инструкциях из таблицы.
+- **Рабочий стол Linux.** [Установите `.deb` или `.rpm`](client/linux/desktop/README.ru.md), откройте **CUSTOS**
+  из меню приложений и создайте задание. К Monitor можно подключиться из меню настроек.
 - **Linux-сервер.** В CUSTOS Monitor 1.4.1 или новее добавьте пакет `custos-linux-<версия>.zip` в
   **«Обновлениях»**, скопируйте команду для Linux со страницы **«Установка»**, запустите её на Linux-машине и
   подтвердите машину в разделе **«Машины»**. [Установка Linux-агента и команды](client/README.ru.md#custos-для-linux)
@@ -87,7 +89,7 @@
 
 | Документ | Что в нём |
 |---|---|
-| Руководства агентов | [Windows](client/README.ru.md#windows), [legacy](client/README.ru.md#версия-для-windows-7-и-81), [macOS](client/README.ru.md#macos), [Linux](client/README.ru.md#custos-для-linux). Резервное копирование, места хранения, обновления, перенос заданий и разработка. |
+| Руководства агентов | [Windows](client/README.ru.md#windows), [legacy](client/README.ru.md#версия-для-windows-7-и-81), [macOS](client/README.ru.md#macos), [Рабочий стол Linux](client/linux/desktop/README.ru.md), [Linux-сервер](client/README.ru.md#custos-для-linux). Резервное копирование, места хранения, обновления, перенос заданий и разработка. |
 | [server/INSTALL.md](server/INSTALL.md), [server/INSTALL.en.md](server/INSTALL.en.md) | Установка и обновление сайта на CloudPanel или на чистом nginx, Telegram, почта, Zabbix |
 | [server/README.md](server/README.md) | Устройство сайта, тесты, имитатор агента (на английском) |
 | [helper/README.md](helper/README.md) | Как забирать данные через custos-helper по SSH |
