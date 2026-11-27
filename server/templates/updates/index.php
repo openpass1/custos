@@ -1,14 +1,15 @@
 <?php
 /**
  * @var list<array> $agentPackages @var list<array> $sevenZipPackages @var ?array $current @var list<array> $agents
- * @var list<array> $groups @var array<string, array> $outdated @var ?array $latestSevenZip @var array<string, array> $sevenZipOutdated
+ * @var list<array> $groups @var array<string, array> $custosOutdated @var bool $custosUpdateAvailable
+ * @var array<string, array> $sevenZipOutdated
  * @var ?array $github @var string $checkedAt @var string $checkError @var bool $checkOn @var array<string, array> $waitingAgent
  * @var array<string, array> $waitingSevenZip @var int $uploadLimit
  * @var string $repo @var bool $releasesOn @var string $releasesCheckedAt @var string $releasesError @var ?array $siteLatest
  * @var string $releaseChannel
  * @var ?array $siteNewer @var ?array $siteState @var string $cronLastRun @var ?array $clientLatest @var ?array $clientNewer
- * @var array<string, array{on: bool, latest: ?array, newer: ?array, packages: list<array>, current: ?array, machines: bool,
- *     outdated: array<string, array>}> $editions the editions for Windows 7 and 8.1 (legacy), macOS (macos) and Linux (linux)
+ * @var array<string, array{on: bool, latest: ?array, newer: ?array, packages: list<array>, current: ?array}> $editions
+ *     the editions for Windows 7 and 8.1 (legacy), macOS (macos) and Linux (linux)
  */
 use Custos\Domain\Agents;
 use Custos\Domain\Packages;
@@ -29,10 +30,6 @@ $stateError = function (?array $error): string {
     return $error === null ? '' : t((string) ($error['key'] ?? 'site.error.unexpected'), (array) ($error['params'] ?? []));
 };
 $cronAge = $cronLastRun === '' ? null : time() - (int) strtotime($cronLastRun . ' UTC');
-$editionOutdated = [];
-foreach ($editions as $ed) {
-    $editionOutdated += $ed['outdated'];
-}
 // The packages of one edition, with "current" and "delete"; $kind is agent, legacy, macos or linux.
 $packageTable = function (array $packages, string $kind) use ($short): void { ?>
         <div class="table-wrap">
@@ -309,14 +306,14 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
 <?php endif ?>
 <?php endforeach ?>
 
-<?php /* Live part: versions and updates on their way change by themselves (app.js) until a machine is ticked here. */ ?>
+<?php /* Live part: refresh machine versions until the administrator starts choosing an update target. */ ?>
 <div data-part="machines">
 <section class="panel updates-panel">
     <h2><?= e(t('updates.machines')) ?></h2>
     <?php if ($agents === []): ?>
         <p class="empty"><?= e(t('updates.machines.none')) ?></p>
     <?php else: ?>
-    <form method="post" action="<?= e(url('/updates/install')) ?>" class="stack" data-scope>
+    <form method="post" action="<?= e(url('/updates/install')) ?>" class="stack" autocomplete="off" data-update-selection>
         <?= csrf_field() ?>
         <div class="table-wrap">
             <table>
@@ -330,7 +327,7 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
                             <?= edition_badge($a) ?>
                             <?php if ($a['status'] !== 'approved'): ?><?= badge($a['status']) ?><?php endif ?></td>
                         <td><?= e($a['agent_version'] === '' ? '—' : $a['agent_version']) ?>
-                            <?php if (isset($outdated[$a['id']]) || isset($editionOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
+                            <?php if (isset($custosOutdated[$a['id']])): ?><?= badge('warning', t('updates.old')) ?><?php endif ?>
                             <?php if (isset($waitingAgent[$a['id']])): ?><div class="note"><?= e(t('updates.waiting', ['version' => (string) ($waitingAgent[$a['id']]['data']['version'] ?? '')])) ?> <?= badge($waitingAgent[$a['id']]['status']) ?></div><?php endif ?></td>
                         <td><?= e($a['sevenzip_version'] ?? '—') ?>
                             <?php if (Packages::agentKind($a) !== 'agent'): ?><div class="note"><?= e(t('updates.sevenzip.' . Packages::agentKind($a))) ?></div><?php endif ?>
@@ -341,35 +338,36 @@ $packageTable = function (array $packages, string $kind) use ($short): void { ?>
                 </tbody>
             </table>
         </div>
-        <div class="choices">
-            <label class="choice"><input type="radio" name="target" value="selected" checked> <span><?= e(t('updates.target.selected')) ?></span></label>
-            <label class="choice"><input type="radio" name="target" value="outdated"> <span><?= e(t('updates.target.outdated', ['agent' => count($outdated) + count($editionOutdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
+        <div class="choices" role="radiogroup" aria-label="<?= e(t('updates.target.label')) ?>">
+            <?php /* Without JavaScript the administrator explicitly chooses the scope of the update. */ ?>
+            <label class="choice"><input type="radio" name="target" value="outdated" required> <span><?= e(t('updates.target.outdated', ['agent' => count($custosOutdated), 'sevenzip' => count($sevenZipOutdated)])) ?></span></label>
+            <label class="choice"><input type="radio" name="target" value="selected"> <span><?= e(t('updates.target.selected')) ?></span></label>
             <?php if ($groups !== []): ?>
                 <label class="choice"><input type="radio" name="target" value="group"> <span><?= e(t('updates.target.group')) ?></span></label>
             <?php endif ?>
         </div>
         <?php if ($groups !== []): ?>
-            <label data-show-if="target=group"><?= e(t('agent.group')) ?>
+            <label><?= e(t('agent.group')) ?>
                 <select name="group_id">
+                    <option value=""><?= e(t('updates.target.choose_group')) ?></option>
                     <?php foreach ($groups as $g): ?><option value="<?= (int) $g['id'] ?>"><?= e($g['name']) ?></option><?php endforeach ?>
                 </select>
             </label>
         <?php endif ?>
+        <p class="note" role="status" data-update-selection-empty hidden><?= e(t('updates.target.select_empty')) ?></p>
         <div class="buttons wrap-actions">
-            <?php if ($current !== null): ?>
-                <button type="submit" name="kind" value="agent"><?= e(t('updates.install.agent', ['version' => $current['version']])) ?></button>
+            <?php if ($custosUpdateAvailable): ?>
+                <button type="submit" name="kind" value="custos"><?= e(t('updates.install.custos')) ?></button>
             <?php endif ?>
-            <?php foreach ($editions as $kind => $ed): ?>
-                <?php if ($ed['current'] !== null && $ed['machines']): ?>
-                    <button type="submit" name="kind" value="<?= e($kind) ?>"><?= e(t('updates.install.' . $kind, ['version' => $ed['current']['version']])) ?></button>
-                <?php endif ?>
-            <?php endforeach ?>
             <?php if ($storedSevenZip !== null): ?>
-                <button type="submit" name="kind" value="7zip"><?= e(t('updates.install.sevenzip', ['version' => $storedSevenZip['version']])) ?></button>
+                <button type="submit" name="kind" value="7zip" class="secondary"><?= e(t('updates.install.sevenzip', ['version' => $storedSevenZip['version']])) ?></button>
             <?php endif ?>
-            <?php if ($current === null && $storedSevenZip === null && array_filter($editions, fn($ed) => $ed['current'] !== null && $ed['machines']) === []): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
+            <?php if (!$custosUpdateAvailable && $storedSevenZip === null): ?><span class="note"><?= e(t('updates.install.nothing')) ?></span><?php endif ?>
         </div>
         <p class="note"><?= e(t('updates.install.hint')) ?></p>
+        <?php if (in_array(Agents::LINUX, array_column($agents, 'edition'), true)): ?>
+            <p class="note"><?= e(t('updates.install.hint_linux')) ?></p>
+        <?php endif ?>
     </form>
     <?php endif ?>
 </section>

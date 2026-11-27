@@ -15,6 +15,7 @@ How to write it:
 ## 1.4.4
 
 ### Improved
+- Update a mixed selection of CUSTOS clients with one button. Ticking a machine switches the target from all outdated to selected machines.
 - Group problem reports with the affected machine, task, dates and notification status on desktop and mobile.
 
 ### Fixed

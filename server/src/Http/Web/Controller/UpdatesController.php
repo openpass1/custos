@@ -26,28 +26,29 @@ final class UpdatesController extends Controller
     public function index(): Response
     {
         $packages = $this->app->packages();
-        $watch = $this->app->updateWatch();
         $agents = array_values(array_filter($this->app->agents()->all(), fn($a) => $a['status'] !== 'pending'));
         $current = $packages->current();
-        $latestSevenZip = $watch->latestSevenZip();
+        $custosOutdated = array_column(Packages::outdated(Packages::fitting('agent', $agents), $current['version'] ?? null), null, 'id');
+        $custosUpdateAvailable = $current !== null;
+        $sevenZipPackages = $packages->all('7zip');
         $settings = $this->app->settings();
         $releases = $this->app->releases();
         $channel = $releases->channel();
-        // The editions other than the standard one, each with its section, packages, current version and machines.
+        // The editions other than the standard one, each with its own section, packages and current version.
         $editions = [];
         foreach (Agents::EDITIONS as $kind) {
             $editionCurrent = $packages->current($kind);
             $machines = Packages::fitting($kind, $agents);
             $latest = $releases->latest($kind);
             $show = $kind === Agents::LINUX || $packages->inUse($kind) || ($channel === Releases::PREVIEW && $latest !== null);
+            $custosOutdated += array_column(Packages::outdated($machines, $editionCurrent['version'] ?? null), null, 'id');
+            $custosUpdateAvailable = $custosUpdateAvailable || $editionCurrent !== null;
             $editions[$kind] = [
                 'on' => $show,
                 'latest' => $latest,
                 'newer' => $show ? $releases->newerClient($kind) : null,
                 'packages' => $packages->all($kind),
                 'current' => $editionCurrent,
-                'machines' => $machines !== [],
-                'outdated' => array_column(Packages::outdated($machines, $editionCurrent['version'] ?? null), null, 'id'),
             ];
         }
         return $this->render('updates/index', [
@@ -65,13 +66,13 @@ final class UpdatesController extends Controller
             'editions' => $editions,
             'section' => 'updates',
             'agentPackages' => $packages->all('agent'),
-            'sevenZipPackages' => $packages->all('7zip'),
+            'sevenZipPackages' => $sevenZipPackages,
             'current' => $current,
             'agents' => $agents,
             'groups' => $this->app->groups()->all(),
-            'outdated' => array_column(Packages::outdated(Packages::fitting('agent', $agents), $current['version'] ?? null), null, 'id'),
-            'latestSevenZip' => $latestSevenZip,
-            'sevenZipOutdated' => array_column(Packages::outdated(Packages::fitting('7zip', $agents), $latestSevenZip['version'] ?? null, 'sevenzip_version'), null, 'id'),
+            'custosOutdated' => $custosOutdated,
+            'custosUpdateAvailable' => $custosUpdateAvailable,
+            'sevenZipOutdated' => array_column(Packages::outdated(Packages::fitting('7zip', $agents), $sevenZipPackages[0]['version'] ?? null, 'sevenzip_version'), null, 'id'),
             'github' => json_decode($settings->get('sevenzip_latest'), true),
             'checkedAt' => $settings->get('sevenzip_checked_at'),
             'checkError' => $settings->get('sevenzip_check_error'),
@@ -127,26 +128,28 @@ final class UpdatesController extends Controller
     }
 
     /**
-     * Updates machines: kind agent, legacy, macos or linux (the current version of that edition) or 7zip (the newest installer on
-     * the server); target "selected" (agent_ids[]), "outdated" or "group" (group_id). Only the machines the package
-     * is for are taken (Packages::fits): the other edition's are left out without a word.
+     * Queues the current program package for each chosen edition, or the newest 7-Zip installer on the server.
+     * The specific program kinds are also accepted by older forms. Targets are selected, outdated or group.
      */
     public function install(): Response
     {
-        $kind = in_array($this->post('kind'), ['7zip', ...Packages::PROGRAM_KINDS], true) ? $this->post('kind') : 'agent';
+        $kind = $this->post('kind');
+        if ($kind === 'custos') {
+            return $this->installCustos();
+        }
+        if (!in_array($kind, ['7zip', ...Packages::PROGRAM_KINDS], true)) {
+            return $this->notFound();
+        }
         $packages = $this->app->packages();
         $package = $kind === '7zip' ? $packages->latestSevenZip() : $packages->current($kind);
         if ($package === null) {
             $this->session->flash('error', $this->t($kind === '7zip' ? 'sevenzip.error.none' : 'updates.error.no_current'));
             return $this->redirect('/updates');
         }
-        $all = Packages::fitting($kind, array_values(array_filter($this->app->agents()->all(), fn($a) => $a['status'] === 'approved')));
-        $target = $this->post('target');
-        $agents = match ($target) {
-            'outdated' => Packages::outdated($all, $package['version'], $kind === '7zip' ? 'sevenzip_version' : 'agent_version'),
-            'group' => array_values(array_filter($all, fn($a) => (string) $a['group_id'] === $this->post('group_id') && $this->post('group_id') !== '')),
-            default => array_values(array_filter($all, fn($a) => in_array($a['id'], (array) ($this->request->post['agent_ids'] ?? []), true))),
-        };
+        $agents = Packages::fitting($kind, $this->installTargets());
+        if ($this->post('target') === 'outdated') {
+            $agents = Packages::outdated($agents, $package['version'], $kind === '7zip' ? 'sevenzip_version' : 'agent_version');
+        }
         if ($agents === []) {
             $this->session->flash('error', $this->t($kind === 'agent' ? 'updates.error.no_machines' : "updates.error.no_machines_$kind"));
             return $this->redirect('/updates');
@@ -167,6 +170,71 @@ final class UpdatesController extends Controller
             $result['skipped'] === [] => 'updates.flash.queued',
             default => 'updates.flash.queued_skipped',
         }, $params));
+        return $this->redirect('/updates');
+    }
+
+    /** Applies the server-side target selection before looking up any package. */
+    private function installTargets(): array
+    {
+        $agents = array_values(array_filter($this->app->agents()->all(), fn($a) => $a['status'] === 'approved'));
+        $group = $this->post('group_id');
+        $ids = (array) ($this->request->post['agent_ids'] ?? []);
+        return match ($this->post('target')) {
+            'outdated' => $agents,
+            'group' => $group === '' ? [] : array_values(array_filter($agents, fn($a) => (string) $a['group_id'] === $group)),
+            'selected', '' => array_values(array_filter($agents, fn($a) => in_array($a['id'], $ids, true))),
+            default => [],
+        };
+    }
+
+    /** Resolves the current, signed package separately for each edition, then records each roll-out in the audit log. */
+    private function installCustos(): Response
+    {
+        $agents = $this->installTargets();
+        if ($agents === []) {
+            $this->session->flash('error', $this->t('updates.error.no_machines'));
+            return $this->redirect('/updates');
+        }
+        $packages = $this->app->packages();
+        $outdated = $this->post('target') === 'outdated';
+        [$queued, $current, $unavailable] = $this->app->db()->transaction(function () use ($agents, $packages, $outdated) {
+            $queued = $current = $unavailable = 0;
+            foreach (Packages::PROGRAM_KINDS as $kind) {
+                $targets = Packages::fitting($kind, $agents);
+                if ($targets === []) {
+                    continue;
+                }
+                $package = $packages->current($kind);
+                if ($package === null) {
+                    $unavailable += $outdated ? 0 : count($targets);
+                    continue;
+                }
+                $version = $package['version'];
+                if ($outdated) {
+                    $targets = Packages::outdated($targets, $version);
+                }
+                $result = $packages->install($kind, $version, $targets, $this->user());
+                $queued += count($result['queued']);
+                $current += count($result['skipped']);
+                if ($result['queued'] !== []) {
+                    $this->audit('update.install', 'update', $version, [
+                        'version' => $version,
+                        'edition' => self::edition($kind),
+                        'machines' => implode(', ', array_map(Agents::name(...), $result['queued'])),
+                    ]);
+                }
+            }
+            return [$queued, $current, $unavailable];
+        });
+
+        $messages = [$this->t($queued > 0 ? 'updates.flash.custos_queued' : 'updates.flash.custos_no_updates', ['n' => $queued])];
+        if ($current > 0) {
+            $messages[] = $this->t('updates.flash.custos_skipped_current', ['n' => $current]);
+        }
+        if ($unavailable > 0) {
+            $messages[] = $this->t('updates.flash.custos_skipped_no_package', ['n' => $unavailable]);
+        }
+        $this->session->flash('info', implode(' ', $messages));
         return $this->redirect('/updates');
     }
 
