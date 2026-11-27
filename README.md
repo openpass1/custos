@@ -25,7 +25,7 @@ its backup tasks.
 | CUSTOS Monitor | Linux with nginx, PHP 8.3+, MariaDB 10.11+ or MySQL 8.0+ | [Releases](https://github.com/openpass1/custos/releases) · `custos-server-<version>.zip` | [Install and update](server/INSTALL.en.md) |
 
 In a release, open **Assets** and choose the installer or archive for your platform. The agent update ZIPs are for
-the **Updates** page in Monitor. Preview releases are available for manual download, and automatic update checks skip them.
+the **Updates** page in Monitor. You can download previews manually or select the **Preview** GitHub release channel in Monitor 1.4.3 or later.
 
 A graphical Linux desktop client is planned. There is no installer or announced release date for it yet.
 The [custos-helper](helper/README.md) script is a separate tool that lets a CUSTOS agent read files and database dumps

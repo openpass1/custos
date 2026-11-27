@@ -46,16 +46,16 @@ final class InstallController extends Controller
     }
 
     /**
-     * The installer of a release found by the daily check of GitHub: [version, file name, address], or null when the
+     * The installer of a release found by the daily check of GitHub: [version, file name, address, prerelease], or null when the
      * check has not found one (turned off, no internet, or a release without it).
      *
-     * @return ?array{0: string, 1: string, 2: string}
+     * @return ?array{0: string, 1: string, 2: string, 3: bool}
      */
     private static function installer(?array $release, string $pattern): ?array
     {
         foreach ((array) ($release['installers'] ?? []) as $name => $url) {
             if (preg_match($pattern, (string) $name)) {
-                return [(string) $release['version'], (string) $name, (string) $url];
+                return [(string) $release['version'], (string) $name, (string) $url, !empty($release['prerelease'])];
             }
         }
         return null;

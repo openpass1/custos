@@ -134,19 +134,20 @@ if (isset($options['package'])) {
     $ok = $updater->installFile((string) realpath($file), $by, $force);
 } else {
     $releases = $app->releases();
-    Cli::info("Reading the releases of github.com/{$releases->repo}");
+    Cli::info("Reading the releases of github.com/{$releases->repo} ({$releases->channel()} channel)");
     if (!$releases->check(time())) {
         Cli::fail('Cannot read the releases: ' . $app->settings()->get('releases_check_error')
             . '. Download custos-server-X.Y.Z.zip from the Releases page by hand and run: php bin/update.php --package=FILE');
     }
     $latest = $releases->latest('server');
     if ($latest === null) {
-        Cli::warn("No published release of the site on github.com/{$releases->repo} yet. Nothing to do.");
+        Cli::warn('No site release found in the selected channel. Nothing to do.');
         exit(0);
     }
-    Cli::info("Installed: $installed, newest release: {$latest['version']}" . ($latest['url'] !== '' ? " ({$latest['url']})" : ''));
+    Cli::info("Installed: $installed, newest release: {$latest['version']}" . (!empty($latest['prerelease']) ? ' (pre-release)' : '')
+        . ($latest['url'] !== '' ? " ({$latest['url']})" : ''));
     if (version_compare($latest['version'], $installed, '<=')) {
-        Cli::ok('The site is up to date.');
+        Cli::ok('No newer site version in the selected channel.');
         exit(0);
     }
     if (isset($options['check'])) {

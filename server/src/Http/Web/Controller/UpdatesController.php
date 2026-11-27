@@ -32,15 +32,17 @@ final class UpdatesController extends Controller
         $latestSevenZip = $watch->latestSevenZip();
         $settings = $this->app->settings();
         $releases = $this->app->releases();
+        $channel = $releases->channel();
         // The editions other than the standard one, each with its section, packages, current version and machines.
         $editions = [];
         foreach (Agents::EDITIONS as $kind) {
             $editionCurrent = $packages->current($kind);
             $machines = Packages::fitting($kind, $agents);
-            $show = $kind === Agents::LINUX || $packages->inUse($kind);
+            $latest = $releases->latest($kind);
+            $show = $kind === Agents::LINUX || $packages->inUse($kind) || ($channel === Releases::PREVIEW && $latest !== null);
             $editions[$kind] = [
                 'on' => $show,
-                'latest' => $releases->latest($kind),
+                'latest' => $latest,
                 'newer' => $show ? $releases->newerClient($kind) : null,
                 'packages' => $packages->all($kind),
                 'current' => $editionCurrent,
@@ -50,6 +52,7 @@ final class UpdatesController extends Controller
         }
         return $this->render('updates/index', [
             'repo' => $releases->repo,
+            'releaseChannel' => $channel,
             'releasesOn' => $releases->checkOn(),
             'releasesCheckedAt' => $settings->get('releases_checked_at'),
             'releasesError' => $settings->get('releases_check_error'),
@@ -247,6 +250,20 @@ final class UpdatesController extends Controller
         return $this->redirect('/updates');
     }
 
+    public function releasesChannel(): Response
+    {
+        $channel = $this->post('releases_channel');
+        try {
+            $this->app->releases()->setChannel($channel);
+        } catch (\InvalidArgumentException $e) {
+            $this->session->flash('error', $this->t($e->getMessage()));
+            return $this->redirect('/updates');
+        }
+        $this->audit('settings.update', 'settings', null, ['releases_channel' => $channel]);
+        $this->session->flash('info', $this->t('settings.flash.saved'));
+        return $this->redirect('/updates');
+    }
+
     /**
      * Downloads the newest program release from GitHub as an agent update package (checked and signed): $part client
      * for the standard edition, legacy for the edition for Windows 7 and 8.1, macos and linux for CUSTOS for macOS and Linux.
@@ -256,7 +273,7 @@ final class UpdatesController extends Controller
         @set_time_limit(300);
         try {
             $package = $this->app->releases()->downloadClient($this->user()['login'], $params,
-                in_array($part, Releases::PROGRAM_PARTS, true) ? $part : 'client');
+                in_array($part, Releases::PROGRAM_PARTS, true) ? $part : 'client', $this->post('release_selection'));
         } catch (\InvalidArgumentException $e) {
             $this->session->flash('error', $this->t($e->getMessage(), $params ?? []));
             return $this->redirect('/updates');
@@ -270,7 +287,7 @@ final class UpdatesController extends Controller
     public function siteInstall(): Response
     {
         try {
-            $state = $this->app->siteUpdate()->request($this->user()['login']);
+            $state = $this->app->siteUpdate()->request($this->user()['login'], $this->post('release_selection'));
         } catch (\InvalidArgumentException $e) {
             $this->session->flash('error', $this->t($e->getMessage()));
             return $this->redirect('/updates');

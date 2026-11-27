@@ -35,7 +35,8 @@
                     ?>
                     <tr class="<?= $n['read_at'] === null ? 'unread' : '' ?>" data-key="n<?= (int) $n['id'] ?>">
                         <td class="nowrap"><?= e(fmt_time($n['created_at'])) ?></td>
-                        <td><?php if ($link !== null): ?><a href="<?= e($link) ?>"><?= e(notice_text($n)) ?></a><?php else: ?><?= e(notice_text($n)) ?><?php endif ?></td>
+                        <td><?php if ($link !== null): ?><a href="<?= e($link) ?>"><?= e(notice_text($n)) ?></a><?php else: ?><?= e(notice_text($n)) ?><?php endif ?>
+                            <?php if (!empty(json_decode($n['params'] ?? '', true)['prerelease'])): ?><?= badge('warning', t('releases.channel.preview')) ?><?php endif ?></td>
                         <td class="card-side">
                             <?php if ($n['read_at'] === null): ?>
                                 <form method="post" action="<?= e(url('/notices/read')) ?>">

@@ -396,6 +396,8 @@ From version 0.4.11 on, the site updates itself: with a button on the site or wi
 1. Open Management → Updates. The "Monitoring site" block shows the installed version and the released one; "What is new" leads to the release page.
 2. Press **Update the site to X.Y.Z** and confirm.
 
+**GitHub release channel** (Monitor 1.4.3+) defaults to **Stable**. Choose **Preview** and save to include GitHub pre-releases in the search for the newest version of Monitor and each client edition. Both channels skip drafts. Switching back to Stable prevents a queued GitHub pre-release update from starting. Client packages already on the server, their current version settings, manual uploads and 7-Zip are managed separately.
+
 ✅ Within a minute cron starts the update. For about a minute the site shows "The site is being updated", then it opens by itself; the new version is shown at the bottom of the page, and the "Monitoring site" block says "The site was updated from … to …".
 
 What happens meanwhile: the site downloads the package and checks its checksum, checks the PHP version, disk space and file permissions, moves the old files to `server/var/update/backup`, puts the new ones in place, applies the database migrations and checks that the new version works. If the migrations change tables, a copy of those tables is taken first. On any error the site puts the old files and tables back by itself and says in the "Monitoring site" block what happened (details under "Steps"). While the site shows the maintenance page, agents are told "being updated" and try again in a minute; their reports are not lost.
@@ -411,7 +413,7 @@ cd ~/htdocs/custos.lan/server
 php8.4 bin/update.php
 ```
 
-The script shows the installed and the new version and asks `Update the site to X.Y.Z? [y/N]`. Answer `y` and press Enter.
+The script uses the same GitHub release channel as the site. It shows the installed and the new version and asks `Update the site to X.Y.Z? [y/N]`. Answer `y` and press Enter.
 
 ✅ At the end: `[ok] The site is updated: … -> …`. The script does the same as the button on the site and puts the old version back by itself on an error, too.
 

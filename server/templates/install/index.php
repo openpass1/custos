@@ -8,15 +8,16 @@
  * @var string $connectionProblem the message key that says why there is neither
  * @var ?array $package the package for Linux the command installs @var bool $packageCurrent whether it is the current one
  * @var list<string> $archives the processors the package has the program for
- * @var string $releasesPage @var ?array $windows @var ?array $mac @var ?array $legacy [version, file, address]
+ * @var string $releasesPage @var ?array $windows @var ?array $mac @var ?array $legacy [version, file, address, prerelease]
  */
 $copy = fn(string $id, string $value, int $size = 72): string => '<span class="copy-row">'
     . '<input type="text" id="' . e($id) . '" class="mono" value="' . e($value) . '" readonly size="' . $size . '" spellcheck="false">'
     . '<button type="button" class="secondary" data-copy="' . e($id) . '" data-copied="' . e(t('common.copied')) . '">'
     . icon('copy') . e(t('common.copy')) . '</button></span>';
+$preview = fn(?array $installer) => empty($installer[3]) ? '' : ' ' . badge('warning', t('releases.channel.preview'));
 $download = fn(?array $installer, string $fallback): string => $installer === null
     ? '<a class="button-link" href="' . e($fallback) . '" target="_blank" rel="noopener">' . icon('download') . e(t('install.github')) . '</a>'
-    : '<a class="button-link" href="' . e($installer[2]) . '" rel="noopener">' . icon('download') . e($installer[1]) . '</a>';
+    : '<a class="button-link" href="' . e($installer[2]) . '" rel="noopener">' . icon('download') . e($installer[1]) . '</a>' . $preview($installer);
 ?>
 <h1><?= e(t('install.title')) ?></h1>
 <p class="hint"><?= e(t('install.hint')) ?></p>
@@ -63,7 +64,7 @@ $download = fn(?array $installer, string $fallback): string => $installer === nu
     <p class="note"><?= e(t('install.windows.hint')) ?></p>
     <div class="buttons"><?= $download($windows, $releasesPage) ?></div>
     <p class="note gap-top"><?= e(t('install.legacy')) ?>
-        <a href="<?= e($legacy === null ? $releasesPage : $legacy[2]) ?>" rel="noopener"><?= e($legacy === null ? t('install.github') : $legacy[1]) ?></a></p>
+        <a href="<?= e($legacy === null ? $releasesPage : $legacy[2]) ?>" rel="noopener"><?= e($legacy === null ? t('install.github') : $legacy[1]) ?></a><?= $preview($legacy) ?></p>
 
     <h3><?= e(t('install.mac')) ?></h3>
     <p class="note"><?= e(t('install.mac.hint')) ?></p>

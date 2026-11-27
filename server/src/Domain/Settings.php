@@ -64,6 +64,7 @@ final class Settings
         // CUSTOS releases on GitHub (section 8): the daily check of the site and the program releases, the
         // releases found (JSON) and the versions a notice was given for. See Domain\Releases.
         'releases_check' => '1',
+        'releases_channel' => 'stable',
         'releases_checked_at' => '',
         'releases_check_error' => '',
         'release_server' => '',
@@ -98,6 +99,12 @@ final class Settings
     public function int(string $name): int
     {
         return (int) $this->get($name);
+    }
+
+    /** Reads a setting saved by another request since this instance filled its cache. */
+    public function fresh(string $name): string
+    {
+        return $this->db->value('SELECT value FROM settings WHERE name = ?', [$name]) ?? self::DEFAULTS[$name] ?? '';
     }
 
     public function float(string $name): float

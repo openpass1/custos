@@ -38,9 +38,10 @@ final class SiteUpdate
      *
      * @throws \InvalidArgumentException with a lang key
      */
-    public function request(string $login): array
+    public function request(string $login, ?string $selection = null): array
     {
         $release = $this->releases->newerSite();
+        $this->releases->checkSelection($selection, $release);
         if ($release === null) {
             throw new \InvalidArgumentException('site.error.nothing');
         }

@@ -12,6 +12,11 @@ How to write it:
 
 `.github/release-notes.sh` prints the text of a release and checks these rules; CI runs it on every change.
 
+## 1.4.3
+
+### Added
+- Choose Stable or Preview for CUSTOS Monitor and client releases discovered on GitHub.
+
 ## 1.4.2
 
 ### Added
