@@ -1,5 +1,6 @@
 case "$1" in
   remove|purge)
+    clear_install_marker
     if [ -L "$enable_link" ]; then
       enabled_unit=$(readlink -- "$enable_link")
       case "$enabled_unit" in
@@ -16,5 +17,8 @@ case "$1" in
     if systemd_running && ! external_agent; then
       systemctl daemon-reload
     fi
+    ;;
+  abort-install)
+    clear_install_marker
     ;;
 esac

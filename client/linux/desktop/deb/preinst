@@ -6,4 +6,8 @@ if [ "$1" = install ]; then
       exit 1
     fi
   done
+
+  # dpkg reports install here even when it remembers the version of a removed package.
+  install -d -m 0700 -- "$state_dir"
+  touch -- "$install_marker"
 fi

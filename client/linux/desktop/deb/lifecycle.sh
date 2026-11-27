@@ -5,9 +5,16 @@ unit=custos.service
 unit_path=/usr/lib/systemd/system/$unit
 enable_link=/etc/systemd/system/multi-user.target.wants/$unit
 program=/usr/lib/custos-desktop-preview/agent/custos
+state_dir=/var/lib/custos-desktop-preview
+install_marker=$state_dir/new-install
 
 path_exists() {
   [ -e "$1" ] || [ -L "$1" ]
+}
+
+clear_install_marker() {
+  rm -f -- "$install_marker"
+  rmdir -- "$state_dir" 2>/dev/null || true
 }
 
 external_unit() {

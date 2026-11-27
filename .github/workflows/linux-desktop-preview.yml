@@ -83,13 +83,14 @@ jobs:
         run: |
           version=$(awk '/^## [0-9]+\.[0-9]+\.[0-9]+$/ {print $2; exit}' CHANGELOG.md)
           test -n "$version"
-          CUSTOS_DESKTOP_DEB_VERSION="$version~preview${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" \
-            bash linux/build-desktop-deb.sh "$ARCH" "$RUNNER_TEMP/custos-desktop"
+          package_version="$version~preview${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          CUSTOS_DESKTOP_DEB_VERSION="$package_version" bash linux/build-desktop-deb.sh "$ARCH" "$RUNNER_TEMP/custos-desktop"
           shopt -s failglob
           packages=("$RUNNER_TEMP"/custos-desktop/custos-desktop-preview_*_"$DEB_ARCH".deb)
           test "${#packages[@]}" = 1
           package="${packages[0]}"
           test "$(dpkg-deb -f "$package" Package)" = custos-desktop-preview
+          test "$(dpkg-deb -f "$package" Version)" = "$package_version"
           test "$(dpkg-deb -f "$package" Architecture)" = "$DEB_ARCH"
           printf 'DEB_PACKAGE=%s\n' "$package" >> "$GITHUB_ENV"
 
@@ -109,19 +110,30 @@ jobs:
             custos status
           }
 
+          check_removed_package() {
+            test ! -e /usr/bin/custos-gui
+            test ! -S /run/custos.sock
+            test ! -L /etc/systemd/system/multi-user.target.wants/custos.service
+            sudo test -f /var/lib/custos/.deb-smoke-test
+            if systemctl is-active --quiet custos.service; then
+              echo 'The packaged service is still active after removal' >&2
+              exit 1
+            fi
+          }
+
           check_installed_service
           sudo touch /var/lib/custos/.deb-smoke-test
           sudo apt-get install -y --reinstall "$DEB_PACKAGE"
           check_installed_service
           sudo test -f /var/lib/custos/.deb-smoke-test
           sudo apt-get remove -y custos-desktop-preview
-          test ! -e /usr/bin/custos-gui
-          test ! -S /run/custos.sock
+          check_removed_package
+
+          sudo apt-get install -y "$DEB_PACKAGE"
+          check_installed_service
           sudo test -f /var/lib/custos/.deb-smoke-test
-          if systemctl is-active --quiet custos.service; then
-            echo 'The packaged service is still active after removal' >&2
-            exit 1
-          fi
+          sudo apt-get remove -y custos-desktop-preview
+          check_removed_package
 
       - name: Check coexistence with an existing service
         run: |
