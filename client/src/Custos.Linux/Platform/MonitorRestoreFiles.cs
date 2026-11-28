@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Custos.Core;
 using Microsoft.Win32.SafeHandles;
 
@@ -7,11 +6,6 @@ namespace Custos.Service.Platform;
 /// <summary>Confines files read and written by Linux restores requested by the monitoring server.</summary>
 internal static class MonitorRestoreFiles
 {
-    // Linux arm64 overrides the asm-generic O_DIRECTORY and O_NOFOLLOW values.
-    private static int DirectoryOnly => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x4000 : 0x10000;
-    private static int NoFollow => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x8000 : 0x20000;
-    private static int DirectoryFlags => Native.PathOnly | Native.CloseOnExec | DirectoryOnly | NoFollow;
-
     private const uint PrivateMode = 0x1c0; // 0700
     private const uint GroupAndOtherWrite = 0x12;
     private const uint Sticky = 0x200;
@@ -55,7 +49,7 @@ internal static class MonitorRestoreFiles
 
         string directoryPath = Path.Combine(root, Path.GetDirectoryName(relative) ?? string.Empty);
         using var directory = OpenDirectory(directoryPath);
-        using var original = Native.openat(directory, Path.GetFileName(relative), Native.PathOnly | NoFollow | Native.CloseOnExec);
+        using var original = Native.openat(directory, Path.GetFileName(relative), Native.PathOnly | Native.NoFollow | Native.CloseOnExec);
         return Native.OpenRegularFile(original, 4096);
     }
 
@@ -66,13 +60,13 @@ internal static class MonitorRestoreFiles
             throw new IOException("A restore directory must be absolute.");
         }
 
-        var current = Native.open("/", DirectoryFlags);
+        var current = Native.open("/", Native.DirectoryPathFlags);
         try
         {
             CheckDirectory(current, requireProtected);
             foreach (string name in Path.GetFullPath(path).Split('/', StringSplitOptions.RemoveEmptyEntries))
             {
-                var next = Native.openat(current, name, DirectoryFlags);
+                var next = Native.openat(current, name, Native.DirectoryPathFlags);
                 current.Dispose();
                 current = next;
                 CheckDirectory(current, requireProtected);

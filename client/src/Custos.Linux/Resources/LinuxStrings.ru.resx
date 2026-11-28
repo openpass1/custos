@@ -361,4 +361,7 @@ ssh -N -o ExitOnForwardFailure=yes -L 127.0.0.1:{0}:127.0.0.1:{0} USER@SERVER
   <data name="CliUpdatePasswordCancelled" xml:space="preserve">
     <value>пароль программы не введён</value>
   </data>
+  <data name="DesktopUpdateUnavailable" xml:space="preserve">
+    <value>Это обновление Linux предназначено только для агента из архива. В Monitor выберите выпуск Linux с пакетами рабочего стола для управляемого обновления.</value>
+  </data>
 </root>

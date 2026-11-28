@@ -37,7 +37,7 @@ internal sealed partial class AgentService
 
     private int _updateRunning;
 
-    // Debian packages keep this executable and its service unit under dpkg ownership.
+    // Native packages keep this executable and its service unit under their package manager's ownership.
     private static bool ProgramManagedByPackage =>
 #if CUSTOS_PACKAGE_MANAGED
         true;
@@ -60,10 +60,12 @@ internal sealed partial class AgentService
             return Rejected(version, Messages.MonitorPackageBadSignature);
         }
 
+#if !CUSTOS_LINUX
         if (ProgramManagedByPackage)
         {
             return CommandOutcome.Failed(Messages.ProgramManagedByPackage);
         }
+#endif
 
         if (version == info.Version)
         {
@@ -82,8 +84,23 @@ internal sealed partial class AgentService
 
         bool handedOver = false;
         string package = Path.Combine(DataFolders.Updates, $"custos-{version}.zip");
+#if CUSTOS_LINUX
+        string? desktopWork = null;
+#endif
         try
         {
+#if CUSTOS_LINUX
+            if (ProgramManagedByPackage)
+            {
+                if (!DesktopUpdatePackage.IsReleaseVersion(version))
+                {
+                    return Rejected(version, Messages.MonitorPackageBadCommand);
+                }
+
+                desktopWork = CreateDesktopUpdateWork();
+                package = Path.Combine(desktopWork, "monitor-package.zip");
+            }
+#endif
             Directory.CreateDirectory(DataFolders.Updates);
             Log(LogLineLevels.Info, Messages.Format(Messages.MonitorUpdateDownloading, version));
             var answer = await _link.DownloadAsync($"agent/updates/{version}", package, MaxPackageBytes, cancellationToken).ConfigureAwait(false);
@@ -97,9 +114,21 @@ internal sealed partial class AgentService
                 return Rejected(version, Messages.MonitorPackageBadHash);
             }
 
-            if (await HandOverAsync(package, version, command.Id, cancellationToken).ConfigureAwait(false) is { } problem)
+            HandOverProblem? problem;
+#if CUSTOS_LINUX
+            if (desktopWork is not null)
             {
-                return problem.BadPackage ? Rejected(version, problem.Reason) : Failed(version, problem.Reason);
+                problem = await HandOverDesktopAsync(package, desktopWork, version, command.Id, cancellationToken).ConfigureAwait(false);
+            }
+            else
+#endif
+            {
+                problem = await HandOverAsync(package, version, command.Id, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (problem is { } handOverProblem)
+            {
+                return handOverProblem.BadPackage ? Rejected(version, handOverProblem.Reason) : Failed(version, handOverProblem.Reason);
             }
 
             handedOver = true;
@@ -116,6 +145,12 @@ internal sealed partial class AgentService
             TryDeleteFile(package);
             if (!handedOver)
             {
+#if CUSTOS_LINUX
+                if (desktopWork is not null)
+                {
+                    TryDeleteFolder(desktopWork);
+                }
+#endif
                 Interlocked.Exchange(ref _updateRunning, 0);
             }
         }
@@ -149,51 +184,10 @@ internal sealed partial class AgentService
             Directory.CreateDirectory(updaterFolder);
             PrepareUpdater(staging, updaterFolder);
 
-            // No run may start now, and the one in progress ends first (A.10).
-            Log(LogLineLevels.Info, Messages.Format(Messages.MonitorUpdateWaiting, version));
-            Interlocked.Increment(ref _sevenZipWanted);
-            try
-            {
-                await _sevenZipGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _sevenZipWanted);
-            }
-
-            bool restoreRunning;
-            lock (_restoreLock)
-            {
-                restoreRunning = _restore is { Running: true } || _sevenZipUpdating;
-            }
-
-            if (restoreRunning)
-            {
-                _sevenZipGate.Release();
-                return new HandOverProblem(Messages.MonitorUpdateRestoreRunning, BadPackage: false);
-            }
-
-            var pending = new PendingUpdate { CommandId = commandId, FromVersion = info.Version, ToVersion = version, StartedAt = DateTimeOffset.UtcNow };
-            File.WriteAllBytes(UpdatePendingFile, JsonSerializer.SerializeToUtf8Bytes(pending, MonitorJsonContext.Default.PendingUpdate));
-            TryDeleteFile(UpdateResultFile);
-
-            var start = UpdaterStart(staging, updaterFolder, version);
-            ServiceLog.UpdateStarting(logger, version);
-            Log(LogLineLevels.Warning, Messages.Format(Messages.MonitorUpdateInstalling, info.Version, version));
-            try
-            {
-                using var process = Process.Start(start) ?? throw new InvalidOperationException("Process.Start returned null.");
-            }
-            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-            {
-                TryDeleteFile(UpdatePendingFile);
-                _sevenZipGate.Release();
-                return new HandOverProblem(ex.Message, BadPackage: false);
-            }
-
-            handedOver = true;
-            WatchUpdate(version);
-            return null;
+            var problemAfterUnpack = await StartUpdaterAsync(UpdaterStart(staging, updaterFolder, version), version, commandId,
+                desktopWork: null, cancellationToken).ConfigureAwait(false);
+            handedOver = problemAfterUnpack is null;
+            return problemAfterUnpack;
         }
         finally
         {
@@ -202,6 +196,134 @@ internal sealed partial class AgentService
                 TryDeleteFolder(staging);
             }
         }
+    }
+
+    private async Task<HandOverProblem?> StartUpdaterAsync(ProcessStartInfo start, string version, string? commandId, string? desktopWork,
+        CancellationToken cancellationToken)
+    {
+        bool gateHeld = false;
+        bool blocksRestore = false;
+        bool pendingWritten = false;
+        bool handedOver = false;
+        try
+        {
+            // No run may start now, and the one in progress ends first (A.10).
+            Log(LogLineLevels.Info, Messages.Format(Messages.MonitorUpdateWaiting, version));
+            Interlocked.Increment(ref _sevenZipWanted);
+            try
+            {
+                await _sevenZipGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+                gateHeld = true;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _sevenZipWanted);
+            }
+
+            lock (_restoreLock)
+            {
+                if (_restore is { Running: true } || _sevenZipUpdating)
+                {
+                    return new HandOverProblem(Messages.MonitorUpdateRestoreRunning, BadPackage: false);
+                }
+
+                // The program package includes 7-Zip. A restore must not start after the check above.
+                _sevenZipUpdating = blocksRestore = true;
+            }
+
+            var pending = new PendingUpdate
+            {
+                CommandId = commandId, FromVersion = info.Version, ToVersion = version,
+                StartedAt = DateTimeOffset.UtcNow, DesktopPackageWork = desktopWork,
+            };
+            pendingWritten = true;
+            WritePendingUpdate(pending);
+            TryDeleteFile(UpdateResultFile);
+
+            ServiceLog.UpdateStarting(logger, version);
+            Log(LogLineLevels.Warning, Messages.Format(Messages.MonitorUpdateInstalling, info.Version, version));
+            try
+            {
+                using var process = Process.Start(start) ?? throw new InvalidOperationException("Process.Start returned null.");
+#if CUSTOS_LINUX
+                if (desktopWork is not null)
+                {
+                    if (await DesktopUpdaterStartFailureAsync(process).ConfigureAwait(false) is { } failure)
+                    {
+                        return new HandOverProblem(failure, BadPackage: false);
+                    }
+                }
+#endif
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+            {
+                return new HandOverProblem(ex.Message, BadPackage: false);
+            }
+
+            handedOver = true;
+#if CUSTOS_LINUX
+            if (desktopWork is not null)
+            {
+                WatchDesktopUpdate(pending);
+                return null;
+            }
+#endif
+            WatchUpdate(version);
+            return null;
+        }
+        finally
+        {
+            if (!handedOver)
+            {
+                if (pendingWritten)
+                {
+                    TryDeleteFile(UpdatePendingFile);
+                }
+
+                if (gateHeld)
+                {
+                    if (blocksRestore)
+                    {
+                        ReleaseUpdateGate();
+                    }
+                    else
+                    {
+                        _sevenZipGate.Release();
+                    }
+                }
+            }
+        }
+    }
+
+    private static void WritePendingUpdate(PendingUpdate pending)
+    {
+        byte[] json = JsonSerializer.SerializeToUtf8Bytes(pending, MonitorJsonContext.Default.PendingUpdate);
+        if (pending.DesktopPackageWork is null)
+        {
+            File.WriteAllBytes(UpdatePendingFile, json);
+            return;
+        }
+
+        string temporary = UpdatePendingFile + ".tmp";
+        try
+        {
+            File.WriteAllBytes(temporary, json);
+            File.Move(temporary, UpdatePendingFile, overwrite: true);
+        }
+        finally
+        {
+            TryDeleteFile(temporary);
+        }
+    }
+
+    private void ReleaseUpdateGate()
+    {
+        lock (_restoreLock)
+        {
+            _sevenZipUpdating = false;
+        }
+
+        _sevenZipGate.Release();
     }
 
 #if !CUSTOS_MAC && !CUSTOS_LINUX
@@ -252,7 +374,7 @@ internal sealed partial class AgentService
 
             string reason = ReadUpdateResult()?.Message ?? Messages.MonitorUpdateNoStop;
             FinishPendingUpdate(reason);
-            _sevenZipGate.Release();
+            ReleaseUpdateGate();
             Interlocked.Exchange(ref _updateRunning, 0);
             ServiceLog.UpdateRejected(logger, version, reason);
         }, CancellationToken.None);
@@ -267,6 +389,9 @@ internal sealed partial class AgentService
         CleanUpdates();
         if (!File.Exists(UpdatePendingFile))
         {
+#if CUSTOS_LINUX
+            CleanAbandonedDesktopWork(null);
+#endif
             return;
         }
 
@@ -280,7 +405,19 @@ internal sealed partial class AgentService
             ServiceLog.ConfigProblem(logger, ex.Message);
         }
 
-        var result = ReadUpdateResult();
+#if CUSTOS_LINUX
+        CleanAbandonedDesktopWork(pending?.DesktopPackageWork);
+        if (pending?.DesktopPackageWork is not null)
+        {
+            ResumeDesktopUpdate(pending);
+            return;
+        }
+#endif
+        CompletePendingUpdate(pending, ReadUpdateResult(), failure);
+    }
+
+    private void CompletePendingUpdate(PendingUpdate? pending, UpdaterResult? result, string? failure, bool requireUpdaterResult = false)
+    {
         TryDeleteFile(UpdatePendingFile);
         TryDeleteFile(UpdateResultFile);
         if (pending is null)
@@ -289,7 +426,7 @@ internal sealed partial class AgentService
         }
 
         CommandOutcome outcome;
-        if (failure is null && info.Version == pending.ToVersion)
+        if (failure is null && info.Version == pending.ToVersion && (!requireUpdaterResult || result?.Ok == true))
         {
             string message = Messages.Format(Messages.MonitorUpdateDone, pending.FromVersion, pending.ToVersion);
             ServiceLog.UpdateInstalled(logger, pending.FromVersion, pending.ToVersion);
@@ -315,11 +452,12 @@ internal sealed partial class AgentService
         }
     }
 
-    private static UpdaterResult? ReadUpdateResult()
+    private static UpdaterResult? ReadUpdateResult(string? path = null)
     {
+        path ??= UpdateResultFile;
         try
         {
-            return File.Exists(UpdateResultFile) ? JsonSerializer.Deserialize(File.ReadAllBytes(UpdateResultFile), MonitorJsonContext.Default.UpdaterResult) : null;
+            return File.Exists(path) ? JsonSerializer.Deserialize(File.ReadAllBytes(path), MonitorJsonContext.Default.UpdaterResult) : null;
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -328,7 +466,7 @@ internal sealed partial class AgentService
     }
 
     /// <summary>Unpacks the files of the manifest into <paramref name="staging"/>; null when the package is good, else why not.</summary>
-    private static string? Unpack(string package, string staging, string version)
+    internal static string? Unpack(string package, string staging, string version)
     {
         TryDeleteFolder(staging);
         using var zip = ZipFile.OpenRead(package);

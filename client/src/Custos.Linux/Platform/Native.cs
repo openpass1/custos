@@ -18,6 +18,12 @@ internal static unsafe partial class Native
     public const int PathOnly = 0x200000;
     public const int CloseOnExec = 0x80000;
 
+    // Linux arm64 overrides the asm-generic O_DIRECTORY and O_NOFOLLOW values.
+    public static int NoFollow => RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x8000 : 0x20000;
+
+    public static int DirectoryPathFlags => PathOnly | CloseOnExec | NoFollow
+        | (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 0x4000 : 0x10000);
+
     private const string LibC = "libc";
     private const int AtFdCwd = -100;
     private const int AtSymlinkNoFollow = 0x100;

@@ -40,6 +40,18 @@ A desktop panel with tray support can display the CUSTOS icon while the window i
 
 ## Update or remove the package
 
+**Update from Monitor.** Starting with Linux Desktop 1.5.1, Monitor can update both the window and the service installed by
+the `custos-desktop` package. On a machine running 1.5.0 or an earlier preview, install the first compatible DEB or RPM
+locally. Later upgrades use the normal Monitor workflow.
+
+1. In Monitor **Updates**, download the Linux update ZIP from a newer release that includes Linux Desktop. Mark that Linux version as current.
+2. Select the machine in **Updates → Machines** and choose the CUSTOS update action. The machine needs HTTPS access to
+   GitHub Releases to fetch its DEB or RPM. The selected Linux ZIP supplies the expected file size and SHA-256.
+3. Check the command result and the reported agent version in Monitor. Reopen any running CUSTOS window to use the new GUI.
+
+If the desktop window uses a separately installed agent in `/opt/custos`, the Monitor command updates that agent.
+Use the desktop package installer to update the window on that machine.
+
 Open **Settings → All settings… → Updates**. **Stable** checks stable releases. **Preview** also includes
 pre-releases.
 
