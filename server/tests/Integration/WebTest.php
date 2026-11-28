@@ -566,6 +566,15 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Установщик 7-Zip 24.10 сохранён на сервере.', $updates);
+        $installer = TestEnv::dir() . '/7z2409-x64.exe';
+        file_put_contents($installer, "MZ test installer");
+        [$status] = $this->http('POST', '/updates/upload', [
+            '_csrf' => $csrf[1], 'package' => new \CURLFile($installer, 'application/octet-stream'), 'version' => '24.09',
+            'sha256' => hash_file('sha256', $installer),
+        ]);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Установщик 7-Zip 24.09 сохранён на сервере.', $updates);
         foreach (['agent', '7zip'] as $kind) {
             $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => basename($agentUrl), 'kind' => $kind]);
             [$status] = $this->http('POST', '/updates/install', self::encode($fields));
@@ -616,7 +625,12 @@ final class WebTest extends TestCase
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Программа 1.2.3 скачана с GitHub, проверена и подписана.', $updates);
         $this->assertStringNotContainsString('action="/updates/releases/client"', $updates, 'the Windows package is on the server now');
-        $this->assertStringContainsString('Текущая версия: 1.0.1.', $updates, 'a downloaded package does not become current by itself');
+        $document = new \DOMDocument();
+        @$document->loadHTML('<?xml encoding="UTF-8">' . $updates);
+        $catalog = new \DOMXPath($document);
+        $this->assertSame('1.0.1', $catalog->evaluate('string(//tr[@data-package="agent"]/td[3]/strong)'),
+            'a downloaded package does not become current by itself');
+        $this->assertSame('1.2.3, 1.0.1', $catalog->evaluate('string(//tr[@data-package="agent"]/td[2]/span[@class="catalog-versions"])'));
 
         $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'stable:1.2.3:stable'])[0]);
         [, $updates] = $this->http('GET', '/updates');
@@ -901,7 +915,7 @@ final class WebTest extends TestCase
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=legacy', '--out=' . $package]);
         $this->assertSame(0, $code, $output);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('CUSTOS для Windows 7 и 8.1', $updates);
+        $this->assertStringContainsString('data-package="legacy"', $updates);
         preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
         [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-legacy-1.0.1.zip')]);
         $this->assertSame(303, $status);
@@ -951,7 +965,7 @@ final class WebTest extends TestCase
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=macos', '--out=' . $package]);
         $this->assertSame(0, $code, $output);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('CUSTOS для macOS', $updates);
+        $this->assertStringContainsString('data-package="macos"', $updates);
         $this->assertStringContainsString('встроен в программу', $updates);
         preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
         [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-macos-1.0.1.zip')]);

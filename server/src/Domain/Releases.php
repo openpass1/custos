@@ -39,7 +39,8 @@ final class Releases
     /** The program parts: the standard edition (client) and the others, named like their package kind. */
     public const PROGRAM_PARTS = ['client', 'legacy', 'macos', 'linux'];
     /** The tag of a release of each part is <prefix>X.Y.Z, its package <zip>X.Y.Z.zip. */
-    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v', 'macos' => 'client-v', 'linux' => 'client-v'];
+    private const TAGS = ['server' => 'server-v', 'client' => 'client-v', 'legacy' => 'client-legacy-v', 'macos' => 'client-v',
+                          'linux' => 'client-v', 'desktop' => 'client-v'];
     private const ZIPS = ['server' => 'custos-server-', 'client' => 'custos-', 'legacy' => 'custos-legacy-', 'macos' => 'custos-macos-',
                           'linux' => 'custos-linux-'];
     /** Far above the size of the program's update packages (the one for Linux holds the program twice, about 80 MB). */
@@ -137,7 +138,7 @@ final class Releases
         }
         $preview = array_filter($releases, static fn($release) => is_array($release) && !empty($release['prerelease']));
         $tags = array_column($releases, 'tag_name');
-        foreach (self::PARTS as $part) {
+        foreach ([...self::PARTS, 'desktop'] as $part) {
             $this->rememberStable('release_' . $part, self::pick($releases, $part), $tags);
             $candidate = self::pick($preview, $part, true);
             $this->settings->set('release_' . $part . '_preview', $candidate === null ? '' : $this->encode($candidate));
@@ -168,7 +169,8 @@ final class Releases
     /**
      * The newest release of a part in GitHub's list: version, tag, url (the release page), published_at, the package
      * (zip_name, zip_url, zip_size), prerelease, sha256 (GitHub's digest of the package, when given), sums_url (the release's
-     * SHA256SUMS.txt, when present) and installers (name => address of each .exe and .pkg, for the page "Install").
+     * SHA256SUMS.txt, when present) and installers (name => address). Desktop releases are selected by their
+     * DEB/RPM installers, independently of the Linux agent ZIP.
      */
     public static function pick(array $releases, string $part, bool $includePreview = false): ?array
     {
@@ -184,12 +186,20 @@ final class Releases
                 || ($version === $best['version'] && ($prerelease || !$best['prerelease'])))) {
                 continue;
             }
-            $zipName = self::ZIPS[$part] . "$version.zip";
+            $desktop = $part === 'desktop';
+            $zipName = $desktop ? null : self::ZIPS[$part] . "$version.zip";
+            $escaped = preg_quote($version, '/');
             $zip = $sums = null;
             $installers = [];
             foreach ((array) ($release['assets'] ?? []) as $asset) {
                 $name = (string) ($asset['name'] ?? '');
-                if ($name === $zipName) {
+                if ($desktop) {
+                    if (!empty($asset['browser_download_url']) && preg_match(
+                        "/^custos-desktop(?:_{$escaped}_(?:amd64|arm64)\\.deb|-{$escaped}-1\\.(?:x86_64|aarch64)\\.rpm)$/D", $name
+                    )) {
+                        $installers[$name] = (string) $asset['browser_download_url'];
+                    }
+                } elseif ($name === $zipName) {
                     $zip = $asset;
                 } elseif ($name === 'SHA256SUMS.txt') {
                     $sums = $asset;
@@ -197,7 +207,7 @@ final class Releases
                     $installers[$name] = (string) $asset['browser_download_url'];
                 }
             }
-            if ($zip === null || empty($zip['browser_download_url'])) {
+            if ($desktop ? $installers === [] : empty($zip['browser_download_url'])) {
                 continue;
             }
             $digest = (string) ($zip['digest'] ?? '');
@@ -208,7 +218,7 @@ final class Releases
                 'url' => (string) ($release['html_url'] ?? ''),
                 'published_at' => $release['published_at'] ?? null,
                 'zip_name' => $zipName,
-                'zip_url' => (string) $zip['browser_download_url'],
+                'zip_url' => (string) ($zip['browser_download_url'] ?? ''),
                 'zip_size' => (int) ($zip['size'] ?? 0),
                 'sha256' => preg_match('/^sha256:([0-9a-f]{64})$/i', $digest, $d) ? strtolower($d[1]) : null,
                 'sums_url' => $sums !== null && !empty($sums['browser_download_url']) ? (string) $sums['browser_download_url'] : null,

@@ -77,6 +77,13 @@ final class ReleasesTest extends TestCase
         $this->assertSame('2.4.0', Releases::pick($releases, 'linux')['version']);
         $this->assertSame('2.4.0', Releases::pick($releases, 'client')['version']);
         $this->assertSame(['2.5.0', ['Custos-2.5.0.pkg']], [Releases::pick($releases, 'macos')['version'], array_keys(Releases::pick($releases, 'macos')['installers'])]);
+
+        $releases[] = ['tag_name' => 'client-v2.6.0', 'assets' => [$asset('custos-desktop_2.6.0_amd64.deb')]];
+        $releases[] = ['tag_name' => 'client-v2.8.0', 'assets' => [$asset('custos-linux-2.8.0.zip'), $asset('custos-desktop_2.9.0_amd64.deb')]];
+        $releases[] = ['tag_name' => 'client-v2.7.0', 'prerelease' => true, 'assets' => [$asset('custos-desktop-2.7.0-1.aarch64.rpm')]];
+        $this->assertSame('2.8.0', Releases::pick($releases, 'linux')['version']);
+        $this->assertSame('2.6.0', Releases::pick($releases, 'desktop')['version']);
+        $this->assertSame(['custos-desktop-2.7.0-1.aarch64.rpm'], array_keys(Releases::pick($releases, 'desktop', true)['installers']));
     }
 
     public function testTablesThatMigrationsChange(): void

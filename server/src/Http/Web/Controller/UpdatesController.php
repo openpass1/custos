@@ -27,28 +27,25 @@ final class UpdatesController extends Controller
     {
         $packages = $this->app->packages();
         $agents = array_values(array_filter($this->app->agents()->all(), fn($a) => $a['status'] !== 'pending'));
-        $current = $packages->current();
-        $custosOutdated = array_column(Packages::outdated(Packages::fitting('agent', $agents), $current['version'] ?? null), null, 'id');
-        $custosUpdateAvailable = $current !== null;
+        $custosOutdated = [];
+        $custosUpdateAvailable = false;
         $sevenZipPackages = $packages->all('7zip');
         $settings = $this->app->settings();
         $releases = $this->app->releases();
         $channel = $releases->channel();
-        // The editions other than the standard one, each with its own section, packages and current version.
-        $editions = [];
-        foreach (Agents::EDITIONS as $kind) {
-            $editionCurrent = $packages->current($kind);
-            $machines = Packages::fitting($kind, $agents);
-            $latest = $releases->latest($kind);
-            $show = $kind === Agents::LINUX || $packages->inUse($kind) || ($channel === Releases::PREVIEW && $latest !== null);
-            $custosOutdated += array_column(Packages::outdated($machines, $editionCurrent['version'] ?? null), null, 'id');
-            $custosUpdateAvailable = $custosUpdateAvailable || $editionCurrent !== null;
-            $editions[$kind] = [
-                'on' => $show,
+        $catalog = [];
+        foreach (Releases::PROGRAM_PARTS as $part) {
+            $kind = Releases::kind($part);
+            $current = $packages->current($kind);
+            $stored = $packages->all($kind);
+            $latest = $releases->latest($part);
+            $custosOutdated += array_column(Packages::outdated(Packages::fitting($kind, $agents), $current['version'] ?? null), null, 'id');
+            $custosUpdateAvailable = $custosUpdateAvailable || $current !== null;
+            $catalog[$kind] = [
                 'latest' => $latest,
-                'newer' => $show ? $releases->newerClient($kind) : null,
-                'packages' => $packages->all($kind),
-                'current' => $editionCurrent,
+                'download' => $latest !== null && ($stored === [] || version_compare($latest['version'], $stored[0]['version'], '>')),
+                'packages' => $stored,
+                'current' => $current,
             ];
         }
         return $this->render('updates/index', [
@@ -61,13 +58,10 @@ final class UpdatesController extends Controller
             'siteNewer' => $releases->newerSite(),
             'siteState' => $this->app->siteUpdate()->state(),
             'cronLastRun' => $settings->get('cron_last_run'),
-            'clientLatest' => $releases->latest('client'),
-            'clientNewer' => $releases->newerClient(),
-            'editions' => $editions,
+            'catalog' => $catalog,
+            'desktopLatest' => $releases->latest('desktop'),
             'section' => 'updates',
-            'agentPackages' => $packages->all('agent'),
             'sevenZipPackages' => $sevenZipPackages,
-            'current' => $current,
             'agents' => $agents,
             'groups' => $this->app->groups()->all(),
             'custosOutdated' => $custosOutdated,
@@ -84,12 +78,15 @@ final class UpdatesController extends Controller
         ], $this->t('updates.title'));
     }
 
-    /** Upload of an agent update package (zip with manifest.json). */
+    /** Upload of an agent ZIP or a 7-Zip installer through the shared file picker. */
     public function upload(): Response
     {
         $file = $this->uploaded('package');
         if ($file === null) {
             return $this->redirect('/updates');
+        }
+        if (file_get_contents($file, false, null, 0, 2) === 'MZ') {
+            return $this->storeSevenZipUpload($file);
         }
         try {
             $package = $this->app->packages()->addAgent($file, $this->user()['login'], $params);
@@ -268,9 +265,11 @@ final class UpdatesController extends Controller
     public function sevenZipUpload(): Response
     {
         $file = $this->uploaded('installer');
-        if ($file === null) {
-            return $this->redirect('/updates');
-        }
+        return $file === null ? $this->redirect('/updates') : $this->storeSevenZipUpload($file);
+    }
+
+    private function storeSevenZipUpload(string $file): Response
+    {
         try {
             $package = $this->app->packages()->addSevenZip($file, trim($this->post('version')), trim($this->post('sha256')), 'upload',
                 $this->user()['login'], $params);

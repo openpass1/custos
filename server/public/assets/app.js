@@ -833,6 +833,26 @@ document.addEventListener('change', (event) => {
     init();
 })();
 
+// CUSTOS ZIPs carry their version in the manifest. Only the 7-Zip installer needs these fields.
+(() => {
+    const form = document.querySelector('[data-package-upload]');
+    if (!form) {
+        return;
+    }
+    const fields = form.querySelector('[data-installer-fields]');
+    const sync = () => {
+        const file = form.elements.package.files[0];
+        const installer = file?.name.toLowerCase().endsWith('.exe') ?? false;
+        fields.hidden = !installer;
+        form.elements.version.disabled = !installer;
+        form.elements.version.required = installer;
+        form.elements.sha256.disabled = !installer;
+    };
+    form.elements.package.addEventListener('change', sync);
+    window.addEventListener('pageshow', sync);
+    sync();
+})();
+
 // Forms with conditional parts (task editor, agent settings, updates):
 // - [data-show-if="name=a|b&other!=c"] is shown only while the fields of its scope have these values. The scope is
 //   the nearest [data-scope]; inside a row of a list the names are the last part: "kind" stands for sources[3][kind].
