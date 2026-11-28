@@ -98,6 +98,19 @@ final class Packages
         return $this->all('7zip')[0] ?? null;
     }
 
+    /** Whether this stored Linux ZIP advertises signed checksums for the desktop installers. */
+    public static function hasDesktopInstallers(array $package): bool
+    {
+        $manifest = json_decode((string) $package['manifest'], true);
+        foreach ((array) ($manifest['files'] ?? []) as $entry) {
+            if (is_array($entry) && ($entry['path'] ?? null) === 'linux-desktop-packages.json'
+                && is_string($entry['sha256'] ?? null) && preg_match('/^[a-f0-9]{64}$/iD', $entry['sha256'])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Path of the stored file, or null when the package or its file is missing. */
     public function file(string $kind, string $version): ?string
     {

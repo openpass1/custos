@@ -10,7 +10,7 @@
         <p class="empty"><?= e(t('groups.empty')) ?></p>
     <?php else: ?>
         <div class="table-wrap">
-            <table>
+            <table class="align-middle">
                 <thead><tr><th><?= e(t('groups.col.name')) ?></th><th class="num"><?= e(t('groups.col.agents')) ?></th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($groups as $g): ?>

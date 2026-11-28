@@ -566,6 +566,15 @@ final class WebTest extends TestCase
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Установщик 7-Zip 24.10 сохранён на сервере.', $updates);
+        $installer = TestEnv::dir() . '/7z2409-x64.exe';
+        file_put_contents($installer, "MZ test installer");
+        [$status] = $this->http('POST', '/updates/upload', [
+            '_csrf' => $csrf[1], 'package' => new \CURLFile($installer, 'application/octet-stream'), 'version' => '24.09',
+            'sha256' => hash_file('sha256', $installer),
+        ]);
+        $this->assertSame(303, $status);
+        [, $updates] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Установщик 7-Zip 24.09 сохранён на сервере.', $updates);
         foreach (['agent', '7zip'] as $kind) {
             $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => basename($agentUrl), 'kind' => $kind]);
             [$status] = $this->http('POST', '/updates/install', self::encode($fields));
@@ -616,7 +625,12 @@ final class WebTest extends TestCase
         [, $updates] = $this->http('GET', '/updates');
         $this->assertStringContainsString('Программа 1.2.3 скачана с GitHub, проверена и подписана.', $updates);
         $this->assertStringNotContainsString('action="/updates/releases/client"', $updates, 'the Windows package is on the server now');
-        $this->assertStringContainsString('Обновить CUSTOS до 1.0.1', $updates, 'a downloaded package does not become current by itself');
+        $document = new \DOMDocument();
+        @$document->loadHTML('<?xml encoding="UTF-8">' . $updates);
+        $catalog = new \DOMXPath($document);
+        $this->assertSame('1.0.1', $catalog->evaluate('string(//tr[@data-package="agent"]/td[3]/strong)'),
+            'a downloaded package does not become current by itself');
+        $this->assertSame('1.2.3, 1.0.1', $catalog->evaluate('string(//tr[@data-package="agent"]/td[2]/span[@class="catalog-versions"])'));
 
         $this->assertSame(303, $this->post('/updates/releases/linux', ['release_selection' => 'stable:1.2.3:stable'])[0]);
         [, $updates] = $this->http('GET', '/updates');
@@ -901,7 +915,7 @@ final class WebTest extends TestCase
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=legacy', '--out=' . $package]);
         $this->assertSame(0, $code, $output);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('CUSTOS для Windows 7 и 8.1', $updates);
+        $this->assertStringContainsString('data-package="legacy"', $updates);
         preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
         [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-legacy-1.0.1.zip')]);
         $this->assertSame(303, $status);
@@ -909,7 +923,7 @@ final class WebTest extends TestCase
         [$status] = $this->post('/updates/legacy/1.0.1/current', []);
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('Обновить CUSTOS для Windows 7 и 8.1 до 1.0.1', $updates);
+        $this->assertStringContainsString('name="kind" value="custos">Обновить CUSTOS</button>', $updates);
         $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => '7zip']);
         $this->http('POST', '/updates/install', self::encode($fields));
         $this->assertStringContainsString('Ни одной выбранной машине нельзя отправить 7-Zip', $this->http('GET', '/updates')[1]);
@@ -951,7 +965,7 @@ final class WebTest extends TestCase
         [$code, $output] = self::php(['tools/make-update-package.php', '--version=1.0.1', '--edition=macos', '--out=' . $package]);
         $this->assertSame(0, $code, $output);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('CUSTOS для macOS', $updates);
+        $this->assertStringContainsString('data-package="macos"', $updates);
         $this->assertStringContainsString('встроен в программу', $updates);
         preg_match('/name="_csrf" value="([0-9a-f]+)"/', $updates, $csrf);
         [$status] = $this->http('POST', '/updates/upload', ['_csrf' => $csrf[1], 'package' => new \CURLFile($package, 'application/zip', 'custos-macos-1.0.1.zip')]);
@@ -960,7 +974,7 @@ final class WebTest extends TestCase
         [$status] = $this->post('/updates/macos/1.0.1/current', []);
         $this->assertSame(303, $status);
         [, $updates] = $this->http('GET', '/updates');
-        $this->assertStringContainsString('Обновить CUSTOS для macOS до 1.0.1', $updates);
+        $this->assertStringContainsString('name="kind" value="custos">Обновить CUSTOS</button>', $updates);
         $fields = self::withValues(self::formFields($updates, '/updates/install'), ['agent_ids[]' => $id[1], 'kind' => '7zip']);
         $this->http('POST', '/updates/install', self::encode($fields));
         $this->assertStringContainsString('Ни одной выбранной машине нельзя отправить 7-Zip', $this->http('GET', '/updates')[1]);
@@ -1273,6 +1287,76 @@ final class WebTest extends TestCase
         $oldList = $this->db()->one('SELECT result_data, restore_obsolete FROM commands WHERE id = ?', [$list['id']]);
         $this->assertSame(1, (int) $oldList['restore_obsolete']);
         $this->assertNotNull($oldList['result_data']);
+    }
+
+    #[Depends('testRestoreBackupFilesFromAnApprovedLinuxTask')]
+    public function testSingleCustosActionUsesTheCurrentPackageForEachTarget(): void
+    {
+        $db = $this->db();
+        $connectionCode = explode('#', $this->connectionString(), 2)[1];
+        $register = function (int $key, string $name, string $edition, string $version) use ($connectionCode): string {
+            $client = new AgentClient(self::$base, TestEnv::agentKey($key));
+            $reply = $client->register($connectionCode, [
+                'hostname' => $name, 'machine_guid' => Crypto::uuid4(), 'os' => $edition, 'agent_version' => $version,
+                'edition' => $edition, 'time_zone' => 'UTC',
+            ]);
+            $this->assertTrue($reply['ok'], $reply['reason']);
+            return $client->agentId;
+        };
+        $expectedCommands = $names = $ids = [];
+        foreach (['agent' => '1.2.3', 'legacy' => '1.0.1', 'macos' => '1.0.1', 'linux' => '1.0.1'] as $kind => $version) {
+            $this->assertSame(303, $this->post("/updates/$kind/$version/current", [])[0]);
+            $name = 'ROLLOUT-' . strtoupper($kind);
+            $id = $register(11 + count($names), $name, $kind === 'agent' ? '' : $kind, '1.0.0');
+            $this->assertSame(303, $this->post("/agents/$id/approve", [])[0]);
+            $names[$kind] = $name;
+            $ids[$kind] = $id;
+            $expectedCommands[$id] = $db->one('SELECT version, sha256, signature FROM agent_updates WHERE kind = ? AND is_current = 1', [$kind]);
+        }
+        $newer = $register(15, 'ROLLOUT-NEWER', 'linux', '2.0.0');
+        $pending = $register(16, 'ROLLOUT-PENDING', 'macos', '1.0.0');
+        $disabled = $register(17, 'ROLLOUT-DISABLED', 'legacy', '1.0.0');
+        $this->assertSame(303, $this->post("/agents/$newer/approve", [])[0]);
+        $db->exec("UPDATE agents SET status = 'disabled' WHERE id = ?", [$disabled]);
+
+        $fixtures = [...array_values($ids), $newer, $pending, $disabled];
+        $placeholders = implode(', ', array_fill(0, count($fixtures), '?'));
+        $queued = fn() => array_map(fn($json) => json_decode($json, true), array_column($db->all(
+            "SELECT agent_id, payload FROM commands WHERE kind = 'update.install' AND status = 'queued' AND agent_id IN ($placeholders) ORDER BY agent_id", $fixtures
+        ), 'payload', 'agent_id'));
+        $clear = fn() => $db->exec("DELETE FROM commands WHERE kind = 'update.install' AND agent_id IN ($placeholders)", $fixtures);
+        $submit = fn(array $target) => $this->post('/updates/install', ['kind' => 'custos'] + $target);
+        $auditStart = $db->value('SELECT MAX(id) FROM audit_log');
+        $this->assertSame(400, $this->http('POST', '/updates/install', ['kind' => 'custos', 'target' => 'outdated'])[0]);
+        $this->assertSame([], $queued());
+
+        $this->assertSame(303, $submit(['target' => 'selected', 'agent_ids' => $fixtures])[0]);
+        ksort($expectedCommands);
+        $this->assertSame($expectedCommands, $queued(), 'the chosen machines receive the signed current package of their own edition');
+        [, $page] = $this->http('GET', '/updates');
+        $this->assertStringContainsString('Обновление CUSTOS поставлено в очередь для машин: 4.', $page);
+        $this->assertStringContainsString('Уже установлена такая же версия или новее: 1.', $page);
+        $audit = $db->all("SELECT object_id, details FROM audit_log WHERE id > ? AND action = 'update.install' ORDER BY id", [$auditStart]);
+        $this->assertSame(['1.2.3', '1.0.1', '1.0.1', '1.0.1'], array_column($audit, 'object_id'));
+        $details = array_map(fn($row) => json_decode($row['details'], true), $audit);
+        $this->assertSame(['standard', 'Windows 7, 8.1', 'macOS', 'Linux'], array_column($details, 'edition'));
+        $this->assertSame(array_values($names), array_column($details, 'machines'));
+        $clear();
+
+        $db->exec("INSERT INTO agent_groups (name, created_at) VALUES ('Rollout group', UTC_TIMESTAMP())");
+        $group = $db->lastInsertId();
+        $db->exec('UPDATE agents SET group_id = ? WHERE id IN (?, ?, ?)', [$group, $ids['agent'], $ids['linux'], $pending]);
+        $db->exec("UPDATE agent_updates SET is_current = 0 WHERE kind = 'linux'");
+        $this->assertSame(303, $submit(['target' => 'group', 'group_id' => (string) $group, 'agent_ids' => $fixtures])[0]);
+        $this->assertSame([$ids['agent']], array_keys($queued()), 'group selection ignores submitted checkboxes and skips an edition with no current package');
+        $this->assertStringContainsString('Нет текущего пакета для редакции машины: 1.', $this->http('GET', '/updates')[1]);
+        $clear();
+
+        $this->assertSame(303, $this->post('/updates/linux/1.0.1/current', [])[0]);
+        $db->exec("UPDATE agents SET agent_version = '' WHERE id = ?", [$ids['agent']]);
+        $this->assertSame(303, $submit(['target' => 'outdated', 'agent_ids' => [$ids['agent']]])[0]);
+        unset($expectedCommands[$ids['agent']]);
+        $this->assertSame($expectedCommands, $queued(), 'outdated uses the current version per edition and requires a known installed version');
     }
 
     /** The connection string of the settings page: the site address, "#" and the registration code. */

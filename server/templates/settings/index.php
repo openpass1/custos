@@ -32,7 +32,7 @@ $error = fn(string $name) => isset($errors[$name]) ? '<div class="field-error">'
         <dt><?= e(t('settings.server_fingerprint')) ?></dt>
         <dd><code class="fingerprint"><?= e($serverFingerprint) ?></code></dd>
     </dl>
-    <form method="post" action="<?= e(url('/settings/registration-key')) ?>" data-confirm="<?= e(t('settings.confirm.key')) ?>">
+    <form method="post" action="<?= e(url('/settings/registration-key')) ?>" class="buttons wrap-actions gap-top" data-confirm="<?= e(t('settings.confirm.key')) ?>">
         <?= csrf_field() ?>
         <button type="submit" class="secondary"><?= icon('key') ?><?= e(t('settings.action.key')) ?></button>
         <span class="note"><?= e(t('settings.key.hint')) ?></span>

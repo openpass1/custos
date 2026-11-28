@@ -623,6 +623,39 @@ footer { padding: 16px 16px 20px 0; color: var(--md-on-surface-variant); font-si
 .all-good { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--md-ok); font-weight: 500; }
 .all-good::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 5px; background: var(--heat-success); box-shadow: 0 0 0 5px var(--md-ok-container); margin: 0 4px 0 5px; }
 
+/* Problems page: keep the report, affected task and dates readable as separate groups. */
+.problems-intro { max-width: 76ch; }
+.problem-records { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.problem-record {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, 24%) minmax(14rem, 29%); align-items: start;
+    gap: 14px 20px; padding: 12px 16px; border-radius: 12px; background: var(--item-bg); overflow-wrap: anywhere;
+}
+.problem-record.arrived { box-shadow: inset 0 0 0 1px var(--md-outline); animation: appear .25s var(--ease-in); }
+.problem-record-message { max-width: 82ch; margin: 6px 0 0; line-height: 1.5; white-space: pre-wrap; }
+.problem-record-facts { display: grid; gap: 8px 12px; margin: 0; }
+.problem-record-facts dt, .problem-record-detail { color: var(--md-on-surface-variant); font-size: 13px; line-height: 18px; }
+.problem-record-facts dd { margin: 0; }
+.problem-record-facts a { font-weight: 500; }
+.problem-record-timing time { font-variant-numeric: tabular-nums; }
+.problem-record-detail { display: block; }
+@media (min-width: 641px) {
+    .problem-record-facts { grid-template-columns: max-content minmax(0, 1fr); gap: 4px 8px; }
+    .problem-record-facts > div {
+        display: grid; grid-column: 1 / -1; grid-template-columns: max-content minmax(0, 1fr); grid-template-columns: subgrid;
+        gap: 8px; align-items: baseline;
+    }
+}
+@media (max-width: 1023px) {
+    .problem-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .problem-record-main { grid-column: 1 / -1; }
+}
+@media (max-width: 540px) {
+    .problem-record { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 12px; }
+    .problem-record-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .problem-record-timing { padding-top: 10px; border-top: 1px solid var(--md-outline-variant); }
+}
+@media (max-width: 360px) { .problem-record-facts { grid-template-columns: minmax(0, 1fr); } }
+
 /* Lead icons of list items: a tonal circle with an icon. */
 .lead { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 20px; background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .lead .icon { width: 22px; height: 22px; }
@@ -657,7 +690,7 @@ td.pills { line-height: 28px; }
 form.stack > .table-wrap { align-self: stretch; min-width: 0; }
 table.compact td { padding: 6px 8px; }
 table.grid { table-layout: fixed; }
-table.grid td { vertical-align: middle; }
+table.grid td, table.align-middle td { vertical-align: middle; }
 table.grid th:nth-child(1) { width: 22%; }
 table.grid th:nth-child(2) { width: 10rem; }
 table.grid th:nth-child(3) { width: 11rem; }
@@ -672,6 +705,46 @@ tr.group-row:first-child > th { padding-top: 8px; }
 dl.props { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 24px; margin: 0 0 12px; }
 dl.props dt { color: var(--md-on-surface-variant); }
 dl.props dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Updates cards use one vertical gap for their actions, status, and upload forms. */
+.updates-panel { --updates-gap: 12px; }
+.updates-panel, .updates-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: var(--updates-gap);
+}
+.updates-panel :is(h2, p, dl.props), .updates-flow > :is(ol, pre.log) { margin-block: 0; }
+.updates-panel form.stack { gap: var(--updates-gap); }
+.updates-panel details > :is(form.stack, .updates-flow) { margin-top: var(--updates-gap); }
+.package-catalog :is(th, td) { vertical-align: middle; }
+.package-catalog tbody th { min-width: 110px; }
+.catalog-versions { overflow-wrap: anywhere; }
+.catalog-cell-label { display: none; }
+.catalog-disclosure > summary { color: var(--md-primary); font-weight: 500; }
+.catalog-disclosure > p { padding-top: var(--updates-gap); }
+.catalog-files h3 { margin: 0; font-size: 16px; }
+.catalog-files ul { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.catalog-files li {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-top: 1px solid var(--md-outline-variant);
+}
+.catalog-files li > div { min-width: 0; }
+.catalog-checksum { overflow-wrap: anywhere; }
+[data-installer-fields] { display: grid; gap: var(--updates-gap); }
+[data-installer-fields][hidden] { display: none; }
+
+@media (max-width: 680px) {
+    .package-catalog, .package-catalog tbody { display: block; }
+    .package-catalog thead { display: none; }
+    .package-catalog tbody tr {
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+        padding: 10px 0; border-bottom: 1px solid var(--md-outline-variant);
+    }
+    .package-catalog tbody :is(th, td) { min-width: 0; padding: 0; border: 0; overflow-wrap: anywhere; }
+    .package-catalog :is(th, .catalog-action) { grid-column: 1 / -1; }
+    .catalog-cell-label { display: block; color: var(--md-on-surface-variant); font-size: 12px; }
+}
 
 /* Status labels: a tonal pill with an icon (badge() in helpers.php). */
 .badge { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; vertical-align: middle;
@@ -751,6 +824,8 @@ button:disabled, button:disabled:hover { opacity: .45; cursor: default; box-shad
 :is(button, a.button-link, summary, .icon-button, .nav-item, .bar-item, .chip, .menu-item):focus-visible { outline: 3px solid var(--md-secondary); outline-offset: 2px; }
 a:focus-visible { outline: 3px solid var(--md-secondary); outline-offset: 2px; border-radius: 4px; }
 .buttons, .actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wrap-actions, .wrap-actions > form { max-width: 100%; min-width: 0; }
+.wrap-actions button { max-width: 100%; white-space: normal; padding-block: 6px; overflow-wrap: anywhere; }
 .actions-row { margin-bottom: 16px; }
 .actions-row form, .buttons form { display: inline-flex; }
 .form-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 20px; }

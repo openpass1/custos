@@ -778,6 +778,81 @@ document.addEventListener('change', (event) => {
     });
 })();
 
+// The machine update picker starts with outdated machines. Checking a machine narrows the scope until the
+// administrator explicitly chooses a different one. Live updates leave a touched picker in place as usual.
+(() => {
+    const selector = 'form[data-update-selection]';
+    const selectedMachines = (form) => form.querySelector('input[name="agent_ids[]"]:enabled:checked');
+    const sync = (form) => {
+        const target = form.elements.target.value;
+        const group = form.elements.group_id;
+        const emptySelection = target === 'selected' && !selectedMachines(form);
+        if (group) {
+            group.disabled = target !== 'group';
+            group.closest('label').hidden = group.disabled;
+        }
+        const ready = target !== '' && !emptySelection && (target !== 'group' || !!group?.value);
+        for (const button of form.querySelectorAll('button[name="kind"]')) {
+            button.disabled = !ready;
+        }
+        form.querySelector('[data-update-selection-empty]').hidden = !emptySelection;
+        return ready;
+    };
+    const init = () => {
+        const form = document.querySelector(selector);
+        if (form) {
+            const target = form.elements.target;
+            if (!target.value) {
+                target.value = selectedMachines(form) ? 'selected' : 'outdated';
+            }
+            sync(form);
+        }
+    };
+    document.addEventListener('change', (event) => {
+        const field = event.target;
+        const form = field instanceof Element ? field.closest(selector) : null;
+        if (!form) {
+            return;
+        }
+        if (field.name === 'agent_ids[]') {
+            form.elements.target.value = 'selected'; // stays selected when the last check is removed
+        } else if (field.name === 'target' && field.value !== 'selected') {
+            for (const box of form.querySelectorAll('input[name="agent_ids[]"]:checked')) {
+                box.checked = false;
+            }
+        }
+        sync(form);
+    });
+    document.addEventListener('submit', (event) => {
+        if (event.target.matches(selector) && !sync(event.target)) {
+            event.preventDefault();
+        }
+    }, true);
+    document.addEventListener('custos:parts', init);
+    window.addEventListener('pageshow', init);
+    init();
+})();
+
+// CUSTOS ZIPs carry their version in the manifest. Only the 7-Zip installer needs these fields.
+(() => {
+    const form = document.querySelector('[data-package-upload]');
+    if (!form) {
+        return;
+    }
+    const fields = form.querySelector('[data-installer-fields]');
+    const sync = () => {
+        const file = form.elements.package.files[0];
+        const installer = file?.name.toLowerCase().endsWith('.exe') ?? false;
+        fields.hidden = !installer;
+        form.elements.version.disabled = !installer;
+        form.elements.version.required = installer;
+        form.elements.sha256.disabled = !installer;
+    };
+    form.elements.package.addEventListener('change', sync);
+    window.addEventListener('pageshow', sync);
+    sync();
+})();
+
 // Forms with conditional parts (task editor, agent settings, updates):
 // - [data-show-if="name=a|b&other!=c"] is shown only while the fields of its scope have these values. The scope is
 //   the nearest [data-scope]; inside a row of a list the names are the last part: "kind" stands for sources[3][kind].
