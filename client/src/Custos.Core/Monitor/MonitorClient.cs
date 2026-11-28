@@ -108,20 +108,30 @@ public sealed class MonitorClient : IDisposable
     private const int MaxAnswerBytes = 16 * 1024 * 1024;
 
     private readonly HttpClient _http;
+    private readonly bool _usesDefaultHandler;
 
     /// <param name="handler">Replaces the network in tests; null = a normal handler that unpacks gzip answers.</param>
     public MonitorClient(HttpMessageHandler? handler = null, TimeSpan? timeout = null)
     {
-        handler ??= new SocketsHttpHandler
-        {
-            // The signature covers the unpacked body (A.2).
-            AutomaticDecompression = DecompressionMethods.All,
-            ConnectTimeout = TimeSpan.FromSeconds(15),
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-        }.WithTls();
-        _http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("CUSTOS/" + CustosInfo.Version);
+        _http = NewClient(handler ?? DefaultHandler(allowRedirects: true));
+        _usesDefaultHandler = handler is null;
         RequestTimeout = timeout ?? TimeSpan.FromSeconds(60);
+    }
+
+    private static SocketsHttpHandler DefaultHandler(bool allowRedirects) => new SocketsHttpHandler
+    {
+        // The signature covers the unpacked body (A.2).
+        AutomaticDecompression = DecompressionMethods.All,
+        ConnectTimeout = TimeSpan.FromSeconds(15),
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        AllowAutoRedirect = allowRedirects,
+    }.WithTls();
+
+    private static HttpClient NewClient(HttpMessageHandler handler)
+    {
+        var client = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CUSTOS/" + CustosInfo.Version);
+        return client;
     }
 
     public TimeSpan RequestTimeout { get; }
@@ -236,7 +246,8 @@ public sealed class MonitorClient : IDisposable
     /// not signed; the caller checks it by the SHA-256 and the signature of the command. Errors are signed as usual.
     /// </summary>
     /// <returns>The answer; on success its body is empty and the file holds the download.</returns>
-    public async Task<MonitorAnswer> DownloadAsync(string serverUrl, string path, string file, long maxBytes, string agentId, RSA agentKey, RSA? serverKey, CancellationToken cancellationToken)
+    public async Task<MonitorAnswer> DownloadAsync(string serverUrl, string path, string file, long maxBytes, string agentId, RSA agentKey, RSA? serverKey,
+        CancellationToken cancellationToken, bool allowRedirects = true)
     {
         string nonce = MonitorCrypto.NewNonce();
         using var request = BuildRequest(serverUrl, "GET", path, [], nonce, agentKey);
@@ -245,7 +256,8 @@ public sealed class MonitorClient : IDisposable
         timeout.CancelAfter(TimeSpan.FromMinutes(30));
         try
         {
-            using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+            using var direct = !allowRedirects && _usesDefaultHandler ? NewClient(DefaultHandler(allowRedirects: false)) : null;
+            using var response = await (direct ?? _http).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
             if (response.StatusCode != HttpStatusCode.OK)
             {
                 byte[] body = await ReadLimitedAsync(response.Content, MaxAnswerBytes, timeout.Token).ConfigureAwait(false);

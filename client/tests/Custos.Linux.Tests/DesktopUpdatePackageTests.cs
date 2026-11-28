@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Custos.Core;
+using Custos.Core.Archives.SevenZip;
 using Custos.Core.Monitor;
 using Custos.Service.Agent;
 using Custos.Service.Platform;
@@ -24,6 +25,22 @@ public sealed class DesktopUpdatePackageTests
         ("custos-desktop-1.5.0-1.x86_64.rpm", "test RPM x86_64"),
         ("custos-desktop-1.5.0-1.aarch64.rpm", "test RPM aarch64"),
     ];
+
+    [Fact]
+    public void Service_startup_cleans_7zip_staging_and_preserves_the_desktop_update_receipt()
+    {
+        string root = TestPlace.NewFolder("startup-cleanup");
+        string updates = Path.Combine(root, "updates");
+        string sevenZip = Directory.CreateDirectory(Path.Combine(updates, "7z-12345678")).FullName;
+        string desktop = Directory.CreateDirectory(Path.Combine(updates, "desktop-update-" + Guid.NewGuid().ToString("N"))).FullName;
+        string receipt = Path.Combine(desktop, "update-result.json");
+        File.WriteAllText(receipt, "{}");
+
+        SevenZipInstaller.CleanUp(root, updates);
+
+        Assert.False(Directory.Exists(sevenZip));
+        Assert.True(File.Exists(receipt));
+    }
 
     [Theory]
     [InlineData("deb", Architecture.X64, 0)]

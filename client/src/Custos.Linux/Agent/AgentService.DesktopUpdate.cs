@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Custos.Core;
 using Custos.Core.Monitor;
 using Custos.Service.Platform;
+using Microsoft.Data.Sqlite;
 
 namespace Custos.Service.Agent;
 
@@ -135,7 +136,7 @@ internal sealed partial class AgentService
     }
 
     private static string SystemdArgument(string value) => '"' + value.Replace("\\", "\\\\", StringComparison.Ordinal)
-        .Replace("\"", "\\\"", StringComparison.Ordinal).Replace("%", "%%", StringComparison.Ordinal)
+        .Replace("\"", "\\\"", StringComparison.Ordinal)
         .Replace("\n", "\\n", StringComparison.Ordinal).Replace("\r", "\\r", StringComparison.Ordinal)
         .Replace("\t", "\\t", StringComparison.Ordinal) + '"';
 
@@ -200,26 +201,37 @@ internal sealed partial class AgentService
         _ = Task.Run(async () =>
         {
             bool complete = false;
+            bool blockingRuns = true;
             try
             {
                 while (!_stopping.IsCancellationRequested)
                 {
                     var result = ReadUpdateResult(Path.Combine(work, DesktopUpdateResult));
-                    if (result is not null && result.FromVersion == pending.FromVersion && result.ToVersion == pending.ToVersion)
+                    bool matches = result is not null && result.FromVersion == pending.FromVersion && result.ToVersion == pending.ToVersion;
+                    if (!matches && DateTimeOffset.UtcNow - pending.StartedAt < DesktopUpdateDeadline)
                     {
-                        complete = true;
-                        CompletePendingUpdate(pending, result, null, requireUpdaterResult: true);
-                        break;
+                        await Task.Delay(TimeSpan.FromSeconds(2), _stopping).ConfigureAwait(false);
+                        continue;
                     }
 
-                    if (DateTimeOffset.UtcNow - pending.StartedAt >= DesktopUpdateDeadline)
+                    // The package process has finished. Let tasks and restores continue even if the report outbox is unavailable.
+                    if (blockingRuns)
                     {
-                        complete = true;
-                        CompletePendingUpdate(pending, null, Messages.MonitorUpdateNoStop, requireUpdaterResult: true);
-                        break;
+                        ReleaseUpdateGate();
+                        blockingRuns = false;
                     }
 
-                    await Task.Delay(TimeSpan.FromSeconds(2), _stopping).ConfigureAwait(false);
+                    try
+                    {
+                        CompletePendingUpdate(pending, matches ? result : null, matches ? null : Messages.MonitorUpdateNoStop, requireUpdaterResult: true);
+                        complete = true;
+                        break;
+                    }
+                    catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
+                    {
+                        ServiceLog.ConfigProblem(logger, ex.Message);
+                        await Task.Delay(TimeSpan.FromSeconds(30), _stopping).ConfigureAwait(false);
+                    }
                 }
             }
             catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
@@ -231,7 +243,6 @@ internal sealed partial class AgentService
                 if (complete)
                 {
                     TryDeleteFolder(work);
-                    ReleaseUpdateGate();
                     Interlocked.Exchange(ref _updateRunning, 0);
                     PublishSnapshot();
                 }

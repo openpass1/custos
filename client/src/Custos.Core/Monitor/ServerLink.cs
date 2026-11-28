@@ -336,11 +336,11 @@ public sealed class ServerLink : IDisposable
     }
 
     /// <summary>Downloads a package of the server into <paramref name="file"/> (A.10).</summary>
-    public async Task<MonitorAnswer> DownloadAsync(string path, string file, long maxBytes, CancellationToken cancellationToken)
+    public async Task<MonitorAnswer> DownloadAsync(string path, string file, long maxBytes, CancellationToken cancellationToken, bool allowRedirects = true)
     {
         var (url, agentId) = Target();
         using var serverKey = MonitorCrypto.LoadPublicPem(_store.Get().ServerPublicKey);
-        return await _client.DownloadAsync(url, path, file, maxBytes, agentId, _store.AgentKey, serverKey, cancellationToken).ConfigureAwait(false);
+        return await _client.DownloadAsync(url, path, file, maxBytes, agentId, _store.AgentKey, serverKey, cancellationToken, allowRedirects).ConfigureAwait(false);
     }
 
     /// <summary>Checks a signature of the server made over <paramref name="data"/> with the pinned key (A.10).</summary>

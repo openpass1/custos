@@ -31,35 +31,45 @@ run_updater() {
         "$version" "$version" custos "$log" "$1"
 }
 
+failed() {
+    printf 'Native update smoke failed for %s.\n' "$unit" >&2
+    if [ -r "$log" ]; then cat "$log" >&2; else printf 'The updater left no local log.\n' >&2; fi
+    if [ -r "$result" ]; then cat "$result" >&2; else printf 'The updater left no result.\n' >&2; fi
+    journalctl --unit="$unit.service" --unit=custos.service --lines=80 --no-pager >&2 || true
+    exit 1
+}
+
+expect_result() { grep -F -- "$1" "$result" || failed; }
+
 previous=$(installed_version)
 before=$(pid)
 prepare identity "$scratch/new.deb" "$version.0"
-if run_updater "$version.0"; then exit 1; fi
-grep -F 'Debian package identity does not match' "$result"
-test "$(pid)" = "$before"
-test "$(installed_version)" = "$previous"
+if run_updater "$version.0"; then failed; fi
+expect_result 'Debian package identity does not match'
+test "$(pid)" = "$before" || failed
+test "$(installed_version)" = "$previous" || failed
 
 prepare upgrade "$scratch/new.deb" "$version"
-run_updater "$version" || { cat "$log"; exit 1; }
-grep -F '"ok":true' "$result"
-test "$(installed_version)" = "$version"
-test "$(pid)" != "$before"
-custos status > /dev/null
+run_updater "$version" || failed
+expect_result '"ok":true'
+test "$(installed_version)" = "$version" || failed
+test "$(pid)" != "$before" || failed
+custos status > /dev/null || failed
 
 prepare downgrade "$original" "$previous"
 before=$(pid)
-if run_updater "$previous"; then exit 1; fi
-grep -F 'not newer than the installed Debian package' "$result"
-test "$(pid)" = "$before"
-test "$(installed_version)" = "$version"
+if run_updater "$previous"; then failed; fi
+expect_result 'not newer than the installed Debian package'
+test "$(pid)" = "$before" || failed
+test "$(installed_version)" = "$version" || failed
 
 # Death of the transient updater after stopping the agent must leave an atomic failure and restart the same package.
 prepare interrupted "$scratch/new.deb" "$version"
 printf '%s\n' "$version" > "$work/original-native"
 if systemd-run --quiet --wait --collect --service-type=exec --unit="$unit" --property="$recovery" \
-    /bin/sh -c 'systemctl stop -- custos.service && kill -KILL $$'; then exit 1; fi
-grep -F '"ok":false' "$result"
-grep -F 'stopped before reporting a result' "$result"
-test "$(pid)" != "$before"
-test "$(installed_version)" = "$version"
-timeout 20 sh -c 'until custos status >/dev/null 2>&1; do sleep 1; done'
+    /bin/sh -c 'systemctl stop -- custos.service && kill -KILL $$'; then failed; fi
+expect_result '"ok":false'
+expect_result 'stopped before reporting a result'
+test "$(pid)" != "$before" || failed
+test "$(installed_version)" = "$version" || failed
+timeout 20 sh -c 'until custos status >/dev/null 2>&1; do sleep 1; done' || failed

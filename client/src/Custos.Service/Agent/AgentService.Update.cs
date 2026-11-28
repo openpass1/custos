@@ -103,7 +103,8 @@ internal sealed partial class AgentService
 #endif
             Directory.CreateDirectory(DataFolders.Updates);
             Log(LogLineLevels.Info, Messages.Format(Messages.MonitorUpdateDownloading, version));
-            var answer = await _link.DownloadAsync($"agent/updates/{version}", package, MaxPackageBytes, cancellationToken).ConfigureAwait(false);
+            var answer = await _link.DownloadAsync($"agent/updates/{version}", package, MaxPackageBytes, cancellationToken,
+                allowRedirects: !ProgramManagedByPackage).ConfigureAwait(false);
             if (!answer.Ok)
             {
                 return Failed(version, Messages.Format(Messages.MonitorDownloadFailed, answer.Describe()));
@@ -418,35 +419,50 @@ internal sealed partial class AgentService
 
     private void CompletePendingUpdate(PendingUpdate? pending, UpdaterResult? result, string? failure, bool requireUpdaterResult = false)
     {
-        TryDeleteFile(UpdatePendingFile);
-        TryDeleteFile(UpdateResultFile);
+        if (!requireUpdaterResult)
+        {
+            TryDeleteFile(UpdatePendingFile);
+            TryDeleteFile(UpdateResultFile);
+        }
+
         if (pending is null)
         {
             return;
         }
 
-        CommandOutcome outcome;
-        if (failure is null && info.Version == pending.ToVersion && (!requireUpdaterResult || result?.Ok == true))
+        bool installed = failure is null && info.Version == pending.ToVersion && (!requireUpdaterResult || result?.Ok == true);
+        string reason = failure ?? result?.Message ?? Messages.MonitorUpdateNoResult;
+        string message = installed ? Messages.Format(Messages.MonitorUpdateDone, pending.FromVersion, pending.ToVersion)
+            : Messages.Format(Messages.MonitorUpdateFailed, pending.ToVersion, reason);
+        var outcome = installed ? CommandOutcome.Done(message) : CommandOutcome.Failed(message);
+
+        if (requireUpdaterResult)
         {
-            string message = Messages.Format(Messages.MonitorUpdateDone, pending.FromVersion, pending.ToVersion);
+            // Commit the report before removing the native receipt. After a crash the server ignores repeated results.
+            if (pending.CommandId is { } desktopCommandId)
+            {
+                _link!.FinishById(desktopCommandId, outcome);
+            }
+
+            File.Delete(UpdatePendingFile);
+        }
+
+        if (installed)
+        {
             ServiceLog.UpdateInstalled(logger, pending.FromVersion, pending.ToVersion);
             Log(LogLineLevels.Info, message);
-            outcome = CommandOutcome.Done(message);
         }
         else
         {
-            string reason = failure ?? result?.Message ?? Messages.MonitorUpdateNoResult;
-            string message = Messages.Format(Messages.MonitorUpdateFailed, pending.ToVersion, reason);
             if (failure is null)
             {
                 ServiceLog.UpdateRejected(logger, pending.ToVersion, reason);
             }
 
             Log(LogLineLevels.Error, message);
-            outcome = CommandOutcome.Failed(message);
         }
 
-        if (pending.CommandId is { } commandId)
+        if (!requireUpdaterResult && pending.CommandId is { } commandId)
         {
             _link?.FinishById(commandId, outcome);
         }

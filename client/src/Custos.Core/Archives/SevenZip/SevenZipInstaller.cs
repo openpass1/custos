@@ -231,7 +231,8 @@ public static class SevenZipInstaller
 
         if (Directory.Exists(stagingRoot))
         {
-            foreach (string folder in Directory.EnumerateDirectories(stagingRoot))
+            // CUSTOS package updaters can still be working in sibling directories across a service restart.
+            foreach (string folder in Directory.EnumerateDirectories(stagingRoot, "7z-*"))
             {
                 TryDelete(() => Directory.Delete(folder, recursive: true));
             }
