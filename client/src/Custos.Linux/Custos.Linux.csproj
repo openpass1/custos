@@ -51,6 +51,7 @@
   </Target>
 
   <ItemGroup>
+    <EmbeddedResource Include="Agent/DesktopPackageUpdate.sh" LogicalName="Custos.Linux.DesktopPackageUpdate.sh" />
     <InternalsVisibleTo Include="Custos.Linux.Tests" />
   </ItemGroup>
 

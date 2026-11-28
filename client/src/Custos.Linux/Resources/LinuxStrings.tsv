@@ -107,3 +107,4 @@ CliUpdateInstallFailed	the agent could not start the update	агент не см
 CliUpdatePasswordNeedsTerminal	the program password is required. Run the command in an interactive terminal	требуется пароль программы. Запустите команду в интерактивном терминале
 CliUpdatePasswordPrompt	Program password (input is hidden):	Пароль программы (ввод скрыт):
 CliUpdatePasswordCancelled	no program password was entered	пароль программы не введён
+DesktopUpdateUnavailable	This Linux update contains only the archive agent. In Monitor, select a Linux release that includes desktop packages for managed updates.	Это обновление Linux предназначено только для агента из архива. В Monitor выберите выпуск Linux с пакетами рабочего стола для управляемого обновления.

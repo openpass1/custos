@@ -16,6 +16,11 @@ How to write it:
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
+## 1.5.1
+
+### Added
+- Linux: Update the desktop application and its packaged service from Monitor using the matching DEB or RPM release.
+
 ## 1.5.0
 
 ### Added

@@ -16,7 +16,7 @@ name: Release
 # only. Each program and the monitoring site look for their own package and pass over a release without it. CUSTOS for
 # macOS is built on a Mac of GitHub by client/mac/build-mac.sh, CUSTOS for Linux on an x86_64 and an ARM machine of
 # GitHub by client/linux/build-linux.sh. Include the Linux desktop packages on those runners unless Linux desktop is
-# unchecked. The agent archives and the Monitor update ZIP keep their own names.
+# unchecked. The Monitor update ZIP describes the desktop packages and leaves them as separate release files.
 #
 # A pull request that changes this file or release-notes.sh builds every part with a test version and publishes
 # nothing. The changelogs themselves are checked by changelog.yml.
@@ -357,8 +357,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The update package of CUSTOS for Linux holds both archives; the release has them on their own too (install.sh
-  # without a site downloads the one of its processor).
+  # The update package of CUSTOS for Linux holds both archives. When desktop is selected its descriptor covers the
+  # exact .deb and .rpm files from the architecture jobs. The archives and desktop files also ship separately.
   linux-package:
     needs: [check, linux]
     runs-on: ubuntu-latest
@@ -372,12 +372,28 @@ jobs:
           path: client/artifacts-linux
           merge-multiple: true
 
+      - uses: actions/download-artifact@v7
+        if: needs.check.outputs.linux_desktop == 'true'
+        with:
+          pattern: release-linux-desktop-*
+          path: client/artifacts-linux/desktop-release
+          merge-multiple: true
+
+      - name: Test the Linux update package with and without desktop
+        run: bash client/linux/ci-smoke-update-package.sh
+
       - name: Make the update package
         env:
           VERSION: ${{ needs.check.outputs.version }}
+          LINUX_DESKTOP: ${{ needs.check.outputs.linux_desktop }}
         run: |
           set -euo pipefail
-          bash client/linux/build-linux.sh package "$VERSION" client/artifacts-linux
+          output=client/artifacts-linux
+          args=(package "$VERSION" "$output")
+          if [ "$LINUX_DESKTOP" = true ]; then
+            args+=("$output/desktop-release")
+          fi
+          bash client/linux/build-linux.sh "${args[@]}"
           mkdir -p out
           cp client/artifacts-linux/custos-linux-x64.tar.gz client/artifacts-linux/custos-linux-arm64.tar.gz \
             "client/artifacts-linux/custos-linux-$VERSION.zip" out/

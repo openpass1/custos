@@ -313,4 +313,7 @@ static partial class LinuxStrings
 
     /// <summary>no program password was entered</summary>
     public static string CliUpdatePasswordCancelled => Get(nameof(CliUpdatePasswordCancelled));
+
+    /// <summary>This Linux update contains only the archive agent. In Monitor, select a Linux release that includes desktop...</summary>
+    public static string DesktopUpdateUnavailable => Get(nameof(DesktopUpdateUnavailable));
 }

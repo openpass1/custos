@@ -361,4 +361,7 @@ Changing the channel, checking and installing require local administrator rights
   <data name="CliUpdatePasswordCancelled" xml:space="preserve">
     <value>no program password was entered</value>
   </data>
+  <data name="DesktopUpdateUnavailable" xml:space="preserve">
+    <value>This Linux update contains only the archive agent. In Monitor, select a Linux release that includes desktop packages for managed updates.</value>
+  </data>
 </root>

@@ -25,8 +25,9 @@ The program sends data only:
     the computer's IP address, as with any web request.
   - A new version is downloaded only when an administrator presses **Update**.
   - To turn the check off, go to **Settings → Updates** and clear **Check GitHub for new versions once a day**.
-  - While the computer is connected to a monitoring site, the program does not ask GitHub; the site decides about
-    updates.
+  - When connected to Monitor, the service gets the update version from the site. For a managed Linux Desktop
+    upgrade, the packaged service downloads the matching DEB or RPM from GitHub Releases. GitHub receives the
+    client's IP address and the requested package name, which identifies its version, format and architecture.
 
 Links in the program window, such as **What's new**, the guides and the donation page, open in your browser only when
 you click them.
@@ -80,7 +81,9 @@ The data that you keep at a cloud drive, a remote server or Telegram falls under
   - Новая версия скачивается, только когда администратор нажмёт «Обновить».
   - Чтобы выключить проверку, откройте «Настройки» → «Обновления» и снимите «Проверять новые версии на GitHub раз в
     день».
-  - Пока компьютер подключён к сайту мониторинга, программа GitHub не спрашивает: об обновлениях решает сайт.
+  - При подключении к Monitor служба получает версию обновления с сайта. Для обновления Linux Desktop пакетная
+    служба скачивает DEB или RPM из GitHub Releases. GitHub получает IP-адрес машины и имя запрошенного файла,
+    по которому видны версия, формат пакета и архитектура.
 
 Ссылки в окне программы, например «Что нового», руководства и страница пожертвований, открываются в браузере, только
 когда вы на них нажмёте.

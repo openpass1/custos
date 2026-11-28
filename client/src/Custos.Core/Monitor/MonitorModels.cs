@@ -511,6 +511,10 @@ public sealed class PendingUpdate
     public required string ToVersion { get; set; }
 
     public DateTimeOffset StartedAt { get; set; }
+
+    /// <summary>The private working directory name of a native Linux desktop updater, if any.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DesktopPackageWork { get; set; }
 }
 
 /// <summary><c>config\update-result.json</c>: what Custos.Updater did (it writes the same fields by hand).</summary>

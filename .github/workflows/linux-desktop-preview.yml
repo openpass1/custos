@@ -127,6 +127,8 @@ jobs:
           sudo apt-get install -y --reinstall "$DEB_PACKAGE"
           check_installed_service
           sudo test -f /var/lib/custos/.deb-smoke-test
+          sudo sh client/linux/desktop/ci-package-update.sh "$DEB_PACKAGE" "$PRODUCT_VERSION"
+          check_installed_service
           sudo apt-get remove -y custos-desktop
           check_removed_package
 
