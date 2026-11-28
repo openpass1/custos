@@ -110,10 +110,10 @@ and select **OK** to apply it to the window and tray menu. This setting is avail
 Other settings in this dialog include permissions, log retention, the program password and the separate language
 for service logs.
 
-Under **Settings → CUSTOS service**, choose **Start the service**, **Stop the service** or **Restart the service**.
+From the CUSTOS tray icon menu, choose **Start the service**, **Stop the service** or **Restart the service**.
 These actions control the standard `custos.service` systemd unit, even when the window is disconnected from it.
 CUSTOS asks for confirmation before a stop or restart. If Linux asks for authorization, approve it in your
-desktop's PolicyKit dialog. The same actions are available in the tray menu on desktops that display the icon.
+desktop's PolicyKit dialog. In a desktop environment without a tray, manage `custos.service` with `systemctl`.
 
 ## Connect to CUSTOS Monitor
 

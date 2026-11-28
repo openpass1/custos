@@ -16,6 +16,11 @@ How to write it:
 
 The edition for Windows 7 and 8.1 has its own file, [CHANGELOG-legacy.md](CHANGELOG-legacy.md).
 
+## 1.5.2
+
+### Improved
+- Linux: Use the tray menu to start, stop or restart the backup service.
+
 ## 1.5.1
 
 ### Added

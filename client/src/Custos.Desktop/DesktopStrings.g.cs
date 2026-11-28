@@ -278,9 +278,6 @@ static partial class DesktopStrings
     /// <summary>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs progr...</summary>
     public static string LinuxEventHelp => Get(nameof(LinuxEventHelp));
 
-    /// <summary>CUSTOS service</summary>
-    public static string SystemServiceHeading => Get(nameof(SystemServiceHeading));
-
     /// <summary>Restart the service</summary>
     public static string SystemServiceRestart => Get(nameof(SystemServiceRestart));
 

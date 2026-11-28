@@ -287,9 +287,6 @@
   <data name="LinuxEventHelp" xml:space="preserve">
     <value>Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.</value>
   </data>
-  <data name="SystemServiceHeading" xml:space="preserve">
-    <value>Служба CUSTOS</value>
-  </data>
   <data name="SystemServiceRestart" xml:space="preserve">
     <value>Перезапустить службу</value>
   </data>

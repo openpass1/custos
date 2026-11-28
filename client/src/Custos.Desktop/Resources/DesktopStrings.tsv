@@ -98,7 +98,6 @@ LinuxDbBinDirHelp	Enter the full path to the directory containing the database t
 LinuxEventUnitStop	Stop a systemd unit	Остановить службу systemd
 LinuxEventUnitStart	Start a systemd unit	Запустить службу systemd
 LinuxEventHelp	Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.	Укажите имя службы systemd, например mariadb.service, либо путь к программе или скрипту. Агент запускает программы от root.
-SystemServiceHeading	CUSTOS service	Служба CUSTOS
 SystemServiceRestart	Restart the service	Перезапустить службу
 SystemServiceRestartConfirm	Restart the CUSTOS service?	Перезапустить службу CUSTOS?
 SystemServiceDone	The CUSTOS service operation completed.	Команда управления службой CUSTOS выполнена.

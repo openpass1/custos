@@ -127,19 +127,6 @@
                   <Button Theme="{StaticResource MenuItemButton}" Click="OnSettings" IsEnabled="{Binding CanOpenSettings}" IsVisible="{Binding ShowsSettings}">
                     <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="tune" /><TextBlock Text="{x:Static p:DesktopStrings.SettingsAll}" VerticalAlignment="Center" /></StackPanel>
                   </Button>
-                  <StackPanel IsVisible="{Binding ShowsSystemServiceActions}" IsEnabled="{Binding CanControlSystemService}">
-                    <Border Classes="divider" Margin="0,8" />
-                    <TextBlock Classes="menuhead" Text="{x:Static p:DesktopStrings.SystemServiceHeading}" />
-                    <Button Theme="{StaticResource MenuItemButton}" Click="OnStartSystemService">
-                      <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="play_arrow" /><TextBlock Text="{x:Static g:Strings.MenuServiceStart}" VerticalAlignment="Center" /></StackPanel>
-                    </Button>
-                    <Button Theme="{StaticResource MenuItemButton}" Click="OnStopSystemService">
-                      <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="stop" /><TextBlock Text="{x:Static g:Strings.MenuServiceStop}" VerticalAlignment="Center" /></StackPanel>
-                    </Button>
-                    <Button Theme="{StaticResource MenuItemButton}" Click="OnRestartSystemService">
-                      <StackPanel Orientation="Horizontal" Spacing="12"><p:Icon Kind="refresh" /><TextBlock Text="{x:Static p:DesktopStrings.SystemServiceRestart}" VerticalAlignment="Center" /></StackPanel>
-                    </Button>
-                  </StackPanel>
                 </StackPanel>
                 </ScrollViewer>
               </Flyout>
