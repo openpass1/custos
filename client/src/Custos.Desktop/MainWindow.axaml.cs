@@ -719,18 +719,6 @@ internal sealed partial class MainWindow : Window
         Safe.Run(_actions.SettingsAsync, ShowProblem);
     }
 
-    private void OnStartSystemService(object? sender, RoutedEventArgs e) => RunSystemServiceAction(sender, SystemServiceAction.Start);
-
-    private void OnStopSystemService(object? sender, RoutedEventArgs e) => RunSystemServiceAction(sender, SystemServiceAction.Stop);
-
-    private void OnRestartSystemService(object? sender, RoutedEventArgs e) => RunSystemServiceAction(sender, SystemServiceAction.Restart);
-
-    private void RunSystemServiceAction(object? sender, SystemServiceAction action)
-    {
-        CloseMenu(sender);
-        Safe.Run(() => _actions.ControlSystemServiceAsync(action), ShowProblem);
-    }
-
     /// <summary>A double click: the task editor for those who may change tasks, else the card.</summary>
     private void OnTaskDoubleTapped(object? sender, TappedEventArgs e)
     {

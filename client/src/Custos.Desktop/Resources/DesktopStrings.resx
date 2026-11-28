@@ -287,9 +287,6 @@ Off: the contents of /srv/data go straight into &lt;backup&gt;/…</value>
   <data name="LinuxEventHelp" xml:space="preserve">
     <value>Enter a systemd unit name such as mariadb.service, or the path to a program or script. The agent runs programs as root.</value>
   </data>
-  <data name="SystemServiceHeading" xml:space="preserve">
-    <value>CUSTOS service</value>
-  </data>
   <data name="SystemServiceRestart" xml:space="preserve">
     <value>Restart the service</value>
   </data>
