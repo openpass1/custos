@@ -978,7 +978,7 @@ return [
     'updates.install.sevenzip' => 'Update 7-Zip to {version}',
     'updates.install.nothing' => 'Nothing to update with yet: upload a CUSTOS package or a 7-Zip installer.',
     'updates.install.hint' => 'Machines receive the current package for their edition. Machines that already have that version or newer are skipped. The command waits for a machine for 3 days.',
-    'updates.install.hint_linux' => 'Update Linux Desktop installations from DEB/RPM with the package manager. When the desktop app is installed separately, Monitor updates only the Linux agent.',
+    'updates.install.hint_linux' => 'Update Linux Desktop 1.5.0 and earlier manually once. Starting with 1.5.1, a packaged installation can receive a newer release with DEB/RPM files through Monitor. If the agent was installed separately from an archive, only that agent is updated.',
     'updates.flash.uploaded' => 'Package {version} uploaded. Mark it as current to roll it out.',
     'updates.flash.uploaded_legacy' => 'Package {version} for Windows 7 and 8.1 uploaded. Mark it as current to roll it out.',
     'updates.flash.uploaded_macos' => 'Package {version} for macOS uploaded. Mark it as current to roll it out.',
